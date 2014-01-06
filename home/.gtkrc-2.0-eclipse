@@ -1,0 +1,65 @@
+#Create a new file in your home directory called .gtkrc-eclipse
+
+# call eclipse with this command:
+# env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/USER/.gtkrc-eclipse '/path_to_eclipse/eclipse'
+
+# In your Eclipse directory find the file 'plugins/org.eclipse.platform_4.2.*/css/e4_default_gtk.css'
+# (there's an * in there, because I guess that the version may change in the future or may be different already).
+# In this file there's a CSS class:
+
+#.MPartStack {
+#    font-size: 11;
+#    swt-simple: false;
+#    swt-mru-visible: false;
+#}
+
+# And you have two possible solutions:
+
+# 1. Change font-size to something smaller
+# 2. Just comment out or remove font-size from this class (works well for me)
+
+# http://stackoverflow.com/questions/11805784/very-large-tabs-in-eclipse-panes-on-ubuntu
+
+# .gtkrc-eclipse
+
+style "gtkcompact" {
+    GtkButton::default_border={0,0,0,0}
+    GtkButton::default_outside_border={0,0,0,0}
+    GtkButtonBox::child_min_width=0
+    GtkButtonBox::child_min_heigth=0
+    GtkButtonBox::child_internal_pad_x=0
+    GtkButtonBox::child_internal_pad_y=0
+    GtkMenu::vertical-padding=1
+    GtkMenuBar::internal_padding=0
+    GtkMenuItem::horizontal_padding=4
+    GtkToolbar::internal-padding=0
+    GtkToolbar::space-size=0
+    GtkOptionMenu::indicator_size=0
+    GtkOptionMenu::indicator_spacing=0
+    GtkPaned::handle_size=4
+    GtkRange::trough_border=0
+    GtkRange::stepper_spacing=0
+    GtkScale::value_spacing=0
+    GtkScrolledWindow::scrollbar_spacing=0
+    GtkTreeView::vertical-separator=0
+    GtkTreeView::horizontal-separator=0
+    GtkTreeView::fixed-height-mode=TRUE
+    GtkWidget::focus_padding=0
+}
+class "GtkWidget" style "gtkcompact"
+
+# Make tabs smaller
+
+style "compact-toolbar" {
+    GtkToolbar::internal-padding = 0
+    xthickness = 1
+    ythickness = 1
+}
+
+style "compact-button" {
+    xthickness = 0
+    ythickness = 0
+}
+
+class "GtkToolbar" style "compact-toolbar" 
+widget_class "*<GtkToolbar>*<GtkButton>" style "compact-button"

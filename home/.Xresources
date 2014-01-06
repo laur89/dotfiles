@@ -1,0 +1,281 @@
+Xft.autohint: 0
+!Xft.antialias: 1   ! Provided in .fonts.conf
+!Xft.hinting: 1 ! Provided in .fonts.conf
+!Xft.hintstyle: hintfull ! Provided in .fonts.conf
+!Xft*dpi: 96
+!Xft*dpi: 120
+!Xft.rgba: rgb  ! Provided in .fonts.conf
+!Xft.lcdfilter: lcddefault ! Provided in .fonts.conf
+
+! -------------------------------------------------
+URxvt*geometry: 100x50
+!URxvt*background:[70]Black
+URxvt*background:#222222
+URxvt*foreground:White
+URxvt.depth: 32
+URxvt*cursorBlink: on
+URxvt*borderLess: false
+URxvt*cursorUnderline: true
+URxvt.visualBell: true
+URxvt*scrollBar: false
+URxvt*scrollTtyOutput: false
+URxvt*scrollTtyKeypress: true
+URxvt*secondaryScroll: true
+URxvt*saveLines: 8000
+
+! TABS
+URxvt.perl-ext-common: default,tabbed
+URxvt.tabbed.tabbar-fg: 12
+URxvt.tabbed.tabbar-bg: 0
+URxvt.tabbed.tab-fg:    14
+URxvt.tabbed.tab-bg:    0
+
+! COLOR PALETTE
+!colors:
+!scheme: pnevma
+!*foreground: #696969
+!*background: #282626
+*foreground: #6F6767
+*background: #3A3636
+*color0: #363636
+*color8: #424242
+*color1: #C37561
+*color9: #D19485
+*color2: #A0A57E
+*color10: #B6B99D
+*color3: #D1A375
+*color11: #DEBC9C
+*color4: #7985A3
+*color12: #98A1B9
+*color5: #AB716D
+*color13: #BE918E
+*color6: #98B9B1
+*color14: #CBE6CB
+*color7: #D0D0D0
+*color15: #E6E6E6
+
+! FONTS
+! $ fc-list lists available fonts
+URxvt*font: xft:Terminess Powerline:pixelsize=14
+URxvt*boldFont: xft:Terminess Powerline:pixelsize=14
+
+
+! Alternative URxvt configs:
+! ==============================================================================
+URxvt2*geometry:                115x40
+URxvt2*font:  xft:cure:pixelsize=8
+URxvt2*depth:                24
+URxvt2*background:            [80]#000000
+URxvt2*foreground:            [30]#ffffff
+URxvt2*borderless: 1
+URxvt2*scrollBar:            false
+URxvt2*saveLines:  2000
+!URxvt2*termName:    URxvt2
+URxvt2.perl-ext-common: default,matcher
+URxvt2.urlLauncher: firefox
+URxvt2.matcher.button: 1
+URxvt2.transparent:      true
+! ==============================================================================
+URxvt3*geometry:                53x20
+URxvt3*font:  xft:Terminus:pixelsize=5
+URxvt3*depth:                32
+URxvt3*background:            [85]#000000
+URxvt3*foreground:            [100]#ffffff
+URxvt3*borderless: 1
+URxvt3*scrollBar:            false
+URxvt3*saveLines:  5000
+URxvt3*termName:    rxvt-unicode
+URxvt3.perl-ext-common: default,matcher
+URxvt3.urlLauncher: firefox
+URxvt3.matcher.button: 1
+
+
+
+!Pnevma1
+URxvt3.color0: #2F2E2D
+URxvt3.color8: #4A4845
+URxvt3.color1: #A36666
+URxvt3.color9: #D78787
+URxvt3.color2: #8FA57E
+URxvt3.color10: #A9BA9C
+URxvt3.color3: #D7AF87
+URxvt3.color11: #E4C9AF
+URxvt3.color4: #7FA5BD
+URxvt3.color12: #A1BDCE
+URxvt3.color5: #C79EC4
+URxvt3.color13: #D7BEDA
+URxvt3.color6: #8ADBB4
+URxvt3.color14: #B1E7DD
+URxvt3.color7: #D0D0D0
+URxvt3.color15: #EFEFEF
+
+!Pnevma2 - A heavy mod of the original.
+!URxvt3.color0: #2F2E2D
+!URxvt3.color8: #4A4845
+!URxvt3.color1: #C37561
+!URxvt3.color9: #D19485
+!URxvt3.color2: #A0A57E
+!URxvt3.color10: #B6B99D
+!URxvt3.color3: #D1A375
+!URxvt3.color11: #DEBC9C
+!URxvt3.color4: #7985A3
+!URxvt3.color12: #98A1B9
+!URxvt3.color5: #AB716D
+!URxvt3.color13: #BE918E
+!URxvt3.color6: #98B9B1
+!URxvt3.color14: #CBE6CB
+!URxvt3.color7: #D0D0D0
+!URxvt3.color15: #EFEFEF
+! ==============================================================================
+
+!-------------------------------------------
+! c o l o r -  s e t t i n g s
+
+URxvt4*background: #222222
+URxvt4*foreground: #777777
+
+! Default
+! 0: black
+URxvt4.color0:  #222222
+URxvt4.color8:  #222222
+! 1: red
+URxvt4.color1:  #9f6767
+URxvt4.color9:  #9f6767
+! 2: green
+URxvt4.color2:  #92ac68
+URxvt4.color10: #92ac68
+! 3: yellow
+URxvt4.color3:  #d0d293
+URxvt4.color11: #d0d293
+! 4: blue
+URxvt4.color4:  #9aacc3
+URxvt4.color12: #9aacc3
+! 5: magenta
+URxvt4.color5:  #bb77a4
+URxvt4.color13: #bb77a4
+! 6: cyan
+URxvt4.color6:  #77bbb5
+URxvt4.color14: #77bbb5
+! 7: white
+URxvt4.color7:  #777777
+URxvt4.color15: #777777
+
+!-------------------------------------------
+! u r x v t
+
+URxvt4*geometry:         112x22  
+URxvt4*font:            xft:terminus:size=8
+URxvt4*urlLauncher:         firefox  
+URxvt4*scrollBar:        false
+URxvt4*scrollBar_right:        true
+URxvt4*scrollColor:        #000000
+! ==============================================================================
+! ==============================================================================
+! ==============================================================================
+
+! xterm ----------------------------------------------------------------------
+
+!xterm*VT100.geometry:     80x25
+xterm*faceName:           Terminus:style=Regular:size=10
+!xterm*font:              -*-dina-medium-r-*-*-16-*-*-*-*-*-*-*
+xterm*dynamicColors:      true
+xterm*utf8:               2
+xterm*eightBitInput:      true
+xterm*saveLines:          512
+xterm*scrollKey:          true
+xterm*scrollTtyOutput:    false
+xterm*scrollBar:          true
+xterm*rightScrollBar:     true
+xterm*jumpScroll:         true
+xterm*multiScroll:        true
+xterm*toolBar:            false
+
+! xclock ---------------------------------------------------------------------
+
+xclock*update:            1
+xclock*analog:            false
+xclock*Foreground:        white
+xclock*background:        #222222
+
+!xcalc-----------------------------------------------------------------------
+
+xcalc*geometry:                        200x275
+xcalc.ti.bevel.background:             #111111
+xcalc.ti.bevel.screen.background:      #000000
+xcalc.ti.bevel.screen.DEG.background:  #000000
+xcalc.ti.bevel.screen.DEG.foreground:  LightSeaGreen
+xcalc.ti.bevel.screen.GRAD.background: #000000
+xcalc.ti.bevel.screen.GRAD.foreground: LightSeaGreen
+xcalc.ti.bevel.screen.RAD.background:  #000000
+xcalc.ti.bevel.screen.RAD.foreground:  LightSeaGreen
+xcalc.ti.bevel.screen.INV.background:  #000000
+xcalc.ti.bevel.screen.INV.foreground:  Red
+xcalc.ti.bevel.screen.LCD.background:  #000000
+xcalc.ti.bevel.screen.LCD.foreground:  LightSeaGreen
+xcalc.ti.bevel.screen.LCD.shadowWidth: 0
+xcalc.ti.bevel.screen.M.background:    #000000
+xcalc.ti.bevel.screen.M.foreground:    LightSeaGreen
+xcalc.ti.bevel.screen.P.background:    #000000
+xcalc.ti.bevel.screen.P.foreground:    Yellow
+xcalc.ti.Command.foreground:  White
+xcalc.ti.Command.background:  #777777
+xcalc.ti.button5.background:  Orange3
+xcalc.ti.button19.background: #611161
+xcalc.ti.button18.background: #611161
+xcalc.ti.button20.background: #611111
+!uncomment to change label on division button
+!xcalc.ti.button20.label:      /
+xcalc.ti.button25.background: #722222
+xcalc.ti.button30.background: #833333
+xcalc.ti.button35.background: #944444
+xcalc.ti.button40.background: #a55555
+xcalc.ti.button22.background: #222262
+xcalc.ti.button23.background: #222262
+xcalc.ti.button24.background: #222272
+xcalc.ti.button27.background: #333373
+xcalc.ti.button28.background: #333373
+xcalc.ti.button29.background: #333373
+xcalc.ti.button32.background: #444484
+xcalc.ti.button33.background: #444484
+xcalc.ti.button34.background: #444484
+xcalc.ti.button37.background: #555595
+xcalc.ti.button38.background: #555595
+xcalc.ti.button39.background: #555595
+XCalc*Cursor:                 hand2
+XCalc*ShapeStyle:             rectangle
+! ============================================
+! xscreensaver
+
+xscreensaver.splash: false
+
+!font settings
+xscreensaver.Dialog.headingFont:        -*-dina-bold-r-*-*-12-*-*-*-*-*-*-*
+xscreensaver.Dialog.bodyFont:           -*-dina-medium-r-*-*-12-*-*-*-*-*-*-*
+xscreensaver.Dialog.labelFont:          -*-dina-medium-r-*-*-12-*-*-*-*-*-*-*
+xscreensaver.Dialog.unameFont:          -*-dina-medium-r-*-*-12-*-*-*-*-*-*-*
+xscreensaver.Dialog.buttonFont:         -*-dina-bold-r-*-*-12-*-*-*-*-*-*-*
+xscreensaver.Dialog.dateFont:           -*-dina-medium-r-*-*-12-*-*-*-*-*-*-*
+xscreensaver.passwd.passwdFont:         -*-dina-bold-r-*-*-12-*-*-*-*-*-*-*
+
+!general dialog box (affects main hostname, username, password text)
+xscreensaver.Dialog.foreground:         #ffffff
+xscreensaver.Dialog.background:         #111111
+xscreensaver.Dialog.topShadowColor:     #111111
+xscreensaver.Dialog.bottomShadowColor:  #111111
+xscreensaver.Dialog.Button.foreground:  #666666
+xscreensaver.Dialog.Button.background:  #ffffff
+
+!username/password input box and date text colour
+xscreensaver.Dialog.text.foreground:    #666666
+xscreensaver.Dialog.text.background:    #ffffff
+xscreensaver.Dialog.internalBorderWidth:24
+xscreensaver.Dialog.borderWidth:        20
+xscreensaver.Dialog.shadowThickness:    2
+
+!timeout bar (background is actually determined by Dialog.text.background)
+xscreensaver.passwd.thermometer.foreground:  #ff0000
+xscreensaver.passwd.thermometer.background:  #000000
+xscreensaver.passwd.thermometer.width:       8
+
+!datestamp format--see the strftime(3) manual page for details
+xscreensaver.dateFormat:    %I:%M%P %a %b %d, %Y
