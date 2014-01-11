@@ -157,6 +157,7 @@ nnoremap <S-l> gt
 "nnoremap <Esc> <Esc><Esc>
 inoremap <Esc> <Esc><Esc>
 vnoremap <Esc> <Esc><Esc>
+" inoremap jj <ESC>
 
 let g:ctrlp_cmd = 'CtrlPBuffer'
 let g:ctrlp_regexp = 1

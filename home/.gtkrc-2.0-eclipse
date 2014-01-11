@@ -63,3 +63,14 @@ style "compact-button" {
 
 class "GtkToolbar" style "compact-toolbar" 
 widget_class "*<GtkToolbar>*<GtkButton>" style "compact-button"
+
+# siit alates minu rida:
+gtk-button-images=1
+gtk-menu-images=1
+gtk-enable-event-sounds=1
+gtk-enable-input-feedback-sounds=1
+gtk-xft-antialias=1
+gtk-xft-hinting=1
+gtk-xft-hintstyle="hintfull"
+gtk-xft-rgba="rgb"
+#include "/home/laur/.gtkrc-2.0.mine"
