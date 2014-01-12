@@ -21,7 +21,7 @@ URxvt*scrollBar: false
 URxvt*scrollTtyOutput: false
 URxvt*scrollTtyKeypress: true
 URxvt*secondaryScroll: true
-URxvt*saveLines: 8000
+URxvt*saveLines: 80000
 
 ! TABS
 URxvt.perl-ext-common: default,tabbed

@@ -22,7 +22,7 @@ export DISPLAY=:0.0
 /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
 
 
-for PROG in "rxvt-unicode" "blueman-applet" "nm-applet" "xfce4-volumed" "todo.sh --auto" "skype" "spacefm" "Earth_sunlight_wallpaper_changer.sh" "sunlight_map_wallpaper_changer.sh" "keepassx" "delay_screensaver.py" "icedove"; do
+for PROG in "rxvt-unicode" "blueman-applet" "nm-applet" "xfce4-volumed" "todo.sh --auto" "skype" "spacefm" "Earth_sunlight_wallpaper_changer.sh" "sunlight_map_wallpaper_changer.sh" "keepassx" "delay_screensaver.py" "icedove" "ssh-agent"; do
     if ! [[ "$(ps -e | grep "\b$PROG\b")" ]]; then
         $PROG &
         echo "Launching $PROG ..."
