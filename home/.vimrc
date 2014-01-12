@@ -162,3 +162,4 @@ vnoremap <Esc> <Esc><Esc>
 let g:ctrlp_cmd = 'CtrlPBuffer'
 let g:ctrlp_regexp = 1
 let g:ctrlp_switch_buffer = 'Et'
+
