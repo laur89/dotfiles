@@ -207,10 +207,10 @@ set nocompatible " Must be the first line
     set ruler                                       " show current pos at bottom
     set relativenumber                              " linenumbers are relative
     set modelines=0                                 " modelines sets the number of
-                                                      lines at the beginning and end
-                                                      of each file vim checks for
-                                                      initializations. basically
-                                                      for file-specific settings.
+                                                    " lines at the beginning and end
+                                                    " of each file vim checks for
+                                                    " initializations. basically
+                                                    " for file-specific settings.
     " autosave file if window loses focus:
     "au FocusLost * :wa
     
