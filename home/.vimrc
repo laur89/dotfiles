@@ -362,8 +362,8 @@ set nocompatible " Must be the first line
         
         " Map esc to double esc (if i remember correctly, it was because of statusbar plugin lag)
         "nnoremap <Esc> <Esc><Esc>
-        inoremap <Esc> <Esc><Esc>
-        vnoremap <Esc> <Esc><Esc>
+        "inoremap <Esc> <Esc><Esc>
+        "vnoremap <Esc> <Esc><Esc>
         
     """ }}}
     
@@ -556,6 +556,10 @@ set nocompatible " Must be the first line
     
     " ???
     let g:ctrlp_switch_buffer = 'Et'
+
+    " airline - automatically populate g:airline_symbols dictionary w/
+    " powerline symbols:
+    let g:airline_powerline_fonts = 1
 
     " TagBar
     let g:tagbar_left = 0
