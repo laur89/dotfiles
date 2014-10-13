@@ -53,7 +53,8 @@ set nocompatible " Must be the first line
     " Super easy commenting, toggle comments etc
     Plugin 'scrooloose/nerdcommenter'
 
-    " Autoclose (, " etc
+    " Autoclose (, " etc; ie when you insert an (, then ) will be automatically
+    " inserted, and cursor placed between them;
     Plugin 'Townk/vim-autoclose'
 
     " Git wrapper inside Vim
@@ -66,10 +67,11 @@ set nocompatible " Must be the first line
     Plugin 'vim-scripts/Align'
 
     " Snippets like textmate
-    Plugin 'MarcWeber/vim-addon-mw-utils'
-    Plugin 'tomtom/tlib_vim'
-    Plugin 'honza/vim-snippets'
-    Plugin 'garbas/vim-snipmate'
+    Plugin 'MarcWeber/vim-addon-mw-utils' "vim-snipmate depends on this one
+    Plugin 'tomtom/tlib_vim'              " ... and this.
+    Plugin 'honza/vim-snippets'           " The snippets repo, and...
+    "Plugin 'garbas/vim-snipmate'          " ...the engine.
+    Plugin 'sirver/ultisnips'             "...the engine.
 
     " A fancy start screen, shows MRU etc.
     Plugin 'mhinz/vim-startify'
@@ -96,6 +98,11 @@ set nocompatible " Must be the first line
     
     " fast mechanism to open files and buffers
     Plugin 'wincent/Command-T'
+
+    " development completion engine (integrates with utilsnips and deprecates
+    " supertab et al; needs compilation! read the docs!:
+    " !!! ühed väidavad, et javaphp,js,html jaoks on neocomplete parem;
+    Plugin 'Valloric/YouCompleteMe'
 
     " Finish Vundle stuff
     call vundle#end()
@@ -211,6 +218,20 @@ set nocompatible " Must be the first line
                                                     " of each file vim checks for
                                                     " initializations. basically
                                                     " for file-specific settings.
+
+
+    " in order exiting insert mode in vim-airline wouldn't lag that much:
+    " {{{
+        if ! has('gui_running')
+        set ttimeoutlen=10
+        augroup FastEscape
+            autocmd!
+            au InsertEnter * set timeoutlen=0
+            au InsertLeave * set timeoutlen=1000
+        augroup END
+        endif
+    "}}}
+
     " autosave file if window loses focus:
     "au FocusLost * :wa
     
@@ -337,8 +358,9 @@ set nocompatible " Must be the first line
         nnoremap <leader><space> :noh<cr>
         
         " Remap tab to bracket matching:
-        nnoremap <tab> %
-        vnoremap <tab> %
+        " (currently disabled since YCM plugin uses tab)
+        "nnoremap <tab> %
+        "vnoremap <tab> %
         
         " Turn off vim's default regex handling:
         nnoremap / /\v
@@ -359,11 +381,6 @@ set nocompatible " Must be the first line
         
         " Go to the middle of the line
         nmap gm :exe 'normal '.(virtcol('$')/2).'\\|'<CR>
-        
-        " Map esc to double esc (if i remember correctly, it was because of statusbar plugin lag)
-        "nnoremap <Esc> <Esc><Esc>
-        "inoremap <Esc> <Esc><Esc>
-        "vnoremap <Esc> <Esc><Esc>
         
     """ }}}
     
@@ -565,6 +582,48 @@ set nocompatible " Must be the first line
     let g:tagbar_left = 0
     let g:tagbar_width = 30
     set tags=tags;/
+
+    " ultisnips trigger conf; do not use <tab> if you use YouCompleteMe! {{{
+        function! g:UltiSnips_Complete()
+            call UltiSnips#ExpandSnippet()
+            if g:ulti_expand_res == 0
+                if pumvisible()
+                    return "\<C-n>"
+                else
+                    call UltiSnips#JumpForwards()
+                    if g:ulti_jump_forwards_res == 0
+                    return "\<TAB>"
+                    endif
+                endif
+            endif
+            return ""
+        endfunction
+
+        au BufEnter * exec "inoremap <silent> " . g:UltiSnipsExpandTrigger . " <C-R>=g:UltiSnips_Complete()<cr>"
+        let g:UltiSnipsJumpForwardTrigger="<tab>"
+        let g:UltiSnipsListSnippets="<c-e>"
+        " this mapping Enter key to <C-y> to chose the current highlight item 
+        " and close the selection list, same as other IDEs.
+        " CONFLICT with some plugins like tpope/Endwise
+        inoremap <expr> <CR> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
+    "}}}
+
+    " alternative:
+    "let g:UltiSnipsExpandTrigger="<c-j>""
+    "let g:UltiSnipsJumpForwardTrigger="<c-j>"
+    "let g:UltiSnipsJumpBackwardTrigger="<c-k>"
+
+    " If you want :UltiSnipsEdit to split your window.
+    let g:UltiSnipsEditSplit="vertical" 
+
+
+
+    " YouCompleteMe
+    " open default ycm_extra_conf, so every project doesn't request
+    " explicitly its own:
+    "let g:ycm_global_ycm_extra_conf = '~/.ycm_extra_conf.py'
+
+
 
     " Syntastic - This is largely up to your own usage, and override these
     "             changes if be needed. This is merely an exemplification.
