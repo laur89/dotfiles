@@ -12,6 +12,10 @@ set nocompatible " Must be the first line
             silent !mkdir -p $HOME/.vim/bundle
             silent !git clone https://github.com/gmarik/Vundle.vim $HOME/.vim/bundle/Vundle.vim
             let has_vundle=0
+            
+            " make directory for the persistent undo storage (not related to
+            " vundle)
+            silent !mkdir -p $HOME/.vim/undo
         endif
     """ }}}
     
@@ -40,7 +44,7 @@ set nocompatible " Must be the first line
     Plugin 'kien/ctrlp.vim'
 
     " A pretty statusline, bufferline integration
-    "Plugin 'itchyny/lightline.vim' " liiga minimalist mu jaoks
+    "Plugin 'itchyny/lightline.vim' "liiga minimalist mu jaoks
     Plugin 'bling/vim-airline'
     Plugin 'bling/vim-bufferline'
 
@@ -95,7 +99,9 @@ set nocompatible " Must be the first line
     " Visualise the undo tree
     Plugin 'sjl/gundo.vim'
     
-    " fast mechanism to open files and buffers
+    " fast mechanism to open files and buffers.
+    " requires compiling - read the docs/wiki!
+    " perhaps time to deprecate for ctrl-p?
     Plugin 'wincent/Command-T'
 
     " development completion engine (integrates with utilsnips and deprecates
@@ -127,6 +133,7 @@ set nocompatible " Must be the first line
         syntax on                                   " syntax highlighting
         set background=dark                         " we're using a dark bg
         colors mustang                           " select colorscheme
+        "colors oblivion                           " select colorscheme
         au BufNewFile,BufRead *.txt se ft=sh tw=79  " opens .txt w/highlight
         au BufNewFile,BufRead *.tex se ft=tex tw=79 " we don't want plaintex
         au BufNewFile,BufRead *.md se ft=markdown tw=79 " markdown, not modula
@@ -279,7 +286,7 @@ set nocompatible " Must be the first line
 """ }}}
 
 """ Text formatting {{{
-    set textwidth=79
+    set textwidth=85
     set colorcolumn=85
     set formatoptions=qrn1
     set autoindent                                  " preserve indentation
@@ -638,13 +645,15 @@ set nocompatible " Must be the first line
 
     let g:syntastic_python_checkers = ['flake8', 'python']
 
+    let g:syntastic_bash_checkers = ['shellcheck'. 'checkbashisms']
+    let g:syntastic_sh_checkers = ['shellcheck', 'checkbashisms']
 
     let g:syntastic_cpp_check_header = 1
-    let g:syntastic_cpp_compiler_options = ' -std=c++0x'
-    let g:syntastic_mode_map = {
-        \ 'mode': 'passive',
-        \ 'active_filetypes':
-            \ ['c', 'cpp', 'perl', 'python'] }
+    "let g:syntastic_cpp_compiler_options = ' -std=c++0x'
+    "let g:syntastic_mode_map = {
+        "\ 'mode': 'passive',
+        "\ 'active_filetypes':
+            "\ ['c', 'cpp', 'perl', 'python'] }
 
 
     " Automatically remove preview window after autocomplete (mainly for clang_complete)
@@ -657,3 +666,18 @@ set nocompatible " Must be the first line
         source $HOME/.vimrc.last
     endif
 """ }}}
+"
+" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+" !!!!! UNORGANISED STUFF:
+" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+" <C-c> for copy, <leader><C-v> for paste:
+if has('unix')
+  vn <C-c> y:call system("xclip -i -selection clipboard", getreg("\""))<CR>:call system("xclip -i", getreg("\""))<CR>
+  no <leader><C-v> :call setreg("\"",system("xclip -o -selection clipboard"))<CR>p
+elseif has('mac')
+  vn <C-c> y:call system("pbcopy", getreg("\""))<CR>
+  no <leader><C-v> :call setreg("\"",system("pbpaste"))<CR>p
+endif
+
