@@ -70,7 +70,6 @@ set nocompatible " Must be the first line
     Plugin 'MarcWeber/vim-addon-mw-utils' "vim-snipmate depends on this one
     Plugin 'tomtom/tlib_vim'              " ... and this.
     Plugin 'honza/vim-snippets'           " The snippets repo, and...
-    "Plugin 'garbas/vim-snipmate'          " ...the engine.
     Plugin 'sirver/ultisnips'             "...the engine.
 
     " A fancy start screen, shows MRU etc.
@@ -553,9 +552,8 @@ set nocompatible " Must be the first line
         \ $HOME . "/.vimrc.last", $HOME . "/.vimrc.plugins"
         \ ]
     let g:startify_custom_header = [
-        \ '   Author:      Tim Sæterøy',
-        \ '   Homepage:    http://thevoid.no',
-        \ '   Source:      http://github.com/timss/vimconf',
+        \ '   Author:               LA',
+        \ '   Original source:      http://github.com/timss/vimconf',
         \ ''
         \ ]
 
@@ -608,7 +606,7 @@ set nocompatible " Must be the first line
         inoremap <expr> <CR> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
     "}}}
 
-    " alternative:
+    " alternative to the previous:
     "let g:UltiSnipsExpandTrigger="<c-j>""
     "let g:UltiSnipsJumpForwardTrigger="<c-j>"
     "let g:UltiSnipsJumpBackwardTrigger="<c-k>"
@@ -618,21 +616,36 @@ set nocompatible " Must be the first line
 
 
 
-    " YouCompleteMe
+    " YouCompleteMe:
     " open default ycm_extra_conf, so every project doesn't request
     " explicitly its own:
     "let g:ycm_global_ycm_extra_conf = '~/.ycm_extra_conf.py'
+
+    " Removes YCM's syntax checking for C-family languages, as it breaks the
+    " syntastic's syntax checker:
+    let g:ycm_show_diagnostics_ui = 0
 
 
 
     " Syntastic - This is largely up to your own usage, and override these
     "             changes if be needed. This is merely an exemplification.
+    let g:syntastic_check_on_open = 1
+    let g:syntastic_enable_signs = 1
+
+    let g:syntastic_c_checkers = ['gcc']
+    let g:syntastic_c_check_header = 1
+    let g:syntastic_c_auto_refresh_includes = 1
+
+    let g:syntastic_python_checkers = ['flake8', 'python']
+
+
     let g:syntastic_cpp_check_header = 1
     let g:syntastic_cpp_compiler_options = ' -std=c++0x'
     let g:syntastic_mode_map = {
         \ 'mode': 'passive',
         \ 'active_filetypes':
             \ ['c', 'cpp', 'perl', 'python'] }
+
 
     " Automatically remove preview window after autocomplete (mainly for clang_complete)
     autocmd CursorMovedI * if pumvisible() == 0|pclose|endif
