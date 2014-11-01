@@ -26,3 +26,6 @@ fi
 if [ -z "$DISPLAY" ] && [ $(tty) == /dev/tty1 ]; then
 	startx
 fi
+
+# add ssh key:
+ssh-add ~/.ssh/id_rsa

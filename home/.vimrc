@@ -645,7 +645,7 @@ set nocompatible " Must be the first line
 
     let g:syntastic_python_checkers = ['flake8', 'python']
 
-    let g:syntastic_bash_checkers = ['shellcheck'. 'checkbashisms']
+    let g:syntastic_bash_checkers = ['shellcheck', 'checkbashisms']
     let g:syntastic_sh_checkers = ['shellcheck', 'checkbashisms']
 
     let g:syntastic_cpp_check_header = 1
