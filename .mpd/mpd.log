@@ -10191,3 +10191,936 @@ Jan 12 14:14 : player_thread: played "Justice Discography/A Cross The Universe/0
 Jan 12 14:21 : player_thread: played "Justice Discography/A Cross The Universe/02 Genesis.mp3"
 Jan 12 14:24 : player_thread: played "Justice Discography/A Cross The Universe/03 Phantom Pt. 1.mp3"
 Jan 12 14:29 : player_thread: played "Justice Discography/A Cross The Universe/04 Phantom Pt. 1.5.mp3"
+Oct 05 21:18 : config: option 'options' on line 211 was not recognized
+Oct 05 21:18 : avahi: Service 'Music Player' successfully established.
+Oct 05 21:28 : config: option 'options' on line 211 was not recognized
+Oct 05 21:28 : avahi: Service 'Music Player' successfully established.
+Oct 05 21:45 : config: option 'options' on line 211 was not recognized
+Oct 05 21:45 : avahi: Service 'Music Player' successfully established.
+Oct 05 21:48 : config: option 'options' on line 211 was not recognized
+Oct 05 21:48 : avahi: Service 'Music Player' successfully established.
+Oct 05 21:56 : config: option 'options' on line 211 was not recognized
+Oct 05 21:56 : avahi: Service 'Music Player' successfully established.
+Oct 05 22:13 : config: option 'options' on line 211 was not recognized
+Oct 05 22:13 : avahi: Service 'Music Player' successfully established.
+Oct 05 22:20 : config: option 'options' on line 211 was not recognized
+Oct 05 22:20 : avahi: Service 'Music Player' successfully established.
+Oct 05 22:31 : config: option 'options' on line 211 was not recognized
+Oct 05 22:31 : avahi: Service 'Music Player' successfully established.
+ALSA lib pulse.c:243:(pulse_connect) PulseAudio: Unable to connect: Connection refused
+
+Oct 05 22:36 : mixer: Failed to read mixer for 'My ALSA Device': failed to attach to default: Connection refused
+ALSA lib pulse.c:243:(pulse_connect) PulseAudio: Unable to connect: Connection refused
+
+Oct 05 22:37 : Failed to open mixer for 'My ALSA Device': failed to attach to default: Connection refused
+ALSA lib pulse.c:243:(pulse_connect) PulseAudio: Unable to connect: Connection refused
+
+Oct 05 22:37 : Failed to open mixer for 'My ALSA Device': failed to attach to default: Connection refused
+ALSA lib pulse.c:243:(pulse_connect) PulseAudio: Unable to connect: Connection refused
+
+Oct 05 22:38 : Failed to open mixer for 'My ALSA Device': failed to attach to default: Connection refused
+Oct 05 22:45 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/01 Torus.m4a"
+Oct 05 22:49 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/05 Twilight.m4a"
+Oct 05 22:54 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/09 Falling Down (feat. Kenzie May).m4a"
+Oct 05 22:58 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/12 Tidal Wave (feat. Alpines).m4a"
+Oct 05 23:00 : config: option 'options' on line 211 was not recognized
+Oct 05 23:00 : avahi: Service 'Music Player' successfully established.
+ALSA lib pulse.c:243:(pulse_connect) PulseAudio: Unable to connect: Connection refused
+
+Oct 05 23:00 : mixer: Failed to read mixer for 'My ALSA Device': failed to attach to default: Connection refused
+ALSA lib pulse.c:243:(pulse_connect) PulseAudio: Unable to connect: Connection refused
+
+Oct 05 23:00 : Failed to open mixer for 'My ALSA Device': failed to attach to default: Connection refused
+Oct 05 23:01 : config: option 'options' on line 211 was not recognized
+Oct 05 23:01 : config: option 'mixer_device' on line 213 was not recognized
+Oct 05 23:01 : config: option 'mixer_control' on line 214 was not recognized
+Oct 05 23:01 : config: option 'mixer_index' on line 215 was not recognized
+Oct 05 23:01 : avahi: Service 'Music Player' successfully established.
+Oct 05 23:03 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/16 Falling Down (VIP) [feat. Kenzie.m4a"
+Oct 05 23:09 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 1/11 Therapy.mp3"
+Oct 05 23:13 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 2/01 Circle VIP 2000.mp3"
+Oct 05 23:20 : config: option 'options' on line 211 was not recognized
+Oct 05 23:20 : config: option 'mixer_device' on line 213 was not recognized
+Oct 05 23:20 : config: option 'mixer_control' on line 214 was not recognized
+Oct 05 23:20 : config: option 'mixer_index' on line 215 was not recognized
+Oct 05 23:20 : avahi: Service 'Music Player' successfully established.
+Oct 05 23:21 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 2/07 Therapy.mp3"
+Oct 05 23:26 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 1/11 Therapy.mp3"
+Oct 05 23:31 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 2/01 Circle VIP 2000.mp3"
+Oct 05 23:38 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 2/07 Therapy.mp3"
+Oct 05 23:43 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 1/11 Therapy.mp3"
+Oct 05 23:48 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 2/01 Circle VIP 2000.mp3"
+Oct 05 23:49 : config: option 'options' on line 211 was not recognized
+Oct 05 23:49 : config: option 'mixer_device' on line 213 was not recognized
+Oct 05 23:49 : config: option 'mixer_control' on line 214 was not recognized
+Oct 05 23:49 : config: option 'mixer_index' on line 215 was not recognized
+Oct 05 23:49 : avahi: Service 'Music Player' successfully established.
+Oct 05 23:55 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 2/07 Therapy.mp3"
+Oct 06 00:01 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 1/11 Therapy.mp3"
+Oct 06 00:06 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 2/01 Circle VIP 2000.mp3"
+Oct 06 00:13 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 2/07 Therapy.mp3"
+Oct 06 00:18 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 1/11 Therapy.mp3"
+Oct 06 00:23 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 2/01 Circle VIP 2000.mp3"
+Oct 06 00:28 : config: option 'options' on line 211 was not recognized
+Oct 06 00:28 : config: option 'mixer_device' on line 213 was not recognized
+Oct 06 00:28 : config: option 'mixer_control' on line 214 was not recognized
+Oct 06 00:28 : config: option 'mixer_index' on line 215 was not recognized
+Oct 06 00:28 : avahi: Service 'Music Player' successfully established.
+Oct 06 00:30 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 2/07 Therapy.mp3"
+Oct 06 00:35 : player_thread: played "Justice Discography/Productions & Remixes/01 Never Be Alone (Justice Vs Simiam.mp3"
+Oct 06 00:40 : player_thread: played "Justice Discography/Productions & Remixes/02 Waters Of Nazareth.mp3"
+Oct 06 00:45 : player_thread: played "Justice Discography/Productions & Remixes/03 Let There Be Light.mp3"
+Oct 06 00:50 : player_thread: played "Justice Discography/Productions & Remixes/04 Carpates.mp3"
+Oct 06 00:55 : player_thread: played "Justice Discography/Productions & Remixes/05 Them From... (Justice Remix) (Vic.mp3"
+Oct 06 01:00 : player_thread: played "Justice Discography/Productions & Remixes/06 Skitzo Dancer (Justice Remix) (Sc.mp3"
+Oct 06 01:04 : player_thread: played "Justice Discography/Productions & Remixes/07 Blood On Our Hands (Justice Remix.mp3"
+Oct 06 01:09 : player_thread: played "Justice Discography/Productions & Remixes/08 NY Excuse (Justice Remix) (Soulwa.mp3"
+Oct 06 01:13 : player_thread: played "Justice Discography/Productions & Remixes/09 Don't Let The Man (Justice Remix).mp3"
+Oct 06 01:17 : player_thread: played "Justice Discography/Productions & Remixes/10 You Can't Fool Me Dennis (Justice.mp3"
+Oct 06 01:21 : player_thread: played "Justice Discography/Productions & Remixes/11 Human After All (Justice Remix) (.mp3"
+Oct 06 01:25 : player_thread: played "Justice Discography/Productions & Remixes/12 Me Against The Music (Justice Rem.mp3"
+Oct 06 01:29 : player_thread: played "Justice Discography/Productions & Remixes/13 The Fallen (Justice Remix) (Franz.mp3"
+Oct 06 01:30 : player_thread: played "Justice Discography/A Cross The Universe/01 Intro.mp3"
+Oct 06 01:37 : player_thread: played "Justice Discography/A Cross The Universe/02 Genesis.mp3"
+Oct 06 01:40 : player_thread: played "Justice Discography/A Cross The Universe/03 Phantom Pt. 1.mp3"
+Oct 06 01:45 : player_thread: played "Justice Discography/A Cross The Universe/04 Phantom Pt. 1.5.mp3"
+Oct 06 01:47 : player_thread: played "Justice Discography/A Cross The Universe/05 D.A.N.C.E.mp3"
+Oct 06 01:50 : player_thread: played "Justice Discography/A Cross The Universe/06 D.A.N.C.E. Pt. 2.mp3"
+Oct 06 01:53 : player_thread: played "Justice Discography/A Cross The Universe/07 DVNO.mp3"
+Oct 06 01:55 : player_thread: played "Justice Discography/A Cross The Universe/08 Waters Of Nazareth.mp3"
+Oct 06 01:59 : player_thread: played "Justice Discography/A Cross The Universe/09 Two Minutes To Midnight.mp3"
+Oct 06 02:02 : player_thread: played "Justice Discography/A Cross The Universe/10 TTHHEE PPAARRTTYY.mp3"
+Oct 06 02:05 : player_thread: played "Justice Discography/A Cross The Universe/11 Let There Be Lite.mp3"
+Oct 06 02:13 : player_thread: played "Justice Discography/A Cross The Universe/12 Stress.mp3"
+Oct 06 02:13 : config: option 'options' on line 211 was not recognized
+Oct 06 02:14 : avahi: Service 'Music Player' successfully established.
+Oct 06 02:17 : player_thread: played "Justice Discography/A Cross The Universe/13 We Are Your Friends [Reprise].mp3"
+Oct 06 02:23 : player_thread: played "Justice Discography/A Cross The Universe/14 Waters Of Nazareth.mp3"
+Oct 06 02:26 : config: option 'options' on line 211 was not recognized
+Oct 06 02:26 : avahi: Service 'Music Player' successfully established.
+Oct 06 02:34 : player_thread: played "Justice Discography/A Cross The Universe/15 Phantom Pt. 2.mp3"
+Oct 06 02:35 : player_thread: played "Justice Discography/A Cross The Universe/16 Encore.mp3"
+Oct 06 02:42 : player_thread: played "Justice Discography/A Cross The Universe/17 NY Excuse.mp3"
+Oct 06 20:48 : config: option 'options' on line 211 was not recognized
+Oct 06 20:48 : avahi: Service 'Music Player' successfully established.
+Oct 06 22:44 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/03 Follow The Light.mp3"
+Oct 06 22:50 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/03 Follow The Light.mp3"
+Oct 06 22:54 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/04 Last Jungle.mp3"
+Oct 06 22:58 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/05 Deep Space.mp3"
+Oct 06 23:03 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/06 Rock It.mp3"
+Oct 06 23:07 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/07 Move Higher.mp3"
+Oct 06 23:12 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/07 Move Higher.mp3"
+Oct 06 23:17 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/07 Move Higher.mp3"
+Oct 08 20:42 : config: option 'options' on line 211 was not recognized
+Oct 08 20:42 : avahi: Service 'Music Player' successfully established.
+Oct 08 20:48 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/08 Vapourise.mp3"
+Oct 08 20:52 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/09 Triple X.mp3"
+Oct 08 20:56 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/10 Could This Be Real.mp3"
+Oct 08 21:00 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/11 Splash.mp3"
+Oct 08 21:06 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/07 Move Higher.mp3"
+Oct 08 21:12 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/07 Move Higher.mp3"
+Oct 08 21:22 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/03 Follow The Light.mp3"
+Oct 08 21:28 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/01 Torus.m4a"
+Oct 08 21:33 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/02 Safe In Sound.m4a"
+Oct 08 21:36 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/03 Endorphins (feat. Alex Clare).m4a"
+Oct 08 21:41 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/04 Out the Blue (feat. Alice Gold).m4a"
+Oct 08 21:44 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/05 Twilight.m4a"
+Oct 08 21:50 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/05 Twilight.m4a"
+Oct 08 21:55 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/06 Close (feat. MNEK).m4a"
+Oct 08 21:58 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/07 Turn It Around (feat. Kele).m4a"
+Oct 08 22:02 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/08 Out of Reach (feat. Jayelldee).m4a"
+Oct 08 22:07 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/09 Falling Down (feat. Kenzie May).m4a"
+Oct 08 22:13 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/10 Turn Back Time.m4a"
+Oct 08 22:18 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/11 You Make It Better (feat. Culture.m4a"
+Oct 08 22:22 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/12 Tidal Wave (feat. Alpines).m4a"
+Oct 08 22:26 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/13 Until the End (feat. Foxes).m4a"
+Oct 08 22:31 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/14 Eclipse.m4a"
+Oct 08 22:35 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/15 Original.m4a"
+Oct 08 22:39 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/16 Falling Down (VIP) [feat. Kenzie.m4a"
+Oct 08 22:44 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/17 Endorphins (feat. Alex Clare) [Su.m4a"
+Oct 08 22:49 : config: option 'options' on line 211 was not recognized
+Oct 08 22:49 : avahi: Service 'Music Player' successfully established.
+Oct 08 22:58 : player_thread: played "Them_Crooked_Vultures-Them_Crooked_Vultures-2009-FNT/01-them_crooked_vultures-no_one_loves_me_and_neither_do_i.mp3"
+Oct 08 23:05 : player_thread: played "Them_Crooked_Vultures-Them_Crooked_Vultures-2009-FNT/03-them_crooked_vultures-new_fang.mp3"
+Oct 08 23:08 : player_thread: played "Them_Crooked_Vultures-Them_Crooked_Vultures-2009-FNT/04-them_crooked_vultures-dead_end_friends.mp3"
+Oct 08 23:25 : player_thread: played "Them_Crooked_Vultures-Them_Crooked_Vultures-2009-FNT/10-them_crooked_vultures-warsaw_or_the_first_breath_you_take_after_you_give_up.mp3"
+Oct 08 23:34 : player_thread: played "VA - Drum And Bass Arena Summer Selection 2011 [2011 - WEB] [MP3 320] [7L]/01-brookes_brothers--beautiful_(feat_robert_owens)-oma.mp3"
+Oct 08 23:40 : player_thread: played "Top 250 Hits of the 90s/132) Bryan Adams - Everything I Do, I Do It For You [1991].mp3"
+Oct 08 23:50 : player_thread: played "dnb/b-culture_shock_and_brookes_brothers-smoothie-sour.mp3"
+Oct 08 23:54 : player_thread: played "Foo Fighters - Discography/Foo Fighters/01 - This Is A Call.mp3"
+Oct 08 23:58 : player_thread: played "Foo Fighters - Discography/Foo Fighters/02 - I'll Stick Around.mp3"
+Oct 09 00:05 : player_thread: played "Mord Fustang Discography [2012]-AmULet-320/Releases/A New World/A New World (Original Mix).mp3"
+Oct 09 00:09 : player_thread: played "Mord Fustang Discography [2012]-AmULet-320/Remixes/Froidz - Finally/Finally (Mord Fustang Remix).mp3"
+Oct 09 00:15 : player_thread: played "Mord Fustang Discography [2012]-AmULet-320/Remixes/Fussy Boy - Gold/Gold (Mord Fustang Remix).mp3"
+Oct 09 00:22 : player_thread: played "Mord Fustang Discography [2012]-AmULet-320/Remixes/Mike Skinner - In The Air/In The Air (Mord Fustang Remix).mp3"
+Oct 09 00:29 : player_thread: played "Mord Fustang Discography [2012]-AmULet-320/Releases/Lick The Rainbow/Lick The Rainbow (Original Mix).mp3"
+Oct 09 00:34 : player_thread: played "Mord Fustang Discography [2012]-AmULet-320/Releases/Magic Trooper/Magic Trooper (Original Mix).mp3"
+Oct 09 00:41 : player_thread: played "Mord Fustang Discography [2012]-AmULet-320/Releases/Milky Way/Milky Way (Original Mix).mp3"
+Oct 09 00:47 : player_thread: played "Mord Fustang Discography [2012]-AmULet-320/Remixes/LMFAO - Sexy And I Know It/Sexy And I Know It (Mord Fustang Remix).mp3"
+Oct 09 00:52 : player_thread: played "Mord Fustang Discography [2012]-AmULet-320/Releases/Super Meat Freeze/Super Meat Freeze (Original Mix).mp3"
+Oct 09 00:57 : player_thread: played "Mord Fustang Discography [2012]-AmULet-320/Releases/The Electric Dream/The Electric Dream (Original Mix).mp3"
+Oct 09 01:02 : player_thread: played "Mord Fustang Discography [2012]-AmULet-320/Releases/We Are Now Connected/We Are Now Connected (Original Mix).mp3"
+Oct 09 01:07 : player_thread: played "Mord Fustang Discography [2012]-AmULet-320/Releases/Welcome To The Future EP/The Majestic (Original Mix).mp3"
+Oct 09 01:14 : player_thread: played "Mord Fustang Discography [2012]-AmULet-320/Releases/Welcome To The Future EP/Welcome To The Future (Original Mix).mp3"
+Oct 09 01:19 : player_thread: played "Mord Fustang Discography [2012]-AmULet-320/Releases/Welcome To The Future EP/Super Fever (Original Mix).mp3"
+Oct 09 01:25 : player_thread: played "Mord Fustang Discography [2012]-AmULet-320/Releases/Welcome To The Future EP/Windwaker (Original Mix).mp3"
+Oct 09 01:25 : player_thread: played "Muse/Absolution/01 Intro.mp3"
+Oct 09 20:05 : player_thread: played "Muse/Absolution/02 Apocalypse Please.mp3"
+Oct 09 20:08 : player_thread: played "Muse/Absolution/03 Time Is Running Out.mp3"
+Oct 09 20:13 : player_thread: played "Muse/Absolution/04 Sing For Absolution.mp3"
+Oct 09 20:18 : player_thread: played "Muse/Absolution/05 Stockholm Syndrome.mp3"
+Oct 09 20:23 : player_thread: played "Muse/Absolution/06 Falling Away With You.mp3"
+Oct 09 20:24 : player_thread: played "Muse/Absolution/07 Interlude.mp3"
+Oct 09 20:27 : player_thread: played "Muse/Absolution/08 Hysteria.mp3"
+Oct 09 20:32 : player_thread: played "Muse/Absolution/09 Blackout.mp3"
+Oct 09 20:37 : player_thread: played "Muse/Absolution/10 Butterflies & Hurricanes.mp3"
+Oct 09 20:40 : player_thread: played "Muse/Absolution/11 The Small Print.mp3"
+Oct 09 20:44 : player_thread: played "Muse/Absolution/12 Endlessly.mp3"
+Oct 09 20:47 : player_thread: played "Muse/Absolution/13 Thoughts Of A Dying Atheist.mp3"
+Oct 09 20:52 : player_thread: played "Muse/Absolution/14 Ruled By Secrecy.mp3"
+Oct 09 20:57 : player_thread: played "Muse/Black Holes And Revelations/01 Take A Bow.mp3"
+Oct 09 21:01 : player_thread: played "Muse/Black Holes And Revelations/02 Starlight.mp3"
+Oct 09 21:04 : player_thread: played "Muse/Black Holes And Revelations/03 Supermassive Black Hole.mp3"
+Oct 09 21:09 : player_thread: played "Muse/Black Holes And Revelations/04 Map Of The Problematique.mp3"
+Oct 09 21:11 : player_thread: played "Muse/Black Holes And Revelations/05 Soldier's Poem.mp3"
+Oct 09 21:16 : player_thread: played "Muse/Black Holes And Revelations/06 Invincible.mp3"
+Oct 09 21:19 : player_thread: played "Muse/Black Holes And Revelations/07 Assassin.mp3"
+Oct 09 21:23 : player_thread: played "Muse/Black Holes And Revelations/08 Exo-Politics.mp3"
+Oct 09 21:28 : player_thread: played "Muse/Black Holes And Revelations/09 City Of Delusion.mp3"
+Oct 09 21:32 : player_thread: played "Muse/Black Holes And Revelations/10 Hoodoo.mp3"
+Oct 09 21:38 : player_thread: played "Muse/Black Holes And Revelations/11 Knights Of Cydonia.mp3"
+Oct 09 21:44 : player_thread: played "Muse/Origin of Symetry/01 New Born.mp3"
+Oct 09 21:48 : player_thread: played "Muse/Origin of Symetry/02 Bliss.mp3"
+Oct 09 21:54 : player_thread: played "Muse/Origin of Symetry/03 Space Dementia.mp3"
+Oct 09 21:58 : player_thread: played "Muse/Origin of Symetry/04 Hyper Music.mp3"
+Oct 09 22:02 : player_thread: played "Muse/Origin of Symetry/05 Plug In Baby.mp3"
+Oct 09 22:09 : player_thread: played "Muse/Origin of Symetry/06 Citizen Erased.mp3"
+Oct 09 22:12 : player_thread: played "Muse/Origin of Symetry/07 Micro Cuts.mp3"
+Oct 09 22:17 : player_thread: played "Muse/Origin of Symetry/08 Screenager.mp3"
+Oct 09 22:22 : player_thread: played "Muse/Origin of Symetry/09 Darkshines.mp3"
+Oct 09 22:25 : player_thread: played "Muse/Origin of Symetry/10 Feeling Good.mp3"
+Oct 09 22:30 : player_thread: played "Muse/Origin of Symetry/11 Megalomania.mp3"
+Oct 09 22:34 : player_thread: played "Muse/Showbiz/01 Sunburn.mp3"
+Oct 09 22:38 : player_thread: played "Muse/Showbiz/02 Muscle Museum.mp3"
+Oct 09 22:42 : player_thread: played "Muse/Showbiz/03 Fillip.mp3"
+Oct 09 22:47 : player_thread: played "Muse/Showbiz/04 Falling Down.mp3"
+Oct 09 22:51 : player_thread: played "Muse/Showbiz/05 Cave.mp3"
+Oct 09 22:57 : player_thread: played "Muse/Showbiz/06 Showbiz.mp3"
+Oct 09 23:01 : player_thread: played "Muse/Showbiz/07 Unintended.mp3"
+Oct 09 23:04 : player_thread: played "Muse/Showbiz/08 Uno.mp3"
+Oct 09 23:08 : player_thread: played "Muse/Showbiz/09 Sober.mp3"
+Oct 09 23:12 : player_thread: played "Muse/Showbiz/10 Escape.mp3"
+Oct 09 23:14 : player_thread: played "Muse/Showbiz/11 Overdue.mp3"
+Oct 09 23:19 : player_thread: played "Muse/Showbiz/12 Hate This & I'll Love You.mp3"
+Oct 09 23:24 : player_thread: played "Muse/The Resistance/01 - Uprising.mp3"
+Oct 09 23:30 : player_thread: played "Muse/The Resistance/02 - Resistance.mp3"
+Oct 09 23:34 : player_thread: played "Muse/The Resistance/03 - Undisclosed Desires.mp3"
+Oct 09 23:40 : player_thread: played "Muse/The Resistance/04 - United States of Eurasia (+ Collateral Damage).mp3"
+Oct 09 23:44 : player_thread: played "Muse/The Resistance/05 - Guiding Light.mp3"
+Oct 09 23:51 : player_thread: played "Muse/The Resistance/06 - Unnatural Selection.mp3"
+Oct 09 23:55 : player_thread: played "Muse/The Resistance/07 - MK Ultra.mp3"
+Oct 10 00:01 : player_thread: played "Muse/The Resistance/08 - I Belong to You-Mon Cœur S'ouvre à ta Voix.mp3"
+Oct 10 00:05 : player_thread: played "Muse/The Resistance/09 - Exogenesis- Symphony, Pt. 1- Overture.mp3"
+Oct 10 00:09 : player_thread: played "Muse/The Resistance/10 - Exogenesis- Symphony, Pt. 2- Cross-Pollination.mp3"
+Oct 10 00:14 : player_thread: played "Muse/The Resistance/11 - Exogenesis- Symphony, Pt. 3- Redemption.mp3"
+Oct 10 00:15 : player_thread: played "Mutemath/Mutemath/Mutemath/01 - collapse.mp3"
+Oct 10 00:19 : player_thread: played "Mutemath/Mutemath/Mutemath/02 - typical.mp3"
+Oct 10 00:20 : player_thread: played "Mutemath/Mutemath/Mutemath/03 - after we have left our homes.mp3"
+Oct 10 00:25 : player_thread: played "Mutemath/Mutemath/Mutemath/04 - chaos.mp3"
+Oct 10 00:30 : player_thread: played "Mutemath/Mutemath/Mutemath/05 - noticed.mp3"
+Oct 10 00:35 : player_thread: played "Mutemath/Mutemath/Mutemath/06 - without it.mp3"
+Oct 10 00:36 : player_thread: played "Mutemath/Mutemath/Mutemath/07 - polite.mp3"
+Oct 10 00:41 : player_thread: played "Mutemath/Mutemath/Mutemath/08 - stare at the sun.mp3"
+Oct 10 00:45 : player_thread: played "Mutemath/Mutemath/Mutemath/09 - obsolete.mp3"
+Oct 10 00:53 : player_thread: played "Mutemath/Mutemath/Mutemath/10 - break the same.mp3"
+Oct 10 00:59 : player_thread: played "Mutemath/Mutemath/Mutemath/11 - you are mine.mp3"
+Oct 10 01:04 : player_thread: played "Mutemath/Mutemath/Mutemath/12 - picture.mp3"
+Oct 10 01:11 : player_thread: played "Mutemath/Mutemath/Mutemath/13 - stall out.mp3"
+Oct 10 01:14 : player_thread: played "Mutemath/Armistice/01 - The Nerve.mp3"
+Oct 10 01:18 : player_thread: played "Mutemath/Armistice/02 - Backfire.mp3"
+Oct 10 01:22 : player_thread: played "Mutemath/Armistice/03 - Clipping.mp3"
+Oct 10 01:25 : player_thread: played "Mutemath/Armistice/04 - Spotlight.mp3"
+Oct 10 01:29 : player_thread: played "Mutemath/Armistice/05 - No Response.mp3"
+Oct 10 01:33 : player_thread: played "Mutemath/Armistice/06 - Pins and Needles.mp3"
+Oct 10 01:37 : player_thread: played "Mutemath/Armistice/07 - Goodbye.mp3"
+Oct 10 01:40 : player_thread: played "Mutemath/Armistice/08 - Odds.mp3"
+Oct 10 01:44 : player_thread: played "Mutemath/Armistice/09 - Electrify.mp3"
+Oct 10 01:48 : player_thread: played "Mutemath/Armistice/10 - Armistice.mp3"
+Oct 10 01:51 : player_thread: played "Mutemath/Armistice/11 - Lost Year.mp3"
+Oct 10 02:00 : player_thread: played "Mutemath/Armistice/12 - Burden.mp3"
+Oct 10 02:05 : player_thread: played "Mutemath/Armistice/13 - Clockwork (Bonus Track).mp3"
+Oct 10 02:09 : player_thread: played "Mutemath/Armistice/14 - Valium (Bonus Track).mp3"
+Oct 10 02:14 : player_thread: played "Mutemath/Reset EP/01 - control.mp3"
+Oct 10 02:19 : player_thread: played "Mutemath/Reset EP/02 - peculiar people.mp3"
+Oct 10 02:24 : player_thread: played "Mutemath/Reset EP/03 - OK.mp3"
+Oct 10 02:30 : player_thread: played "Mutemath/Reset EP/04 - reset.mp3"
+Oct 10 02:34 : player_thread: played "Mutemath/Reset EP/05 - plan B.mp3"
+Oct 10 02:39 : player_thread: played "Mutemath/Reset EP/06 - progress.mp3"
+Oct 10 02:40 : player_thread: played "Mutemath/Reset EP/07 - afterward.mp3"
+Oct 10 02:43 : player_thread: played "Mutemath/Mute Math - Transformers - The Movie Theme.mp3"
+Oct 10 02:47 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/01 - This Means War.mp3"
+Oct 10 02:50 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/02 - Bottoms Up.mp3"
+Oct 10 02:53 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/03 - When We Stand Together.mp3"
+Oct 10 02:57 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/04 - Midnight Queen.mp3"
+Oct 10 03:00 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/05 - Gotta Get Me Some.mp3"
+Oct 10 03:04 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/06 - Lullaby.mp3"
+Oct 10 03:08 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/07 - Kiss It Goodbye.mp3"
+Oct 10 03:12 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/08 - Trying Not To Love You.mp3"
+Oct 10 03:16 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/09 - Holding On To Heaven.mp3"
+Oct 10 03:19 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/10 - Everything I Wanna Do.mp3"
+Oct 10 03:23 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/11 - Don't Ever Let It End.mp3"
+Oct 10 03:28 : player_thread: played "Top 250 Hits of the 90s/011) Nirvana - Smells Like Teen Spirit [1992].mp3"
+Oct 10 08:11 : player_thread: played "Noisia - The Best Hits and Remixes/Noisia & Spor - Falling Through.mp3"
+Oct 10 08:15 : player_thread: played "Oceansize/Oceansize - Effloresce 2003/01-I Am The Morning.mp3"
+Oct 10 08:22 : player_thread: played "Oceansize/Oceansize - Effloresce 2003/02-Catalyst.mp3"
+Oct 10 08:26 : player_thread: played "Oceansize/Oceansize - Effloresce 2003/03-One Day All This Could Be Yours.mp3"
+Oct 11 18:56 : player_thread: played "Oasis - Dig Out Your Soul [2008][CD+SkidVid_XviD+Cov]320Kbps/01  Oasis - Bag It Up.mp3"
+Oct 11 18:59 : player_thread: played "Oasis - Dig Out Your Soul [2008][CD+SkidVid_XviD+Cov]320Kbps/03  Oasis - Waiting For The Rapture.mp3"
+Oct 11 19:04 : player_thread: played "Oasis - Dig Out Your Soul [2008][CD+SkidVid_XviD+Cov]320Kbps/04  Oasis - The Shock Of The Lightning.mp3"
+Oct 11 19:08 : player_thread: played "Oasis - Dig Out Your Soul [2008][CD+SkidVid_XviD+Cov]320Kbps/05  Oasis - I'm Outta Time.mp3"
+Oct 11 19:13 : player_thread: played "Oasis - Dig Out Your Soul [2008][CD+SkidVid_XviD+Cov]320Kbps/06  Oasis - [Get Off Your] High Horse Lady.mp3"
+Oct 11 19:17 : player_thread: played "Oasis - Dig Out Your Soul [2008][CD+SkidVid_XviD+Cov]320Kbps/07  Oasis - Falling Down.mp3"
+Oct 11 19:21 : player_thread: played "Oasis - Dig Out Your Soul [2008][CD+SkidVid_XviD+Cov]320Kbps/08  Oasis - To Be Where There's Life.mp3"
+Oct 11 19:24 : player_thread: played "Oasis - Dig Out Your Soul [2008][CD+SkidVid_XviD+Cov]320Kbps/09  Oasis - Ain't Got Nothin'.mp3"
+Oct 11 19:28 : player_thread: played "Oasis - Dig Out Your Soul [2008][CD+SkidVid_XviD+Cov]320Kbps/10  Oasis - The Nature Of Reality.mp3"
+Oct 11 19:32 : player_thread: played "Oasis - Dig Out Your Soul [2008][CD+SkidVid_XviD+Cov]320Kbps/11  Oasis - Soldier On.mp3"
+Oct 11 19:36 : player_thread: played "Noisia - The Best Hits and Remixes/Skrillex - Scary Monsters And Nice Sprites - Noisia Remix.mp3"
+Oct 11 19:41 : player_thread: played "Sub Focus Discography/[Various Digital Downloads]/X-ray (Tittsworth Remix).mp3"
+Oct 11 19:44 : player_thread: played "Sub Focus Discography/[Various Digital Downloads]/Rock It (Props! 115bpm Edit).mp3"
+Oct 11 19:51 : player_thread: played "Sub Focus Discography/[Various Digital Downloads]/Pendulum - Triad Warrior (Feat. Sub.mp3"
+Oct 11 19:56 : player_thread: played "Sub Focus Discography/Annie Macs Mini Mix BBCR1 (Feb '06)/Sub Focus Minimix For Annie Mac.mp3"
+Oct 11 20:27 : player_thread: played "Sub Focus Discography/BBCR1 Grooverider Show (19.07.2009)/Live On Radio 1 (Sub Focus Guestmix.mp3"
+Oct 11 21:42 : player_thread: played "Sub Focus Discography/Breaking Science 4th Birthday (08-07-06)/Sub Focus - Breaking Science 4th Bir.mp3"
+Oct 12 17:38 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/03 Follow The Light.mp3"
+Oct 12 18:43 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/04 Last Jungle.mp3"
+Oct 12 18:48 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/05 Deep Space.mp3"
+Oct 12 18:52 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/06 Rock It.mp3"
+Oct 12 18:56 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/07 Move Higher.mp3"
+Oct 12 19:01 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/01-the_asteroids_galaxy_tour-lady_jesus.mp3"
+Oct 12 19:04 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/02-the_asteroids_galaxy_tour-the_sun_aint_shining_no_more.mp3"
+Oct 12 19:08 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/03-the_asteroids_galaxy_tour-push_the_envelope.mp3"
+Oct 12 19:12 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/04-the_asteroids_galaxy_tour-satellite.mp3"
+Oct 12 19:16 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/05-the_asteroids_galaxy_tour-crazy.mp3"
+Oct 12 19:20 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/06-the_asteroids_galaxy_tour-the_golden_age.mp3"
+Oct 12 19:24 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/07-the_asteroids_galaxy_tour-around_the_bend.mp3"
+Oct 12 21:16 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/08-the_asteroids_galaxy_tour-sunshine_coolin.mp3"
+Oct 12 21:21 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/09-the_asteroids_galaxy_tour-hero.mp3"
+Oct 13 20:41 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/10-the_asteroids_galaxy_tour-bad_fever.mp3"
+Oct 13 20:44 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/02 - The Asteroids Galaxy Tour - Dollars In The Night.mp3"
+Oct 13 20:45 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/03 - The Asteroids Galaxy Tour - Gold Rush PT.2.mp3"
+Oct 13 20:49 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/04 - The Asteroids Galaxy Tour - Major.mp3"
+Oct 13 20:53 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/05 - The Asteroids Galaxy Tour - Heart Attack.mp3"
+Oct 13 20:58 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/06 - The Asteroids Galaxy Tour - Out Of Frequency.mp3"
+Oct 13 21:03 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/07 - The Asteroids Galaxy Tour - Cloak & Dagger.mp3"
+Oct 13 21:04 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/08 - The Asteroids Galaxy Tour - Arrival Of The Empress (prelude).mp3"
+Oct 13 21:09 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/09 - The Asteroids Galaxy Tour - Theme From 45 Eugenia.mp3"
+Oct 13 21:13 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/10 - The Asteroids Galaxy Tour - Mafia.mp3"
+Oct 13 21:18 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/11 - The Asteroids Galaxy Tour - Ghost In My Head.mp3"
+Oct 13 21:22 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/12 - The Asteroids Galaxy Tour - Suburban Space Invader.mp3"
+Oct 13 21:26 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/13 - The Asteroids Galaxy Tour - Fantasy Friend Forever.mp3"
+Oct 13 21:29 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/14 - The Asteroids Galaxy Tour - When It Comes To Us.mp3"
+Oct 13 21:34 : player_thread: played "VA - Drum And Bass Arena Summer Selection 2011 [2011 - WEB] [MP3 320] [7L]/13-fred_v--resolved-oma.mp3"
+Oct 13 21:41 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/09-the_asteroids_galaxy_tour-hero.mp3"
+Oct 13 21:47 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/04 - The Asteroids Galaxy Tour - Major.mp3"
+Oct 13 21:51 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/05 - The Asteroids Galaxy Tour - Heart Attack.mp3"
+Oct 13 21:56 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/06 - The Asteroids Galaxy Tour - Out Of Frequency.mp3"
+Oct 13 22:00 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/07 - The Asteroids Galaxy Tour - Cloak & Dagger.mp3"
+Oct 13 22:00 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/08 - The Asteroids Galaxy Tour - Arrival Of The Empress (prelude).mp3"
+Oct 13 22:06 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/09 - The Asteroids Galaxy Tour - Theme From 45 Eugenia.mp3"
+Oct 13 22:10 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/10 - The Asteroids Galaxy Tour - Mafia.mp3"
+Oct 13 22:15 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/11 - The Asteroids Galaxy Tour - Ghost In My Head.mp3"
+Oct 13 22:22 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/11 - The Asteroids Galaxy Tour - Ghost In My Head.mp3"
+Oct 13 22:26 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/12 - The Asteroids Galaxy Tour - Suburban Space Invader.mp3"
+Oct 13 22:32 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/11 - The Asteroids Galaxy Tour - Ghost In My Head.mp3"
+Oct 13 22:39 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/11 - The Asteroids Galaxy Tour - Ghost In My Head.mp3"
+Oct 13 22:46 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/12 - The Asteroids Galaxy Tour - Suburban Space Invader.mp3"
+Oct 13 22:49 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/13 - The Asteroids Galaxy Tour - Fantasy Friend Forever.mp3"
+Oct 13 22:53 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/14 - The Asteroids Galaxy Tour - When It Comes To Us.mp3"
+Oct 13 22:58 : player_thread: played "VA - Drum And Bass Arena Summer Selection 2011 [2011 - WEB] [MP3 320] [7L]/13-fred_v--resolved-oma.mp3"
+Oct 13 23:03 : player_thread: played "Drum & Bass Arena Anthology (Unmixed & Mixed) (2010)/05-dj_fresh--gold_dust_(vocal_vip_mix)-oma.mp3"
+Oct 13 23:09 : player_thread: played "Drum & Bass Arena Anthology (Unmixed & Mixed) (2010)/16-dj_fresh--heavyweight-oma.mp3"
+Oct 13 23:13 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 1/09 When the Sun goes Down (Andy C & AntMiles Orgin Unknown Mix).mp3"
+Oct 13 23:18 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 1/08 The Living Daylights.mp3"
+Oct 13 23:20 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 1/15 Submarines (Pendulum Remix).mp3"
+Oct 13 23:26 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 2/02 Living DayLights II.mp3"
+Oct 13 23:30 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 1/17 Foreigner.mp3"
+Oct 13 23:36 : decoder_thread: Unrecognized URI
+Oct 13 23:36 : decoder_thread: Unrecognized URI
+Oct 13 23:36 : player_thread: played "dnb/a-dj_fresh-scream-sour.mp3"
+Oct 13 23:36 : decoder_thread: Unrecognized URI
+Oct 13 23:36 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : player_thread: played "High Contrast/high society/01 lovesick.m4a"
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:43 : decoder_thread: Unrecognized URI
+Oct 13 23:47 : player_thread: played "dnb/01-dj_fresh_feat._stamina_mc_and_koko-hypercaine_(radio_edit).mp3"
+Oct 13 23:54 : player_thread: played "dnb/Fresh - the immortal.mp3"
+Oct 13 23:58 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/04 Out the Blue (feat. Alice Gold).m4a"
+Oct 14 00:04 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/01 Torus.m4a"
+Oct 14 00:07 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/05 Twilight.m4a"
+Oct 14 00:13 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/12 Tidal Wave (feat. Alpines).m4a"
+Oct 14 00:18 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/16 Falling Down (VIP) [feat. Kenzie.m4a"
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:20 : decoder_thread: Unrecognized URI
+Oct 14 00:28 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/01 Torus.m4a"
+Oct 14 00:31 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/05 Twilight.m4a"
+Oct 14 00:36 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/09 Falling Down (feat. Kenzie May).m4a"
+Oct 14 00:44 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/04 Out the Blue (feat. Alice Gold).m4a"
+Oct 14 00:49 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/01 Torus.m4a"
+Oct 14 00:56 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/04 Out the Blue (feat. Alice Gold).m4a"
+Oct 14 01:01 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/01 Torus.m4a"
+Oct 14 01:05 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/05 Twilight.m4a"
+Oct 14 01:10 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/09 Falling Down (feat. Kenzie May).m4a"
+Oct 14 01:13 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/12 Tidal Wave (feat. Alpines).m4a"
+Oct 14 01:18 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/16 Falling Down (VIP) [feat. Kenzie.m4a"
+Oct 14 01:21 : player_thread: played "Justice Discography/A Cross The Universe/03 Phantom Pt. 1.mp3"
+Oct 14 01:26 : player_thread: played "Justice Discography/A Cross The Universe/04 Phantom Pt. 1.5.mp3"
+Oct 14 01:30 : player_thread: played "Justice Discography/A Cross The Universe/06 D.A.N.C.E. Pt. 2.mp3"
+Oct 14 01:33 : player_thread: played "Justice Discography/A Cross The Universe/07 DVNO.mp3"
+Oct 14 01:35 : player_thread: played "Justice Discography/A Cross The Universe/08 Waters Of Nazareth.mp3"
+Oct 14 01:39 : player_thread: played "Justice Discography/A Cross The Universe/09 Two Minutes To Midnight.mp3"
+Oct 14 01:42 : player_thread: played "Justice Discography/A Cross The Universe/10 TTHHEE PPAARRTTYY.mp3"
+Oct 14 01:45 : player_thread: played "Justice Discography/A Cross The Universe/11 Let There Be Lite.mp3"
+Oct 14 01:53 : player_thread: played "Justice Discography/A Cross The Universe/12 Stress.mp3"
+Oct 14 01:57 : player_thread: played "Justice Discography/A Cross The Universe/13 We Are Your Friends [Reprise].mp3"
+Oct 14 02:14 : player_thread: played "Justice Discography/Justice- Audio, Video, Disco- [2011]- Mp3ViLLe/06 - On'n'On.mp3"
+Oct 14 02:18 : player_thread: played "Justice Discography/Justice- Audio, Video, Disco- [2011]- Mp3ViLLe/07 - Brianvision.mp3"
+Oct 14 02:22 : player_thread: played "Justice Discography/Justice- Audio, Video, Disco- [2011]- Mp3ViLLe/08 - Parade.mp3"
+Oct 14 02:26 : player_thread: played "Justice Discography/Justice- Audio, Video, Disco- [2011]- Mp3ViLLe/09 - New Lands.mp3"
+Oct 14 02:30 : player_thread: played "Justice Discography/Justice- Audio, Video, Disco- [2011]- Mp3ViLLe/10 - Helix.mp3"
+Oct 14 02:41 : player_thread: played "Justice Discography/Justice- Audio, Video, Disco- [2011]- Mp3ViLLe/11 - Audio, Video, Disco.mp3"
+Oct 14 02:47 : player_thread: played "All Saints/01 Never Ever.mp3"
+Oct 14 02:51 : player_thread: played "All Saints/02 Bootie Call.mp3"
+Oct 14 02:56 : player_thread: played "All Saints/08 Trapped.mp3"
+Oct 14 03:01 : player_thread: played "All Saints/12 War Of Nerves.mp3"
+Oct 14 03:05 : player_thread: played "All Saints/01 Pure Shores.mp3"
+Oct 14 03:09 : player_thread: played "All Saints/02 All Hooked Up.mp3"
+Oct 14 03:14 : player_thread: played "All Saints/05 Black Coffee.mp3"
+Oct 14 03:18 : player_thread: played "The Beach - Soundtrack/2 Pure Shores.mp3"
+Oct 14 03:26 : player_thread: played "All Saints/01 Chick Fit (Kissy Sell Out's Excel.mp3"
+Oct 14 03:30 : player_thread: played "All Saints/02-all_saints-chick_fit_-_www.torrentazos.com.mp3"
+Oct 14 03:33 : player_thread: played "Top 250 Hits of the 90s/032) Alanis Morissette - Ironic [1996].mp3"
+Oct 14 03:37 : player_thread: played "Top 250 Hits of the 90s/045) Alanis Morissette - You Oughta Know [1995].mp3"
+Oct 14 03:41 : player_thread: played "Top 250 Hits of the 90s/169) Alanis Morissette - You Learn [1996].mp3"
+Oct 14 03:46 : player_thread: played "Top 250 Hits of the 90s/098) Alanis Morissette - Head Over Feet [1996].mp3"
+Oct 14 03:52 : player_thread: played "Top 250 Hits of the 90s/049) Aerosmith - Livin' On The Edge [1993].mp3"
+Oct 14 03:57 : player_thread: played "Top 250 Hits of the 90s/053) Aerosmith - Cryin' [1993].mp3"
+Oct 14 04:02 : player_thread: played "Top 250 Hits of the 90s/119) Aerosmith - Crazy [1994].mp3"
+Oct 14 04:07 : player_thread: played "Top 250 Hits of the 90s/006) Aerosmith - I Don't Want To Miss A Thing [1998].mp3"
+Oct 14 04:12 : player_thread: played "Top 250 Hits of the 90s/102) Arrested Development - Tennessee [1992].mp3"
+Oct 15 22:27 : player_thread: played "Drum & Bass Arena Anthology (Unmixed & Mixed) (2010)/12-brookes_brothers--tear_you_down-oma.mp3"
+Oct 15 22:33 : player_thread: played "VA - Drum And Bass Arena Summer Selection 2011 [2011 - WEB] [MP3 320] [7L]/01-brookes_brothers--beautiful_(feat_robert_owens)-oma.mp3"
+Oct 15 22:45 : player_thread: played "All Saints/01 Never Ever.mp3"
+Oct 15 22:48 : player_thread: played "All Saints/02 Bootie Call.mp3"
+Oct 15 22:53 : player_thread: played "All Saints/08 Trapped.mp3"
+Oct 15 22:58 : player_thread: played "All Saints/12 War Of Nerves.mp3"
+Oct 15 23:03 : player_thread: played "All Saints/01 Pure Shores.mp3"
+Oct 15 23:07 : player_thread: played "All Saints/02 All Hooked Up.mp3"
+Oct 15 23:12 : player_thread: played "All Saints/05 Black Coffee.mp3"
+Oct 15 23:16 : player_thread: played "The Beach - Soundtrack/2 Pure Shores.mp3"
+Oct 15 23:23 : player_thread: played "All Saints/01 Chick Fit (Kissy Sell Out's Excel.mp3"
+Oct 15 23:27 : player_thread: played "All Saints/02-all_saints-chick_fit_-_www.torrentazos.com.mp3"
+Oct 15 23:31 : player_thread: played "Top 250 Hits of the 90s/032) Alanis Morissette - Ironic [1996].mp3"
+Oct 15 23:35 : player_thread: played "Top 250 Hits of the 90s/045) Alanis Morissette - You Oughta Know [1995].mp3"
+Oct 15 23:39 : player_thread: played "Top 250 Hits of the 90s/169) Alanis Morissette - You Learn [1996].mp3"
+Oct 15 23:45 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/01 - This Means War.mp3"
+Oct 15 23:48 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/02 - Bottoms Up.mp3"
+Oct 15 23:51 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/03 - When We Stand Together.mp3"
+Oct 15 23:55 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/04 - Midnight Queen.mp3"
+Oct 15 23:58 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/05 - Gotta Get Me Some.mp3"
+Oct 16 00:03 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/07 - Kiss It Goodbye.mp3"
+Oct 16 22:47 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/08 - Trying Not To Love You.mp3"
+Oct 16 22:51 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/09 - Holding On To Heaven.mp3"
+Oct 16 22:54 : player_thread: played "Nickelback - Here And Now [2011-MP3-Cov][Bubanee]/10 - Everything I Wanna Do.mp3"
+Oct 16 23:00 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/07 Move Higher.mp3"
+Oct 16 23:05 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/10 Could This Be Real.mp3"
+Oct 16 23:10 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/02 World Of Hurt.mp3"
+Oct 16 23:16 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/03 Follow The Light.mp3"
+Oct 16 23:22 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/03 Follow The Light.mp3"
+Oct 16 23:40 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/04 Out the Blue (feat. Alice Gold).m4a"
+Oct 16 23:43 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/05 Twilight.m4a"
+Oct 16 23:51 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/09 Falling Down (feat. Kenzie May).m4a"
+Oct 16 23:57 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/11 You Make It Better (feat. Culture.m4a"
+Oct 18 10:32 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/07 Move Higher.mp3"
+Oct 18 10:38 : player_thread: played "Sub Focus Discography/Sub Focus [CD LP - RAMMLPCD013]/10 Could This Be Real.mp3"
+Oct 18 10:44 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/01 Torus.m4a"
+Oct 18 10:50 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/04 Out the Blue (feat. Alice Gold).m4a"
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 10:57 : decoder_thread: Unrecognized URI
+Oct 18 11:09 : player_thread: played "dnb/Fresh - the immortal.mp3"
+Oct 18 11:14 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/04 Out the Blue (feat. Alice Gold).m4a"
+Oct 18 11:20 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/01 Torus.m4a"
+Oct 18 11:23 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/05 Twilight.m4a"
+Oct 18 11:26 : player_thread: played "dnb/01-dj_fresh_feat._stamina_mc_and_koko-hypercaine_(radio_edit).mp3"
+Oct 18 11:31 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/09 Falling Down (feat. Kenzie May).m4a"
+Oct 18 11:35 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/12 Tidal Wave (feat. Alpines).m4a"
+Oct 18 11:40 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/16 Falling Down (VIP) [feat. Kenzie.m4a"
+Oct 18 11:46 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 1/11 Therapy.mp3"
+Oct 18 20:22 : player_thread: played "Justice Discography/Productions & Remixes/01 Never Be Alone (Justice Vs Simiam.mp3"
+Oct 18 20:27 : player_thread: played "Justice Discography/Productions & Remixes/02 Waters Of Nazareth.mp3"
+Oct 18 22:48 : player_thread: played "Justice Discography/Productions & Remixes/03 Let There Be Light.mp3"
+Oct 18 22:49 : player_thread: played "Justice Discography/A Cross The Universe/01 Intro.mp3"
+Oct 18 22:57 : player_thread: played "Justice Discography/A Cross The Universe/02 Genesis.mp3"
+Oct 18 23:00 : player_thread: played "Justice Discography/A Cross The Universe/03 Phantom Pt. 1.mp3"
+Oct 18 23:20 : player_thread: played "Justice Discography/A Cross The Universe/04 Phantom Pt. 1.5.mp3"
+Oct 18 23:24 : player_thread: played "Justice Discography/A Cross The Universe/07 DVNO.mp3"
+Oct 18 23:26 : player_thread: played "Justice Discography/A Cross The Universe/08 Waters Of Nazareth.mp3"
+Oct 18 23:31 : player_thread: played "Justice Discography/A Cross The Universe/13 We Are Your Friends [Reprise].mp3"
+Oct 19 12:04 : player_thread: played "Justice Discography/A Cross The Universe/14 Waters Of Nazareth.mp3"
+Oct 19 12:14 : player_thread: played "Justice Discography/A Cross The Universe/15 Phantom Pt. 2.mp3"
+Oct 19 12:15 : player_thread: played "Justice Discography/A Cross The Universe/16 Encore.mp3"
+Oct 19 17:52 : player_thread: played "Justice Discography/†/1-05 Phantom.mp3"
+Oct 19 17:56 : player_thread: played "Justice Discography/†/1-06 Phantom Pt II.mp3"
+Oct 19 18:00 : player_thread: played "Justice Discography/†/1-04 Newjack.mp3"
+Oct 19 18:04 : player_thread: played "Justice Discography/†/1-05 Phantom.mp3"
+Oct 19 18:08 : player_thread: played "Justice Discography/†/1-06 Phantom Pt II.mp3"
+Oct 19 18:11 : player_thread: played "Justice Discography/†/1-07 Valentine.mp3"
+Oct 19 18:15 : player_thread: played "Justice Discography/†/1-08 Tthhee Pparrttyy.mp3"
+Oct 19 18:19 : player_thread: played "Justice Discography/†/1-09 Dvno.mp3"
+Oct 19 18:24 : player_thread: played "Justice Discography/†/1-10 Stress.mp3"
+Oct 19 18:28 : player_thread: played "Justice Discography/†/11 - Justice - Waters of Nazareth.mp3"
+Oct 19 18:32 : player_thread: played "Justice Discography/†/1-12 One minute to midnight.mp3"
+Oct 19 18:36 : player_thread: played "Justice Discography/†/1-13 D.A.N.C.E. Rehearsal.mp3"
+Oct 19 18:43 : player_thread: played "Justice Discography/Justice- Audio, Video, Disco- [2011]- Mp3ViLLe/02 - Civilization.mp3"
+Oct 19 18:47 : player_thread: played "Justice Discography/Justice- Audio, Video, Disco- [2011]- Mp3ViLLe/03 - Ohio.mp3"
+Oct 19 18:47 : player_thread: played "Justice Discography/Justice- Audio, Video, Disco- [2011]- Mp3ViLLe/04 - Canon (Primo).mp3"
+Oct 19 18:51 : player_thread: played "Justice Discography/Justice- Audio, Video, Disco- [2011]- Mp3ViLLe/05 - Canon.mp3"
+Oct 19 22:17 : player_thread: played "Justice Discography/Justice- Audio, Video, Disco- [2011]- Mp3ViLLe/09 - New Lands.mp3"
+Oct 19 22:26 : player_thread: played "Drum & Bass Arena Anthology (Unmixed & Mixed) (2010)/12-brookes_brothers--tear_you_down-oma.mp3"
+Oct 19 22:31 : player_thread: played "VA - Drum And Bass Arena Summer Selection 2011 [2011 - WEB] [MP3 320] [7L]/01-brookes_brothers--beautiful_(feat_robert_owens)-oma.mp3"
+Oct 19 22:38 : player_thread: played "dnb/aa-brookes_brothers_vs_futurebound-dawn_treader-sour.mp3"
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:38 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:39 : decoder_thread: Unrecognized URI
+Oct 19 22:43 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/04 Out the Blue (feat. Alice Gold).m4a"
+Oct 19 22:49 : player_thread: played "Sub Focus Discography/Sub Focus - Torus (Deluxe Version)/01 Torus.m4a"
+Oct 19 22:53 : player_thread: played "dnb/01-dj_fresh_feat._stamina_mc_and_koko-hypercaine_(radio_edit).mp3"
+Oct 19 22:59 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/04 - The Asteroids Galaxy Tour - Major.mp3"
+Oct 19 23:03 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/05 - The Asteroids Galaxy Tour - Heart Attack.mp3"
+Oct 19 23:07 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/06 - The Asteroids Galaxy Tour - Out Of Frequency.mp3"
+Oct 19 23:11 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/07 - The Asteroids Galaxy Tour - Cloak & Dagger.mp3"
+Oct 19 23:12 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/08 - The Asteroids Galaxy Tour - Arrival Of The Empress (prelude).mp3"
+Oct 19 23:17 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/09 - The Asteroids Galaxy Tour - Theme From 45 Eugenia.mp3"
+Oct 19 23:22 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/10 - The Asteroids Galaxy Tour - Mafia.mp3"
+Oct 19 23:26 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/11 - The Asteroids Galaxy Tour - Ghost In My Head.mp3"
+Oct 19 23:31 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/10 - The Asteroids Galaxy Tour - Mafia.mp3"
+Oct 19 23:36 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/11 - The Asteroids Galaxy Tour - Ghost In My Head.mp3"
+Oct 19 23:40 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/12 - The Asteroids Galaxy Tour - Suburban Space Invader.mp3"
+Oct 19 23:43 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/13 - The Asteroids Galaxy Tour - Fantasy Friend Forever.mp3"
+Oct 19 23:47 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/14 - The Asteroids Galaxy Tour - When It Comes To Us.mp3"
+Oct 19 23:53 : player_thread: played "dnb/aa-brookes_brothers_vs_futurebound-dawn_treader-sour.mp3"
+Oct 19 23:58 : player_thread: played "VA - Drum And Bass Arena Summer Selection 2011 [2011 - WEB] [MP3 320] [7L]/13-fred_v--resolved-oma.mp3"
+Oct 20 00:03 : player_thread: played "Drum & Bass Arena Anthology (Unmixed & Mixed) (2010)/05-dj_fresh--gold_dust_(vocal_vip_mix)-oma.mp3"
+Oct 20 00:09 : player_thread: played "Drum & Bass Arena Anthology (Unmixed & Mixed) (2010)/16-dj_fresh--heavyweight-oma.mp3"
+Oct 20 00:13 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 1/09 When the Sun goes Down (Andy C & AntMiles Orgin Unknown Mix).mp3"
+Oct 20 00:16 : decoder_thread: Unrecognized URI
+Oct 20 00:16 : decoder_thread: Unrecognized URI
+Oct 20 00:16 : decoder_thread: Unrecognized URI
+Oct 20 00:16 : decoder_thread: Unrecognized URI
+Oct 20 00:16 : decoder_thread: Unrecognized URI
+Oct 20 00:16 : decoder_thread: Unrecognized URI
+Oct 20 00:16 : decoder_thread: Unrecognized URI
+Oct 20 00:16 : decoder_thread: Unrecognized URI
+Oct 20 00:16 : decoder_thread: Unrecognized URI
+Oct 20 00:16 : decoder_thread: Unrecognized URI
+Oct 20 00:16 : decoder_thread: Unrecognized URI
+Oct 20 00:16 : decoder_thread: Unrecognized URI
+Oct 20 00:27 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1984 - Ride The Lightning/02 - Ride The Lightning.mp3"
+Oct 20 00:32 : player_thread: played "VA - Drum And Bass Arena Summer Selection 2011 [2011 - WEB] [MP3 320] [7L]/13-fred_v--resolved-oma.mp3"
+Oct 20 01:16 : player_thread: played "Drum & Bass Arena Anthology (Unmixed & Mixed) (2010)/05-dj_fresh--gold_dust_(vocal_vip_mix)-oma.mp3"
+Oct 20 01:21 : player_thread: played "Drum & Bass Arena Anthology (Unmixed & Mixed) (2010)/16-dj_fresh--heavyweight-oma.mp3"
+Oct 21 19:51 : player_thread: played "Pendulum Discography/Pendulum - Jungle Sound Gold (2006)/CD 1/09 When the Sun goes Down (Andy C & AntMiles Orgin Unknown Mix).mp3"
+Oct 22 20:40 : player_thread: played "The Prodigy albums (1992-2004)/2009 - Invaders Must Die (Deluxe Edition)/11. The Prodigy - Stand Up.mp3"
+Oct 22 20:44 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/01-the_asteroids_galaxy_tour-lady_jesus.mp3"
+Oct 22 20:48 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/02-the_asteroids_galaxy_tour-the_sun_aint_shining_no_more.mp3"
+Oct 22 20:52 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/03-the_asteroids_galaxy_tour-push_the_envelope.mp3"
+Oct 22 20:55 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/04-the_asteroids_galaxy_tour-satellite.mp3"
+Oct 22 21:01 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/04 - The Asteroids Galaxy Tour - Major.mp3"
+Oct 22 21:05 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/05 - The Asteroids Galaxy Tour - Heart Attack.mp3"
+Oct 22 21:09 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/06 - The Asteroids Galaxy Tour - Out Of Frequency.mp3"
+Oct 22 21:14 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/07 - The Asteroids Galaxy Tour - Cloak & Dagger.mp3"
+Oct 22 21:14 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/08 - The Asteroids Galaxy Tour - Arrival Of The Empress (prelude).mp3"
+Oct 23 22:26 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/09 - The Asteroids Galaxy Tour - Theme From 45 Eugenia.mp3"
+Oct 23 22:30 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/10 - The Asteroids Galaxy Tour - Mafia.mp3"
+Oct 23 22:39 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/11 - The Asteroids Galaxy Tour - Ghost In My Head.mp3"
+Oct 23 22:43 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/10 - The Asteroids Galaxy Tour - Mafia.mp3"
+Oct 23 22:47 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/04 - The Asteroids Galaxy Tour - Major.mp3"
+Oct 23 22:51 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/05 - The Asteroids Galaxy Tour - Heart Attack.mp3"
+Oct 23 22:56 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/06 - The Asteroids Galaxy Tour - Out Of Frequency.mp3"
+Oct 23 23:00 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/07 - The Asteroids Galaxy Tour - Cloak & Dagger.mp3"
+Oct 23 23:01 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/08 - The Asteroids Galaxy Tour - Arrival Of The Empress (prelude).mp3"
+Oct 23 23:08 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/03-the_asteroids_galaxy_tour-push_the_envelope.mp3"
+Oct 23 23:12 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/04-the_asteroids_galaxy_tour-satellite.mp3"
+Oct 23 23:16 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/05-the_asteroids_galaxy_tour-crazy.mp3"
+Oct 23 23:20 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/06-the_asteroids_galaxy_tour-the_golden_age.mp3"
+Oct 23 23:24 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/07-the_asteroids_galaxy_tour-around_the_bend.mp3"
+Oct 23 23:32 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/08-the_asteroids_galaxy_tour-sunshine_coolin.mp3"
+Oct 23 23:37 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/09-the_asteroids_galaxy_tour-hero.mp3"
+Oct 23 23:38 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/01 - The Asteroids Galaxy Tour - Gold Rush PT.1.mp3"
+Oct 23 23:40 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/02 - The Asteroids Galaxy Tour - Dollars In The Night.mp3"
+Oct 23 23:42 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/03 - The Asteroids Galaxy Tour - Gold Rush PT.2.mp3"
+Oct 23 23:46 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/04 - The Asteroids Galaxy Tour - Major.mp3"
+Oct 23 23:50 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/05 - The Asteroids Galaxy Tour - Heart Attack.mp3"
+Oct 23 23:59 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1986 - Master Of Puppets/01 - Battery.mp3"
+Oct 24 00:07 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1986 - Master Of Puppets/02 - Master Of Puppets.mp3"
+Oct 24 00:14 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1986 - Master Of Puppets/03 - The Thing That Should Not Be.mp3"
+Oct 24 00:20 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1986 - Master Of Puppets/04 - Welcome Home (Sanitarium).mp3"
+Oct 24 00:29 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1986 - Master Of Puppets/05 - Disposable Heroes.mp3"
+Oct 24 00:34 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1986 - Master Of Puppets/06 - Leper Messiah.mp3"
+Oct 24 00:43 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1986 - Master Of Puppets/07 - Orion (Instrumental).mp3"
+Oct 24 00:48 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1986 - Master Of Puppets/08 - Damage, Inc..mp3"
+Oct 24 00:59 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1988 - And Justice For All/02 - ...And Justice For All.mp3"
+Oct 24 01:05 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1988 - And Justice For All/03 - Eye Of The Beholder.mp3"
+Oct 24 01:13 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1988 - And Justice For All/04 - One.mp3"
+Oct 24 01:25 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/01 - Enter Sandman.mp3"
+Oct 24 01:31 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/02 - Sad But True.mp3"
+Oct 24 01:35 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/03 - Holier Than Thou.mp3"
+Oct 24 01:41 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/04 - The Unforgiven.mp3"
+Oct 24 01:48 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/05 - Wherever I May Roam.mp3"
+Oct 24 01:52 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/06 - Don't Tread On Me.mp3"
+Oct 25 05:14 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/07 - Through The Never.mp3"
+Oct 25 05:20 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/08 - Nothing Else Matters.mp3"
+Oct 25 05:25 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/09 - Of Wolf And Man.mp3"
+Oct 25 05:30 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/10 - The God That Failed.mp3"
+Oct 25 05:36 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/11 - My Friend Of Misery.mp3"
+Oct 25 05:40 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/12 - The Struggle Within.mp3"
+Oct 25 05:46 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/01 - Breadfan.mp3"
+Oct 25 05:51 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/02 - The Prince.mp3"
+Oct 25 05:54 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/03 - So What.mp3"
+Oct 25 05:56 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/04 - Stone Cold Crazy.mp3"
+Oct 25 06:03 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/05 - Helpless.mp3"
+Oct 25 06:10 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/06 - The Small Hours.mp3"
+Oct 25 06:13 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/07 - Killing Time.mp3"
+Oct 25 06:17 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/08 - The Wait.mp3"
+Oct 25 06:21 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/09 - Crash Course In Brain Surgery.mp3"
+Oct 25 06:22 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/10 - Last Caress.mp3"
+Oct 25 06:24 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/11 - Green Hell.mp3"
+Oct 25 06:29 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/12 - Enter Sandman (Live).mp3"
+Oct 25 06:35 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/13 - Harvester Of Sorrow (Live).mp3"
+Oct 25 06:41 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/14 - Sad But True (Live).mp3"
+Oct 25 06:46 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/15 - For Whom The Bell Tolls (Live).mp3"
+Oct 25 06:52 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/16 - Whereever I May Roam.mp3"
+Oct 25 06:54 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/17 - A) Prowler B) Run To The Hills.mp3"
+Oct 25 07:02 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 1/01 - Enter Sandman.mp3"
+Oct 25 07:09 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 1/02 - Creeping Death.mp3"
+Oct 25 07:16 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 1/03 - Harvester Of Sorrow.mp3"
+Oct 25 07:23 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 1/04 - Welcome Home (Sanitarium).mp3"
+Oct 25 07:29 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 1/05 - Sad But True.mp3"
+Oct 25 07:36 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 1/06 - Of Wolf And Man.mp3"
+Oct 25 07:42 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 1/07 - The Unforgiven.mp3"
+Oct 25 07:52 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 1/08 - Justice Medley.mp3"
+Oct 25 08:11 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 1/09 - Solos (Bass  Guitar).mp3"
+Oct 25 08:15 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 2/01 - Through The Never.mp3"
+Oct 25 08:20 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 2/02 - For Whom The Bell Tolls.mp3"
+Oct 25 08:28 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 2/03 - Fade To Black.mp3"
+Oct 25 08:32 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 2/04 - Master Of Puppets.mp3"
+Oct 25 08:50 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 2/05 - Seek & Destroy.mp3"
+Oct 25 08:56 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 2/06 - Whiplash.mp3"
+Oct 25 09:02 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 3/01 - Nothing Else Matters.mp3"
+Oct 25 09:09 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 3/02 - Wherever I May Roam.mp3"
+Oct 25 09:15 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 3/03 - Am I Evil.mp3"
+Oct 25 09:16 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 3/04 - Last Caress.mp3"
+Oct 25 09:27 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 3/05 - One.mp3"
+Oct 25 09:37 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 3/06 - Battery.mp3"
+Oct 25 09:43 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 3/07 - The Four Horsemen.mp3"
+Oct 25 09:46 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 3/08 - Motorbreath.mp3"
+Oct 25 09:52 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1993 - Live Shit, Binge And Purge/Metallica - 1993 - Live Shit, Binge And Purge - CD 3/09 - Stone Cold Crazy.mp3"
+Oct 25 09:59 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1994 - One (German Single)/01 - Metallica - One.mp3"
+Oct 25 10:06 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1994 - One (German Single)/02 - Metallica - One (Demo).mp3"
+Oct 25 10:16 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1994 - One (German Single)/03 - Metallica - One (Live).mp3"
+Oct 25 10:21 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1996 - Load/01 - Ain't My Bitch.mp3"
+Oct 25 10:26 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1996 - Load/02 - 2 X 4.mp3"
+Oct 25 10:33 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1996 - Load/03 - The House Jack Built.mp3"
+Oct 25 10:37 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1996 - Load/04 - Until It Sleeps.mp3"
+Oct 25 10:43 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1996 - Load/05 - King Nothing.mp3"
+Oct 25 10:47 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1996 - Load/06 - Hero Of The Day.mp3"
+Oct 25 10:56 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1996 - Load/07 - Bleeding Me.mp3"
+Oct 25 11:00 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1996 - Load/08 - Cure.mp3"
+Oct 25 11:04 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1996 - Load/09 - Poor Twisted Me.mp3"
+Oct 25 11:08 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1996 - Load/10 - Wasting My Hate.mp3"
+Oct 25 11:14 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1996 - Load/11 - Mama Said.mp3"
+Oct 25 11:20 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1996 - Load/12 - Thorn Within.mp3"
+Oct 25 11:25 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1996 - Load/13 - Ronnie.mp3"
+Oct 25 11:35 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1996 - Load/14 - The Outlaw Torn.mp3"
+Oct 25 11:42 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1997 - Reload/03 - Devil's Dance.mp3"
+Oct 25 11:48 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1997 - Reload/05 - Better Than You.mp3"
+Oct 25 11:53 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1997 - Reload/06 - Slither.mp3"
+Oct 25 12:17 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1997 - Reload/13 - Fixxxer.mp3"
+Oct 25 12:21 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1997 - Reload/08 - Bad Seed.mp3"
+Oct 25 12:28 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1997 - Reload/09 - Where The Wild Things Are.mp3"
+Oct 25 12:34 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1997 - Reload/10 - Prince Charming.mp3"
+Oct 25 12:42 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1997 - Reload/11 - Low Man's Lyric.mp3"
+Oct 25 12:47 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1997 - Reload/12 - Attitude.mp3"
+Oct 25 12:55 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1997 - Reload/13 - Fixxxer.mp3"
+Oct 26 13:27 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 1/02 - It's Electric.mp3"
+Oct 26 13:34 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 1/03 - Sabbra Cadabra.mp3"
+Oct 26 13:40 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 1/04 - Turn The Page.mp3"
+Oct 26 13:42 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 1/05 - Die, Die My Darling.mp3"
+Oct 26 13:50 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 1/06 - Loverman.mp3"
+Oct 26 14:01 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 1/07 - Mercyful Fate.mp3"
+Oct 26 14:08 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 1/08 - Astronomy.mp3"
+Oct 26 14:13 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 1/09 - Whiskey In The Jar.mp3"
+Oct 26 14:22 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 1/10 - Tuesday's Gone.mp3"
+Oct 26 14:27 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 1/11 - The More I See.mp3"
+Oct 26 14:34 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 2/01 - Helpless.mp3"
+Oct 26 14:40 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 2/02 - The Small Hours.mp3"
+Oct 26 14:45 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 2/03 - The Wait.mp3"
+Oct 26 14:49 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 2/04 - Crash Course In Brain Surgery.mp3"
+Oct 26 14:52 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 2/05 - A) Last Caress; B) Green Hell.mp3"
+Oct 26 15:00 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 2/06 - Am I Evil.mp3"
+Oct 26 15:03 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 2/07 - Blitzkrieg.mp3"
+Oct 26 15:09 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 2/08 - Breadfan.mp3"
+Oct 26 15:14 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 2/09 - The Prince.mp3"
+Oct 26 15:16 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 2/10 - Stone Cold Crazy.mp3"
+Oct 26 15:19 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 2/11 - So What.mp3"
+Oct 26 15:22 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 2/12 - Killing Time.mp3"
+Oct 26 15:26 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 2/13 - Overkill.mp3"
+Oct 26 22:12 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - Garage Inc/Metallica - 1998 - Garage Inc - CD 2/14 - Damage Case.mp3"
+Oct 26 22:21 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - The Complete Garage Days/01 - Breadfan.mp3"
+Oct 26 22:26 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - The Complete Garage Days/02 - The Prince.mp3"
+Oct 26 22:29 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - The Complete Garage Days/04 - Blitzkrieg.mp3"
+Oct 26 22:32 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - The Complete Garage Days/05 - Stone Cold Crazy.mp3"
+Oct 26 22:35 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - The Complete Garage Days/06 - Killing Time.mp3"
+Oct 26 22:38 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1998 - The Complete Garage Days/07 - So What.mp3"
+Oct 26 22:51 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1999 - S & M/Metallica - 1999 - S & M - CD 1/08 - No Leaf Clover.mp3"
+Oct 26 22:56 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1999 - S & M/Metallica - 1999 - S & M - CD 1/09 - Hero Of The Day.mp3"
+Oct 26 23:01 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1999 - S & M/Metallica - 1999 - S & M - CD 1/10 - Devil's Dance.mp3"
+Oct 26 23:10 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1999 - S & M/Metallica - 1999 - S & M - CD 1/11 - Bleeding Me.mp3"
+Oct 27 21:46 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 2008 - Death Magnetic/03 - Broken, Beat & Scarred.mp3"
+Oct 27 21:55 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/04 - The Asteroids Galaxy Tour - Major.mp3"
+Oct 27 21:59 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/05 - The Asteroids Galaxy Tour - Heart Attack.mp3"
+Oct 27 22:04 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/06 - The Asteroids Galaxy Tour - Out Of Frequency.mp3"
+Oct 30 20:42 : avahi: Client Disconnected, will reconnect shortly
+Oct 30 20:42 : avahi: Could not reconnect: An unexpected D-Bus error occured
+Oct 30 20:42 : config: option 'options' on line 211 was not recognized
+Oct 30 20:42 : avahi: Service 'Music Player' successfully established.
+Oct 31 23:08 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/04 - The Asteroids Galaxy Tour - Major.mp3"
+Oct 31 23:12 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/05 - The Asteroids Galaxy Tour - Heart Attack.mp3"
+Oct 31 23:16 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/06 - The Asteroids Galaxy Tour - Out Of Frequency.mp3"
+Oct 31 23:21 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/07 - The Asteroids Galaxy Tour - Cloak & Dagger.mp3"
+Oct 31 23:21 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/08 - The Asteroids Galaxy Tour - Arrival Of The Empress (prelude).mp3"
+Oct 31 23:27 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/09 - The Asteroids Galaxy Tour - Theme From 45 Eugenia.mp3"
+Oct 31 23:31 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/10 - The Asteroids Galaxy Tour - Mafia.mp3"
+Oct 31 23:35 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/11 - The Asteroids Galaxy Tour - Ghost In My Head.mp3"
+Oct 31 23:40 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/12 - The Asteroids Galaxy Tour - Suburban Space Invader.mp3"
+Oct 31 23:43 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/13 - The Asteroids Galaxy Tour - Fantasy Friend Forever.mp3"
+Oct 31 23:51 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/09 - Of Wolf And Man.mp3"
+Oct 31 23:56 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/10 - The God That Failed.mp3"
+Nov 01 00:04 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/11 - My Friend Of Misery.mp3"
+Nov 01 00:08 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/12 - The Struggle Within.mp3"
+Nov 01 00:14 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/01 - Breadfan.mp3"
+Nov 01 00:18 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/02 - The Prince.mp3"
+Nov 01 00:21 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/03 - So What.mp3"
+Nov 01 00:23 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1992 - New Skulls For The Old Ceremony/04 - Stone Cold Crazy.mp3"
+Nov 01 00:32 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/08 - Nothing Else Matters.mp3"
+Nov 01 00:38 : player_thread: played "Metallica - Discography 1983-2008 (19 Albums, 23 CDs)/Metallica - 1991 - The Black Album/01 - Enter Sandman.mp3"
+Nov 01 18:23 : player_thread: played "Tool - Discography/Tool - 10,000 Days/Tool - Vicarious.mp3"
+Nov 01 18:32 : player_thread: played "Tool - Discography/Tool - Ænima/Tool - Aenima.mp3"
+Nov 01 18:39 : player_thread: played "Tool - Discography/Tool - Ænima/Tool - Stinkfist.mp3"
+Nov 01 18:47 : player_thread: played "Tool - Discography/Tool - Ænima/Tool - Eulogy.mp3"
+Nov 01 18:54 : player_thread: played "Tool - Discography/Tool - Ænima/Tool - H..mp3"
+Nov 01 18:54 : player_thread: played "Tool - Discography/Tool - Ænima/Tool - Useful Idiot.mp3"
+Nov 01 19:00 : player_thread: played "Tool - Discography/Tool - Ænima/Tool - Forty Six & 2.mp3"
+Nov 01 19:05 : player_thread: played "Tool - Discography/Tool - Ænima/Tool - Hooker With A Penis.mp3"
+Nov 01 19:06 : player_thread: played "Tool - Discography/Tool - Ænima/Tool - Intermission.mp3"
+Nov 01 19:11 : player_thread: played "Tool - Discography/Tool - Ænima/Tool - Jimmy.mp3"
+Nov 01 19:27 : player_thread: played "Tool - Discography/Tool - Ænima/Tool - Pushit.mp3"
+Nov 01 19:29 : player_thread: played "Tool - Discography/Tool - Ænima/Tool - Cesaro Summability.mp3"
+Nov 01 19:38 : player_thread: played "Tool - Discography/Tool - Lateralus/Tool - The Grudge.mp3"
+Nov 01 19:39 : player_thread: played "Tool - Discography/Tool - Lateralus/Tool - Eon Blue Apocalypse.mp3"
+Nov 01 19:41 : player_thread: played "Tool - Discography/Tool - Lateralus/Tool - Mantra.mp3"
+Nov 01 19:51 : player_thread: played "Tool - Discography/Tool - Lateralus/Tool - Parabol.mp3"
+Nov 01 19:57 : player_thread: played "Tool - Discography/Tool - Lateralus/Tool - Parabola.mp3"
+Nov 01 20:09 : player_thread: played "Tool - Discography/Tool - Lateralus/Tool - Ticks & Leeches.mp3"
+Nov 01 20:19 : player_thread: played "Tool - Discography/Tool - Lateralus/Tool - Lateralus.mp3"
+Nov 01 20:23 : player_thread: played "Tool - Discography/Tool - Lateralus/Tool - Disposition.mp3"
+Nov 01 20:40 : player_thread: played "Tool - Discography/Tool - 10,000 Days/Tool - Vicarious.mp3"
+Nov 01 20:47 : player_thread: played "Tool - Discography/Tool - 10,000 Days/Tool - Jambi.mp3"
+Nov 01 20:54 : player_thread: played "Tool - Discography/Tool - 10,000 Days/Tool - Wings For Marie, Pt. 1.mp3"
+Nov 01 21:06 : player_thread: played "Tool - Discography/Tool - 10,000 Days/Tool - 10,000 Days (Wings, Pt. 2).mp3"
+Nov 01 21:12 : player_thread: played "Tool - Discography/Tool - 10,000 Days/Tool - The Pot.mp3"
+Nov 01 21:13 : player_thread: played "Tool - Discography/Tool - 10,000 Days/Tool - Lipan Conjuring.mp3"
+Nov 01 21:17 : player_thread: played "Tool - Discography/Tool - 10,000 Days/Tool - Lost Keys (Blame Hofmann).mp3"
+Nov 01 21:25 : avahi: Client Disconnected, will reconnect shortly
+Nov 01 21:25 : avahi: Client Disconnected, will reconnect shortly
+Nov 01 21:25 : avahi: Service 'Music Player' successfully established.
+Nov 01 21:28 : player_thread: played "Tool - Discography/Tool - 10,000 Days/Tool - Roseta Stoned.mp3"
+Nov 01 21:32 : avahi: Client Disconnected, will reconnect shortly
+Nov 01 21:32 : avahi: Could not reconnect: An unexpected D-Bus error occured
+Nov 01 21:34 : config: option 'options' on line 211 was not recognized
+Nov 01 21:34 : avahi: Service 'Music Player' successfully established.
+Nov 01 22:03 : player_thread: played "Tool - Discography/Tool - 10,000 Days/Tool - Intension.mp3"
+Nov 01 22:12 : player_thread: played "Tool - Discography/Tool - 10,000 Days/Tool - Right In Two.mp3"
+Nov 01 22:17 : player_thread: played "Tool - Discography/Tool - 10,000 Days/Tool - Viginti Tres.mp3"
+Nov 01 22:20 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/01-the_asteroids_galaxy_tour-lady_jesus.mp3"
+Nov 01 22:26 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/03-the_asteroids_galaxy_tour-push_the_envelope.mp3"
+Nov 01 22:30 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/04-the_asteroids_galaxy_tour-satellite.mp3"
+Nov 01 22:34 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/05-the_asteroids_galaxy_tour-crazy.mp3"
+Nov 01 22:37 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/06-the_asteroids_galaxy_tour-the_golden_age.mp3"
+Nov 01 22:41 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/07-the_asteroids_galaxy_tour-around_the_bend.mp3"
+Nov 01 22:44 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/08-the_asteroids_galaxy_tour-sunshine_coolin.mp3"
+Nov 01 22:49 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/09-the_asteroids_galaxy_tour-hero.mp3"
+Nov 01 22:53 : player_thread: played "Asteroids Galaxy Tour/The_Asteroids_Galaxy_Tour-Fruit/10-the_asteroids_galaxy_tour-bad_fever.mp3"
+Nov 01 22:54 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/01 - The Asteroids Galaxy Tour - Gold Rush PT.1.mp3"
+Nov 01 22:56 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/02 - The Asteroids Galaxy Tour - Dollars In The Night.mp3"
+Nov 01 22:58 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/03 - The Asteroids Galaxy Tour - Gold Rush PT.2.mp3"
+Nov 01 23:02 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/04 - The Asteroids Galaxy Tour - Major.mp3"
+Nov 01 23:06 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/05 - The Asteroids Galaxy Tour - Heart Attack.mp3"
+Nov 01 23:11 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/07 - The Asteroids Galaxy Tour - Cloak & Dagger.mp3"
+Nov 01 23:12 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/08 - The Asteroids Galaxy Tour - Arrival Of The Empress (prelude).mp3"
+Nov 01 23:14 : avahi: Client Disconnected, will reconnect shortly
+Nov 01 23:14 : avahi: Could not reconnect: An unexpected D-Bus error occured
+Nov 01 23:15 : config: option 'options' on line 211 was not recognized
+Nov 01 23:15 : avahi: Service 'Music Player' successfully established.
+Nov 01 23:18 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/09 - The Asteroids Galaxy Tour - Theme From 45 Eugenia.mp3"
+Nov 01 23:22 : player_thread: played "Asteroids Galaxy Tour/The Asteroids Galaxy Tour - Out Of Frequency (2012) DutchReleaseTeam/10 - The Asteroids Galaxy Tour - Mafia.mp3"
