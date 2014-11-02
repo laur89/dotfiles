@@ -24,5 +24,5 @@ fi
 # start X:
 
 if [ -z "$DISPLAY" ] && [ $(tty) == /dev/tty1 ]; then
-	startx
+	ssh-agent startx
 fi

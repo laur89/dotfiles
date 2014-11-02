@@ -14,6 +14,8 @@ DEFAULT_SESSION="start_dwm"
 #if test -z "$DBUS_SESSION_BUS_ADDRESS"; then
 #    exec dbus-launch --sh-syntax --exit-with-session
 #fi
+#eval $(/usr/bin/gnome-keyring-daemon --start --components=gpg,pkcs11,secrets,ssh)
+#export GPG_AGENT_INFO SSH_AUTH_SOCK
 case $1 in
     dwm)
         exec start_dwm
