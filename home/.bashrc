@@ -123,4 +123,6 @@ GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274
 source .bash-git-prompt/gitprompt.sh
 
 export JAVA_HOME=/usr/local/jdk1.7.0_67
-export PATH=$PATH:$JAVA_HOME/bin
+export M2_HOME=/data/progs/apache-maven-3.2.3
+export M2=$M2_HOME/bin
+export PATH=$PATH:$JAVA_HOME/bin:$M2
