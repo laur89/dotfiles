@@ -21,7 +21,7 @@ if [ -d "$HOME/bin" ] ; then
     PATH="$HOME/bin:$PATH"
 fi
 
-# start X:
+# start X; note the ssh-agent:
 
 if [ -z "$DISPLAY" ] && [ $(tty) == /dev/tty1 ]; then
 	ssh-agent startx
