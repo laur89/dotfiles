@@ -73,4 +73,7 @@ gtk-xft-antialias=1
 gtk-xft-hinting=1
 gtk-xft-hintstyle="hintfull"
 gtk-xft-rgba="rgb"
+# muuda tooltip normaalseks; muidu eclipse'is mustalt:
+style "tooltip" { bg[NORMAL] = "#1E1E1E" }
+widget "gtk-tooltips" style "tooltip"
 #include "/home/laur/.gtkrc-2.0.mine"

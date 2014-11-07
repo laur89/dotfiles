@@ -52,7 +52,7 @@ set nocompatible " Must be the first line
     Plugin 'Lokaltog/vim-easymotion'
 
     " Glorious colorscheme
-    "Plugin 'nanotech/jellybeans.vim'
+    Plugin 'nanotech/jellybeans.vim'
 
     " Super easy commenting, toggle comments etc
     Plugin 'scrooloose/nerdcommenter'
@@ -89,6 +89,10 @@ set nocompatible " Must be the first line
     " Functions, class data etc.
     " REQUIREMENTS: (exuberant)-ctags
     Plugin 'majutsushi/tagbar'
+
+    " Ctags generator/highlighter (note the vim-misc is dependency for it)
+    Plugin 'xolox/vim-easytags'
+    Plugin 'xolox/vim-misc'
     
     " Selfexplanatory...
     Plugin 'jlanzarotta/bufexplorer'
@@ -132,11 +136,17 @@ set nocompatible " Must be the first line
         filetype plugin indent on                   " load filetype plugins and indent settings
         syntax on                                   " syntax highlighting
         set background=dark                         " we're using a dark bg
+        "colors mustang                           " select colorscheme
         colors mustang                           " select colorscheme
-        "colors oblivion                           " select colorscheme
         au BufNewFile,BufRead *.txt se ft=sh tw=79  " opens .txt w/highlight
         au BufNewFile,BufRead *.tex se ft=tex tw=79 " we don't want plaintex
         au BufNewFile,BufRead *.md se ft=markdown tw=79 " markdown, not modula
+        " these next schemes come from   https://github.com/sentientmachine/erics_vim_syntax_and_color_highlighting
+        " note they came with their own syntax files also (create syntax/ dir in .vim):
+        au BufReadPost *.py colorscheme molokai
+        au BufReadPost *.html colorscheme monokai
+        au BufReadPost *.java colorscheme monokai
+        au BufReadPost *.php colorscheme monokai
         
         """ 256 colors for maximum jellybeans bling. See commit log for info {{{
             "if (&term =~ "xterm") || (&term =~ "screen")
@@ -189,7 +199,8 @@ set nocompatible " Must be the first line
         """ }}}
         
         """ Gvim {{{
-            set guifont=DejaVu\ Sans\ Mono\ 9
+            "set guifont=DejaVu\ Sans\ Mono\ 9
+            set guifont=Terminess\ Powerline\ 10
             set guioptions-=m                       " remove menubar
             set guioptions-=T                       " remove toolbar
             set guioptions-=r                       " remove right scrollbar
@@ -587,6 +598,10 @@ set nocompatible " Must be the first line
     let g:tagbar_left = 0
     let g:tagbar_width = 30
     set tags=tags;/
+
+    " eclim completon registration to vim's omni complete which YCM automatically
+    " detects:
+    let g:EclimCompletionMethod = 'omnifunc'
 
     " ultisnips trigger conf; do not use <tab> if you use YouCompleteMe! {{{
         function! g:UltiSnips_Complete()

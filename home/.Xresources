@@ -1,11 +1,11 @@
 Xft.autohint: 0
-!Xft.antialias: 1   ! Provided in .fonts.conf
-!Xft.hinting: 1 ! Provided in .fonts.conf
-!Xft.hintstyle: hintfull ! Provided in .fonts.conf
+Xft.antialias: 1
+Xft.hinting: 1
+Xft.hintstyle: hintfull
 !Xft*dpi: 96
 !Xft*dpi: 120
-!Xft.rgba: rgb  ! Provided in .fonts.conf
-!Xft.lcdfilter: lcddefault ! Provided in .fonts.conf
+Xft.rgba: rgb
+Xft.lcdfilter: lcddefault
 
 ! -------------------------------------------------
 URxvt*geometry: 100x50
