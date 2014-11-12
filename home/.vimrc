@@ -40,6 +40,9 @@ set nocompatible " Must be the first line
     " <Tab> everything!
     "Plugin 'ervandew/supertab'
 
+    "Rename current file:
+    Plugin 'danro/rename.vim'
+
     " Fuzzy finder (files, mru, etc)
     Plugin 'kien/ctrlp.vim'
 
