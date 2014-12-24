@@ -24,5 +24,8 @@ fi
 # start X; note the ssh-agent:
 
 if [ -z "$DISPLAY" ] && [ $(tty) == /dev/tty1 ]; then
-	ssh-agent startx
+    ssh-agent startx # -- -logverbose 6
 fi
+
+# provides automatic logout; for debugging puroposes:
+#export TMOUT=120

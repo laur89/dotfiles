@@ -122,7 +122,14 @@ GIT_PROMPT_START="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && ech
 GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
 source .bash-git-prompt/gitprompt.sh
 
+# export environment vars:
 export JAVA_HOME=/usr/local/jdk1.7.0_67
 export M2_HOME=/data/progs/apache-maven-3.2.3
 export M2=$M2_HOME/bin
 export PATH=$PATH:$JAVA_HOME/bin:$M2
+export EDITOR=vim
+
+# set PATH so it includes user's private bin if it exists
+if [[ -d "$HOME/bin" ]] ; then
+    export PATH="$PATH:$HOME/bin"
+fi
