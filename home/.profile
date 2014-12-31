@@ -12,7 +12,7 @@
 if [ -n "$BASH_VERSION" ]; then
     # include .bashrc if it exists
     if [ -f "$HOME/.bashrc" ]; then
-	. "$HOME/.bashrc"
+	source "$HOME/.bashrc"
     fi
 fi
 
@@ -22,9 +22,10 @@ if [ -d "$HOME/bin" ] ; then
 fi
 
 # start X; note the ssh-agent:
-
-if [ -z "$DISPLAY" ] && [ $(tty) == /dev/tty1 ]; then
-    ssh-agent startx # -- -logverbose 6
+if [ -z "$DISPLAY" ] && [ "$(tty)" == "/dev/tty1" ]; then
+    echo -e "Enter DE/WM:"
+    read session
+    ssh-agent startx $HOME/.xinitrc $session # -- -logverbose 6
 fi
 
 # provides automatic logout; for debugging puroposes:

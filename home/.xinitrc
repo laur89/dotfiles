@@ -43,6 +43,9 @@ case $1 in
     blackbox)
         exec blackbox
         ;;
+    fluxbox)
+        exec startfluxbox
+        ;;
     *)
         exec $DEFAULT_SESSION
         ;;
