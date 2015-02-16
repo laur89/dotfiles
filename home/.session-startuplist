@@ -1,0 +1,84 @@
+#!/bin/bash
+# contains userspace programs to start during startup
+
+# Note if you leave last command without '&' (i.e. won't fork to background),
+# you can exit your session by simply ending that application.
+#---------------------------------------------------
+PROGS=( \
+    "urxvtd" \
+    "davmail" \
+    "blueman-applet" \
+    "nm-applet" \
+    "xfce4-volumed" \
+    "skype" \
+    "spacefm" \
+    "Earth_sunlight_wallpaper_changer.sh" \
+    "sunlight_map_wallpaper_changer.sh" \
+    "keepassx" \
+    "delay_screensaver.py" \
+    "ssh-agent" \
+    "parcellite" \
+    "mbsync --all" \
+    "urxvtc" \
+)
+# oldies:
+    #"icedove" \
+    #"volti" \
+#---------------------------------------------------
+export DISPLAY=:0.0
+
+# See policykit käitati tavaliste DE-de puhul /etc/xdg/autostart/polkit-gnome....desktop-ist;
+# kui ei käivitanud, siis andis network-manager wireless võrku ühendamisel permission errori:
+# teine variant, kuidas soovitatakse NM permission errorist jagu saada:
+# loo fail  /etc/polkit-1/localauthority/50-local.d/org.freedesktop.NetworkManager.pkla sisuga:
+#[nm-applet]
+#Identity=unix-group:netdev
+#Action=org.freedesktop.NetworkManager.*
+#ResultAny=yes
+#ResultInactive=no
+#ResultActive=yes
+
+/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
+
+for PROG in "${PROGS[@]}"; do
+    if ! [[ "$(ps -e | grep "\b$PROG\b")" ]]; then
+        echo "Launching ${PROG}..."
+        $PROG &
+        echo "Launched $PROG."
+    fi
+done
+
+# sets the cursor icon; Available themes reside in /usr/share/icons and local themes can be installed to ~/.icons.:
+#xsetroot -cursor_name left_ptr &
+
+#xfce4-power-manager &
+#launchy &
+
+# set wallpaper (afterwards, script will be run periodically by cron):
+/usr/local/bin/wallpaper_changer.sh > /dev/null 2>&1 &
+
+#if ! [[ "$(ps -e | grep "\bmpd\b")" ]]; then
+    #mpd /etc/mpd.conf &
+    #echo "Launching mpd..."
+#fi
+if ! [[ "$(ps -e | grep "\bmopidy\b")" ]]; then
+    mopidy &
+    echo "Launching mopidy"
+fi
+
+if ! [[ "$(ps -e | grep "\bdropbox\b")" ]]; then
+    dropbox start &
+    echo "Launching dropbox..."
+fi
+
+if ! [[ "$(ps -e | grep "\bxscreensaver\b")" ]]; then
+    xscreensaver -no-splash &
+    echo "Launching xscreensaver..."
+fi
+
+# nvidia bug report:
+#sleep 5;
+#sudo nvidia-bug-report.sh >> /tmp/minuNVIDlog.log
+#sleep 10;
+#msmtp -t < /tmp/logs_to_send.log >> /tmp/minuMSMTP.log
+

@@ -1,0 +1,140 @@
+# vim: ft=muttrc
+# 
+# ref: http://durak.org/sean/pubs/software/mutt/reference.html
+#
+# main opts:
+  set askcc # ask for CC:
+unset confirmappend # don't ask
+  set delete # don't ask
+  set quit   # dont ask
+  unset move  # gmail and xchange does that
+  set alias_file = '~/.mutt/alias' # alias_file
+  set edit_headers # see the headers when editing
+  auto_view text/html # automatically open HTML messages in txt/html mailcap
+  auto_view text/calendar
+  set editor            = "/usr/bin/vim +/^$" # vim and skip to 1st blank line
+  set send_charset="utf-8"
+  set fast_reply # skip to compose when replying
+  set folder            = ~/mail # mailboxes in here; do not end with slash!
+  set forward_quote # include msg in forwards
+  set quote_regexp = "^( {0,4}[>|:#%]| {0,4}[a-z0-9]+[>|]+)+"
+  #set header_cache      = ~/.mutt/cache
+    # if you have more than a few emails, you *really* want this
+    set header_cache = ~/.mutt/caches/work-headercache # where to store hdrs
+    set message_cachedir = ~/.mutt/caches/work-messagecache # where to store bodies
+    set certificate_file = '~/.mutt/.mutt_certificates' # default: '~/.mutt_certificates'; where to store certs
+unset help
+  set include # include msg in replies
+  set mail_check        = 0
+  set mailcap_path      = ~/.mutt/mailcap # entries for filetypes; on ikka????
+unset mark_old   # read/new is ok enough
+#set beep_new # bell on new mail
+unset markers # no ugly plus signs
+  set mbox_type         = Maildir
+  set menu_scroll # scroll in menus
+  set pager_context     = 5 # retain 5 lines of previous page when scrolling
+  set pager_index_lines = 10 # nr of index lines to show in pager view
+  set pager_stop # dont go to next message automatically
+  set smart_wrap # dont split words
+  set pipe_decode  # strip headers and eval mimes when piping
+  set forward_decode # decode when fwding
+  set check_new = yes
+  set realname          = "Laur Aliste"
+  set envelope_from # ???
+ unset sig_dashes # dashes before sig;
+  set sleep_time=0 # open dirs w/o delay
+  set sendmail_wait = -1 # dont wait for sending to complete
+  set fcc_attach # save attachments with the body
+  unset mime_forward # fwd attachments as part of body
+  set forward_format    = "Fwd: %s"
+  set ispell = "aspell -e -c"
+  set attribution =  "On %d, %n wrote:" # set the attribution
+unset record # do not save sent mails locally; it'll be managed by the services;
+  set reply_to # reply to Reply to: field
+  set reverse_name # reply to whomever it was to
+  set sort_alias       = alias  # sort aliasfile by alias
+  set sidebar_visible = yes
+  set sidebar_delim   = ' │'
+set sidebar_width   = 24
+  #color sidebar_new color221 color233
+  color sidebar_new yellow default
+#set sidebar_shortpath = yes
+#set reverse_alias # show names from alias file in index
+  set signature         = ~/.mutt/signature
+  set sig_on_top = yes  # signature BEFORE quoted text
+  #sorting:
+  #
+  set sort              = threads # sort by threads, just like gmail
+  set sort_aux          = reverse-last-date-received # like gmail
+  #set sort              = reverse-threads
+  #set sort_aux          = date-received
+  #
+  set uncollapse_jump #don't collapse on an unread message
+  #set spoolfile         = "+work/Inbox" # wh is dfault inbox; so-called startup folder
+  #set spoolfile         = "+gmail/INBOX" # gmail is dfault inbox
+  set sort_re # thread based on regex
+  set reply_regexp = "^(([Rr][Ee]?(\[[0-9]+\])?: *)?(\[[^]]+\] *)?)*"
+
+  # status bar:
+  #set status_on_top # status bar on top
+  set status_chars = " *%A"
+  #set status_format     = "-%r- %f%?t? Tagged:%t?%?p? Drafts:%p? -%>-"
+  set status_format = "───[ Folder: %f ]───[%r%m messages%?n? (%n new)?%?d? (%d to delete)?%?t? (%t tagged)? ]───%>─%?p?( %p postponed )?───"
+    set date_format = "%d/%m/%y at %I:%M%P"
+    set index_format = "%3C [%Z] %D %-15.15F %s"
+    #set index_format      = "%3C %Z %[!%m/%d] %-17.17F %s"
+    set alias_format = "%4n %t %-20a %r"
+color status red default
+
+  set strict_threads
+  set thorough_search # strip headers and eval mimes before searching
+  set tilde # show tildes like in vim
+  set timeout           = 3  # idle time before scanning
+  set mail_check = '60' # default: '5'; min time between scans
+  set tmpdir            = ~/.mutt/temp
+
+#alternates .*@pbrisbin\.com .*@brisb\.in
+alternative_order text/calendar text/plain text/enriched text/html text
+
+#ignore * # ignore all headers
+ignore * # ignore allhdrs
+unignore from: to: cc: date: subject: #show only these
+unhdr_order *                           # some distros order things by default
+hdr_order from: to: cc: date: subject:
+
+# this one is only used when using mutt's built in IMAP support, amirite?
+# or is it mail-list related stuff?
+#subscribe arch-announce arch-dev-public arch-haskell aur-general \
+          #rubyparley vim web-devel xmonad yesod
+
+source ~/.mutt/colors
+#source ~/.mutt/mailboxes.all # watch these mailboxes for new mail
+source '~/.mutt/detectMailboxes.sh|' # watch these mailboxes for new mail
+source ~/.mutt/bindings
+source ~/.mutt/macros
+#source ~/.mutt/gpg
+source ~/.mutt/hooks
+source $alias_file
+
+#=========================================
+# Generated by the muttrc builder (http://muttrcbuilder.org/)
+# for mutt-1.5.23
+
+#set alias_file = '~/.mutt/muttrc' # default: '~/.muttrc'
+#set certificate_file = '~/.mutt/.mutt_certificates' # default: '~/.mutt_certificates'
+#set escape = ':' # default: '~'
+#set folder = '~/mail' # default: '~/Mail'
+#set from = 'def.ault@gmail.com' # default: '(empty)'
+#set header_cache = '~/.mutt/cache' # default: '(empty)'
+#set history_file = '~/.mutt/.mutthistory' # default: '~/.mutthistory'
+#set imap_login = 'laur.aliste' # default: '(empty)'
+#set imap_pass = 'imap.pass' # default: '(empty)'
+#set mail_check = '60' # default: '5'
+#set mbox_type = 'Maildir' # default: 'mbox'
+#set pgp_sort_keys = 'date' # default: 'address'
+#set postponed = '~/.mutt/postponed' # default: '~/postponed'
+#set record = '~/.mutt/sent' # default: '~/sent'
+#set signature = '~/.mutt/.signature' # default: '~/.signature'
+#set sort_browser = 'date' # default: 'alpha'
+#set tmpdir = '~/.mutt/temp' # default: '(empty)'
+#set visual = 'vim' # default: '(empty)'

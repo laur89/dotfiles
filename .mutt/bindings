@@ -1,0 +1,43 @@
+# vim: ft=muttrc
+bind index i noop
+bind index gg first-entry
+bind index G last-entry
+bind index,pager N search-opposite
+bind pager i exit
+#bind pager q toggle-quoted
+#bind index <space>  collapse-thread
+bind pager q exit
+bind pager / search
+bind pager j next-line
+bind pager k previous-line
+bind pager gg top
+bind pager G bottom
+bind index,pager \# noop
+bind index,pager \& noop
+bind index,pager R group-reply
+# View attachments properly:
+bind attach <return> view-mailcap
+bind pager <up> previous-line
+bind pager <down> next-line
+bind pager K previous-undeleted
+bind pager J next-undeleted
+bind index K previous-unread
+bind index J next-unread
+# Ctrl-n, Ctrl-p to select next, previous folder.
+# Ctrl-o to open selected folder.
+bind index,pager \CP sidebar-prev
+bind index,pager \CN sidebar-next
+bind index,pager \CO sidebar-open
+#bind index,pager <down>   sidebar-next
+#bind index,pager <up>     sidebar-prev
+#bind index,pager <right>  sidebar-open
+#
+# to reply or compose offline, postpone:
+bind compose p postpone-message
+# to edit the postponed drafts locally, recall them:
+bind index p recall-message
+# contacts query stuff?:
+bind editor <Tab> complete-query
+bind editor ^T    complete
+#
+

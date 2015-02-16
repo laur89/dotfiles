@@ -13,8 +13,7 @@ set nocompatible " Must be the first line
             silent !git clone https://github.com/gmarik/Vundle.vim $HOME/.vim/bundle/Vundle.vim
             let has_vundle=0
             
-            " make directory for the persistent undo storage (not related to
-            " vundle)
+            " make directory for the persistent undo storage (not related to vundle):
             silent !mkdir -p $HOME/.vim/undo
         endif
     """ }}}
@@ -46,8 +45,10 @@ set nocompatible " Must be the first line
     " Fuzzy finder (files, mru, etc)
     Plugin 'kien/ctrlp.vim'
 
-    " A pretty statusline, bufferline integration
+    " A pretty statusline, bufferline integration:
     "Plugin 'itchyny/lightline.vim' "liiga minimalist mu jaoks
+    " !! use either vim-airline OR powerline !!
+    "   also, pwrline needs to be installed EITHER with vundle OR by pip, never /w both
     Plugin 'bling/vim-airline'
     Plugin 'bling/vim-bufferline'
 
@@ -74,12 +75,12 @@ set nocompatible " Must be the first line
     Plugin 'vim-scripts/Align'
 
     " Snippets like textmate
-    Plugin 'MarcWeber/vim-addon-mw-utils' "vim-snipmate depends on this one
-    Plugin 'tomtom/tlib_vim'              " ... and this.
+    "Plugin 'MarcWeber/vim-addon-mw-utils' "vim-snipmate depends on this one
+    "Plugin 'tomtom/tlib_vim'              " ... and this.
     Plugin 'honza/vim-snippets'           " The snippets repo, and...
     Plugin 'sirver/ultisnips'             "...the engine.
 
-    " A fancy start screen, shows MRU etc.
+    " A fancy start screen, shows MRU etc:
     Plugin 'mhinz/vim-startify'
 
     " Vim signs (:h signs) for modified lines based off VCS (e.g. Git)
@@ -94,8 +95,9 @@ set nocompatible " Must be the first line
     Plugin 'majutsushi/tagbar'
 
     " Ctags generator/highlighter (note the vim-misc is dependency for it)
-    Plugin 'xolox/vim-easytags'
     Plugin 'xolox/vim-misc'
+    Plugin 'xolox/vim-easytags'
+    Plugin 'xolox/vim-session'
     
     " Selfexplanatory...
     Plugin 'jlanzarotta/bufexplorer'
@@ -115,6 +117,28 @@ set nocompatible " Must be the first line
     " supertab et al; needs compilation! read the docs!:
     " !!! ühed väidavad, et javaphp,js,html jaoks on neocomplete parem;
     Plugin 'Valloric/YouCompleteMe'
+
+    " Go-lang support:
+    Plugin 'fatih/vim-go'
+
+    " Rename plugin:
+    Plugin 'Rename'
+
+    " Node.js:
+    Plugin 'moll/vim-node'
+
+    " js syntax:
+    Plugin 'jelera/vim-javascript-syntax'
+
+    " navigate seamlessly btw vim & tmux splits (don't forget tmux bindings as well):
+    Plugin 'christoomey/vim-tmux-navigator'
+
+    " supertab: (mainly so YCM and UltiSnips could play along;)
+    Plugin 'ervandew/supertab'
+    
+    " TODO: check out this alternative to easymotions:
+    "Plugin  'justinmk/vim-sneak'
+
 
     " Finish Vundle stuff
     call vundle#end()
@@ -140,16 +164,18 @@ set nocompatible " Must be the first line
         syntax on                                   " syntax highlighting
         set background=dark                         " we're using a dark bg
         "colors mustang                           " select colorscheme
-        colors mustang                           " select colorscheme
+        colors jellybeans                           " select colorscheme
         au BufNewFile,BufRead *.txt se ft=sh tw=79  " opens .txt w/highlight
         au BufNewFile,BufRead *.tex se ft=tex tw=79 " we don't want plaintex
         au BufNewFile,BufRead *.md se ft=markdown tw=79 " markdown, not modula
+        " per filetype colors:
         " these next schemes come from   https://github.com/sentientmachine/erics_vim_syntax_and_color_highlighting
         " note they came with their own syntax files also (create syntax/ dir in .vim):
-        au BufReadPost *.py colorscheme molokai
-        au BufReadPost *.html colorscheme monokai
-        au BufReadPost *.java colorscheme monokai
-        au BufReadPost *.php colorscheme monokai
+        "au BufReadPost *.py colorscheme molokai
+        "au BufReadPost *.html colorscheme monokai
+        "au BufReadPost *.java colorscheme monokai
+        "au BufReadPost *.php colorscheme monokai
+        "au BufReadPost *.js colorscheme Mango
         
         """ 256 colors for maximum jellybeans bling. See commit log for info {{{
             "if (&term =~ "xterm") || (&term =~ "screen")
@@ -192,6 +218,7 @@ set nocompatible " Must be the first line
                        \.avi,.mkv,.so               " ignore said files
         set wildmenu                                " better auto complete
         set wildmode=longest,list                   " bash-like auto complete
+        set equalalways                             " keep splits equally sized
         
         """ Encoding {{{
             " If you're having problems with some characters you can force
@@ -329,8 +356,11 @@ set nocompatible " Must be the first line
         noremap <leader>ve :edit $HOME/.vimrc<CR>
         noremap <leader>vs :source $HOME/.vimrc<CR>
 
-        " Yank(copy) to system clipboard
+        " Yank(copy) to system clipboard (implies visual mode)
         noremap <leader>y "+y
+
+        " Y -> yank from cursor to EOL (instead of same as yy)
+        noremap Y y$
 
         " Toggle text wrapping
         nmap <silent> <leader>w :set invwrap<CR>:set wrap?<CR>
@@ -406,7 +436,8 @@ set nocompatible " Must be the first line
     
     """ Window movement/maangement {{{
         " Create a vertical split and start using it
-        nnoremap <leader>w <C-w>v<C-w>l
+        nnoremap <leader>v <C-w>v<C-w>l
+        "nnoremap <leader>w <C-w>v<C-w>l
         
         " Create a horizontal split and start using it
         nnoremap <leader>s <C-w>s<C-w>j
@@ -561,6 +592,17 @@ set nocompatible " Must be the first line
         
         " Gundo toggle:
         nnoremap <F5> :GundoToggle<CR>
+
+        " vim-tmux-navigator:
+        nnoremap <silent> <c-h> :TmuxNavigateLeft<cr>
+        nnoremap <silent> <c-j> :TmuxNavigateDown<cr>
+        nnoremap <silent> <c-k> :TmuxNavigateUp<cr>
+        nnoremap <silent> <c-l> :TmuxNavigateRight<cr>
+        "nnoremap <silent> <todo> :TmuxNavigatePrevious<cr>
+
+        " powerline (disable if using airline)
+        "set rtp+=/usr/local/lib/python2.7/dist-packages/powerline/bindings/vim/
+
         
     """ }}}
 """ }}}
@@ -596,6 +638,8 @@ set nocompatible " Must be the first line
     " airline - automatically populate g:airline_symbols dictionary w/
     " powerline symbols:
     let g:airline_powerline_fonts = 1
+    " integrate with https://github.com/edkolev/tmuxline.vim:
+    "let g:airline#extensions#tmuxline#enabled = 1
 
     " TagBar
     let g:tagbar_left = 0
@@ -606,29 +650,47 @@ set nocompatible " Must be the first line
     " detects:
     let g:EclimCompletionMethod = 'omnifunc'
 
-    " ultisnips trigger conf; do not use <tab> if you use YouCompleteMe! {{{
-        function! g:UltiSnips_Complete()
-            call UltiSnips#ExpandSnippet()
-            if g:ulti_expand_res == 0
-                if pumvisible()
-                    return "\<C-n>"
-                else
-                    call UltiSnips#JumpForwards()
-                    if g:ulti_jump_forwards_res == 0
-                    return "\<TAB>"
-                    endif
-                endif
-            endif
-            return ""
-        endfunction
+    """"""""" /ultisnips-YCM
+    "" one solution for YCM and UltiSnips conflict (from http://stackoverflow.com/questions/14896327/ultisnips-and-youcompleteme/18685821#18685821):
+    "" ultisnips trigger conf; do not use <tab> if you use YouCompleteMe! {{{
+        "function! g:UltiSnips_Complete()
+            "call UltiSnips#ExpandSnippet()
+            "if g:ulti_expand_res == 0
+                "if pumvisible()
+                    "return "\<C-n>"
+                "else
+                    "call UltiSnips#JumpForwards()
+                    "if g:ulti_jump_forwards_res == 0
+                    "return "\<TAB>"
+                    "endif
+                "endif
+            "endif
+            "return ""
+        "endfunction
 
-        au BufEnter * exec "inoremap <silent> " . g:UltiSnipsExpandTrigger . " <C-R>=g:UltiSnips_Complete()<cr>"
-        let g:UltiSnipsJumpForwardTrigger="<tab>"
-        let g:UltiSnipsListSnippets="<c-e>"
-        " this mapping Enter key to <C-y> to chose the current highlight item 
-        " and close the selection list, same as other IDEs.
-        " CONFLICT with some plugins like tpope/Endwise
-        inoremap <expr> <CR> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
+        "au BufEnter * exec "inoremap <silent> " . g:UltiSnipsExpandTrigger . " <C-R>=g:UltiSnips_Complete()<cr>"
+        "let g:UltiSnipsJumpForwardTrigger="<tab>"
+        "let g:UltiSnipsListSnippets="<c-e>"
+        "" this mapping Enter key to <C-y> to chose the current highlight item 
+        "" and close the selection list, same as other IDEs.
+        "" CONFLICT with some plugins like tpope/Endwise
+        "inoremap <expr> <CR> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
+    """""
+    " anouther solution form same stackOverflow topic:
+    " make YCM compatible with UltiSnips (using supertab)
+    let g:ycm_key_list_select_completion = ['<C-n>', '<Down>']
+    let g:ycm_key_list_previous_completion = ['<C-p>', '<Up>']
+    let g:SuperTabDefaultCompletionType = '<C-n>'
+
+    " better key bindings for UltiSnipsExpandTrigger
+    let g:UltiSnipsExpandTrigger = "<tab>"
+    let g:UltiSnipsJumpForwardTrigger = "<tab>"
+    let g:UltiSnipsJumpBackwardTrigger = "<s-tab>"
+    """"""""" /ultisnips-YCM
+    
+    " vim-tmux-navigator:
+    let g:tmux_navigator_no_mappings = 1
+    let g:tmux_navigator_save_on_switch = 1
     "}}}
 
     " alternative to the previous:
@@ -637,7 +699,7 @@ set nocompatible " Must be the first line
     "let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 
     " If you want :UltiSnipsEdit to split your window.
-    let g:UltiSnipsEditSplit="vertical" 
+    let g:VltiSnipsEditSplit="vertical" 
 
 
 
@@ -673,6 +735,12 @@ set nocompatible " Must be the first line
         "\ 'active_filetypes':
             "\ ['c', 'cpp', 'perl', 'python'] }
 
+
+    " Session management options (vim-session):
+    " if you don't want help windows to be restored:
+    set sessionoptions-=help
+    " by default, don't ask to save sessions:
+    let g:session_autosave = 'no'
 
     " Automatically remove preview window after autocomplete (mainly for clang_complete)
     autocmd CursorMovedI * if pumvisible() == 0|pclose|endif

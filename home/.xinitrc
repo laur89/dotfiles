@@ -1,11 +1,9 @@
-#!/bin/sh
-#
+#!/bin/bash
 #
 # ~/.xinitrc
 #
 # Executed by startx (run your window manager from here) or DM;
-# Mul execute'ib siit SLiM
-#
+# Mul execute'ib siit SLiM või .profile
 #
 # Make sure that default_session script is in the slim's $PATH!;  /usr/local/bin should be fine;
 
@@ -16,7 +14,11 @@ DEFAULT_SESSION="start_dwm"
 #fi
 #eval $(/usr/bin/gnome-keyring-daemon --start --components=gpg,pkcs11,secrets,ssh)
 #export GPG_AGENT_INFO SSH_AUTH_SOCK
-case $1 in
+
+input="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
+. $HOME/.common_startup
+
+case "$input" in
     dwm)
         exec start_dwm
         #exec ck-launch-session dbus-launch --sh-syntax --exit-with-session /usr/local/bin/start_dwm
@@ -43,10 +45,18 @@ case $1 in
     blackbox)
         exec blackbox
         ;;
-    fluxbox)
+    fluxbox | flux | fb)
         exec startfluxbox
+        ;;
+    bspwm | bs)
+        sxhkd &
+        exec bspwm
+        ;;
+    none | nil | console)
+        true
         ;;
     *)
         exec $DEFAULT_SESSION
         ;;
 esac
+

@@ -1,0 +1,43 @@
+# vim: ft=muttrc
+macro index ,i      "<change-folder>!<enter>"  "go to inbox"
+macro index ,p      "<pipe-message>cat > ~/"   "save message as"
+macro index <space> "<collapse-thread>"        "[un]collapse thread"
+
+macro index ,s "\
+  <enter-command>\
+    set my_old_wait_key=\$wait_key \
+    nowait_key \
+  <enter>\
+  <shell-escape>notmuch-mutt --prompt search<enter>\
+  <change-folder-readonly>~/.cache/notmuch/mutt/results<enter>\
+  <enter-command>\
+    set wait_key=\$my_old_wait_key \
+  <enter>" \
+  "search"
+
+macro index ,u "\
+  <enter-command>set \
+    my_old_pipe_decode=\$pipe_decode \
+    nopipe_decode \
+  <enter>\
+  <pipe-message>ghu<enter>\
+  <delete-thread>\
+  <enter-command>set \
+    pipe_decode=\$my_old_pipe_decode \
+  <enter>" \
+  "Unsubscribe from any email with a List-Unsubscribe header"
+
+# Ctrl-R to mark all as read:
+#macro index \Cr "T~U<enter><tag-prefix><clear-flag>N<untag-pattern>.<enter>" "mark all messages as read"
+macro index <esc>m "T~N<enter>;WNT~O<enter>;WO\CT~T<enter>" "mark all messages read"
+macro index \Cr "<tag-prefix><clear-flag>N" "mark tagged messages as read"
+macro pager \cb "<enter-command>unset wait_key<enter><pipe-entry>'urlview'<enter>" 'Follow links with urlview'
+# or:
+#macro pager \Cu "|urlview<enter>" "call urlview to open links"
+macro attach 'V' "<pipe-entry>cat >~/.cache/mutt/mail.html && $BROWSER ~/.cache/mutt/mail.html && rm ~/.cache/mutt/mail.html<enter>" "open mail in graphical browser"
+macro index b '<enter-command>toggle sidebar_visible<enter><refresh>'
+macro pager b '<enter-command>toggle sidebar_visible<enter><redraw-screen>'
+macro index 'c' '<change-folder>?<change-dir><home>^K=<enter>'
+# note, this one shadows the create_alias:
+macro index a "<limit>all\n" "show all messages (undo limit)"
+

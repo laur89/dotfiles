@@ -1,0 +1,10 @@
+mailboxes +work/Inbox \
+          +work/Inbox/.sb  \
+          +work/Inbox/.devs  \
+          +work/Inbox/.jira  \
+          +work/Sent \
+          +work/Drafts \
+          +work/Junk \
+          +work/temp/search
+
+set spoolfile = "+work/Inbox" # default inbox; so-called startup folder

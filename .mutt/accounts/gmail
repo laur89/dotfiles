@@ -1,0 +1,24 @@
+# vim: ft=muttrc
+set realname = "Laur Aliste"
+set from          = "laur.aliste@gmail.com"
+set sendmail      = "/usr/bin/msmtp -a gmail" # defaults to /usr/sbin/sendmail
+set mbox          = "+gmail/archive"
+set postponed     = "+gmail/drafts"
+#set query_command = "echo; ~/.local/bin/gcontacts pbrisbin@gmail.com 'getnetrc pbrisbin@gmail.com' '%s'"
+
+    set header_cache = ~/.mutt/caches/gmail-headercache # where to store hdrs
+    set message_cachedir = ~/.mutt/caches/gmail-messagecache # where to store bodies
+
+macro index ,c "<change-folder>+gmail/INBOX<enter>" "change accounts"
+macro index ,z "<shell-escape>mbsync --pull-new gmail<enter>" "sync IMAP"
+macro index D "<save-message>+gmail/trash<enter>" "move message to the trash"
+macro index S "<save-message>+gmail/spam<enter>"  "mark message as spam"
+
+macro index ,D \
+  "<tag-pattern>all<enter><tag-prefix><save-message>+gmail/trash<enter>" \
+  "delete all"
+
+# to change folder to different mailboxes: (do i want these?)
+#macro index,pager <f2> '<sync-mailbox><enter-command>source ~/.mutt/personal<enter><change-folder>!<enter>'
+#macro index,pager <f3> '<sync-mailbox><enter-command>source ~/.mutt/work<enter><change-folder>!<enter>'
+macro index S "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch.py -g ~/mail/gmail/temp/search<enter><change-folder-readonly>+gmail/temp/search<enter>" "search mail (using notmuch)"

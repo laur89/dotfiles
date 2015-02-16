@@ -1,0 +1,45 @@
+# defines the env vars that should be included in each shell session.
+#
+export JAVA_HOME=/usr/local/jdk_link
+export M2_HOME=/data/progs/maven/mvn_link
+export M2=$M2_HOME/bin
+export EDITOR=vim
+export VISUAL=gvim
+export PAGER=less
+export BROWSER=/usr/bin/iceweasel
+export DEITY=
+# add additional locations to $PATH:
+export PATH=$PATH:$JAVA_HOME/bin:$M2:/data/Dropbox/dev/scripts/system
+
+export CUSTOM_LOGDIR="/var/log/custom_logs"
+export SSH_LOGIN_USER=laliste   # for WH LDAP login script
+export PANEL_FIFO="/tmp/panel-fifo" # for BSPWM
+
+# Colorize less
+export LESS_TERMCAP_mb=$(printf "\e[1;31m") \
+LESS_TERMCAP_md=$(printf "\e[1;31m") \
+LESS_TERMCAP_me=$(printf "\e[0m") \
+LESS_TERMCAP_se=$(printf "\e[0m") \
+LESS_TERMCAP_so=$(printf "\e[1;44;33m") \
+LESS_TERMCAP_ue=$(printf "\e[0m") \
+LESS_TERMCAP_us=$(printf "\e[1;32m")
+
+#export HGRCPATH="$HOME/.config/hg/hgrc"
+export PASSWORD_STORE_DIR="$HOME/.config/password-store"
+export GNUPGHOME="$HOME/.config/gnupg"
+
+# Update RC file locations for apps that don't support XDG:
+#export GTK2_RC_FILES="$HOME/.config/gtk-2.0/gtkrc"
+export GTK2_RC_FILES=$HOME/.gtkrc-2.0
+
+export XDG_CONFIG_HOME="/home/$USER/.config"
+export XDG_DATA_DIR="/home/$USER/.config"
+export XDG_CACHE_HOME="/home/$USER/.cache"
+export XDG_DOWNLOAD_DIR="/home/$USER/Downloads"
+
+case "$TERM" in
+    xterm*) export TERM=xterm-256color
+esac
+#export POWERLINE_CONFIG_COMMAND="powerline-config"
+## /usr/local/bin/powerline-config
+export POWERLINE_NO_SHELL_PROMPT=NOPE.jpeg

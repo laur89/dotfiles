@@ -56,7 +56,6 @@ if [ -n "$force_color_prompt" ]; then
     fi
 fi
 
-color_prompt=yes
 if [ "$color_prompt" = yes ]; then
     #PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
     PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
@@ -86,10 +85,6 @@ if [ -x /usr/bin/dircolors ]; then
     #alias egrep='egrep --color=auto'
 fi
 
-# some more ls aliases
-#alias ll='ls -l'
-#alias la='ls -A'
-#alias l='ls -CF'
 
 # Alias definitions.
 # You may want to put all your additions into a separate file like
@@ -111,25 +106,51 @@ if ! shopt -oq posix; then
   fi
 fi
 
+##############################################
+# siit alates kõik enda defineeritud:
+##############################################
+# good source http://tldp.org/LDP/abs/html/sample-bashrc.html
+#
+#
+# source own functions and env vars:
+for i in $HOME/.bash_env_vars $HOME/.bash_functions; do
+    if [[ -f "$i" ]]; then
+        source "$i"
+    fi
+done
+
+# source homeshick:
 source "$HOME/.homesick/repos/homeshick/homeshick.sh"
 source "$HOME/.homesick/repos/homeshick/completions/homeshick-completion.bash"
 
 # bash-git-prompt conf:
 # see provide'ib promptile git repo info; override'ib üleval defineeritud PS1 (põmst sama asjaga kui olen ümber modinud)
-# modi repo asub @ https://github.com/magicmonty/bash-git-prompt
-
+# (modi repo asub @ https://github.com/magicmonty/bash-git-prompt)
+# prompt: ################################
+# bash-git-prompt;....
 GIT_PROMPT_START="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]"
 GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
 source .bash-git-prompt/gitprompt.sh
-
-# export environment vars:
-export JAVA_HOME=/usr/local/jdk1.7.0_71
-export M2_HOME=/data/progs/maven/apache-maven-3.2.3
-export M2=$M2_HOME/bin
-export PATH=$PATH:$JAVA_HOME/bin:$M2
-export EDITOR=vim
+#
+# ...or powerline:
+#pwrLineLoc=/usr/local/lib/python2.7/dist-packages/powerline/bindings/bash/powerline.sh
+#if [ -f "$pwrLineLoc" ]; then
+    #source $pwrLineLoc
+#fi
+##########################################
 
 # set PATH so it includes user's private bin if it exists
 if [[ -d "$HOME/bin" ]] ; then
     export PATH="$PATH:$HOME/bin"
 fi
+
+#override history size:
+HISTSIZE=-1
+HISTFILESIZE=-1
+
+# ignore dups:
+export HISTCONTROL=ignoredups
+
+# disable mail notification:
+shopt -u mailwarn
+unset MAILCHECK

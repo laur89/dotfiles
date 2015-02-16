@@ -1,0 +1,58 @@
+#!/bin/bash
+# handles basic system startup
+
+session_startfile="$HOME/.session-startuplist"
+logdir="/var/log/custom_logs/"
+
+xrandr --output DP-2 --auto --right-of DP-1 &
+
+# Load bitmap fonts:
+xset +fp ~/.fonts
+xset fp rehash
+#sleep 1
+
+# Set default cursor
+#xsetroot -cursor_name left_ptr
+
+# Load the Xresources database:
+[[ -f ~/.Xresources ]] && xrdb -merge ~/.Xresources # Do not background!
+
+# disable system beep:
+xset -b &
+
+# Start the programs/scripts in $session_startfile:
+if [ -f "$session_startfile" ]; then
+    source $session_startfile &
+    # give some time before wm is launched:
+    sleep 3
+else
+    rxvt-unicode &
+fi
+
+## Start gpg-agent daemon
+#if [[ -x /usr/bin/gpg-agent ]]; then
+#kill $(ps ux | awk '/gpg-agent/ && !/awk/ {print $2}') >/dev/null 2>&1
+#fi
+#if [[ -x /usr/bin/gpg-agent ]]; then
+#eval "$(/usr/bin/gpg-agent --daemon)"
+#fi
+
+
+# Create necessary directories if don't exist:
+for i in /data/.rsync /data/.tmp; do
+    [ ! -d $i ] && mkdir $i
+done &
+
+# Check whether logfolder at /var/log and /data/ dir are existing:
+for i in $logdir /data/; do
+    if [ ! -w $i ]; then
+        notify-send -t 0 -i gtk-dialog-error "$logdir is not created or no write permissions granted. Do it!" &
+    fi
+done &
+
+# Check the filesize in MB of logs dir:
+allowed_size="20"   # Max size in MB
+size="$(du -sL --block-size=1M $logdir | cut -f1)" # file/dir size in MB;
+if [[ "$size" -gt "$allowed_size" ]]; then
+    notify-send -t 0 -i gtk-dialog-error "Error: $logdir directory is ${size}MB! (max allowed ${allowed_size}MB)" &
+fi

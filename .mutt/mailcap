@@ -1,0 +1,16 @@
+application/octet-stream ; echo %s "can be anything...ie unidentified"                    ; copiousoutput
+#application/octet-stream; ~/.mutt/view_attachment.sh %s "-"
+#text/html                ; /usr/bin/elinks -dump %s ; nametemplate=%s.html ; copiousoutput
+text/html                ; lynx -assume_charset=%{charset} -display_charset=utf-8 -dump %s; nametemplate=%s.html; copiousoutput
+#application/pdf          ; /usr/bin/evince %s                             ; copiousoutput
+application/pdf          ; /usr/bin/zathura %s                             ; copiousoutput
+application/msword       ; /usr/bin/libreoffice %s                         ; copiousoutput
+#image/*                  ; /usr/bin/geeqie %s                              ; copiousoutput
+#image/*                  ; ~/bin/muttshowimage.sh %s                       ; copiousoutput
+#image/*                  ; ~/bin/muttshowimage2.sh %s                       ; copiousoutput
+#image/*; feh %s
+image/*                  ; sxiv %s
+audio/*                  ; /usr/bin/mplayer %s                             ; copiousoutput
+video/*                  ; /usr/bin/mplayer %s                             ; copiousoutput
+text/calendar            ; icalview.rb                                     ; copiousoutput
+

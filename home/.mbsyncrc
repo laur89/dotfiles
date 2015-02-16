@@ -1,0 +1,146 @@
+# isync conf for retrieving mail (for mutt for instance)
+################################################
+#
+# Automatically create missing mailboxes, both locally and on the server
+#Create Both
+Create Slave
+Expunge Both
+# Save the synchronization state files in the relevant directory
+SyncState *
+#
+#################################################
+IMAPAccount gmail
+# Address to connect to
+Host imap.gmail.com
+User laur.aliste@gmail.com
+PassCmd "getnetrc laur.aliste@gmail.com"
+# Use SSL
+UseIMAPS yes
+#RequireSSL yes
+#CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+# the rempte repository:
+IMAPStore gmail-remote
+Account gmail
+
+# the local repository:
+MaildirStore gmail-local
+# The trailing "/" is important
+Path ~/mail/gmail/
+Inbox ~/mail/gmail/INBOX
+
+Channel gmail-INBOX
+Master :gmail-remote:INBOX
+Slave :gmail-local:INBOX
+
+Channel gmail-sent
+Master ":gmail-remote:[Gmail]/Sent Mail"
+Slave :gmail-local:Sent
+
+Channel gmail-Drafts
+Master :gmail-remote:[Gmail]/Drafts
+Slave :gmail-local:Drafts
+
+Channel gmail-Trash
+Master :gmail-remote:[Gmail]/Trash
+Slave :gmail-local:Trash
+
+Channel gmail-Archive
+Master ":gmail-remote:[Gmail]/All Mail"
+Slave :gmail-local:Archive
+
+# group channels together:
+Group gmail
+Channel gmail-INBOX
+Channel gmail-Sent
+Channel gmail-Drafts
+Channel gmail-Trash
+Channel gmail-Archive
+
+################################################
+################################################
+
+IMAPAccount work
+Host localhost
+User laur.aliste@williamhill.com
+PassCmd "getnetrc laur.aliste@williamhill.com"
+Port 1143
+#
+# Do not use SSL
+#UseIMAPS yes
+RequireSSL no
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+IMAPStore work-remote
+Account work
+
+MaildirStore work-local
+# The trailing "/" is important
+Path ~/mail/work/
+Inbox ~/mail/work/Inbox
+
+Channel work-inbox
+Master :work-remote:
+Slave :work-local:
+# exclude some, include all ohters:
+#Patterns * !_setupRelated !_workplaceRelated !Junk* !Trash* !Unsent\ Messages* !Issues* !Sync\ Issues* !Working\ Set* !INBOX/serviceDesk !INBOX/sbNotifications !INBOX/changeManagement
+# include some, exclude all others:
+Patterns  !* INBOX INBOX/sb INBOX/jira INBOX/devs Drafts Sent Junk
+
+#Channel work-sb
+#Master :work-remote:
+#Slave :work-local:sb
+#Patterns !* INBOX/scoreboards
+
+#Channel work-devs
+#Master :work-remote:
+#Slave :work-local:devs
+#Patterns !* INBOX/devs
+
+Group work
+Channel work-inbox
+#Channel work-sent
+#Channel work-drafts
+#Channel work-jira
+#Channel work-sb
+#Channel work-devs
+#
+# Exclude everything under the internal [Gmail] folder, except the interesting folders
+#Patterns * ![Gmail]* "[Gmail]/Sent Mail" "[Gmail]/Starred" "[Gmail]/All Mail"
+# Or include everything
+#Patterns *
+################################################
+
+#IMAPAccount work
+#Host outlook.office365.com
+#User laur.aliste@williamhill.com
+#PassCmd "getnetrc laur.aliste@williamhill.com"
+##Port 1143
+##
+## Do not use SSL
+#UseIMAPS yes
+#CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+#IMAPStore work-remote
+#Account work
+
+#MaildirStore work-local
+## The trailing "/" is important
+#Path ~/mail/work/
+#Inbox ~/mail/work/Inbox
+
+#Channel work-inbox
+#Master :work-remote:
+#Slave :work-local:
+## exclude some, include all ohters:
+##Patterns * !_setupRelated !_workplaceRelated !Junk* !Trash* !Unsent\ Messages* !Issues* !Sync\ Issues* !Working\ Set* !INBOX/serviceDesk !INBOX/sbNotifications !INBOX/changeManagement
+## include some, exclude all others:
+#Patterns  !* INBOX INBOX/sb INBOX/jira INBOX/devs Drafts Sent Junk
+
+#Group work
+#Channel work-inbox
+
+################################################
+Group INBOXES
+Channel gmail-INBOX
+Channel work-Inbox

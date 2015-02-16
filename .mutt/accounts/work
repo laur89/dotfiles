@@ -1,0 +1,42 @@
+# vim: ft=muttrc
+set realname = "Laur Aliste"
+set from          = "laur.aliste@williamhill.com"
+set sendmail      = "/usr/bin/msmtp -a work" # defaults to /usr/sbin/sendmail
+set mbox          = "+work/Inbox"
+set postponed     = "+work/Drafts"
+#set query_command = "echo; ~/.local/bin/gcontacts pbrisbin@gmail.com 'getnetrc pbrisbin@gmail.com' '%s'"
+#set query_command = "contacts -Sf '%eTOKEN%n' '%s' | sed -e 's/TOKEN/\t/g'"
+# goobook address qyery (executed by Tab binding):
+#set query_command="goobook query '%s'"
+#macro index,pager ,a "<pipe-message>goobook add<return>" "add sender to google contacts"
+# abook binds:
+set query_command="abook --mutt-query '%s'"
+macro generic,index,pager \ca "<shell-escape>abook<return>" "launch abook"
+macro index,pager A "<pipe-message>abook --add-email-quiet<return>" "add the sender address to abook"
+
+    set header_cache = ~/.mutt/caches/wh-headercache # where to store hdrs
+    set message_cachedir = ~/.mutt/caches/wh-messagecache # where to store bodies
+
+macro index ,c "<change-folder>+work/Inbox<enter>" "change accounts"
+macro index ,z "<shell-escape>mbsync --pull-new work<enter>" "sync IMAP"
+macro index D "<save-message>+work/Trash<enter>" "move message to the trash"
+macro index S "<save-message>+work/Junk<enter>"  "mark message as spam"
+
+macro index ,D \
+  "<tag-pattern>all<enter><tag-prefix><save-message>+work/Trash<enter>" \
+  "delete all"
+
+# indexing: (if changing dir, do not forgot to change in crontab as well!); this is for py ver (https://github.com/honza/mutt-notmuch-py):
+macro index ,s "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch.py -G ~/mail/work/temp/search<enter><change-folder-readonly>+work/temp/search<enter>" "search mail (using notmuch)"
+
+# same, but uses the deb repo version(ie perl) of notmuch-mutt:
+# perform notmuch query, showin only the results:
+#macro index L "<enter-command>unset wait_key<enter><shell-escape>read -p 'notmuch query: ' x; echo \$x >~/.cache/mutt_terms<enter><limit>~i \"\`notmuch search --output=messages \$(cat ~/.cache/mutt_terms) | head -n 600 | perl -le '@a=<>;chomp@a;s/\^id:// for@a;$,=\"|\";print@a'\`\"<enter>" "show only messages matching a notmuch pattern"
+
+# show all messages again:
+#macro index a "<limit>all<enter>" "show all messages (undo limit)"
+macro index a "<change-folder>+work/Inbox<enter>" "show all messages (undo limit)"
+# reminder: (note, this version doesnt work with newer outlooks anymore) (http://superuser.com/questions/197324/mutt-and-calendar)
+#macro index,pager ,r ":unset wait_key; set pipe_decode\n|mutt_add_reminder\n:set wait_key; unset pipe_decode\n" "record a reminder"
+#macro index,pager ,r ":unset wait_key; set pipe_decode\n|icalview.rb\n:set wait_key; unset pipe_decode\n" "record a reminder"
+macro index,pager ,r ":unset wait_key; set pipe_decode\n|vim -\n:set wait_key; unset pipe_decode\n" "record a reminder"

@@ -1,0 +1,6 @@
+mailboxes +gmail/INBOX \
+          +gMail/[Gmail].All\ Mail \
+          +gMail/[Gmail].Sent\ Mail  \
+          +gmail/temp/search 
+
+set spoolfile = "+gmail/INBOX" # default inbox; so-called startup folder
