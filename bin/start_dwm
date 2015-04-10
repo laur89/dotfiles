@@ -1,0 +1,39 @@
+#!/bin/bash
+# Will be executed by ~/.xinitrc
+# and will in turn execute $session_startfile
+
+# ==============================
+
+# skip, if dwm is already running:
+if [[ "$(ps -e | grep "\bdwm\b")" ]]; then
+    echo "dwm appears to be already running. abort."
+    exit 1
+fi
+
+# !! removed this at 04.01.15; if some access issues, then prolly because of this;
+#if test -z "$DBUS_SESSION_BUS_ADDRESS"; then
+    #eval `dbus-launch --sh-syntax --exit-with-session`
+#fi
+# ---------------------------------------------------------------
+# Draw the status bar:
+#while true; do
+#    python3 /home/laur/Documents/comp/DWM/bars/py_bar.py
+#    sleep 1        # Sleep is currently provided by the py script itself
+#done &
+# enda py bar:
+
+#python3 $HOME/.dwm/bars/py_bar.py &
+# dzen2 setup:
+$HOME/.dwm/bars/w0ng_bash/statusbar &
+
+# spoof window manager, so java apps would recognize it:
+wmname LG3D &
+
+# loop, so exiting dwm actually restarts it without exiting clients;
+# (pointless if using restart patch):
+#while true; do
+    # Log stderror to a file:
+    dwm 2>  /var/log/custom_logs/dwm.log
+    # No error logging:
+    #dwm >/dev/null 2>&1
+#done
