@@ -97,7 +97,7 @@ color status red default
 alternative_order text/calendar text/plain text/enriched text/html text
 
 #ignore * # ignore all headers
-ignore * # ignore allhdrs
+ignore * # ignore all hdrs
 unignore from: to: cc: date: subject: #show only these
 unhdr_order *                           # some distros order things by default
 hdr_order from: to: cc: date: subject:

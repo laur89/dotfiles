@@ -36,9 +36,6 @@ set nocompatible " Must be the first line
     " Edit files using sudo/su
     "Plugin 'chrisbra/SudoEdit.vim'
 
-    " <Tab> everything!
-    "Plugin 'ervandew/supertab'
-
     "Rename current file:
     Plugin 'danro/rename.vim'
 
@@ -78,7 +75,7 @@ set nocompatible " Must be the first line
     "Plugin 'MarcWeber/vim-addon-mw-utils' "vim-snipmate depends on this one
     "Plugin 'tomtom/tlib_vim'              " ... and this.
     Plugin 'honza/vim-snippets'           " The snippets repo, and...
-    Plugin 'sirver/ultisnips'             "...the engine.
+    Plugin 'SirVer/ultisnips'             "...the engine.
 
     " A fancy start screen, shows MRU etc:
     Plugin 'mhinz/vim-startify'
@@ -134,7 +131,11 @@ set nocompatible " Must be the first line
     Plugin 'christoomey/vim-tmux-navigator'
 
     " supertab: (mainly so YCM and UltiSnips could play along;)
+    " <Tab> everything!
     Plugin 'ervandew/supertab'
+
+    " yankring: hold copy of yanked elements:
+    Plugin 'vim-scripts/YankRing.vim'
     
     " TODO: check out this alternative to easymotions:
     "Plugin  'justinmk/vim-sneak'
@@ -477,8 +478,8 @@ set nocompatible " Must be the first line
         nnoremap tj  :tabnext<CR>
         nnoremap tk  :tabprev<CR>
         nnoremap tl  :tablast<CR>
-        nnoremap tt  :tabedit<Space>
-        nnoremap tn  :tabnext<Space>
+        nnoremap tt  :tabedit<CR>
+        nnoremap tn  :tabnext<CR>
         nnoremap tm  :tabm<Space>
         nnoremap td  :tabclose<CR>
         
@@ -623,6 +624,11 @@ set nocompatible " Must be the first line
     " CtrlP - don't recalculate files on start (slow)
     let g:ctrlp_clear_cache_on_exit = 0
     let g:ctrlp_working_path_mode = 'ra'
+
+    " yankring: remap c-p so CtrlP could use it:
+    " TODO: think of an actual mappinks!:
+    let g:yankring_replace_n_pkey = '<c-ü>'
+    let g:yankring_replace_n_nkey = '<c-ö>'
     
     " Start ctrlp in find buffer mode
     let g:ctrlp_cmd = 'CtrlPBuffer'
@@ -675,8 +681,9 @@ set nocompatible " Must be the first line
         "" and close the selection list, same as other IDEs.
         "" CONFLICT with some plugins like tpope/Endwise
         "inoremap <expr> <CR> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
-    """""
-    " anouther solution form same stackOverflow topic:
+        "
+    """"" ultisnips-YCM
+    " another solution form same stackOverflow topic:
     " make YCM compatible with UltiSnips (using supertab)
     let g:ycm_key_list_select_completion = ['<C-n>', '<Down>']
     let g:ycm_key_list_previous_completion = ['<C-p>', '<Up>']

@@ -130,7 +130,7 @@ source "$HOME/.homesick/repos/homeshick/completions/homeshick-completion.bash"
 # bash-git-prompt;....
 GIT_PROMPT_START="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]"
 GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
-source .bash-git-prompt/gitprompt.sh
+source $HOME/.bash-git-prompt/gitprompt.sh
 #
 # ...or powerline:
 #pwrLineLoc=/usr/local/lib/python2.7/dist-packages/powerline/bindings/bash/powerline.sh
@@ -151,6 +151,9 @@ HISTFILESIZE=-1
 # ignore dups:
 export HISTCONTROL=ignoredups
 
-# disable mail notification:
-shopt -u mailwarn
+shopt -u mailwarn       # disable mail notification:
+shopt -s cdspell        # try to correct typos in path
+shopt -s dotglob        # include dotfiles in path expansion
+shopt -s hostcomplete   # try to autocomplete hostnames
+
 unset MAILCHECK
