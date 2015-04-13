@@ -87,6 +87,17 @@ function ffindsmallerthan() {
     find . -size -${size}M -exec ls -s --block-size=M {} \; | sort -n 2>/dev/null
 }
 
+# mkdir and cd into it:
+function mkcd() { mkdir -p "$@" && cd "$@"; }
+
+function aptsearch() {
+    [[ -z "$@" ]] && { echo -e "provide partial package name to search for."; return 1; }
+    aptitude search "$@"
+    #apt-cache search "$@"
+}
+
+function aptsrc() { aptsearch "$@"; } #alias
+
 #  Find a pattern in a set of files and highlight them:
 #+ (needs a recent version of egrep).
 function ffstr() {
@@ -135,7 +146,12 @@ function lgrep() {
 }
 
 # Make your directories and files access rights sane.
-function sanitize() { chmod -R u=rwX,g=rX,o= "$@"; }
+function sanitize() {
+    defaultInterface="eth0"
+    [[ -z "$@" ]] && { echo -e "provide a file/dir name plz."; return 1; }
+    [[ ! -e "$@" ]] && { echo -e "\"$@\" does not exist."; return 1; }
+    chmod -R u=rwX,g=rX,o= "$@";
+}
 
 function my_ip() { # Get IP adress on ethernet.
     local MY_IP=$(/sbin/ifconfig eth0 | awk '/inet/ { print $2 } ' |
@@ -319,28 +335,3 @@ function createUsbIso() {
 }
 
 
-#=================================
-# utils
-#
-function confirm() {
-    local msg yno
-    msg="$1"
-
-    while : ; do
-        echo -e "$msg"
-        read yno
-        case $yno in
-            [yY] | YEs | YES | Yes | yes )
-                echo "Ok, continuing...";
-                return 0
-                ;;
-            [nN] | NO | No | no )
-                echo "Abort.";
-                return 1
-                ;;
-            *)
-                echo -e "Incorrect answer; try again."
-                ;;
-        esac
-    done
-}

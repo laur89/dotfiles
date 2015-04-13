@@ -14,6 +14,8 @@ alias eclim='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/
 #alias amq="/data/progs/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"
 alias logout="pkill -KILL -u $USER"
 alias grep="grep --color=auto"
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
 alias c="clear"
 alias cp="cp -rp"
 alias less="less -IR"
@@ -36,6 +38,7 @@ alias vdiff="vimdiff"
 alias mut="mutt"
 alias utt="mutt"
 alias cim='vim'
+alias vin='vim'
 alias xs='cd'
 alias vf='cd'
 alias cs='cd'
@@ -59,16 +62,13 @@ alias documents='cd /home/laur/Documents'
 alias docs='cd /home/laur/Documents'
 alias doc='cd /home/laur/Documents'
 alias pics='cd /data/Dropbox/Pictures'
+alias drop='cd /data/Dropbox/'
 alias scripts='cd /data/dev/scripts'
 alias proj='cd /data/dev/projects'
 alias prog='cd /data/progs'
 alias progs='cd /data/progs'
 alias dev='cd /data/dev'
 alias data='cd /data/'
-
-# mkdir and cd into it:
-mkcd () { mkdir -p "$@" && cd "$@"; }
-
 
 alias lns='ln -s'
 alias svim='sudo vim'
