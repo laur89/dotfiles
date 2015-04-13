@@ -61,10 +61,16 @@ alias doc='cd /home/laur/Documents'
 alias pics='cd /data/Dropbox/Pictures'
 alias scripts='cd /data/dev/scripts'
 alias proj='cd /data/dev/projects'
+alias prog='cd /data/progs'
+alias progs='cd /data/progs'
+alias dev='cd /data/dev'
+alias data='cd /data/'
 
 # mkdir and cd into it:
 mkcd () { mkdir -p "$@" && cd "$@"; }
 
+
+alias lns='ln -s'
 alias svim='sudo vim'
 alias root='sudo su'
 

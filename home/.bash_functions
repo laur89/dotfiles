@@ -129,7 +129,7 @@ function swap() {
 # list current directory and search for a name
 function lgrep() {
     [[ $# != 1 ]] && { echo -e "$FUNCNAME name_to_grep"; return 1; }
-    ls -A | grep --color=auto -i "$1"
+    ls -lA | grep --color=auto -i "$1"
     #[[ -z "$@" ]] && { echo -e "$FUNCNAME filename_pattern"; return 1; }
     #ls -A | grep --color=auto -i "\'$@\'"
 }
@@ -213,7 +213,7 @@ function extract() {
                          ;;
             *.zip)       mkdir "$file_without_extension" && unzip $file -d $file_without_extension
                          ;;
-                         # TODO these last 2 are unverified how and where they'll unpack:
+                         # TODO these last 2 are unverified how and where they'd unpack:
             *.Z)         uncompress $file  ;;
             *.7z)        7z x $file        ;;
             *)           echo "'$file' cannot be extracted via  ${FUNCNAME}()"
@@ -227,6 +227,7 @@ function extract() {
 }
 
 fontreset() {
+    fc-cache -fv
     mkfontscale ~/.fonts
     mkfontdir ~/.fonts
     xset +fp ~/.fonts
@@ -268,11 +269,13 @@ xmlformat() {
 function xmlf() { xmlformat $@; } # alias for xmlformat;
 
 function createUsbIso() {
-    local file device
+    local file device mountpoint cleaned_devicename
     file="$1"
     device="$2"
+    cleaned_devicename="${device%/}" # strip trailing slash
+    cleaned_devicename="${cleaned_devicename##*/}"  # strip everything before last slash(slash included)
 
-    if [[ -z "$file" || -z "$device" ]]; then
+    if [[ -z "$file" || -z "$device" || -z "$cleaned_devicename" ]]; then
         echo -e "either file or device weren't provided"
         return 1;
     elif [[ ! -f "$file" ]]; then
@@ -281,17 +284,35 @@ function createUsbIso() {
     elif [[ ! -e "$device" ]]; then
         echo -e "$device does not exist"
         return 1;
-    # TODO: check that $device doesn't have a nr at the end
+    elif ! ls /dev | grep "\b$cleaned_devicename\b";then
+        echo -e "$device does not exist in /dev"
+        return 1;
+    elif [[ "${device:$(( ${#device} - 1)):1}" =~ ^[0-9:]+$ ]]; then
+        echo -e "please don't provide partition, but a drive, e.g. /dev/sdh instad of /dev/sdh1"
+        return 1
     fi
 
     #echo "please provide passwd for running fdisk -l to confirm the selected device is the right one:"
     #sudo fdisk -l $device
-    lsblk
+    lsblk | grep --color=auto "$cleaned_devicename\|MOUNTPOINT"
 
-    if ! confirm  "\nis selected device $device the correct one? (y/n)"; then
+    if ! confirm  "\nis selected device - $device - the correct one? (y/n)"; then
         return 1
     fi
 
+    # find if device is mounted:
+     #lsblk -o name,size,mountpoint /dev/sda
+    mountpoint="$(lsblk -o mountpoint $device | sed -n 3p)"
+    if [[ -n "$mountpoint" ]]; then
+        echo -e "$device appears to be mounted at $mountpoint, trying to unmount..."
+        if ! umount "$mountpoint"; then
+            echo -e "something went wrong with unmounting... abort"
+            return 1
+        fi
+        echo -e "...success."
+    fi
+
+    echo -e "Running dd, this might take a while..."
     sudo dd if="$file" of="$device" bs=4M
     sync
     #eject $device
