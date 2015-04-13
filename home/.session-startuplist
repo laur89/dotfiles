@@ -10,6 +10,7 @@ PROGS=( \
     "blueman-applet" \
     "nm-applet" \
     "xfce4-volumed" \
+    "xfce4-power-manager" \
     "skype" \
     "spacefm" \
     "Earth_sunlight_wallpaper_changer.sh" \
@@ -51,11 +52,10 @@ done
 # sets the cursor icon; Available themes reside in /usr/share/icons and local themes can be installed to ~/.icons.:
 #xsetroot -cursor_name left_ptr &
 
-#xfce4-power-manager &
 #launchy &
 
 # set wallpaper (afterwards, script will be run periodically by cron):
-/usr/local/bin/wallpaper_changer.sh > /dev/null 2>&1 &
+wallpaper_changer.sh > /dev/null 2>&1 &
 
 #if ! [[ "$(ps -e | grep "\bmpd\b")" ]]; then
     #mpd /etc/mpd.conf &
