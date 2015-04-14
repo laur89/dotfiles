@@ -17,12 +17,12 @@ export PANEL_FIFO="/tmp/panel-fifo" # for BSPWM
 
 # Colorize less
 export LESS_TERMCAP_mb=$(printf "\e[1;31m") \
-LESS_TERMCAP_md=$(printf "\e[1;31m") \
-LESS_TERMCAP_me=$(printf "\e[0m") \
-LESS_TERMCAP_se=$(printf "\e[0m") \
-LESS_TERMCAP_so=$(printf "\e[1;44;33m") \
-LESS_TERMCAP_ue=$(printf "\e[0m") \
-LESS_TERMCAP_us=$(printf "\e[1;32m")
+export LESS_TERMCAP_md=$(printf "\e[1;31m") \
+export LESS_TERMCAP_me=$(printf "\e[0m") \
+export LESS_TERMCAP_se=$(printf "\e[0m") \
+export LESS_TERMCAP_so=$(printf "\e[1;44;33m") \
+export LESS_TERMCAP_ue=$(printf "\e[0m") \
+export LESS_TERMCAP_us=$(printf "\e[1;32m")
 
 #export HGRCPATH="$HOME/.config/hg/hgrc"
 export PASSWORD_STORE_DIR="$HOME/.config/password-store"
@@ -43,3 +43,4 @@ esac
 #export POWERLINE_CONFIG_COMMAND="powerline-config"
 ## /usr/local/bin/powerline-config
 export POWERLINE_NO_SHELL_PROMPT=NOPE.jpeg
+export _SCRIPTS_COMMONS="/data/dev/scripts/system/utils.sh" # needs to be located in the same dir as this script;

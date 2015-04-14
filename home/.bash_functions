@@ -2,9 +2,18 @@
 #
 #
 # =====================================================================
+# import common:
+if [[ -f "$_SCRIPTS_COMMONS" && -r "$_SCRIPTS_COMMONS" ]]; then
+    source "$_SCRIPTS_COMMONS"
+else
+    echo -e "\nError: common file \"$_SCRIPTS_COMMONS\" not found. Abort."
+    exit 1
+fi
+# =====================================================================
+
 # find files or dirs:
 function ffind() {
-    local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter
+    local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter usegrep
     usage="$FUNCNAME: find files by name.
     Usage: $FUNCNAME [-i] [-f] [-d] [-l] \"fileName pattern\" [top_level_dir_to_search_from]
         -i  filename is case insensitive
@@ -37,7 +46,32 @@ function ffind() {
         return 1
     fi
 
-    find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null
+    if [[ -n "$SRCDIR" ]]; then
+        if [[ ! -d "$SRCDIR" ]]; then
+            echo -e "provided directory to search from is not a directory. abort."
+            return 1
+        elif [[ "${SRCDIR:$(( ${#SRCDIR} - 1)):1}" != "/" ]]; then
+            SRCDIR="${SRCDIR}/" # add trailing slash if missing; required for gnu find
+        fi
+    fi
+
+    if [[ "$SRC" == *\.\** ]]; then
+        echo -e "use only asterisks (*) for wildcards, not .*"
+        return 1
+    elif [[ "$SRC" == *\** ]]; then
+        #echo -e "please don't use asterisks in filename pattern; searchterm is already padded with wildcards on both sides."
+        #return 1
+        usegrep="false"
+    fi
+
+
+    # grep is for coloring only:
+    #find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' | grep -i --color=auto "$SRC" 2>/dev/null
+    if [[ "$usegrep" == "false" ]]; then
+        find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null
+    else
+        find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' | grep -i --color=auto "$SRC" 2>/dev/null
+    fi
 }
 
 function ffindproc() {
@@ -103,7 +137,7 @@ function aptsrc() { aptsearch "$@"; } #alias
 function ffstr() {
     local grepcase OPTIND usage opt
     OPTIND=1
-    usage="fstr: find string in files.
+    usage="$FUNCNAME: find string in files.
 Usage: fstr [-i] \"pattern\" [\"filename pattern\"] "
 
     while getopts "i" opt; do
@@ -111,13 +145,13 @@ Usage: fstr [-i] \"pattern\" [\"filename pattern\"] "
            i) grepcase=" -i "
               shift $(( $OPTIND - 1 ))
               ;;
-           *) echo "$usage"; return ;;
+           *) echo "$usage"; return 1 ;;
         esac
     done
 
     if [ "$#" -lt 1 ]; then
         echo "$usage"
-        return;
+        return 1;
     fi
 
     find . -type f -iname "${2:-*}" -print0 | \
@@ -126,15 +160,15 @@ Usage: fstr [-i] \"pattern\" [\"filename pattern\"] "
 
 function swap() {
     # Swap 2 files around, if they exist (from Uzi's bashrc):
-    local TMPFILE="/tmp/swap_function_tmpFile.$RANDOM"
+    local TMPFILE="/tmp/${FUNCNAME}_function_tmpFile.$RANDOM"
 
     [ $# -ne 2 ] && echo "swap: 2 arguments needed" && return 1
     [ ! -e "$1" ] && echo "swap: $1 does not exist" && return 1
     [ ! -e "$2" ] && echo "swap: $2 does not exist" && return 1
 
-    mv "$1" $TMPFILE
+    mv "$1" "$TMPFILE"
     mv "$2" "$1"
-    mv $TMPFILE "$2"
+    mv "$TMPFILE" "$2"
 }
 
 # list current directory and search for a name
@@ -147,14 +181,14 @@ function lgrep() {
 
 # Make your directories and files access rights sane.
 function sanitize() {
-    defaultInterface="eth0"
     [[ -z "$@" ]] && { echo -e "provide a file/dir name plz."; return 1; }
     [[ ! -e "$@" ]] && { echo -e "\"$@\" does not exist."; return 1; }
     chmod -R u=rwX,g=rX,o= "$@";
 }
 
 function my_ip() { # Get IP adress on ethernet.
-    local MY_IP=$(/sbin/ifconfig eth0 | awk '/inet/ { print $2 } ' |
+    local connected_interface="$(find_connected_if)"
+    local MY_IP=$(/sbin/ifconfig $connected_interface | awk '/inet/ { print $2 } ' |
       sed -e s/addr://)
     echo ${MY_IP:-"Not connected"}
 }
@@ -303,7 +337,7 @@ function createUsbIso() {
     elif ! ls /dev | grep "\b$cleaned_devicename\b";then
         echo -e "$device does not exist in /dev"
         return 1;
-    elif [[ "${device:$(( ${#device} - 1)):1}" =~ ^[0-9:]+$ ]]; then
+    elif [[ "${cleaned_devicename:$(( ${#cleaned_devicename} - 1)):1}" =~ ^[0-9:]+$ ]]; then
         echo -e "please don't provide partition, but a drive, e.g. /dev/sdh instad of /dev/sdh1"
         return 1
     fi
@@ -322,16 +356,17 @@ function createUsbIso() {
     if [[ -n "$mountpoint" ]]; then
         echo -e "$device appears to be mounted at $mountpoint, trying to unmount..."
         if ! umount "$mountpoint"; then
-            echo -e "something went wrong with unmounting... abort"
+            echo -e "something went wrong with unmounting."
+            echo -e "please unmount the device and try again."
             return 1
         fi
         echo -e "...success."
     fi
 
-    echo -e "Running dd, this might take a while..."
+    echo -e "Please provide sudo passwd for running dd:"
+    sudo echo -e "Running dd, this might take a while..."
     sudo dd if="$file" of="$device" bs=4M
     sync
     #eject $device
 }
-
 
