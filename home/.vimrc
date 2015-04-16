@@ -124,8 +124,8 @@ set nocompatible " Must be the first line
     " Node.js:
     Plugin 'moll/vim-node'
 
-    " js syntax:
-    Plugin 'jelera/vim-javascript-syntax'
+    " js beautifier:
+    Plugin 'jsbeautify'
 
     " navigate seamlessly btw vim & tmux splits (don't forget tmux bindings as well):
     Plugin 'christoomey/vim-tmux-navigator'
@@ -370,6 +370,10 @@ set nocompatible " Must be the first line
         nnoremap <silent> <Space> @=(foldlevel('.')?'za':"\<Space>")<CR>
         vnoremap <Space> zf
 
+        " buffer delete fix (fix as in won't exit the window when dropping buffer, eg
+        " with NerdTree):
+        nnoremap <leader>q :bp<cr>:bd #<cr>
+
         " Bubbling (bracket matching)
         nmap <C-up> [e
         nmap <C-down> ]e
@@ -528,15 +532,16 @@ set nocompatible " Must be the first line
         """ }}}
         
         """ Toggle relativenumber using <leader>r {{{
-            nnoremap <leader>r :call NumberToggle()<CR>
+                "(currently incative because of nerdtree binding)
+            "nnoremap <leader>r :call NumberToggle()<CR>
 
-            function! NumberToggle()
-                if(&relativenumber == 1)
-                    set number
-                else
-                    set relativenumber
-                endif
-            endfunction
+            "function! NumberToggle()
+                "if(&relativenumber == 1)
+                    "set number
+                "else
+                    "set relativenumber
+                "endif
+            "endfunction
         """ }}}
         
         """ Remove multiple empty lines {{{
@@ -590,6 +595,7 @@ set nocompatible " Must be the first line
         
         " NERDtree toggle:
         map <C-n> :NERDTreeToggle<CR>
+        map <leader>r :NERDTreeFind<cr> " move to currently opened file in nerdtree
         
         " Gundo toggle:
         nnoremap <F5> :GundoToggle<CR>
@@ -734,6 +740,7 @@ set nocompatible " Must be the first line
 
     let g:syntastic_bash_checkers = ['shellcheck', 'checkbashisms']
     let g:syntastic_sh_checkers = ['shellcheck', 'checkbashisms']
+    let g:syntastic_javascript_checkers = ['jshint']
 
     let g:syntastic_cpp_check_header = 1
     "let g:syntastic_cpp_compiler_options = ' -std=c++0x'
