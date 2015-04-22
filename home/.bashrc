@@ -142,7 +142,7 @@ source $HOME/.bash-git-prompt/gitprompt.sh
 # set PATH so it includes user's private bin if it exists
 if [[ -d "$HOME/bin" ]] ; then
     export PATH="$PATH:$HOME/bin"
-    export PATH="$PATH:$HOME/bin/sys_specific_bin" # execs/files that are machine-dependent;
+    #export PATH="$PATH:$HOME/bin/sys_specific_bin" # execs/files that are machine-dependent;
 fi
 
 #override history size:

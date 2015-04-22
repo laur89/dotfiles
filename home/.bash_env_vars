@@ -38,8 +38,9 @@ export XDG_CACHE_HOME="/home/$USER/.cache"
 export XDG_DOWNLOAD_DIR="/home/$USER/Downloads"
 
 case "$TERM" in
-    xterm*) export TERM=xterm-256color
+    xterm* | rxvt-unicode-256color ) export TERM=xterm-256color ;;
 esac
+
 #export POWERLINE_CONFIG_COMMAND="powerline-config"
 ## /usr/local/bin/powerline-config
 export POWERLINE_NO_SHELL_PROMPT=NOPE.jpeg

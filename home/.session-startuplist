@@ -76,6 +76,11 @@ if ! [[ "$(ps -e | grep "\bxscreensaver\b")" ]]; then
     echo "Launching xscreensaver..."
 fi
 
+if ! [[ "$(ps -e | grep "\bxsyndaemon\b")" ]]; then
+    syndaemon -t -K -i 4 &
+    echo "Launching syndaemon"
+fi
+
 # nvidia bug report:
 #sleep 5;
 #sudo nvidia-bug-report.sh >> /tmp/minuNVIDlog.log

@@ -638,13 +638,10 @@ set nocompatible " Must be the first line
     
     " Start ctrlp in find buffer mode
     let g:ctrlp_cmd = 'CtrlPBuffer'
-    
     " Start ctrlp in MRU file mode
     "let g:ctrlp_cmd = 'CtrlPMRU'
-    
     let g:ctrlp_regexp = 1
-    
-    " ???
+    " ???:
     let g:ctrlp_switch_buffer = 'Et'
 
     " airline - automatically populate g:airline_symbols dictionary w/
@@ -652,15 +649,19 @@ set nocompatible " Must be the first line
     let g:airline_powerline_fonts = 1
     " integrate with https://github.com/edkolev/tmuxline.vim:
     "let g:airline#extensions#tmuxline#enabled = 1
+    let g:airline#extensions#bufferline#enabled = 0
+    let g:airline#extensions#bufferline#overwrite_variables = 1
 
     "bufferline:
     let g:bufferline_active_buffer_left = '['
     let g:bufferline_active_buffer_right = ']'
     let g:bufferline_modified = '+'
     let g:bufferline_show_bufnr = 0
-    let g:bufferline_rotate = 0  " scrolling with fixed current buf position
+    let g:bufferline_rotate = 1  " scrolling with fixed current buf position
     let g:bufferline_inactive_highlight = 'StatusLineNC'
     let g:bufferline_active_highlight = 'StatusLine'
+    "let g:bufferline_echo = 0  "disable echoing buffers to command bar
+    let g:bufferline_fixed_index =  0 "always first
 
 
     " TagBar
@@ -755,10 +756,21 @@ set nocompatible " Must be the first line
 
     let g:syntastic_cpp_check_header = 1
     "let g:syntastic_cpp_compiler_options = ' -std=c++0x'
+    "
+    let g:syntastic_mode_map = {
+        \ 'mode': 'active',
+        \ 'passive_filetypes':
+            \ ['java'] }
+
     "let g:syntastic_mode_map = {
         "\ 'mode': 'passive',
         "\ 'active_filetypes':
             "\ ['c', 'cpp', 'perl', 'python'] }
+
+    "let g:syntastic_mode_map = {
+        "\ 'mode': 'passive',
+        "\ 'active_filetypes': [],
+        "\ 'passive_filetypes': [] } }
 
 
     " Session management options (vim-session):

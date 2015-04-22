@@ -6,8 +6,8 @@
 if [[ -f "$_SCRIPTS_COMMONS" && -r "$_SCRIPTS_COMMONS" ]]; then
     source "$_SCRIPTS_COMMONS"
 else
-    echo -e "\nError: common file \"$_SCRIPTS_COMMONS\" not found. Abort."
-    exit 1
+    echo -e "\nError: common file \"$_SCRIPTS_COMMONS\" not found!! Many functions will be unusable!!!"
+    # do not exit, or you won't be able to open shell!
 fi
 # =====================================================================
 
@@ -56,7 +56,7 @@ function ffind() {
     fi
 
     if [[ "$SRC" == *\.\** ]]; then
-        echo -e "use only asterisks (*) for wildcards, not .*"
+        echo -e "only use asterisks (*) for wildcards, not .*"
         return 1
     elif [[ "$SRC" == *\** ]]; then
         #echo -e "please don't use asterisks in filename pattern; searchterm is already padded with wildcards on both sides."
@@ -70,8 +70,14 @@ function ffind() {
     if [[ "$usegrep" == "false" ]]; then
         find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null
     else
-        find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' | grep -i --color=auto "$SRC" 2>/dev/null
+        find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null | grep -i --color=auto "$SRC"
     fi
+}
+
+# Find a file with a pattern in name (inside wd);
+# essentially same as ffind(), but a bit simplified:
+function ff() {
+    find . -type f -iname '*'"$*"'*'  -ls
 }
 
 function ffindproc() {
@@ -81,12 +87,6 @@ function ffindproc() {
 
     # TODO: add also exact match option?:
     #   grep '\$1\b'
-}
-
-# Find a file with a pattern in name (inside wd);
-# essentially same as ffind(), but a bit simplified:
-function ff() {
-    find . -type f -iname '*'"$*"'*'  -ls
 }
 
 # find top 5/x biggest files:
@@ -138,7 +138,7 @@ function ffstr() {
     local grepcase OPTIND usage opt
     OPTIND=1
     usage="$FUNCNAME: find string in files.
-Usage: fstr [-i] \"pattern\" [\"filename pattern\"] "
+Usage: fstr [-i] \"pattern\" [filename pattern] "
 
     while getopts "i" opt; do
         case "$opt" in
@@ -154,7 +154,7 @@ Usage: fstr [-i] \"pattern\" [\"filename pattern\"] "
         return 1;
     fi
 
-    find . -type f -iname "${2:-*}" -print0 | \
+    find . -type f -iname '*'"${2:-*}"'*' -print0 | \
         xargs -0 egrep --color=always -sn ${grepcase} "$1" 2>&- | more
 }
 
@@ -190,7 +190,7 @@ function my_ip() { # Get IP adress on ethernet.
     local connected_interface="$(find_connected_if)"
     local MY_IP=$(/sbin/ifconfig $connected_interface | awk '/inet/ { print $2 } ' |
       sed -e s/addr://)
-    echo ${MY_IP:-"Not connected"}
+    echo "${MY_IP:-"Not connected"} @ $connected_interface"
 }
 
 function compress() {
