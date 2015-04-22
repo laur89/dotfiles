@@ -37,7 +37,7 @@ set nocompatible " Must be the first line
     "Plugin 'chrisbra/SudoEdit.vim'
 
     "Rename current file:
-    Plugin 'danro/rename.vim'
+    "Plugin 'danro/rename.vim'      " should be same as Rename plugin
 
     " Fuzzy finder (files, mru, etc)
     Plugin 'kien/ctrlp.vim'
@@ -653,6 +653,16 @@ set nocompatible " Must be the first line
     " integrate with https://github.com/edkolev/tmuxline.vim:
     "let g:airline#extensions#tmuxline#enabled = 1
 
+    "bufferline:
+    let g:bufferline_active_buffer_left = '['
+    let g:bufferline_active_buffer_right = ']'
+    let g:bufferline_modified = '+'
+    let g:bufferline_show_bufnr = 0
+    let g:bufferline_rotate = 0  " scrolling with fixed current buf position
+    let g:bufferline_inactive_highlight = 'StatusLineNC'
+    let g:bufferline_active_highlight = 'StatusLine'
+
+
     " TagBar
     let g:tagbar_left = 0
     let g:tagbar_width = 30
@@ -741,6 +751,7 @@ set nocompatible " Must be the first line
     let g:syntastic_bash_checkers = ['shellcheck', 'checkbashisms']
     let g:syntastic_sh_checkers = ['shellcheck', 'checkbashisms']
     let g:syntastic_javascript_checkers = ['jshint']
+    let g:syntastic_css_checkers = ['csslint']
 
     let g:syntastic_cpp_check_header = 1
     "let g:syntastic_cpp_compiler_options = ' -std=c++0x'
