@@ -650,7 +650,8 @@ set nocompatible " Must be the first line
     " integrate with https://github.com/edkolev/tmuxline.vim:
     "let g:airline#extensions#tmuxline#enabled = 1
     let g:airline#extensions#bufferline#enabled = 0
-    let g:airline#extensions#bufferline#overwrite_variables = 1
+    "let g:airline#extensions#bufferline#overwrite_variables = 1
+    let g:airline_theme='dark'
 
     "bufferline:
     let g:bufferline_active_buffer_left = '['
@@ -660,7 +661,7 @@ set nocompatible " Must be the first line
     let g:bufferline_rotate = 1  " scrolling with fixed current buf position
     let g:bufferline_inactive_highlight = 'StatusLineNC'
     let g:bufferline_active_highlight = 'StatusLine'
-    "let g:bufferline_echo = 0  "disable echoing buffers to command bar
+    let g:bufferline_echo = 1
     let g:bufferline_fixed_index =  0 "always first
 
 
