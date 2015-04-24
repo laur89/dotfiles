@@ -662,7 +662,7 @@ set nocompatible " Must be the first line
     let g:bufferline_inactive_highlight = 'StatusLineNC'
     let g:bufferline_active_highlight = 'StatusLine'
     let g:bufferline_echo = 1
-    let g:bufferline_fixed_index =  0 "always first
+    let g:bufferline_fixed_index = 0 "always first
 
 
     " TagBar

@@ -44,4 +44,4 @@ esac
 #export POWERLINE_CONFIG_COMMAND="powerline-config"
 ## /usr/local/bin/powerline-config
 export POWERLINE_NO_SHELL_PROMPT=NOPE.jpeg
-export _SCRIPTS_COMMONS="/data/dev/scripts/system/utils.sh" # needs to be located in the same dir as this script;
+export _SCRIPTS_COMMONS="/data/dev/scripts/system/utils.sh"
