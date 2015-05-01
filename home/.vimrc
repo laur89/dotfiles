@@ -15,6 +15,7 @@ set nocompatible " Must be the first line
             
             " make directory for the persistent undo storage (not related to vundle):
             silent !mkdir -p $HOME/.vim/undo
+            silent !mkdir -p $HOME/.vim/tags
         endif
     """ }}}
     
@@ -157,6 +158,7 @@ set nocompatible " Must be the first line
     Plugin 'kien/rainbow_parentheses.vim'
 
     " tern for vim (tern is a standalone js analyzer)
+    " depends on tern!
     Plugin 'marijnh/tern_for_vim'
 
     " Finish Vundle stuff
@@ -698,6 +700,30 @@ set nocompatible " Must be the first line
     let g:tagbar_left = 0
     let g:tagbar_width = 30
     set tags=tags;/
+
+    " vim-easytags:
+    "let g:easytags_by_filetype = '~/.vim/tags' " TODO: would want, but how to use with jsctags?
+    let g:easytags_always_enabled = 1
+    let g:easytags_on_cursorhold = 1
+    "let g:easytags_include_members = 1
+    "let g:easytags_autorecurse = 1 "!!! makes stuff slooooow
+    "let g:easytags_events = ['BufWritePost']
+    let g:easytags_languages = {
+                \   'javascript': {
+                \     'cmd': 'jsctags',
+                \       'args': [-f', '$HOME/.vim/tags/javascript'],
+                \       'fileoutput_opt': '-f',
+                \       'stdout_opt': '-f-',
+                \       'recurse_flag': '-R'
+                \   },
+                \   'haskell': {
+                \       'cmd': '~/.cabal/bin/lushtags',
+                \       'args': [],
+                \       'fileoutput_opt': '-f',
+                \       'stdout_opt': '-f-',
+                \       'recurse_flag': '-R'
+                \   }
+                \}
 
     " eclim completon registration to vim's omni complete which YCM automatically
     " detects:
