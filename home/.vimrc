@@ -139,7 +139,25 @@ set nocompatible " Must be the first line
     
     " TODO: check out this alternative to easymotions:
     "Plugin  'justinmk/vim-sneak'
+    
+    " show location of the marks: (! requires compilation with +signs)
+    " !!! deprecated by vim-signature?
+    "Plugin 'showmarks'
 
+    " show, place and toggle marks: (! requires compilation with +signs)
+    Plugin 'kshenoy/vim-signature'
+
+    " camel case movements:
+    Plugin 'bkad/CamelCaseMotion'
+
+    " typos:
+    Plugin 'chip/vim-fat-finger'
+
+    " rainbow parnes:
+    Plugin 'kien/rainbow_parentheses.vim'
+
+    " tern for vim (tern is a standalone js analyzer)
+    Plugin 'marijnh/tern_for_vim'
 
     " Finish Vundle stuff
     call vundle#end()
@@ -282,6 +300,9 @@ set nocompatible " Must be the first line
 
     " autosave file if window loses focus:
     "au FocusLost * :wa
+
+    " auto-reload vimrc on save:
+    autocmd! BufWritePost ~/.vimrc nested :source ~/.vimrc
     
     """ Folding {{{
         set foldcolumn=0                            " hide folding column
@@ -439,7 +460,7 @@ set nocompatible " Must be the first line
         
     """ }}}
     
-    """ Window movement/maangement {{{
+    """ Window movement/management {{{
         " Create a vertical split and start using it
         nnoremap <leader>v <C-w>v<C-w>l
         "nnoremap <leader>w <C-w>v<C-w>l
@@ -453,7 +474,7 @@ set nocompatible " Must be the first line
         nnoremap <C-k> <C-w>k
         nnoremap <C-l> <C-w>l
         
-        " map shift j&k to prev/next buffer:
+        " map shift+j/k to prev/next buffer:
         map <S-J> :bp <CR>
         map <S-K> :bn <CR>
         
@@ -609,6 +630,14 @@ set nocompatible " Must be the first line
 
         " powerline (disable if using airline)
         "set rtp+=/usr/local/lib/python2.7/dist-packages/powerline/bindings/vim/
+
+        " CamelCaseMotion: Replace the default 'w', 'b' and 'e' mappings instead of defining additional mappings ',w', ',b' and ',e': 
+        map <silent> w <Plug>CamelCaseMotion_w
+        map <silent> b <Plug>CamelCaseMotion_b
+        map <silent> e <Plug>CamelCaseMotion_e
+        sunmap w
+        sunmap b
+        sunmap e
 
         
     """ }}}
@@ -780,6 +809,34 @@ set nocompatible " Must be the first line
     " by default, don't ask to save sessions:
     let g:session_autosave = 'no'
 
+    " rainbow_parentheses:
+    let g:rbpt_colorpairs = [
+        \ ['brown',       'RoyalBlue3'],
+        \ ['Darkblue',    'SeaGreen3'],
+        \ ['darkgray',    'DarkOrchid3'],
+        \ ['darkgreen',   'firebrick3'],
+        \ ['darkcyan',    'RoyalBlue3'],
+        \ ['darkred',     'SeaGreen3'],
+        \ ['darkmagenta', 'DarkOrchid3'],
+        \ ['brown',       'firebrick3'],
+        \ ['gray',        'RoyalBlue3'],
+        \ ['black',       'SeaGreen3'],
+        \ ['darkmagenta', 'DarkOrchid3'],
+        \ ['Darkblue',    'firebrick3'],
+        \ ['darkgreen',   'RoyalBlue3'],
+        \ ['darkcyan',    'SeaGreen3'],
+        \ ['darkred',     'DarkOrchid3'],
+        \ ['red',         'firebrick3'],
+        \ ]
+
+    let g:rbpt_max = 16
+    let g:rbpt_loadcmd_toggle = 0
+
+    au VimEnter * RainbowParenthesesToggle
+    au Syntax * RainbowParenthesesLoadRound
+    au Syntax * RainbowParenthesesLoadSquare
+    au Syntax * RainbowParenthesesLoadBraces
+
     " Automatically remove preview window after autocomplete (mainly for clang_complete)
     autocmd CursorMovedI * if pumvisible() == 0|pclose|endif
     autocmd InsertLeave * if pumvisible() == 0|pclose|endif
@@ -795,8 +852,7 @@ set nocompatible " Must be the first line
 " !!!!! UNORGANISED STUFF:
 " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-" <C-c> for copy, <leader><C-v> for paste:
+" <C-c> for copy(in visual), <leader><C-v>(in normal) for paste:
 if has('unix')
   vn <C-c> y:call system("xclip -i -selection clipboard", getreg("\""))<CR>:call system("xclip -i", getreg("\""))<CR>
   no <leader><C-v> :call setreg("\"",system("xclip -o -selection clipboard"))<CR>p

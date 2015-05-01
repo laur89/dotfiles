@@ -44,6 +44,7 @@ alias vf='cd'
 alias cs='cd'
 alias gitst='git st'
 alias gitdi='git di'
+alias gitfe='git fe'
 
 # Directory navigation aliases:
 alias ..='cd ..'
@@ -61,6 +62,7 @@ alias vid='cd /home/laur/Videos'
 alias documents='cd /home/laur/Documents'
 alias docs='cd /home/laur/Documents'
 alias doc='cd /home/laur/Documents'
+alias dox='cd /data/Dropbox/Documents' # ! note the difference of endpoint; only useful on personal setups;
 alias pics='cd /data/Dropbox/Pictures'
 alias drop='cd /data/Dropbox/'
 alias scripts='cd /data/dev/scripts'
