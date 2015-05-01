@@ -711,10 +711,7 @@ set nocompatible " Must be the first line
     let g:easytags_languages = {
                 \   'javascript': {
                 \     'cmd': 'jsctags',
-                \       'args': [-f', '$HOME/.vim/tags/javascript'],
-                \       'fileoutput_opt': '-f',
-                \       'stdout_opt': '-f-',
-                \       'recurse_flag': '-R'
+                \       'args': ['-f', '$HOME/.vim/tags/javascript'],
                 \   },
                 \   'haskell': {
                 \       'cmd': '~/.cabal/bin/lushtags',
