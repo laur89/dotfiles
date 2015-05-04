@@ -699,7 +699,7 @@ set nocompatible " Must be the first line
     " TagBar
     let g:tagbar_left = 0
     let g:tagbar_width = 30
-    set tags=tags;/
+    set tags=./.tags;,~/.vimtags     "not actually a TagBar setting per se.; .vimtags is written by easytags plugin by default;
 
     " vim-easytags:
     "let g:easytags_by_filetype = '~/.vim/tags' " TODO: would want, but how to use with jsctags?
@@ -708,20 +708,21 @@ set nocompatible " Must be the first line
     "let g:easytags_include_members = 1
     "let g:easytags_autorecurse = 1 "!!! makes stuff slooooow
     "let g:easytags_events = ['BufWritePost']
-    let g:easytags_languages = {
-                \   'javascript': {
-                \     'cmd': 'jsctags',
-                \       'args': ['-f', '$HOME/.vim/tags/javascript'],
-                \   },
-                \   'haskell': {
-                \       'cmd': '~/.cabal/bin/lushtags',
-                \       'args': [],
-                \       'fileoutput_opt': '-f',
-                \       'stdout_opt': '-f-',
-                \       'recurse_flag': '-R'
-                \   }
-                \}
+    "let g:easytags_languages = {
+                "\   'javascript': {
+                "\     'cmd': 'jsctags',
+                "\       'args': ['-f', '$HOME/.vim/tags/javascript'],
+                "\   },
+                "\   'haskell': {
+                "\       'cmd': '~/.cabal/bin/lushtags',
+                "\       'args': [],
+                "\       'fileoutput_opt': '-f',
+                "\       'stdout_opt': '-f-',
+                "\       'recurse_flag': '-R'
+                "\   }
+                "\}
 
+    " eclim:
     " eclim completon registration to vim's omni complete which YCM automatically
     " detects:
     let g:EclimCompletionMethod = 'omnifunc'

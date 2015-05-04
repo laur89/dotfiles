@@ -7,7 +7,8 @@ if [[ -f "$_SCRIPTS_COMMONS" && -r "$_SCRIPTS_COMMONS" ]]; then
     source "$_SCRIPTS_COMMONS"
 else
     echo -e "\nError: common file \"$_SCRIPTS_COMMONS\" not found!! Many functions will be unusable!!!"
-    # do not exit, or you won't be able to open shell!
+    # !do not exit, or you won't be able to open shell without the commons file being
+    # present!
 fi
 # =====================================================================
 
@@ -171,10 +172,27 @@ function swap() {
     mv "$TMPFILE" "$2"
 }
 
-# list current directory and search for a name
+# list current directory and search for a file/dir by name:
 function lgrep() {
-    [[ $# != 1 ]] && { echo -e "$FUNCNAME name_to_grep"; return 1; }
-    ls -lA | grep --color=auto -i "$1"
+    local SRC SRCDIR usage
+
+    SRC="$1"
+    SRCDIR="$2"
+    usage="$FUNCNAME  name_to_grep [dir_to_look_from]"
+    if [[ "$#" -lt 1 || "$#" -gt 2 || -z "$SRC" ]]; then
+        echo -e "$usage"
+        return 1;
+    elif [[ -n "$SRCDIR" ]]; then
+        if [[ ! -d "$SRCDIR" ]]; then
+            echo -e "provided directory to list and grep from is not a directory. abort."
+            echo -e "\n$usage"
+            return 1
+        fi
+    fi
+
+    ls -lA "${SRCDIR:-.}" | grep --color=auto -i "$SRC"
+    #[[ $# != 1 ]] && { echo -e "$FUNCNAME name_to_grep [dir_to_look_from]"; return 1; }
+
     #[[ -z "$@" ]] && { echo -e "$FUNCNAME filename_pattern"; return 1; }
     #ls -A | grep --color=auto -i "\'$@\'"
 }
@@ -192,6 +210,8 @@ function my_ip() { # Get IP adress on ethernet.
       sed -e s/addr://)
     echo "${MY_IP:-"Not connected"} @ $connected_interface"
 }
+
+function whatsmyip() { my_ip; } # alias for my_ip
 
 function compress() {
     local usage file type
@@ -241,39 +261,41 @@ function extract() {
     if [[ -z "$file" ]]; then
         echo "gimme file to extract plz."
         return 1
-    elif [[ -f "$file" ]]; then
-        case "$file" in
-            *.tar.bz2)   file_without_extension="${file_without_extension%.*}"
-                         mkdir "$file_without_extension" && tar xjf $file -C $file_without_extension
-                         ;;
-            *.tar.gz)    file_without_extension="${file_without_extension%.*}"
-                         mkdir "$file_without_extension" && tar xzf $file -C $file_without_extension
-                         ;;
-            *.bz2)       bunzip2 -k $file
-                         ;;
-            *.rar)       mkdir "$file_without_extension" && unrar x $file ${file_without_extension}/
-                         ;;
-            *.gz)        gunzip -kd $file
-                         ;;
-            *.tar)       mkdir "$file_without_extension" && tar xf $file -C $file_without_extension
-                         ;;
-            *.tbz2)      mkdir "$file_without_extension" && tar xjf $file -C $file_without_extension
-                         ;;
-            *.tgz)       mkdir "$file_without_extension" && tar xzf $file -C $file_without_extension
-                         ;;
-            *.zip)       mkdir "$file_without_extension" && unzip $file -d $file_without_extension
-                         ;;
-                         # TODO these last 2 are unverified how and where they'd unpack:
-            *.Z)         uncompress $file  ;;
-            *.7z)        7z x $file        ;;
-            *)           echo "'$file' cannot be extracted via  ${FUNCNAME}()"
-                         return 1
-                         ;;
-        esac
-     else
+    elif [[ ! -f "$file" ]]; then
          echo "'$file' is not a valid file"
          return 1
-     fi
+    fi
+
+    case "$file" in
+        *.tar.bz2)   file_without_extension="${file_without_extension%.*}" # because two extensions
+                        mkdir "$file_without_extension" && tar xjf $file -C $file_without_extension
+                        ;;
+        *.tar.gz)    file_without_extension="${file_without_extension%.*}" # because two extensions
+                        mkdir "$file_without_extension" && tar xzf $file -C $file_without_extension
+                        ;;
+        *.bz2)       bunzip2 -k $file
+                        ;;
+        *.rar)       mkdir "$file_without_extension" && unrar x $file ${file_without_extension}/
+                        ;;
+        *.gz)        gunzip -kd $file
+                        ;;
+        *.tar)       mkdir "$file_without_extension" && tar xf $file -C $file_without_extension
+                        ;;
+        *.tbz2)      mkdir "$file_without_extension" && tar xjf $file -C $file_without_extension
+                        ;;
+        *.tgz)       mkdir "$file_without_extension" && tar xzf $file -C $file_without_extension
+                        ;;
+        *.zip)       mkdir "$file_without_extension" && unzip $file -d $file_without_extension
+                        ;;
+                        # TODO these last 2 are unverified how and where they'd unpack:
+        *.Z)         uncompress $file  ;;
+        *.7z)        7z x $file        ;;
+        *)           echo "'$file' cannot be extracted via  ${FUNCNAME}()"
+                        return 1
+                        ;;
+    esac
+
+    echo -e "extracted $file contents into $file_without_extension"
 }
 
 fontreset() {
