@@ -674,6 +674,7 @@ set nocompatible " Must be the first line
     let g:ctrlp_regexp = 1
     " ???:
     let g:ctrlp_switch_buffer = 'Et'
+    let g:ctrlp_extensions = ['tag']    " enables tag browsing
 
     " airline - automatically populate g:airline_symbols dictionary w/
     " powerline symbols:
@@ -699,7 +700,7 @@ set nocompatible " Must be the first line
     " TagBar
     let g:tagbar_left = 0
     let g:tagbar_width = 30
-    set tags=./.tags;,~/.vimtags     "not actually a TagBar setting per se.; .vimtags is written by easytags plugin by default;
+    set tags=./.tags,./tags,tags,~/.vimtags     "not actually a TagBar setting per se.; .vimtags is written by easytags plugin by default;
 
     " vim-easytags:
     "let g:easytags_by_filetype = '~/.vim/tags' " TODO: would want, but how to use with jsctags?
