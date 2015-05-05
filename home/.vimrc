@@ -161,6 +161,9 @@ set nocompatible " Must be the first line
     " depends on tern!
     Plugin 'marijnh/tern_for_vim'
 
+    " easy find and replace across multiple files
+    Plugin 'dkprice/vim-easygrep'
+
     " Finish Vundle stuff
     call vundle#end()
 

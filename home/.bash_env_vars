@@ -45,3 +45,9 @@ esac
 ## /usr/local/bin/powerline-config
 export POWERLINE_NO_SHELL_PROMPT=NOPE.jpeg
 export _SCRIPTS_COMMONS="/data/dev/scripts/system/utils.sh"
+
+# hostnames
+export WORK_DESKTOP_HOSTNAME="WHOD5001556"
+export WORK_LAPTOP_HOSTNAME="WHOL5001981"
+export PERSONAL_DESKTOP_HOSTNAME="aliste"
+

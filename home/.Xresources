@@ -8,7 +8,7 @@ Xft.rgba: rgb
 Xft.lcdfilter: lcddefault
 
 ! -------------------------------------------------
-!URxvt.perl-lib: /your/folder/
+!URxvt.perl-lib: /your/folder/  ! only needed if yo use a non-standard directory
 URxvt*geometry: 100x50
 !URxvt*background:[70]Black
 URxvt*background:#222222
@@ -25,34 +25,48 @@ URxvt*scrollTtyKeypress: true
 URxvt*secondaryScroll: true
 URxvt*saveLines: 80000
 URxvt*url-Launcher: iceweasel
-URxvt.url-select.launcher:                      /usr/bin/iceweasel
 URxvt.keysym.C-Delete: perl:matcher:last
 URxvt.keysym.M-Delete: perl:matcher:list
 URxvt.colorUL: #4682B4
-! yankable url settings (requires urxvt-perls package; disables clicable urls extension):
-!URxvt.perl-ext: default,url-select
-!URxvt.keysym.M-u: perl:url-select:select_next
-!URxvt.url-select.launcher: /usr/bin/xdg-open
-!URxvt.url-select.underline: true
 ! /
+!!! yankable url settings (requires urxvt-perls package; disables clicable urls extension):
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+URxvt.keysym.M-u: perl:url-select:select_next
 URxvt.url-select.underline:                     true
+!URxvt.url-select.launcher: /usr/bin/xdg-open
+URxvt.url-select.launcher:                      /usr/bin/iceweasel
+!URvxt.url-select.button:    Mouse button to click-open URLs (default: 2)
+!
+!!! keyboard-select:
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+URxvt.keysym.M-Escape: perl:keyboard-select:activate
+URxvt.keysym.M-s: perl:keyboard-select:search
 
 ! TABS
-URxvt.perl-ext-common: default,clipboard,tabbed
-!URxvt.perl-ext-common: default,tabbed
-URxvt.tabbed.tabbar-fg: 12
-URxvt.tabbed.tabbar-bg: 0
-URxvt.tabbed.tab-fg:    14
-URxvt.tabbed.tab-bg:    0
-! autohide tabbar if only one tab:
-URxvt.tabbed.autohide: true
-!
-! tabbedex: (if using this, disable 'tabbed' version above)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! tabbedex: (if using this, disable 'tabbed' version below)
 !URxvt.perl-ext-common: ...,tabbedex,...
-!URxvt.keysym.Shift-Control-T: perl:tabbedex:new_tab
-!URxvt.keysym.Shift-t: perl:tabbedex:new_tab
-!URxvt.keysym.Control-Tab: perl:tabbedex:next_tab
-!URxvt.keysym.Control-Shift-Tab: perl:tabbedex:prev_tab
+URxvt.perl-ext-common: default,clipboard,tabbedex,url-select,keyboard-select,vtwheel
+!URxvt.perl-ext-common: default,clipboard,tabbed
+
+URxvt.keysym.Shift-Control-T: perl:tabbedex:new_tab
+URxvt.keysym.Shift-t: perl:tabbedex:new_tab
+URxvt.keysym.Control-Tab: perl:tabbedex:next_tab
+URxvt.keysym.Control-Shift-Tab: perl:tabbedex:prev_tab
+!
+!URxvt.tabbed.tabbar-fg: 12
+!URxvt.tabbed.tabbar-bg: 0
+!URxvt.tabbed.tab-fg:    14
+!URxvt.tabbed.tab-bg:    0
+URxvt.tabbed.tabbar-fg: 1
+URxvt.tabbed.tabbar-bg: 0
+URxvt.tabbed.tab-fg:    3
+URxvt.tabbed.tab-bg:    7
+! autohide tabbar if only one tab:
+URxvt.tabbed.autohide: false
+!URxvt.tabbed.new-button: true
+!URxvt.tabbed.title: no
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !coopy-pasta:
 URxvt.keysym.Shift-Control-V: perl:clipboard:paste
@@ -587,7 +601,9 @@ urxvt*color15: #9a875f
 ! FONTS
 ! $ fc-list lists available fonts
 URxvt.allow_bold:           true
+URxvt.boldColors:           on
 URxvt*font: xft:Terminus:pixelsize=12,xft:Inconsolata\ for\ Powerline:pixelsize=12
+URxvt*boldFont: xft:TerminessPowerlineBold:pixelsize=12,xft:Inconsolata\ for\ Powerline:pixelsize=12
 !URxvt*font: xft:Inconsolata\ for\ Powerline:pixelsize=12
 !URxvt*font: xft:Terminess\ Powerline:pixelsize=12
 !URxvt*font: xft:Terminess Powerline:pixelsize=14
