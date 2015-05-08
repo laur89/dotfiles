@@ -18,13 +18,14 @@ PROGS=( \
     "keepassx" \
     "delay_screensaver.py" \
     "ssh-agent" \
-    "parcellite" \
+    "copyq" \
     "mbsync --all" \
     "urxvtc" \
 )
 # oldies:
     #"icedove" \
     #"volti" \
+    #"parcellite" \
 #---------------------------------------------------
 export DISPLAY=:0.0
 

@@ -1,3 +1,5 @@
+! one other source:   http://fluxbox-wiki.org/category/howtos/en/Xdefaults_setup.html
+! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Xft.autohint: 0
 Xft.antialias: 1
 Xft.hinting: 1
@@ -25,8 +27,24 @@ URxvt*scrollTtyKeypress: true
 URxvt*secondaryScroll: true
 URxvt*saveLines: 80000
 URxvt*url-Launcher: iceweasel
+! matcher :
 URxvt.keysym.C-Delete: perl:matcher:last
 URxvt.keysym.M-Delete: perl:matcher:list
+URxvt.matcher.button:     1
+URxvt.termName:    xterm-color
+
+!! matcher -  Full Path Patterns
+URxvt.matcher.pattern.1:  \\bwww\\.[\\w-]+\\.[\\w./?&@#-]*[\\w/-]
+!URxvt.matcher.pattern.2:  \\B(/\\S+?):(\\d+)(?=:|$)
+!URxvt.matcher.launcher.2: gvim +$2 $1
+URxvt.matcher.pattern.2: ^(/[\\S]+):?
+URxvt.matcher.launcher.2: gvim $1
+URxvt.matcher.pattern.3: \\B(/[\\S]+):(\\d+):?
+URxvt.matcher.launcher.3: gvim $1 +$2
+URxvt.matcher.pattern.4: \\B(/[\\S]+):(\\d+):(\\d+):?
+URxvt.matcher.launcher.4: gvim $1 +$2
+URxvt.matcher.render.4: fg=5
+
 URxvt.colorUL: #4682B4
 ! /
 !!! yankable url settings (requires urxvt-perls package; disables clicable urls extension):
@@ -46,7 +64,8 @@ URxvt.keysym.M-s: perl:keyboard-select:search
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! tabbedex: (if using this, disable 'tabbed' version below)
 !URxvt.perl-ext-common: ...,tabbedex,...
-URxvt.perl-ext-common: default,clipboard,tabbedex,url-select,keyboard-select,vtwheel
+! TODO search about the matcher perl script
+URxvt.perl-ext-common: default,clipboard,tabbedex,url-select,keyboard-select,vtwheel,matcher
 !URxvt.perl-ext-common: default,clipboard,tabbed
 
 URxvt.keysym.Shift-Control-T: perl:tabbedex:new_tab
@@ -724,41 +743,89 @@ URxvt4*scrollColor:        #000000
 ! ==============================================================================
 
 ! xterm ----------------------------------------------------------------------
-!xterm*VT100.geometry:     80x25
-!xterm*faceName:           Terminus:style=Regular:size=10
-xterm*faceName:           xft:Terminess Powerline:pixelsize=14
-xterm*faceSize:           11
-!xterm*font:              -*-dina-medium-r-*-*-16-*-*-*-*-*-*-*
-xterm*dynamicColors:      true
-xterm*utf8:               2
-xterm*eightBitInput:      true
-xterm*saveLines:          16384
-xterm*scrollKey:          true
-xterm*scrollTtyOutput:    false
-xterm*scrollBar:          true
-xterm*rightScrollBar:     true
-xterm*jumpScroll:         true
-xterm*multiScroll:        true
-xterm*toolBar:            false
-! DOS-box colours...
-xterm*foreground: rgb:a8/a8/a8
-xterm*background: rgb:00/00/00
-xterm*color0: rgb:00/00/00
-xterm*color1: rgb:a8/00/00
-xterm*color2: rgb:00/a8/00
-xterm*color3: rgb:a8/54/00
-xterm*color4: rgb:00/00/a8
-xterm*color5: rgb:a8/00/a8
-xterm*color6: rgb:00/a8/a8
-xterm*color7: rgb:a8/a8/a8
-xterm*color8: rgb:54/54/54
-xterm*color9: rgb:fc/54/54
-xterm*color10: rgb:54/fc/54
-xterm*color11: rgb:fc/fc/54
-xterm*color12: rgb:54/54/fc
-xterm*color13: rgb:fc/54/fc
-xterm*color14: rgb:54/fc/fc
-xterm*color15: rgb:fc/fc/fc
+!!xterm*VT100.geometry:     80x25
+!!xterm*faceName:           Terminus:style=Regular:size=10
+!xterm*faceName:           xft:Terminess Powerline:pixelsize=14
+!xterm*faceSize:           11
+!!xterm*font:              -*-dina-medium-r-*-*-16-*-*-*-*-*-*-*
+!xterm*dynamicColors:      true
+!xterm*utf8:               2
+!xterm*eightBitInput:      true
+!xterm*saveLines:          16384
+!xterm*scrollKey:          true
+!xterm*scrollTtyOutput:    false
+!xterm*scrollBar:          true
+!xterm*rightScrollBar:     true
+!xterm*jumpScroll:         true
+!xterm*multiScroll:        true
+!xterm*toolBar:            false
+!! DOS-box colours...
+!xterm*foreground: rgb:a8/a8/a8
+!xterm*background: rgb:00/00/00
+!xterm*color0: rgb:00/00/00
+!xterm*color1: rgb:a8/00/00
+!xterm*color2: rgb:00/a8/00
+!xterm*color3: rgb:a8/54/00
+!xterm*color4: rgb:00/00/a8
+!xterm*color5: rgb:a8/00/a8
+!xterm*color6: rgb:00/a8/a8
+!xterm*color7: rgb:a8/a8/a8
+!xterm*color8: rgb:54/54/54
+!xterm*color9: rgb:fc/54/54
+!xterm*color10: rgb:54/fc/54
+!xterm*color11: rgb:fc/fc/54
+!xterm*color12: rgb:54/54/fc
+!xterm*color13: rgb:fc/54/fc
+!xterm*color14: rgb:54/fc/fc
+!xterm*color15: rgb:fc/fc/fc
+!!!!!!!!!!!!!!1
+!2nd:
+!!!!!!!!!!!!!!
+XTerm*background:                       grey15
+ XTerm*foreground:                       grey75
+ XTerm*cursorColor:                      darkorange1
+ XTerm*scrollBar:                        false
+ XTterm*utf8:                            2
+ XTerm*termName:                         xterm-256color
+!XTerm*faceName:                         xft:Dejavu Sans Mono:pixelsize=11.5
+xterm*faceName:           xft:Terminess\ Powerline:pixelsize=12
+! http://invisible-island.net/xterm/xterm.faq.html#tiny_menus
+ XTerm.VT100.geometry:                   93x29
+ XTerm*saveLines:                        7777
+ XTerm*metaSendsEscape:                  true
+ XTerm*highlightSelection:               true
+ XTerm*trimSelection:                    true
+ XTerm*cutNewline:                       false
+ XTerm*colorBDMode:                      true
+ XTerm*colorBD:                          khaki
+ XTerm*charClass: 3:48,35:48,37:48,43:48,45-47:48,64:48,95:48,126:48,35:48,58:48,63:48,61:48,44:48,38:48,59:48
+ 
+!colors
+!black
+ XTerm*color0:                           #171717
+ XTerm*color8:                           #737373
+!red
+ XTerm*color1:                           #FF5E5E
+ XTerm*color9:                           #FF7878
+!green
+ XTerm*color2:                           #9CE82B
+ XTerm*color10:                          #9ACD32
+!yellow
+ XTerm*color3:                           #F0E68C
+ XTerm*color11:                          #EEE8AA
+!blue
+ XTerm*color4:                           #008AFF
+ XTerm*color12:                          #4F98FF
+!magenta
+ XTerm*color5:                           #E88CFF
+ XTerm*color13:                          #EDA6FF
+!cyan
+ XTerm*color6:                           #87CEFA
+ XTerm*color14:                          #B0E2FF
+!white
+ XTerm*color7:                           #DCDCCC
+ XTerm*color15:                          #FFFFFF
+
 
 ! xclock ---------------------------------------------------------------------
 

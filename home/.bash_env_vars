@@ -44,7 +44,13 @@ esac
 #export POWERLINE_CONFIG_COMMAND="powerline-config"
 ## /usr/local/bin/powerline-config
 export POWERLINE_NO_SHELL_PROMPT=NOPE.jpeg
+
 export _SCRIPTS_COMMONS="/data/dev/scripts/system/utils.sh"
+if [[ -d "/data/tmp" ]]; then
+    export _PERSISTED_TMP="/data/tmp"
+else
+    export _PERSISTED_TMP="/tmp"
+fi
 
 # hostnames
 export WORK_DESKTOP_HOSTNAME="WHOD5001556"

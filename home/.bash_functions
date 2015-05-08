@@ -1,4 +1,5 @@
 # good source to begin with: http://tldp.org/LDP/abs/html/sample-bashrc.html
+# TODO: check this!: https://github.com/Cloudef/dotfiles-ng/blob/master/#ARCHCONFIG/shell/functions
 #
 #
 # =====================================================================
@@ -392,3 +393,108 @@ function createUsbIso() {
     #eject $device
 }
 
+#######################
+## Setup github repo ##
+#######################
+function mkgit() {
+   local GITHUB="Cloudef"
+   local dir="$1"
+   local gitname="$2"
+
+   # check dir
+   [[ -n "$dir" ]] || {
+      echo "usage: mkgit <dir> [name]"
+      return
+   }
+
+   # use dir name if, no gitname specified
+   [[ -n "$gitname" ]] || gitname="$dir"
+   [[ -d "$dir"     ]] || mkdir "$dir"
+
+   # bail out, if already git repo
+   [[ -d "$dir/.git" ]] && {
+      echo "already a git repo: $dir"
+      return
+   }
+
+   cd "$dir"
+   git init || return
+   touch README; git add README
+   git commit -a -m 'inital setup - automated'
+   git remote add origin "git@github.com:$GITHUB/$gitname.git"
+   git push -u origin master
+}
+
+######################################
+## Open file inside git tree on vim ##
+######################################
+vimo() {
+   local match=
+   local gtdir=
+   local cwd=$PWD
+   git ls-files &>/dev/null || return # test if git
+   gtdir="$(git rev-parse --show-toplevel )"
+   [[ "$cwd" != "$gtdir" ]] && pushd "$gtdir" &> /dev/null # git root
+   [[ -n "$@" ]] && { match="$(git ls-files | grep "$@")"; } ||
+                      match="$(git ls-files)"
+   [[ $(echo "$match" | wc -l) -gt 1 ]] && match="$(echo "$match" | bemenu -i -l 20 -p "vim")"
+   match="$gtdir/$match" # convert to absolute
+   [[ "$cwd" != "$gtdir" ]] && popd &> /dev/null # go back
+   [[ -f "$match" ]] || return
+   vim "$match"
+}
+
+########################
+## Print window class ##
+########################
+xclass() {
+   xprop |awk '
+   /^WM_CLASS/{sub(/.* =/, "instance:"); sub(/,/, "\nclass:"); print}
+   /^WM_NAME/{sub(/.* =/, "title:"); print}'
+}
+
+################
+## Smarter CD ##
+################
+goto() {
+   [[ -d "$1" ]] && { cd "$1"; } || cd "$(dirname "$1")";
+}
+
+####################
+## Copy && Follow ##
+####################
+cpf() {
+   cp "$@" && goto "$_";
+}
+
+####################
+## Move && Follow ##
+####################
+mvf() {
+   mv "$@" && goto "$_";
+}
+
+#####################################
+## Take screenshot of main monitor ##
+#####################################
+shot() {
+   local mon=$@
+   local file="$HOME/shot-$(date +'%H:%M-%d-%m-%Y').png"
+   [[ -n "$mon" ]] || mon=0
+   ffcast -x $mon % scrot -g %wx%h+%x+%y "$file"
+}
+
+###################
+## Capture video ##
+###################
+capture() {
+   ffcast -w ffmpeg -f alsa -ac 2 -i hw:0,2 -f x11grab -s %s -i %D+%c -acodec pcm_s16le -vcodec huffyuv $@
+}
+
+##############################################
+## Colored Find                             ##
+## NOTE: Searches current tree recrusively. ##
+##############################################
+f() {
+   find . -iregex ".*$@.*" -printf '%P\0' | xargs -r0 ls --color=auto -1d
+}
