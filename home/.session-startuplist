@@ -77,9 +77,33 @@ if ! [[ "$(ps -e | grep "\bxscreensaver\b")" ]]; then
     echo "Launching xscreensaver..."
 fi
 
-if ! [[ "$(ps -e | grep "\bxsyndaemon\b")" ]]; then
+if ! [[ "$(ps -e | grep "\bsyndaemon\b")" ]]; then
     syndaemon -t -K -i 4 &
     echo "Launching syndaemon"
+fi
+
+if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" || "$HOSTNAME" == "$PERSONAL_LAPTOP_HOSTNAME" ]]; then
+    if ! [[ "$(ps -e | grep "\bsynergyc\b")" ]]; then
+        echo "Launching syndergy client"
+        if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]]; then
+            /data/progs/custom_builds/synergy/bin/synergyc -f --no-tray --debug INFO --name $HOSTNAME 10.180.18.149:24800 &
+        else
+            # TODO personal laptop
+            echo "todo"
+        fi
+
+        setxkbmap ee & # otherwise using server's keyboard defaults to us map;
+    fi
+elif [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" || "$HOSTNAME" == "$PERSONAL_DESKTOP_HOSTNAME" ]]; then
+    if ! [[ "$(ps -e | grep "\bsynergys\b")" ]]; then
+        echo "Launching syndergy server"
+        if [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" ]]; then
+            /data/progs/custom_builds/synergy/bin/synergys -f --no-tray --debug INFO --name $HOSTNAME -c /home/laur/synergy.conf --address :24800
+        else
+            # TODO personal deskderp
+            echo "todo"
+        fi
+    fi
 fi
 
 # nvidia bug report:
