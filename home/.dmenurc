@@ -1,0 +1,10 @@
+#!/bin/bash
+# makes dmenu identical across all scripts by sourcing this file
+
+__font="-*-terminus-medium-r-*-*-12-*-*-*-*-*-*-*"
+# see vist tegelt: 1d1f21  :
+__nb=#5f6267
+__nf=#7f8185
+__sb=#1d1f21
+__sf=#c5c8c6
+DMENU='dmenu_run -i -fn $font -nb $__nb -nf $__nf -sb $__sb -sf $__sf'

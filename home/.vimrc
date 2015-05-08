@@ -1,5 +1,8 @@
 
 " We use Vim settings
+" TODO: check this out: https://github.com/skwp/dotfiles
+"
+"
 set nocompatible " Must be the first line
 
 """ Vundle plugin manager {{{
@@ -26,6 +29,7 @@ set nocompatible " Must be the first line
     """ }}}
     
     """ Github repos, uncomment to disable a plugin {{{
+    " consider NeoBundle
     Plugin 'gmarik/Vundle.vim'
 
     """ Local plugins (and only plugins in this file!) {{{{
@@ -53,6 +57,9 @@ set nocompatible " Must be the first line
     " Easy... motions... yeah.
     Plugin 'Lokaltog/vim-easymotion'
 
+    " TODO: check out this alternative to easymotion:
+    "Plugin  'justinmk/vim-sneak'
+    
     " Glorious colorscheme
     Plugin 'nanotech/jellybeans.vim'
 
@@ -82,7 +89,11 @@ set nocompatible " Must be the first line
     Plugin 'mhinz/vim-startify'
 
     " Vim signs (:h signs) for modified lines based off VCS (e.g. Git)
+    " for git-only usage, better look for vim-gitgutter
     Plugin 'mhinz/vim-signify'
+
+    " git-only support similar to vim-signify (only use one of them!)
+    "Plugin 'airblade/vim-gitgutter'
 
     " Awesome syntax checker.
     " REQUIREMENTS: See :h syntastic-intro
@@ -138,9 +149,6 @@ set nocompatible " Must be the first line
     " yankring: hold copy of yanked elements:
     Plugin 'vim-scripts/YankRing.vim'
     
-    " TODO: check out this alternative to easymotions:
-    "Plugin  'justinmk/vim-sneak'
-    
     " show location of the marks: (! requires compilation with +signs)
     " !!! deprecated by vim-signature?
     "Plugin 'showmarks'
@@ -162,6 +170,7 @@ set nocompatible " Must be the first line
     Plugin 'marijnh/tern_for_vim'
 
     " easy find and replace across multiple files
+    " alternative - greplace
     Plugin 'dkprice/vim-easygrep'
 
     " Finish Vundle stuff
@@ -456,6 +465,12 @@ set nocompatible " Must be the first line
         inoremap <down> <nop>
         inoremap <left> <nop>
         inoremap <right> <nop>
+
+        " move in insert mode:
+        imap <C-h> <C-o>h
+        imap <C-j> <C-o>j
+        imap <C-k> <C-o>k
+        imap <C-l> <C-o>l
         
         " avoid typos:
         nnoremap ; :
@@ -614,6 +629,7 @@ set nocompatible " Must be the first line
 
         " Toggle pastemode, doesn't indent
         set pastetoggle=<F3>
+        set pastetoggle=<F6>
 
         " Syntastic - toggle error list. Probably should be toggleable.
         noremap <silent><leader>lo :Errors<CR>
@@ -664,6 +680,11 @@ set nocompatible " Must be the first line
     " CtrlP - don't recalculate files on start (slow)
     let g:ctrlp_clear_cache_on_exit = 0
     let g:ctrlp_working_path_mode = 'ra'
+    "let g:ctrlp_working_path_mode = ""
+    let g:ctrlp_max_files=0
+    "TODO: confirm these:
+    let g:ctrlp_user_command = ['.git/', 'cd %s && git ls-files --exclude-standard -co']
+    "let g:ctrlp_user_command = "find %s -type f | egrep -v '/\.(git|hg|svn)|solr|tmp/' | egrep -v '/\.(git|hg|svn)|solr|tmp/' | egrep -v '\.(png|exe|jpg|gif|jar|class|swp|swo|log|gitkep|keepme|so|o)$'"
 
     " yankring: remap c-p so CtrlP could use it:
     " TODO: think of an actual mappinks!:
@@ -768,12 +789,6 @@ set nocompatible " Must be the first line
     let g:UltiSnipsExpandTrigger = "<tab>"
     let g:UltiSnipsJumpForwardTrigger = "<tab>"
     let g:UltiSnipsJumpBackwardTrigger = "<s-tab>"
-    """"""""" /ultisnips-YCM
-    
-    " vim-tmux-navigator:
-    let g:tmux_navigator_no_mappings = 1
-    let g:tmux_navigator_save_on_switch = 1
-    "}}}
 
     " alternative to the previous:
     "let g:UltiSnipsExpandTrigger="<c-j>""
@@ -781,7 +796,14 @@ set nocompatible " Must be the first line
     "let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 
     " If you want :UltiSnipsEdit to split your window.
-    let g:VltiSnipsEditSplit="vertical" 
+    let g:UltiSnipsEditSplit="vertical" 
+    """"""""" /ultisnips-YCM
+    
+    " vim-tmux-navigator:
+    let g:tmux_navigator_no_mappings = 1
+    let g:tmux_navigator_save_on_switch = 1
+    "}}}
+
 
 
 
