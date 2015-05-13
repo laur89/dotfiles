@@ -44,6 +44,7 @@ alias vf='cd'
 alias cs='cd'
 alias ct='cd'
 alias sd='cd'
+alias gti='git'
 alias gitst='git st'
 alias gitdi='git di'
 alias gitfe='git fe'
@@ -82,6 +83,8 @@ alias prog='cd /data/progs'
 alias progs='cd /data/progs'
 alias dev='cd /data/dev'
 alias data='cd /data/'
+#alias ffind="eval set ffind"
+alias ffind="ffind"
 
 alias lns='ln -s'
 alias svim='sudo vim'

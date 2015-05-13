@@ -92,6 +92,7 @@ color status red default
   set timeout           = 3  # idle time before scanning
   set mail_check = '60' # default: '5'; min time between scans
   set tmpdir            = ~/.mutt/temp
+  set mask="" # show all files/directories in the browser (eg dotfiles included)
 
 #alternates .*@pbrisbin\.com .*@brisb\.in
 alternative_order text/calendar text/plain text/enriched text/html text

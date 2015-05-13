@@ -15,7 +15,7 @@ fi
 
 # find files or dirs:
 function ffind() {
-    local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter usegrep
+    local SRC SRCDIR INAME_ARG IREGEX_ARG opt usage OPTIND file_type filetypeOptionCounter usegrep found_files_list parameterised_files_list file index
     usage="$FUNCNAME: find files by name.
     Usage: $FUNCNAME [-i] [-f] [-d] [-l] \"fileName pattern\" [top_level_dir_to_search_from]
         -i  filename is case insensitive
@@ -27,6 +27,7 @@ function ffind() {
     while getopts "ifdl" opt; do
         case "$opt" in
            i) INAME_ARG="-iname"
+              IREGEX_ARG="-iregex"
               shift $((OPTIND-1))
                 ;;
            f | d | l) file_type="-type $opt"
@@ -39,6 +40,7 @@ function ffind() {
 
     SRC="$1"
     SRCDIR="$2"
+
     if [[ "$#" -lt 1 || "$#" -gt 2 || -z "$SRC" ]]; then
         echo -e "$usage"
         return 1;
@@ -70,10 +72,41 @@ function ffind() {
     # grep is for coloring only:
     #find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' | grep -i --color=auto "$SRC" 2>/dev/null
     if [[ "$usegrep" == "false" ]]; then
-        find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null
+        find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null # old; TODO: deleteme if new one proves better
+        # TODO: try to make this one work:
+        #find "${SRCDIR:-.}" $file_type "${IREGEX_ARG:--regex}" ".*${SRC}.*" -printf '%P\0' 2>/dev/null | xargs -r0 ls --color=auto -1d
     else
         find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null | grep -i --color=auto "$SRC"
     fi
+
+    found_files_list=()
+    parameterised_files_list=()
+
+    # TODO: store found files in args:
+    while IFS= read -r -d '' file; do
+        found_files_list+=( "$file" )
+    done <   <(find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' -print0 2>/dev/null)
+
+    index=1
+    clear
+    for file in ${found_files_list[@]}; do
+        if [[ "$index" -le 20 ]]; then
+            parameterised_files_list+=( "\"$file\"" )
+            file="$index\t$file"
+            let index+=1
+        fi
+
+        if [[ "$usegrep" == "false" ]]; then
+            echo -e "$file"
+        else
+            echo -e "$file" | grep -i --color=auto "$SRC"
+        fi
+    done
+
+    #if [[ "${#parameterised_files_list[@]}" != 0 ]]; then
+        # TODO: handles filenames with spaces, but otherwise... dangerous:
+        echo -e "${parameterised_files_list[@]}"
+    #fi
 }
 
 # Find a file with a pattern in name (inside wd);
@@ -342,27 +375,33 @@ xmlformat() {
 function xmlf() { xmlformat $@; } # alias for xmlformat;
 
 function createUsbIso() {
-    local file device mountpoint cleaned_devicename
+    local file device mountpoint cleaned_devicename usage
     file="$1"
     device="$2"
     cleaned_devicename="${device%/}" # strip trailing slash
     cleaned_devicename="${cleaned_devicename##*/}"  # strip everything before last slash(slash included)
+    usage="$FUNCNAME  mntpoint  device"
 
     if [[ -z "$file" || -z "$device" || -z "$cleaned_devicename" ]]; then
         echo -e "either file or device weren't provided"
+        echo -e "$usage"
         return 1;
     elif [[ ! -f "$file" ]]; then
         echo -e "$file is not a regular file"
+        echo -e "$usage"
         return 1;
     elif [[ ! -e "$device" ]]; then
         echo -e "$device does not exist"
+        echo -e "$usage"
         return 1;
     elif ! ls /dev | grep "\b$cleaned_devicename\b";then
         echo -e "$device does not exist in /dev"
+        echo -e "$usage"
         return 1;
-    elif [[ "${cleaned_devicename:$(( ${#cleaned_devicename} - 1)):1}" =~ ^[0-9:]+$ ]]; then
-        echo -e "please don't provide partition, but a drive, e.g. /dev/sdh instad of /dev/sdh1"
-        return 1
+    #elif [[ "${cleaned_devicename:$(( ${#cleaned_devicename} - 1)):1}" =~ ^[0-9:]+$ ]]; then
+        #echo -e "please don't provide partition, but a drive, e.g. /dev/sdh instad of /dev/sdh1"
+        #echo -e "$usage"
+        #return 1
     fi
 
     #echo "please provide passwd for running fdisk -l to confirm the selected device is the right one:"
@@ -374,7 +413,7 @@ function createUsbIso() {
     fi
 
     # find if device is mounted:
-     #lsblk -o name,size,mountpoint /dev/sda
+    #lsblk -o name,size,mountpoint /dev/sda
     mountpoint="$(lsblk -o mountpoint $device | sed -n 3p)"
     if [[ -n "$mountpoint" ]]; then
         echo -e "$device appears to be mounted at $mountpoint, trying to unmount..."

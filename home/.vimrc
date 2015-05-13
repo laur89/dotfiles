@@ -41,9 +41,6 @@ set nocompatible " Must be the first line
     " Edit files using sudo/su
     "Plugin 'chrisbra/SudoEdit.vim'
 
-    "Rename current file:
-    "Plugin 'danro/rename.vim'      " should be same as Rename plugin
-
     " Fuzzy finder (files, mru, etc)
     Plugin 'kien/ctrlp.vim'
 
@@ -72,6 +69,10 @@ set nocompatible " Must be the first line
 
     " Git wrapper inside Vim
     Plugin 'tpope/vim-fugitive'
+
+    " better git log borwser (hit :gitv)
+    " !!! depends on tpope/fugitive !!!
+    Plugin 'gregsexton/gitv'
 
     " Handle surround chars like ''
     Plugin 'tpope/vim-surround'
@@ -105,7 +106,7 @@ set nocompatible " Must be the first line
 
     " Ctags generator/highlighter (note the vim-misc is dependency for it)
     Plugin 'xolox/vim-misc'
-    Plugin 'xolox/vim-easytags'
+    Plugin 'xolox/vim-easytags' " alternative shoud be taginator?
     Plugin 'xolox/vim-session'
     
     " Selfexplanatory...
@@ -130,9 +131,6 @@ set nocompatible " Must be the first line
     " Go-lang support:
     Plugin 'fatih/vim-go'
 
-    " Rename plugin:
-    Plugin 'Rename'
-
     " Node.js:
     Plugin 'moll/vim-node'
 
@@ -147,7 +145,9 @@ set nocompatible " Must be the first line
     Plugin 'ervandew/supertab'
 
     " yankring: hold copy of yanked elements:
+    " alternative: yankstack
     Plugin 'vim-scripts/YankRing.vim'
+    "Plugin 'maxbrunsfeld/vim-yankstack'
     
     " show location of the marks: (! requires compilation with +signs)
     " !!! deprecated by vim-signature?
@@ -163,7 +163,8 @@ set nocompatible " Must be the first line
     Plugin 'chip/vim-fat-finger'
 
     " rainbow parnes:
-    Plugin 'kien/rainbow_parentheses.vim'
+    "Plugin 'kien/rainbow_parentheses.vim'
+    Plugin 'luochen1990/rainbow'
 
     " tern for vim (tern is a standalone js analyzer)
     " depends on tern!
@@ -172,6 +173,47 @@ set nocompatible " Must be the first line
     " easy find and replace across multiple files
     " alternative - greplace
     Plugin 'dkprice/vim-easygrep'
+
+    " visual-star-search - search words selected in visual mode:
+    Plugin 'bronson/vim-visual-star-search'
+
+    " front for ag, aka the silver_searcher:
+    " depends on the_silver_searcher!
+    Plugin 'rking/ag.vim'
+
+    "Plugin 'ggreer/the_silver_searcher' " you need to build it or apt-get install silversearcher-ag!
+
+    " manipulate on blocks based on their indentation:
+    " use  vai  and vii
+    Plugin 'michaeljsmith/vim-indent-object'
+
+    " provides text-object 'a' (argument) - you can delete, change, select etc in
+    " familiar ways;, eg daa, cia,...
+    Plugin 'vim-scripts/argtextobj.vim'
+
+    " gives 'f' textobj so vaf to select javascript function
+    Plugin 'thinca/vim-textobj-function-javascript'
+
+    " better jquery syntax highlighting:
+    Plugin 'jQuery'
+
+    Plugin 'jelera/vim-javascript-syntax'
+
+    " show search window as 'at match # out of # matches':
+    Plugin 'henrik/vim-indexed-search'
+
+    " tab completion in search:
+    Plugin 'vim-scripts/SearchComplete' "TODO: currently doesn't work!
+
+    " adds . (repeat) functionality to more complex commands instead of the native-only ones:
+    Plugin 'tpope/vim-repeat'
+
+    " ends if-blocks etc for few langs:
+    Plugin 'tpope/vim-endwise'
+
+    " vim sugar for unix shell commands:
+    Plugin 'tpope/vim-eunuch'
+
 
     " Finish Vundle stuff
     call vundle#end()
@@ -438,7 +480,7 @@ set nocompatible " Must be the first line
         nnoremap gn :bnext<CR>
         nnoremap gN :bprevious<CR>
         nnoremap gd :bdelete<CR>
-        nnoremap gf <C-^>
+        nnoremap gf <C-^> " TODO: clashes with Node.vim plugin?
         
         " This is totally awesome - remap jj to escape in insert mode.
         inoremap jj <Esc>
@@ -649,7 +691,7 @@ set nocompatible " Must be the first line
         nnoremap <silent> <c-l> :TmuxNavigateRight<cr>
         "nnoremap <silent> <todo> :TmuxNavigatePrevious<cr>
 
-        " powerline (disable if using airline)
+        " powerline (disable if using airline instead)
         "set rtp+=/usr/local/lib/python2.7/dist-packages/powerline/bindings/vim/
 
         " CamelCaseMotion: Replace the default 'w', 'b' and 'e' mappings instead of defining additional mappings ',w', ',b' and ',e': 
@@ -660,6 +702,8 @@ set nocompatible " Must be the first line
         sunmap b
         sunmap e
 
+        " yankring:
+        nnoremap <silent> <F11> :YRShow<CR> "displays the yankring window
         
     """ }}}
 """ }}}
@@ -680,17 +724,24 @@ set nocompatible " Must be the first line
     " CtrlP - don't recalculate files on start (slow)
     let g:ctrlp_clear_cache_on_exit = 0
     let g:ctrlp_working_path_mode = 'ra'
+    "let g:ctrlp_root_markers = ['.ctrlp']  "consider this, since .git isn't not as good with submodules
     "let g:ctrlp_working_path_mode = ""
-    let g:ctrlp_max_files=0
+    "let g:ctrlp_dotfiles = 0
+    let g:ctrlp_max_files = 0
     "TODO: confirm these:
     let g:ctrlp_user_command = ['.git/', 'cd %s && git ls-files --exclude-standard -co']
     "let g:ctrlp_user_command = "find %s -type f | egrep -v '/\.(git|hg|svn)|solr|tmp/' | egrep -v '/\.(git|hg|svn)|solr|tmp/' | egrep -v '\.(png|exe|jpg|gif|jar|class|swp|swo|log|gitkep|keepme|so|o)$'"
 
     " yankring: remap c-p so CtrlP could use it:
     " TODO: think of an actual mappinks!:
-    let g:yankring_replace_n_pkey = '<c-ü>'
-    let g:yankring_replace_n_nkey = '<c-ö>'
+    let g:yankring_replace_n_pkey = '<leader>p'
+    let g:yankring_replace_n_nkey = '<leader>P'
+
+    " yankstack (if using this, perhaps lose the yankring stuff?):
+    "nmap <leader>p <Plug>yankstack_substitute_older_paste
+    "nmap <leader>P <Plug>yankstack_substitute_newer_paste
     
+
     " Start ctrlp in find buffer mode
     let g:ctrlp_cmd = 'CtrlPBuffer'
     " Start ctrlp in MRU file mode
@@ -860,32 +911,36 @@ set nocompatible " Must be the first line
     let g:session_autosave = 'no'
 
     " rainbow_parentheses:
-    let g:rbpt_colorpairs = [
-        \ ['brown',       'RoyalBlue3'],
-        \ ['Darkblue',    'SeaGreen3'],
-        \ ['darkgray',    'DarkOrchid3'],
-        \ ['darkgreen',   'firebrick3'],
-        \ ['darkcyan',    'RoyalBlue3'],
-        \ ['darkred',     'SeaGreen3'],
-        \ ['darkmagenta', 'DarkOrchid3'],
-        \ ['brown',       'firebrick3'],
-        \ ['gray',        'RoyalBlue3'],
-        \ ['black',       'SeaGreen3'],
-        \ ['darkmagenta', 'DarkOrchid3'],
-        \ ['Darkblue',    'firebrick3'],
-        \ ['darkgreen',   'RoyalBlue3'],
-        \ ['darkcyan',    'SeaGreen3'],
-        \ ['darkred',     'DarkOrchid3'],
-        \ ['red',         'firebrick3'],
-        \ ]
+    "let g:rbpt_colorpairs = [
+        "\ ['brown',       'RoyalBlue3'],
+        "\ ['Darkblue',    'SeaGreen3'],
+        "\ ['darkgray',    'DarkOrchid3'],
+        "\ ['darkgreen',   'firebrick3'],
+        "\ ['darkcyan',    'RoyalBlue3'],
+        "\ ['darkred',     'SeaGreen3'],
+        "\ ['darkmagenta', 'DarkOrchid3'],
+        "\ ['brown',       'firebrick3'],
+        "\ ['gray',        'RoyalBlue3'],
+        "\ ['black',       'SeaGreen3'],
+        "\ ['darkmagenta', 'DarkOrchid3'],
+        "\ ['Darkblue',    'firebrick3'],
+        "\ ['darkgreen',   'RoyalBlue3'],
+        "\ ['darkcyan',    'SeaGreen3'],
+        "\ ['darkred',     'DarkOrchid3'],
+        "\ ['red',         'firebrick3'],
+        "\ ]
 
-    let g:rbpt_max = 16
-    let g:rbpt_loadcmd_toggle = 0
+    "let g:rbpt_max = 16
+    "let g:rbpt_loadcmd_toggle = 0
 
-    au VimEnter * RainbowParenthesesToggle
-    au Syntax * RainbowParenthesesLoadRound
-    au Syntax * RainbowParenthesesLoadSquare
-    au Syntax * RainbowParenthesesLoadBraces
+    "au VimEnter * RainbowParenthesesToggle
+    "au Syntax * RainbowParenthesesLoadRound
+    "au Syntax * RainbowParenthesesLoadSquare
+    "au Syntax * RainbowParenthesesLoadBraces
+
+
+    "rainbow:
+    let g:rainbow_active = 1
 
     " Automatically remove preview window after autocomplete (mainly for clang_complete)
     autocmd CursorMovedI * if pumvisible() == 0|pclose|endif

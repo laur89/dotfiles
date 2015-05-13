@@ -97,6 +97,12 @@ URxvt.iso14755: False
 *VT100.colorUL:                       magenta
 *VT100.veryBoldColors:                6
 
+! allow ctrl+arrow keys by-word motions:
+!URxvt.keysym.Control-Up:   \033[1;5A
+!URxvt.keysym.Control-Down:    \033[1;5B
+!URxvt.keysym.Control-Left:    \033[1;5D
+!URxvt.keysym.Control-Right:    \033[1;5C
+
 ! COLOR PALETTE
 !!colors:
 !!scheme: pnevma
