@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # good source to begin with: http://tldp.org/LDP/abs/html/sample-bashrc.html
 # TODO: check this!: https://github.com/Cloudef/dotfiles-ng/blob/master/#ARCHCONFIG/shell/functions
 #
@@ -27,7 +29,7 @@ function ffind() {
     while getopts "ifdl" opt; do
         case "$opt" in
            i) INAME_ARG="-iname"
-              IREGEX_ARG="-iregex"
+              IREGEX_ARG="-iregex" # TODO: deleteme?
               shift $((OPTIND-1))
                 ;;
            f | d | l) file_type="-type $opt"
@@ -79,34 +81,35 @@ function ffind() {
         find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null | grep -i --color=auto "$SRC"
     fi
 
-    found_files_list=()
-    parameterised_files_list=()
+    ##### from here on, hackeroo begins:
+    #found_files_list=()
+    #parameterised_files_list=()
 
-    # TODO: store found files in args:
-    while IFS= read -r -d '' file; do
-        found_files_list+=( "$file" )
-    done <   <(find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' -print0 2>/dev/null)
+    ## TODO: store found files in args:
+    #while IFS= read -r -d '' file; do
+        #found_files_list+=( "$file" )
+    #done <   <(find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' -print0 2>/dev/null)
 
-    index=1
-    clear
-    for file in ${found_files_list[@]}; do
-        if [[ "$index" -le 20 ]]; then
-            parameterised_files_list+=( "\"$file\"" )
-            file="$index\t$file"
-            let index+=1
-        fi
+    #index=1
+    #clear
+    #for file in ${found_files_list[@]}; do
+        #if [[ "$index" -le 20 ]]; then
+            #parameterised_files_list+=( "\"$file\"" )
+            #file="$index\t$file"
+            #let index+=1
+        #fi
 
-        if [[ "$usegrep" == "false" ]]; then
-            echo -e "$file"
-        else
-            echo -e "$file" | grep -i --color=auto "$SRC"
-        fi
-    done
+        #if [[ "$usegrep" == "false" ]]; then
+            #echo -e "$file"
+        #else
+            #echo -e "$file" | grep -i --color=auto "$SRC"
+        #fi
+    #done
 
-    #if [[ "${#parameterised_files_list[@]}" != 0 ]]; then
-        # TODO: handles filenames with spaces, but otherwise... dangerous:
-        echo -e "${parameterised_files_list[@]}"
-    #fi
+    ##if [[ "${#parameterised_files_list[@]}" != 0 ]]; then
+        ## TODO: handles filenames with spaces, but otherwise... dangerous:
+        #echo -e "${parameterised_files_list[@]}"
+    ##fi
 }
 
 # Find a file with a pattern in name (inside wd);
@@ -180,11 +183,13 @@ Usage: fstr [-i] \"pattern\" [filename pattern] "
            i) grepcase=" -i "
               shift $(( $OPTIND - 1 ))
               ;;
-           *) echo "$usage"; return 1 ;;
+           *) echo "$usage";
+              return 1
+              ;;
         esac
     done
 
-    if [ "$#" -lt 1 ]; then
+    if [[ "$#" -lt 1 ]]; then
         echo "$usage"
         return 1;
     fi
@@ -197,9 +202,10 @@ function swap() {
     # Swap 2 files around, if they exist (from Uzi's bashrc):
     local TMPFILE="/tmp/${FUNCNAME}_function_tmpFile.$RANDOM"
 
-    [ $# -ne 2 ] && echo "swap: 2 arguments needed" && return 1
-    [ ! -e "$1" ] && echo "swap: $1 does not exist" && return 1
-    [ ! -e "$2" ] && echo "swap: $2 does not exist" && return 1
+    [[ $# -ne 2 ]] && echo "${FUNCNAME}(): 2 arguments needed" && return 1
+    [[ ! -e "$1" ]] && echo "${FUNCNAME}(): $1 does not exist" && return 1
+    [[ ! -e "$2" ]] && echo "${FUNCNAME}(): $2 does not exist" && return 1
+    [[ "$1" == "$2" ]] && echo "${FUNCNAME}(): source and destination cannot be the same" && return 1
 
     mv "$1" "$TMPFILE"
     mv "$2" "$1"
@@ -221,6 +227,9 @@ function lgrep() {
             echo -e "provided directory to list and grep from is not a directory. abort."
             echo -e "\n$usage"
             return 1
+        elif [[ ! -r "$SRCDIR" ]]; then
+            echo -e "provided directory to list and grep from is not readable. abort."
+            return 1
         fi
     fi
 
@@ -232,11 +241,23 @@ function lgrep() {
 }
 
 # Make your directories and files access rights sane.
+# (sane as in rw for owner, r for group, none for others)
 function sanitize() {
     [[ -z "$@" ]] && { echo -e "provide a file/dir name plz."; return 1; }
     [[ ! -e "$@" ]] && { echo -e "\"$@\" does not exist."; return 1; }
     chmod -R u=rwX,g=rX,o= "$@";
 }
+
+function sanitize_ssh() {
+    local dir="$@"
+
+    [[ -z "$dir" ]] && { echo -e "provide a file/dir name plz."; return 1; }
+    [[ ! -e "$dir" ]] && { echo -e "\"$dir\" does not exist."; return 1; }
+
+    chmod -R u=rwX,g=,o= "$dir";
+}
+
+function ssh_sanitize() { sanitize_ssh "$@"; } # alias for sanitize_ssh
 
 function my_ip() { # Get IP adress on ethernet.
     local connected_interface="$(find_connected_if)"
@@ -378,9 +399,10 @@ function createUsbIso() {
     local file device mountpoint cleaned_devicename usage
     file="$1"
     device="$2"
+
     cleaned_devicename="${device%/}" # strip trailing slash
     cleaned_devicename="${cleaned_devicename##*/}"  # strip everything before last slash(slash included)
-    usage="$FUNCNAME  mntpoint  device"
+    usage="$FUNCNAME  image.file  device"
 
     if [[ -z "$file" || -z "$device" || -z "$cleaned_devicename" ]]; then
         echo -e "either file or device weren't provided"
