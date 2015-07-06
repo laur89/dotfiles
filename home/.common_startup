@@ -1,8 +1,21 @@
 #!/bin/bash
-# handles basic system startup
+# handles basic system startup.
+# note that services to be started are handled by different file, imported here.
+# #####
 
 session_startfile="$HOME/.session-startuplist"
-logdir="/var/log/custom_logs/"
+logdir="$CUSTOM_LOGDIR"
+################################################
+
+#### ENTRY ####
+# import common:
+if [[ -f "$_SCRIPTS_COMMONS" && -r "$_SCRIPTS_COMMONS" ]]; then
+    source "$_SCRIPTS_COMMONS"
+else
+    echo -e "\nError: common file \"$_SCRIPTS_COMMONS\" not found! Abort."
+    # do not exit!
+    #exit 1
+fi
 
 xrandr --output DP-2 --auto --right-of DP-1 &
 
@@ -15,18 +28,22 @@ xset fp rehash
 #xsetroot -cursor_name left_ptr
 
 # Load the Xresources database:
-[[ -f ~/.Xresources ]] && xrdb -merge ~/.Xresources # Do not background!
+[[ -r ~/.Xresources ]] && xrdb -merge ~/.Xresources # Do not background!
 
 # disable system beep:
 xset -b &
 
 # Start the programs/scripts in $session_startfile:
-if [ -f "$session_startfile" ]; then
-    source $session_startfile &
+if [[ -r "$session_startfile" ]]; then
+    source "$session_startfile" &
     # give some time before wm is launched:
     sleep 3
 else
-    rxvt-unicode &
+    if command -v rxvt-unicode; then
+        rxvt-unicode &
+    else
+        xterm &
+    fi
 fi
 
 ## Start gpg-agent daemon
@@ -37,22 +54,21 @@ fi
 #eval "$(/usr/bin/gpg-agent --daemon)"
 #fi
 
-
-# Create necessary directories if don't exist:
-for i in /data/.rsync /data/.tmp; do
-    [ ! -d $i ] && mkdir $i
-done &
-
 # Check whether logfolder at /var/log and /data/ dir are existing:
 for i in $logdir /data/; do
-    if [ ! -w $i ]; then
-        notify-send -t 0 -i gtk-dialog-error "$logdir is not created or no write permissions granted. Do it!" &
+    if [[ ! -w "$i" ]]; then
+        err_display  "$logdir is not created or no write permissions granted. Do it!" ".common_startup" &
     fi
 done &
 
+# Create necessary directories if don't exist:
+for i in /data/.rsync /data/.tmp; do
+    if [[ ! -d "$i" ]] && ! mkdir "$i"; then
+        err_display  "Tried to create required directory \"$i\" but mkdir failed." ".common_startup" &
+    fi
+done &
+
+#TODO: this stuff needs to be done via logrotate perhaps?
 # Check the filesize in MB of logs dir:
 allowed_size="20"   # Max size in MB
-size="$(du -sL --block-size=1M $logdir | cut -f1)" # file/dir size in MB;
-if [[ "$size" -gt "$allowed_size" ]]; then
-    notify-send -t 0 -i gtk-dialog-error "Error: $logdir directory is ${size}MB! (max allowed ${allowed_size}MB)" &
-fi
+check_max_allowed_size "$logdir" "$allowed_size"

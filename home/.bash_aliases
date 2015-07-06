@@ -1,4 +1,6 @@
 # bash aliases:
+#
+################################3
 __THEME_LOC="$HOME/.themes/Numix/gtk-2.0/gtkrc"
 #
 #alias eclipse='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-eclipse "/data/progs/eclipse-jee-kepler-x86_64/eclipse/eclipse"'
@@ -12,7 +14,9 @@ alias giteye='env GTK2_RC_FILES=$__THEME_LOC:/home/laur/.gtkrc-2.0-IDE "/data/pr
 alias eclim='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/eclimd"'
 #alias clean_failed_mvn="$(find ~/.m2 -name *.lastUpdated -delete)"
 #alias amq="/data/progs/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"
-alias logout="pkill -KILL -u $USER"
+#alias logout="pkill -TERM -u $USER; sleep 5; pkill -KILL -u $USER"
+alias logout="pkill -u $USER"   # by default pkill sends SIGTERM signal
+alias ulogout="sudo pkill -KILL -u $1"  # user logout
 alias grep="grep --color=auto"
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
@@ -21,16 +25,19 @@ alias cp="cp -rp"
 alias less="less -IR"
 alias ls="ls --color=auto"
 alias ll='ls -l'
-alias lr='ls -ltr'
+alias lr='ls -lr'
 alias ltr='ls -ltr'
 alias lrt='ls -ltr'
 alias lt='ls -lt'
-alias la='ls -lAt'
+alias la='ls -lA'
+alias lar='ls -lAr'
+alias lra='ls -lAr'
 alias lat='ls -lAt'
 alias lta='ls -lAt'
 alias ltar='ls -lAtr'
 alias ltra='ls -lAtr'
 alias latr='ls -lAtr'
+alias lart='ls -lAtr'
 #alias l='ls -CF'
 alias vdiff="vimdiff"
 #
@@ -57,6 +64,7 @@ alias drpbox='dropbox'
 alias dropbx='dropbox'
 alias dropvox='dropbox'
 alias dorpbox='dropbox'
+alias suod='sudo'
 
 # Directory navigation aliases:
 alias ..='cd ..'
@@ -68,6 +76,7 @@ alias dl='cd /home/laur/Downloads'
 alias dls='cd /home/laur/Downloads'
 alias dwn='cd /home/laur/Downloads'
 alias music='cd /home/laur/Music'
+alias muss='cd /home/laur/Music'
 alias videos='cd /home/laur/Videos'
 alias vids='cd /home/laur/Videos'
 alias vid='cd /home/laur/Videos'
@@ -83,6 +92,7 @@ alias prog='cd /data/progs'
 alias progs='cd /data/progs'
 alias dev='cd /data/dev'
 alias data='cd /data/'
+#TODO:
 #alias ffind="eval set ffind"
 alias ffind="ffind"
 

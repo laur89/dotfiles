@@ -20,13 +20,28 @@ PROGS=( \
     "ssh-agent" \
     "copyq" \
     "mbsync --all" \
+    "wait_for_suspend_to_lock_screen.sh" \
     "urxvtc" \
 )
 # oldies:
     #"icedove" \
     #"volti" \
     #"parcellite" \
+
+# alternative to lock automatically when suspending/hibernating: (requires xss-lock)
+# (currently using the shellscript that listens to dbus messages)
+# xss-lock -- xscreensaver-command -lock &
+#
 #---------------------------------------------------
+# import common:
+if [[ -r "$_SCRIPTS_COMMONS" ]]; then
+    source "$_SCRIPTS_COMMONS"
+else
+    echo -e "\nError: common file \"$_SCRIPTS_COMMONS\" not found!"
+    #exit 1   # prolly not a good idea to exit
+fi
+#---------------------------------------------------
+
 export DISPLAY=:0.0
 
 # See policykit käitati tavaliste DE-de puhul /etc/xdg/autostart/polkit-gnome....desktop-ist;
@@ -77,16 +92,18 @@ if ! [[ "$(ps -e | grep "\bxscreensaver\b")" ]]; then
     echo "Launching xscreensaver..."
 fi
 
-if ! [[ "$(ps -e | grep "\bsyndaemon\b")" ]]; then
+if ! [[ "$(ps -e | grep "\bsyndaemon\b")" ]] && is_laptop; then
     syndaemon -t -K -i 4 &
     echo "Launching syndaemon"
 fi
 
-if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" || "$HOSTNAME" == "$PERSONAL_LAPTOP_HOSTNAME" ]]; then
+#if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" || "$HOSTNAME" == "$PERSONAL_LAPTOP_HOSTNAME" ]]; then
+if is_laptop; then
     if ! [[ "$(ps -e | grep "\bsynergyc\b")" ]]; then
         echo "Launching syndergy client"
         if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]]; then
-            /data/progs/custom_builds/synergy/bin/synergyc -f --no-tray --debug INFO --name $HOSTNAME 10.180.18.149:24800 &
+            #/data/progs/custom_builds/synergy/bin/synergyc -f --no-tray --debug INFO --name $HOSTNAME 10.180.18.149:24800 &
+            /data/progs/custom_builds/synergy/bin/synergyc -f --no-tray --debug INFO --name work-laptop 10.180.18.149:24800 &
         else
             # TODO personal laptop
             echo "todo"
@@ -94,11 +111,12 @@ if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" || "$HOSTNAME" == "$PERSONAL_LAPTOP
 
         setxkbmap ee & # otherwise using server's keyboard defaults to us map;
     fi
-elif [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" || "$HOSTNAME" == "$PERSONAL_DESKTOP_HOSTNAME" ]]; then
+#elif [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" || "$HOSTNAME" == "$PERSONAL_DESKTOP_HOSTNAME" ]]; then
+else # is NOT lapto, assuming desktop
     if ! [[ "$(ps -e | grep "\bsynergys\b")" ]]; then
         echo "Launching syndergy server"
         if [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" ]]; then
-            /data/progs/custom_builds/synergy/bin/synergys -f --no-tray --debug INFO --name $HOSTNAME -c /home/laur/synergy.conf --address :24800
+            /data/progs/custom_builds/synergy/bin/synergys -f --no-tray --debug INFO --name work-desktop -c /home/laur/synergy.conf --log $CUSTOM_LOGDIR/synergy_server.log --address :24800
         else
             # TODO personal deskderp
             echo "todo"

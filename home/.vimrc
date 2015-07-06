@@ -567,14 +567,13 @@ set nocompatible " Must be the first line
         nnoremap tl  :tablast<CR>
         nnoremap tt  :tabedit<CR>
         nnoremap tn  :tabnext<CR>
-        nnoremap tm  :tabm<Space>
+        nnoremap tm  :tabm<Space> "tabmove
         nnoremap td  :tabclose<CR>
         
         " Move to prev/next tabpage:
         nnoremap <S-h> gT
         nnoremap <S-l> gt
         
-
         
     """ }}}
     

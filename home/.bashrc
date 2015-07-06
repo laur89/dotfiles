@@ -10,14 +10,14 @@ esac
 
 # don't put duplicate lines or lines starting with space in the history.
 # See bash(1) for more options
-HISTCONTROL=ignoreboth
+#HISTCONTROL=ignoreboth
 
 # append to the history file, don't overwrite it
 shopt -s histappend
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=1000
-HISTFILESIZE=2000
+#HISTSIZE=1000
+#HISTFILESIZE=2000
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -113,9 +113,11 @@ fi
 #
 #
 # source own functions and env vars:
-for i in $HOME/.bash_env_vars $HOME/.bash_functions; do
-    if [[ -f "$i" ]]; then
+for i in $HOME/.bash_env_vars $HOME/.bash_env_vars_overrides $HOME/.bash_functions; do # note the sys-specific env_vars_overrides!
+    if [[ -r "$i" ]]; then
         source "$i"
+    #else
+        #echo -e "file \"$i\" to be sourced does not exist or is not readable!"
     fi
 done
 
@@ -130,6 +132,8 @@ source "$HOME/.homesick/repos/homeshick/completions/homeshick-completion.bash"
 # bash-git-prompt;....
 GIT_PROMPT_START="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]"
 GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
+# prompt without the bash-git-promt would be:
+#   PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
 source $HOME/.bash-git-prompt/gitprompt.sh
 #
 # ...or powerline:
@@ -138,12 +142,6 @@ source $HOME/.bash-git-prompt/gitprompt.sh
     #source $pwrLineLoc
 #fi
 ##########################################
-
-# set PATH so it includes user's private bin if it exists
-if [[ -d "$HOME/bin" ]] ; then
-    export PATH="$PATH:$HOME/bin"
-    #export PATH="$PATH:$HOME/bin/sys_specific_bin" # execs/files that are machine-dependent;
-fi
 
 #override history size:
 HISTSIZE=-1
