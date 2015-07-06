@@ -261,8 +261,8 @@ function ssh_sanitize() { sanitize_ssh "$@"; } # alias for sanitize_ssh
 
 function my_ip() { # Get IP adress on ethernet.
     local connected_interface="$(find_connected_if)"
-    local MY_IP=$(/sbin/ifconfig $connected_interface | awk '/inet/ { print $2 } ' |
-      sed -e s/addr://)
+    local MY_IP="$(/sbin/ifconfig $connected_interface | awk '/inet/ { print $2 } ' |
+      sed -e s/addr://)"
     echo "${MY_IP:-"Not connected"} @ $connected_interface"
 }
 
@@ -274,7 +274,7 @@ function compress() {
     type="$2"
     usage="$FUNCNAME  fileOrDir  [zip|tar|rar] "
 
-    [[ $# == 1 || $# == 2 ]] || { echo -e "$usage"; return 1; }
+    [[ $# -eq 1 || $# -eq 2 ]] || { echo -e "$usage"; return 1; }
     [[ -e "$file" ]] || { echo -e "$file doesn't exist.\n\n$usage"; return 1; }
 
     if [[ -n "$type" ]]; then
@@ -285,7 +285,8 @@ function compress() {
                 ;;
             rar) makerar "$file"
                 ;;
-            *) echo -e "$usage"; return 1;
+            *) echo -e "$usage";
+               return 1;
                 ;;
         esac
     else
@@ -309,6 +310,10 @@ function makezip() { zip -r "${1%%/}.zip" "$1"; }
 # alias for extract
 function unpack() { extract $@; }
 
+# helper wrapper for uncompressing archives. it uncompresses into new directory, which
+# name is the same as the archive's, minus the file extension. this avoids the situations
+# where gazillion files are being extracted into workin dir. note that if the dir
+# already exists, then unpacking fails (since mkdir fails).
 function extract() {
     local file="$1"
     local file_without_extension="${file%.*}"
@@ -316,8 +321,8 @@ function extract() {
     if [[ -z "$file" ]]; then
         echo "gimme file to extract plz."
         return 1
-    elif [[ ! -f "$file" ]]; then
-         echo "'$file' is not a valid file"
+    elif [[ ! -r "$file" ]]; then
+         echo "'$file' is not a valid file or read rights not granted."
          return 1
     fi
 
@@ -327,6 +332,9 @@ function extract() {
                         ;;
         *.tar.gz)    file_without_extension="${file_without_extension%.*}" # because two extensions
                         mkdir "$file_without_extension" && tar xzf $file -C $file_without_extension
+                        ;;
+        *.tar.xz)    file_without_extension="${file_without_extension%.*}" # because two extensions
+                        mkdir "$file_without_extension" && tar xpvf $file -C $file_without_extension
                         ;;
         *.bz2)       bunzip2 -k $file
                         ;;
@@ -503,6 +511,18 @@ vimo() {
    [[ "$cwd" != "$gtdir" ]] && popd &> /dev/null # go back
    [[ -f "$match" ]] || return
    vim "$match"
+}
+
+function sethometime() {
+    timedatectl set-timezone Europe/Tallinn
+}
+
+function setgibtime() {
+    timedatectl set-timezone Europe/Gibraltar
+}
+
+function setspaintime() {
+    timedatectl set-timezone Europe/Madrid
 }
 
 ########################

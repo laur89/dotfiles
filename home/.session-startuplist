@@ -21,6 +21,7 @@ PROGS=( \
     "copyq" \
     "mbsync --all" \
     "urxvtc" \
+    "wait_for_suspend_to_lock_screen.sh" \
 )
 # oldies:
     #"icedove" \

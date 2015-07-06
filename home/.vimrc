@@ -71,7 +71,7 @@ set nocompatible " Must be the first line
     Plugin 'tpope/vim-fugitive'
 
     " better git log borwser (hit :gitv)
-    " !!! depends on tpope/fugitive !!!
+    " !!! depfnds on tpope/fugitive !!!
     Plugin 'gregsexton/gitv'
 
     " Handle surround chars like ''
@@ -544,15 +544,15 @@ set nocompatible " Must be the first line
     
     """ Tabs {{{
         " tab switching:
-        map <A-1> <Esc>:tabn 1<CR>i
-        map <A-2> <Esc>:tabn 2<CR>i
-        map <A-3> <Esc>:tabn 3<CR>i
-        map <A-4> <Esc>:tabn 4<CR>i
-        map <A-5> <Esc>:tabn 5<CR>i
-        map <A-6> <Esc>:tabn 6<CR>i
-        map <A-7> <Esc>:tabn 7<CR>i
-        map <A-8> <Esc>:tabn 8<CR>i
-        map <A-9> <Esc>:tabn 9<CR>i
+        map <A-1> <Esc>:tabn 1<CR>
+        map <A-2> <Esc>:tabn 2<CR>
+        map <A-3> <Esc>:tabn 3<CR>
+        map <A-4> <Esc>:tabn 4<CR>
+        map <A-5> <Esc>:tabn 5<CR>
+        map <A-6> <Esc>:tabn 6<CR>
+        map <A-7> <Esc>:tabn 7<CR>
+        map <A-8> <Esc>:tabn 8<CR>
+        map <A-9> <Esc>:tabn 9<CR>
         
         " New tab:
         nnoremap <C-S-t> :tabnew<CR>
@@ -694,13 +694,17 @@ set nocompatible " Must be the first line
         " powerline (disable if using airline instead)
         "set rtp+=/usr/local/lib/python2.7/dist-packages/powerline/bindings/vim/
 
-        " CamelCaseMotion: Replace the default 'w', 'b' and 'e' mappings instead of defining additional mappings ',w', ',b' and ',e': 
-        map <silent> w <Plug>CamelCaseMotion_w
-        map <silent> b <Plug>CamelCaseMotion_b
-        map <silent> e <Plug>CamelCaseMotion_e
-        sunmap w
-        sunmap b
-        sunmap e
+        " CamelCaseMotion: Replace the default 'w', 'b' and 'e' mappings instead of defining additional mappings ',w', ',b' and ',e': ...
+        "map <silent> w <Plug>CamelCaseMotion_w
+        "map <silent> b <Plug>CamelCaseMotion_b
+        "map <silent> e <Plug>CamelCaseMotion_e
+        "sunmap w
+        "sunmap b
+        "sunmap e
+        " ...or define the <leader>-motion options:
+        map <silent><leader> w <Plug>CamelCaseMotion_w
+        map <silent><leader> b <Plug>CamelCaseMotion_b
+        map <silent><leader> e <Plug>CamelCaseMotion_e
 
         " yankring:
         nnoremap <silent> <F11> :YRShow<CR> "displays the yankring window

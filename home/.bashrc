@@ -134,7 +134,7 @@ source $HOME/.bash-git-prompt/gitprompt.sh
 #
 # ...or powerline:
 #pwrLineLoc=/usr/local/lib/python2.7/dist-packages/powerline/bindings/bash/powerline.sh
-#if [ -f "$pwrLineLoc" ]; then
+#if [[ -f "$pwrLineLoc" ]]; then
     #source $pwrLineLoc
 #fi
 ##########################################
