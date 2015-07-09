@@ -148,7 +148,7 @@ function ffindbiggerthan() {
     local size
     [[ -n "$1" ]] && size="$1" || size="1024"
 
-    find . -size +${size}M -exec ls -s --block-size=M {} \; | sort -nr  2>/dev/null
+    find . -size +${size}M -exec ls -s --block-size=M {} \; | sort -nr 2>/dev/null
 }
 
 # find  files smalles than x mb:
@@ -189,7 +189,7 @@ Usage: fstr [-i] \"pattern\" [filename pattern] "
         esac
     done
 
-    if [[ "$#" -lt 1 ]]; then
+    if [[ "$#" -lt 1 ]] || [[ "$#" -gt 2 ]]; then
         echo "$usage"
         return 1;
     fi
@@ -200,16 +200,72 @@ Usage: fstr [-i] \"pattern\" [filename pattern] "
 
 function swap() {
     # Swap 2 files around, if they exist (from Uzi's bashrc):
-    local TMPFILE="/tmp/${FUNCNAME}_function_tmpFile.$RANDOM"
+    local TMPFILE file_size space_left_on_target i
 
-    [[ $# -ne 2 ]] && echo "${FUNCNAME}(): 2 arguments needed" && return 1
+    TMPFILE="/tmp/${FUNCNAME}_function_tmpFile.$RANDOM"
+
+    count_params 2 $# equal || return 1
     [[ ! -e "$1" ]] && echo "${FUNCNAME}(): $1 does not exist" && return 1
     [[ ! -e "$2" ]] && echo "${FUNCNAME}(): $2 does not exist" && return 1
     [[ "$1" == "$2" ]] && echo "${FUNCNAME}(): source and destination cannot be the same" && return 1
 
-    mv "$1" "$TMPFILE"
-    mv "$2" "$1"
-    mv "$TMPFILE" "$2"
+    # check write perimssions:
+    for i in "$TMPFILE" "$1" "$2"; do
+        i="$(dirname "$i")"
+        if [[ ! -w "$i" ]]; then
+            err "$i doesn't have write permission. abort." "$FUNCNAME"
+            return 1
+        fi
+    done
+
+    # check if $1 fits into /tmp:
+    file_size="$(get_size "$1")"
+    space_left_on_target="$(space_left "$TMPFILE")"
+    if [[ "$file_size" -ge "$space_left_on_target" ]]; then
+        echo -e "${FUNCNAME}(): $1 size is ${file_size}MB, but $(dirname "$TMPFILE") has only ${space_left_on_target}MB free space left. abort."
+        return 1
+    fi
+
+    if ! mv "$1" "$TMPFILE"; then
+        err "moving $1 to $TMPFILE failed. abort." "$FUNCNAME"
+        return 1
+    fi
+
+    # check if $2 fits into $1:
+    file_size="$(get_size "$2")"
+    space_left_on_target="$(space_left "$1")"
+    if [[ "$file_size" -ge "$space_left_on_target" ]]; then
+        echo -e "${FUNCNAME}(): $2 size is ${file_size}MB, but $(dirname "$1") has only ${space_left_on_target}MB free space left. abort."
+        # undo:
+        mv "$TMPFILE" "$1"
+        return 1
+    fi
+
+    if ! mv "$2" "$1"; then
+        err "moving $2 to $1 failed. abort." "$FUNCNAME"
+        # undo:
+        mv "$TMPFILE" "$1"
+        return 1
+    fi
+
+    # check if $1 fits into $2:
+    file_size="$(get_size "$TMPFILE")"
+    space_left_on_target="$(space_left "$2")"
+    if [[ "$file_size" -ge "$space_left_on_target" ]]; then
+        echo -e "${FUNCNAME}(): $1 size is ${file_size}MB, but $(dirname "$2") has only ${space_left_on_target}MB free space left. abort."
+        # undo:
+        mv "$1" "$2"
+        mv "$TMPFILE" "$1"
+        return 1
+    fi
+
+    if ! mv "$TMPFILE" "$2"; then
+        err "moving $1 to $2 failed. abort." "$FUNCNAME"
+        # undo:
+        mv "$1" "$2"
+        mv "$TMPFILE" "$1"
+        return 1
+    fi
 }
 
 # list current directory and search for a file/dir by name:
@@ -516,6 +572,9 @@ vimo() {
 function sethometime() {
     timedatectl set-timezone Europe/Tallinn
 }
+
+function setesttime() { sethometime; }
+function setestoniatime() { sethometime; }
 
 function setgibtime() {
     timedatectl set-timezone Europe/Gibraltar
