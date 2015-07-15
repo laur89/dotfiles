@@ -65,7 +65,11 @@ URxvt.keysym.M-s: perl:keyboard-select:search
 ! tabbedex: (if using this, disable 'tabbed' version below)
 !URxvt.perl-ext-common: ...,tabbedex,...
 ! TODO search about the matcher perl script
-URxvt.perl-ext-common: default,clipboard,tabbedex,url-select,keyboard-select,vtwheel,matcher
+!
+!URxvt.perl-ext-common: default,clipboard,tabbedex,url-select,keyboard-select,vtwheel,matcher
+!reomve url-select from the list, as that caused urls to be opened twice (as in
+!url opening is also implemented in matcher)
+URxvt.perl-ext-common: default,clipboard,tabbedex,keyboard-select,vtwheel,matcher
 !URxvt.perl-ext-common: default,clipboard,tabbed
 
 URxvt.keysym.Shift-Control-T: perl:tabbedex:new_tab

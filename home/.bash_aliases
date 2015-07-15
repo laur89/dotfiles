@@ -52,12 +52,18 @@ alias cs='cd'
 alias ct='cd'
 alias sd='cd'
 alias gti='git'
+alias igt='git'
 alias gitst='git st'
 alias gitdi='git di'
 alias gitfe='git fe'
 alias gitco='git co'
 alias gitrst='git rst'
+alias gitau='git au'
+alias gitlg='git lg'
+alias gitcom='git commit'
+alias gitcomm='git commit'
 alias mkdri='mkdir'
+alias mkdr='mkdir'
 alias mkdi='mkdir'
 alias mkd='mkdir'
 alias dopbox='dropbox'
@@ -95,7 +101,7 @@ alias dev='cd /data/dev'
 alias data='cd /data/'
 #TODO:
 #alias ffind="eval set ffind"
-alias ffind="ffind"
+#alias ffind="ffind"
 
 alias lns='ln -s'
 alias svim='sudo vim'

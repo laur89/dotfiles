@@ -21,8 +21,7 @@ PROGS=( \
     "copyq" \
     "mbsync --all" \
     "wait_for_suspend_to_lock_screen.sh" \
-    "urxvtc" \
-    "wait_for_suspend_to_lock_screen.sh" \
+    "urxvtc"
 )
 # oldies:
     #"icedove" \
@@ -59,7 +58,7 @@ export DISPLAY=:0.0
 /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
 
 for PROG in "${PROGS[@]}"; do
-    if ! [[ "$(ps -e | grep "\b$PROG\b")" ]]; then
+    if ! is_proc_running "$PROG"; then
         echo "Launching ${PROG}..."
         $PROG &
         echo "Launched $PROG."
@@ -78,29 +77,29 @@ wallpaper_changer.sh > /dev/null 2>&1 &
     #mpd /etc/mpd.conf &
     #echo "Launching mpd..."
 #fi
-if ! [[ "$(ps -e | grep "\bmopidy\b")" ]]; then
+if ! is_proc_running mopidy; then
     mopidy &
     echo "Launching mopidy"
 fi
 
-if ! [[ "$(ps -e | grep "\bdropbox\b")" ]]; then
+if ! is_proc_running dropbox; then
     dropbox start &
     echo "Launching dropbox..."
 fi
 
-if ! [[ "$(ps -e | grep "\bxscreensaver\b")" ]]; then
+if ! is_proc_running xscreensaver; then
     xscreensaver -no-splash &
     echo "Launching xscreensaver..."
 fi
 
-if ! [[ "$(ps -e | grep "\bsyndaemon\b")" ]] && is_laptop; then
+if ! is_proc_running syndaemon && is_laptop; then
     syndaemon -t -K -i 4 &
     echo "Launching syndaemon"
 fi
 
 #if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" || "$HOSTNAME" == "$PERSONAL_LAPTOP_HOSTNAME" ]]; then
 if is_laptop; then
-    if ! [[ "$(ps -e | grep "\bsynergyc\b")" ]]; then
+    if ! is_proc_running synergyc; then
         echo "Launching syndergy client"
         if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]]; then
             #/data/progs/custom_builds/synergy/bin/synergyc -f --no-tray --debug INFO --name $HOSTNAME 10.180.18.149:24800 &
@@ -114,7 +113,7 @@ if is_laptop; then
     fi
 #elif [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" || "$HOSTNAME" == "$PERSONAL_DESKTOP_HOSTNAME" ]]; then
 else # is NOT lapto, assuming desktop
-    if ! [[ "$(ps -e | grep "\bsynergys\b")" ]]; then
+    if ! is_proc_running synergys; then
         echo "Launching syndergy server"
         if [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" ]]; then
             /data/progs/custom_builds/synergy/bin/synergys -f --no-tray --debug INFO --name work-desktop -c /home/laur/synergy.conf --log $CUSTOM_LOGDIR/synergy_server.log --address :24800

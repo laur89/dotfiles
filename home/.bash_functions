@@ -315,13 +315,23 @@ function sanitize_ssh() {
 
 function ssh_sanitize() { sanitize_ssh "$@"; } # alias for sanitize_ssh
 
-function my_ip() { # Get IP adress on ethernet.
-    local connected_interface="$(find_connected_if)"
-    local MY_IP="$(/sbin/ifconfig $connected_interface | awk '/inet/ { print $2 } ' |
-      sed -e s/addr://)"
-    echo "${MY_IP:-"Not connected"} @ $connected_interface"
+function my_ip() { # Get internal & external ip addies:
+    local internal_ip external_ip connected_interface
+
+    connected_interface="$(find_connected_if)"
+
+    if [[ -n "$connected_interface" ]]; then
+        external_ip="$(dig +short myip.opendns.com @resolver1.opendns.com 2>/dev/null)"
+        internal_ip="$(/sbin/ifconfig "$connected_interface" | awk '/inet/ { print $2 } ' | sed -e s/addr://)"
+        echo "${internal_ip:-"Not connected"} @ $connected_interface"
+        echo "${external_ip:-"Not connected"}"
+        return 0
+    fi
+
+    echo "Not connected"
 }
 
+function myip() { my_ip; } # alias for my_ip
 function whatsmyip() { my_ip; } # alias for my_ip
 
 function compress() {

@@ -713,7 +713,7 @@ set nocompatible " Must be the first line
 
 """ Plugin settings {{{
     " Startify, the fancy start page
-    let g:ctrlp_reuse_window = 'startify' " don't split in startify
+    let g:ctrlp_reuse_window = 'startify' "don't split in startify
     let g:startify_bookmarks = [
         \ $HOME . "/.vimrc", $HOME . "/.vimrc.first",
         \ $HOME . "/.vimrc.last", $HOME . "/.vimrc.plugins"
@@ -727,7 +727,7 @@ set nocompatible " Must be the first line
     " CtrlP - don't recalculate files on start (slow)
     let g:ctrlp_clear_cache_on_exit = 0
     let g:ctrlp_working_path_mode = 'ra'
-    "let g:ctrlp_root_markers = ['.ctrlp']  "consider this, since .git isn't not as good with submodules
+    "let g:ctrlp_root_markers = ['.ctrlp']  "consider this, since .git isn't as good with submodules
     "let g:ctrlp_working_path_mode = ""
     "let g:ctrlp_dotfiles = 0
     let g:ctrlp_max_files = 0
@@ -736,9 +736,11 @@ set nocompatible " Must be the first line
     "let g:ctrlp_user_command = "find %s -type f | egrep -v '/\.(git|hg|svn)|solr|tmp/' | egrep -v '/\.(git|hg|svn)|solr|tmp/' | egrep -v '\.(png|exe|jpg|gif|jar|class|swp|swo|log|gitkep|keepme|so|o)$'"
 
     " yankring: remap c-p so CtrlP could use it:
-    " TODO: think of an actual mappinks!:
+    " TODO: think of an actual mappings!:
     let g:yankring_replace_n_pkey = '<leader>p'
     let g:yankring_replace_n_nkey = '<leader>P'
+    let g:yankring_history_dir = '$HOME/.vim'
+    let g:yankring_max_history = 1000
 
     " yankstack (if using this, perhaps lose the yankring stuff?):
     "nmap <leader>p <Plug>yankstack_substitute_older_paste
