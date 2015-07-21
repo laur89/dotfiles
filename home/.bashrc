@@ -142,7 +142,7 @@ source $HOME/.bash-git-prompt/gitprompt.sh
     #source $pwrLineLoc
 #fi
 ##########################################
-if ! ssh-add -l; then
+if ! ssh-add -l > /dev/null 2>&1; then
     ssh-add
 fi
 ##########################################
