@@ -142,6 +142,10 @@ source $HOME/.bash-git-prompt/gitprompt.sh
     #source $pwrLineLoc
 #fi
 ##########################################
+if ! ssh-add -l; then
+    ssh-add
+fi
+##########################################
 
 #override history size:
 HISTSIZE=-1

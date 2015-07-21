@@ -112,17 +112,24 @@ if is_laptop; then
         setxkbmap ee & # otherwise using server's keyboard defaults to us map;
     fi
 #elif [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" || "$HOSTNAME" == "$PERSONAL_DESKTOP_HOSTNAME" ]]; then
-else # is NOT lapto, assuming desktop
+else # is NOT laptop, assuming desktop
     if ! is_proc_running synergys; then
         echo "Launching syndergy server"
         if [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" ]]; then
-            /data/progs/custom_builds/synergy/bin/synergys -f --no-tray --debug INFO --name work-desktop -c /home/laur/synergy.conf --log $CUSTOM_LOGDIR/synergy_server.log --address :24800
+            /data/progs/custom_builds/synergy/bin/synergys -f --no-tray --debug INFO --name work-desktop -c /home/laur/synergy.conf --log $CUSTOM_LOGDIR/synergy_server.log --address :24800 &
         else
             # TODO personal deskderp
             echo "todo"
         fi
     fi
 fi
+
+# modify configs:
+if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]]; then
+    # ! ignore symlinks for sed !
+    find /home/laur/.homesick/repos -type f -name ".xscreensaver" ! -type l | xargs sed -i '/^lockTimeout:/s/^lockTimeout:.*/lockTimeout:\t0:00:05/g'
+fi
+
 
 # nvidia bug report:
 #sleep 5;
