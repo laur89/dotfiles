@@ -127,7 +127,7 @@ fi
 # modify configs:
 if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]]; then
     # ! ignore symlinks for sed !
-    find /home/laur/.homesick/repos -type f -name ".xscreensaver" ! -type l | xargs sed -i '/^lockTimeout:/s/^lockTimeout:.*/lockTimeout:\t0:00:05/g'
+    $(find /home/laur/.homesick/repos -type f -name ".xscreensaver" ! -type l | xargs sed -i '/^lockTimeout:/s/^lockTimeout:.*/lockTimeout:\t0:00:05/g') &
 fi
 
 
