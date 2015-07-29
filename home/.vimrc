@@ -282,6 +282,7 @@ set nocompatible " Must be the first line
     
     """ Interface general {{{
         set cursorline                              " hilight cursor line
+        set cursorcolumn                            " hilight cursor col
         set more                                    " ---more--- like less
         set number                                  " line numbers
         set scrolloff=3                             " lines above/below cursor
