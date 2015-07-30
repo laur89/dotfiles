@@ -173,8 +173,9 @@ function aptsrc() { aptsearch "$@"; } #alias
 #  Find a pattern in a set of files and highlight them:
 #+ (needs a recent version of egrep).
 function ffstr() {
-    local grepcase OPTIND usage opt
+    local grepcase OPTIND usage opt MAX_RESULT_LINE_LENGTH
     OPTIND=1
+    MAX_RESULT_LINE_LENGTH=300 # max nr of characters per grep result line
     usage="$FUNCNAME: find string in files.
 Usage: fstr [-i] \"pattern\" [filename pattern] "
 
@@ -195,7 +196,9 @@ Usage: fstr [-i] \"pattern\" [filename pattern] "
     fi
 
     find . -type f -iname '*'"${2:-*}"'*' -print0 | \
-        xargs -0 egrep --color=always -sn ${grepcase} "$1" 2>&- | more
+        xargs -0 egrep --color=always -sn ${grepcase} "$1" 2>&- | \
+        cut -c 1-$MAX_RESULT_LINE_LENGTH \
+        | more
 }
 
 function swap() {

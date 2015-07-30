@@ -128,8 +128,11 @@ set nocompatible " Must be the first line
     " !!! ühed väidavad, et javaphp,js,html jaoks on neocomplete parem;
     Plugin 'Valloric/YouCompleteMe'
 
-    " Go-lang support:
+    " Go-lang/golang/go lang support:
     Plugin 'fatih/vim-go'
+
+    " C# support:
+    Plugin 'OmniSharp/omnisharp-vim'
 
     " Node.js:
     Plugin 'moll/vim-node'
