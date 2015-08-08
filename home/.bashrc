@@ -128,19 +128,22 @@ source "$HOME/.homesick/repos/homeshick/completions/homeshick-completion.bash"
 # bash-git-prompt conf:
 # see provide'ib promptile git repo info; override'ib üleval defineeritud PS1 (põmst sama asjaga kui olen ümber modinud)
 # (modi repo asub @ https://github.com/magicmonty/bash-git-prompt)
+
+##########################################
 # prompt: ################################
 # bash-git-prompt;....
 GIT_PROMPT_START="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]"
 GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
 # prompt without the bash-git-promt would be:
 #   PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
-source $HOME/.bash-git-prompt/gitprompt.sh
+source /data/deps/.bash-git-prompt/gitprompt.sh
 #
 # ...or powerline:
 #pwrLineLoc=/usr/local/lib/python2.7/dist-packages/powerline/bindings/bash/powerline.sh
 #if [[ -f "$pwrLineLoc" ]]; then
     #source $pwrLineLoc
 #fi
+
 ##########################################
 if ! ssh-add -l > /dev/null 2>&1; then
     ssh-add

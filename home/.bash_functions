@@ -17,19 +17,24 @@ fi
 
 # find files or dirs:
 function ffind() {
-    local SRC SRCDIR INAME_ARG IREGEX_ARG opt usage OPTIND file_type filetypeOptionCounter usegrep found_files_list parameterised_files_list file index
+    local SRC SRCDIR INAME_ARG IREGEX_ARG opt usage OPTIND file_type filetypeOptionCounter usegrep found_files_list parameterised_files_list file index exact
     usage="$FUNCNAME: find files by name.
-    Usage: $FUNCNAME [-i] [-f] [-d] [-l] \"fileName pattern\" [top_level_dir_to_search_from]
+    Usage: $FUNCNAME [-i] [-f] [-d] [-l] [-e] \"fileName pattern\" [top_level_dir_to_search_from]
         -i  filename is case insensitive
         -f  search for regular files
         -d  search for directories
-        -l  search for symbolic links"
+        -l  search for symbolic links
+        -e  serch for exact filename, not for a partial"
+
     filetypeOptionCounter=0
 
-    while getopts "ifdl" opt; do
+    while getopts "ifdel" opt; do
         case "$opt" in
            i) INAME_ARG="-iname"
               IREGEX_ARG="-iregex" # TODO: deleteme?
+              shift $((OPTIND-1))
+                ;;
+           e) exact=1
               shift $((OPTIND-1))
                 ;;
            f | d | l) file_type="-type $opt"
@@ -54,7 +59,7 @@ function ffind() {
 
     if [[ -n "$SRCDIR" ]]; then
         if [[ ! -d "$SRCDIR" ]]; then
-            echo -e "provided directory to search from is not a directory. abort."
+            err "provided directory to search from is not a directory. abort." "$FUNCNAME"
             return 1
         elif [[ "${SRCDIR:$(( ${#SRCDIR} - 1)):1}" != "/" ]]; then
             SRCDIR="${SRCDIR}/" # add trailing slash if missing; required for gnu find
@@ -62,7 +67,7 @@ function ffind() {
     fi
 
     if [[ "$SRC" == *\.\** ]]; then
-        echo -e "only use asterisks (*) for wildcards, not .*"
+        err "only use asterisks (*) for wildcards, not .*" "$FUNCNAME"
         return 1
     elif [[ "$SRC" == *\** ]]; then
         #echo -e "please don't use asterisks in filename pattern; searchterm is already padded with wildcards on both sides."
@@ -73,12 +78,20 @@ function ffind() {
 
     # grep is for coloring only:
     #find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' | grep -i --color=auto "$SRC" 2>/dev/null
-    if [[ "$usegrep" == "false" ]]; then
-        find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null # old; TODO: deleteme if new one proves better
-        # TODO: try to make this one work:
-        #find "${SRCDIR:-.}" $file_type "${IREGEX_ARG:--regex}" ".*${SRC}.*" -printf '%P\0' 2>/dev/null | xargs -r0 ls --color=auto -1d
+    if [[ "$exact" -eq 1 ]]; then
+        if [[ "$usegrep" == "false" ]]; then
+            find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null # old; TODO: deleteme if new one proves better
+        else
+            find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null | grep -i --color=auto "$SRC"
+        fi
     else
-        find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null | grep -i --color=auto "$SRC"
+        if [[ "$usegrep" == "false" ]]; then
+            find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null # old; TODO: deleteme if new one proves better
+            # TODO: try to make this one work:
+            #find "${SRCDIR:-.}" $file_type "${IREGEX_ARG:--regex}" ".*${SRC}.*" -printf '%P\0' 2>/dev/null | xargs -r0 ls --color=auto -1d
+        else
+            find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null | grep -i --color=auto "$SRC"
+        fi
     fi
 
     ##### from here on, hackeroo begins:
@@ -176,8 +189,8 @@ function ffstr() {
     local grepcase OPTIND usage opt MAX_RESULT_LINE_LENGTH
     OPTIND=1
     MAX_RESULT_LINE_LENGTH=300 # max nr of characters per grep result line
-    usage="$FUNCNAME: find string in files.
-Usage: fstr [-i] \"pattern\" [filename pattern] "
+    usage="$FUNCNAME: find string in files (from current directory recursively).
+    Usage: $FUNCNAME [-i] \"pattern\" [filename pattern] "
 
     while getopts "i" opt; do
         case "$opt" in
@@ -197,8 +210,9 @@ Usage: fstr [-i] \"pattern\" [filename pattern] "
 
     find . -type f -iname '*'"${2:-*}"'*' -print0 | \
         xargs -0 egrep --color=always -sn ${grepcase} "$1" 2>&- | \
-        cut -c 1-$MAX_RESULT_LINE_LENGTH \
-        | more
+        cut -c 1-$MAX_RESULT_LINE_LENGTH | \
+        more
+        #less
 }
 
 function swap() {
@@ -441,7 +455,7 @@ fontreset() {
 # alias for fontreset:
 resetfont() { fontreset; }
 
-# TODO: rewrite this one, looks supid:
+# TODO: rewrite this one, looks stupid:
 up() {
   local d=""
   local limit=$1
@@ -535,14 +549,14 @@ function createUsbIso() {
 ## Setup github repo ##
 #######################
 function mkgit() {
-   local GITHUB="Cloudef"
+   local GITHUB="laur89"
    local dir="$1"
    local gitname="$2"
 
    # check dir
    [[ -n "$dir" ]] || {
       echo "usage: mkgit <dir> [name]"
-      return
+      return 1
    }
 
    # use dir name if, no gitname specified
@@ -552,11 +566,11 @@ function mkgit() {
    # bail out, if already git repo
    [[ -d "$dir/.git" ]] && {
       echo "already a git repo: $dir"
-      return
+      return 1
    }
 
    cd "$dir"
-   git init || return
+   git init || { err "bad return from git init" "$FUNCNAME"; return 1; }
    touch README; git add README
    git commit -a -m 'inital setup - automated'
    git remote add origin "git@github.com:$GITHUB/$gitname.git"

@@ -217,6 +217,9 @@ set nocompatible " Must be the first line
     " vim sugar for unix shell commands:
     Plugin 'tpope/vim-eunuch'
 
+    " add :CopyPath and :CopyFileName commands
+    Plugin 'vim-scripts/copypath.vim'
+
 
     " Finish Vundle stuff
     call vundle#end()
@@ -950,6 +953,10 @@ set nocompatible " Must be the first line
 
     "rainbow:
     let g:rainbow_active = 1
+
+    "copypath:
+    "copy file path or name to unnamed register as well:
+    let g:copypath_copy_to_unnamed_register = 1
 
     " Automatically remove preview window after autocomplete (mainly for clang_complete)
     autocmd CursorMovedI * if pumvisible() == 0|pclose|endif
