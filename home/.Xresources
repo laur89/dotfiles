@@ -90,6 +90,9 @@ URxvt.tabbed.autohide: false
 !URxvt.tabbed.new-button: true
 !URxvt.tabbed.title: no
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! meta key:
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !coopy-pasta:
 URxvt.keysym.Shift-Control-V: perl:clipboard:paste

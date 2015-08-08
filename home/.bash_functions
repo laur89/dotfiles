@@ -6,12 +6,14 @@
 #
 # =====================================================================
 # import common:
-if [[ -f "$_SCRIPTS_COMMONS" && -r "$_SCRIPTS_COMMONS" ]]; then
-    source "$_SCRIPTS_COMMONS"
-else
-    echo -e "\nError: common file \"$_SCRIPTS_COMMONS\" not found!! Many functions will be unusable!!!"
-    # !do not exit, or you won't be able to open shell without the commons file being
-    # present!
+if [[ -z "$__COMMONS_LOADED" ]]; then
+    if [[ -r "$_SCRIPTS_COMMONS" ]]; then
+        source "$_SCRIPTS_COMMONS"
+    else
+        echo -e "\nError: common file \"$_SCRIPTS_COMMONS\" not found!! Many functions will be unusable!!!"
+        # !do not exit, or you won't be able to open shell without the commons file being
+        # present!
+    fi
 fi
 # =====================================================================
 

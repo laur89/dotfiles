@@ -27,6 +27,7 @@ alias less="less -IR"
 alias ls="ls --color=auto"
 alias ll='ls -l'
 alias lr='ls -lr'
+alias lsr='ls -lr'
 alias ltr='ls -ltr'
 alias lrt='ls -ltr'
 alias lt='ls -lt'
