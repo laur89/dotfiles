@@ -144,7 +144,8 @@ source /data/progs/deps/bash-git-prompt/gitprompt.sh
     #source $pwrLineLoc
 #fi
 
-source /data/progs/deps/pearl-ssh/lib/ssh_pearl.sh
+# better create symlink to add to PATH:
+#source /data/progs/deps/pearl-ssh/lib/ssh_pearl.sh
 ##########################################
 if ! ssh-add -l > /dev/null 2>&1; then
     ssh-add
