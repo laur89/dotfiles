@@ -19,27 +19,31 @@ fi
 
 # find files or dirs:
 function ffind() {
-    local SRC SRCDIR INAME_ARG IREGEX_ARG opt usage OPTIND file_type filetypeOptionCounter usegrep found_files_list parameterised_files_list file index exact
+    local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter usegrep found_files_list parameterised_files_list file index exact binary
     usage="$FUNCNAME: find files by name.
-    Usage: $FUNCNAME [-i] [-f] [-d] [-l] [-e] \"fileName pattern\" [top_level_dir_to_search_from]
+    Usage: $FUNCNAME [-i] [-f] [-d] [-l] [-b] [-e] \"fileName pattern\" [top_level_dir_to_search_from]
         -i  filename is case insensitive
         -f  search for regular files
         -d  search for directories
         -l  search for symbolic links
+        -b  search for executable binaries
         -e  serch for exact filename, not for a partial"
 
     filetypeOptionCounter=0
 
-    while getopts "ifdel" opt; do
+    while getopts "ifdelb" opt; do
         case "$opt" in
            i) INAME_ARG="-iname"
-              IREGEX_ARG="-iregex" # TODO: deleteme?
               shift $((OPTIND-1))
                 ;;
            e) exact=1
               shift $((OPTIND-1))
                 ;;
            f | d | l) file_type="-type $opt"
+              let filetypeOptionCounter+=1
+              shift $((OPTIND-1))
+                ;;
+           b) binary=1
               let filetypeOptionCounter+=1
               shift $((OPTIND-1))
                 ;;
@@ -54,7 +58,7 @@ function ffind() {
         echo -e "$usage"
         return 1;
     elif [[ "$filetypeOptionCounter" -gt 1 ]]; then
-        echo -e "-f, -d and -l flags are exclusive.\n"
+        err "-f, -d, -l and -b flags are exclusive.\n" "$FUNCNAME"
         echo -e "$usage"
         return 1
     fi
@@ -71,6 +75,8 @@ function ffind() {
     if [[ "$SRC" == *\.\** ]]; then
         err "only use asterisks (*) for wildcards, not .*" "$FUNCNAME"
         return 1
+    elif [[ "$SRC" == *\.* ]]; then
+        report "note that period (.) will be used as a literal period, not as a wildcard.\n" "$FUNCNAME"
     elif [[ "$SRC" == *\** ]]; then
         #echo -e "please don't use asterisks in filename pattern; searchterm is already padded with wildcards on both sides."
         #return 1
@@ -82,17 +88,31 @@ function ffind() {
     #find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' | grep -i --color=auto "$SRC" 2>/dev/null
     if [[ "$exact" -eq 1 ]]; then
         if [[ "$usegrep" == "false" ]]; then
-            find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null # old; TODO: deleteme if new one proves better
-        else
-            find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null | grep -i --color=auto "$SRC"
+            if [[ "$binary" -eq 1 ]]; then
+                find "${SRCDIR:-.}" -type f "${INAME_ARG:--name}" "$SRC" -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null
+            else
+                find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null # old; TODO: deleteme if new one proves better
+            fi
+        else # use coloring grep
+            if [[ "$binary" -eq 1 ]]; then
+                find "${SRCDIR:-.}" -type f "${INAME_ARG:--name}" "$SRC" -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -i --color=auto "$SRC"
+            else
+                find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null | grep -i --color=auto "$SRC"
+            fi
         fi
-    else
+    else # partial filename match
         if [[ "$usegrep" == "false" ]]; then
-            find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null # old; TODO: deleteme if new one proves better
-            # TODO: try to make this one work:
-            #find "${SRCDIR:-.}" $file_type "${IREGEX_ARG:--regex}" ".*${SRC}.*" -printf '%P\0' 2>/dev/null | xargs -r0 ls --color=auto -1d
-        else
-            find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null | grep -i --color=auto "$SRC"
+            if [[ "$binary" -eq 1 ]]; then
+                find "${SRCDIR:-.}" -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null
+            else
+                find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null # old; TODO: deleteme if new one proves better
+            fi
+        else # use coloring grep
+            if [[ "$binary" -eq 1 ]]; then
+                find "${SRCDIR:-.}" -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -i --color=auto "$SRC"
+            else
+                find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null | grep -i --color=auto "$SRC"
+            fi
         fi
     fi
 
@@ -326,7 +346,7 @@ function sanitize() {
 function sanitize_ssh() {
     local dir="$@"
 
-    [[ -z "$dir" ]] && { echo -e "provide a file/dir name plz."; return 1; }
+    [[ -z "$dir" ]] && { echo -e "provide a file/dir name plz. (most likely you want the .ssh dir)"; return 1; }
     [[ ! -e "$dir" ]] && { echo -e "\"$dir\" does not exist."; return 1; }
 
     chmod -R u=rwX,g=,o= "$dir";
@@ -353,31 +373,33 @@ function my_ip() { # Get internal & external ip addies:
 function myip() { my_ip; } # alias for my_ip
 function whatsmyip() { my_ip; } # alias for my_ip
 
+# !! lrzip might offer best compression when it comes to text: http://unix.stackexchange.com/questions/78262/which-file-compression-software-for-linux-offers-the-highest-size-reduction
 function compress() {
     local usage file type
     file="$1"
     type="$2"
-    usage="$FUNCNAME  fileOrDir  [zip|tar|rar] "
+    usage="$FUNCNAME  fileOrDir  [zip|tar|rar|7z]\n\tif not provided, compression type defaults to tar (tar.bz2) "
 
-    [[ $# -eq 1 || $# -eq 2 ]] || { echo -e "$usage"; return 1; }
+    [[ $# -eq 1 || $# -eq 2 ]] || { err "gimme file/dir to compress plox.\n" "$FUNCNAME"; echo -e "$usage"; return 1; }
     [[ -e "$file" ]] || { echo -e "$file doesn't exist.\n\n$usage"; return 1; }
+    [[ -z "$type" ]] && { report "no compression type selected, defaulting to tar.bz2\n" "$FUNCNAME"; type="tar"; } # default to tar
 
-    if [[ -n "$type" ]]; then
-        case "$type" in
-            zip) makezip "$file"
-                ;;
-            tar) maketar "$file"
-                ;;
-            rar) makerar "$file"
-                ;;
-            *) echo -e "$usage";
-               return 1;
-                ;;
-        esac
-    else
-        # default to tar
-        maketar "$file"
-    fi
+    case "$type" in
+        zip) makezip "$file"
+             ;;
+        #tar) maketar "$file"
+        tar) maketar2 "$file"
+             ;;
+        rar) [[ -d "$file" ]] || { err "input for rar has to be a dir" "$FUNCNAME"; return 1; }
+             makerar "$file"
+             ;;
+        7z)  make7z "$file"
+             ;;
+        *)   err "compression type not supported\n" "$FUNCNAME"
+             echo -e "$usage";
+             return 1;
+             ;;
+    esac
 }
 
 # alias for compress
@@ -386,11 +408,20 @@ function pack() { compress $@; }
 # Creates an archive (*.tar.gz) from given directory.
 function maketar() { tar cvzf "${1%%/}.tar.gz"  "${1%%/}/"; }
 
+# Creates an archive (*.tar.bz2) from given directory.
+# j - use bzip2 compression rather than z option  (heavier compression)
+function maketar2() { tar cvjf "${1%%/}.tar.bz2"  "${1%%/}/"; }
+
 # Create a rar archive.
+# -m# - compresson lvl, 5 being max level, 0 just storage;
 function makerar() { rar a -r -rr10 -m4 "${1%%/}.rar"  "${1%%/}/"; }
 
 # Create a ZIP archive of a file or folder.
 function makezip() { zip -r "${1%%/}.zip" "$1"; }
+
+# Create a 7z archive of a file or folder.
+# -mx=# - compression lvl, 9 being highest (ultra)
+function make7z() { 7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on "${1%%/}.7z" "$1"; }
 
 # alias for extract
 function unpack() { extract $@; }
@@ -404,11 +435,11 @@ function extract() {
     local file_without_extension="${file%.*}"
 
     if [[ -z "$file" ]]; then
-        echo "gimme file to extract plz."
+        err "gimme file to extract plz." "$FUNCNAME"
         return 1
-    elif [[ ! -r "$file" ]]; then
-         echo "'$file' is not a valid file or read rights not granted."
-         return 1
+    elif [[ ! -f "$file" || ! -r "$file" ]]; then
+        err "'$file' is not a valid file or read rights not granted." "$FUNCNAME"
+        return 1
     fi
 
     case "$file" in
@@ -435,15 +466,17 @@ function extract() {
                         ;;
         *.zip)       mkdir "$file_without_extension" && unzip $file -d $file_without_extension
                         ;;
-                        # TODO these last 2 are unverified how and where they'd unpack:
+        *.7z)        mkdir "$file_without_extension" && 7z x "-o$file_without_extension" $file
+                        ;;
+                        # TODO .Z is unverified how and where they'd unpack:
         *.Z)         uncompress $file  ;;
-        *.7z)        7z x $file        ;;
-        *)           echo "'$file' cannot be extracted via  ${FUNCNAME}()"
+        *)           err "'$file' cannot be extracted; this filetype is not supported." "$FUNCNAME"
                         return 1
                         ;;
     esac
 
-    echo -e "extracted $file contents into $file_without_extension"
+    # at the moment this reporting could be erroneous if mkdir fails:
+    #echo -e "extracted $file contents into $file_without_extension"
 }
 
 fontreset() {

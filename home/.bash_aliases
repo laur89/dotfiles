@@ -12,6 +12,8 @@ alias idea='env GTK2_RC_FILES=$__THEME_LOC:/home/laur/.gtkrc-2.0-IDE "/data/prog
 alias giteye='env GTK2_RC_FILES=$__THEME_LOC:/home/laur/.gtkrc-2.0-IDE "/data/progs/GitEye/GitEye"'
 #alias sts='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/STS"'
 alias eclim='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/eclimd"'
+alias skype='LD_PRELOAD=/data/progs/custom_builds/skypetab-ng/libskypetab-ng.so   skype'
+alias fileroller='file-roller'
 ##################################
 #alias clean_failed_mvn="$(find ~/.m2 -name *.lastUpdated -delete)"
 #alias amq="/data/progs/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"
@@ -30,7 +32,10 @@ alias lr='ls -lr'
 alias lsr='ls -lr'
 alias ltr='ls -ltr'
 alias lrt='ls -ltr'
+alias lstr='ls -ltr'
+alias lsrt='ls -ltr'
 alias lt='ls -lt'
+alias lst='ls -lt'
 alias la='ls -lA'
 alias lar='ls -lAr'
 alias lra='ls -lAr'
