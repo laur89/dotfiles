@@ -19,19 +19,22 @@ fi
 
 # find files or dirs:
 function ffind() {
-    local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter usegrep found_files_list parameterised_files_list file index exact binary
-    usage="$FUNCNAME: find files by name.
-    Usage: $FUNCNAME [-i] [-f] [-d] [-l] [-b] [-e] \"fileName pattern\" [top_level_dir_to_search_from]
+    local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter linkTypeOptionCounter usegrep found_files_list parameterised_files_list file index exact binary follow_links maxDepth maxDepthParam
+    usage="\n$FUNCNAME: find files/dirs by name.
+    Usage: $FUNCNAME  [-i] [-f] [-d] [-l] [-b] [-e] [-m depth]  \"fileName pattern\" [top_level_dir_to_search_from]
         -i  filename is case insensitive
         -f  search for regular files
         -d  search for directories
         -l  search for symbolic links
         -b  search for executable binaries
+        -L  follow symlinks. note that this won't work with -l.
+        -m<digit>   max depth to descend
         -e  serch for exact filename, not for a partial"
 
     filetypeOptionCounter=0
+    linkTypeOptionCounter=0
 
-    while getopts "ifdelb" opt; do
+    while getopts "m:ifdelbLh" opt; do
         case "$opt" in
            i) INAME_ARG="-iname"
               shift $((OPTIND-1))
@@ -41,11 +44,22 @@ function ffind() {
                 ;;
            f | d | l) file_type="-type $opt"
               let filetypeOptionCounter+=1
+              [[ "$opt" == "l" ]] && let linkTypeOptionCounter+=1
               shift $((OPTIND-1))
                 ;;
            b) binary=1
               let filetypeOptionCounter+=1
               shift $((OPTIND-1))
+                ;;
+           L) linkTypeOptionCounter+=1
+              follow_links="-follow"
+              shift $((OPTIND-1))
+                ;;
+           m) maxDepth="$OPTARG"
+              shift $((OPTIND-1))
+                ;;
+           h) echo -e "$usage"
+              return 0
                 ;;
            *) echo -e "$usage"; return 1 ;;
         esac
@@ -58,7 +72,11 @@ function ffind() {
         echo -e "$usage"
         return 1;
     elif [[ "$filetypeOptionCounter" -gt 1 ]]; then
-        err "-f, -d, -l and -b flags are exclusive.\n" "$FUNCNAME"
+        err "-f, -d, -l and -b flags are exclusive." "$FUNCNAME"
+        echo -e "$usage"
+        return 1
+    elif [[ "$linkTypeOptionCounter" -gt 1 ]]; then
+        err "-l and -L flags are exclusive." "$FUNCNAME"
         echo -e "$usage"
         return 1
     fi
@@ -80,38 +98,48 @@ function ffind() {
     elif [[ "$SRC" == *\** ]]; then
         #echo -e "please don't use asterisks in filename pattern; searchterm is already padded with wildcards on both sides."
         #return 1
+        # switch grep usage off for coloring, as using asterisks wouldn't pass grep filter:
         usegrep="false"
     fi
 
+    if [[ -n "$maxDepth" ]]; then
+        if ! is_digit "$maxDepth"; then
+            err "maxdepth (the -m flag) arg value has to be a digit, but was \"$maxDepth\"" "$FUNCNAME"
+            echo -e "$usage"
+            return 1
+        fi
+
+        maxDepthParam="-maxdepth $maxDepth"
+    fi
 
     # grep is for coloring only:
     #find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' | grep -i --color=auto "$SRC" 2>/dev/null
     if [[ "$exact" -eq 1 ]]; then
         if [[ "$usegrep" == "false" ]]; then
             if [[ "$binary" -eq 1 ]]; then
-                find "${SRCDIR:-.}" -type f "${INAME_ARG:--name}" "$SRC" -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null
+                find "${SRCDIR:-.}" $maxDepthParam $follow_links -type f "${INAME_ARG:--name}" "$SRC" -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null
             else
-                find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null # old; TODO: deleteme if new one proves better
+                find "${SRCDIR:-.}" $maxDepthParam $follow_links $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null # old; TODO: deleteme if new one proves better
             fi
         else # use coloring grep
             if [[ "$binary" -eq 1 ]]; then
-                find "${SRCDIR:-.}" -type f "${INAME_ARG:--name}" "$SRC" -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -i --color=auto "$SRC"
+                find "${SRCDIR:-.}" $maxDepthParam $follow_links -type f "${INAME_ARG:--name}" "$SRC" -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -i --color=auto "$SRC"
             else
-                find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null | grep -i --color=auto "$SRC"
+                find "${SRCDIR:-.}" $maxDepthParam $follow_links $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null | grep -i --color=auto "$SRC"
             fi
         fi
     else # partial filename match
         if [[ "$usegrep" == "false" ]]; then
             if [[ "$binary" -eq 1 ]]; then
-                find "${SRCDIR:-.}" -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null
+                find "${SRCDIR:-.}" $maxDepthParam $follow_links -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null
             else
-                find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null # old; TODO: deleteme if new one proves better
+                find "${SRCDIR:-.}" $maxDepthParam $follow_links $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null # old; TODO: deleteme if new one proves better
             fi
         else # use coloring grep
             if [[ "$binary" -eq 1 ]]; then
-                find "${SRCDIR:-.}" -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -i --color=auto "$SRC"
+                find "${SRCDIR:-.}" $maxDepthParam $follow_links -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -i --color=auto "$SRC"
             else
-                find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null | grep -i --color=auto "$SRC"
+                find "${SRCDIR:-.}" $maxDepthParam $follow_links $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null | grep -i --color=auto "$SRC"
             fi
         fi
     fi
@@ -154,7 +182,7 @@ function ff() {
 }
 
 function ffindproc() {
-    [[ -z "$1" ]] && { echo -e "process name required"; return 1; }
+    [[ -z "$1" ]] && { err "process name required" "$FUNCNAME"; return 1; }
     # last grep for re-coloring:
     ps -ef | grep -i "$1" | grep -v '\bgrep\b' | grep -i --color=auto "$1"
 
@@ -162,43 +190,215 @@ function ffindproc() {
     #   grep '\$1\b'
 }
 
-# find top 5/x biggest files:
-function ffindtopbig() {
-    local itmesToShow
-    [[ -n "$1" ]] && itmesToShow="$1" || itmesToShow="5"
+# find top 5/x biggest or smallest nodes:
+function __find_top_big_small_fun() {
+    local usage opt OPTIND itemsToShow fileTypeArgs item compiledFileTypeArgs maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_ bigOrSmall
 
-    find . -type f -exec ls -s --block-size=M {} \; | sort -n -r | head -$itmesToShow 2>/dev/null
+    reverse="$1"
+    du_size_unit="$2"
+    FUNCNAME_="$3"
+    bigOrSmall="$4"
+    shift 4
+
+	if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ ]]; then
+        err "unsupported du block size unit: \"$du_size_unit\"" "$FUNCNAME"
+        echo -e "$usage"
+        return 1
+    fi
+
+    usage="\n$FUNCNAME_: find top $bigOrSmall nodes. if node type not specified, defaults to searching for regular files.
+    Usage: $FUNCNAME_  [-f] [-d] [-L] [-m depth]  [nr_of_top_items_to_show]
+        -f  include regular files
+        -d  include directories
+        -L  follow symlinks
+        -m<digit>   max depth to descend"
+
+    while getopts "m:fdLh" opt; do
+        case "$opt" in
+           f) fileTypeArgs="$fileTypeArgs f"
+              shift $((OPTIND-1))
+                ;;
+           d) fileTypeArgs="$fileTypeArgs d"
+              # we don't want to sed maxdepth param here by default, right?
+              #maxDepthParam="-maxdepth 1"
+              shift $((OPTIND-1))
+                ;;
+           m) maxDepth="$OPTARG"
+              shift $((OPTIND-1))
+                ;;
+           L) follow_links="-follow"
+              shift $((OPTIND-1))
+                ;;
+           h) echo -e "$usage"
+              return 0
+                ;;
+           *) echo -e "$usage"; return 1 ;;
+        esac
+    done
+
+    itemsToShow="$1"
+
+    if [[ -z "$fileTypeArgs" ]]; then
+        compiledFileTypeArgs="-type f"
+    else
+        for item in $fileTypeArgs; do
+            [[ -z "$compiledFileTypeArgs" ]] && compiledFileTypeArgs="-type $item" \
+                                             || compiledFileTypeArgs="$compiledFileTypeArgs -o -type $item"
+        done
+    fi
+
+    if [[ -n "$maxDepth" ]]; then
+        if ! is_digit "$maxDepth"; then
+            err "maxdepth arg value has to be... y'know, a digit" "$FUNCNAME_"
+            echo -e "$usage"
+            return 1
+        fi
+
+        maxDepthParam="-maxdepth $maxDepth"
+    fi
+
+    if [[ -n "$itemsToShow" ]]; then
+        if ! is_digit "$itemsToShow"; then
+            err "number of top big items to display has to be... y'know, a digit" "$FUNCNAME_"
+            echo -e "$usage"
+            return 1
+        fi
+    else
+        itemsToShow=10 # default
+    fi
+
+    # the old command, ie using ls, didn't support finding directories:
+    #find . $fileTypeArgs  -exec ls -s --block-size=M {} \; | sort -n -r | head -$itemsToShow 2>/dev/null
+    #find . -not -name . $fileTypeArgs  -exec du -sm {} \; | sort -n -r | head -$itemsToShow 2>/dev/null
+
+    # exclude the starting dir with the -mindepth 1 opt:
+    find . $follow_links -mindepth 1 $maxDepthParam \( $compiledFileTypeArgs \)  -exec du -s --block-size=${du_size_unit} {} \; 2>/dev/null | sort -n $reverse | head -$itemsToShow 2>/dev/null
+}
+
+function ffindtopbig() {
+    __find_top_big_small_fun "-r" "M" "$FUNCNAME" "large" $@
 }
 
 # find top 5/x smallest files:
 function ffindtopsmall() {
-    local itmesToShow
-    [[ -n "$1" ]] && itmesToShow="$1" || itmesToShow="5"
-
-    find . -type f -exec ls -s --block-size=K {} \; | sort -n | head -$itmesToShow 2>/dev/null
+    #find . -type f -exec ls -s --block-size=K {} \; | sort -n | head -$itemsToShow 2>/dev/null
+    __find_top_big_small_fun "" "K" "$FUNCNAME" "small" $@
 }
 
-# find  files bigger than x mb:
+# find smaller/bigger than Xmegas files
+function __find_bigger_smaller_common_fun() {
+    local usage opt OPTIND fileTypeArgs item compiledFileTypeArgs maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_ biggerOrSmaller sizeArg
+
+    reverse="$1" # sorting order
+    du_size_unit="$2"
+    FUNCNAME_="$3" #invoking function name
+    biggerOrSmaller="$4" #denotes whether larger or smaller than X size units were queried
+    shift 4
+
+	if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ ]]; then
+        err "unsupported du block size unit: \"$du_size_unit\"" "$FUNCNAME"
+        echo -e "$usage"
+        return 1
+    fi
+
+    usage="\n$FUNCNAME_: find nodes $biggerOrSmaller than X $du_size_unit. if node type not specified, defaults to searching for regular files.
+    Usage: $FUNCNAME_  [-f] [-d] [-L] [-m depth]  base_size_in_$du_size_unit
+        -f  include regular files
+        -d  include directories
+        -L  follow symlinks
+        -m<digit>   max depth to descend"
+
+    while getopts "m:fdLh" opt; do
+        case "$opt" in
+           f) fileTypeArgs="$fileTypeArgs f"
+              shift $((OPTIND-1))
+                ;;
+           d) fileTypeArgs="$fileTypeArgs d"
+              # we don't want to sed maxdepth param here by default, right?
+              #maxDepthParam="-maxdepth 1"
+              shift $((OPTIND-1))
+                ;;
+           m) maxDepth="$OPTARG"
+              shift $((OPTIND-1))
+                ;;
+           L) follow_links="-follow"
+              shift $((OPTIND-1))
+                ;;
+           h) echo -e "$usage"
+              return 0
+                ;;
+           *) echo -e "$usage"; return 1 ;;
+        esac
+    done
+
+    sizeArg="$1"
+
+    if [[ -z "$fileTypeArgs" ]]; then
+        compiledFileTypeArgs="-type f"
+    else
+        for item in $fileTypeArgs; do
+            [[ -z "$compiledFileTypeArgs" ]] && compiledFileTypeArgs="-type $item" \
+                                             || compiledFileTypeArgs="$compiledFileTypeArgs -o -type $item"
+        done
+    fi
+
+    if [[ -n "$maxDepth" ]]; then
+        if ! is_digit "$maxDepth"; then
+            err "maxdepth arg value has to be... y'know, a digit" "$FUNCNAME_"
+            echo -e "$usage"
+            return 1
+        fi
+
+        maxDepthParam="-maxdepth $maxDepth"
+    fi
+
+    if [[ -n "$sizeArg" ]]; then
+        if ! is_digit "$sizeArg"; then
+            err "base size has to be a digit." "$FUNCNAME_"
+            echo -e "$usage"
+            return 1
+        fi
+    else
+        #sizeArg=5
+        err "need to provide base size in $du_size_unit" "$FUNCNAME_"
+        echo -e "$usage"
+        return 1
+    fi
+
+    # note that different find commands are defined purely because of < vs > in awk command.
+    if [[ "$biggerOrSmaller" == "smaller" ]]; then # meaning that ffindsmallerthan function was invoker
+        #TODO: why doesn't this work? (note the sizeArg in awk):
+        #find . $follow_links -mindepth 1 $maxDepthParam \( $compiledFileTypeArgs \)  -exec du -s --block-size=${du_size_unit} {} \; 2>/dev/null | awk '{var=substr($1, 0, length($1))+0; if (var < "'"$sizeArg"'") printf("%s\t%s\n", $1, $2)}' | sort -n $reverse 2>/dev/null
+        find . $follow_links -mindepth 1 $maxDepthParam \( $compiledFileTypeArgs \)  -exec du -s --block-size=${du_size_unit} {} \; 2>/dev/null | \
+            awk -v sizeArg=$sizeArg '{var=substr($1, 0, length($1))+0; if (var < sizeArg) printf("%s\t%s\n", $1, $2)}' | \
+            sort -n $reverse 2>/dev/null
+    elif [[ "$biggerOrSmaller" == "bigger" ]]; then # meaning that ffindbiggerthan function was invoker
+        find . $follow_links -mindepth 1 $maxDepthParam \( $compiledFileTypeArgs \)  -exec du -s --block-size=${du_size_unit} {} \; 2>/dev/null | \
+            awk -v sizeArg=$sizeArg '{var=substr($1, 0, length($1))+0; if (var > sizeArg) printf("%s\t%s\n", $1, $2)}' | \
+            sort -n $reverse 2>/dev/null
+    else
+        err "could not detect whether we should look for smaller or larger than ${sizeArg}$du_size_unit files" "$FUNCNAME_"
+        return 1
+    fi
+}
+
+# find  nodes bigger than x mb:
 function ffindbiggerthan() {
-    local size
-    [[ -n "$1" ]] && size="$1" || size="1024"
-
-    find . -size +${size}M -exec ls -s --block-size=M {} \; | sort -nr 2>/dev/null
+    #find . -size +${size}M -exec ls -s --block-size=M {} \; | sort -nr 2>/dev/null
+    __find_bigger_smaller_common_fun "-r" "M" "$FUNCNAME" "bigger" $@
 }
 
-# find  files smalles than x mb:
+# find  nodes smalles than x mb:
 function ffindsmallerthan() {
-    local size
-    [[ -n "$1" ]] && size="$1" || size="1024"
-
-    find . -size -${size}M -exec ls -s --block-size=M {} \; | sort -n 2>/dev/null
+    #find . -size -${size}M -exec ls -s --block-size=M {} \; | sort -n 2>/dev/null
+    __find_bigger_smaller_common_fun "" "M" "$FUNCNAME" "smaller" $@
 }
 
 # mkdir and cd into it:
 function mkcd() { mkdir -p "$@" && cd "$@"; }
 
 function aptsearch() {
-    [[ -z "$@" ]] && { echo -e "provide partial package name to search for."; return 1; }
+    [[ -z "$@" ]] && { err "provide partial package name to search for." "$FUNCNAME"; return 1; }
     aptitude search "$@"
     #apt-cache search "$@"
 }
@@ -244,9 +444,9 @@ function swap() {
     TMPFILE="/tmp/${FUNCNAME}_function_tmpFile.$RANDOM"
 
     count_params 2 $# equal || return 1
-    [[ ! -e "$1" ]] && echo "${FUNCNAME}(): $1 does not exist" && return 1
-    [[ ! -e "$2" ]] && echo "${FUNCNAME}(): $2 does not exist" && return 1
-    [[ "$1" == "$2" ]] && echo "${FUNCNAME}(): source and destination cannot be the same" && return 1
+    [[ ! -e "$1" ]] && err "$1 does not exist" "$FUNCNAME" && return 1
+    [[ ! -e "$2" ]] && err "$2 does not exist" "$FUNCNAME" && return 1
+    [[ "$1" == "$2" ]] && err "source and destination cannot be the same" "$FUNCNAME" && return 1
 
     # check write perimssions:
     for i in "$TMPFILE" "$1" "$2"; do
@@ -261,7 +461,7 @@ function swap() {
     file_size="$(get_size "$1")"
     space_left_on_target="$(space_left "$TMPFILE")"
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
-        echo -e "${FUNCNAME}(): $1 size is ${file_size}MB, but $(dirname "$TMPFILE") has only ${space_left_on_target}MB free space left. abort."
+        err "$1 size is ${file_size}MB, but $(dirname "$TMPFILE") has only ${space_left_on_target}MB free space left. abort." "$FUNCNAME"
         return 1
     fi
 
@@ -274,7 +474,7 @@ function swap() {
     file_size="$(get_size "$2")"
     space_left_on_target="$(space_left "$1")"
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
-        echo -e "${FUNCNAME}(): $2 size is ${file_size}MB, but $(dirname "$1") has only ${space_left_on_target}MB free space left. abort."
+        err "$2 size is ${file_size}MB, but $(dirname "$1") has only ${space_left_on_target}MB free space left. abort." "$FUNCNAME"
         # undo:
         mv "$TMPFILE" "$1"
         return 1
@@ -291,7 +491,7 @@ function swap() {
     file_size="$(get_size "$TMPFILE")"
     space_left_on_target="$(space_left "$2")"
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
-        echo -e "${FUNCNAME}(): $1 size is ${file_size}MB, but $(dirname "$2") has only ${space_left_on_target}MB free space left. abort."
+        err "$1 size is ${file_size}MB, but $(dirname "$2") has only ${space_left_on_target}MB free space left. abort." "$FUNCNAME"
         # undo:
         mv "$1" "$2"
         mv "$TMPFILE" "$1"
@@ -319,11 +519,11 @@ function lgrep() {
         return 1;
     elif [[ -n "$SRCDIR" ]]; then
         if [[ ! -d "$SRCDIR" ]]; then
-            echo -e "provided directory to list and grep from is not a directory. abort."
+            err "provided directory to list and grep from is not a directory. abort." "$FUNCNAME"
             echo -e "\n$usage"
             return 1
         elif [[ ! -r "$SRCDIR" ]]; then
-            echo -e "provided directory to list and grep from is not readable. abort."
+            err "provided directory to list and grep from is not readable. abort." "$FUNCNAME"
             return 1
         fi
     fi
@@ -338,16 +538,16 @@ function lgrep() {
 # Make your directories and files access rights sane.
 # (sane as in rw for owner, r for group, none for others)
 function sanitize() {
-    [[ -z "$@" ]] && { echo -e "provide a file/dir name plz."; return 1; }
-    [[ ! -e "$@" ]] && { echo -e "\"$@\" does not exist."; return 1; }
+    [[ -z "$@" ]] && { err "provide a file/dir name plz." "$FUNCNAME"; return 1; }
+    [[ ! -e "$@" ]] && { err "\"$@\" does not exist." "$FUNCNAME"; return 1; }
     chmod -R u=rwX,g=rX,o= "$@";
 }
 
 function sanitize_ssh() {
     local dir="$@"
 
-    [[ -z "$dir" ]] && { echo -e "provide a file/dir name plz. (most likely you want the .ssh dir)"; return 1; }
-    [[ ! -e "$dir" ]] && { echo -e "\"$dir\" does not exist."; return 1; }
+    [[ -z "$dir" ]] && { err "provide a file/dir name plz. (most likely you want the .ssh dir)" "$FUNCNAME"; return 1; }
+    [[ ! -e "$dir" ]] && { err "\"$dir\" does not exist." "$FUNCNAME"; return 1; }
 
     chmod -R u=rwX,g=,o= "$dir";
 }
@@ -381,7 +581,7 @@ function compress() {
     usage="$FUNCNAME  fileOrDir  [zip|tar|rar|7z]\n\tif not provided, compression type defaults to tar (tar.bz2) "
 
     [[ $# -eq 1 || $# -eq 2 ]] || { err "gimme file/dir to compress plox.\n" "$FUNCNAME"; echo -e "$usage"; return 1; }
-    [[ -e "$file" ]] || { echo -e "$file doesn't exist.\n\n$usage"; return 1; }
+    [[ -e "$file" ]] || { err "$file doesn't exist." "$FUNCNAME"; echo -e "\n\n$usage"; return 1; }
     [[ -z "$type" ]] && { report "no compression type selected, defaulting to tar.bz2\n" "$FUNCNAME"; type="tar"; } # default to tar
 
     case "$type" in
@@ -515,7 +715,8 @@ clock() {
 }
 
 xmlformat() {
-    [[ -z "$@" ]] && { echo -e "$FUNCNAME  <filename>"; return 1; }
+    [[ -z "$@" ]] && { echo -e "usage:   $FUNCNAME  <filename>"; return 1; }
+    [[ -f "$@" && -r "$@" ]] || { err "provided file \"$@\" is not a regular file or is not readable. abort." "$FUNCNAME"; return 1; }
     xmllint --format $@ | vim  "+set foldlevel=99" -;
 }
 
@@ -531,19 +732,19 @@ function createUsbIso() {
     usage="$FUNCNAME  image.file  device"
 
     if [[ -z "$file" || -z "$device" || -z "$cleaned_devicename" ]]; then
-        echo -e "either file or device weren't provided"
+        err "either file or device weren't provided" "$FUNCNAME"
         echo -e "$usage"
         return 1;
     elif [[ ! -f "$file" ]]; then
-        echo -e "$file is not a regular file"
+        err "$file is not a regular file" "$FUNCNAME"
         echo -e "$usage"
         return 1;
     elif [[ ! -e "$device" ]]; then
-        echo -e "$device does not exist"
+        err "$device does not exist" "$FUNCNAME"
         echo -e "$usage"
         return 1;
     elif ! ls /dev | grep "\b$cleaned_devicename\b";then
-        echo -e "$device does not exist in /dev"
+        err "$device does not exist in /dev" "$FUNCNAME"
         echo -e "$usage"
         return 1;
     #elif [[ "${cleaned_devicename:$(( ${#cleaned_devicename} - 1)):1}" =~ ^[0-9:]+$ ]]; then
@@ -564,16 +765,15 @@ function createUsbIso() {
     #lsblk -o name,size,mountpoint /dev/sda
     mountpoint="$(lsblk -o mountpoint $device | sed -n 3p)"
     if [[ -n "$mountpoint" ]]; then
-        echo -e "$device appears to be mounted at $mountpoint, trying to unmount..."
+        report "$device appears to be mounted at $mountpoint, trying to unmount..." "$FUNCNAME"
         if ! umount "$mountpoint"; then
-            echo -e "something went wrong with unmounting."
-            echo -e "please unmount the device and try again."
+            err "something went wrong with unmounting. please unmount the device and try again." "$FUNCNAME"
             return 1
         fi
-        echo -e "...success."
+        report "...success." "$FUNCNAME"
     fi
 
-    echo -e "Please provide sudo passwd for running dd:"
+    report "Please provide sudo passwd for running dd:" "$FUNCNAME"
     sudo echo -e "Running dd, this might take a while..."
     sudo dd if="$file" of="$device" bs=4M
     sync
@@ -590,7 +790,7 @@ function mkgit() {
 
    # check dir
    [[ -n "$dir" ]] || {
-      echo "usage: mkgit <dir> [name]"
+      err "usage: mkgit <dir> [name]" "$FUNCNAME"
       return 1
    }
 
@@ -600,7 +800,7 @@ function mkgit() {
 
    # bail out, if already git repo
    [[ -d "$dir/.git" ]] && {
-      echo "already a git repo: $dir"
+      err "already a git repo: $dir" "$FUNCNAME"
       return 1
    }
 
