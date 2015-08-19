@@ -6,7 +6,7 @@
 #
 # =====================================================================
 # import common:
-if [[ -z "$__COMMONS_LOADED" ]]; then
+if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
     if [[ -r "$_SCRIPTS_COMMONS" ]]; then
         source "$_SCRIPTS_COMMONS"
     else
@@ -69,6 +69,7 @@ function ffind() {
     SRCDIR="$2"
 
     if [[ "$#" -lt 1 || "$#" -gt 2 || -z "$SRC" ]]; then
+        err "incorrect nr of aguments." "$FUNCNAME"
         echo -e "$usage"
         return 1;
     elif [[ "$filetypeOptionCounter" -gt 1 ]]; then
@@ -86,7 +87,7 @@ function ffind() {
             err "provided directory to search from is not a directory. abort." "$FUNCNAME"
             return 1
         elif [[ "${SRCDIR:$(( ${#SRCDIR} - 1)):1}" != "/" ]]; then
-            SRCDIR="${SRCDIR}/" # add trailing slash if missing; required for gnu find
+            SRCDIR="${SRCDIR}/" # add trailing slash if missing; required for gnu find; is it really the case??
         fi
     fi
 
@@ -430,8 +431,8 @@ function ffstr() {
         return 1;
     fi
 
-    find . -type f -iname '*'"${2:-*}"'*' -print0 | \
-        xargs -0 egrep --color=always -sn ${grepcase} "$1" 2>&- | \
+    find . -type f -iname '*'"${2:-*}"'*' -print0 2>/dev/null | \
+        xargs -0 egrep --color=always -sn ${grepcase} "$1" | \
         cut -c 1-$MAX_RESULT_LINE_LENGTH | \
         more
         #less
@@ -748,6 +749,7 @@ function createUsbIso() {
         echo -e "$usage"
         return 1;
     elif [[ "${cleaned_devicename:$(( ${#cleaned_devicename} - 1)):1}" =~ ^[0-9:]+$ ]]; then
+        # as per arch wiki
         err "please don't provide partition, but a drive, e.g. /dev/sdh instad of /dev/sdh1" "$FUNCNAME"
         echo -e "$usage"
         return 1
@@ -757,13 +759,13 @@ function createUsbIso() {
     #sudo fdisk -l $device
     lsblk | grep --color=auto "$cleaned_devicename\|MOUNTPOINT"
 
-    if ! confirm  "\nis selected device - $device - the correct one? (y/n)"; then
+    if ! confirm  "\nis selected device - $device - the correct one (be VERY sure!)? (y/n)"; then
         return 1
     fi
 
     # find if device is mounted:
     #lsblk -o name,size,mountpoint /dev/sda
-    mountpoint="$(lsblk -o mountpoint $device | sed -n 3p)"
+    mountpoint="$(lsblk -o mountpoint "$device" | sed -n 3p)"
     if [[ -n "$mountpoint" ]]; then
         report "$device appears to be mounted at $mountpoint, trying to unmount..." "$FUNCNAME"
         if ! umount "$mountpoint"; then
@@ -774,7 +776,7 @@ function createUsbIso() {
     fi
 
     report "Please provide sudo passwd for running dd:" "$FUNCNAME"
-    sudo echo -e "Running dd, this might take a while..."
+    sudo echo -e "Running dd, this might take a while..." # do not use 'report' as root might not have that
     sudo dd if="$file" of="$device" bs=4M
     sync
     #eject $device
