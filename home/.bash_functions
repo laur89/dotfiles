@@ -747,10 +747,10 @@ function createUsbIso() {
         err "$device does not exist in /dev" "$FUNCNAME"
         echo -e "$usage"
         return 1;
-    #elif [[ "${cleaned_devicename:$(( ${#cleaned_devicename} - 1)):1}" =~ ^[0-9:]+$ ]]; then
-        #echo -e "please don't provide partition, but a drive, e.g. /dev/sdh instad of /dev/sdh1"
-        #echo -e "$usage"
-        #return 1
+    elif [[ "${cleaned_devicename:$(( ${#cleaned_devicename} - 1)):1}" =~ ^[0-9:]+$ ]]; then
+        err "please don't provide partition, but a drive, e.g. /dev/sdh instad of /dev/sdh1" "$FUNCNAME"
+        echo -e "$usage"
+        return 1
     fi
 
     #echo "please provide passwd for running fdisk -l to confirm the selected device is the right one:"
