@@ -4,16 +4,17 @@
 
 #deb cdrom:[Debian GNU/Linux jessie-DI-b2 _Jessie_ - Official Snapshot amd64 NETINST Binary-1 20141003-18:31]/ jessie main
 
-deb http://ftp.uk.debian.org/debian/ jessie main non-free contrib
-deb-src http://ftp.uk.debian.org/debian/ jessie main non-free contrib
+deb http://ftp.uk.debian.org/debian/ testing main non-free contrib
+deb-src http://ftp.uk.debian.org/debian/ testing main non-free contrib
 
-deb http://security.debian.org/ jessie/updates main contrib non-free
-deb-src http://security.debian.org/ jessie/updates main contrib non-free
+deb http://security.debian.org/ testing/updates main contrib non-free
+deb-src http://security.debian.org/ testing/updates main contrib non-free
 
-# jessie-updates, previously known as 'volatile'
-deb http://ftp.uk.debian.org/debian/ jessie-updates main contrib non-free
-deb-src http://ftp.uk.debian.org/debian/ jessie-updates main contrib non-free
+# testing-updates, previously known as 'volatile'
+deb http://ftp.uk.debian.org/debian/ testing-updates main contrib non-free
+deb-src http://ftp.uk.debian.org/debian/ testing-updates main contrib non-free
 
+#### !!!!!! no backports per release:
 # jessie-backports, previously on backports.debian.org
 deb http://ftp.uk.debian.org/debian/ jessie-backports main contrib non-free
 deb-src http://ftp.uk.debian.org/debian/ jessie-backports main contrib non-free
@@ -33,3 +34,6 @@ deb-src http://apt.mopidy.com/ stable main contrib non-free
 # sid:
 #deb http://ftp.uk.debian.org/debian/ unstable main non-free contrib
 #deb-src http://ftp.uk.debian.org/debian/ unstable main non-free contrib
+
+# skypetab:
+#deb http://ppa.launchpad.net/keks9n/skypetab/ubuntu lucid main

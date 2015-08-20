@@ -178,9 +178,9 @@ function ffind() {
 
 # Find a file with a pattern in name (inside wd);
 # essentially same as ffind(), but a bit simplified:
-function ff() {
-    find . -type f -iname '*'"$*"'*'  -ls
-}
+#function ff() {
+    #find . -type f -iname '*'"$*"'*'  -ls
+#}
 
 function ffindproc() {
     [[ -z "$1" ]] && { err "process name required" "$FUNCNAME"; return 1; }
@@ -410,6 +410,7 @@ function aptsrc() { aptsearch "$@"; } #alias
 #+ (needs a recent version of egrep).
 function ffstr() {
     local grepcase OPTIND usage opt MAX_RESULT_LINE_LENGTH
+
     OPTIND=1
     MAX_RESULT_LINE_LENGTH=300 # max nr of characters per grep result line
     usage="$FUNCNAME: find string in files (from current directory recursively).
@@ -514,7 +515,7 @@ function lgrep() {
 
     SRC="$1"
     SRCDIR="$2"
-    usage="$FUNCNAME  name_to_grep [dir_to_look_from]"
+    usage="$FUNCNAME  filename_to_grep  [dir_to_look_from]"
     if [[ "$#" -lt 1 || "$#" -gt 2 || -z "$SRC" ]]; then
         echo -e "$usage"
         return 1;
