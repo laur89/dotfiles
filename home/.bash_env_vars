@@ -86,9 +86,14 @@ export _MAX_STARTING_VOL_FOR_EARPHONES=80
 if [[ -d "/data/tmp" ]] && [[ -w "/data/tmp" ]]; then
     export _PERSISTED_TMP="/data/tmp"
 else
+    echo -e "preferred persisted tempdir at /data/tmp not found; defaulting to /tmp"
     export _PERSISTED_TMP="/tmp"
 fi
 
-if [[ "$EUID" -eq 0 ]] && [[ -z "$DISPLAY" ]]; then
+if [[ -z "$DISPLAY" ]]; then
     export DISPLAY=":0.0"
 fi
+
+# marker function used to detect whether env vars have been loaded:
+function __ENV_VARS_LOADED_MARKER() { true; }
+

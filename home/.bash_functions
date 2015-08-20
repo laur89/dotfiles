@@ -838,7 +838,7 @@ function sethometime() {
     timedatectl set-timezone Europe/Tallinn
 }
 
-function setesttime() { sethometime; }
+#function setesttime() { sethometime; }
 function setestoniatime() { sethometime; }
 
 function setgibtime() {
