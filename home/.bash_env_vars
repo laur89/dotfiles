@@ -90,7 +90,9 @@ else
     export _PERSISTED_TMP="/tmp"
 fi
 
-if [[ -z "$DISPLAY" ]]; then
+#if [[ -z "$DISPLAY" ]]; then
+# test whether the shell is interactive; if not, set the display:
+if ! [[ -t 0 || -p /dev/stdin ]]; then
     export DISPLAY=":0.0"
 fi
 
