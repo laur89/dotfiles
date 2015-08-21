@@ -86,14 +86,23 @@ export _MAX_STARTING_VOL_FOR_EARPHONES=80
 if [[ -d "/data/tmp" ]] && [[ -w "/data/tmp" ]]; then
     export _PERSISTED_TMP="/data/tmp"
 else
-    echo -e "preferred persisted tempdir at /data/tmp not found; defaulting to /tmp"
+    echo -e "    preferred persisted tempdir at /data/tmp not found; defaulting to /tmp"
     export _PERSISTED_TMP="/tmp"
 fi
 
-#if [[ -z "$DISPLAY" ]]; then
 # test whether the shell is interactive; if not, set the display:
-if ! [[ -t 0 || -p /dev/stdin ]]; then
-    export DISPLAY=":0.0"
+# (as per http://www.tldp.org/LDP/abs/html/intandnonint.html)
+#if [[ -z "$DISPLAY" ]]; then
+#if ! [[ -t 0 || -p /dev/stdin ]]; then
+#if [[ ! -t 0 && ! -p /dev/stdin ]]; then
+#if [[ "$(tty)" == "/dev/tty1" ]]; then
+#if [[ "$-" != *i* ]] && [[ -z "$DISPLAY" ]]; then
+if [[ "$EUID" -eq 0 && -z "$DISPLAY" ]] || [[ "$-" != *i* ]]; then
+
+#if ! shopt -q login_shell; then
+#if [[ "$(tty)" != "/dev/tty1" ]] && [[ \"\$(who | cut -d' ' -f1 | sort | uniq)\" == \"\$usr\" ]]; do
+
+    export DISPLAY=":0"
 fi
 
 # marker function used to detect whether env vars have been loaded:
