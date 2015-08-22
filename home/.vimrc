@@ -220,6 +220,7 @@ set nocompatible " Must be the first line
     " add :CopyPath and :CopyFileName commands
     Plugin 'vim-scripts/copypath.vim'
 
+    " consider targets.vim - adds new text objects
 
     " Finish Vundle stuff
     call vundle#end()

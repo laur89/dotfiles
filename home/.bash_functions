@@ -397,6 +397,7 @@ function ffindsmallerthan() {
 
 # mkdir and cd into it:
 function mkcd() { mkdir -p "$@" && cd "$@"; }
+function mkf() { mkcd "$@"; } # alias to mkcd
 
 function aptsearch() {
     [[ -z "$@" ]] && { err "provide partial package name to search for." "$FUNCNAME"; return 1; }

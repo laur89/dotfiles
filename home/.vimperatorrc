@@ -1,0 +1,111 @@
+" ~/.vimperatorrc | vi: set ft=vimperator:
+
+" from https://gist.github.com/igal/329662#file-vimperatorrc-local-vim-L113   and
+" https://raw.githubusercontent.com/cfree3/config/master/.vimperatorrc
+"===[ Settings ]========================================================
+
+" These settings prevent Vimperator from overwriting my preferred Firefox settings.
+set! browser.startup.page=1
+
+" Awesome Bar
+"" See http://developernotes.com/archive/2008/09/22/vimperator-tip-awesome-bar.aspx.
+"" Additional 's' option gives initial suggestion of search engine but (mistakenly?)
+"" enables suggestions (which should only occur given 'S'). Useful, but I'll favor
+"" privacy/security and just use 'l' here.
+set complete=l
+
+" Scrolling
+"" Vimperator does not give the user direct control over scroll distance. Vimium (for
+"" Chromium/Google Chrome) uses a nice 60px by default; 2<dir> is much smaller, but it
+"" feels better in Vimperator.
+nnoremap j 2j
+nnoremap k 2k
+nnoremap h 2h
+nnoremap l 2l
+
+" Display
+"" show only the tab bar
+set gui=tabs
+"" show numbers on each tab
+set tabnumbers
+"" see http://code.google.com/p/vimperator-labs/issues/detail?id=311
+set popups=tab,resized
+
+" Find
+"" perform incremental searching
+set incsearch
+"" highlight search results
+set hlsearch
+"" typically (see below) ignore case
+set ignorecase
+"" only consider case if an upper case char is used
+set smartcase
+" Select the longest autocomplete match
+set wildmode='list:full'
+" Don't beep
+set noerrorbells
+
+" Make Firefox run faster by using JIT
+set! javascript.options.jit.chrome=true
+
+"""" GNU Screen-like Tabs
+""""" NOTE: These interfere with Vimperator's default <C-a> functionality.
+"""""       See `:h <C-a>`.
+"map <C-a>c <C-t>
+"map <C-a>n <C-Tab>
+"map <C-a>p <S-C-Tab>
+"map <C-a>k d
+
+" more colors from https://github.com/vimpr/vimperator-colors
+":colorscheme desert
+
+
+" Comms
+"" App Tabs
+command! app set apptab!
+
+
+"===[ Status bars ]=====================================================
+" Make bar yellow when focused.
+" From: http://www.reddit.com/r/linux/comments/99d55/i_could_use_a_little_vimperator_help_also/
+javascript <<EOF
+(function() {
+var inputElement = document.getElementById('liberator-commandline-command');
+function swapBGColor(event) {
+inputElement.style.backgroundColor = event.type == "focus" ? "yellow" : "";
+}
+inputElement.addEventListener('focus', swapBGColor, false);
+inputElement.addEventListener('blur', swapBGColor, false);
+})();
+EOF
+"===[ Auto commands ]===================================================
+" Pass through all keys (like CTRL-Z) on Gmail and Google Reader:
+"autocmd LocationChange .* :js modes.passAllKeys = /mail\.google\.com|www\.google\.com\/reader\/view/.test(buffer.URL)
+"===[ Custom commands ]=================================================
+" Load configuration file into current browser, useful for updating after editing this file.
+command! sourcerc :source ~/.vimperatorrc
+" Show properties of an object within JavaScript.
+javascript <<EOB
+function inspect(what) {
+var nodes = [];
+for (var node in what)
+nodes.push(node);
+liberator.echo(nodes.sort().join(', '));
+}
+EOB
+"===[ Mappings ]========================================================
+" Use h,l to move left,right between tabs
+nnoremap <S-K> :tabprevious<Return>
+nnoremap <S-J> :tabnext<Return>
+
+" Use <C-h>,<C-l> to move a tab one position left,right
+nnoremap <C-h> :tabmove!<Space>-1<Return>
+nnoremap <C-l> :tabmove!<Space>+1<Return>
+
+" Use arrows to navigate tabs, <Del> to close a tab
+nnoremap <Left> :tabprevious<Return>
+nnoremap <Right> :tabnext<Return>
+nnoremap <Del> :tabclose<Return>
+
+nnoremap q :bdelete -select lastactive<Return>
+"===[ fin ]=============================================================
