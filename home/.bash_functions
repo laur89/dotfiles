@@ -94,9 +94,11 @@ function ffind() {
     if [[ "$SRC" == *\.\** ]]; then
         err "only use asterisks (*) for wildcards, not .*" "$FUNCNAME"
         return 1
-    elif [[ "$SRC" == *\.* ]]; then
+    fi
+    if [[ "$SRC" == *\.* ]]; then
         report "note that period (.) will be used as a literal period, not as a wildcard.\n" "$FUNCNAME"
-    elif [[ "$SRC" == *\** ]]; then
+    fi
+    if [[ "$SRC" == *\** ]]; then
         #echo -e "please don't use asterisks in filename pattern; searchterm is already padded with wildcards on both sides."
         #return 1
         # switch grep usage off for coloring, as using asterisks wouldn't pass grep filter:

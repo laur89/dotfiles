@@ -57,7 +57,7 @@ set! javascript.options.jit.chrome=true
 "map <C-a>k d
 
 " more colors from https://github.com/vimpr/vimperator-colors
-":colorscheme desert
+":colorscheme sweets
 
 
 " Comms
