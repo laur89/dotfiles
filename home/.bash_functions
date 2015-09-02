@@ -19,22 +19,23 @@ fi
 
 # find files or dirs:
 function ffind() {
-    local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter linkTypeOptionCounter usegrep found_files_list parameterised_files_list file index exact binary follow_links maxDepth maxDepthParam
+    local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter linkTypeOptionCounter usegrep found_files_list parameterised_files_list file index exact binary follow_links maxDepth maxDepthParam pathOpt
     usage="\n$FUNCNAME: find files/dirs by name.
     Usage: $FUNCNAME  [-i] [-f] [-d] [-l] [-b] [-e] [-m depth]  \"fileName pattern\" [top_level_dir_to_search_from]
-        -i  filename is case insensitive
+        -i  pattern is case insensitive
         -f  search for regular files
         -d  search for directories
         -l  search for symbolic links
         -b  search for executable binaries
         -L  follow symlinks. note that this won't work with -l.
         -m<digit>   max depth to descend
-        -e  serch for exact filename, not for a partial"
+        -e  serch for exact filename, not for a partial
+        -p  expand the pattern search for path as well (adds the -path option)"
 
     filetypeOptionCounter=0
     linkTypeOptionCounter=0
 
-    while getopts "m:ifdelbLh" opt; do
+    while getopts "m:ifdelbLhp" opt; do
         case "$opt" in
            i) INAME_ARG="-iname"
               shift $((OPTIND-1))
@@ -56,6 +57,9 @@ function ffind() {
               shift $((OPTIND-1))
                 ;;
            m) maxDepth="$OPTARG"
+              shift $((OPTIND-1))
+                ;;
+           p) pathOpt=1
               shift $((OPTIND-1))
                 ;;
            h) echo -e "$usage"
@@ -94,15 +98,15 @@ function ffind() {
     if [[ "$SRC" == *\.\** ]]; then
         err "only use asterisks (*) for wildcards, not .*" "$FUNCNAME"
         return 1
-    fi
-    if [[ "$SRC" == *\.* ]]; then
-        report "note that period (.) will be used as a literal period, not as a wildcard.\n" "$FUNCNAME"
-    fi
-    if [[ "$SRC" == *\** ]]; then
+    elif [[ "$SRC" == *\** ]]; then
         #echo -e "please don't use asterisks in filename pattern; searchterm is already padded with wildcards on both sides."
         #return 1
         # switch grep usage off for coloring, as using asterisks wouldn't pass grep filter:
         usegrep="false"
+    fi
+
+    if [[ "$SRC" == *\.* ]]; then
+        report "note that period (.) will be used as a literal period, not as a wildcard.\n" "$FUNCNAME"
     fi
 
     if [[ -n "$maxDepth" ]]; then
@@ -113,6 +117,10 @@ function ffind() {
         fi
 
         maxDepthParam="-maxdepth $maxDepth"
+    fi
+
+    if [[ "$pathOpt" -eq 1 ]]; then
+        [[ -n "$INAME_ARG" ]] && INAME_ARG="-iwholename" || INAME_ARG="-path" # as per man page, -ipath is deprecated
     fi
 
     # grep is for coloring only:

@@ -20,7 +20,6 @@ if [[ -d "$HOME/bin" ]] ; then
 fi
 
 export CUSTOM_LOGDIR="/var/log/custom_logs"
-export SSH_LOGIN_USER=laliste   # for WH LDAP login script
 export PANEL_FIFO="/tmp/panel-fifo" # for BSPWM
 
 # Colorize less (from http://unix.stackexchange.com/questions/119/colors-in-man-pages)

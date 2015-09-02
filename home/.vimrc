@@ -217,6 +217,9 @@ set nocompatible " Must be the first line
     " vim sugar for unix shell commands:
     Plugin 'tpope/vim-eunuch'
 
+    " asyn jobs
+    Plugin 'tpope/vim-dispatch'
+
     " add :CopyPath and :CopyFileName commands
     Plugin 'vim-scripts/copypath.vim'
 
@@ -735,7 +738,7 @@ set nocompatible " Must be the first line
     " CtrlP - don't recalculate files on start (slow)
     let g:ctrlp_clear_cache_on_exit = 0
     let g:ctrlp_working_path_mode = 'ra'
-    "let g:ctrlp_root_markers = ['.ctrlp']  "consider this, since .git isn't as good with submodules
+    let g:ctrlp_root_markers = ['.ctrlp']  "consider this, since .git isn't as good with submodules
     "let g:ctrlp_working_path_mode = ""
     "let g:ctrlp_dotfiles = 0
     let g:ctrlp_max_files = 0
@@ -788,10 +791,11 @@ set nocompatible " Must be the first line
     " TagBar
     let g:tagbar_left = 0
     let g:tagbar_width = 30
-    set tags=./.tags,./tags,tags,~/.vimtags     "not actually a TagBar setting per se.; .vimtags is written by easytags plugin by default;
 
     " vim-easytags:
-    "let g:easytags_by_filetype = '~/.vim/tags' " TODO: would want, but how to use with jsctags?
+    set tags=./.tags;,~/.vimtags
+    let g:easytags_dynamic_files = 1 " search for project specific tags; relative to wd or buffer!
+    let g:easytags_by_filetype = '~/.vim/tags' " TODO: how to use with jsctags?; also fyi -  dynamic_files takes precedence over this
     let g:easytags_always_enabled = 1
     let g:easytags_on_cursorhold = 1
     "let g:easytags_include_members = 1
@@ -811,7 +815,7 @@ set nocompatible " Must be the first line
                 "\   }
                 "\}
 
-    " eclim:
+    " Eclim:
     " eclim completon registration to vim's omni complete which YCM automatically
     " detects:
     let g:EclimCompletionMethod = 'omnifunc'
@@ -892,7 +896,6 @@ set nocompatible " Must be the first line
     let g:syntastic_c_auto_refresh_includes = 1
 
     let g:syntastic_python_checkers = ['flake8', 'python']
-
     let g:syntastic_bash_checkers = ['shellcheck', 'checkbashisms']
     let g:syntastic_sh_checkers = ['shellcheck', 'checkbashisms']
     let g:syntastic_javascript_checkers = ['jshint']

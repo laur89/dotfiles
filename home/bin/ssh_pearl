@@ -16,7 +16,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+# #########################################
+# This is a slightly modified version of the original ssh_pearl:
+# it calls the ssh_pearl function with passed arguments; that way it can be invoked
+# by other scripts. It also forces the TERM env var.
 
 function ssh_pearl(){
     function _aggregate_scripts(){
