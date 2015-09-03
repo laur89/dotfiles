@@ -16,12 +16,14 @@ alias giteye='env GTK2_RC_FILES=$__THEME_LOC:/home/laur/.gtkrc-2.0-IDE "/data/pr
 alias eclim='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/eclimd"'
 #alias skype='LD_PRELOAD=/data/progs/custom_builds/skypetab-ng/libskypetab-ng.so   skype'
 alias fileroller='file-roller'
+alias vscode='/data/progs/VSCode-linux-x64/Code' # MS Visual Code (editor)
 ##################################
 #alias clean_failed_mvn="$(find ~/.m2 -name *.lastUpdated -delete)"
 #alias amq="/data/progs/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"
-#alias logout="pkill -TERM -u $USER; sleep 5; pkill -KILL -u $USER"
-alias logout="pkill -u $USER"   # by default pkill sends SIGTERM signal
 alias ulogout="sudo pkill -KILL -u $1"  # user logout
+alias logout="pkill -TERM -u $USER; sleep 5; pkill -KILL -u $USER; exit"
+#alias logout="pkill -u $USER"   # by default pkill sends SIGTERM signal
+#alias logout='kill -9 -1' # kill all processes *you* can kill
 alias grep="grep --color=auto"
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
@@ -52,6 +54,8 @@ alias lart='ls -lAtr'
 #alias l='ls -CF'
 alias vdiff="vimdiff"
 alias mkdir='mkdir -p'
+alias rmrf='rm -rf'
+alias psef='ps -ef'
 #
 # hate the typos:
 alias mut="mutt"
@@ -72,8 +76,8 @@ alias gitco='git co'
 alias gitrst='git rst'
 alias gitau='git au'
 alias gitlg='git lg'
+alias gitlgp='git lg -p'
 alias gitcom='git commit'
-alias gitcomm='git commit'
 alias gita='git a'
 alias gitaa='git aa'
 alias gitb='git b'

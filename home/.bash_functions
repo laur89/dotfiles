@@ -28,7 +28,7 @@ function ffind() {
         -l  search for symbolic links
         -b  search for executable binaries
         -L  follow symlinks. note that this won't work with -l.
-        -m<digit>   max depth to descend
+        -m<digit>   max depth to descend; unlimited by default.
         -e  serch for exact filename, not for a partial
         -p  expand the pattern search for path as well (adds the -path option)"
 
@@ -101,6 +101,7 @@ function ffind() {
     elif [[ "$SRC" == *\** ]]; then
         #echo -e "please don't use asterisks in filename pattern; searchterm is already padded with wildcards on both sides."
         #return 1
+        # TODO: try to lose this:
         # switch grep usage off for coloring, as using asterisks wouldn't pass grep filter:
         usegrep="false"
     fi
@@ -217,12 +218,12 @@ function __find_top_big_small_fun() {
         return 1
     fi
 
-    usage="\n$FUNCNAME_: find top $bigOrSmall nodes. if node type not specified, defaults to searching for regular files.
+    usage="\n$FUNCNAME_: find top $bigOrSmall nodes from current dir. if node type not specified, defaults to searching for regular files.
     Usage: $FUNCNAME_  [-f] [-d] [-L] [-m depth]  [nr_of_top_items_to_show]
         -f  include regular files
         -d  include directories
         -L  follow symlinks
-        -m<digit>   max depth to descend"
+        -m<digit>   max depth to descend; unlimited by default."
 
     while getopts "m:fdLh" opt; do
         case "$opt" in
@@ -312,12 +313,12 @@ function __find_bigger_smaller_common_fun() {
         return 1
     fi
 
-    usage="\n$FUNCNAME_: find nodes $biggerOrSmaller than X $du_size_unit. if node type not specified, defaults to searching for regular files.
+    usage="\n$FUNCNAME_: find nodes $biggerOrSmaller than X $du_size_unit from current dir. if node type not specified, defaults to searching for regular files.
     Usage: $FUNCNAME_  [-f] [-d] [-L] [-m depth]  base_size_in_$du_size_unit
         -f  include regular files
         -d  include directories
         -L  follow symlinks
-        -m<digit>   max depth to descend"
+        -m<digit>   max depth to descend; unlimited by default."
 
     while getopts "m:fdLh" opt; do
         case "$opt" in
@@ -376,7 +377,8 @@ function __find_bigger_smaller_common_fun() {
         return 1
     fi
 
-    # note that different find commands are defined purely because of < vs > in awk command.
+    # note that different find commands are defined purely because of < vs > in awk command.; could overcome
+    # by using eval, but better not.
     if [[ "$biggerOrSmaller" == "smaller" ]]; then # meaning that ffindsmallerthan function was invoker
         #TODO: why doesn't this work? (note the sizeArg in awk):
         #find . $follow_links -mindepth 1 $maxDepthParam \( $compiledFileTypeArgs \)  -exec du -s --block-size=${du_size_unit} {} \; 2>/dev/null | awk '{var=substr($1, 0, length($1))+0; if (var < "'"$sizeArg"'") printf("%s\t%s\n", $1, $2)}' | sort -n $reverse 2>/dev/null
@@ -399,7 +401,7 @@ function ffindbiggerthan() {
     __find_bigger_smaller_common_fun "-r" "M" "$FUNCNAME" "bigger" $@
 }
 
-# find  nodes smalles than x mb:
+# find  nodes smaller than x mb:
 function ffindsmallerthan() {
     #find . -size -${size}M -exec ls -s --block-size=M {} \; | sort -n 2>/dev/null
     __find_bigger_smaller_common_fun "" "M" "$FUNCNAME" "smaller" $@
@@ -427,12 +429,15 @@ function ffstr() {
     usage="$FUNCNAME: find string in files (from current directory recursively).
     Usage: $FUNCNAME [-i] \"pattern\" [filename pattern] "
 
-    while getopts "i" opt; do
+    while getopts "hi" opt; do
         case "$opt" in
            i) grepcase=" -i "
               shift $(( $OPTIND - 1 ))
               ;;
-           *) echo "$usage";
+           h) echo -e "$usage"
+              return 0
+              ;;
+           *) echo -e "$usage";
               return 1
               ;;
         esac
@@ -561,6 +566,9 @@ function sanitize_ssh() {
 
     [[ -z "$dir" ]] && { err "provide a file/dir name plz. (most likely you want the .ssh dir)" "$FUNCNAME"; return 1; }
     [[ ! -e "$dir" ]] && { err "\"$dir\" does not exist." "$FUNCNAME"; return 1; }
+    if [[ "$dir" != *ssh*  ]]; then
+        confirm  "\nthe node name you're about to $FUNCNAME does not contain string \"ssh\"; still continue? (y/n)" || return 1
+    fi
 
     chmod -R u=rwX,g=,o= "$dir";
 }
@@ -588,10 +596,21 @@ function whatsmyip() { my_ip; } # alias for my_ip
 
 # !! lrzip might offer best compression when it comes to text: http://unix.stackexchange.com/questions/78262/which-file-compression-software-for-linux-offers-the-highest-size-reduction
 function compress() {
-    local usage file type
+    local usage file type opt OPTIND
     file="$1"
     type="$2"
-    usage="$FUNCNAME  fileOrDir  [zip|tar|rar|7z]\n\tif not provided, compression type defaults to tar (tar.bz2) "
+    usage="$FUNCNAME  fileOrDir  [zip|tar|rar|7z]\n\tif optional second arg not provided, compression type defaults to tar (tar.bz2) "
+
+    while getopts "h" opt; do
+        case "$opt" in
+           h) echo -e "$usage";
+              return 0
+              ;;
+           *) echo -e "$usage";
+              return 1
+              ;;
+        esac
+    done
 
     [[ $# -eq 1 || $# -eq 2 ]] || { err "gimme file/dir to compress plox.\n" "$FUNCNAME"; echo -e "$usage"; return 1; }
     [[ -e "$file" ]] || { err "$file doesn't exist." "$FUNCNAME"; echo -e "\n\n$usage"; return 1; }
@@ -651,7 +670,7 @@ function extract() {
         err "gimme file to extract plz." "$FUNCNAME"
         return 1
     elif [[ ! -f "$file" || ! -r "$file" ]]; then
-        err "'$file' is not a valid file or read rights not granted." "$FUNCNAME"
+        err "'$file' is not a regular file or read rights not granted." "$FUNCNAME"
         return 1
     fi
 
@@ -705,6 +724,7 @@ resetfont() { fontreset; }
 
 # TODO: rewrite this one, looks stupid:
 up() {
+  local i
   local d=""
   local limit=$1
   for ((i=1 ; i <= limit ; i++)); do
@@ -730,6 +750,7 @@ clock() {
 xmlformat() {
     [[ -z "$@" ]] && { echo -e "usage:   $FUNCNAME  <filename>"; return 1; }
     [[ -f "$@" && -r "$@" ]] || { err "provided file \"$@\" is not a regular file or is not readable. abort." "$FUNCNAME"; return 1; }
+    check_progs_installed xmllint vim || return 1;
     xmllint --format $@ | vim  "+set foldlevel=99" -;
 }
 
@@ -741,8 +762,8 @@ function createUsbIso() {
     device="$2"
 
     cleaned_devicename="${device%/}" # strip trailing slash
-    cleaned_devicename="${cleaned_devicename##*/}"  # strip everything before last slash(slash included)
-    usage="$FUNCNAME  image.file  device"
+    cleaned_devicename="${cleaned_devicename##*/}"  # strip everything before last slash (slash included)
+    usage="usage:   $FUNCNAME  image.file  device\nexample: $FUNCNAME  file.iso  /dev/sdh"
 
     if [[ -z "$file" || -z "$device" || -z "$cleaned_devicename" ]]; then
         err "either file or device weren't provided" "$FUNCNAME"
@@ -756,8 +777,8 @@ function createUsbIso() {
         err "$device does not exist" "$FUNCNAME"
         echo -e "$usage"
         return 1;
-    elif ! ls /dev | grep "\b$cleaned_devicename\b";then
-        err "$device does not exist in /dev" "$FUNCNAME"
+    elif ! ls /dev | grep "\b$cleaned_devicename\b" > /dev/null 2>&1 ;then
+        err "$cleaned_devicename does not exist in /dev" "$FUNCNAME"
         echo -e "$usage"
         return 1;
     elif [[ "${cleaned_devicename:$(( ${#cleaned_devicename} - 1)):1}" =~ ^[0-9:]+$ ]]; then

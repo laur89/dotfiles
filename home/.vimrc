@@ -108,6 +108,7 @@ set nocompatible " Must be the first line
     Plugin 'xolox/vim-misc'
     Plugin 'xolox/vim-easytags' " alternative shoud be taginator?
     Plugin 'xolox/vim-session'
+    Plugin 'xolox/vim-notes'
     
     " Selfexplanatory...
     Plugin 'jlanzarotta/bufexplorer'
@@ -487,12 +488,6 @@ set nocompatible " Must be the first line
         " Disable annoying ex mode (Q)
         map Q <nop>
 
-        " Buffers, preferred over tabs now with bufferline.
-        nnoremap gn :bnext<CR>
-        nnoremap gN :bprevious<CR>
-        nnoremap gd :bdelete<CR>
-        nnoremap gf <C-^> " TODO: clashes with Node.vim plugin?
-        
         " This is totally awesome - remap jj to escape in insert mode.
         inoremap jj <Esc>
         
@@ -528,7 +523,7 @@ set nocompatible " Must be the first line
         " avoid typos:
         nnoremap ; :
         
-        " Go to the middle of the line
+        " Go to the middle of the line TODO: doesnt work
         nmap gm :exe 'normal '.(virtcol('$')/2).'\\|'<CR>
         
     """ }}}
@@ -548,8 +543,8 @@ set nocompatible " Must be the first line
         nnoremap <C-l> <C-w>l
         
         " map shift+j/k to prev/next buffer:
-        map <S-J> :bp <CR>
-        map <S-K> :bn <CR>
+        map <S-J> :bn <CR>
+        map <S-K> :bp <CR>
         
     """ }}}
     
@@ -669,7 +664,7 @@ set nocompatible " Must be the first line
                 call cursor(l, c)
             endfunction
 
-            autocmd FileType c,cpp,conf,css,html,perl,python,sh autocmd 
+            autocmd FileType c,cpp,conf,css,html,perl,python,sh,javascript autocmd 
                         \BufWritePre <buffer> :call <SID>StripTrailingWhitespace()
         """ }}}
     """ }}}
@@ -798,6 +793,7 @@ set nocompatible " Must be the first line
     let g:easytags_by_filetype = '~/.vim/tags' " TODO: how to use with jsctags?; also fyi -  dynamic_files takes precedence over this
     let g:easytags_always_enabled = 1
     let g:easytags_on_cursorhold = 1
+    let g:easytags_async = 1
     "let g:easytags_include_members = 1
     "let g:easytags_autorecurse = 1 "!!! makes stuff slooooow
     "let g:easytags_events = ['BufWritePost']
@@ -921,6 +917,7 @@ set nocompatible " Must be the first line
 
 
     " Session management options (vim-session):
+
     " if you don't want help windows to be restored:
     set sessionoptions-=help
     " by default, don't ask to save sessions:
@@ -965,6 +962,10 @@ set nocompatible " Must be the first line
     " Automatically remove preview window after autocomplete (mainly for clang_complete)
     autocmd CursorMovedI * if pumvisible() == 0|pclose|endif
     autocmd InsertLeave * if pumvisible() == 0|pclose|endif
+
+    " vim-notes
+    let g:notes_directories = ['/data/Dropbox/notes']
+    let g:notes_suffix = '.note'
 """ }}}
 
 """ Local ending config, will overwrite anything above. Generally use this. {{{{

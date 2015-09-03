@@ -13,15 +13,18 @@ PROGS=( \
     "xfce4-power-manager" \
     "skype" \
     "spacefm" \
-    "Earth_sunlight_wallpaper_changer.sh" \
-    "sunlight_map_wallpaper_changer.sh" \
     "keepassx" \
-    "delay_screensaver.py" \
     "ssh-agent" \
     "copyq" \
     "mbsync --all" \
-    "wait_for_suspend_to_lock_screen.sh" \
     "urxvtc"
+)
+
+SHELL_SCRIPTS=( \
+    "Earth_sunlight_wallpaper_changer.sh" \
+    "sunlight_map_wallpaper_changer.sh" \
+    "delay_screensaver.py" \
+    "wait_for_suspend_to_lock_screen.sh"
 )
 # oldies:
     #"icedove" \
@@ -42,7 +45,8 @@ else
 fi
 #---------------------------------------------------
 
-export DISPLAY=:0.0
+# TODO: delete this?:
+#export DISPLAY=:0.0
 
 # See policykit käitati tavaliste DE-de puhul /etc/xdg/autostart/polkit-gnome....desktop-ist;
 # kui ei käivitanud, siis andis network-manager wireless võrku ühendamisel permission errori:
@@ -61,6 +65,14 @@ for PROG in "${PROGS[@]}"; do
     if ! is_proc_running "$PROG"; then
         echo "Launching ${PROG}..."
         $PROG &
+        echo "Launched $PROG."
+    fi
+done
+
+for PROG in "${SHELL_SCRIPTS[@]}"; do
+    if ! is_proc_running "$PROG"; then
+        echo "Launching ${PROG}..."
+        nohup $PROG >/dev/null 2>&1 </dev/null &
         echo "Launched $PROG."
     fi
 done
@@ -94,7 +106,12 @@ fi
 
 if ! is_proc_running syndaemon && is_laptop; then
     syndaemon -t -K -i 4 &
-    echo "Launching syndaemon"
+    echo "Launching syndaemon..."
+fi
+
+if ! is_proc_running transmission_somethiNG_TODO && ! is_work; then
+    # TODO: start transmission? client, server? where?
+    true
 fi
 
 #if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" || "$HOSTNAME" == "$PERSONAL_LAPTOP_HOSTNAME" ]]; then

@@ -164,5 +164,6 @@ shopt -u mailwarn       # disable mail notification:
 shopt -s cdspell        # try to correct typos in path
 shopt -s dotglob        # include dotfiles in path expansion
 shopt -s hostcomplete   # try to autocomplete hostnames
+shopt -s huponexit      # send SIGHUP on when interactive login shell exits
 
 unset MAILCHECK
