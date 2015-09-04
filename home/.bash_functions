@@ -27,9 +27,9 @@ function ffind() {
         -d  search for directories
         -l  search for symbolic links
         -b  search for executable binaries
-        -L  follow symlinks. note that this won't work with -l.
-        -m<digit>   max depth to descend; unlimited by default.
-        -e  serch for exact filename, not for a partial
+        -L  follow symlinks. note that this won't work with -l
+        -m<digit>   max depth to descend; unlimited by default
+        -e  search for exact filename, not for a partial (you still can use * wildcards)
         -p  expand the pattern search for path as well (adds the -path option)"
 
     filetypeOptionCounter=0
@@ -52,7 +52,7 @@ function ffind() {
               let filetypeOptionCounter+=1
               shift $((OPTIND-1))
                 ;;
-           L) linkTypeOptionCounter+=1
+           L) let linkTypeOptionCounter+=1
               follow_links="-follow"
               shift $((OPTIND-1))
                 ;;
@@ -446,6 +446,11 @@ function ffstr() {
     if [[ "$#" -lt 1 ]] || [[ "$#" -gt 2 ]]; then
         echo "$usage"
         return 1;
+    fi
+
+    if [[ "$1" == *\** && "$1" != *\.\** ]]; then
+        err "use .* as wildcards, not a single *" "$FUNCNAME"
+        return 1
     fi
 
     find . -type f -iname '*'"${2:-*}"'*' -print0 2>/dev/null | \

@@ -19,3 +19,4 @@ target/
 
 # vim
 .tags
+_vimrc_local.vim

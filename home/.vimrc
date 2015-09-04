@@ -224,6 +224,10 @@ set nocompatible " Must be the first line
     " add :CopyPath and :CopyFileName commands
     Plugin 'vim-scripts/copypath.vim'
 
+    " project specific vimrc:
+    Plugin 'LucHermitte/lh-vim-lib' " dependency for local_vimrc
+    Plugin 'LucHermitte/local_vimrc'
+
     " consider targets.vim - adds new text objects
 
     " Finish Vundle stuff
