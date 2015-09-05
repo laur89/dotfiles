@@ -62,7 +62,7 @@ for i in $logdir /data/; do
 done &
 
 # Create necessary directories if don't exist:
-for i in /data/.rsync /data/.tmp; do
+for i in /data/.rsync "$_PERSISTED_TMP"; do
     if [[ ! -d "$i" ]] && ! mkdir "$i"; then
         err_display  "Tried to create required directory \"$i\" but mkdir failed." ".common_startup" &
     fi
