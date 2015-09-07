@@ -75,14 +75,18 @@ export POWERLINE_NO_SHELL_PROMPT=NOPE.jpeg
 export WORK_DESKTOP_HOSTNAME="WHOD5001556"
 export WORK_LAPTOP_HOSTNAME="WHOL5001981"
 export PERSONAL_DESKTOP_HOSTNAME="aliste"
-export PERSONAL_LAPTOP_HOSTNAME="aliste"
+export PERSONAL_LAPTOP_HOSTNAME="8570w"
 
 # scripts' settings:
 # ###################
 export _SCRIPTS_COMMONS="/data/dev/scripts/system/utils.sh"
+export _DEF_CON_IF="/tmp/connected_default_if.dat"
+export _CON_IF="/tmp/connected_interfaces.dat"
+export _TRUSTED_CON_MARKER="/tmp/connected_trusted_NW.dat"
+
 export _MAX_STARTING_VOL_FOR_EARPHONES=80
 
-if [[ -d "/data/tmp" ]] && [[ -w "/data/tmp" ]]; then
+if [[ -d "/data/tmp" && -w "/data/tmp" ]]; then
     export _PERSISTED_TMP="/data/tmp"
 else
     echo -e "    preferred persisted tempdir at /data/tmp not found; defaulting to /tmp"

@@ -113,7 +113,7 @@ fi
 #
 #
 # source own functions and env vars:
-for i in $HOME/.bash_env_vars $HOME/.bash_env_vars_overrides $HOME/.bash_functions; do # note the sys-specific env_vars_overrides!
+for i in $HOME/.bash_env_vars $HOME/.bash_env_vars_overrides $HOME/.bash_functions; do # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
     if [[ -r "$i" ]]; then
         source "$i"
     #else
