@@ -1,0 +1,3 @@
+# check also https://github.com/hluk/config/tree/master/.mplayer for good setup.
+heartbeat-cmd="xscreensaver-command -deactivate >&- 2>&- &" 
+ao=alsa

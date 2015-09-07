@@ -17,19 +17,20 @@ PROGS=( \
     "ssh-agent" \
     "copyq" \
     "mbsync --all" \
+    "delay_screensaver" \
     "urxvtc"
 )
 
 SHELL_SCRIPTS=( \
     "Earth_sunlight_wallpaper_changer.sh" \
     "sunlight_map_wallpaper_changer.sh" \
-    "delay_screensaver.py" \
     "wait_for_suspend_to_lock_screen.sh"
 )
 # oldies:
     #"icedove" \
     #"volti" \
     #"parcellite" \
+    #"delay_screensaver.py" \
 
 # alternative to lock automatically when suspending/hibernating: (requires xss-lock)
 # (currently using the shellscript that listens to dbus messages)
