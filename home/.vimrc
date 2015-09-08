@@ -182,10 +182,8 @@ set nocompatible " Must be the first line
     Plugin 'bronson/vim-visual-star-search'
 
     " front for ag, aka the silver_searcher:
-    " depends on the_silver_searcher!
+    " depends on the_silver_searcher - apt-get install silversearcher-ag   proj @ ggreer/the_silver_searcher
     Plugin 'rking/ag.vim'
-
-    "Plugin 'ggreer/the_silver_searcher' " you need to build it or apt-get install silversearcher-ag!
 
     " manipulate on blocks based on their indentation:
     " use  vai  and vii
@@ -904,10 +902,11 @@ set nocompatible " Must be the first line
     let g:syntastic_cpp_check_header = 1
     "let g:syntastic_cpp_compiler_options = ' -std=c++0x'
     "
+    " note go in passive list, as vim-go is installed;
     let g:syntastic_mode_map = {
         \ 'mode': 'active',
         \ 'passive_filetypes':
-            \ ['java'] }
+            \ ['java','go'] }
 
     "let g:syntastic_mode_map = {
         "\ 'mode': 'passive',
@@ -970,6 +969,13 @@ set nocompatible " Must be the first line
     " vim-notes
     let g:notes_directories = ['/data/Dropbox/notes']
     let g:notes_suffix = '.note'
+
+    " Ag
+    " by default, start search from project root:
+    let g:ag_working_path_mode='r'
+    let g:ag_highlight=1
+    let g:ag_prg="ag --vimgrep --smart-case"
+
 """ }}}
 
 """ Local ending config, will overwrite anything above. Generally use this. {{{{

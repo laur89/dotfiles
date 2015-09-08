@@ -421,6 +421,7 @@ function aptsrc() { aptsearch "$@"; } #alias
 
 #  Find a pattern in a set of files and highlight them:
 #+ (needs a recent version of egrep).
+# !!! deprecated by ag.
 function ffstr() {
     local grepcase OPTIND usage opt MAX_RESULT_LINE_LENGTH
 

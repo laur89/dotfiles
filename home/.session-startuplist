@@ -18,14 +18,13 @@ PROGS=( \
     "copyq" \
     "mbsync --all" \
     "delay_screensaver" \
-    "urxvtc"
-)
+    "urxvtc" \
 
-SHELL_SCRIPTS=( \
     "Earth_sunlight_wallpaper_changer.sh" \
     "sunlight_map_wallpaper_changer.sh" \
     "wait_for_suspend_to_lock_screen.sh"
 )
+
 # oldies:
     #"icedove" \
     #"volti" \
@@ -38,11 +37,13 @@ SHELL_SCRIPTS=( \
 #
 #---------------------------------------------------
 # import common:
-if [[ -r "$_SCRIPTS_COMMONS" ]]; then
-    source "$_SCRIPTS_COMMONS"
-else
-    echo -e "\nError: common file \"$_SCRIPTS_COMMONS\" not found!"
-    #exit 1   # prolly not a good idea to exit
+if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
+    if [[ -r "$_SCRIPTS_COMMONS" ]]; then
+        source "$_SCRIPTS_COMMONS"
+    else
+        echo -e "\nError: common file \"$_SCRIPTS_COMMONS\" not found!"
+        #exit 1   # prolly not a good idea to exit here
+    fi
 fi
 #---------------------------------------------------
 
@@ -66,14 +67,6 @@ for PROG in "${PROGS[@]}"; do
     if ! is_proc_running "$PROG"; then
         echo "Launching ${PROG}..."
         $PROG &
-        echo "Launched $PROG."
-    fi
-done
-
-for PROG in "${SHELL_SCRIPTS[@]}"; do
-    if ! is_proc_running "$PROG"; then
-        echo "Launching ${PROG}..."
-        nohup $PROG >/dev/null 2>&1 </dev/null &
         echo "Launched $PROG."
     fi
 done
@@ -129,7 +122,6 @@ if is_laptop; then
 
         setxkbmap ee & # otherwise using server's keyboard defaults to us map;
     fi
-#elif [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" || "$HOSTNAME" == "$PERSONAL_DESKTOP_HOSTNAME" ]]; then
 else # is NOT laptop, assuming desktop
     if ! is_proc_running synergys; then
         echo "Launching syndergy server"
@@ -137,7 +129,7 @@ else # is NOT laptop, assuming desktop
             /data/progs/custom_builds/synergy/bin/synergys -f --no-tray --debug INFO --name work-desktop -c /home/laur/synergy.conf --log $CUSTOM_LOGDIR/synergy_server.log --address :24800 &
         else
             # TODO personal deskderp
-            echo "todo"
+            echo "TODO"
         fi
     fi
 fi
@@ -145,7 +137,7 @@ fi
 # modify configs:
 if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]]; then
     # ! ignore symlinks for sed !
-    $(find /home/laur/.homesick/repos -type f -name ".xscreensaver" ! -type l | xargs sed -i '/^lockTimeout:/s/^lockTimeout:.*/lockTimeout:\t0:00:05/g') &
+    $(find /home/laur/.homesick/repos -type f -name ".xscreensaver" | xargs sed -i '/^lockTimeout:/s/^lockTimeout:.*/lockTimeout:\t0:00:05/g') &
 fi
 
 
