@@ -1,6 +1,7 @@
 
 " We use Vim settings
 " TODO: check this out: https://github.com/skwp/dotfiles
+" quite sure this was the base config:  https://github.com/timss/vimconf/blob/master/.vimrc
 "
 "
 set nocompatible " Must be the first line
@@ -253,39 +254,46 @@ set nocompatible " Must be the first line
         set background=dark                         " we're using a dark bg
         "colors mustang                           " select colorscheme
         colors jellybeans                           " select colorscheme
-        au BufNewFile,BufRead *.txt se ft=sh tw=79  " opens .txt w/highlight
-        au BufNewFile,BufRead *.tex se ft=tex tw=79 " we don't want plaintex
-        au BufNewFile,BufRead *.md se ft=markdown tw=79 " markdown, not modula
-        " per filetype colors:
-        " these next schemes come from   https://github.com/sentientmachine/erics_vim_syntax_and_color_highlighting
-        " note they came with their own syntax files also (create syntax/ dir in .vim):
-        "au BufReadPost *.py colorscheme molokai
-        "au BufReadPost *.html colorscheme monokai
-        "au BufReadPost *.java colorscheme monokai
-        "au BufReadPost *.php colorscheme monokai
-        "au BufReadPost *.js colorscheme Mango
+        """ force behavior and filetypes, and by extension highlighting {{{
+            augroup FileTypeRules
+                autocmd!
+                au BufNewFile,BufRead *.txt se ft=sh tw=79  " opens .txt w/highlight
+                au BufNewFile,BufRead *.tex se ft=tex tw=79 " we don't want plaintex
+                au BufNewFile,BufRead *.md se ft=markdown tw=79 " markdown, not modula
+                " per filetype colors:
+                " these next schemes come from   https://github.com/sentientmachine/erics_vim_syntax_and_color_highlighting
+                " note they came with their own syntax files also (create syntax/ dir in .vim):
+                "au BufReadPost *.py colorscheme molokai
+                "au BufReadPost *.html colorscheme monokai
+                "au BufReadPost *.java colorscheme monokai
+                "au BufReadPost *.php colorscheme monokai
+                "au BufReadPost *.js colorscheme Mango
+            augroup END
+        """ }}}
         
         """ 256 colors for maximum jellybeans bling. See commit log for info {{{
             "if (&term =~ "xterm") || (&term =~ "screen")
             "    set t_Co=256
             "endif
-        " Use 256 colours (Use this setting only if your terminal supports 256 colours)
-        " (currently overrides the above if-block)
-        set t_Co=256
+
+            " Use 256 colours (Use this setting only if your terminal supports 256 colours)
+            " (currently overrides the above if-block):
+            set t_Co=256
         """ }}}
         
-        """ Tab colors, overwritten by lightline(?) {{{
-            "hi TabLineFill ctermfg=NONE ctermbg=233
-            "hi TabLine ctermfg=241 ctermbg=233
-            "hi TabLineSel ctermfg=250 ctermbg=233
+        """ Tab colors   (overwritten by lightline?) {{{
+                hi TabLineFill ctermfg=NONE ctermbg=233
+                hi TabLine ctermfg=241 ctermbg=233
+                hi TabLineSel ctermfg=250 ctermbg=233
         """ }}}
         
         """ Custom highlighting, where NONE uses terminal background {{{
             function! CustomHighlighting()
                 highlight Normal ctermbg=NONE
-                highlight nonText ctermbg=NONE
+                highlight NonText ctermbg=NONE
                 highlight LineNr ctermbg=NONE
                 highlight SignColumn ctermbg=NONE
+                highlight SignColumn guibg=#151515
                 highlight CursorLine ctermbg=235
             endfunction
 
@@ -304,7 +312,7 @@ set nocompatible " Must be the first line
         set vb t_vb=                                " disable beep and flashing
         set wildignore=.bak,.pyc,.o,.ojb,.a,
                        \.pdf,.jpg,.gif,.png,
-                       \.avi,.mkv,.so               " ignore said files
+                       \.avi,.mkv,.so               " ignore said files for tab completion
         set wildmenu                                " better auto complete
         set wildmode=longest,list                   " bash-like auto complete
         set equalalways                             " keep splits equally sized
@@ -314,7 +322,8 @@ set nocompatible " Must be the first line
             " UTF-8 if your locale is something else.
             " WARNING: this will affect encoding used when editing files!
             "
-            " set encoding=utf-8                    " for character glyphs
+            " set encoding=utf-8                    " for character glyphs; default $LANG/latin1
+            " set fileencoding=utf-8                " default none
         """ }}}
         
         """ Gvim {{{
@@ -359,12 +368,12 @@ set nocompatible " Must be the first line
     " in order exiting insert mode in vim-airline wouldn't lag that much:
     " {{{
         if ! has('gui_running')
-        set ttimeoutlen=10
-        augroup FastEscape
-            autocmd!
-            au InsertEnter * set timeoutlen=0
-            au InsertLeave * set timeoutlen=1000
-        augroup END
+            set ttimeoutlen=10
+            augroup FastEscape
+                autocmd!
+                au InsertEnter * set timeoutlen=0
+                au InsertLeave * set timeoutlen=1000
+            augroup END
         endif
     "}}}
 
@@ -393,10 +402,12 @@ set nocompatible " Must be the first line
     """ }}}
     
     """ Return to last edit position when opening files {{{
-        autocmd BufReadPost *
-            \ if line("'\"") > 0 && line("'\"") <= line("$") |
-            \     exe "normal! g`\"" |
-            \ endif
+        augroup LastPosition
+            autocmd! BufReadPost *
+                \ if line("'\"") > 0 && line("'\"") <= line("$") |
+                \     exe "normal! g`\"" |
+                \ endif
+        augroup END
     """ }}}
 """ }}}
 
@@ -421,7 +432,7 @@ set nocompatible " Must be the first line
 """ Text formatting {{{
     set textwidth=85
     set colorcolumn=85
-    set formatoptions=qrn1
+    set formatoptions=qrn1j
     set autoindent                                  " preserve indentation
     set backspace=indent,eol,start                  " smart backspace
     set cinkeys-=0#                                 " don't force # indentation
@@ -435,7 +446,9 @@ set nocompatible " Must be the first line
     set softtabstop=4                               " "tab" feels like <tab>
     set tabstop=4                                   " replace <TAB> w/4 spaces
     """ Only auto-comment newline for block comments {{{
-        au FileType c,cpp setlocal comments -=:// comments +=f://
+        augroup AutoBlockComment
+            autocmd! FileType c,cpp setlocal comments -=:// comments +=f://
+        augroup END
     """ }}}
 """ }}}
 
@@ -471,9 +484,9 @@ set nocompatible " Must be the first line
         vmap <C-up> [egv
         vmap <C-down> ]egv
 
-        " Move faster
-        map <C-j> <C-d>
-        map <C-k> <C-u>
+        " Move faster (overridden by the tmux split navigation)
+        "map <C-j> <C-d>
+        "map <C-k> <C-u>
 
         " Treat wrapped lines as normal lines
         nnoremap j gj
@@ -666,9 +679,25 @@ set nocompatible " Must be the first line
                 call cursor(l, c)
             endfunction
 
-            autocmd FileType c,cpp,conf,css,html,perl,python,sh,javascript autocmd 
-                        \BufWritePre <buffer> :call <SID>StripTrailingWhitespace()
+            augroup StripTrailingWhitespace
+                autocmd!
+                autocmd FileType c,cpp,conf,css,html,perl,python,sh,javascript
+                            \ autocmd BufWritePre <buffer> :call
+                            \ <SID>StripTrailingWhitespace()
+            augroup END
         """ }}}
+
+        """ set binds to copy/paste to system clipboard: {{{
+            " <C-c> for copy(in visual), <leader><C-v>(in normal) for paste:
+            if has('unix')
+                vn <C-c> y:call system("xclip -i -selection clipboard", getreg("\""))<CR>:call system("xclip -i", getreg("\""))<CR>
+                no <leader><C-v> :call setreg("\"",system("xclip -o -selection clipboard"))<CR>p
+            elseif has('mac')
+                vn <C-c> y:call system("pbcopy", getreg("\""))<CR>
+                no <leader><C-v> :call setreg("\"",system("pbpaste"))<CR>p
+            endif
+        """ }}}
+
     """ }}}
     
     """ Plugins {{{
@@ -698,7 +727,7 @@ set nocompatible " Must be the first line
         nnoremap <silent> <c-l> :TmuxNavigateRight<cr>
         "nnoremap <silent> <todo> :TmuxNavigatePrevious<cr>
 
-        " powerline (disable if using airline instead)
+        " powerline (disable if using airline instead):
         "set rtp+=/usr/local/lib/python2.7/dist-packages/powerline/bindings/vim/
 
         " CamelCaseMotion: Replace the default 'w', 'b' and 'e' mappings instead of defining additional mappings ',w', ',b' and ',e': ...
@@ -732,29 +761,17 @@ set nocompatible " Must be the first line
         \ ''
         \ ]
 
-    " CtrlP - don't recalculate files on start (slow)
+    " CtrlP
+    "don't recalculate files on start (slow)
     let g:ctrlp_clear_cache_on_exit = 0
     let g:ctrlp_working_path_mode = 'ra'
-    let g:ctrlp_root_markers = ['.ctrlp']  "consider this, since .git isn't as good with submodules
+    let g:ctrlp_root_markers = ['.ctrlp']  "consider this, since .git isn't as good with submodules; note this is IN ADDITION to the default ones
     "let g:ctrlp_working_path_mode = ""
     "let g:ctrlp_dotfiles = 0
     let g:ctrlp_max_files = 0
     "TODO: confirm these:
     let g:ctrlp_user_command = ['.git/', 'cd %s && git ls-files --exclude-standard -co']
     "let g:ctrlp_user_command = "find %s -type f | egrep -v '/\.(git|hg|svn)|solr|tmp/' | egrep -v '/\.(git|hg|svn)|solr|tmp/' | egrep -v '\.(png|exe|jpg|gif|jar|class|swp|swo|log|gitkep|keepme|so|o)$'"
-
-    " yankring: remap c-p so CtrlP could use it:
-    " TODO: think of an actual mappings!:
-    let g:yankring_replace_n_pkey = '<leader>p'
-    let g:yankring_replace_n_nkey = '<leader>P'
-    let g:yankring_history_dir = '$HOME/.vim'
-    let g:yankring_max_history = 1000
-
-    " yankstack (if using this, perhaps lose the yankring stuff?):
-    "nmap <leader>p <Plug>yankstack_substitute_older_paste
-    "nmap <leader>P <Plug>yankstack_substitute_newer_paste
-    
-
     " Start ctrlp in find buffer mode
     let g:ctrlp_cmd = 'CtrlPBuffer'
     " Start ctrlp in MRU file mode
@@ -764,16 +781,29 @@ set nocompatible " Must be the first line
     let g:ctrlp_switch_buffer = 'Et'
     let g:ctrlp_extensions = ['tag']    " enables tag browsing
 
+
+    " yankring:
+    " remap c-p so CtrlP could use it:
+    " TODO: think of an actual mappings!:
+    let g:yankring_replace_n_pkey = '<leader>p'
+    let g:yankring_replace_n_nkey = '<leader>P'
+    let g:yankring_history_dir = '$HOME/.vim'
+    let g:yankring_max_history = 1000
+
+    " yankstack (if using this, perhaps lose the yankring stuff?):
+    "nmap <leader>p <Plug>yankstack_substitute_older_paste
+    "nmap <leader>P <Plug>yankstack_substitute_newer_paste
+
     " airline - automatically populate g:airline_symbols dictionary w/
     " powerline symbols:
     let g:airline_powerline_fonts = 1
+    let g:airline_theme='dark'
     " integrate with https://github.com/edkolev/tmuxline.vim:
     "let g:airline#extensions#tmuxline#enabled = 1
     let g:airline#extensions#bufferline#enabled = 0
     "let g:airline#extensions#bufferline#overwrite_variables = 1
-    let g:airline_theme='dark'
 
-    "bufferline:
+    " bufferline:
     let g:bufferline_active_buffer_left = '['
     let g:bufferline_active_buffer_right = ']'
     let g:bufferline_modified = '+'
@@ -783,7 +813,6 @@ set nocompatible " Must be the first line
     let g:bufferline_active_highlight = 'StatusLine'
     let g:bufferline_echo = 1
     let g:bufferline_fixed_index = 0 "always first
-
 
     " TagBar
     let g:tagbar_left = 0
@@ -813,10 +842,10 @@ set nocompatible " Must be the first line
                 "\   }
                 "\}
 
-    " Eclim:
-    " eclim completon registration to vim's omni complete which YCM automatically
-    " detects:
+    " eclim:
+    " eclim completon registration to vim's omni complete which YCM automatically detects:
     let g:EclimCompletionMethod = 'omnifunc'
+
 
     """"""""" /ultisnips-YCM
     "" one solution for YCM and UltiSnips conflict (from http://stackoverflow.com/questions/14896327/ultisnips-and-youcompleteme/18685821#18685821):
@@ -844,7 +873,7 @@ set nocompatible " Must be the first line
         "" CONFLICT with some plugins like tpope/Endwise
         "inoremap <expr> <CR> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
         "
-    """"" ultisnips-YCM
+
     " another solution form same stackOverflow topic:
     " make YCM compatible with UltiSnips (using supertab)
     let g:ycm_key_list_select_completion = ['<C-n>', '<Down>']
@@ -864,14 +893,13 @@ set nocompatible " Must be the first line
     " If you want :UltiSnipsEdit to split your window.
     let g:UltiSnipsEditSplit="vertical" 
     """"""""" /ultisnips-YCM
+
+    "}}}
+
     
     " vim-tmux-navigator:
     let g:tmux_navigator_no_mappings = 1
     let g:tmux_navigator_save_on_switch = 1
-    "}}}
-
-
-
 
     " YouCompleteMe:
     " open default ycm_extra_conf, so every project doesn't request
@@ -920,7 +948,6 @@ set nocompatible " Must be the first line
 
 
     " Session management options (vim-session):
-
     " if you don't want help windows to be restored:
     set sessionoptions-=help
     " by default, don't ask to save sessions:
@@ -945,7 +972,6 @@ set nocompatible " Must be the first line
         "\ ['darkred',     'DarkOrchid3'],
         "\ ['red',         'firebrick3'],
         "\ ]
-
     "let g:rbpt_max = 16
     "let g:rbpt_loadcmd_toggle = 0
 
@@ -955,16 +981,19 @@ set nocompatible " Must be the first line
     "au Syntax * RainbowParenthesesLoadBraces
 
 
-    "rainbow:
+    " rainbow:
     let g:rainbow_active = 1
 
-    "copypath:
+    " copypath:
     "copy file path or name to unnamed register as well:
     let g:copypath_copy_to_unnamed_register = 1
 
     " Automatically remove preview window after autocomplete (mainly for clang_complete)
-    autocmd CursorMovedI * if pumvisible() == 0|pclose|endif
-    autocmd InsertLeave * if pumvisible() == 0|pclose|endif
+    augroup RemovePreview
+        autocmd!
+        autocmd CursorMovedI * if pumvisible() == 0|pclose|endif
+        autocmd InsertLeave * if pumvisible() == 0|pclose|endif
+    augroup END
 
     " vim-notes
     let g:notes_directories = ['/data/Dropbox/notes']
@@ -975,6 +1004,13 @@ set nocompatible " Must be the first line
     let g:ag_working_path_mode='r'
     let g:ag_highlight=1
     let g:ag_prg="ag --vimgrep --smart-case"
+
+    " vim-easygrep
+    let g:EasyGrepRoot="search:.git,.svn,.hg,.ctrlp"
+    "let g:EasyGrepCommand="ag --vimgrep --smart-case"  " does not support ag at the moment
+    let g:EasyGrepWindow=0  " 0 -quickfix; 1 -location list
+    "let g:EasyGrepWindowPosition="botleft lopen"
+    let g:EasyGrepOpenWindowOnMatch=0
 
 """ }}}
 
@@ -987,13 +1023,4 @@ set nocompatible " Must be the first line
 " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 " !!!!! UNORGANISED STUFF:
 " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-" <C-c> for copy(in visual), <leader><C-v>(in normal) for paste:
-if has('unix')
-  vn <C-c> y:call system("xclip -i -selection clipboard", getreg("\""))<CR>:call system("xclip -i", getreg("\""))<CR>
-  no <leader><C-v> :call setreg("\"",system("xclip -o -selection clipboard"))<CR>p
-elseif has('mac')
-  vn <C-c> y:call system("pbcopy", getreg("\""))<CR>
-  no <leader><C-v> :call setreg("\"",system("pbpaste"))<CR>p
-endif
 
