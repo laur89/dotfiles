@@ -108,7 +108,6 @@ if ! is_proc_running transmission_somethiNG_TODO && ! is_work; then
     true
 fi
 
-#if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" || "$HOSTNAME" == "$PERSONAL_LAPTOP_HOSTNAME" ]]; then
 if is_laptop; then
     if ! is_proc_running synergyc; then
         echo "Launching syndergy client"
@@ -134,9 +133,10 @@ else # is NOT laptop, assuming desktop
     fi
 fi
 
+###############################
 # modify configs:
-if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]]; then
-    # ! ignore symlinks for sed !
+if is_laptop; then
+    # ! -type f in order to ignore symlinks for sed !
     $(find /home/laur/.homesick/repos -type f -name ".xscreensaver" | xargs sed -i '/^lockTimeout:/s/^lockTimeout:.*/lockTimeout:\t0:00:05/g') &
 fi
 
