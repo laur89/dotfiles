@@ -941,3 +941,4 @@ capture() {
 f() {
    find . -iregex ".*$@.*" -printf '%P\0' | xargs -r0 ls --color=auto -1d
 }
+

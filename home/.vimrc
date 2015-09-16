@@ -17,8 +17,9 @@ set nocompatible " Must be the first line
             silent !git clone https://github.com/gmarik/Vundle.vim $HOME/.vim/bundle/Vundle.vim
             let has_vundle=0
             
-            " make directory for the persistent undo storage (not related to vundle):
+            " make directory for the persistent undo storage (not related to vundle)...
             silent !mkdir -p $HOME/.vim/undo
+            " ...and for tags (used by vim-easytags):
             silent !mkdir -p $HOME/.vim/tags
         endif
     """ }}}
@@ -66,7 +67,9 @@ set nocompatible " Must be the first line
 
     " Autoclose (, " etc; ie when you insert an (, then ) will be automatically
     " inserted, and cursor placed between them;
-    Plugin 'Townk/vim-autoclose'
+    "Plugin 'Townk/vim-autoclose'
+    " uses delimitMate instead of vim-autoclose, if you use YCM (they conflict):
+    Plugin 'Raimondi/delimitMate'
 
     " Git wrapper inside Vim
     Plugin 'tpope/vim-fugitive'
@@ -145,7 +148,7 @@ set nocompatible " Must be the first line
     " navigate seamlessly btw vim & tmux splits (don't forget tmux bindings as well):
     Plugin 'christoomey/vim-tmux-navigator'
 
-    " supertab: (mainly so YCM and UltiSnips could play along;)
+    " supertab: (only so YCM and UltiSnips could play along, otherwise don't need)
     " <Tab> everything!
     Plugin 'ervandew/supertab'
 
@@ -252,7 +255,6 @@ set nocompatible " Must be the first line
         filetype plugin indent on                   " load filetype plugins and indent settings
         syntax on                                   " syntax highlighting
         set background=dark                         " we're using a dark bg
-        "colors mustang                           " select colorscheme
         colors jellybeans                           " select colorscheme
         """ force behavior and filetypes, and by extension highlighting {{{
             augroup FileTypeRules
@@ -302,10 +304,12 @@ set nocompatible " Must be the first line
     """ }}}
     
     """ Interface general {{{
+        " !!! cursorline & -column & relativelinenr can make vim super-laggy, especially if using huge tags file
         set cursorline                              " hilight cursor line
         set cursorcolumn                            " hilight cursor col
         set more                                    " ---more--- like less
         set number                                  " line numbers
+        set relativenumber                          " linenumbers are relative
         set scrolloff=3                             " lines above/below cursor
         set showcmd                                 " show cmds being typed
         set title                                   " window title
@@ -357,7 +361,6 @@ set nocompatible " Must be the first line
     set ttyfast                                     " for faster redraws etc
     set ttymouse=xterm2                             " experimental
     set ruler                                       " show current pos at bottom
-    set relativenumber                              " linenumbers are relative
     set modelines=0                                 " modelines sets the number of
                                                     " lines at the beginning and end
                                                     " of each file vim checks for
@@ -365,8 +368,7 @@ set nocompatible " Must be the first line
                                                     " for file-specific settings.
 
 
-    " in order exiting insert mode in vim-airline wouldn't lag that much:
-    " {{{
+    """ In order exiting insert mode in vim-airline/bufferline wouldn't lag that much: {{{
         if ! has('gui_running')
             set ttimeoutlen=10
             augroup FastEscape
@@ -375,7 +377,7 @@ set nocompatible " Must be the first line
                 au InsertLeave * set timeoutlen=1000
             augroup END
         endif
-    "}}}
+    """ }}}
 
     " autosave file if window loses focus:
     "au FocusLost * :wa
@@ -750,19 +752,19 @@ set nocompatible " Must be the first line
 
 """ Plugin settings {{{
     " Startify, the fancy start page
-    let g:ctrlp_reuse_window = 'startify' "don't split in startify
     let g:startify_bookmarks = [
         \ $HOME . "/.vimrc", $HOME . "/.vimrc.first",
         \ $HOME . "/.vimrc.last", $HOME . "/.vimrc.plugins"
         \ ]
     let g:startify_custom_header = [
-        \ '   Author:               LA',
-        \ '   Original source:      http://github.com/timss/vimconf',
+        \ '   Author:               la',
+        \ '   Original vimconf:     http://github.com/timss/vimconf',
         \ ''
         \ ]
 
     " CtrlP
     "don't recalculate files on start (slow)
+    let g:ctrlp_reuse_window = 'startify' "don't split in startify
     let g:ctrlp_clear_cache_on_exit = 0
     let g:ctrlp_working_path_mode = 'ra'
     let g:ctrlp_root_markers = ['.ctrlp']  "consider this, since .git isn't as good with submodules; note this is IN ADDITION to the default ones
@@ -849,52 +851,50 @@ set nocompatible " Must be the first line
 
     """"""""" /ultisnips-YCM
     "" one solution for YCM and UltiSnips conflict (from http://stackoverflow.com/questions/14896327/ultisnips-and-youcompleteme/18685821#18685821):
-    "" ultisnips trigger conf; do not use <tab> if you use YouCompleteMe! {{{
-        "function! g:UltiSnips_Complete()
-            "call UltiSnips#ExpandSnippet()
-            "if g:ulti_expand_res == 0
-                "if pumvisible()
-                    "return "\<C-n>"
-                "else
-                    "call UltiSnips#JumpForwards()
-                    "if g:ulti_jump_forwards_res == 0
-                    "return "\<TAB>"
+    """ ultisnips trigger conf; do not use <tab> if you use YouCompleteMe! {{{
+            "function! g:UltiSnips_Complete()
+                "call UltiSnips#ExpandSnippet()
+                "if g:ulti_expand_res == 0
+                    "if pumvisible()
+                        "return "\<C-n>"
+                    "else
+                        "call UltiSnips#JumpForwards()
+                        "if g:ulti_jump_forwards_res == 0
+                        "return "\<TAB>"
+                        "endif
                     "endif
                 "endif
-            "endif
-            "return ""
-        "endfunction
+                "return ""
+            "endfunction
 
-        "au BufEnter * exec "inoremap <silent> " . g:UltiSnipsExpandTrigger . " <C-R>=g:UltiSnips_Complete()<cr>"
-        "let g:UltiSnipsJumpForwardTrigger="<tab>"
-        "let g:UltiSnipsListSnippets="<c-e>"
-        "" this mapping Enter key to <C-y> to chose the current highlight item 
-        "" and close the selection list, same as other IDEs.
-        "" CONFLICT with some plugins like tpope/Endwise
-        "inoremap <expr> <CR> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
-        "
+            "au BufEnter * exec "inoremap <silent> " . g:UltiSnipsExpandTrigger . " <C-R>=g:UltiSnips_Complete()<cr>"
+            "let g:UltiSnipsJumpForwardTrigger="<tab>"
+            "let g:UltiSnipsListSnippets="<c-e>"
+            "" this mapping Enter key to <C-y> to chose the current highlight item 
+            "" and close the selection list, same as other IDEs.
+            "" CONFLICT with some plugins like tpope/Endwise
+            "inoremap <expr> <CR> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
+            "
 
-    " another solution form same stackOverflow topic:
-    " make YCM compatible with UltiSnips (using supertab)
-    let g:ycm_key_list_select_completion = ['<C-n>', '<Down>']
-    let g:ycm_key_list_previous_completion = ['<C-p>', '<Up>']
-    let g:SuperTabDefaultCompletionType = '<C-n>'
+        " another solution form the same stackOverflow topic:
+        " make YCM compatible with UltiSnips (using supertab):
+        let g:ycm_key_list_select_completion = ['<C-j>', '<Down>']
+        let g:ycm_key_list_previous_completion = ['<C-k>', '<Up>']
+        let g:SuperTabDefaultCompletionType = '<C-j>' "enables us to use tab to cycle through non-ultisnip items
 
-    " better key bindings for UltiSnipsExpandTrigger
-    let g:UltiSnipsExpandTrigger = "<tab>"
-    let g:UltiSnipsJumpForwardTrigger = "<tab>"
-    let g:UltiSnipsJumpBackwardTrigger = "<s-tab>"
+        " better key bindings for UltiSnipsExpandTrigger
+        let g:UltiSnipsExpandTrigger = "<tab>"
+        let g:UltiSnipsJumpForwardTrigger = "<tab>"
+        let g:UltiSnipsJumpBackwardTrigger = "<s-tab>"
 
-    " alternative to the previous:
-    "let g:UltiSnipsExpandTrigger="<c-j>""
-    "let g:UltiSnipsJumpForwardTrigger="<c-j>"
-    "let g:UltiSnipsJumpBackwardTrigger="<c-k>"
+        " alternative to the previous:
+        "let g:UltiSnipsExpandTrigger="<c-j>""
+        "let g:UltiSnipsJumpForwardTrigger="<c-j>"
+        "let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 
-    " If you want :UltiSnipsEdit to split your window.
-    let g:UltiSnipsEditSplit="vertical" 
-    """"""""" /ultisnips-YCM
-
-    "}}}
+        " If you want :UltiSnipsEdit to split your window.
+        let g:UltiSnipsEditSplit="vertical" 
+    """ }}}  /ultisnips-YCM
 
     
     " vim-tmux-navigator:
@@ -1011,6 +1011,8 @@ set nocompatible " Must be the first line
     let g:EasyGrepWindow=0  " 0 -quickfix; 1 -location list
     "let g:EasyGrepWindowPosition="botleft lopen"
     let g:EasyGrepOpenWindowOnMatch=0
+    let g:EasyGrepRecursive=1
+    let g:EasyGrepMode=2 "search for files that are of a similar type to the current file
 
 """ }}}
 

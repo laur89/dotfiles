@@ -21,6 +21,7 @@ target/
 # vim
 .tags
 _vimrc_local.vim
+.ctrlp
 
 # Meld original diff files
 *.orig
