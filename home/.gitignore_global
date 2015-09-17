@@ -1,5 +1,5 @@
 # Global gitignore;
-# stolen from http://gary-rowe.com/agilestack/2012/10/12/a-gitignore-file-for-intellij-and-eclipse-with-maven/
+# initial version stolen from http://gary-rowe.com/agilestack/2012/10/12/a-gitignore-file-for-intellij-and-eclipse-with-maven/
 #
 # Eclipse
 .classpath
