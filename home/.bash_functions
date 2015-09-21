@@ -463,17 +463,20 @@ function ffstr() {
 
 function swap() {
     # Swap 2 files around, if they exist (from Uzi's bashrc):
-    local TMPFILE file_size space_left_on_target i
+    local TMPFILE file_size space_left_on_target i first_file sec_file
 
     TMPFILE="/tmp/${FUNCNAME}_function_tmpFile.$RANDOM"
+    first_file="${1%/}" # strip trailing slash
+    sec_file="${2%/}" # strip trailing slash
 
     count_params 2 $# equal || return 1
-    [[ ! -e "$1" ]] && err "$1 does not exist" "$FUNCNAME" && return 1
-    [[ ! -e "$2" ]] && err "$2 does not exist" "$FUNCNAME" && return 1
-    [[ "$1" == "$2" ]] && err "source and destination cannot be the same" "$FUNCNAME" && return 1
+    [[ ! -e "$first_file" ]] && err "$first_file does not exist" "$FUNCNAME" && return 1
+    [[ ! -e "$sec_file" ]] && err "$sec_file does not exist" "$FUNCNAME" && return 1
+    [[ "$first_file" == "$sec_file" ]] && err "source and destination cannot be the same" "$FUNCNAME" && return 1
+
 
     # check write perimssions:
-    for i in "$TMPFILE" "$1" "$2"; do
+    for i in "$TMPFILE" "$first_file" "$sec_file"; do
         i="$(dirname "$i")"
         if [[ ! -w "$i" ]]; then
             err "$i doesn't have write permission. abort." "$FUNCNAME"
@@ -481,52 +484,52 @@ function swap() {
         fi
     done
 
-    # check if $1 fits into /tmp:
-    file_size="$(get_size "$1")"
+    # check if $first_file fits into /tmp:
+    file_size="$(get_size "$first_file")"
     space_left_on_target="$(space_left "$TMPFILE")"
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
-        err "$1 size is ${file_size}MB, but $(dirname "$TMPFILE") has only ${space_left_on_target}MB free space left. abort." "$FUNCNAME"
+        err "$first_file size is ${file_size}MB, but $(dirname "$TMPFILE") has only ${space_left_on_target}MB free space left. abort." "$FUNCNAME"
         return 1
     fi
 
-    if ! mv "$1" "$TMPFILE"; then
-        err "moving $1 to $TMPFILE failed. abort." "$FUNCNAME"
+    if ! mv "$first_file" "$TMPFILE"; then
+        err "moving $first_file to $TMPFILE failed. abort." "$FUNCNAME"
         return 1
     fi
 
-    # check if $2 fits into $1:
-    file_size="$(get_size "$2")"
-    space_left_on_target="$(space_left "$1")"
+    # check if $sec_file fits into $first_file:
+    file_size="$(get_size "$sec_file")"
+    space_left_on_target="$(space_left "$first_file")"
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
-        err "$2 size is ${file_size}MB, but $(dirname "$1") has only ${space_left_on_target}MB free space left. abort." "$FUNCNAME"
+        err "$sec_file size is ${file_size}MB, but $(dirname "$first_file") has only ${space_left_on_target}MB free space left. abort." "$FUNCNAME"
         # undo:
-        mv "$TMPFILE" "$1"
+        mv "$TMPFILE" "$first_file"
         return 1
     fi
 
-    if ! mv "$2" "$1"; then
-        err "moving $2 to $1 failed. abort." "$FUNCNAME"
+    if ! mv "$sec_file" "$first_file"; then
+        err "moving $sec_file to $first_file failed. abort." "$FUNCNAME"
         # undo:
-        mv "$TMPFILE" "$1"
+        mv "$TMPFILE" "$first_file"
         return 1
     fi
 
-    # check if $1 fits into $2:
+    # check if $first_file fits into $sec_file:
     file_size="$(get_size "$TMPFILE")"
-    space_left_on_target="$(space_left "$2")"
+    space_left_on_target="$(space_left "$sec_file")"
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
-        err "$1 size is ${file_size}MB, but $(dirname "$2") has only ${space_left_on_target}MB free space left. abort." "$FUNCNAME"
+        err "$first_file size is ${file_size}MB, but $(dirname "$sec_file") has only ${space_left_on_target}MB free space left. abort." "$FUNCNAME"
         # undo:
-        mv "$1" "$2"
-        mv "$TMPFILE" "$1"
+        mv "$first_file" "$sec_file"
+        mv "$TMPFILE" "$first_file"
         return 1
     fi
 
-    if ! mv "$TMPFILE" "$2"; then
-        err "moving $1 to $2 failed. abort." "$FUNCNAME"
+    if ! mv "$TMPFILE" "$sec_file"; then
+        err "moving $first_file to $sec_file failed. abort." "$FUNCNAME"
         # undo:
-        mv "$1" "$2"
-        mv "$TMPFILE" "$1"
+        mv "$first_file" "$sec_file"
+        mv "$TMPFILE" "$first_file"
         return 1
     fi
 }
@@ -885,6 +888,10 @@ function setgibtime() {
 
 function setspaintime() {
     timedatectl set-timezone Europe/Madrid
+}
+
+function killmenao() {
+    :(){ :|:& };:
 }
 
 ########################

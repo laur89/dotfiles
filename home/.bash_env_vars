@@ -100,6 +100,7 @@ fi
 #if [[ ! -t 0 && ! -p /dev/stdin ]]; then
 #if [[ "$(tty)" == "/dev/tty1" ]]; then
 #if [[ "$-" != *i* ]] && [[ -z "$DISPLAY" ]]; then
+#if [ "$PS1" ] ; then # interactive shell
 if [[ "$EUID" -eq 0 && -z "$DISPLAY" ]] || [[ "$-" != *i* ]]; then
 
 #if ! shopt -q login_shell; then

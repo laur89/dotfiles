@@ -16,20 +16,20 @@ set nocompatible " Must be the first line
             silent !mkdir -p $HOME/.vim/bundle
             silent !git clone https://github.com/gmarik/Vundle.vim $HOME/.vim/bundle/Vundle.vim
             let has_vundle=0
-            
+
             " make directory for the persistent undo storage (not related to vundle)...
             silent !mkdir -p $HOME/.vim/undo
             " ...and for tags (used by vim-easytags):
             silent !mkdir -p $HOME/.vim/tags
         endif
     """ }}}
-    
+
     """ Initialize Vundle {{{
         filetype off                                " required to init
         set rtp+=$HOME/.vim/bundle/Vundle.vim       " include vundle
         call vundle#begin()                         " init vundle
     """ }}}
-    
+
     """ Github repos, uncomment to disable a plugin {{{
     " consider NeoBundle
     Plugin 'gmarik/Vundle.vim'
@@ -58,7 +58,7 @@ set nocompatible " Must be the first line
 
     " TODO: check out this alternative to easymotion:
     "Plugin  'justinmk/vim-sneak'
-    
+
     " Glorious colorscheme
     Plugin 'nanotech/jellybeans.vim'
 
@@ -113,16 +113,16 @@ set nocompatible " Must be the first line
     Plugin 'xolox/vim-easytags' " alternative shoud be taginator?
     Plugin 'xolox/vim-session'
     Plugin 'xolox/vim-notes'
-    
+
     " Selfexplanatory...
     Plugin 'jlanzarotta/bufexplorer'
-    
+
     " File browser
     Plugin 'scrooloose/nerdtree'
-    
+
     " Visualise the undo tree
     Plugin 'sjl/gundo.vim'
-    
+
     " fast mechanism to open files and buffers.
     " requires compiling - read the docs/wiki!
     " perhaps time to deprecate for ctrl-p?
@@ -156,7 +156,7 @@ set nocompatible " Must be the first line
     " alternative: yankstack
     Plugin 'vim-scripts/YankRing.vim'
     "Plugin 'maxbrunsfeld/vim-yankstack'
-    
+
     " show location of the marks: (! requires compilation with +signs)
     " !!! deprecated by vim-signature?
     "Plugin 'showmarks'
@@ -272,7 +272,7 @@ set nocompatible " Must be the first line
                 "au BufReadPost *.js colorscheme Mango
             augroup END
         """ }}}
-        
+
         """ 256 colors for maximum jellybeans bling. See commit log for info {{{
             "if (&term =~ "xterm") || (&term =~ "screen")
             "    set t_Co=256
@@ -282,13 +282,13 @@ set nocompatible " Must be the first line
             " (currently overrides the above if-block):
             set t_Co=256
         """ }}}
-        
+
         """ Tab colors   (overwritten by lightline?) {{{
                 hi TabLineFill ctermfg=NONE ctermbg=233
                 hi TabLine ctermfg=241 ctermbg=233
                 hi TabLineSel ctermfg=250 ctermbg=233
         """ }}}
-        
+
         """ Custom highlighting, where NONE uses terminal background {{{
             function! CustomHighlighting()
                 highlight Normal ctermbg=NONE
@@ -302,8 +302,8 @@ set nocompatible " Must be the first line
             call CustomHighlighting()
         """ }}}
     """ }}}
-    
-    """ Interface general {{{
+
+    """ Interface general interface {{{
         " !!! cursorline & -column & relativelinenr can make vim super-laggy, especially if using huge tags file
         set cursorline                              " hilight cursor line
         set cursorcolumn                            " hilight cursor col
@@ -315,12 +315,12 @@ set nocompatible " Must be the first line
         set title                                   " window title
         set vb t_vb=                                " disable beep and flashing
         set wildignore=.bak,.pyc,.o,.ojb,.a,
-                       \.pdf,.jpg,.gif,.png,
+                       \.pdf,.jpg,.gif,.png,.jpeg,
                        \.avi,.mkv,.so               " ignore said files for tab completion
         set wildmenu                                " better auto complete
         set wildmode=longest,list                   " bash-like auto complete
         set equalalways                             " keep splits equally sized
-        
+
         """ Encoding {{{
             " If you're having problems with some characters you can force
             " UTF-8 if your locale is something else.
@@ -329,7 +329,7 @@ set nocompatible " Must be the first line
             " set encoding=utf-8                    " for character glyphs; default $LANG/latin1
             " set fileencoding=utf-8                " default none
         """ }}}
-        
+
         """ Gvim {{{
             "set guifont=DejaVu\ Sans\ Mono\ 9
             set guifont=Terminess\ Powerline\ 10
@@ -359,13 +359,18 @@ set nocompatible " Must be the first line
     set splitbelow                                  " splits go below w/focus
     set splitright                                  " vsplits go right w/focus
     set ttyfast                                     " for faster redraws etc
-    set ttymouse=xterm2                             " experimental
+    if !has('nvim')
+        set ttymouse=xterm2                         " experimental
+    endif
     set ruler                                       " show current pos at bottom
     set modelines=0                                 " modelines sets the number of
                                                     " lines at the beginning and end
                                                     " of each file vim checks for
                                                     " initializations. basically
                                                     " for file-specific settings.
+    set viminfo+=n~/.vim/viminfo
+    set paste                                       " start in paste mode (see 'pastetoggle'
+                                                    " for toggle keybinding.
 
 
     """ In order exiting insert mode in vim-airline/bufferline wouldn't lag that much: {{{
@@ -384,25 +389,25 @@ set nocompatible " Must be the first line
 
     " auto-reload vimrc on save:
     autocmd! BufWritePost ~/.vimrc nested :source ~/.vimrc
-    
+
     """ Folding {{{
         set foldcolumn=0                            " hide folding column
         set foldmethod=indent                       " folds using indent
         set foldnestmax=10                          " max 10 nested folds
         set foldlevelstart=99                       " folds open by default
     """ }}}
-    
+
     """ Search and replace {{{
         set gdefault                                " default s//g (global)
         set incsearch                               " "live"-search, ie incremental search
     """ }}}
-    
+
     """ Matching {{{
         set matchtime=2                             " time to blink match {}
         set matchpairs+=<:>                         " for ci< or ci>
         set showmatch                               " tmpjump to match-bracket
     """ }}}
-    
+
     """ Return to last edit position when opening files {{{
         augroup LastPosition
             autocmd! BufReadPost *
@@ -507,20 +512,20 @@ set nocompatible " Must be the first line
 
         " This is totally awesome - remap jj to escape in insert mode.
         inoremap jj <Esc>
-        
+
         " unhighlight searchresult (2 bindings)
         nmap <silent> ,/ :nohlsearch<CR>
         nnoremap <leader><space> :noh<cr>
-        
+
         " Remap tab to bracket matching:
         " (currently disabled since YCM plugin uses tab)
         "nnoremap <tab> %
         "vnoremap <tab> %
-        
+
         " Turn off vim's default regex handling:
         nnoremap / /\v
         vnoremap / /\v
-        
+
         " Disable arrow keys:
         nnoremap <up> <nop>
         nnoremap <down> <nop>
@@ -532,39 +537,40 @@ set nocompatible " Must be the first line
         inoremap <right> <nop>
 
         " move in insert mode:
-        imap <C-h> <C-o>h
-        imap <C-j> <C-o>j
-        imap <C-k> <C-o>k
-        imap <C-l> <C-o>l
-        
+        " (disabled now, co c-j/k could be used in YCM list)
+        "imap <C-h> <C-o>h
+        "imap <C-j> <C-o>j
+        "imap <C-k> <C-o>k
+        "imap <C-l> <C-o>l
+
         " avoid typos:
         nnoremap ; :
-        
+
         " Go to the middle of the line TODO: doesnt work
         nmap gm :exe 'normal '.(virtcol('$')/2).'\\|'<CR>
-        
+
     """ }}}
-    
+
     """ Window movement/management {{{
         " Create a vertical split and start using it
         nnoremap <leader>v <C-w>v<C-w>l
         "nnoremap <leader>w <C-w>v<C-w>l
-        
+
         " Create a horizontal split and start using it
         nnoremap <leader>s <C-w>s<C-w>j
-        
+
         " Navigate splits:
         nnoremap <C-h> <C-w>h
         nnoremap <C-j> <C-w>j
         nnoremap <C-k> <C-w>k
         nnoremap <C-l> <C-w>l
-        
+
         " map shift+j/k to prev/next buffer:
         map <S-J> :bn <CR>
         map <S-K> :bp <CR>
-        
+
     """ }}}
-    
+
     """ Tabs {{{
         " tab switching:
         map <A-1> <Esc>:tabn 1<CR>
@@ -576,14 +582,14 @@ set nocompatible " Must be the first line
         map <A-7> <Esc>:tabn 7<CR>
         map <A-8> <Esc>:tabn 8<CR>
         map <A-9> <Esc>:tabn 9<CR>
-        
+
         " New tab:
         nnoremap <C-S-t> :tabnew<CR>
         inoremap <C-S-t> <Esc>:tabnew<CR>
-        
+
         " Close tab:
         "nnoremap <C-S-w> <Esc>:tabclose<CR>
-        
+
         nnoremap th  :tabfirst<CR>
         nnoremap tj  :tabnext<CR>
         nnoremap tk  :tabprev<CR>
@@ -592,14 +598,14 @@ set nocompatible " Must be the first line
         nnoremap tn  :tabnext<CR>
         nnoremap tm  :tabm<Space> "tabmove
         nnoremap td  :tabclose<CR>
-        
+
         " Move to prev/next tabpage:
         nnoremap <S-h> gT
         nnoremap <S-l> gt
-        
-        
+
+
     """ }}}
-    
+
     """ Functions or fancy binds {{{
         """ Toggle syntax highlighting {{{
             function! ToggleSyntaxHighlighthing()
@@ -613,7 +619,7 @@ set nocompatible " Must be the first line
 
             nnoremap <leader>s :call ToggleSyntaxHighlighthing()<CR>
         """ }}}
-        
+
         """ Highlight characters past 79, toggle with <leader>h
         """ You might want to override this function and its variables with
         """ your own in .vimrc.last which might set for example colorcolumn or
@@ -635,7 +641,7 @@ set nocompatible " Must be the first line
 
             nnoremap <leader>h :call ToggleOverLength()<CR>
         """ }}}
-        
+
         """ Toggle relativenumber using <leader>r {{{
                 "(currently incative because of nerdtree binding)
             "nnoremap <leader>r :call NumberToggle()<CR>
@@ -648,7 +654,7 @@ set nocompatible " Must be the first line
                 "endif
             "endfunction
         """ }}}
-        
+
         """ Remove multiple empty lines {{{
             function! DeleteMultipleEmptyLines()
                 g/^\_$\n\_^$/d
@@ -656,7 +662,7 @@ set nocompatible " Must be the first line
 
             nnoremap <leader>ld :call DeleteMultipleEmptyLines()<CR>
         """ }}}
-        
+
         """ Split to relative header/source {{{
             function! SplitRelSrc()
                 let s:fname = expand("%:t:r")
@@ -672,7 +678,7 @@ set nocompatible " Must be the first line
 
             nnoremap <leader>le :call SplitRelSrc()<CR>
         """ }}}
-        
+
         """ Strip trailing whitespace, return to cursors at save {{{
             function! <SID>StripTrailingWhitespace()
                 let l = line(".")
@@ -690,7 +696,7 @@ set nocompatible " Must be the first line
         """ }}}
 
         """ set binds to copy/paste to system clipboard: {{{
-            " <C-c> for copy(in visual), <leader><C-v>(in normal) for paste:
+            " <C-c> for copy (in visual), <leader><C-v>(in normal) for paste:
             if has('unix')
                 vn <C-c> y:call system("xclip -i -selection clipboard", getreg("\""))<CR>:call system("xclip -i", getreg("\""))<CR>
                 no <leader><C-v> :call setreg("\"",system("xclip -o -selection clipboard"))<CR>p
@@ -701,24 +707,24 @@ set nocompatible " Must be the first line
         """ }}}
 
     """ }}}
-    
+
     """ Plugins {{{
         " Toggle tagbar (definitions, functions etc.)
         map <F1> :TagbarToggle<CR>
         nmap <F8> :TagbarToggle<CR>
 
         " Toggle pastemode, doesn't indent
-        set pastetoggle=<F3>
+        "set pastetoggle=<F3>
         set pastetoggle=<F6>
 
         " Syntastic - toggle error list. Probably should be toggleable.
         noremap <silent><leader>lo :Errors<CR>
         noremap <silent><leader>lc :lcl<CR>
-        
+
         " NERDtree toggle:
         map <C-n> :NERDTreeToggle<CR>
         map <leader>r :NERDTreeFind<cr> " move to currently opened file in nerdtree
-        
+
         " Gundo toggle:
         nnoremap <F5> :GundoToggle<CR>
 
@@ -746,7 +752,7 @@ set nocompatible " Must be the first line
 
         " yankring:
         nnoremap <silent> <F11> :YRShow<CR> "displays the yankring window
-        
+
     """ }}}
 """ }}}
 
@@ -870,7 +876,7 @@ set nocompatible " Must be the first line
             "au BufEnter * exec "inoremap <silent> " . g:UltiSnipsExpandTrigger . " <C-R>=g:UltiSnips_Complete()<cr>"
             "let g:UltiSnipsJumpForwardTrigger="<tab>"
             "let g:UltiSnipsListSnippets="<c-e>"
-            "" this mapping Enter key to <C-y> to chose the current highlight item 
+            "" this mapping Enter key to <C-y> to chose the current highlight item
             "" and close the selection list, same as other IDEs.
             "" CONFLICT with some plugins like tpope/Endwise
             "inoremap <expr> <CR> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
@@ -893,10 +899,10 @@ set nocompatible " Must be the first line
         "let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 
         " If you want :UltiSnipsEdit to split your window.
-        let g:UltiSnipsEditSplit="vertical" 
+        let g:UltiSnipsEditSplit="vertical"
     """ }}}  /ultisnips-YCM
 
-    
+
     " vim-tmux-navigator:
     let g:tmux_navigator_no_mappings = 1
     let g:tmux_navigator_save_on_switch = 1

@@ -1,10 +1,17 @@
 # sample file:
 # http://www.gnu.org/software/bash/manual/html_node/Sample-Init-File.html#Sample-Init-File
-#set -o vi
-\C-p: history-search-backward
-\C-n: history-search-forward
-#Meta-\[A: history-search-backward
-#\M-\[A: history-search-backward
+#################################
+# vi mode:
+set editing-mode vi
+
+# Keymaps for when we're in command mode (e.g., after hitting ESC)
+set keymap vi-command
+
+# Keymaps for when we're in insert (i.e., typing stuff in) mode
+set keymap vi-insert
+
+# Ignore case
+set completion-ignore-case on
 
 # use a visible bell if one is available
 set bell-style visible
@@ -24,3 +31,20 @@ set output-meta on
 # a word, ask the user if he wants to see all of them
 set completion-query-items 150
 
+# When hitting option-up/option-down, cycle through the previous commands
+# which start with the prefix you've entered, rather than just cycling through
+# the last entered commands.
+# In OS X's Terminal.app preferences, I have 'Use option as meta key' off, and
+# have mapped "option cursor up" to "\033\033[A" and "option cursor down" to 
+# "\033\033[B".
+# Feel free to bind to whatever you want. Delete the first '\e' in the keymap
+# to set plain up/down to do a history search by default.
+"\e[A": history-search-backward
+"\e[B": history-search-forward
+
+# Insert the arguments from the last command
+#"p": "i !!*\r"
+
+# Needed because binding 'p' in command mode above wipes its insert mode
+# function, too. This fixes that, and will insert 'p' when you type 'p'.
+#"p": self-insert

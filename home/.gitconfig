@@ -5,11 +5,11 @@
     tool = my_meld
     conflictstyle = diff3
 [mergetool "my_meld"]
-    ;cmd = meld --auto-merge --diff $BASE $LOCAL --diff $BASE $REMOTE --diff $LOCAL $BASE $REMOTE --output $MERGED
-    cmd = meld --diff $BASE $LOCAL --diff $BASE $REMOTE --diff $LOCAL $BASE $REMOTE --output $MERGED
-    ;keepBackup = false 
+    cmd = meld --auto-merge --diff $BASE $LOCAL --diff $BASE $REMOTE --diff $LOCAL $BASE $REMOTE --output $MERGED
+    ;cmd = meld --diff $BASE $LOCAL --diff $BASE $REMOTE --diff $LOCAL $BASE $REMOTE --output $MERGED
+    ;keepBackup = false
 ;[mergetool]
-    ;keepBackup = false 
+    ;keepBackup = false
 [core]
 	excludesfile = /home/laur/.gitignore_global
 	editor = vim
@@ -17,7 +17,7 @@
 	autocrlf = false
     safecrlf = true
 [difftool]
-    prompt = false 
+    prompt = false
 [diff]
     tool = vimdiff
 [push]
@@ -71,4 +71,4 @@
 ; git log --all --oneline --author=rickhanlonii | grep "search query"
 ; git show a2c25061
 ;   or  git show a2c25061 --stat   to show info about commit without diff
-; 
+;

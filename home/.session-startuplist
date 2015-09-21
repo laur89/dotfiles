@@ -108,11 +108,11 @@ if ! is_proc_running transmission_somethiNG_TODO && ! is_work; then
     true
 fi
 
+# synergy:
 if is_laptop; then
     if ! is_proc_running synergyc; then
         echo "Launching syndergy client"
         if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]]; then
-            #/data/progs/custom_builds/synergy/bin/synergyc -f --no-tray --debug INFO --name $HOSTNAME 10.180.18.149:24800 &
             /data/progs/custom_builds/synergy/bin/synergyc -f --no-tray --debug INFO --name work-laptop 10.180.18.149:24800 &
         else
             # TODO personal laptop
@@ -121,7 +121,7 @@ if is_laptop; then
 
         setxkbmap ee & # otherwise using server's keyboard defaults to us map;
     fi
-else # is NOT laptop, assuming desktop
+else    # is NOT laptop, assuming desktop
     if ! is_proc_running synergys; then
         echo "Launching syndergy server"
         if [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" ]]; then
@@ -136,8 +136,7 @@ fi
 ###############################
 # modify configs:
 if is_laptop; then
-    # ! -type f in order to ignore symlinks for sed !
-    $(find /home/laur/.homesick/repos -type f -name ".xscreensaver" | xargs sed -i '/^lockTimeout:/s/^lockTimeout:.*/lockTimeout:\t0:00:05/g') &
+    sed --follow-symlinks -i '/^lockTimeout:/s/^lockTimeout:.*/lockTimeout:\t0:00:05/g' /home/laur/.xscreensaver &
 fi
 
 
