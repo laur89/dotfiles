@@ -1,6 +1,6 @@
 [user]
-	name = Laur Aliste
-	email = laur.aliste@gmail.com
+    name = Laur Aliste
+    email = laur.aliste@gmail.com
 [merge]
     ;tool = meld
     ;tool = vimdiff
