@@ -16,10 +16,10 @@
 ;[mergetool]
     ;keepBackup = false
 [core]
-	excludesfile = /home/laur/.gitignore_global
-	editor = vim
-	;autocrlf = input
-	autocrlf = false
+    excludesfile = /home/laur/.gitignore_global
+    editor = vim
+    ;autocrlf = input
+    autocrlf = false
     safecrlf = true
     pager = less
 [difftool]
@@ -32,10 +32,10 @@
     ; & https://github.com/xenomachina/public/
     ;tool = vd -f
 [pager]
-	diff = false
-	difftool = false
+    diff = false
+    difftool = false
 [push]
-	default = simple
+    default = simple
 [alias]
     st = status
     com = commit
