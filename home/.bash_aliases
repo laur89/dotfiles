@@ -29,7 +29,7 @@ alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
 alias c="clear"
 alias cp="cp -rp"
-alias less="less -IR"
+#alias less="less -IRKFX" # handled by the $LESS env var
 alias ls="ls --color=auto"
 alias ll='ls -l'
 alias lr='ls -lr'
@@ -70,17 +70,22 @@ alias sd='cd'
 alias gti='git'
 alias igt='git'
 alias gitst='git st'
-alias gitdi='git di'
 alias gitfe='git fe'
 alias gitco='git co'
 alias gitrst='git rst'
 alias gitau='git au'
 alias gitlg='git lg'
 alias gitlgp='git lg -p'
-alias gitcom='git commit'
+alias gitcom='git com'
 alias gita='git a'
 alias gitaa='git aa'
 alias gitb='git b'
+#alias gitdi='git di'
+alias gitdi='git difftool --dir-diff' # only diff unstaged files
+alias gitdi-all='git difftool --dir-diff HEAD' # also diff staged files
+alias gitdi-staged='git difftool --dir-diff --cached' # --cached == --staged
+alias gitdi-prev='git difftool --dir-diff HEAD^ HEAD' # local last commit against index
+
 alias mkdri='mkdir'
 alias mkdr='mkdir'
 alias mkdi='mkdir'

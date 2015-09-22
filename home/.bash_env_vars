@@ -24,7 +24,7 @@ export PANEL_FIFO="/tmp/panel-fifo" # for BSPWM
 
 # Colorize less (from http://unix.stackexchange.com/questions/119/colors-in-man-pages)
 # get color support for less:
-export LESS="--RAW-CONTROL-CHARS"
+export LESS="$LESS -FRXKI"
 # colorize:
 export LESS_TERMCAP_mb=$(tput bold; tput setaf 2) # green
 export LESS_TERMCAP_md=$(tput bold; tput setaf 6) # cyan

@@ -2,11 +2,16 @@
 	name = Laur Aliste
 	email = laur.aliste@gmail.com
 [merge]
+    ;tool = meld
+    ;tool = vimdiff
     tool = my_meld
     conflictstyle = diff3
+    prompt = false
 [mergetool "my_meld"]
-    cmd = meld --auto-merge --diff $BASE $LOCAL --diff $BASE $REMOTE --diff $LOCAL $BASE $REMOTE --output $MERGED
+    ;cmd = meld --auto-merge --diff $BASE $LOCAL --diff $BASE $REMOTE --diff $LOCAL $BASE $REMOTE --output $MERGED
     ;cmd = meld --diff $BASE $LOCAL --diff $BASE $REMOTE --diff $LOCAL $BASE $REMOTE --output $MERGED
+    ; MJ's cmd:
+    cmd = meld --auto-merge $LOCAL $BASE $REMOTE --output $MERGED --diff $LOCAL $BASE --diff $BASE $REMOTE
     ;keepBackup = false
 ;[mergetool]
     ;keepBackup = false
@@ -16,14 +21,24 @@
 	;autocrlf = input
 	autocrlf = false
     safecrlf = true
+    pager = less
 [difftool]
-    prompt = false
+    prompt = true
 [diff]
-    tool = vimdiff
+    tool = meld
+    ;tool = vimdiff
+;[multidiff]
+    ; see http://www.xenomachina.com/2012/02/multi-diff-with-vim-andor-git.html
+    ; & https://github.com/xenomachina/public/
+    ;tool = vd -f
+[pager]
+	diff = false
+	difftool = false
 [push]
 	default = simple
 [alias]
     st = status
+    com = commit
     au = add -u
     a = add
     b = branch -a
