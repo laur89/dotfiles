@@ -12,12 +12,7 @@ export PAGER=less
 export BROWSER=/usr/bin/iceweasel
 export DEITY=
 # add additional locations to $PATH:
-export PATH=$PATH:$JAVA_HOME/bin:$M2:/data/dev/scripts/system
-# set PATH so it includes user's private bin if it exists
-if [[ -d "$HOME/bin" ]] ; then
-    export PATH="$PATH:$HOME/bin"
-    #export PATH="$PATH:$HOME/bin/sys_specific_bin" # execs/files that are machine-dependent;
-fi
+export PATH=$PATH:$JAVA_HOME/bin:$M2:/data/dev/scripts/system:$HOME/bin
 
 export CUSTOM_LOGDIR="/var/log/custom_logs"
 export PANEL_FIFO="/tmp/panel-fifo" # for BSPWM
@@ -109,6 +104,6 @@ if [[ "$EUID" -eq 0 && -z "$DISPLAY" ]] || [[ "$-" != *i* ]]; then
     export DISPLAY=":0"
 fi
 
-# marker function used to detect whether env vars have been loaded:
-function __ENV_VARS_LOADED_MARKER() { true; }
+# marker var used to detect whether env vars have been loaded:
+export __ENV_VARS_LOADED_MARKER_VAR="loaded"
 

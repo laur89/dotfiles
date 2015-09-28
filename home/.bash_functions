@@ -18,26 +18,40 @@ fi
 # =====================================================================
 
 # find files or dirs:
+# TODO: set default max depth? should be at least when -L is selected;
 function ffind() {
-    local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter linkTypeOptionCounter usegrep found_files_list parameterised_files_list file index exact binary follow_links maxDepth maxDepthParam pathOpt
-    usage="\n$FUNCNAME: find files/dirs by name.
-    Usage: $FUNCNAME  [-i] [-f] [-d] [-l] [-b] [-e] [-m depth]  \"fileName pattern\" [top_level_dir_to_search_from]
-        -i  pattern is case insensitive
+    local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter exact binary follow_links maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter
+
+    defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
+    usage="\n$FUNCNAME: find files/dirs by name. smartcase.
+    Usage: $FUNCNAME  [options]  \"fileName pattern\" [top_level_dir_to_search_from]
+        -r  use regex (so the find specific metacharacters *, ? and [] won't work)
+        -i  force case insensitive
+        -s  force case sensitivity
         -f  search for regular files
         -d  search for directories
         -l  search for symbolic links
         -b  search for executable binaries
-        -L  follow symlinks. note that this won't work with -l
-        -m<digit>   max depth to descend; unlimited by default
+        -L  follow symlinks
+        -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;
         -e  search for exact filename, not for a partial (you still can use * wildcards)
         -p  expand the pattern search for path as well (adds the -path option)"
 
     filetypeOptionCounter=0
-    linkTypeOptionCounter=0
+    caseOptCounter=0
 
-    while getopts "m:ifdelbLhp" opt; do
+    while getopts "m:isrefdlbLph" opt; do
         case "$opt" in
            i) INAME_ARG="-iname"
+              caseOptCounter+=1
+              shift $((OPTIND-1))
+                ;;
+           s) unset INAME_ARG
+              force_case=1
+              caseOptCounter+=1
+              shift $((OPTIND-1))
+                ;;
+           r) regex=1
               shift $((OPTIND-1))
                 ;;
            e) exact=1
@@ -45,15 +59,13 @@ function ffind() {
                 ;;
            f | d | l) file_type="-type $opt"
               let filetypeOptionCounter+=1
-              [[ "$opt" == "l" ]] && let linkTypeOptionCounter+=1
               shift $((OPTIND-1))
                 ;;
            b) binary=1
               let filetypeOptionCounter+=1
               shift $((OPTIND-1))
                 ;;
-           L) let linkTypeOptionCounter+=1
-              follow_links="-follow"
+           L) follow_links="-L"
               shift $((OPTIND-1))
                 ;;
            m) maxDepth="$OPTARG"
@@ -80,35 +92,67 @@ function ffind() {
         err "-f, -d, -l and -b flags are exclusive." "$FUNCNAME"
         echo -e "$usage"
         return 1
-    elif [[ "$linkTypeOptionCounter" -gt 1 ]]; then
-        err "-l and -L flags are exclusive." "$FUNCNAME"
+    elif [[ "$caseOptCounter" -gt 1 ]]; then
+        err "-i and -s flags are exclusive." "$FUNCNAME"
+        echo -e "$usage"
+        return 1
+    elif [[ "$pathOpt" -eq 1 && "$regex" -eq 1 ]]; then
+        err "-r and -p flags are exclusive." "$FUNCNAME"
+        echo -e "$usage"
+        return 1
+    elif [[ "$exact" -eq 1 && "$regex" -eq 1 ]]; then
+        err "-r and -e flags are exclusive, since regex always searches the whole path anyways, meaning script will always pad beginning with .*" "$FUNCNAME"
         echo -e "$usage"
         return 1
     fi
 
+
+    if [[ "$follow_links" == "-L" && "$file_type" == "-type l" ]]; then
+        report "if both -l and -L flags are set, then ONLY the broken links are being searched.\n" "$FUNCNAME"
+    fi
+
+    # as find doesn't support smart case, provide it yourself:
+    if [[ "$(tolowercase "$SRC")" == "$SRC" ]]; then
+        # provided pattern was lowercase, make it case insensitive:
+        INAME_ARG="-iname"
+    fi
+
+    [[ "$force_case" -eq 1 ]] && INAME_ARG=""
+
+
+    if [[ "$pathOpt" -eq 1 && "$exact" -eq 1 ]]; then
+        report "note that using -p and -e flags together means that the pattern has to match whole path, not only the filename!" "$FUNCNAME"
+    fi
+
     if [[ -n "$SRCDIR" ]]; then
         if [[ ! -d "$SRCDIR" ]]; then
-            err "provided directory to search from is not a directory. abort." "$FUNCNAME"
+            err "provided directory to search from (\"$SRCDIR\") is not a directory. abort." "$FUNCNAME"
             return 1
         elif [[ "${SRCDIR:$(( ${#SRCDIR} - 1)):1}" != "/" ]]; then
             SRCDIR="${SRCDIR}/" # add trailing slash if missing; required for gnu find; is it really the case??
         fi
     fi
 
-    if [[ "$SRC" == *\.\** ]]; then
-        err "only use asterisks (*) for wildcards, not .*" "$FUNCNAME"
-        return 1
-    elif [[ "$SRC" == *\** ]]; then
-        #echo -e "please don't use asterisks in filename pattern; searchterm is already padded with wildcards on both sides."
-        #return 1
-        # TODO: try to lose this:
-        # switch grep usage off for coloring, as using asterisks wouldn't pass grep filter:
-        usegrep="false"
+    # find metacharacter or regex sanity:
+    if [[ "$regex" -eq 1 ]]; then
+        if [[ "$SRC" == *\** && "$SRC" != *\.\** ]]; then
+            err 'use .* as wildcards, not a single *; you are misusing regex.' "$FUNCNAME"
+            return 1
+        elif [[ "$(echo "$SRC" | tr -dc '.' | wc -m)" -lt "$(echo "$SRC" | tr -dc '*' | wc -m)" ]]; then
+            err "nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
+            return 1
+        fi
+    else # no regex, make sure find metacharacters are not mistaken for regex ones:
+        if [[ "$SRC" == *\.\** ]]; then
+            err "only use asterisks (*) for wildcards, not .*; provide -r flag if you want to use regex." "$FUNCNAME"
+            return 1
+        fi
+
+        if [[ "$SRC" == *\.* ]]; then
+            report "note that period (.) will be used as a literal period, not as a wildcard. provide -r flag to use regex.\n" "$FUNCNAME"
+        fi
     fi
 
-    if [[ "$SRC" == *\.* ]]; then
-        report "note that period (.) will be used as a literal period, not as a wildcard.\n" "$FUNCNAME"
-    fi
 
     if [[ -n "$maxDepth" ]]; then
         if ! is_digit "$maxDepth"; then
@@ -118,73 +162,46 @@ function ffind() {
         fi
 
         maxDepthParam="-maxdepth $maxDepth"
+    elif [[ -n "$follow_links" ]]; then
+        maxDepthParam="-maxdepth $defMaxDeptWithFollowLinks"
     fi
 
     if [[ "$pathOpt" -eq 1 ]]; then
         [[ -n "$INAME_ARG" ]] && INAME_ARG="-iwholename" || INAME_ARG="-path" # as per man page, -ipath is deprecated
+    elif [[ "$regex" -eq 1 ]]; then
+        [[ -n "$INAME_ARG" ]] && INAME_ARG="-regextype posix-extended -iregex" || INAME_ARG="-regextype posix-extended -regex"
     fi
 
     # grep is for coloring only:
     #find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' | grep -i --color=auto "$SRC" 2>/dev/null
-    if [[ "$exact" -eq 1 ]]; then
-        if [[ "$usegrep" == "false" ]]; then
-            if [[ "$binary" -eq 1 ]]; then
-                find "${SRCDIR:-.}" $maxDepthParam $follow_links -type f "${INAME_ARG:--name}" "$SRC" -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null
-            else
-                find "${SRCDIR:-.}" $maxDepthParam $follow_links $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null # old; TODO: deleteme if new one proves better
-            fi
-        else # use coloring grep
-            if [[ "$binary" -eq 1 ]]; then
-                find "${SRCDIR:-.}" $maxDepthParam $follow_links -type f "${INAME_ARG:--name}" "$SRC" -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -i --color=auto "$SRC"
-            else
-                find "${SRCDIR:-.}" $maxDepthParam $follow_links $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null | grep -i --color=auto "$SRC"
-            fi
+    if [[ "$exact" -eq 1 ]]; then # no regex with exact; they are excluded.
+        if [[ "$binary" -eq 1 ]]; then
+            find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" "$SRC" -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto "$SRC|$"
+        else
+            find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null | grep -iE --color=auto "$SRC|$"
         fi
-    else # partial filename match
-        if [[ "$usegrep" == "false" ]]; then
+    else # partial filename match, ie add * padding
+        if [[ "$regex" -eq 1 ]]; then  #regex, need to change the * padding around $SRC
+            #
+            # TODO eval!
+            #
             if [[ "$binary" -eq 1 ]]; then
-                find "${SRCDIR:-.}" $maxDepthParam $follow_links -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null
+                # TODO: this doesnt work atm:
+                err "binary search in regex currently unimplemented" "$FUNCNAME"
+                return
+                # this doesn't work atm:
+                eval find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '.*'"$SRC"'.*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto "$SRC|$"
             else
-                find "${SRCDIR:-.}" $maxDepthParam $follow_links $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null # old; TODO: deleteme if new one proves better
+                eval find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '.*'"$SRC"'.*' 2>/dev/null | grep -iE --color=auto "$SRC|$"
             fi
-        else # use coloring grep
+        else # no regex
             if [[ "$binary" -eq 1 ]]; then
-                find "${SRCDIR:-.}" $maxDepthParam $follow_links -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -i '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -i --color=auto "$SRC"
+                find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto "$SRC|$"
             else
-                find "${SRCDIR:-.}" $maxDepthParam $follow_links $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null | grep -i --color=auto "$SRC"
+                find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null | grep -iE --color=auto "$SRC|$"
             fi
         fi
     fi
-
-    ##### from here on, hackeroo begins:
-    #found_files_list=()
-    #parameterised_files_list=()
-
-    ## TODO: store found files in args:
-    #while IFS= read -r -d '' file; do
-        #found_files_list+=( "$file" )
-    #done <   <(find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' -print0 2>/dev/null)
-
-    #index=1
-    #clear
-    #for file in ${found_files_list[@]}; do
-        #if [[ "$index" -le 20 ]]; then
-            #parameterised_files_list+=( "\"$file\"" )
-            #file="$index\t$file"
-            #let index+=1
-        #fi
-
-        #if [[ "$usegrep" == "false" ]]; then
-            #echo -e "$file"
-        #else
-            #echo -e "$file" | grep -i --color=auto "$SRC"
-        #fi
-    #done
-
-    ##if [[ "${#parameterised_files_list[@]}" != 0 ]]; then
-        ## TODO: handles filenames with spaces, but otherwise... dangerous:
-        #echo -e "${parameterised_files_list[@]}"
-    ##fi
 }
 
 # Find a file with a pattern in name (inside wd);
@@ -204,41 +221,52 @@ function ffindproc() {
 
 # find top 5/x biggest or smallest nodes:
 function __find_top_big_small_fun() {
-    local usage opt OPTIND itemsToShow fileTypeArgs item compiledFileTypeArgs maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_ bigOrSmall
+    local usage opt OPTIND itemsToShow file_type item compiledFileTypeArgs maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_
+    local bigOrSmall du_include_regular_files filesize_print_unit ignore_filesize_print_unit_msg duMaxDepthParam filetypeOptionCounter
 
-    reverse="$1"
-    du_size_unit="$2"
+    reverse="$1" # this basically decides whether we're showing top big or small.
+    du_size_unit="$2" # default unit provided by the invoker
     FUNCNAME_="$3"
     bigOrSmall="$4"
     shift 4
 
-	if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ ]]; then
-        err "unsupported du block size unit: \"$du_size_unit\"" "$FUNCNAME"
+    filetypeOptionCounter=0
+
+	if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ && "${#du_size_unit}" -eq 1 ]]; then
+        err "unsupported du block size unit: \"$du_size_unit\"" "$FUNCNAME_"
         echo -e "$usage"
         return 1
     fi
 
-    usage="\n$FUNCNAME_: find top $bigOrSmall nodes from current dir. if node type not specified, defaults to searching for regular files.
+    usage="\n$FUNCNAME_: find top $bigOrSmall nodes from current dir.\nif node type not specified, defaults to searching for everything.\n
     Usage: $FUNCNAME_  [-f] [-d] [-L] [-m depth]  [nr_of_top_items_to_show]
-        -f  include regular files
-        -d  include directories
-        -L  follow symlinks
+        -f  search only for regular files
+        -d  search only for directories
+        -L  follow/dereference symlinks
         -m<digit>   max depth to descend; unlimited by default."
 
     while getopts "m:fdLh" opt; do
         case "$opt" in
-           f) fileTypeArgs="$fileTypeArgs f"
-              shift $((OPTIND-1))
-                ;;
-           d) fileTypeArgs="$fileTypeArgs d"
-              # we don't want to sed maxdepth param here by default, right?
-              #maxDepthParam="-maxdepth 1"
+           #f) file_type="$file_type f"
+           #f) file_type="-type f"
+              #filetypeOptionCounter+=1
+              #shift $((OPTIND-1))
+                #;;
+           ##d) file_type="$file_type d"
+           #d) file_type="-type d"
+              #filetypeOptionCounter+=1
+              ## we don't want to sed maxdepth param here by default, right?
+              ##maxDepthParam="-maxdepth 1"
+              #shift $((OPTIND-1))
+                #;;
+           f | d) file_type="-type $opt"
+              let filetypeOptionCounter+=1
               shift $((OPTIND-1))
                 ;;
            m) maxDepth="$OPTARG"
               shift $((OPTIND-1))
                 ;;
-           L) follow_links="-follow"
+           L) follow_links="-L" # common for both find and du
               shift $((OPTIND-1))
                 ;;
            h) echo -e "$usage"
@@ -250,13 +278,19 @@ function __find_top_big_small_fun() {
 
     itemsToShow="$1"
 
-    if [[ -z "$fileTypeArgs" ]]; then
-        compiledFileTypeArgs="-type f"
-    else
-        for item in $fileTypeArgs; do
-            [[ -z "$compiledFileTypeArgs" ]] && compiledFileTypeArgs="-type $item" \
-                                             || compiledFileTypeArgs="$compiledFileTypeArgs -o -type $item"
-        done
+    #if [[ -z "$file_type" ]]; then
+        #compiledFileTypeArgs="-type f"
+    #else
+        #for item in $file_type; do
+            #[[ -z "$compiledFileTypeArgs" ]] && compiledFileTypeArgs="-type $item" \
+                                             #|| compiledFileTypeArgs="$compiledFileTypeArgs -o -type $item"
+        #done
+    #fi
+
+    if [[ "$#" -gt 1 ]]; then
+        err "maximum of one arg allowed" "$FUNCNAME_"
+        echo -e "$usage"
+        return 1
     fi
 
     if [[ -n "$maxDepth" ]]; then
@@ -267,6 +301,7 @@ function __find_top_big_small_fun() {
         fi
 
         maxDepthParam="-maxdepth $maxDepth"
+        duMaxDepthParam="--max-depth=$maxDepth"
     fi
 
     if [[ -n "$itemsToShow" ]]; then
@@ -279,19 +314,92 @@ function __find_top_big_small_fun() {
         itemsToShow=10 # default
     fi
 
-    # the old command, ie using ls, didn't support finding directories:
-    #find . $fileTypeArgs  -exec ls -s --block-size=M {} \; | sort -n -r | head -$itemsToShow 2>/dev/null
-    #find . -not -name . $fileTypeArgs  -exec du -sm {} \; | sort -n -r | head -$itemsToShow 2>/dev/null
+    if [[ "$filetypeOptionCounter" -gt 1 ]]; then
+        err "-f and -d flags are exclusive." "$FUNCNAME_"
+        echo -e "$usage"
+        return 1
+    fi
 
-    # exclude the starting dir with the -mindepth 1 opt:
-    find . $follow_links -mindepth 1 $maxDepthParam \( $compiledFileTypeArgs \)  -exec du -s --block-size=${du_size_unit} {} \; 2>/dev/null | sort -n $reverse | head -$itemsToShow 2>/dev/null
+    # TODO: malaga start
+
+    report "seeking for top $itemsToShow $bigOrSmall files (in $du_size_unit units) ..." "$FUNCNAME_"
+
+    if [[ "$file_type" == "-type f" ]]; then
+        # optimization for files-only logic (ie no directories) to avoid expensive
+        # calls to other programs (like awk and du).
+
+        filesize_print_unit="k" # find's printf unit for the filesize; note that this is used merely for the printing not for seeking for the files;
+
+        if ! [[ "$du_size_unit" =~ ^[KMGB]+$ ]]; then
+            err "unsupported block size unit for find: \"$du_size_unit\"" "$FUNCNAME_"
+            echo -e "$usage"
+            return 1
+
+        # convert some of the du types to the find equivalents:
+        elif [[ "$du_size_unit" == B ]]; then
+            filesize_print_unit="s"
+            ignore_filesize_print_unit_msg=1
+        elif [[ "$du_size_unit" == K ]]; then
+            ignore_filesize_print_unit_msg=1
+        fi
+
+        [[ "$ignore_filesize_print_unit_msg" -ne 1 ]] && report "note that printed file size is in 1k units (limitation of find's -printf)\n" "$FUNCNAME_"
+
+        # find's printf:
+        # %s file size in byte   - appears to be the same as du block-size w/o any units
+        # %k in 1K blocks
+        # %b in 512byte blocks
+        find $follow_links . -mindepth 1 $maxDepthParam $file_type -printf "%${filesize_print_unit}\t%P\n" 2>/dev/null | \
+            sort -n $reverse | \
+            head -$itemsToShow
+
+    else  # covers both dirs only & dirs+files cases:
+        if [[ "$du_size_unit" == B ]]; then
+            du_size_unit="--bytes"
+        else
+            du_size_unit="--block-size=${du_size_unit}"
+        fi
+
+        [[ "$file_type" != "-type d" ]] && du_include_regular_files="--all"  # if not dirs only;
+
+        # TODO: here, for top_big_small, consider for i in G M K for the du -h!:
+        du $follow_links $du_include_regular_files $du_size_unit $duMaxDepthParam 2>/dev/null | \
+            sort -n $reverse | \
+            head -$itemsToShow
+
+    #
+    # !! this one's slow and old, but works with errything, ie dirs and files included:
+    #
+    #else
+                # the old command, ie using ls, didn't support finding directories:
+                #find . $file_type  -exec ls -s --block-size=M {} \; | sort -n -r | head -$itemsToShow 2>/dev/null
+                #find . -not -name . $file_type  -exec du -sm {} \; | sort -n -r | head -$itemsToShow 2>/dev/null
+
+
+                # good stuff from http://www.cyberciti.biz/faq/how-do-i-find-the-largest-filesdirectories-on-a-linuxunixbsd-filesystem/:
+                # find top filesizes, but add only last levels for the dirs!:
+                    # for i in G M K; do du -ah | grep [0-9]$i | sort -nr -k 1; done | head -n 11
+                    # for i in G M K; do du -ah | grep ^[0-9\.]*$i | sort -nr -k 1; done | head -n 110
+                # find grand total of jpg files:
+                    # find ./photos/john_doe -type f -name '*.jpg' -exec du -ch {} + | grep total$
+
+
+                # summing tip:
+                # | awk '{sum+=$1} END {print sum}'    # to sum stuff
+
+
+        # old, all-fits-one comm:
+        # exclude the starting dir with the -mindepth 1 opt:
+        #find . $follow_links -mindepth 1 $maxDepthParam \( $compiledFileTypeArgs \)  -exec du -s --block-size=${du_size_unit} {} \; 2>/dev/null | \
+            #sort -n $reverse | \
+            #head -$itemsToShow
+    fi
 }
 
 function ffindtopbig() {
     __find_top_big_small_fun "-r" "M" "$FUNCNAME" "large" $@
 }
 
-# find top 5/x smallest files:
 function ffindtopsmall() {
     #find . -type f -exec ls -s --block-size=K {} \; | sort -n | head -$itemsToShow 2>/dev/null
     __find_top_big_small_fun "" "K" "$FUNCNAME" "small" $@
@@ -299,41 +407,64 @@ function ffindtopsmall() {
 
 # find smaller/bigger than Xmegas files
 function __find_bigger_smaller_common_fun() {
-    local usage opt OPTIND fileTypeArgs item compiledFileTypeArgs maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_ biggerOrSmaller sizeArg
+    local usage opt OPTIND file_type item compiledFileTypeArgs maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_ biggerOrSmaller sizeArg
+    local du_include_regular_files filesize_print_unit ignore_filesize_print_unit_msg duMaxDepthParam plusOrMinus filetypeOptionCounter sizeArgLastChar du_blk_sz
 
     reverse="$1" # sorting order
-    du_size_unit="$2"
+    du_size_unit="$2" # default unit provided by the invoker
     FUNCNAME_="$3" #invoking function name
     biggerOrSmaller="$4" #denotes whether larger or smaller than X size units were queried
     shift 4
 
-	if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ ]]; then
-        err "unsupported du block size unit: \"$du_size_unit\"" "$FUNCNAME"
+    filetypeOptionCounter=0
+
+	if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ && "${#du_size_unit}" -eq 1 ]]; then
+        err "unsupported du block size unit: \"$du_size_unit\"" "$FUNCNAME_"
         echo -e "$usage"
         return 1
     fi
 
-    usage="\n$FUNCNAME_: find nodes $biggerOrSmaller than X $du_size_unit from current dir. if node type not specified, defaults to searching for regular files.
-    Usage: $FUNCNAME_  [-f] [-d] [-L] [-m depth]  base_size_in_$du_size_unit
-        -f  include regular files
-        -d  include directories
-        -L  follow symlinks
-        -m<digit>   max depth to descend; unlimited by default."
+    usage="\n$FUNCNAME_: find nodes $biggerOrSmaller than X $du_size_unit from current dir.\nif node type not specified, defaults to searching for everything.\n
+    Usage: $FUNCNAME_  [-f] [-d] [-L] [-m depth]  base_size_in_<du_size_unit>
+
+        the <du_size_unit> can be any of [KMGTPEZYB]; if not provided, defaults to $du_size_unit.
+        ('B' is for bytes; KB, MB etc for base 1000 not supported)
+
+        -f  search only for regular files
+        -d  search only for directories
+        -L  follow/dereference symlinks
+        -m<digit>   max depth to descend; unlimited by default.
+
+        examples:
+            $FUNCNAME_ 300       - seek files and dirs $biggerOrSmaller than 300 default
+                                        du_size_units, which is $du_size_unit;
+            $FUNCNAME_ -f 12G    - seek files $biggerOrSmaller than 12 gigs;
+            $FUNCNAME_ -dm3 12K  - seek dirs $biggerOrSmaller than 12 kilobytes;
+                                        descend up to 3 levels from current dir.
+"
 
     while getopts "m:fdLh" opt; do
         case "$opt" in
-           f) fileTypeArgs="$fileTypeArgs f"
-              shift $((OPTIND-1))
-                ;;
-           d) fileTypeArgs="$fileTypeArgs d"
-              # we don't want to sed maxdepth param here by default, right?
-              #maxDepthParam="-maxdepth 1"
+           #f) file_type="$file_type f"
+           #f) file_type="-type f"
+              #filetypeOptionCounter+=1
+              #shift $((OPTIND-1))
+                #;;
+           ##d) file_type="$file_type d"
+           #d) file_type="-type d"
+              #filetypeOptionCounter+=1
+              ## we don't want to sed maxdepth param here by default, right?
+              ##maxDepthParam="-maxdepth 1"
+              #shift $((OPTIND-1))
+                #;;
+           f | d) file_type="-type $opt"
+              let filetypeOptionCounter+=1
               shift $((OPTIND-1))
                 ;;
            m) maxDepth="$OPTARG"
               shift $((OPTIND-1))
                 ;;
-           L) follow_links="-follow"
+           L) follow_links="-L" # common for both find and du
               shift $((OPTIND-1))
                 ;;
            h) echo -e "$usage"
@@ -345,13 +476,19 @@ function __find_bigger_smaller_common_fun() {
 
     sizeArg="$1"
 
-    if [[ -z "$fileTypeArgs" ]]; then
-        compiledFileTypeArgs="-type f"
-    else
-        for item in $fileTypeArgs; do
-            [[ -z "$compiledFileTypeArgs" ]] && compiledFileTypeArgs="-type $item" \
-                                             || compiledFileTypeArgs="$compiledFileTypeArgs -o -type $item"
-        done
+    #if [[ -z "$file_type" ]]; then
+        #compiledFileTypeArgs="-type f"
+    #else
+        #for item in $file_type; do
+            #[[ -z "$compiledFileTypeArgs" ]] && compiledFileTypeArgs="-type $item" \
+                                             #|| compiledFileTypeArgs="$compiledFileTypeArgs -o -type $item"
+        #done
+    #fi
+
+    if [[ "$#" -ne 1 ]]; then
+        err "exactly one arg required" "$FUNCNAME_"
+        echo -e "$usage"
+        return 1
     fi
 
     if [[ -n "$maxDepth" ]]; then
@@ -362,11 +499,30 @@ function __find_bigger_smaller_common_fun() {
         fi
 
         maxDepthParam="-maxdepth $maxDepth"
+        duMaxDepthParam="--max-depth=$maxDepth"
     fi
 
     if [[ -n "$sizeArg" ]]; then
-        if ! is_digit "$sizeArg"; then
-            err "base size has to be a digit." "$FUNCNAME_"
+        sizeArgLastChar="${sizeArg:$(( ${#sizeArg} - 1)):1}"
+
+        if ! is_digit "$sizeArgLastChar"; then
+            # override du_size_unit defined by the invoker:
+            du_size_unit="$sizeArgLastChar"
+
+            if ! [[ "$sizeArgLastChar" =~ ^[KMGTPEZYB]+$ ]]; then
+                err "unsupported du block size unit provided: \"$du_size_unit\"" "$FUNCNAME_"
+                return 1
+            fi
+
+            sizeArg="${sizeArg:0:$(( ${#sizeArg} - 1))}"
+        fi
+
+        if [[ -z "$sizeArg" ]]; then
+            err "base size has to be provided as well, not only the unit." "$FUNCNAME_"
+            echo -e "$usage"
+            return 1
+        elif ! is_digit "$sizeArg"; then
+            err "base size has to be a digit, but was \"$sizeArg\"." "$FUNCNAME_"
             echo -e "$usage"
             return 1
         fi
@@ -377,21 +533,83 @@ function __find_bigger_smaller_common_fun() {
         return 1
     fi
 
-    # note that different find commands are defined purely because of < vs > in awk command.; could overcome
-    # by using eval, but better not.
-    if [[ "$biggerOrSmaller" == "smaller" ]]; then # meaning that ffindsmallerthan function was invoker
-        #TODO: why doesn't this work? (note the sizeArg in awk):
-        #find . $follow_links -mindepth 1 $maxDepthParam \( $compiledFileTypeArgs \)  -exec du -s --block-size=${du_size_unit} {} \; 2>/dev/null | awk '{var=substr($1, 0, length($1))+0; if (var < "'"$sizeArg"'") printf("%s\t%s\n", $1, $2)}' | sort -n $reverse 2>/dev/null
-        find . $follow_links -mindepth 1 $maxDepthParam \( $compiledFileTypeArgs \)  -exec du -s --block-size=${du_size_unit} {} \; 2>/dev/null | \
-            awk -v sizeArg=$sizeArg '{var=substr($1, 0, length($1))+0; if (var < sizeArg) printf("%s\t%s\n", $1, $2)}' | \
-            sort -n $reverse 2>/dev/null
-    elif [[ "$biggerOrSmaller" == "bigger" ]]; then # meaning that ffindbiggerthan function was invoker
-        find . $follow_links -mindepth 1 $maxDepthParam \( $compiledFileTypeArgs \)  -exec du -s --block-size=${du_size_unit} {} \; 2>/dev/null | \
-            awk -v sizeArg=$sizeArg '{var=substr($1, 0, length($1))+0; if (var > sizeArg) printf("%s\t%s\n", $1, $2)}' | \
-            sort -n $reverse 2>/dev/null
+    if [[ "$filetypeOptionCounter" -gt 1 ]]; then
+        err "-f and -d flags are exclusive." "$FUNCNAME_"
+        echo -e "$usage"
+        return 1
+    fi
+
+
+    # invoker sanity: (and +/- definition for find -size and du --threshold args)
+    if [[ "$biggerOrSmaller" == "smaller" ]]; then
+        plusOrMinus='-'
+    elif [[ "$biggerOrSmaller" == "bigger" ]]; then
+        plusOrMinus='+'
     else
         err "could not detect whether we should look for smaller or larger than ${sizeArg}$du_size_unit files" "$FUNCNAME_"
         return 1
+    fi
+
+    report "seeking for files $biggerOrSmaller than ${sizeArg}$du_size_unit ..." "$FUNCNAME_"
+
+    if [[ "$file_type" == "-type f" ]]; then
+        # optimization for files-only logic (ie no directories) to avoid expensive
+        # calls to other programs (like awk and du).
+
+        filesize_print_unit="k" # find's printf unit for the filesize; note that this is used merely for the printing not for seeking for the files;
+
+        if ! [[ "$du_size_unit" =~ ^[KMGB]+$ ]]; then
+            err "unsupported block size unit for find: \"$du_size_unit\". refer to man find and search for \"-size\"" "$FUNCNAME_"
+            echo -e "$usage"
+            return 1
+
+        # convert some of the du types to the find equivalents:
+        elif [[ "$du_size_unit" == B ]]; then
+            du_size_unit=c # bytes unit for find
+            filesize_print_unit="s"
+            ignore_filesize_print_unit_msg=1
+        elif [[ "$du_size_unit" == K ]]; then
+            du_size_unit=k # kilobytes unit for find
+            ignore_filesize_print_unit_msg=1
+        fi
+
+        [[ "$ignore_filesize_print_unit_msg" -ne 1 ]] && report "note that printed file size is in 1k units (limitation of find's -printf)\n" "$FUNCNAME_"
+
+        # find's printf:
+        # %s file size in byte   - appears to be the same as du block-size w/o any units
+        # %k in 1K blocks
+        # %b in 512byte blocks
+        find $follow_links . -mindepth 1 $maxDepthParam -size ${plusOrMinus}${sizeArg}${du_size_unit} $file_type -printf "%${filesize_print_unit}\t%P\n" 2>/dev/null | \
+            sort -n $reverse 2>/dev/null
+
+    else # directories included, need to use du + awk
+        # note that different find commands are defined purely because of < vs > in awk command.; could overcome
+        # by using eval, but better not.
+
+        # old, find+du combo; slow as fkuk:
+        #if [[ "$biggerOrSmaller" == "smaller" ]]; then # meaning that ffindsmallerthan function was invoker
+            ##TODO: why doesn't this work? (note the sizeArg in awk):
+            ##find . $follow_links -mindepth 1 $maxDepthParam \( $compiledFileTypeArgs \)  -exec du -s --block-size=${du_size_unit} {} \; 2>/dev/null | awk '{var=substr($1, 0, length($1))+0; if (var < "'"$sizeArg"'") printf("%s\t%s\n", $1, $2)}' | sort -n $reverse 2>/dev/null
+            #find . $follow_links -mindepth 1 $maxDepthParam \( $compiledFileTypeArgs \)  -exec du -s --block-size=${du_size_unit} {} \; 2>/dev/null | \
+                #awk -v sizeArg=$sizeArg '{var=substr($1, 0, length($1))+0; if (var < sizeArg) printf("%s\t%s\n", $1, $2)}' | \
+                #sort -n $reverse 2>/dev/null
+        #else
+            #find . $follow_links -mindepth 1 $maxDepthParam \( $compiledFileTypeArgs \)  -exec du -s --block-size=${du_size_unit} {} \; 2>/dev/null | \
+                #awk -v sizeArg=$sizeArg '{var=substr($1, 0, length($1))+0; if (var > sizeArg) printf("%s\t%s\n", $1, $2)}' | \
+                #sort -n $reverse 2>/dev/null
+        #fi
+
+        if [[ "$du_size_unit" == B ]]; then
+            du_blk_sz="--bytes"
+            unset du_size_unit # with bytes, --threshold arg doesn't need a unit
+        else
+            du_blk_sz="--block-size=$du_size_unit"
+        fi
+
+        [[ "$file_type" != "-type d" ]] && du_include_regular_files="--all"  # if not dirs only;
+
+        du $follow_links $du_include_regular_files $du_blk_sz $duMaxDepthParam --threshold=${plusOrMinus}${sizeArg}${du_size_unit} 2>/dev/null | \
+            sort -n $reverse
     fi
 }
 
@@ -417,24 +635,42 @@ function aptsearch() {
     #apt-cache search "$@"
 }
 
-function aptsrc() { aptsearch "$@"; } #alias
+function aptsrc() { aptsearch "$@"; } # alias
 
 #  Find a pattern in a set of files and highlight them:
-#+ (needs a recent version of egrep).
-# !!! deprecated by ag.
+#+ (needs a recent version of grep).
+# !!! deprecated by ag/astr
 function ffstr() {
-    local grepcase OPTIND usage opt MAX_RESULT_LINE_LENGTH
+    local grepcase OPTIND usage opt MAX_RESULT_LINE_LENGTH caseOptCounter force_case regex INAME_ARG
 
+    caseOptCounter=0
     OPTIND=1
     MAX_RESULT_LINE_LENGTH=300 # max nr of characters per grep result line
-    usage="$FUNCNAME: find string in files (from current directory recursively).
-    Usage: $FUNCNAME [-i] \"pattern\" [filename pattern] "
+    usage="\n$FUNCNAME: find string in files (from current directory recursively). smartcase both for filename and search patterns.
+    Usage: $FUNCNAME [-i] [-s] \"pattern\" [filename pattern]
+        -i  force case insensitive
+        -s  force case sensitivity
+        -r  enable regex on filename pattern"
 
-    while getopts "hi" opt; do
+
+    check_progs_installed ag && report "consider using ag or its wrapper astr (same thing as $FUNCNAME, but using ag instead of find+grep)" "$FUNCNAME"
+
+    while getopts "isrh" opt; do
         case "$opt" in
            i) grepcase=" -i "
+              INAME_ARG="-iname"
+              caseOptCounter+=1
               shift $(( $OPTIND - 1 ))
               ;;
+           s) unset grepcase
+              unset INAME_ARG
+              force_case=1
+              caseOptCounter+=1
+              shift $((OPTIND-1))
+                ;;
+           r) regex=1
+              shift $((OPTIND-1))
+                ;;
            h) echo -e "$usage"
               return 0
               ;;
@@ -445,20 +681,134 @@ function ffstr() {
     done
 
     if [[ "$#" -lt 1 ]] || [[ "$#" -gt 2 ]]; then
-        echo "$usage"
+        err "incorrect nr of arguments." "$FUNCNAME"
+        echo -e "$usage"
         return 1;
-    fi
-
-    if [[ "$1" == *\** && "$1" != *\.\** ]]; then
-        err "use .* as wildcards, not a single *" "$FUNCNAME"
+    elif [[ "$caseOptCounter" -gt 1 ]]; then
+        err "-i and -s flags are exclusive." "$FUNCNAME"
+        echo -e "$usage"
         return 1
     fi
 
-    find . -type f -iname '*'"${2:-*}"'*' -print0 2>/dev/null | \
-        xargs -0 egrep --color=always -sn ${grepcase} "$1" | \
-        cut -c 1-$MAX_RESULT_LINE_LENGTH | \
-        more
-        #less
+    # grep search pattern sanity:
+    if [[ "$1" == *\** && "$1" != *\.\** ]]; then
+        err "use .* as wildcards, not a single *" "$FUNCNAME"
+        return 1
+    elif [[ "$(echo "$1" | tr -dc '.' | wc -m)" -lt "$(echo "$1" | tr -dc '*' | wc -m)" ]]; then
+        err "nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
+        return 1
+    fi
+
+
+    # find metacharacter or regex FILENAME (not search pattern) sanity:
+    if [[ -n "$2" ]]; then
+        if [[ "$regex" -eq 1 ]]; then
+            if [[ "$2" == *\** && "$2" != *\.\** ]]; then
+                err 'err in filename pattern: use .* as wildcards, not a single *; you are misusing regex.' "$FUNCNAME"
+                return 1
+            elif [[ "$(echo "$2" | tr -dc '.' | wc -m)" -lt "$(echo "$2" | tr -dc '*' | wc -m)" ]]; then
+                err "err in filename pattern: nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
+                return 1
+            fi
+        else # no regex, make sure find metacharacters are not mistaken for regex ones:
+            if [[ "$2" == *\.\** ]]; then
+                err "err in filename pattern: only use asterisks (*) for wildcards, not .*; provide -r flag if you want to use regex." "$FUNCNAME"
+                return 1
+            fi
+
+            if [[ "$2" == *\.* ]]; then
+                report "note that period (.) in the filename pattern will be used as a literal period, not as a wildcard. provide -r flag to use regex.\n" "$FUNCNAME"
+            fi
+        fi
+    fi
+
+    # as find doesn't support smart case, provide it yourself:
+    if [[ "$(tolowercase "$1")" == "$1" ]]; then
+        # provided pattern was lowercase, make it case insensitive:
+        grepcase=" -i "
+    fi
+
+    if [[ -n "$2" && "$(tolowercase "$2")" == "$2" ]]; then
+        # provided pattern was lowercase, make it case insensitive:
+        INAME_ARG="-iname"
+    fi
+
+    [[ "$force_case" -eq 1 ]] && { grepcase=""; INAME_ARG=""; }
+
+    if [[ "$regex" -eq 1 ]]; then
+        [[ -z "$2" ]] && { err "with -r flag, please provide file name pattern." "$FUNCNAME"; return 1; }
+        [[ -n "$INAME_ARG" ]] && INAME_ARG="-regextype posix-extended -iregex" || INAME_ARG="-regextype posix-extended -regex"
+
+        eval find . -type f $INAME_ARG '.*'"$2"'.*' -print0 2>/dev/null | \
+            xargs -0 grep -E --color=always -sn ${grepcase} "$1" | \
+            cut -c 1-$MAX_RESULT_LINE_LENGTH | \
+            more
+            #less
+    else
+        find . -type f "${INAME_ARG:--name}" '*'"${2:-*}"'*' -print0 2>/dev/null | \
+            xargs -0 grep -E --color=always -sn ${grepcase} "$1" | \
+            cut -c 1-$MAX_RESULT_LINE_LENGTH | \
+            more
+            #less
+    fi
+}
+
+function astr() {
+    local grepcase OPTIND usage opt filePattern fileCase caseOptCounter
+
+    OPTIND=1
+    caseOptCounter=0
+    usage="\n$FUNCNAME: find string in files using ag (from current directory recursively). smartcase by default.
+    Usage: $FUNCNAME [-i] [-s] \"pattern\" [filename pattern]
+        -i  force case insensitive
+        -s  force case sensitivity"
+
+    check_progs_installed ag
+    report "consider using ag directly; it has really sane syntax (compared to find + grep)\nfor instance, with this wrapper you can't use the filetype & path options." "$FUNCNAME"
+
+    while getopts "ish" opt; do
+        case "$opt" in
+           i) grepcase=" -i "
+              fileCase="i"
+              caseOptCounter+=1
+              shift $(( $OPTIND - 1 ))
+              ;;
+           s) grepcase=" -s "
+              fileCase="s"
+              caseOptCounter+=1
+              shift $((OPTIND-1))
+                ;;
+           h) echo -e "$usage"
+              return 0
+              ;;
+           *) echo -e "$usage";
+              return 1
+              ;;
+        esac
+    done
+
+    if [[ "$#" -lt 1 ]] || [[ "$#" -gt 2 ]]; then
+        err "incorrect nr of arguments." "$FUNCNAME"
+        echo -e "$usage"
+        return 1;
+    elif [[ "$caseOptCounter" -gt 1 ]]; then
+        err "-i and -s flags are exclusive." "$FUNCNAME"
+        echo -e "$usage"
+        return 1
+    fi
+
+    # regex sanity:
+    if [[ "$@" == *\** && "$@" != *\.\** ]]; then
+        err "use .* as wildcards, not a single *" "$FUNCNAME"
+        return 1
+    elif [[ "$(echo "$@" | tr -dc '.' | wc -m)" -lt "$(echo "$@" | tr -dc '*' | wc -m)" ]]; then
+        err "nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
+        return 1
+    fi
+
+    [[ -n "$2" ]] && filePattern="-${fileCase}G $2"
+
+    ag $filePattern $grepcase "$1" 2>/dev/null
 }
 
 function swap() {
@@ -597,7 +947,7 @@ function my_ip() { # Get internal & external ip addies:
         return 0
     fi
 
-    echo "Not connected"
+    echo "Not connected (at least nothing was returned by find_connected_if())"
 }
 
 function myip() { my_ip; } # alias for my_ip
@@ -742,7 +1092,7 @@ up() {
   d="$(echo $d | sed 's/^\///')"
   [[ -z "$d" ]] && d=".."
 
-  cd $d
+  cd "$d"
 }
 
 # clock - A bash clock that can run in your terminal window:
@@ -774,6 +1124,8 @@ function createUsbIso() {
     cleaned_devicename="${cleaned_devicename##*/}"  # strip everything before last slash (slash included)
     usage="usage:   $FUNCNAME  image.file  device\nexample: $FUNCNAME  file.iso  /dev/sdh"
 
+    check_progs_installed   dd lsblk umount sudo || return 1
+
     if [[ -z "$file" || -z "$device" || -z "$cleaned_devicename" ]]; then
         err "either file or device weren't provided" "$FUNCNAME"
         echo -e "$usage"
@@ -801,11 +1153,10 @@ function createUsbIso() {
     #sudo fdisk -l $device
     lsblk | grep --color=auto "$cleaned_devicename\|MOUNTPOINT"
 
-    if ! confirm  "\nis selected device - $device - the correct one (be VERY sure!)? (y/n)"; then
-        return 1
-    fi
+    confirm  "\nis selected device - $device - the correct one (be VERY sure!)? (y/n)" || return 1
 
     # find if device is mounted:
+    #  TODO: what about partition mountpoints????
     #lsblk -o name,size,mountpoint /dev/sda
     mountpoint="$(lsblk -o mountpoint "$device" | sed -n 3p)"
     if [[ -n "$mountpoint" ]]; then
@@ -818,7 +1169,9 @@ function createUsbIso() {
     fi
 
     report "Please provide sudo passwd for running dd:" "$FUNCNAME"
-    sudo echo -e "Running dd, this might take a while..." # do not use 'report' as root might not have that
+    sudo echo "..."
+    clear
+    report "Running dd, this might take a while..." "$FUNCNAME"
     sudo dd if="$file" of="$device" bs=4M
     sync
     #eject $device
@@ -828,51 +1181,197 @@ function createUsbIso() {
 ## Setup github repo ##
 #######################
 function mkgit() {
-   local GITHUB="laur89"
-   local dir="$1"
-   local gitname="$2"
+    local user repo dir gitname OPTIND opt
+    local usage="usage:   $FUNCNAME  -g|-b  <dirname> [reponame]"
+    local mainOptCounter=0
 
-   # check dir
-   [[ -n "$dir" ]] || {
-      err "usage: mkgit <dir> [name]" "$FUNCNAME"
-      return 1
-   }
+    while getopts "hgb" opt; do
+        case "$opt" in
+           h) echo -e "$usage";
+              return 0
+              ;;
+           g) user="laur89"
+              repo="github.com"
+              let mainOptCounter+=1
+              shift $((OPTIND-1))
+              ;;
+           b) user="layr"
+              repo="bitbucket.org"
+              let mainOptCounter+=1
+              shift $((OPTIND-1))
+              ;;
+           *) echo -e "$usage";
+              return 1
+              ;;
+        esac
+    done
 
-   # use dir name if, no gitname specified
-   [[ -n "$gitname" ]] || gitname="$dir"
-   [[ -d "$dir"     ]] || mkdir "$dir"
+    dir="$1"
+    gitname="$2"
 
-   # bail out, if already git repo
-   [[ -d "$dir/.git" ]] && {
-      err "already a git repo: $dir" "$FUNCNAME"
-      return 1
-   }
+    if [[ "$mainOptCounter" -gt 1 ]]; then
+        err "-g and -b flags are exclusive." "$FUNCNAME"
+        echo -e "$usage"
+        return 1
+    elif [[ "$mainOptCounter" -eq 0 ]]; then
+        err "need to select a repo." "$FUNCNAME"
+        echo -e "$usage"
+        return 1
+    elif [[ "$#" -gt 2 ]]; then
+        err "too many arguments" "$FUNCNAME"
+        echo -e "$usage"
+        return 1
+    fi
 
-   cd "$dir"
-   git init || { err "bad return from git init" "$FUNCNAME"; return 1; }
-   touch README; git add README
-   git commit -a -m 'inital setup - automated'
-   git remote add origin "git@github.com:$GITHUB/$gitname.git"
-   git push -u origin master
+    # check dir
+    [[ -n "$dir" ]] || {
+       err "$usage" "$FUNCNAME"
+       return 1
+    }
+
+    # use dir name if, no gitname specified
+    [[ -n "$gitname" ]] || gitname="$dir"
+    [[ -d "$dir"     ]] || mkdir "$dir"
+
+    [[ -w "$dir" ]] || {
+       err "we were unable to create dir $dir, or it simply doesn't have write permissions." "$FUNCNAME"
+       return 1
+    }
+
+    # bail out, if already git repo
+    [[ -d "$dir/.git" ]] && {
+       err "already a git repo: $dir" "$FUNCNAME"
+       return 1
+    }
+
+    cd "$dir"
+    git init || { err "bad return from git init" "$FUNCNAME"; return 1; }
+    touch README; git add README
+    git commit -a -m 'inital setup - automated'
+    git remote add origin "git@$repo:$user/${gitname}.git"
+    git push -u origin master
 }
 
 ######################################
 ## Open file inside git tree on vim ##
 ######################################
-vimo() {
-   local match=
-   local gtdir=
-   local cwd=$PWD
-   git ls-files &>/dev/null || return # test if git
-   gtdir="$(git rev-parse --show-toplevel )"
-   [[ "$cwd" != "$gtdir" ]] && pushd "$gtdir" &> /dev/null # git root
-   [[ -n "$@" ]] && { match="$(git ls-files | grep "$@")"; } ||
-                      match="$(git ls-files)"
-   [[ $(echo "$match" | wc -l) -gt 1 ]] && match="$(echo "$match" | bemenu -i -l 20 -p "vim")"
-   match="$gtdir/$match" # convert to absolute
-   [[ "$cwd" != "$gtdir" ]] && popd &> /dev/null # go back
-   [[ -f "$match" ]] || return
-   vim "$match"
+gito() {
+    local DMENU match gtdir count
+    local cwd="$PWD"
+    local dmenurc="$HOME/.dmenurc"
+    local editor="$EDITOR"
+
+    check_progs_installed git "$editor" dmenu || return 1
+    [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
+
+    git rev-parse --is-inside-work-tree &>/dev/null || { err "not in git repo." "$FUNCNAME"; return 1; } # test if git
+    gtdir="$(git rev-parse --show-toplevel )"
+    [[ "$cwd" != "$gtdir" ]] && pushd "$gtdir" &> /dev/null # git root
+
+    if [[ -n "$@" ]]; then
+        if [[ "$@" == *\** && "$@" != *\.\** ]]; then
+            err 'use .* as wildcards, not a single *' "$FUNCNAME"
+            [[ "$cwd" != "$gtdir" ]] && popd &> /dev/null # go back
+            return 1
+        elif [[ "$(echo "$@" | tr -dc '.' | wc -m)" -lt "$(echo "$@" | tr -dc '*' | wc -m)" ]]; then
+            err "nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
+            [[ "$cwd" != "$gtdir" ]] && popd &> /dev/null # go back
+            return 1
+        fi
+
+        match="$(git ls-files | grep -Ei "$@")"
+    else
+        match="$(git ls-files)"
+    fi
+
+    [[ "$cwd" != "$gtdir" ]] && popd &> /dev/null # go back
+
+    count="$(echo "$match" | wc -l)"
+    [[ "$count" -gt 1 ]] && { report "found $count items" "$FUNCNAME"; match="$(echo "$match" | $DMENU -l 20 -p open)"; }
+    #[[ $(echo "$match" | wc -l) -gt 1 ]] && match="$(echo "$match" | bemenu -i -l 20 -p "$editor")"
+    [[ -z "$match" ]] && return 1
+    match="$gtdir/$match" # convert to absolute
+    [[ -f "$match" ]] || { err "\"$match\" is not a regular file." "$FUNCNAME"; return 1; }
+
+    $editor "$match"
+}
+
+# ag looks for whole file path!
+ago() {
+    err "ag is not playing along at the moment. see fo()"
+    return 1
+
+
+    local DMENU match
+    local dmenurc="$HOME/.dmenurc"
+    local editor="$EDITOR"
+
+    check_progs_installed ag $editor dmenu || return 1
+    [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
+
+    [[ -z "$@" ]] && { err "args required."; return 1; }
+
+    match="$(ag -g "$@")"
+    [[ "$?" -eq 0 ]] || return 1
+
+    [[ $(echo "$match" | wc -l) -gt 1 ]] && match="$(echo "$match" | $DMENU -l 20 -p open)"
+    [[ -z "$match" ]] && return 1
+
+    [[ -f "$match" ]] || { err "\"$match\" is not a regular file." "$FUNCNAME"; return 1; }
+    $editor "$match"
+}
+
+# finds files/dirs using ffind() (find wrapper) and opens them.
+# mnemonic: file open
+fo() {
+    local DMENU match count filetype dmenurc editor image_viewer video_player file_mngr pdf_viewer
+
+    dmenurc="$HOME/.dmenurc"
+    editor="$EDITOR"
+    image_viewer="sxiv"
+    video_player="smplayer"
+    file_mngr="ranger"
+    pdf_viewer="zathura"
+
+    check_progs_installed find ffind "$file_mngr" "$editor" "$image_viewer" "$video_player" "$pdf_viewer" dmenu file || return 1
+    [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
+
+    [[ -z "$@" ]] && { err "args required. see ffind -h" "$FUNCNAME"; return 1; }
+
+    match="$(ffind "$@")"
+    [[ "$?" -eq 0 ]] || return 1
+
+    count="$(echo "$match" | wc -l)"
+    [[ "$count" -gt 1 ]] && { report "found $count items" "$FUNCNAME"; match="$(echo "$match" | $DMENU -l 20 -p open)"; }
+    [[ -z "$match" ]] && return 1
+
+    # note that test will resolve links to files and dirs as well;
+    # TODO: instead of file, use xdg-open?
+    if [[ -f "$match" ]]; then
+        filetype="$(file -iLb "$match")"
+
+        if echo "$filetype" | grep -q '^image/'; then
+            $image_viewer "$match"
+        elif echo "$filetype" | grep -q '^video/'; then
+            $video_player "$match"
+        elif echo "$filetype" | grep -q '^text/'; then
+            $editor "$match"
+        elif echo "$filetype" | grep -q '^application/pdf'; then
+            $pdf_viewer "$match"
+        elif echo "$filetype" | grep -q '^application/x-executable; charset=binary'; then
+            confirm "$match is executable. want to launch it from here?" || return
+            report "launching ${match}..." "$FUNCNAME"
+            "$match"
+        else
+            err "dunno what to open this type of file with:\n\t$filetype" "$FUNCNAME"
+            return 1
+        fi
+    elif [[ -d "$match" ]]; then
+        "$file_mngr" "$match"
+    else
+        err "\"$match\" isn't either regular file nor a dir." "$FUNCNAME"
+        return 1
+    fi
 }
 
 function sethometime() {
@@ -891,6 +1390,8 @@ function setspaintime() {
 }
 
 function killmenao() {
+    confirm "you sure?" || return 1
+    clear
     :(){ :|:& };:
 }
 
@@ -898,7 +1399,7 @@ function killmenao() {
 ## Print window class ##
 ########################
 xclass() {
-   xprop |awk '
+   xprop | awk '
    /^WM_CLASS/{sub(/.* =/, "instance:"); sub(/,/, "\nclass:"); print}
    /^WM_NAME/{sub(/.* =/, "title:"); print}'
 }
@@ -907,7 +1408,43 @@ xclass() {
 ## Smarter CD ##
 ################
 goto() {
-   [[ -d "$1" ]] && { cd "$1"; } || cd "$(dirname "$1")";
+   [[ -d "$@" ]] && { cd "$@"; } || cd "$(dirname "$@")";
+}
+
+# cd-s to directory by partial match; if multiple matches, opens input via dmenu.
+#  g /data/partialmatch     # searches for partialmatch in /data
+#  g partialmatch           # searches for partialmatch in current dir
+g() {
+    local path input file matches pattern DMENU dmenurc msg_loc
+
+    input="$@"
+    dmenurc="$HOME/.dmenurc"
+
+    [[ -z "$input" ]] && { err "no input." "$FUNCNAME"; return 1; }
+    [[ -d "$input" ]] && { cd "$input"; return; }
+    [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
+
+    #[[ "$input" == */* ]] && path="${input%%/*}"  # strip everything after last slash(included)
+    path="$(dirname "$input")"
+    [[ -d "$path" ]] || { err "something went wrong - dirname result \"$path\" is not a dir." "$FUNCNAME"; return 1; }
+    pattern="${input##*/}" # strip everything before last slash (included)
+    [[ -z "$pattern" ]] && { err "no search pattern provided" "$FUNCNAME"; return 1; }
+    [[ "$path" == '.' ]] && msg_loc="here" || msg_loc="$path"
+
+    matches="$(find "$path" -follow -maxdepth 1 -mindepth 1 \( -type d \) -iname '*'"$pattern"'*')"
+    if [[ -z "$matches" ]]; then
+        err "no dirs in $msg_loc matching \"$pattern\"" "$FUNCNAME"
+        return 1
+    fi
+
+    [[ "$(echo "$matches" | wc -l)" -gt 1 ]] && matches="$(echo "$matches" | $DMENU -l 20 -p cd)"
+    [[ -z "$matches" ]] && return 1
+    if ! [[ -d "$matches" ]]; then
+        err "no such dir like \"$matches\" in $msg_loc" "$FUNCNAME"
+        return 1
+    fi
+
+    cd "$matches"
 }
 
 ####################
@@ -938,6 +1475,10 @@ shot() {
 ## Capture video ##
 ###################
 capture() {
+   check_progs_installed recordmydesktop || return 1
+
+    #recordmydesktop --display=$DISPLAY --width=1024 height=768 -x=1680 -y=0 --fps=15 --no-sound --delay=10
+    #recordmydesktop --display=0 --width=1920 height=1080 --fps=15 --no-sound --delay=10
    ffcast -w ffmpeg -f alsa -ac 2 -i hw:0,2 -f x11grab -s %s -i %D+%c -acodec pcm_s16le -vcodec huffyuv $@
 }
 
@@ -948,4 +1489,7 @@ capture() {
 f() {
    find . -iregex ".*$@.*" -printf '%P\0' | xargs -r0 ls --color=auto -1d
 }
+
+# marker function used to detect whether functions have been loaded into the shell:
+function __BASH_FUNS_LOADED_MARKER() { true; }
 

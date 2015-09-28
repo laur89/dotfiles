@@ -5,16 +5,19 @@
 
 session_startfile="$HOME/.session-startuplist"
 logdir="$CUSTOM_LOGDIR"
+SELF=".common_startup"
 ################################################
 
 #### ENTRY ####
 # import common:
-if [[ -f "$_SCRIPTS_COMMONS" && -r "$_SCRIPTS_COMMONS" ]]; then
-    source "$_SCRIPTS_COMMONS"
-else
-    echo -e "\nError: common file \"$_SCRIPTS_COMMONS\" not found! Abort."
-    # do not exit!
-    #exit 1
+if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
+    if [[ -r "$_SCRIPTS_COMMONS" ]]; then
+        source "$_SCRIPTS_COMMONS"
+    else
+        echo -e "\nError: common file \"$_SCRIPTS_COMMONS\" not found! Abort."
+        # do not exit!
+        #exit 1
+    fi
 fi
 
 xrandr --output DP-2 --auto --right-of DP-1 &
@@ -57,14 +60,14 @@ fi
 # Check whether logfolder at /var/log and /data/ dir are existing:
 for i in $logdir /data/; do
     if [[ ! -w "$i" ]]; then
-        err_display  "$logdir is not created or no write permissions granted. Do it!" ".common_startup" &
+        err_display  "$logdir is not created or no write permissions granted. Do it!" "$SELF" &
     fi
 done &
 
 # Create necessary directories if don't exist:
 for i in /data/.rsync "$_PERSISTED_TMP"; do
     if [[ ! -d "$i" ]] && ! mkdir "$i"; then
-        err_display  "Tried to create required directory \"$i\" but mkdir failed." ".common_startup" &
+        err_display  "Tried to create required directory \"$i\" but mkdir failed." "$SELF" &
     fi
 done &
 
@@ -72,3 +75,47 @@ done &
 # Check the filesize in MB of logs dir:
 allowed_size="20"   # Max size in MB
 check_max_allowed_size "$logdir" "$allowed_size"
+
+
+# enable SMART:
+#####################################3
+_disk_list="$(sudo smartctl --scan | cut -d' ' -f1 | sort | uniq)"
+_status="$?"
+
+if [[ "$_status" -ne 0 ]]; then
+    msg="$SELF: smartctl --scan returned exit code $_status"
+    err_display "$msg" "$SELF"
+    #log "$msg" "$error_log"
+    #mail_error_report_and_log "$SELF: unable to scan drives with smartctl --scan on $HOSTNAME" "$msg" "$error_log"
+elif [[ -z "$_disk_list" ]]; then
+    msg="$SELF: no disks returned from \"sudo smartctl --scan\" command."
+    err_display "$msg" "$SELF"
+    #log "$SELF" "$error_log"
+    #mail_error_report_and_log "$SELF: no disks found using smartctl on $HOSTNAME." "$msg" "$error_log"
+fi
+
+for _disk in $_disk_list; do
+	disk_check="$(echo "$_disk" | sed 's/.*\///')" # strip everything before last slash (included)
+
+	# Check whether user given disk is listed in /proc/partitions; if not, send error:
+	if grep -Fq "$disk_check" /proc/partitions; then
+        sudo smartctl -s on -o on -S on "$disk_check"
+        _status="$?"
+
+		if [[ "$status" -ne 0 ]]; then
+            msg="$SELF: unable to enable SMART on $disk_check"
+            err_display "$msg" "$SELF"
+            #log "$msg" "$error_log"
+            #mail_error_report_and_log "$SELF: unable to enable SMART on $HOSTNAME." "$msg" "$error_log"
+		fi
+	else
+        msg="$SELF:
+The disk \"$_disk\" has beed passed to me via
+\"sudo smartctl --scan\" command, but it cannot be located in
+/proc/partitions. Unmounted/mismounted volume perhaps?"
+        err_display "$msg" "$SELF"
+        #log "$msg" "$error_log"
+        #mail_error_report_and_log "invalid drive detected on $HOSTNAME" "$msg" "$error_log"
+	fi
+done
+

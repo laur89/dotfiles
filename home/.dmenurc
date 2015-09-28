@@ -1,5 +1,7 @@
 #!/bin/bash
 # makes dmenu identical across all scripts by sourcing this file
+#
+# multi-selection patch: http://lists.suckless.org/dev/0109/26302.html
 
 __font='-*-terminus-medium-r-*-*-12-*-*-*-*-*-*-*'
 
