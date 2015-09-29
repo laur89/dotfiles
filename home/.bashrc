@@ -124,6 +124,13 @@ if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
     done
 fi
 
+# this needs to be outside env_vars, unless you're gonna load those every time bashrc is loaded;
+case "$TERM" in
+    xterm* | rxvt-unicode-256color )
+        export TERM=xterm-256color
+        ;;
+esac
+
 if ! type __BASH_FUNS_LOADED_MARKER > /dev/null 2>&1; then
     [[ -r "$HOME/.bash_functions" ]] && source "$HOME/.bash_functions"
 fi
