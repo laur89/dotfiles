@@ -213,7 +213,7 @@ function ffind() {
 function ffindproc() {
     [[ -z "$1" ]] && { err "process name required" "$FUNCNAME"; return 1; }
     # last grep for re-coloring:
-    ps -ef | grep -i "$1" | grep -v '\bgrep\b' | grep -i --color=auto "$1"
+    ps -ef | grep -v '\bgrep\b' | grep -i --color=auto "$1"
 
     # TODO: add also exact match option?:
     #   grep '\$1\b'
