@@ -580,7 +580,7 @@ function __find_bigger_smaller_common_fun() {
         # %k in 1K blocks
         # %b in 512byte blocks
         find $follow_links . -mindepth 1 $maxDepthParam -size ${plusOrMinus}${sizeArg}${du_size_unit} $file_type -printf "%${filesize_print_unit}\t%P\n" 2>/dev/null | \
-            sort -n $reverse 2>/dev/null
+            sort -n $reverse
 
     else # directories included, need to use du + awk
         # note that different find commands are defined purely because of < vs > in awk command.; could overcome
