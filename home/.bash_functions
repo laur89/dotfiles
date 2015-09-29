@@ -941,7 +941,7 @@ function my_ip() { # Get internal & external ip addies:
 
     if [[ -n "$connected_interface" ]]; then
         external_ip="$(dig +short myip.opendns.com @resolver1.opendns.com 2>/dev/null)"
-        internal_ip="$(/sbin/ifconfig "$connected_interface" | awk '/inet/ { print $2 } ' | sed -e s/addr://)"
+        internal_ip="$(/sbin/ifconfig "$connected_interface" | awk '/inet / { print $2 } ' | sed -e s/addr://)"
         echo "${internal_ip:-"Not connected"} @ $connected_interface"
         echo "${external_ip:-"Not connected"}"
         return 0
@@ -1411,11 +1411,11 @@ goto() {
    [[ -d "$@" ]] && { cd "$@"; } || cd "$(dirname "$@")";
 }
 
-# cd-s to directory by partial match; if multiple matches, opens input via dmenu.
+# cd-s to directory by partial match; if multiple matches, opens input via dmenu. smartcase.
 #  g /data/partialmatch     # searches for partialmatch in /data
 #  g partialmatch           # searches for partialmatch in current dir
 g() {
-    local path input file matches pattern DMENU dmenurc msg_loc
+    local path input file matches pattern DMENU dmenurc msg_loc INAME_ARG
 
     input="$@"
     dmenurc="$HOME/.dmenurc"
@@ -1431,7 +1431,12 @@ g() {
     [[ -z "$pattern" ]] && { err "no search pattern provided" "$FUNCNAME"; return 1; }
     [[ "$path" == '.' ]] && msg_loc="here" || msg_loc="$path"
 
-    matches="$(find "$path" -follow -maxdepth 1 -mindepth 1 \( -type d \) -iname '*'"$pattern"'*')"
+    if [[ "$(tolowercase "$pattern")" == "$pattern" ]]; then
+        # provided pattern was lowercase, make it case insensitive:
+        INAME_ARG="-iname"
+    fi
+
+    matches="$(find -L "$path" -maxdepth 1 -mindepth 1 \( -type d \) ${INAME_ARG:--name} '*'"$pattern"'*')"
     if [[ -z "$matches" ]]; then
         err "no dirs in $msg_loc matching \"$pattern\"" "$FUNCNAME"
         return 1
