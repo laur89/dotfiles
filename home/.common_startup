@@ -20,6 +20,7 @@ if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
     fi
 fi
 
+################################################
 # enables offline SMART checks on system drives
 function enableSmart() {
     local _disk_list _disk _status msg disk_check
@@ -47,6 +48,9 @@ function enableSmart() {
 
         # Check whether user given disk is listed in /proc/partitions; if not, send error:
         if grep -Fq "$disk_check" /proc/partitions; then
+            #	-s on	enables SMART on device (off would disable); should be somewhere in machine startup script, like rc.local;
+            #	-S on	enables autosave of device vendor-specific attributes
+            #	-o on	turns on offline data collection every 4 hours
             sudo smartctl -s on -o on -S on "$_disk"
             _status="$?"
 
@@ -66,6 +70,7 @@ function enableSmart() {
         fi
     done
 }
+################################################
 
 xrandr --output DP-2 --auto --right-of DP-1 &
 
@@ -122,6 +127,5 @@ done &
 # Check the filesize in MB of logs dir:
 allowed_size="20"   # Max size in MB
 check_max_allowed_size "$logdir" "$allowed_size"
-
 
 enableSmart &

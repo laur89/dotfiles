@@ -1005,14 +1005,26 @@ function maketar2() { tar cvjf "${1%%/}.tar.bz2"  "${1%%/}/"; }
 
 # Create a rar archive.
 # -m# - compresson lvl, 5 being max level, 0 just storage;
-function makerar() { rar a -r -rr10 -m4 "${1%%/}.rar"  "${1%%/}/"; }
+function makerar() {
+    check_progs_installed rar || return 1
+
+    rar a -r -rr10 -m4 "${1%%/}.rar"  "${1%%/}/"
+}
 
 # Create a ZIP archive of a file or folder.
-function makezip() { zip -r "${1%%/}.zip" "$1"; }
+function makezip() {
+    check_progs_installed zip || return 1
+
+    zip -r "${1%%/}.zip" "$1"
+}
 
 # Create a 7z archive of a file or folder.
 # -mx=# - compression lvl, 9 being highest (ultra)
-function make7z() { 7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on "${1%%/}.7z" "$1"; }
+function make7z() {
+    check_progs_installed 7z || return 1
+
+    7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on "${1%%/}.7z" "$1"
+}
 
 # alias for extract
 function unpack() { extract $@; }
@@ -1035,32 +1047,38 @@ function extract() {
 
     case "$file" in
         *.tar.bz2)   file_without_extension="${file_without_extension%.*}" # because two extensions
-                        mkdir "$file_without_extension" && tar xjf $file -C $file_without_extension
+                        mkdir "$file_without_extension" && tar xjf "$file" -C "$file_without_extension"
                         ;;
         *.tar.gz)    file_without_extension="${file_without_extension%.*}" # because two extensions
-                        mkdir "$file_without_extension" && tar xzf $file -C $file_without_extension
+                        mkdir "$file_without_extension" && tar xzf "$file" -C "$file_without_extension"
                         ;;
         *.tar.xz)    file_without_extension="${file_without_extension%.*}" # because two extensions
-                        mkdir "$file_without_extension" && tar xpvf $file -C $file_without_extension
+                        mkdir "$file_without_extension" && tar xpvf "$file" -C "$file_without_extension"
                         ;;
-        *.bz2)       bunzip2 -k $file
+        *.bz2)       check_progs_installed bunzip2 || return 1
+                        bunzip2 -k "$file"
                         ;;
-        *.rar)       mkdir "$file_without_extension" && unrar x $file ${file_without_extension}/
+        *.rar)       check_progs_installed unrar || return 1
+                        mkdir "$file_without_extension" && unrar x "$file" "${file_without_extension}"/
                         ;;
-        *.gz)        gunzip -kd $file
+        *.gz)        check_progs_installed gunzip || return 1
+                        gunzip -kd "$file"
                         ;;
-        *.tar)       mkdir "$file_without_extension" && tar xf $file -C $file_without_extension
+        *.tar)       mkdir "$file_without_extension" && tar xf "$file" -C "$file_without_extension"
                         ;;
-        *.tbz2)      mkdir "$file_without_extension" && tar xjf $file -C $file_without_extension
+        *.tbz2)      mkdir "$file_without_extension" && tar xjf "$file" -C "$file_without_extension"
                         ;;
-        *.tgz)       mkdir "$file_without_extension" && tar xzf $file -C $file_without_extension
+        *.tgz)       mkdir "$file_without_extension" && tar xzf "$file" -C "$file_without_extension"
                         ;;
-        *.zip)       mkdir "$file_without_extension" && unzip $file -d $file_without_extension
+        *.zip)       check_progs_installed unzip || return 1
+                        mkdir "$file_without_extension" && unzip "$file" -d "$file_without_extension"
                         ;;
-        *.7z)        mkdir "$file_without_extension" && 7z x "-o$file_without_extension" $file
+        *.7z)        check_progs_installed 7z || return 1
+                        mkdir "$file_without_extension" && 7z x "-o$file_without_extension" "$file"
                         ;;
                         # TODO .Z is unverified how and where they'd unpack:
-        *.Z)         uncompress $file  ;;
+        *.Z)         check_progs_installed uncompress || return 1
+                        uncompress "$file"  ;;
         *)           err "'$file' cannot be extracted; this filetype is not supported." "$FUNCNAME"
                         return 1
                         ;;
@@ -1262,10 +1280,11 @@ gito() {
     local editor="$EDITOR"
 
     check_progs_installed git "$editor" dmenu || return 1
+    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
-    git rev-parse --is-inside-work-tree &>/dev/null || { err "not in git repo." "$FUNCNAME"; return 1; } # test if git
-    gtdir="$(git rev-parse --show-toplevel )"
+    gtdir="$(git rev-parse --show-toplevel)"
     [[ "$cwd" != "$gtdir" ]] && pushd "$gtdir" &> /dev/null # git root
 
     if [[ -n "$@" ]]; then
@@ -1298,7 +1317,7 @@ gito() {
 
 # ag looks for whole file path!
 ago() {
-    err "ag is not playing along at the moment. see fo()"
+    err "ag is not playing along at the moment. see fo()" "$FUNCNAME"
     return 1
 
 
@@ -1306,7 +1325,7 @@ ago() {
     local dmenurc="$HOME/.dmenurc"
     local editor="$EDITOR"
 
-    check_progs_installed ag $editor dmenu || return 1
+    check_progs_installed ag "$editor" dmenu || return 1
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
     [[ -z "$@" ]] && { err "args required."; return 1; }
@@ -1333,7 +1352,9 @@ fo() {
     file_mngr="ranger"
     pdf_viewer="zathura"
 
-    check_progs_installed find ffind "$file_mngr" "$editor" "$image_viewer" "$video_player" "$pdf_viewer" dmenu file || return 1
+    if [[ "$__REMOTE_SSH" -ne 1 ]]; then  # only check for progs if not ssh-d
+        check_progs_installed find ffind "$file_mngr" "$editor" "$image_viewer" "$video_player" "$pdf_viewer" dmenu file || return 1
+    fi
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
     [[ -z "$@" ]] && { err "args required. see ffind -h" "$FUNCNAME"; return 1; }
@@ -1342,7 +1363,17 @@ fo() {
     [[ "$?" -eq 0 ]] || return 1
 
     count="$(echo "$match" | wc -l)"
-    [[ "$count" -gt 1 ]] && { report "found $count items" "$FUNCNAME"; match="$(echo "$match" | $DMENU -l 20 -p open)"; }
+    [[ "$count" -gt 1 ]] && {
+        report "found $count items" "$FUNCNAME"
+
+        if [[ "$__REMOTE_SSH" -eq 1 ]]; then
+            report "no way of using dmenu over ssh; these are the found files:\n" "$FUNCNAME"
+            echo -e "$match"
+            return 0
+        else
+            match="$(echo "$match" | $DMENU -l 20 -p open)"
+        fi
+    }
     [[ -z "$match" ]] && return 1
 
     # note that test will resolve links to files and dirs as well;
@@ -1351,17 +1382,19 @@ fo() {
         filetype="$(file -iLb "$match")"
 
         if echo "$filetype" | grep -q '^image/'; then
-            $image_viewer "$match"
+            "$image_viewer" "$match"
         elif echo "$filetype" | grep -q '^video/'; then
-            $video_player "$match"
+            "$video_player" "$match"
         elif echo "$filetype" | grep -q '^text/'; then
-            $editor "$match"
+            "$editor" "$match"
         elif echo "$filetype" | grep -q '^application/pdf'; then
-            $pdf_viewer "$match"
+            "$pdf_viewer" "$match"
         elif echo "$filetype" | grep -q '^application/x-executable; charset=binary'; then
             confirm "$match is executable. want to launch it from here?" || return
             report "launching ${match}..." "$FUNCNAME"
             "$match"
+        #elif echo "$filetype" | grep -q '^inode/directory;'; then
+            #"$file_mngr" "$match"
         else
             err "dunno what to open this type of file with:\n\t$filetype" "$FUNCNAME"
             return 1
@@ -1470,6 +1503,8 @@ mvf() {
 ## Take screenshot of main monitor ##
 #####################################
 shot() {
+   check_progs_installed ffcast || return 1
+
    local mon=$@
    local file="$HOME/shot-$(date +'%H:%M-%d-%m-%Y').png"
    [[ -n "$mon" ]] || mon=0

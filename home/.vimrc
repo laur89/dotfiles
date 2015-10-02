@@ -691,7 +691,7 @@ set nocompatible " Must be the first line
 
             augroup StripTrailingWhitespace
                 autocmd!
-                autocmd FileType c,cpp,conf,css,html,perl,python,sh,javascript
+                autocmd FileType c,cpp,conf,css,html,perl,ruby,python,sh,javascript
                             \ autocmd BufWritePre <buffer> :call
                             \ <SID>StripTrailingWhitespace()
             augroup END
