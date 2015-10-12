@@ -19,10 +19,10 @@ unset confirmappend # don't ask
   set forward_quote # include msg in forwards
   set quote_regexp = "^( {0,4}[>|:#%]| {0,4}[a-z0-9]+[>|]+)+"
   #set header_cache      = ~/.mutt/cache
-    # if you have more than a few emails, you *really* want this
-    set header_cache = ~/.mutt/caches/work-headercache # where to store hdrs
-    set message_cachedir = ~/.mutt/caches/work-messagecache # where to store bodies
-    set certificate_file = '~/.mutt/.mutt_certificates' # default: '~/.mutt_certificates'; where to store certs
+  # if you have more than a few emails, you *really* want this
+  set header_cache = ~/.mutt/caches/work-headercache # where to store hdrs
+  set message_cachedir = ~/.mutt/caches/work-messagecache # where to store bodies
+  set certificate_file = '~/.mutt/.mutt_certificates' # default: '~/.mutt_certificates'; where to store certs
 unset help
   set include # include msg in replies
   set mail_check        = 0
@@ -80,10 +80,10 @@ set sidebar_width   = 24
   set status_chars = " *%A"
   #set status_format     = "-%r- %f%?t? Tagged:%t?%?p? Drafts:%p? -%>-"
   set status_format = "───[ Folder: %f ]───[%r%m messages%?n? (%n new)?%?d? (%d to delete)?%?t? (%t tagged)? ]───%>─%?p?( %p postponed )?───"
-    set date_format = "%d/%m/%y at %I:%M%P"
-    set index_format = "%3C [%Z] %D %-15.15F %s"
-    #set index_format      = "%3C %Z %[!%m/%d] %-17.17F %s"
-    set alias_format = "%4n %t %-20a %r"
+  set date_format = "%d/%m/%y at %I:%M%P"
+  set index_format = "%3C [%Z] %D %-15.15F %s"
+  #set index_format      = "%3C %Z %[!%m/%d] %-17.17F %s"
+  set alias_format = "%4n %t %-20a %r"
 color status red default
 
   set strict_threads
@@ -97,7 +97,6 @@ color status red default
 #alternates .*@pbrisbin\.com .*@brisb\.in
 alternative_order text/calendar text/plain text/enriched text/html text
 
-#ignore * # ignore all headers
 ignore * # ignore all hdrs
 unignore from: to: cc: date: subject: #show only these
 unhdr_order *                           # some distros order things by default

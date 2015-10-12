@@ -78,7 +78,7 @@ export _MAX_STARTING_VOL_FOR_EARPHONES=80
 if [[ -d "/data/tmp" && -w "/data/tmp" ]]; then
     export _PERSISTED_TMP="/data/tmp"
 else
-    echo -e "    preferred persisted tempdir at /data/tmp not found; defaulting to /tmp"
+    echo -e "bash_env_vars: preferred persisted tempdir at /data/tmp not found; defaulting to /tmp"
     export _PERSISTED_TMP="/tmp"
 fi
 

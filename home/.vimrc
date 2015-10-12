@@ -1005,7 +1005,7 @@ set nocompatible " Must be the first line
     let g:notes_directories = ['/data/Dropbox/notes']
     let g:notes_suffix = '.note'
 
-    " Ag
+    " Ag (silver-searcher)
     " by default, start search from project root:
     let g:ag_working_path_mode='r'
     let g:ag_highlight=1
