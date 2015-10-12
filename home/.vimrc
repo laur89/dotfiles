@@ -371,8 +371,6 @@ set nocompatible " Must be the first line
                                                     " initializations. basically
                                                     " for file-specific settings.
     set viminfo+=n~/.vim/viminfo
-    set paste                                       " start in paste mode (see 'pastetoggle'
-                                                    " for toggle keybinding.
 
 
     """ In order exiting insert mode in vim-airline/bufferline wouldn't lag that much: {{{

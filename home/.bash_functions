@@ -641,21 +641,25 @@ function aptsrc() { aptsearch "$@"; } # alias
 #+ (needs a recent version of grep).
 # !!! deprecated by ag/astr
 function ffstr() {
-    local grepcase OPTIND usage opt MAX_RESULT_LINE_LENGTH caseOptCounter force_case regex INAME_ARG
+    local grepcase OPTIND usage opt MAX_RESULT_LINE_LENGTH caseOptCounter force_case regex INAME_ARG maxDepth maxDepthParam defMaxDeptWithFollowLinks follow_links
 
     caseOptCounter=0
     OPTIND=1
-    MAX_RESULT_LINE_LENGTH=300 # max nr of characters per grep result line
+    MAX_RESULT_LINE_LENGTH=300      # max nr of characters per grep result line
+    defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
+
     usage="\n$FUNCNAME: find string in files (from current directory recursively). smartcase both for filename and search patterns.
-    Usage: $FUNCNAME [-i] [-s] \"pattern\" [filename pattern]
+    Usage: $FUNCNAME [opts] \"pattern\" [filename pattern]
         -i  force case insensitive
         -s  force case sensitivity
+        -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;
+        -L  follow symlinks
         -r  enable regex on filename pattern"
 
 
     check_progs_installed ag && report "consider using ag or its wrapper astr (same thing as $FUNCNAME, but using ag instead of find+grep)" "$FUNCNAME"
 
-    while getopts "isrh" opt; do
+    while getopts "isrm:Lh" opt; do
         case "$opt" in
            i) grepcase=" -i "
               INAME_ARG="-iname"
@@ -669,6 +673,12 @@ function ffstr() {
               shift $((OPTIND-1))
                 ;;
            r) regex=1
+              shift $((OPTIND-1))
+                ;;
+           m) maxDepth="$OPTARG"
+              shift $((OPTIND-1))
+                ;;
+           L) follow_links="-L"
               shift $((OPTIND-1))
                 ;;
            h) echo -e "$usage"
@@ -722,6 +732,18 @@ function ffstr() {
         fi
     fi
 
+    if [[ -n "$maxDepth" ]]; then
+        if ! is_digit "$maxDepth"; then
+            err "maxdepth (the -m flag) arg value has to be a digit, but was \"$maxDepth\"" "$FUNCNAME"
+            echo -e "$usage"
+            return 1
+        fi
+
+        maxDepthParam="-maxdepth $maxDepth"
+    elif [[ -n "$follow_links" ]]; then
+        maxDepthParam="-maxdepth $defMaxDeptWithFollowLinks"
+    fi
+
     # as find doesn't support smart case, provide it yourself:
     if [[ "$(tolowercase "$1")" == "$1" ]]; then
         # provided pattern was lowercase, make it case insensitive:
@@ -739,13 +761,13 @@ function ffstr() {
         [[ -z "$2" ]] && { err "with -r flag, please provide file name pattern." "$FUNCNAME"; return 1; }
         [[ -n "$INAME_ARG" ]] && INAME_ARG="-regextype posix-extended -iregex" || INAME_ARG="-regextype posix-extended -regex"
 
-        eval find . -type f $INAME_ARG '.*'"$2"'.*' -print0 2>/dev/null | \
+        eval find $follow_links . $maxDepthParam -type f $INAME_ARG '.*'"$2"'.*' -print0 2>/dev/null | \
             xargs -0 grep -E --color=always -sn ${grepcase} "$1" | \
             cut -c 1-$MAX_RESULT_LINE_LENGTH | \
             more
             #less
     else
-        find . -type f "${INAME_ARG:--name}" '*'"${2:-*}"'*' -print0 2>/dev/null | \
+        find $follow_links . $maxDepthParam -type f "${INAME_ARG:--name}" '*'"${2:-*}"'*' -print0 2>/dev/null | \
             xargs -0 grep -E --color=always -sn ${grepcase} "$1" | \
             cut -c 1-$MAX_RESULT_LINE_LENGTH | \
             more
@@ -1027,14 +1049,14 @@ function make7z() {
 }
 
 # alias for extract
-function unpack() { extract $@; }
+function unpack() { extract "$@"; }
 
 # helper wrapper for uncompressing archives. it uncompresses into new directory, which
 # name is the same as the archive's, minus the file extension. this avoids the situations
 # where gazillion files are being extracted into workin dir. note that if the dir
 # already exists, then unpacking fails (since mkdir fails).
 function extract() {
-    local file="$1"
+    local file="$*"
     local file_without_extension="${file%.*}"
 
     if [[ -z "$file" ]]; then
@@ -1101,13 +1123,14 @@ resetfont() { fontreset; }
 
 # TODO: rewrite this one, looks stupid:
 up() {
-  local i
-  local d=""
-  local limit=$1
+  local i d limit
+
+  d=""
+  limit=$1
   for ((i=1 ; i <= limit ; i++)); do
       d="$d/.."
   done
-  d="$(echo $d | sed 's/^\///')"
+  d="$(echo "$d" | sed 's/^\///')"
   [[ -z "$d" ]] && d=".."
 
   cd "$d"
@@ -1126,12 +1149,12 @@ clock() {
 
 xmlformat() {
     [[ -z "$@" ]] && { echo -e "usage:   $FUNCNAME  <filename>"; return 1; }
-    [[ -f "$@" && -r "$@" ]] || { err "provided file \"$@\" is not a regular file or is not readable. abort." "$FUNCNAME"; return 1; }
+    [[ -f "$@" && -r "$@" ]] || { err "provided file \"$*\" is not a regular file or is not readable. abort." "$FUNCNAME"; return 1; }
     check_progs_installed xmllint vim || return 1;
-    xmllint --format $@ | vim  "+set foldlevel=99" -;
+    xmllint --format "$@" | vim  "+set foldlevel=99" -;
 }
 
-function xmlf() { xmlformat $@; } # alias for xmlformat;
+function xmlf() { xmlformat "$@"; } # alias for xmlformat;
 
 function createUsbIso() {
     local file device mountpoint cleaned_devicename usage
@@ -1278,6 +1301,7 @@ gito() {
     local cwd="$PWD"
     local dmenurc="$HOME/.dmenurc"
     local editor="$EDITOR"
+    local nr_of_dmenu_vertical_lines=20
 
     check_progs_installed git "$editor" dmenu || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
@@ -1306,7 +1330,7 @@ gito() {
     [[ "$cwd" != "$gtdir" ]] && popd &> /dev/null # go back
 
     count="$(echo "$match" | wc -l)"
-    [[ "$count" -gt 1 ]] && { report "found $count items" "$FUNCNAME"; match="$(echo "$match" | $DMENU -l 20 -p open)"; }
+    [[ "$count" -gt 1 ]] && { report "found $count items" "$FUNCNAME"; match="$(echo "$match" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)"; }
     #[[ $(echo "$match" | wc -l) -gt 1 ]] && match="$(echo "$match" | bemenu -i -l 20 -p "$editor")"
     [[ -z "$match" ]] && return 1
     match="$gtdir/$match" # convert to absolute
@@ -1343,9 +1367,10 @@ ago() {
 # finds files/dirs using ffind() (find wrapper) and opens them.
 # mnemonic: file open
 fo() {
-    local DMENU match count filetype dmenurc editor image_viewer video_player file_mngr pdf_viewer
+    local DMENU match count filetype dmenurc editor image_viewer video_player file_mngr pdf_viewer nr_of_dmenu_vertical_lines
 
     dmenurc="$HOME/.dmenurc"
+    nr_of_dmenu_vertical_lines=20
     editor="$EDITOR"
     image_viewer="sxiv"
     video_player="smplayer"
@@ -1371,7 +1396,7 @@ fo() {
             echo -e "$match"
             return 0
         else
-            match="$(echo "$match" | $DMENU -l 20 -p open)"
+            match="$(echo "$match" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)"
         fi
     }
     [[ -z "$match" ]] && return 1
