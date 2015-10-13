@@ -18,9 +18,10 @@ fi
 # =====================================================================
 
 # find files or dirs:
-# TODO: set default max depth? should be at least when -L is selected;
+# TODO: refactor the massive spaghetti.
 function ffind() {
-    local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter exact binary follow_links maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter
+    local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter exact binary follow_links
+    local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter
 
     defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
     usage="\n$FUNCNAME: find files/dirs by name. smartcase.
@@ -109,6 +110,7 @@ function ffind() {
 
     if [[ "$follow_links" == "-L" && "$file_type" == "-type l" ]]; then
         report "if both -l and -L flags are set, then ONLY the broken links are being searched.\n" "$FUNCNAME"
+        sleep 2
     fi
 
     # as find doesn't support smart case, provide it yourself:
@@ -117,11 +119,12 @@ function ffind() {
         INAME_ARG="-iname"
     fi
 
-    [[ "$force_case" -eq 1 ]] && INAME_ARG=""
+    [[ "$force_case" -eq 1 ]] && unset INAME_ARG
 
 
     if [[ "$pathOpt" -eq 1 && "$exact" -eq 1 ]]; then
         report "note that using -p and -e flags together means that the pattern has to match whole path, not only the filename!" "$FUNCNAME"
+        sleep 2
     fi
 
     if [[ -n "$SRCDIR" ]]; then
@@ -129,7 +132,7 @@ function ffind() {
             err "provided directory to search from (\"$SRCDIR\") is not a directory. abort." "$FUNCNAME"
             return 1
         elif [[ "${SRCDIR:$(( ${#SRCDIR} - 1)):1}" != "/" ]]; then
-            SRCDIR="${SRCDIR}/" # add trailing slash if missing; required for gnu find; is it really the case??
+            SRCDIR="${SRCDIR}/" # add trailing slash if missing; required for gnu find; TODO: is it really the case??
         fi
     fi
 
@@ -192,6 +195,7 @@ function ffind() {
                 # this doesn't work atm:
                 eval find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '.*'"$SRC"'.*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto "$SRC|$"
             else
+                report "!!! running with eval, be careful !!!" "$FUNCNAME"
                 eval find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '.*'"$SRC"'.*' 2>/dev/null | grep -iE --color=auto "$SRC|$"
             fi
         else # no regex
@@ -346,9 +350,9 @@ function __find_top_big_small_fun() {
         [[ "$ignore_filesize_print_unit_msg" -ne 1 ]] && report "note that printed file size is in 1k units (limitation of find's -printf)\n" "$FUNCNAME_"
 
         # find's printf:
-        # %s file size in byte   - appears to be the same as du block-size w/o any units
-        # %k in 1K blocks
-        # %b in 512byte blocks
+        #   %s file size in byte   - appears to be the same as du block-size w/o any units
+        #   %k in 1K blocks
+        #   %b in 512byte blocks
         find $follow_links . -mindepth 1 $maxDepthParam $file_type -printf "%${filesize_print_unit}\t%P\n" 2>/dev/null | \
             sort -n $reverse | \
             head -$itemsToShow
@@ -641,7 +645,8 @@ function aptsrc() { aptsearch "$@"; } # alias
 #+ (needs a recent version of grep).
 # !!! deprecated by ag/astr
 function ffstr() {
-    local grepcase OPTIND usage opt MAX_RESULT_LINE_LENGTH caseOptCounter force_case regex INAME_ARG maxDepth maxDepthParam defMaxDeptWithFollowLinks follow_links
+    local grepcase OPTIND usage opt MAX_RESULT_LINE_LENGTH caseOptCounter force_case regex
+    local INAME_ARG maxDepth maxDepthParam defMaxDeptWithFollowLinks follow_links
 
     caseOptCounter=0
     OPTIND=1
