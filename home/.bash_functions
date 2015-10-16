@@ -1437,6 +1437,10 @@ fo() {
     fi
 }
 
+function setromaniatime() {
+    timedatectl set-timezone Europe/Bucharest
+}
+
 function sethometime() {
     timedatectl set-timezone Europe/Tallinn
 }
