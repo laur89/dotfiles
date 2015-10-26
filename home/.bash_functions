@@ -962,15 +962,53 @@ function sanitize_ssh() {
 function ssh_sanitize() { sanitize_ssh "$@"; } # alias for sanitize_ssh
 
 function my_ip() { # Get internal & external ip addies:
-    local internal_ip external_ip connected_interface
+    local connected_interface interfaces if_dir
+
+    if_dir="/sys/class/net"
+
+    function __get_ip_for_interface() {
+        local interface ip
+
+        interface="$1"
+
+        ip="$(/sbin/ifconfig "$interface" | awk '/inet / { print $2 } ' | sed -e s/addr://)"
+        [[ -z "$ip" && "$__REMOTE_SSH" -eq 1 ]] && return  # probaby the interface was not found
+
+        echo "${ip:-"Not connected"} @ $interface"
+    }
+
+    function __get_external_ip() {
+        local ip
+
+        check_progs_installed dig || {
+            err "can't look up external ip - dig is not installed" "$FUNCNAME"
+            return 1
+        }
+
+        ip="$(dig +short myip.opendns.com @resolver1.opendns.com 2>/dev/null)"
+        echo "${ip:-"Not connected to the internet."}"
+    }
 
     connected_interface="$(find_connected_if)"
+    __get_external_ip
 
     if [[ -n "$connected_interface" ]]; then
-        external_ip="$(dig +short myip.opendns.com @resolver1.opendns.com 2>/dev/null)"
-        internal_ip="$(/sbin/ifconfig "$connected_interface" | awk '/inet / { print $2 } ' | sed -e s/addr://)"
-        echo "${internal_ip:-"Not connected"} @ $connected_interface"
-        echo "${external_ip:-"Not connected"}"
+        __get_ip_for_interface "$connected_interface"
+        return 0
+    elif [[ "$__REMOTE_SSH" -eq 1 ]]; then
+        if [[ -d "$if_dir" && -r "$if_dir" ]]; then
+            interfaces="$(ls "$if_dir")"
+        else
+            interfaces="eth0 eth1 eth2 eth3"
+            report "can't read interfaces from $if_dir (not a readable dir); trying these interfaces: \"$interfaces\"" "$FUNCNAME"
+        fi
+
+        [[ -z "$interfaces" ]] && return 1
+
+        for connected_interface in $interfaces; do
+            __get_ip_for_interface "$connected_interface"
+        done
+
         return 0
     fi
 
