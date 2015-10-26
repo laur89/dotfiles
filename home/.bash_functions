@@ -159,7 +159,7 @@ function ffind() {
 
     if [[ -n "$maxDepth" ]]; then
         if ! is_digit "$maxDepth"; then
-            err "maxdepth (the -m flag) arg value has to be a digit, but was \"$maxDepth\"" "$FUNCNAME"
+            err "maxdepth (the -m flag) arg value has to be a positive digit, but was \"$maxDepth\"" "$FUNCNAME"
             echo -e "$usage"
             return 1
         fi
@@ -526,7 +526,7 @@ function __find_bigger_smaller_common_fun() {
             echo -e "$usage"
             return 1
         elif ! is_digit "$sizeArg"; then
-            err "base size has to be a digit, but was \"$sizeArg\"." "$FUNCNAME_"
+            err "base size has to be a positive digit, but was \"$sizeArg\"." "$FUNCNAME_"
             echo -e "$usage"
             return 1
         fi
@@ -739,7 +739,7 @@ function ffstr() {
 
     if [[ -n "$maxDepth" ]]; then
         if ! is_digit "$maxDepth"; then
-            err "maxdepth (the -m flag) arg value has to be a digit, but was \"$maxDepth\"" "$FUNCNAME"
+            err "maxdepth (the -m flag) arg value has to be a positive digit, but was \"$maxDepth\"" "$FUNCNAME"
             echo -e "$usage"
             return 1
         fi

@@ -44,7 +44,8 @@ set nocompatible " Must be the first line
     "Plugin 'chrisbra/SudoEdit.vim'
 
     " Fuzzy finder (files, mru, etc)
-    Plugin 'kien/ctrlp.vim'
+    "Plugin 'kien/ctrlp.vim'  " kien/ repo (the original one) seems dead.
+    Plugin 'ctrlpvim/ctrlp.vim'
 
     " A pretty statusline, bufferline integration:
     "Plugin 'itchyny/lightline.vim' "liiga minimalist mu jaoks
@@ -771,7 +772,7 @@ set nocompatible " Must be the first line
     " CtrlP
     "don't recalculate files on start (slow)
     let g:ctrlp_reuse_window = 'startify' "don't split in startify
-    let g:ctrlp_clear_cache_on_exit = 0
+    "let g:ctrlp_clear_cache_on_exit = 0
     let g:ctrlp_working_path_mode = 'ra'
     let g:ctrlp_root_markers = ['.ctrlp']  "consider this, since .git isn't as good with submodules; note this is IN ADDITION to the default ones
     "let g:ctrlp_working_path_mode = ""
