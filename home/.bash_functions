@@ -1305,6 +1305,8 @@ function mkgit() {
         err "too many arguments" "$FUNCNAME"
         echo -e "$usage"
         return 1
+    elif ! check_progs_installed git; then
+        return 1
     fi
 
     # check dir
