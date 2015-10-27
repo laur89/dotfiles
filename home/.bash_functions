@@ -981,7 +981,7 @@ function my_ip() { # Get internal & external ip addies:
         local ip
 
         check_progs_installed dig || {
-            err "can't look up external ip - dig is not installed" "$FUNCNAME"
+            err "can't look up external ip - dig (dns lookup util) is not installed" "$FUNCNAME"
             return 1
         }
 
@@ -1485,7 +1485,6 @@ function sethometime() {
     timedatectl set-timezone Europe/Tallinn
 }
 
-#function setesttime() { sethometime; }
 function setestoniatime() { sethometime; }
 
 function setgibtime() {
