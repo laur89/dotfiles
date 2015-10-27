@@ -962,11 +962,11 @@ function sanitize_ssh() {
 function ssh_sanitize() { sanitize_ssh "$@"; } # alias for sanitize_ssh
 
 function my_ip() { # Get internal & external ip addies:
-    local connected_interface interfaces if_dir i blacklisted
+    local connected_interface interfaces if_dir i interface
 
     if_dir="/sys/class/net"
 
-    function __get_ip_for_interface() {
+    function __get_internal_ip_for_if() {
         local interface ip
 
         interface="$1"
@@ -974,37 +974,39 @@ function my_ip() { # Get internal & external ip addies:
         ip="$(/sbin/ifconfig "$interface" | awk '/inet / { print $2 } ' | sed -e s/addr://)"
         [[ -z "$ip" && "$__REMOTE_SSH" -eq 1 ]] && return  # probaby the interface was not found
 
-        echo "${ip:-"Not connected"} @ $interface"
+        echo -e "${ip:-"Not connected"}\t@ $interface"
     }
 
     function __get_external_ip() {
-        local ip
+        local ip timeout
+        timeout=1  # in sec
 
-        check_progs_installed dig || {
+        command -v dig > /dev/null 2>&1 || {  # don't use check_progs_installed because of its verbosity
             err "can't look up external ip - dig (dns lookup util) is not installed" "$FUNCNAME"
             return 1
         }
 
-        ip="$(dig +short myip.opendns.com @resolver1.opendns.com 2>/dev/null)"
-        echo "${ip:-"Not connected to the internet."}"
+        ip="$(dig +short +time=$timeout myip.opendns.com @resolver1.opendns.com 2>/dev/null)"
+        echo -e "external:\t${ip:-"Not connected to the internet."}"
     }
 
-    connected_interface="$(find_connected_if)"
+    connected_interface="$(find_connected_if)"  # note this returns only on own machines, not on remotes.
     __get_external_ip
 
+    command -v /sbin/ifconfig > /dev/null 2>&1 || {  # don't use check_progs_installed because of its verbosity
+        err "can't check internal ip as /sbin/ifconfig appears not to be installed." "$FUNCNAME"
+        return 1
+    }
+
     if [[ -n "$connected_interface" ]]; then
-        __get_ip_for_interface "$connected_interface"
+        __get_internal_ip_for_if "$connected_interface"
         return 0
     elif [[ "$__REMOTE_SSH" -eq 1 ]]; then
         if [[ -d "$if_dir" && -r "$if_dir" ]]; then
-            while IFS= read -r -d '' interface; do
-                blacklisted=0  # reset
-                interface="${interface*/}"  # strip everything before last slash(slash included)
-                for i in lo loopback; do
-                    [[ "$interface" == "$i" ]] && { blacklisted=1; break; }
-                done
-                [[ "$blacklisted" -eq 0 ]] && interfaces+=" $interface "
-            done <   <(find "$if_dir" -maxdepth 1 -mindepth 1 -print0)
+            while read interface; do
+                # filter out blacklisted interfaces:
+                list_contains "$interface" "lo loopback" || interfaces+=" $interface "
+            done < <(find "$if_dir" -maxdepth 1 -mindepth 1 -printf '%f\n')
 
             # old solution:
             #interfaces="$(ls "$if_dir")"
@@ -1015,8 +1017,8 @@ function my_ip() { # Get internal & external ip addies:
 
         [[ -z "$interfaces" ]] && return 1
 
-        for connected_interface in $interfaces; do
-            __get_ip_for_interface "$connected_interface"
+        for interface in $interfaces; do
+            __get_internal_ip_for_if "$interface"
         done
 
         return 0
@@ -1419,25 +1421,48 @@ ago() {
     $editor "$match"
 }
 
+# finds files/dirs using fo() and goes to containing dir (or same dir if found item is already a dir)
+#
+# mnemonic: go go
+gg() {
+    local opts default_depth
+    default_depth="m7"
+
+    if [[ "$1" == -* ]]; then
+        [[ "$1" != *m* ]] && opts="${1}$default_depth" || opts="${1}"
+        #echo $opts  # debug
+        shift
+    else
+        opts="-$default_depth"
+    fi
+
+    fo --goto $opts "$@"
+}
+
 # finds files/dirs using ffind() (find wrapper) and opens them.
+# accepts different 'special modes' to be defined as first arg (modes contained in $special_modes array)
+#
 # mnemonic: file open
 fo() {
-    local DMENU match count filetype dmenurc editor image_viewer video_player file_mngr pdf_viewer nr_of_dmenu_vertical_lines
+    local DMENU match count filetype dmenurc editor image_viewer video_player file_mngr
+    local pdf_viewer nr_of_dmenu_vertical_lines special_mode special_modes
 
     dmenurc="$HOME/.dmenurc"
     nr_of_dmenu_vertical_lines=20
+    special_modes="--goto"  # special mode definitions; mode basically decides how to deal with the found match
     editor="$EDITOR"
     image_viewer="sxiv"
     video_player="smplayer"
     file_mngr="ranger"
     pdf_viewer="zathura"
 
-    if [[ "$__REMOTE_SSH" -ne 1 ]]; then  # only check for progs if not ssh-d
-        check_progs_installed find ffind "$file_mngr" "$editor" "$image_viewer" "$video_player" "$pdf_viewer" dmenu file || return 1
-    fi
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
     [[ -z "$@" ]] && { err "args required. see ffind -h" "$FUNCNAME"; return 1; }
+    list_contains "$1" "$special_modes" && { special_mode="$1"; shift; }
+    if [[ "$__REMOTE_SSH" -ne 1 && -z "$special_mode" ]]; then  # only check for progs if not ssh-d AND not using in "special mode"
+        check_progs_installed find ffind "$file_mngr" "$editor" "$image_viewer" "$video_player" "$pdf_viewer" dmenu file || return 1
+    fi
 
     match="$(ffind "$@")"
     [[ "$?" -eq 0 ]] || return 1
@@ -1446,7 +1471,7 @@ fo() {
     [[ "$count" -gt 1 ]] && {
         report "found $count items" "$FUNCNAME"
 
-        if [[ "$__REMOTE_SSH" -eq 1 ]]; then
+        if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
             report "no way of using dmenu over ssh; these are the found files:\n" "$FUNCNAME"
             echo -e "$match"
             return 0
@@ -1455,6 +1480,17 @@ fo() {
         fi
     }
     [[ -z "$match" ]] && return 1
+
+    # parse special modes, if used:
+    if [[ -n "$special_mode" ]]; then
+        case $special_mode in
+            --goto) goto "$match"
+            ;;
+            #*) no need, as mode has already been verified
+        esac
+
+        return
+    fi
 
     # note that test will resolve links to files and dirs as well;
     # TODO: instead of file, use xdg-open?
@@ -1530,6 +1566,8 @@ goto() {
 # cd-s to directory by partial match; if multiple matches, opens input via dmenu. smartcase.
 #  g /data/partialmatch     # searches for partialmatch in /data
 #  g partialmatch           # searches for partialmatch in current dir
+#
+# see also gg()
 g() {
     local path input file matches pattern DMENU dmenurc msg_loc INAME_ARG
 
@@ -1545,7 +1583,7 @@ g() {
     [[ -d "$path" ]] || { err "something went wrong - dirname result \"$path\" is not a dir." "$FUNCNAME"; return 1; }
     pattern="${input##*/}" # strip everything before last slash (included)
     [[ -z "$pattern" ]] && { err "no search pattern provided" "$FUNCNAME"; return 1; }
-    [[ "$path" == '.' ]] && msg_loc="here" || msg_loc="$path"
+    [[ "$path" == '.' ]] && msg_loc="here" || msg_loc="$path/"
 
     if [[ "$(tolowercase "$pattern")" == "$pattern" ]]; then
         # provided pattern was lowercase, make it case insensitive:

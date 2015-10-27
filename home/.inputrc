@@ -31,6 +31,15 @@ set output-meta on
 # a word, ask the user if he wants to see all of them
 set completion-query-items 150
 
+# add char to beginning of prompt indicating editing mode (: for fi comm, + for vi insert);
+# somewhat pointless, as you'd never see you're in command mode, if defaulting to insert,
+# since entering command mode won't update the prompt.
+#set show-mode-in-prompt on
+
+# auto-completion opts:
+set show-all-if-ambiguous on
+set show-all-if-unmodified on
+
 # When hitting option-up/option-down, cycle through the previous commands
 # which start with the prefix you've entered, rather than just cycling through
 # the last entered commands.
