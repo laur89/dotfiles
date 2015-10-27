@@ -962,7 +962,7 @@ function sanitize_ssh() {
 function ssh_sanitize() { sanitize_ssh "$@"; } # alias for sanitize_ssh
 
 function my_ip() { # Get internal & external ip addies:
-    local connected_interface interfaces if_dir
+    local connected_interface interfaces if_dir i blacklisted
 
     if_dir="/sys/class/net"
 
@@ -997,7 +997,17 @@ function my_ip() { # Get internal & external ip addies:
         return 0
     elif [[ "$__REMOTE_SSH" -eq 1 ]]; then
         if [[ -d "$if_dir" && -r "$if_dir" ]]; then
-            interfaces="$(ls "$if_dir")"
+            while IFS= read -r -d '' interface; do
+                blacklisted=0  # reset
+                interface="${interface*/}"  # strip everything before last slash(slash included)
+                for i in lo loopback; do
+                    [[ "$interface" == "$i" ]] && { blacklisted=1; break; }
+                done
+                [[ "$blacklisted" -eq 0 ]] && interfaces+=" $interface "
+            done <   <(find "$if_dir" -maxdepth 1 -mindepth 1 -print0)
+
+            # old solution:
+            #interfaces="$(ls "$if_dir")"
         else
             interfaces="eth0 eth1 eth2 eth3"
             report "can't read interfaces from $if_dir (not a readable dir); trying these interfaces: \"$interfaces\"" "$FUNCNAME"
