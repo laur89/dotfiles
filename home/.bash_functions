@@ -166,6 +166,7 @@ function ffind() {
 
         maxDepthParam="-maxdepth $maxDepth"
     elif [[ -n "$follow_links" ]]; then
+        # TODO: perhaps force maxdepth regardless whether followlinks is used?
         maxDepthParam="-maxdepth $defMaxDeptWithFollowLinks"
     fi
 
@@ -226,7 +227,7 @@ function ffindproc() {
 # find top 5/x biggest or smallest nodes:
 function __find_top_big_small_fun() {
     local usage opt OPTIND itemsToShow file_type item compiledFileTypeArgs maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_
-    local bigOrSmall du_include_regular_files filesize_print_unit ignore_filesize_print_unit_msg duMaxDepthParam filetypeOptionCounter
+    local bigOrSmall du_include_regular_files filesize_print_unit duMaxDepthParam filetypeOptionCounter orig_size_unit
 
     reverse="$1" # this basically decides whether we're showing top big or small.
     du_size_unit="$2" # default unit provided by the invoker
@@ -332,6 +333,7 @@ function __find_top_big_small_fun() {
         # optimization for files-only logic (ie no directories) to avoid expensive
         # calls to other programs (like awk and du).
 
+        orig_size_unit="$du_size_unit"  # store the original size
         filesize_print_unit="k" # find's printf unit for the filesize; note that this is used merely for the printing not for seeking for the files;
 
         if ! [[ "$du_size_unit" =~ ^[KMGB]+$ ]]; then
@@ -342,18 +344,18 @@ function __find_top_big_small_fun() {
         # convert some of the du types to the find equivalents:
         elif [[ "$du_size_unit" == B ]]; then
             filesize_print_unit="s"
-            ignore_filesize_print_unit_msg=1
         elif [[ "$du_size_unit" == K ]]; then
-            ignore_filesize_print_unit_msg=1
+            true
+        else
+            report "note that printed file size is in 1k units (limitation of find's -printf)\n" "$FUNCNAME_"
+            orig_size_unit="K"
         fi
-
-        [[ "$ignore_filesize_print_unit_msg" -ne 1 ]] && report "note that printed file size is in 1k units (limitation of find's -printf)\n" "$FUNCNAME_"
 
         # find's printf:
         #   %s file size in byte   - appears to be the same as du block-size w/o any units
         #   %k in 1K blocks
         #   %b in 512byte blocks
-        find $follow_links . -mindepth 1 $maxDepthParam $file_type -printf "%${filesize_print_unit}\t%P\n" 2>/dev/null | \
+        find $follow_links . -mindepth 1 $maxDepthParam $file_type -printf "%${filesize_print_unit}${orig_size_unit}\t%P\n" 2>/dev/null | \
             sort -n $reverse | \
             head -$itemsToShow
 
@@ -412,7 +414,7 @@ function ffindtopsmall() {
 # find smaller/bigger than Xmegas files
 function __find_bigger_smaller_common_fun() {
     local usage opt OPTIND file_type item compiledFileTypeArgs maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_ biggerOrSmaller sizeArg
-    local du_include_regular_files filesize_print_unit ignore_filesize_print_unit_msg duMaxDepthParam plusOrMinus filetypeOptionCounter sizeArgLastChar du_blk_sz
+    local du_include_regular_files filesize_print_unit duMaxDepthParam plusOrMinus filetypeOptionCounter sizeArgLastChar du_blk_sz orig_size_unit
 
     reverse="$1" # sorting order
     du_size_unit="$2" # default unit provided by the invoker
@@ -560,6 +562,7 @@ function __find_bigger_smaller_common_fun() {
         # optimization for files-only logic (ie no directories) to avoid expensive
         # calls to other programs (like awk and du).
 
+        orig_size_unit="$du_size_unit"  # store the original size
         filesize_print_unit="k" # find's printf unit for the filesize; note that this is used merely for the printing not for seeking for the files;
 
         if ! [[ "$du_size_unit" =~ ^[KMGB]+$ ]]; then
@@ -571,19 +574,19 @@ function __find_bigger_smaller_common_fun() {
         elif [[ "$du_size_unit" == B ]]; then
             du_size_unit=c # bytes unit for find
             filesize_print_unit="s"
-            ignore_filesize_print_unit_msg=1
         elif [[ "$du_size_unit" == K ]]; then
             du_size_unit=k # kilobytes unit for find
-            ignore_filesize_print_unit_msg=1
+        else
+            report "note that printed file size is in 1k units (limitation of find's -printf)\n" "$FUNCNAME_"
+            orig_size_unit="K"
         fi
 
-        [[ "$ignore_filesize_print_unit_msg" -ne 1 ]] && report "note that printed file size is in 1k units (limitation of find's -printf)\n" "$FUNCNAME_"
 
         # find's printf:
         # %s file size in byte   - appears to be the same as du block-size w/o any units
         # %k in 1K blocks
         # %b in 512byte blocks
-        find $follow_links . -mindepth 1 $maxDepthParam -size ${plusOrMinus}${sizeArg}${du_size_unit} $file_type -printf "%${filesize_print_unit}\t%P\n" 2>/dev/null | \
+        find $follow_links . -mindepth 1 $maxDepthParam -size ${plusOrMinus}${sizeArg}${du_size_unit} $file_type -printf "%${filesize_print_unit}${orig_size_unit}\t%P\n" 2>/dev/null | \
             sort -n $reverse
 
     else # directories included, need to use du + awk
