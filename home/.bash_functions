@@ -185,7 +185,7 @@ function ffind() {
             find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null | grep -iE --color=auto "$SRC|$"
         fi
     else # partial filename match, ie add * padding
-        if [[ "$regex" -eq 1 ]]; then  #regex, need to change the * padding around $SRC
+        if [[ "$regex" -eq 1 ]]; then  # using regex, need to change the * padding around $SRC
             #
             # TODO eval!
             #
@@ -197,6 +197,7 @@ function ffind() {
                 eval find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '.*'"$SRC"'.*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto "$SRC|$"
             else
                 report "!!! running with eval, be careful !!!" "$FUNCNAME"
+                sleep 2
                 eval find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '.*'"$SRC"'.*' 2>/dev/null | grep -iE --color=auto "$SRC|$"
             fi
         else # no regex
@@ -665,7 +666,7 @@ function ffstr() {
         -r  enable regex on filename pattern"
 
 
-    check_progs_installed ag && report "consider using ag or its wrapper astr (same thing as $FUNCNAME, but using ag instead of find+grep)" "$FUNCNAME"
+    command -v ag > /dev/null && report "consider using ag or its wrapper astr (same thing as $FUNCNAME, but using ag instead of find+grep)\n" "$FUNCNAME"
 
     while getopts "isrm:Lh" opt; do
         case "$opt" in
@@ -766,7 +767,7 @@ function ffstr() {
     [[ "$force_case" -eq 1 ]] && { grepcase=""; INAME_ARG=""; }
 
     if [[ "$regex" -eq 1 ]]; then
-        [[ -z "$2" ]] && { err "with -r flag, please provide file name pattern." "$FUNCNAME"; return 1; }
+        [[ -z "$2" ]] && { err "with -r flag, filename argument is required." "$FUNCNAME"; return 1; }
         [[ -n "$INAME_ARG" ]] && INAME_ARG="-regextype posix-extended -iregex" || INAME_ARG="-regextype posix-extended -regex"
 
         eval find $follow_links . $maxDepthParam -type f $INAME_ARG '.*'"$2"'.*' -print0 2>/dev/null | \
@@ -1464,7 +1465,7 @@ fo() {
     [[ -z "$@" ]] && { err "args required. see ffind -h" "$FUNCNAME"; return 1; }
     list_contains "$1" "$special_modes" && { special_mode="$1"; shift; }
     if [[ "$__REMOTE_SSH" -ne 1 && -z "$special_mode" ]]; then  # only check for progs if not ssh-d AND not using in "special mode"
-        check_progs_installed find ffind "$file_mngr" "$editor" "$image_viewer" "$video_player" "$pdf_viewer" dmenu file || return 1
+        check_progs_installed find ffind "$PAGER" "$file_mngr" "$editor" "$image_viewer" "$video_player" "$pdf_viewer" dmenu file || return 1
     fi
 
     match="$(ffind "$@")"
@@ -1502,6 +1503,11 @@ fo() {
 
         if echo "$filetype" | grep -q '^image/'; then
             "$image_viewer" "$match"
+        elif echo "$filetype" | grep -q '^application/octet-stream'; then
+            # should be the logs on server
+            "$PAGER" "$match"
+        elif echo "$filetype" | grep -q '^application/xml'; then
+            xmlformat "$match"
         elif echo "$filetype" | grep -q '^video/'; then
             "$video_player" "$match"
         elif echo "$filetype" | grep -q '^text/'; then

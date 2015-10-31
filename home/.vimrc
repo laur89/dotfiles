@@ -782,7 +782,7 @@ set nocompatible " Must be the first line
     let g:ctrlp_user_command = ['.git/', 'cd %s && git ls-files --exclude-standard -co']
     "let g:ctrlp_user_command = "find %s -type f | egrep -v '/\.(git|hg|svn)|solr|tmp/' | egrep -v '/\.(git|hg|svn)|solr|tmp/' | egrep -v '\.(png|exe|jpg|gif|jar|class|swp|swo|log|gitkep|keepme|so|o)$'"
     " Start ctrlp in find buffer mode
-    let g:ctrlp_cmd = 'CtrlPBuffer'
+    let g:ctrlp_cmd = 'CtrlPMRU'  "buffer: CtrlPBuffer
     " Start ctrlp in MRU file mode
     "let g:ctrlp_cmd = 'CtrlPMRU'
     let g:ctrlp_regexp = 1
