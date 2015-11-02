@@ -1,4 +1,8 @@
 Package: *
+Pin: release l=Debian-Security
+Pin-Priority: 1000
+
+Package: *
 Pin: release a=testing
 Pin-Priority: 700
 
@@ -12,4 +16,4 @@ Pin-Priority: 600
 
 Package: *
 Pin: release a=oldstable
-Pin-Priority: 550
+Pin-Priority: 1
