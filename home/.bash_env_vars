@@ -7,7 +7,7 @@ export M2_HOME=/data/progs/maven/mvn_link
 export M2=$M2_HOME/bin
 
 export EDITOR=vim
-export VISUAL=gvim
+export VISUAL=geany  # gvim doesn't play well with some stuff, eg crontab -e
 export PAGER=less
 export BROWSER=/usr/bin/iceweasel
 export DEITY=
@@ -19,7 +19,7 @@ export PANEL_FIFO="/tmp/panel-fifo" # for BSPWM
 
 # Colorize less (from http://unix.stackexchange.com/questions/119/colors-in-man-pages)
 # get color support for less:
-export LESS="$LESS -FRXKI"
+export LESS="$LESS -FRXKi"
 # colorize:
 export LESS_TERMCAP_mb=$(tput bold; tput setaf 2) # green
 export LESS_TERMCAP_md=$(tput bold; tput setaf 6) # cyan

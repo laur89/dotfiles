@@ -404,12 +404,12 @@ function __find_top_big_small_fun() {
 }
 
 function ffindtopbig() {
-    __find_top_big_small_fun "-r" "M" "$FUNCNAME" "large" $@
+    __find_top_big_small_fun "-r" "M" "$FUNCNAME" "large" "$@"
 }
 
 function ffindtopsmall() {
     #find . -type f -exec ls -s --block-size=K {} \; | sort -n | head -$itemsToShow 2>/dev/null
-    __find_top_big_small_fun "" "K" "$FUNCNAME" "small" $@
+    __find_top_big_small_fun "" "K" "$FUNCNAME" "small" "$@"
 }
 
 # find smaller/bigger than Xmegas files
@@ -624,17 +624,16 @@ function __find_bigger_smaller_common_fun() {
 # find  nodes bigger than x mb:
 function ffindbiggerthan() {
     #find . -size +${size}M -exec ls -s --block-size=M {} \; | sort -nr 2>/dev/null
-    __find_bigger_smaller_common_fun "-r" "M" "$FUNCNAME" "bigger" $@
+    __find_bigger_smaller_common_fun "-r" "M" "$FUNCNAME" "bigger" "$@"
 }
 
 # find  nodes smaller than x mb:
 function ffindsmallerthan() {
     #find . -size -${size}M -exec ls -s --block-size=M {} \; | sort -n 2>/dev/null
-    __find_bigger_smaller_common_fun "" "M" "$FUNCNAME" "smaller" $@
+    __find_bigger_smaller_common_fun "" "M" "$FUNCNAME" "smaller" "$@"
 }
 
 # mkdir and cd into it:
-function mkcd() { mkdir -p "$@" && cd "$@"; }
 function mkf() { mkcd "$@"; } # alias to mkcd
 
 function aptsearch() {
@@ -947,7 +946,7 @@ function lgrep() {
 # (sane as in rw for owner, r for group, none for others)
 function sanitize() {
     [[ -z "$@" ]] && { err "provide a file/dir name plz." "$FUNCNAME"; return 1; }
-    [[ ! -e "$@" ]] && { err "\"$@\" does not exist." "$FUNCNAME"; return 1; }
+    [[ ! -e "$@" ]] && { err "\"$*\" does not exist." "$FUNCNAME"; return 1; }
     chmod -R u=rwX,g=rX,o= "$@";
 }
 
@@ -1358,7 +1357,7 @@ function mkgit() {
 ## Open file inside git tree on vim ##
 ######################################
 gito() {
-    local DMENU match gtdir count
+    local DMENU match gitdir count
     local cwd="$PWD"
     local dmenurc="$HOME/.dmenurc"
     local editor="$EDITOR"
@@ -1369,17 +1368,17 @@ gito() {
 
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
-    gtdir="$(git rev-parse --show-toplevel)"
-    [[ "$cwd" != "$gtdir" ]] && pushd "$gtdir" &> /dev/null # git root
+    gitdir="$(git rev-parse --show-toplevel)"
+    [[ "$cwd" != "$gitdir" ]] && pushd "$gitdir" &> /dev/null # git root
 
     if [[ -n "$@" ]]; then
         if [[ "$@" == *\** && "$@" != *\.\** ]]; then
             err 'use .* as wildcards, not a single *' "$FUNCNAME"
-            [[ "$cwd" != "$gtdir" ]] && popd &> /dev/null # go back
+            [[ "$cwd" != "$gitdir" ]] && popd &> /dev/null # go back
             return 1
         elif [[ "$(echo "$@" | tr -dc '.' | wc -m)" -lt "$(echo "$@" | tr -dc '*' | wc -m)" ]]; then
             err "nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
-            [[ "$cwd" != "$gtdir" ]] && popd &> /dev/null # go back
+            [[ "$cwd" != "$gitdir" ]] && popd &> /dev/null # go back
             return 1
         fi
 
@@ -1388,13 +1387,13 @@ gito() {
         match="$(git ls-files)"
     fi
 
-    [[ "$cwd" != "$gtdir" ]] && popd &> /dev/null # go back
+    [[ "$cwd" != "$gitdir" ]] && popd &> /dev/null # go back
 
     count="$(echo "$match" | wc -l)"
     [[ "$count" -gt 1 ]] && { report "found $count items" "$FUNCNAME"; match="$(echo "$match" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)"; }
     #[[ $(echo "$match" | wc -l) -gt 1 ]] && match="$(echo "$match" | bemenu -i -l 20 -p "$editor")"
     [[ -z "$match" ]] && return 1
-    match="$gtdir/$match" # convert to absolute
+    match="$gitdir/$match" # convert to absolute
     [[ -f "$match" ]] || { err "\"$match\" is not a regular file." "$FUNCNAME"; return 1; }
 
     $editor "$match"
@@ -1560,16 +1559,17 @@ function killmenao() {
 ## Print window class ##
 ########################
 xclass() {
-   xprop | awk '
-   /^WM_CLASS/{sub(/.* =/, "instance:"); sub(/,/, "\nclass:"); print}
-   /^WM_NAME/{sub(/.* =/, "title:"); print}'
+    xprop | awk '
+    /^WM_CLASS/{sub(/.* =/, "instance:"); sub(/,/, "\nclass:"); print}
+    /^WM_NAME/{sub(/.* =/, "title:"); print}'
 }
 
 ################
 ## Smarter CD ##
 ################
 goto() {
-   [[ -d "$@" ]] && { cd "$@"; } || cd "$(dirname "$@")";
+    [[ -z "$@" ]] && { err "node operand required" "$FUNCNAME"; return 1; }
+    [[ -d "$@" ]] && { cd "$@"; } || cd "$(dirname "$@")";
 }
 
 # cd-s to directory by partial match; if multiple matches, opens input via dmenu. smartcase.
@@ -1619,14 +1619,24 @@ g() {
 ## Copy && Follow ##
 ####################
 cpf() {
-   cp "$@" && goto "$_";
+    [[ -z "$@" ]] && { err "arguments for the cp command required." "$FUNCNAME"; return 1; }
+    cp "$@" && goto "$_";
 }
 
 ####################
 ## Move && Follow ##
 ####################
 mvf() {
-   mv "$@" && goto "$_";
+    [[ -z "$@" ]] && { err "name of a node to be moved required." "$FUNCNAME"; return 1; }
+    mv "$@" && goto "$_";
+}
+
+########################
+## Make dir && Follow ##
+########################
+function mkcd() {
+    [[ -z "$@" ]] && { err "name of a directory to be created required." "$FUNCNAME"; return 1; }
+    mkdir -p "$@" && cd "$@"
 }
 
 #####################################
@@ -1645,11 +1655,11 @@ shot() {
 ## Capture video ##
 ###################
 capture() {
-   check_progs_installed recordmydesktop || return 1
+    check_progs_installed recordmydesktop || return 1
 
     #recordmydesktop --display=$DISPLAY --width=1024 height=768 -x=1680 -y=0 --fps=15 --no-sound --delay=10
     #recordmydesktop --display=0 --width=1920 height=1080 --fps=15 --no-sound --delay=10
-   ffcast -w ffmpeg -f alsa -ac 2 -i hw:0,2 -f x11grab -s %s -i %D+%c -acodec pcm_s16le -vcodec huffyuv $@
+    ffcast -w ffmpeg -f alsa -ac 2 -i hw:0,2 -f x11grab -s %s -i %D+%c -acodec pcm_s16le -vcodec huffyuv "$@"
 }
 
 ##############################################
@@ -1657,7 +1667,7 @@ capture() {
 ## NOTE: Searches current tree recrusively. ##
 ##############################################
 f() {
-   find . -iregex ".*$@.*" -printf '%P\0' | xargs -r0 ls --color=auto -1d
+    find . -iregex ".*$*.*" -printf '%P\0' | xargs -r0 ls --color=auto -1d
 }
 
 # marker function used to detect whether functions have been loaded into the shell:
