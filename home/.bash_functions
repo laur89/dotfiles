@@ -916,11 +916,28 @@ function swap() {
 
 # list current directory and search for a file/dir by name:
 function lgrep() {
-    local SRC SRCDIR usage
+    local SRC SRCDIR usage exact OPTIND
+
+    usage="$FUNCNAME  [-e]  filename_to_grep  [dir_to_look_from]\n             -e  search for exact filename"
+
+    while getopts "he" opt; do
+        case "$opt" in
+           h) echo -e "$usage";
+              return 0
+              ;;
+           e) exact=1
+              shift $((OPTIND-1))
+              ;;
+           *) echo -e "$usage";
+              return 1
+              ;;
+        esac
+    done
 
     SRC="$1"
     SRCDIR="$2"
-    usage="$FUNCNAME  filename_to_grep  [dir_to_look_from]"
+
+    # sanity:
     if [[ "$#" -lt 1 || "$#" -gt 2 || -z "$SRC" ]]; then
         echo -e "$usage"
         return 1;
@@ -935,11 +952,12 @@ function lgrep() {
         fi
     fi
 
-    ls -lA "${SRCDIR:-.}" | grep --color=auto -i "$SRC"
-    #[[ $# != 1 ]] && { echo -e "$FUNCNAME name_to_grep [dir_to_look_from]"; return 1; }
-
-    #[[ -z "$@" ]] && { echo -e "$FUNCNAME filename_pattern"; return 1; }
-    #ls -A | grep --color=auto -i "\'$@\'"
+    if [[ "$exact" -eq 1 ]]; then
+        find "${SRCDIR:-.}" -maxdepth 1 -mindepth 1 -name "$SRC" -printf '%f\n' | grep -iE --color=auto "$SRC|$"
+    else
+        ls -lA "${SRCDIR:-.}" | grep --color=auto -i -- "$SRC"
+        #find "${SRCDIR:-.}" -maxdepth 1 -mindepth 1 -iname '*'"$SRC"'*' -printf '%f\n' | grep -iE --color=auto "$SRC|$"
+    fi
 }
 
 # Make your directories and files access rights sane.
