@@ -180,9 +180,9 @@ function ffind() {
     #find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' | grep -i --color=auto "$SRC" 2>/dev/null
     if [[ "$exact" -eq 1 ]]; then # no regex with exact; they are excluded.
         if [[ "$binary" -eq 1 ]]; then
-            find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" "$SRC" -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto "$SRC|$"
+            find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" "$SRC" -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
         else
-            find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null | grep -iE --color=auto "$SRC|$"
+            find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
         fi
     else # partial filename match, ie add * padding
         if [[ "$regex" -eq 1 ]]; then  # using regex, need to change the * padding around $SRC
@@ -194,17 +194,17 @@ function ffind() {
                 err "binary search in regex currently unimplemented" "$FUNCNAME"
                 return
                 # this doesn't work atm:
-                eval find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '.*'"$SRC"'.*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto "$SRC|$"
+                eval find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '.*'"$SRC"'.*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             else
                 report "!!! running with eval, be careful !!!" "$FUNCNAME"
                 sleep 2
-                eval find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '.*'"$SRC"'.*' 2>/dev/null | grep -iE --color=auto "$SRC|$"
+                eval find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '.*'"$SRC"'.*' 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             fi
         else # no regex
             if [[ "$binary" -eq 1 ]]; then
-                find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto "$SRC|$"
+                find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             else
-                find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null | grep -iE --color=auto "$SRC|$"
+                find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             fi
         fi
     fi
@@ -219,7 +219,7 @@ function ffind() {
 function ffindproc() {
     [[ -z "$1" ]] && { err "process name required" "$FUNCNAME"; return 1; }
     # last grep for re-coloring:
-    ps -ef | grep -v '\bgrep\b' | grep -i --color=auto "$1"
+    ps -ef | grep -v '\bgrep\b' | grep -i --color=auto -- "$1"
 
     # TODO: add also exact match option?:
     #   grep '\$1\b'
@@ -633,12 +633,9 @@ function ffindsmallerthan() {
     __find_bigger_smaller_common_fun "" "M" "$FUNCNAME" "smaller" "$@"
 }
 
-# mkdir and cd into it:
-function mkf() { mkcd "$@"; } # alias to mkcd
-
 function aptsearch() {
     [[ -z "$@" ]] && { err "provide partial package name to search for." "$FUNCNAME"; return 1; }
-    aptitude search "$@"
+    aptitude search -- "$@"
     #apt-cache search "$@"
 }
 
@@ -770,13 +767,13 @@ function ffstr() {
         [[ -n "$INAME_ARG" ]] && INAME_ARG="-regextype posix-extended -iregex" || INAME_ARG="-regextype posix-extended -regex"
 
         eval find $follow_links . $maxDepthParam -type f $INAME_ARG '.*'"$2"'.*' -print0 2>/dev/null | \
-            xargs -0 grep -E --color=always -sn ${grepcase} "$1" | \
+            xargs -0 grep -E --color=always -sn ${grepcase} -- "$1" | \
             cut -c 1-$MAX_RESULT_LINE_LENGTH | \
             more
             #less
     else
         find $follow_links . $maxDepthParam -type f "${INAME_ARG:--name}" '*'"${2:-*}"'*' -print0 2>/dev/null | \
-            xargs -0 grep -E --color=always -sn ${grepcase} "$1" | \
+            xargs -0 grep -E --color=always -sn ${grepcase} -- "$1" | \
             cut -c 1-$MAX_RESULT_LINE_LENGTH | \
             more
             #less
@@ -838,7 +835,7 @@ function astr() {
 
     [[ -n "$2" ]] && filePattern="-${fileCase}G $2"
 
-    ag $filePattern $grepcase "$1" 2>/dev/null
+    ag $filePattern $grepcase -- "$1" 2>/dev/null
 }
 
 function swap() {
@@ -857,7 +854,7 @@ function swap() {
 
     # check write perimssions:
     for i in "$TMPFILE" "$first_file" "$sec_file"; do
-        i="$(dirname "$i")"
+        i="$(dirname -- "$i")"
         if [[ ! -w "$i" ]]; then
             err "$i doesn't have write permission. abort." "$FUNCNAME"
             return 1
@@ -872,7 +869,7 @@ function swap() {
         return 1
     fi
 
-    if ! mv "$first_file" "$TMPFILE"; then
+    if ! mv -- "$first_file" "$TMPFILE"; then
         err "moving $first_file to $TMPFILE failed. abort." "$FUNCNAME"
         return 1
     fi
@@ -883,14 +880,14 @@ function swap() {
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
         err "$sec_file size is ${file_size}MB, but $(dirname "$first_file") has only ${space_left_on_target}MB free space left. abort." "$FUNCNAME"
         # undo:
-        mv "$TMPFILE" "$first_file"
+        mv -- "$TMPFILE" "$first_file"
         return 1
     fi
 
-    if ! mv "$sec_file" "$first_file"; then
+    if ! mv -- "$sec_file" "$first_file"; then
         err "moving $sec_file to $first_file failed. abort." "$FUNCNAME"
         # undo:
-        mv "$TMPFILE" "$first_file"
+        mv -- "$TMPFILE" "$first_file"
         return 1
     fi
 
@@ -900,12 +897,12 @@ function swap() {
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
         err "$first_file size is ${file_size}MB, but $(dirname "$sec_file") has only ${space_left_on_target}MB free space left. abort." "$FUNCNAME"
         # undo:
-        mv "$first_file" "$sec_file"
-        mv "$TMPFILE" "$first_file"
+        mv -- "$first_file" "$sec_file"
+        mv -- "$TMPFILE" "$first_file"
         return 1
     fi
 
-    if ! mv "$TMPFILE" "$sec_file"; then
+    if ! mv -- "$TMPFILE" "$sec_file"; then
         err "moving $first_file to $sec_file failed. abort." "$FUNCNAME"
         # undo:
         mv "$first_file" "$sec_file"
@@ -965,7 +962,7 @@ function lgrep() {
 function sanitize() {
     [[ -z "$@" ]] && { err "provide a file/dir name plz." "$FUNCNAME"; return 1; }
     [[ ! -e "$@" ]] && { err "\"$*\" does not exist." "$FUNCNAME"; return 1; }
-    chmod -R u=rwX,g=rX,o= "$@";
+    chmod -R u=rwX,g=rX,o= -- "$@";
 }
 
 function sanitize_ssh() {
@@ -977,7 +974,7 @@ function sanitize_ssh() {
         confirm  "\nthe node name you're about to $FUNCNAME does not contain string \"ssh\"; still continue? (y/n)" || return 1
     fi
 
-    chmod -R u=rwX,g=,o= "$dir";
+    chmod -R u=rwX,g=,o= -- "$dir";
 }
 
 function ssh_sanitize() { sanitize_ssh "$@"; } # alias for sanitize_ssh
@@ -1095,25 +1092,25 @@ function compress() {
 function pack() { compress $@; }
 
 # Creates an archive (*.tar.gz) from given directory.
-function maketar() { tar cvzf "${1%%/}.tar.gz"  "${1%%/}/"; }
+function maketar() { tar cvzf "${1%%/}.tar.gz" -- "${1%%/}/"; }
 
 # Creates an archive (*.tar.bz2) from given directory.
 # j - use bzip2 compression rather than z option  (heavier compression)
-function maketar2() { tar cvjf "${1%%/}.tar.bz2"  "${1%%/}/"; }
+function maketar2() { tar cvjf "${1%%/}.tar.bz2" -- "${1%%/}/"; }
 
 # Create a rar archive.
 # -m# - compresson lvl, 5 being max level, 0 just storage;
 function makerar() {
     check_progs_installed rar || return 1
 
-    rar a -r -rr10 -m4 "${1%%/}.rar"  "${1%%/}/"
+    rar a -r -rr10 -m4 -- "${1%%/}.rar"  "${1%%/}/"
 }
 
 # Create a ZIP archive of a file or folder.
 function makezip() {
     check_progs_installed zip || return 1
 
-    zip -r "${1%%/}.zip" "$1"
+    zip -r "${1%%/}.zip" -- "$1"
 }
 
 # Create a 7z archive of a file or folder.
@@ -1121,7 +1118,7 @@ function makezip() {
 function make7z() {
     check_progs_installed 7z || return 1
 
-    7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on "${1%%/}.7z" "$1"
+    7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on -- "${1%%/}.7z" "$1"
 }
 
 # alias for extract
@@ -1145,38 +1142,38 @@ function extract() {
 
     case "$file" in
         *.tar.bz2)   file_without_extension="${file_without_extension%.*}" # because two extensions
-                        mkdir "$file_without_extension" && tar xjf "$file" -C "$file_without_extension"
+                        mkdir -- "$file_without_extension" && tar xjf "$file" -C "$file_without_extension"
                         ;;
         *.tar.gz)    file_without_extension="${file_without_extension%.*}" # because two extensions
-                        mkdir "$file_without_extension" && tar xzf "$file" -C "$file_without_extension"
+                        mkdir -- "$file_without_extension" && tar xzf "$file" -C "$file_without_extension"
                         ;;
         *.tar.xz)    file_without_extension="${file_without_extension%.*}" # because two extensions
-                        mkdir "$file_without_extension" && tar xpvf "$file" -C "$file_without_extension"
+                        mkdir -- "$file_without_extension" && tar xpvf "$file" -C "$file_without_extension"
                         ;;
         *.bz2)       check_progs_installed bunzip2 || return 1
-                        bunzip2 -k "$file"
+                        bunzip2 -k -- "$file"
                         ;;
         *.rar)       check_progs_installed unrar || return 1
-                        mkdir "$file_without_extension" && unrar x "$file" "${file_without_extension}"/
+                        mkdir -- "$file_without_extension" && unrar x "$file" "${file_without_extension}"/
                         ;;
         *.gz)        check_progs_installed gunzip || return 1
-                        gunzip -kd "$file"
+                        gunzip -kd -- "$file"
                         ;;
-        *.tar)       mkdir "$file_without_extension" && tar xf "$file" -C "$file_without_extension"
+        *.tar)       mkdir -- "$file_without_extension" && tar xf "$file" -C "$file_without_extension"
                         ;;
-        *.tbz2)      mkdir "$file_without_extension" && tar xjf "$file" -C "$file_without_extension"
+        *.tbz2)      mkdir -- "$file_without_extension" && tar xjf "$file" -C "$file_without_extension"
                         ;;
-        *.tgz)       mkdir "$file_without_extension" && tar xzf "$file" -C "$file_without_extension"
+        *.tgz)       mkdir -- "$file_without_extension" && tar xzf "$file" -C "$file_without_extension"
                         ;;
         *.zip)       check_progs_installed unzip || return 1
-                        mkdir "$file_without_extension" && unzip "$file" -d "$file_without_extension"
+                        mkdir -- "$file_without_extension" && unzip -- "$file" -d "$file_without_extension"
                         ;;
         *.7z)        check_progs_installed 7z || return 1
-                        mkdir "$file_without_extension" && 7z x "-o$file_without_extension" "$file"
+                        mkdir -- "$file_without_extension" && 7z x "-o$file_without_extension" -- "$file"
                         ;;
                         # TODO .Z is unverified how and where they'd unpack:
         *.Z)         check_progs_installed uncompress || return 1
-                        uncompress "$file"  ;;
+                        uncompress -- "$file"  ;;
         *)           err "'$file' cannot be extracted; this filetype is not supported." "$FUNCNAME"
                         return 1
                         ;;
@@ -1209,7 +1206,7 @@ up() {
   d="$(echo "$d" | sed 's/^\///')"
   [[ -z "$d" ]] && d=".."
 
-  cd "$d"
+  cd -- "$d"
 }
 
 # clock - A bash clock that can run in your terminal window:
@@ -1227,7 +1224,7 @@ xmlformat() {
     [[ -z "$@" ]] && { echo -e "usage:   $FUNCNAME  <filename>"; return 1; }
     [[ -f "$@" && -r "$@" ]] || { err "provided file \"$*\" is not a regular file or is not readable. abort." "$FUNCNAME"; return 1; }
     check_progs_installed xmllint vim || return 1;
-    xmllint --format "$@" | vim  "+set foldlevel=99" -;
+    xmllint --format -- "$@" | vim  "+set foldlevel=99" -;
 }
 
 function xmlf() { xmlformat "$@"; } # alias for xmlformat;
@@ -1255,7 +1252,7 @@ function createUsbIso() {
         err "$device does not exist" "$FUNCNAME"
         echo -e "$usage"
         return 1;
-    elif ! ls /dev | grep "\b$cleaned_devicename\b" > /dev/null 2>&1 ;then
+    elif ! ls /dev | grep -- "\b$cleaned_devicename\b" > /dev/null 2>&1 ;then
         err "$cleaned_devicename does not exist in /dev" "$FUNCNAME"
         echo -e "$usage"
         return 1;
@@ -1268,14 +1265,14 @@ function createUsbIso() {
 
     #echo "please provide passwd for running fdisk -l to confirm the selected device is the right one:"
     #sudo fdisk -l $device
-    lsblk | grep --color=auto "$cleaned_devicename\|MOUNTPOINT"
+    lsblk | grep --color=auto -- "$cleaned_devicename\|MOUNTPOINT"
 
     confirm  "\nis selected device - $device - the correct one (be VERY sure!)? (y/n)" || return 1
 
     # find if device is mounted:
     #  TODO: what about partition mountpoints????
     #lsblk -o name,size,mountpoint /dev/sda
-    mountpoint="$(lsblk -o mountpoint "$device" | sed -n 3p)"
+    mountpoint="$(lsblk -o mountpoint -- "$device" | sed -n 3p)"
     if [[ -n "$mountpoint" ]]; then
         report "$device appears to be mounted at $mountpoint, trying to unmount..." "$FUNCNAME"
         if ! umount "$mountpoint"; then
@@ -1350,7 +1347,7 @@ function mkgit() {
 
     # use dir name if, no gitname specified
     [[ -n "$gitname" ]] || gitname="$dir"
-    [[ -d "$dir"     ]] || mkdir "$dir"
+    [[ -d "$dir"     ]] || mkdir -- "$dir"
 
     [[ -w "$dir" ]] || {
        err "we were unable to create dir $dir, or it simply doesn't have write permissions." "$FUNCNAME"
@@ -1400,7 +1397,7 @@ gito() {
             return 1
         fi
 
-        match="$(git ls-files | grep -Ei "$@")"
+        match="$(git ls-files | grep -Ei -- "$@")"
     else
         match="$(git ls-files)"
     fi
@@ -1516,7 +1513,7 @@ fo() {
     # note that test will resolve links to files and dirs as well;
     # TODO: instead of file, use xdg-open?
     if [[ -f "$match" ]]; then
-        filetype="$(file -iLb "$match")"
+        filetype="$(file -iLb -- "$match")"
 
         if echo "$filetype" | grep -q '^image/'; then
             "$image_viewer" "$match"
@@ -1587,7 +1584,7 @@ xclass() {
 ################
 goto() {
     [[ -z "$@" ]] && { err "node operand required" "$FUNCNAME"; return 1; }
-    [[ -d "$@" ]] && { cd "$@"; } || cd "$(dirname "$@")";
+    [[ -d "$@" ]] && { cd -- "$@"; } || cd "$(dirname -- "$@")";
 }
 
 # cd-s to directory by partial match; if multiple matches, opens input via dmenu. smartcase.
@@ -1606,7 +1603,7 @@ g() {
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
     #[[ "$input" == */* ]] && path="${input%%/*}"  # strip everything after last slash(included)
-    path="$(dirname "$input")"
+    path="$(dirname -- "$input")"
     [[ -d "$path" ]] || { err "something went wrong - dirname result \"$path\" is not a dir." "$FUNCNAME"; return 1; }
     pattern="${input##*/}" # strip everything before last slash (included)
     [[ -z "$pattern" ]] && { err "no search pattern provided" "$FUNCNAME"; return 1; }
@@ -1638,7 +1635,7 @@ g() {
 ####################
 cpf() {
     [[ -z "$@" ]] && { err "arguments for the cp command required." "$FUNCNAME"; return 1; }
-    cp "$@" && goto "$_";
+    cp -- "$@" && goto "$_";
 }
 
 ####################
@@ -1646,7 +1643,7 @@ cpf() {
 ####################
 mvf() {
     [[ -z "$@" ]] && { err "name of a node to be moved required." "$FUNCNAME"; return 1; }
-    mv "$@" && goto "$_";
+    mv -- "$@" && goto "$_";
 }
 
 ########################
@@ -1654,19 +1651,24 @@ mvf() {
 ########################
 function mkcd() {
     [[ -z "$@" ]] && { err "name of a directory to be created required." "$FUNCNAME"; return 1; }
-    mkdir -p "$@" && cd "$@"
+    mkdir -p -- "$@" && cd -- "$@"
 }
+
+
+function mkf() { mkcd "$@"; } # alias to mkcd
 
 #####################################
 ## Take screenshot of main monitor ##
 #####################################
 shot() {
-   check_progs_installed ffcast || return 1
+    local mon file
 
-   local mon=$@
-   local file="$HOME/shot-$(date +'%H:%M-%d-%m-%Y').png"
-   [[ -n "$mon" ]] || mon=0
-   ffcast -x $mon % scrot -g %wx%h+%x+%y "$file"
+    check_progs_installed ffcast || return 1
+
+    mon=$@
+    file="$HOME/shot-$(date +'%H:%M-%d-%m-%Y').png"
+    [[ -n "$mon" ]] || mon=0
+    ffcast -x $mon % scrot -g %wx%h+%x+%y -- "$file"
 }
 
 ###################
