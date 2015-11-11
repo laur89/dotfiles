@@ -191,7 +191,7 @@ function ffind() {
             #
             if [[ "$binary" -eq 1 ]]; then
                 # TODO: this doesnt work atm:
-                err "binary search in regex currently unimplemented" "$FUNCNAME"
+                err "executalbe binary file search in regex currently unimplemented" "$FUNCNAME"
                 return
                 # this doesn't work atm:
                 eval find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '.*'"$SRC"'.*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
@@ -200,7 +200,7 @@ function ffind() {
                 sleep 2
                 eval find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '.*'"$SRC"'.*' 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             fi
-        else # no regex
+        else  # no regex
             if [[ "$binary" -eq 1 ]]; then
                 find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             else
@@ -979,8 +979,8 @@ function sanitize_ssh() {
 
 function ssh_sanitize() { sanitize_ssh "$@"; } # alias for sanitize_ssh
 
-function my_ip() { # Get internal & external ip addies:
-    local connected_interface interfaces if_dir i interface
+function my_ip() {  # Get internal & external ip addies:
+    local connected_interface interfaces if_dir interface external_ip
 
     if_dir="/sys/class/net"
 
@@ -991,25 +991,13 @@ function my_ip() { # Get internal & external ip addies:
 
         ip="$(/sbin/ifconfig "$interface" | awk '/inet / { print $2 } ' | sed -e s/addr://)"
         [[ -z "$ip" && "$__REMOTE_SSH" -eq 1 ]] && return  # probaby the interface was not found
-
         echo -e "${ip:-"Not connected"}\t@ $interface"
     }
 
-    function __get_external_ip() {
-        local ip timeout
-        timeout=1  # in sec
-
-        command -v dig > /dev/null 2>&1 || {  # don't use check_progs_installed because of its verbosity
-            err "can't look up external ip - dig (dns lookup util) is not installed" "$FUNCNAME"
-            return 1
-        }
-
-        ip="$(dig +short +time=$timeout myip.opendns.com @resolver1.opendns.com 2>/dev/null)"
-        echo -e "external:\t${ip:-"Not connected to the internet."}"
-    }
-
     connected_interface="$(find_connected_if)"  # note this returns only on own machines, not on remotes.
-    __get_external_ip
+    external_ip="$(get_external_ip)" && {
+        echo -e "external:\t${external_ip:-"Not connected to the internet."}"
+    }
 
     command -v /sbin/ifconfig > /dev/null 2>&1 || {  # don't use check_progs_installed because of its verbosity
         err "can't check internal ip as /sbin/ifconfig appears not to be installed." "$FUNCNAME"
@@ -1360,7 +1348,7 @@ function mkgit() {
        return 1
     }
 
-    cd "$dir"
+    cd -- "$dir"
     git init || { err "bad return from git init" "$FUNCNAME"; return 1; }
     touch README; git add README
     git commit -a -m 'inital setup - automated'
@@ -1411,7 +1399,7 @@ gito() {
     match="$gitdir/$match" # convert to absolute
     [[ -f "$match" ]] || { err "\"$match\" is not a regular file." "$FUNCNAME"; return 1; }
 
-    $editor "$match"
+    $editor -- "$match"
 }
 
 # ag looks for whole file path!
@@ -1482,6 +1470,7 @@ fo() {
         check_progs_installed find ffind "$PAGER" "$file_mngr" "$editor" "$image_viewer" "$video_player" "$pdf_viewer" dmenu file || return 1
     fi
 
+    # filesearch begins:
     match="$(ffind "$@")"
     [[ "$?" -eq 0 ]] || return 1
 
@@ -1498,6 +1487,7 @@ fo() {
         fi
     }
     [[ -z "$match" ]] && return 1
+    # /filesearch
 
     # parse special modes, if used:
     if [[ -n "$special_mode" ]]; then
@@ -1515,6 +1505,7 @@ fo() {
     if [[ -f "$match" ]]; then
         filetype="$(file -iLb -- "$match")"
 
+        # TODO: replace with case block:
         if echo "$filetype" | grep -q '^image/'; then
             "$image_viewer" "$match"
         elif echo "$filetype" | grep -q '^application/octet-stream'; then
@@ -1546,22 +1537,35 @@ fo() {
     fi
 }
 
+function sethometime() { setestoniatime; }  # home is where you make it;
+
 function setromaniatime() {
-    timedatectl set-timezone Europe/Bucharest
+    __settz Europe/Bucharest
 }
 
-function sethometime() {
-    timedatectl set-timezone Europe/Tallinn
+function setestoniatime() {
+    __settz Europe/Tallinn
 }
-
-function setestoniatime() { sethometime; }
 
 function setgibtime() {
-    timedatectl set-timezone Europe/Gibraltar
+    __settz Europe/Gibraltar
 }
 
 function setspaintime() {
-    timedatectl set-timezone Europe/Madrid
+    __settz Europe/Madrid
+}
+
+function __settz() {
+    local tz
+
+    tz="$*"
+
+    check_progs_installed timedatectl || return 1
+    [[ -z "$tz" ]] && { err "provide a timezone to switch to (e.g. Europe/Madrid)." "$FUNCNAME"; return 1; }
+    [[ "$tz" != */* ]] && { err "invalid timezone format; has to be in a format like Europe/Madrid." "$FUNCNAME"; return 1; }
+
+    timedatectl set-timezone "$tz"
+    return $?
 }
 
 function killmenao() {
