@@ -1505,30 +1505,38 @@ fo() {
     if [[ -f "$match" ]]; then
         filetype="$(file -iLb -- "$match")"
 
-        # TODO: replace with case block:
-        if echo "$filetype" | grep -q '^image/'; then
-            "$image_viewer" "$match"
-        elif echo "$filetype" | grep -q '^application/octet-stream'; then
-            # should be the logs on server
-            "$PAGER" "$match"
-        elif echo "$filetype" | grep -q '^application/xml'; then
-            xmlformat "$match"
-        elif echo "$filetype" | grep -q '^video/'; then
-            "$video_player" "$match"
-        elif echo "$filetype" | grep -q '^text/'; then
-            "$editor" "$match"
-        elif echo "$filetype" | grep -q '^application/pdf'; then
-            "$pdf_viewer" "$match"
-        elif echo "$filetype" | grep -q '^application/x-executable; charset=binary'; then
-            confirm "$match is executable. want to launch it from here?" || return
-            report "launching ${match}..." "$FUNCNAME"
-            "$match"
-        #elif echo "$filetype" | grep -q '^inode/directory;'; then
-            #"$file_mngr" "$match"
-        else
-            err "dunno what to open this type of file with:\n\t$filetype" "$FUNCNAME"
-            return 1
-        fi
+        case "$filetype" in
+            image/*)
+                "$image_viewer" "$match"
+                ;;
+            application/octet-stream*)
+                # should be the logs on server
+                "$PAGER" "$match"
+                ;;
+            application/xml*)
+                xmlformat "$match"
+                ;;
+            video/*)
+                "$video_player" "$match"
+                ;;
+            text/*)
+                "$editor" "$match"
+                ;;
+            application/pdf*)
+                "$pdf_viewer" "$match"
+                ;;
+            'application/x-executable; charset=binary'*)
+                confirm "$match is executable. want to launch it from here?" || return
+                report "launching ${match}..." "$FUNCNAME"
+                "$match"
+                ;;
+            #'inode/directory;'*)
+                #"$file_mngr" "$match"
+            *)
+                err "dunno what to open this type of file with:\n\t$filetype" "$FUNCNAME"
+                return 1
+                ;;
+        esac
     elif [[ -d "$match" ]]; then
         "$file_mngr" "$match"
     else
