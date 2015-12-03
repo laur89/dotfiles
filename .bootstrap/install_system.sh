@@ -17,7 +17,7 @@ MODE=
 BASE_DATA_DIR="/data"
 BASE_DEPS_LOC="$BASE_DATA_DIR/progs/deps"
 BASE_HOMESICK_REPOS_LOC="$BASE_DEPS_LOC/homesick/repos"
-PRIVATE_CASTLE=  # installation specific private castle location (eg for work or personal)
+PRIVATE_CASTLE=  # installation specific private castle location (eg for 'work' or 'personal')
 COMMON_DOTFILES="$BASE_HOMESICK_REPOS_LOC/dotfiles"
 
 declare -A COLORS
@@ -42,9 +42,10 @@ function validate() {
     fi
 
     # verify we have our key(s) set up and available:
-    if isSshSetup; then
+    if is_ssh_setup; then
         _sanitize_ssh
 
+        # TODO: what if ssh-agent is not running?
         if ! ssh-add -l > /dev/null 2>&1; then
             report "ssh keys already there, running ssh-add..."
             execute "ssh-add"
@@ -220,8 +221,9 @@ function clone_or_pull_castle() {
         execute "$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick link $castle"
 
         # just in case verify whether our ssh issue is solved after linking:
-        if [[ "$IS_SSH_SETUP" -eq 0 ]] && isSshSetup; then
+        if [[ "$IS_SSH_SETUP" -eq 0 ]] && is_ssh_setup; then
             _sanitize_ssh
+             # TODO: is ssh-agent running?
             report "looks like ssh keys are there now, adding with ssh-add..."
             execute "ssh-add"
             IS_SSH_SETUP=1
@@ -235,13 +237,14 @@ function clone_or_pull_castle() {
             execute "$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick clone https://${hub}/$user/${castle}.git"
 
             # just in case verify whether our ssh issue got solved after cloning & subsequent linking:
-            if isSshSetup; then
+            if is_ssh_setup; then
                 # change just cloned repo remote from https to ssh:
                 execute "pushd $BASE_HOMESICK_REPOS_LOC/$castle"
                 execute "git remote set-url origin git@${hub}:$user/${castle}.git"
                 execute "popd"
 
                 _sanitize_ssh
+                # TODO: is ssh-agent running?
                 report "looks like ssh keys are there now, adding with ssh-add..."
                 execute "ssh-add"
                 IS_SSH_SETUP=1
@@ -269,19 +272,19 @@ function fetch_castles() {
 }
 
 
-function verifyKeysOk() {
+function verify_ssh_key() {
 
     if [[ "$IS_SSH_SETUP" -ne 1 ]]; then
         err "expected ssh keys to be there after cloning repo(s), but weren't."
 
         if confirm "do you wish to generate set of ssh keys? (answering no will abort the installation)"; then
-            generateKeys
+            generate_key
         else
             err "abort."
             exit 1
         fi
 
-        if isSshSetup; then
+        if is_ssh_setup; then
             IS_SSH_SETUP=1
         else
             err "ssh key missing at ~/.ssh/id_rsa. abort"
@@ -295,16 +298,15 @@ function setup_homesick() {
 
     install_homesick
     fetch_castles
-    verifyKeysOk
 
-    # just in case set homeshick remote:
+    # just in case set homeshick remote to ssh (assuming keys are now ok).
     execute "pushd $BASE_HOMESICK_REPOS_LOC/homeshick"
     execute "git remote set-url origin git@$github.com:andsens/homeshick.git"
     execute "popd"
 }
 
 
-# setup system config files (the ones not living under ~)
+# setup system config files (the ones not living under $HOME)
 function setup_config_files() {
 
     setup_apt
@@ -317,6 +319,7 @@ function setup() {
 
     check_dependencies
     setup_homesick
+    verify_ssh_key
     install_deps
     execute "source $HOME/.bashrc"  # so we get our functions and env vars after dotfiles are pulled in
     setup_dirs  # has to come after .bashrc sourcing so the env vars are in place
@@ -324,17 +327,12 @@ function setup() {
 }
 
 
-function pre_install_cleanup() {
-
-    true
-}
-
 
 function install_progs() {
 
-    pre_install_cleanup
     execute "sudo aptitude update"
     install_own_builds
+    install_from_repo
 }
 
 
@@ -352,8 +350,17 @@ function install_vim() {
 }
 
 
+function install_from_repo() {
+
+    # NOTE: these meta-packages only required, if using non-stable debian:
+    execute "aptitude install linux-image-amd64"
+    execute "aptitude install linux-headers-amd64"
+}
+
+
 ###################
 # UTILS (contains no setup-related logic)
+###################
 
 function confirm() {
     local msg yno
@@ -410,7 +417,7 @@ function _sanitize_ssh() {
 }
 
 
-function isSshSetup() {
+function is_ssh_setup() {
     if [[ -f "$HOME/.ssh/id_rsa" ]]; then
         return 0
     fi
@@ -432,7 +439,7 @@ function check_connection() {
 }
 
 
-function generateKeys() {
+function generate_key() {
     local mail
 
     report "enter your mail:"
@@ -442,7 +449,7 @@ function generateKeys() {
     execute "ssh-keygen -t rsa -b 4096 -C \"$mail\""
 
     report "adding generated key to the ssh-agent..."
-    execute "ssh-add $HOME/.ssh/id_rsa"
+    execute "ssh-add $HOME/.ssh/id_rsa"  # TODO: what if ssh-agent is not running???
 }
 
 
