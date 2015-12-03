@@ -112,7 +112,7 @@ fi
 # Check whether logfolder at /var/log and /data/ dir are existing:
 for i in $logdir /data/; do
     if [[ ! -w "$i" ]]; then
-        err_display  "$logdir is not created or no write permissions granted. Do it!" "$SELF" &
+        err_display  "$i is not created or no write permissions granted. Do it!" "$SELF" &
     fi
 done &
 
@@ -129,3 +129,5 @@ allowed_size="20"   # Max size in MB
 check_max_allowed_size "$logdir" "$allowed_size"
 
 enableSmart &
+
+unset i

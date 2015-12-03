@@ -326,8 +326,7 @@ function setup() {
 
 function pre_install_cleanup() {
 
-    report "removing default vim components..."
-    execute "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"
+    true
 }
 
 
@@ -341,14 +340,20 @@ function install_progs() {
 
 function install_own_builds() {
 
-    true
-    # vim
+    install_vim
     # spacefm?
 }
 
 
+function install_vim() {
+
+    report "removing default vim components..."
+    execute "sudo apt-get --qq remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"
+}
+
+
 ###################
-# UTILS (contain no setup-related logic)
+# UTILS (contains no setup-related logic)
 
 function confirm() {
     local msg yno

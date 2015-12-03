@@ -1525,6 +1525,9 @@ fo() {
             application/pdf*)
                 "$pdf_viewer" "$match"
                 ;;
+            application/x-elc*) # TODO: what is it exactly?
+                "$editor" "$match"
+                ;;
             'application/x-executable; charset=binary'*)
                 confirm "$match is executable. want to launch it from here?" || return
                 report "launching ${match}..." "$FUNCNAME"
