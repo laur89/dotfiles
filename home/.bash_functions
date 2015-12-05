@@ -1432,7 +1432,7 @@ ago() {
 # mnemonic: go go
 gg() {
     local opts default_depth
-    default_depth="m7"
+    default_depth="m10"
 
     if [[ "$1" == -* ]]; then
         [[ "$1" != *m* ]] && opts="${1}$default_depth" || opts="${1}"
