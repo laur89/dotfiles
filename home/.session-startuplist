@@ -116,7 +116,7 @@ if is_laptop; then
             /data/progs/custom_builds/synergy/bin/synergyc -f --no-tray --debug INFO --name work-laptop 10.180.18.149:24800 &
         else
             # TODO personal laptop
-            echo "todo"
+            echo "TODO"
         fi
 
         setxkbmap ee & # otherwise using server's keyboard defaults to us map;

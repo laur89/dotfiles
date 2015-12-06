@@ -17,7 +17,8 @@ if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
 fi
 # =====================================================================
 
-# find files or dirs:
+# gnu find wrapper.
+# find files or dirs.
 # TODO: refactor the massive spaghetti.
 function ffind() {
     local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter exact binary follow_links
@@ -1171,12 +1172,30 @@ function extract() {
     #echo -e "extracted $file contents into $file_without_extension"
 }
 
+# to check included fonts: xlsfonts | grep fontname
+# list all installed fonts: fclist
 fontreset() {
-    fc-cache -fv
+    local dir
+
+    xset +fp ~/.fonts
     mkfontscale ~/.fonts
     mkfontdir ~/.fonts
-    xset +fp ~/.fonts
+    #xset fp rehash
+
+    pushd ~/.fonts
+    for dir in * ; do
+        if [[ -d "$dir" ]]; then
+            pushd "$dir"
+            xset +fp "$PWD"
+            mkfontscale
+            mkfontdir
+            popd
+        fi
+    done
+
     xset fp rehash
+    fc-cache -fv
+    popd
 }
 
 # alias for fontreset:
@@ -1644,6 +1663,13 @@ g() {
 
     cd "$matches"
 }
+
+
+# display available APs and their basic info
+function wifi_list() {
+    nmcli device wifi list
+}
+
 
 ####################
 ## Copy && Follow ##

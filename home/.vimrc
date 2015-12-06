@@ -286,10 +286,10 @@ set nocompatible " Must be the first line
             set t_Co=256
         """ }}}
 
-        """ Tab colors   (overwritten by lightline?) {{{
-                hi TabLineFill ctermfg=NONE ctermbg=233
-                hi TabLine ctermfg=241 ctermbg=233
-                hi TabLineSel ctermfg=250 ctermbg=233
+        """ Tab colors   (overwritten by lightline?) {{{ "currently disabled because of airline tab extension
+                "hi TabLineFill ctermfg=NONE ctermbg=233
+                "hi TabLine ctermfg=241 ctermbg=233
+                "hi TabLineSel ctermfg=250 ctermbg=233
         """ }}}
 
         """ Custom highlighting, where NONE uses terminal background {{{
@@ -803,7 +803,7 @@ set nocompatible " Must be the first line
     "nmap <leader>p <Plug>yankstack_substitute_older_paste
     "nmap <leader>P <Plug>yankstack_substitute_newer_paste
 
-    " airline - automatically populate g:airline_symbols dictionary w/
+    " vim-airline - automatically populate g:airline_symbols dictionary w/
     " powerline symbols:
     let g:airline_powerline_fonts = 1
     let g:airline_theme='dark'
@@ -811,6 +811,7 @@ set nocompatible " Must be the first line
     "let g:airline#extensions#tmuxline#enabled = 1
     let g:airline#extensions#bufferline#enabled = 0
     "let g:airline#extensions#bufferline#overwrite_variables = 1
+    let g:airline#extensions#tabline#enabled = 1
 
     " bufferline:
     let g:bufferline_active_buffer_left = '['
@@ -959,6 +960,8 @@ set nocompatible " Must be the first line
     set sessionoptions-=help
     " by default, don't ask to save sessions:
     let g:session_autosave = 'no'
+    " session data store:
+    let g:session_directory = '~/.vim/sessions'  "default value; enforcing just in case
 
     " rainbow_parentheses:
     "let g:rbpt_colorpairs = [
