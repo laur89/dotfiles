@@ -1295,6 +1295,90 @@ function should_build_if_avail_in_repo() {
 }
 
 
+function choose_step() {
+    report "what do you want to do?"
+
+    while true; do
+        select_items "full-install single-task" 1
+
+        if [[ -z "$__SELECTED_ITEMS" ]]; then
+            confirm "no items were selected; exit?" && break
+        else
+            break
+        fi
+    done
+
+    case "$__SELECTED_ITEMS" in
+        "full-install" ) full_install ;;
+        "single-task" )  choose ;;
+    esac
+}
+
+
+# basically offers steps from setup() & install_progs():
+function choose() {
+    local steps
+
+    steps=(
+        setup_homesick
+        setup_config_files
+        install_deps
+        setup_dirs
+        setup_fonts
+        upgrade_kernel
+        install_from_repo
+        choose_prog_to_build
+    )
+
+    report "what do you want to do?"
+
+    while true; do
+        select_items "${steps[*]}" 1
+
+        if [[ -z "$__SELECTED_ITEMS" ]]; then
+            confirm "no items were selected; exit?" && break || continue
+        fi
+
+        $__SELECTED_ITEMS
+    done
+}
+
+
+# offerst steps from install_own_builds():
+function choose_prog_to_build() {
+    local steps
+
+    steps=(
+        install_vim
+        install_YCM
+        install_keepassx
+        install_copyq
+        install_synergy
+        install_dwm
+        install_oracle_jdk
+        install_skype
+    )
+
+    report "what do you want to build/install?"
+
+    while true; do
+        select_items "${steps[*]}" 1
+
+        if [[ -z "$__SELECTED_ITEMS" ]]; then
+            confirm "no items were selected; exit?" && break || continue
+        fi
+
+        $__SELECTED_ITEMS
+    done
+}
+
+
+function full_install() {
+    setup
+    install_progs
+}
+
+
 ###################
 # UTILS (contains no setup-related logic)
 ###################
@@ -1560,89 +1644,6 @@ function is_work() {
     [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" || "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]] \
         && return 0 \
         || return 1
-}
-
-
-function choose_step() {
-    report "what do you want to do?"
-
-    while true; do
-        select_items "full-install single-task" 1
-
-        if [[ -z "$__SELECTED_ITEMS" ]]; then
-            confirm "no items were selected; exit?" && break
-        else
-            break
-        fi
-    done
-
-    case "$__SELECTED_ITEMS" in
-        "full-install" ) full_install ;;
-        "single-task" )  choose ;;
-    esac
-}
-
-
-# basically offers steps from setup() & install_progs():
-function choose() {
-    local steps
-
-    steps=( \
-        setup_homesick \
-        setup_config_files \
-        install_deps \
-        setup_dirs \
-        setup_fonts \
-        upgrade_kernel \
-        install_from_repo \
-        choose_prog_to_build \
-    )
-
-    report "what do you want to do?"
-
-    while true; do
-        select_items "${steps[*]}" 1
-
-        if [[ -z "$__SELECTED_ITEMS" ]]; then
-            confirm "no items were selected; exit?" && break || continue
-        fi
-
-        $__SELECTED_ITEMS
-    done
-}
-
-
-# offerst steps from install_own_builds():
-function choose_prog_to_build() {
-    local steps
-
-    steps=( \
-        install_vim
-        install_keepassx
-        install_copyq
-        install_synergy
-        install_dwm
-        install_oracle_jdk
-        install_skype
-    )
-
-    report "what do you want to build/install?"
-
-    while true; do
-        select_items "${steps[*]}" 1
-
-        if [[ -z "$__SELECTED_ITEMS" ]]; then
-            confirm "no items were selected; exit?" && break || continue
-        fi
-
-        $__SELECTED_ITEMS
-    done
-}
-
-
-function full_install() {
-    setup
-    install_progs
 }
 
 
