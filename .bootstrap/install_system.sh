@@ -21,8 +21,8 @@ COPYQ_REPO_LOC="https://github.com/hluk/CopyQ.git"           # copyq - awesome c
 SYNERGY_REPO_LOC="https://github.com/synergy/synergy.git"    # synergy - share keyboard&mouse between computers on same LAN
 ORACLE_JDK_LOC="http://download.oracle.com/otn-pub/java/jdk/8u65-b17/jdk-8u65-linux-x64.tar.gz"
 SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick
-                                            # note that contents of that file are somewhat important, as some
-                                            # (script-related) configuration lies within.
+                                        # note that contents of that file are somewhat important, as some
+                                        # (script-related) configuration lies within.
 
 #------------------------
 #--- Global Variables ---
@@ -31,16 +31,20 @@ IS_SSH_SETUP=0  # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=
 MODE=
 PACKAGES_FAILED_TO_INSTALL=()  # list of all packages that failed to install during the setup
+LOGGING_LVL=0                  # execution logging level (full install logs everything);
+                               # don't set log level too soon; don't want to persist bullshit.
+EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%m-%y--%R).log" \
+        || EXECUTION_LOG="$HOME/installation-exe.log"
 
 #------------------------
 #--- Global Constants ---
 #------------------------
 BASE_DATA_DIR="/data"
-BASE_DEPS_LOC="$BASE_DATA_DIR/progs/deps"
+BASE_DEPS_LOC="$BASE_DATA_DIR/progs/deps"  # hosting stuff like homeshick, bash-git-prompt...
 BASE_BUILDS_DIR="$BASE_DATA_DIR/progs/custom_builds"
 BASE_HOMESICK_REPOS_LOC="$BASE_DEPS_LOC/homesick/repos"
-PRIVATE_CASTLE=''  # installation specific private castle location (eg for 'work' or 'personal')
 COMMON_DOTFILES="$BASE_HOMESICK_REPOS_LOC/dotfiles"
+PRIVATE_CASTLE=''  # installation specific private castle location (eg for 'work' or 'personal')
 
 SELF="${0##*/}"
 
@@ -63,8 +67,7 @@ function print_usage() {
 }
 
 
-# TODO: rename; 'validate' doesn't quite cut it
-function validate() {
+function validate_and_init() {
 
     check_connection || { err "no internet connection. abort."; exit 1; }
 
@@ -530,12 +533,12 @@ function swap_caps_lock_and_esc() {
 
 function install_progs() {
 
-    execute "sudo apt-get update"
-    upgrade_kernel
     install_from_repo
     install_own_builds
-    # TODO:
-    #install_webdev
+
+    if confirm "do you want to install our webdev lot?"; then
+        install_webdev
+    fi
 }
 
 
@@ -549,9 +552,10 @@ function upgrade_kernel() {
     # NOTE: these meta-packages only required, if using non-stable debian;
     # they keep the kernel and headers in sync:
     if is_64_bit; then
-        install_block " \
-            linux-image-amd64 \
-            linux-headers-amd64 \
+        report "first installing kernel meta-packages..."
+        install_block "
+            linux-image-amd64
+            linux-headers-amd64
         "
     else
         report "verified we're not running 64bit system. make sure it's correct. skipping kernel meta-package installation."
@@ -686,8 +690,8 @@ function install_skype() {
 function install_webdev() {
     is_server && { report "we're server, skipping webdev stack installation."; return; }
 
-    install_block "\
-        nodejs \
+    install_block "
+        nodejs
     "
 
     execute "sudo npm install -g jshint"
@@ -996,7 +1000,7 @@ function install_YCM() {
         execute "wget $CLANG_LLVM_LOC" || { err "wgetting $CLANG_LLVM_LOC failed."; return 1; }
         extract "$tarball" || { err "extracting $tarball failed."; return 1; }
         dir="$(find -mindepth 1 -maxdepth 1 -type d)"
-        [[ -d "$dir" ]] || { err "couldn find unpacked directory"; return 1; }
+        [[ -d "$dir" ]] || { err "couldn find unpacked clang directory"; return 1; }
         [[ -d "$libclang_root" ]] && execute "rm -rf -- $libclang_root"
         execute "mv $dir $libclang_root"
 
@@ -1030,7 +1034,7 @@ function install_YCM() {
 
     execute "mkdir $ycm_build_root"
     execute "pushd $ycm_build_root"
-    execute "cmake -G \"Unix Makefiles\" \
+    execute "cmake -G 'Unix Makefiles' \
         -DPATH_TO_LLVM_ROOT=$libclang_root \
         . \
         ~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp \
@@ -1218,11 +1222,27 @@ function install_from_repo() {
         fi
     fi
 
+    install_nvidia
+
     if is_work; then
         install_block " \
             samba-common-bin \
             davmail \
         "
+    fi
+}
+
+
+# offers to install nvidia drivers, if NVIDIA card is detected
+function install_nvidia() {
+
+    if sudo lshw | grep -iA 5 'display' | grep -iq 'vendor.*NVIDIA'; then
+        if confirm "we seem to have NVIDIA card; want to install nvidia drivers?"; then
+            report "installing NVIDIA drivers..."
+            install_block "nvidia-driver nvidia-xconfig"
+            execute "sudo nvidia-xconfig"
+            return $?
+        fi
     fi
 }
 
@@ -1256,7 +1276,7 @@ function install_block() {
                             break
                         fi
                     else
-                        report "you didn't de-select any packages; will re-try anyways..."
+                        report "you didn't de-select any packages; will re-try installing anyways..."
                         sleep 3
                         break
                     fi
@@ -1266,7 +1286,7 @@ function install_block() {
 
                 report "all packages from this block were skipped. this will be reported"
                 sleep 5
-                break
+                return 1
             fi
         }
 
@@ -1317,9 +1337,18 @@ function choose_step() {
 
 # basically offers steps from setup() & install_progs():
 function choose_single_task() {
-    local steps
+    local choices
 
-    steps=(
+    LOGGING_LVL=1
+
+    # need to assume .bash_env_vars are there:
+    if [[ -f "$SHELL_ENVS" ]]; then
+        execute "source $SHELL_ENVS"
+    else
+        err "expected \"$SHELL_ENVS\" to exist; note that some configuration might be missing."
+    fi
+
+    choices=(
         generate_key
         setup_homesick
         setup_config_files
@@ -1327,6 +1356,8 @@ function choose_single_task() {
         setup_dirs
         setup_fonts
         upgrade_kernel
+        install_nvidia
+        install_webdev
         install_from_repo
         __choose_prog_to_build
     )
@@ -1334,7 +1365,7 @@ function choose_single_task() {
     report "what do you want to do?"
 
     while true; do
-        select_items "${steps[*]}" 1
+        select_items "${choices[*]}" 1
 
         if [[ -z "$__SELECTED_ITEMS" ]]; then
             confirm "no items were selected; exit?" && break || continue
@@ -1348,9 +1379,9 @@ function choose_single_task() {
 # meta-function;
 # offerst steps from install_own_builds():
 function __choose_prog_to_build() {
-    local steps
+    local choices
 
-    steps=(
+    choices=(
         install_vim
         install_YCM
         install_keepassx
@@ -1364,7 +1395,7 @@ function __choose_prog_to_build() {
     report "what do you want to build/install?"
 
     while true; do
-        select_items "${steps[*]}" 1
+        select_items "${choices[*]}" 1
 
         if [[ -z "$__SELECTED_ITEMS" ]]; then
             confirm "no items were selected; exit?" && break || continue
@@ -1376,7 +1407,13 @@ function __choose_prog_to_build() {
 
 
 function full_install() {
+
+    LOGGING_LVL=10
+
     setup
+
+    execute "sudo apt-get update"
+    upgrade_kernel
     install_progs
 }
 
@@ -1415,6 +1452,7 @@ function err() {
     msg="$1"
     caller_name="$2" # OPTIONAL
 
+    [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "    ERR LOG: $msg" >> "$EXECUTION_LOG"
     echo -e "${COLORS[RED]}${caller_name:-"error"}:${COLORS[OFF]} ${msg:-"Abort"}" 1>&2
 }
 
@@ -1425,6 +1463,7 @@ function report() {
     msg="$1"
     caller_name="$2" # OPTIONAL
 
+    [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "OK LOG: $msg" >> "$EXECUTION_LOG"
     echo -e "${COLORS[YELLOW]}${caller_name:-"INFO"}:${COLORS[OFF]} ${msg:-"--info lvl message placeholder--"}"
 }
 
@@ -1437,6 +1476,7 @@ function _sanitize_ssh() {
     fi
 
     execute "chmod -R u=rwX,g=,o= -- $HOME/.ssh"
+    return $?
 }
 
 
@@ -1468,7 +1508,7 @@ function generate_key() {
     fi
 
     report "generating ssh key..."
-    report "enter your mail:"
+    report "enter your mail (eg \"username@server.com\"):"
     read mail
 
     report "(if asked for location, leave it to default (ie ~/.ssh/id_rsa))"
@@ -1482,10 +1522,12 @@ function execute() {
     cmd="$1"
     exit_code="$2"  # only pass exit code to exit with if script should abort on unsuccessful execution
 
-    $cmd
+    eval "$cmd"
     exit_sig=$?
 
     if [[ "$exit_sig" -ne 0 ]]; then
+        [[ "$LOGGING_LVL" -ge 1 ]] && echo -e "    ERR CMD: \"$cmd\" (exited with code $exit_sig)" >> "$EXECUTION_LOG"
+
         if [[ -n "$exit_code" ]]; then
             err "executing \"$cmd\" returned $exit_sig. abort."
             exit "$exit_code"
@@ -1494,6 +1536,7 @@ function execute() {
         fi
     fi
 
+    [[ "$LOGGING_LVL" -ge 10 ]] && echo "OK CMD: $cmd" >> "$EXECUTION_LOG"
     return 0
 }
 
@@ -1669,5 +1712,10 @@ clear
 while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 check_dependencies
-validate
+validate_and_init
 choose_step
+
+if [[ -e "$EXECUTION_LOG" ]]; then
+    report "\n\n\texecution log can be found at \"$EXECUTION_LOG\"\n"
+fi
+
