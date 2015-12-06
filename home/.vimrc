@@ -34,7 +34,7 @@ set nocompatible " Must be the first line
     " consider NeoBundle
     Plugin 'gmarik/Vundle.vim'
 
-    """ Local plugins (and only plugins in this file!) {{{{
+    """ Local plugins (and only plugins in this file!) {{{
         if filereadable($HOME."/.vimrc.plugins")
             source $HOME/.vimrc.plugins
         endif
