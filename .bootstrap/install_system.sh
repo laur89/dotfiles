@@ -58,7 +58,8 @@ COLORS=( \
 function print_usage() {
 
     printf "${SELF}:  install system.
-        usage: $SELF  work|personal"
+        usage: $SELF  work|personal
+    "
 }
 
 
@@ -466,9 +467,28 @@ function setup_config_files() {
     setup_global_env_vars
     setup_netrc_perms  # TODO: does this really belong under setup_config_files()?
     swap_caps_lock_and_esc
+    setup_SSID_checker
+}
 
-    # TODO:
-    #- NW_SSID_checker_wrapper script liiguta /etc/NetworkManager/dispatcher.d/ alla;
+
+# network manager wrapper script;
+# writes info to /tmp and manages locking logic for laptops (security, kinda)
+function setup_SSID_checker() {
+    local wrapper_loc  wrapper_dest
+
+    wrapper_loc="/data/dev/scripts/network_manager_SSID_checker_wrapper.sh"
+    wrapper_dest="/etc/NetworkManager/dispatcher.d"
+
+    if ! [[ -f "$wrapper_loc" ]]; then
+        err "$wrapper_loc does not exist; SSID checker won't be installed"
+        return 1
+    elif ! [[ -d "$wrapper_dest" ]]; then
+        err "$wrapper_dest dir does not exist; SSID checker won't be installed"
+        return 1
+    fi
+
+    execute "sudo cp $wrapper_loc $wrapper_dest/"
+    return $?
 }
 
 
@@ -477,6 +497,7 @@ function setup() {
     setup_homesick
     verify_ssh_key
     execute "source $SHELL_ENVS"  # so we get our env vars after dotfiles are pulled in
+
     setup_config_files
     install_deps
     setup_dirs  # has to come after .bash_env_vars sourcing so the env vars are in place
@@ -592,7 +613,8 @@ function install_oracle_jdk() {
 
     tarball="$(basename $ORACLE_JDK_LOC)"
     extract "$tarball" || { err "extracting $tarball failed."; return 1; }
-    dir="$(find -mindepth 1 -maxdepth 1 -type d)" || { err "couldn find unpacked jdk directory"; return 1; }
+    dir="$(find -mindepth 1 -maxdepth 1 -type d)"
+    [[ -d "$dir" ]] || { err "couldn find unpacked jdk directory"; return 1; }
 
     execute "sudo mkdir $java_installation_dir"
     report "installing fetched JDK to $java_installation_dir"
@@ -833,19 +855,22 @@ function install_from_deb() {
     name="$1"
 
     deb_file="$(find $BASE_BUILDS_DIR -type f -iname "*$name*.deb")"
-    [[ "$?" -eq 0 ]] || { report "didn't find any pre-build deb packages for $name; trying to build..."; return 1; }
+    [[ "$?" -eq 0 && -n "$deb_file" ]] || { report "didn't find any pre-build deb packages for $name; trying to build..."; return 1; }
     count="$(echo "$deb_file" | wc -l)"
 
     [[ "$count" -gt 1 ]] && {
         report "found $count potential deb packages. select one, or select none to build instead:"
 
-        select_items "$deb_file" 1
-        if [[ -n "$__SELECTED_ITEMS" ]]; then
-            deb_file="$__SELECTED_ITEMS"
-        else
-            report "no files selected, building..."
-            return 1
-        fi
+        while true; do
+            select_items "$deb_file" 1
+
+            if [[ -n "$__SELECTED_ITEMS" ]]; then
+                deb_file="$__SELECTED_ITEMS"
+                break
+            else
+                confirm "no files selected; skip and build instead?" && { report "ok, won't install from .deb"; return 1; }
+            fi
+        done
     }
 
     execute "sudo dpkg -i $deb_file"
@@ -970,7 +995,8 @@ function install_YCM() {
         report "fetching $CLANG_LLVM_LOC"
         execute "wget $CLANG_LLVM_LOC" || { err "wgetting $CLANG_LLVM_LOC failed."; return 1; }
         extract "$tarball" || { err "extracting $tarball failed."; return 1; }
-        dir="$(find -mindepth 1 -maxdepth 1 -type d)" || { err "couldn find unpacked directory"; return 1; }
+        dir="$(find -mindepth 1 -maxdepth 1 -type d)"
+        [[ -d "$dir" ]] || { err "couldn find unpacked directory"; return 1; }
         [[ -d "$libclang_root" ]] && execute "rm -rf -- $libclang_root"
         execute "mv $dir $libclang_root"
 
@@ -1365,7 +1391,6 @@ function execute() {
 
     cmd="$1"
     exit_code="$2"  # only pass exit code to exit with if script should abort on unsuccessful execution
-    echo -e "cmdd: \"$cmd\""
 
     $cmd
     exit_sig=$?
@@ -1389,11 +1414,13 @@ function select_items() {
     # original version stolen from http://serverfault.com/a/298312
     options=( $1 )
     is_single_selection="$2"
+    selections=()
 
     function __menu() {
         local i
 
-        echo "Avaliable options:"
+        echo -e "\n---------------------"
+        echo "Available options:"
         for i in "${!options[@]}"; do
             printf "%3d%s) %s\n" $((i+1)) "${choices[i]:- }" "${options[i]}"
         done
@@ -1423,10 +1450,10 @@ function select_items() {
     done
 
     for i in "${!options[@]}"; do
-        [[ -n "${choices[i]}" ]] && selections+=" ${options[i]} "
+        [[ -n "${choices[i]}" ]] && selections+=( ${options[i]} )
     done
 
-    __SELECTED_ITEMS="$selections"
+    __SELECTED_ITEMS="${selections[*]}"
 
     unset __menu  # to keep the inner function really an inner one (ie private).
 }
@@ -1536,6 +1563,89 @@ function is_work() {
 }
 
 
+function choose_step() {
+    report "what do you want to do?"
+
+    while true; do
+        select_items "full-install single-task" 1
+
+        if [[ -z "$__SELECTED_ITEMS" ]]; then
+            confirm "no items were selected; exit?" && break
+        else
+            break
+        fi
+    done
+
+    case "$__SELECTED_ITEMS" in
+        "full-install" ) full_install ;;
+        "single-task" )  choose ;;
+    esac
+}
+
+
+# basically offers steps from setup() & install_progs():
+function choose() {
+    local steps
+
+    steps=( \
+        setup_homesick \
+        setup_config_files \
+        install_deps \
+        setup_dirs \
+        setup_fonts \
+        upgrade_kernel \
+        install_from_repo \
+        choose_prog_to_build \
+    )
+
+    report "what do you want to do?"
+
+    while true; do
+        select_items "${steps[*]}" 1
+
+        if [[ -z "$__SELECTED_ITEMS" ]]; then
+            confirm "no items were selected; exit?" && break || continue
+        fi
+
+        $__SELECTED_ITEMS
+    done
+}
+
+
+# offerst steps from install_own_builds():
+function choose_prog_to_build() {
+    local steps
+
+    steps=( \
+        install_vim
+        install_keepassx
+        install_copyq
+        install_synergy
+        install_dwm
+        install_oracle_jdk
+        install_skype
+    )
+
+    report "what do you want to build/install?"
+
+    while true; do
+        select_items "${steps[*]}" 1
+
+        if [[ -z "$__SELECTED_ITEMS" ]]; then
+            confirm "no items were selected; exit?" && break || continue
+        fi
+
+        $__SELECTED_ITEMS
+    done
+}
+
+
+function full_install() {
+    setup
+    install_progs
+}
+
+
 #----------------------------
 #---  Script entry point  ---
 #----------------------------
@@ -1553,5 +1663,4 @@ while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 check_dependencies
 validate
-setup
-install_progs
+choose_step
