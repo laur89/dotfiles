@@ -1310,16 +1310,17 @@ function choose_step() {
 
     case "$__SELECTED_ITEMS" in
         "full-install" ) full_install ;;
-        "single-task" )  choose ;;
+        "single-task" )  choose_single_task ;;
     esac
 }
 
 
 # basically offers steps from setup() & install_progs():
-function choose() {
+function choose_single_task() {
     local steps
 
     steps=(
+        generate_key
         setup_homesick
         setup_config_files
         install_deps
@@ -1327,7 +1328,7 @@ function choose() {
         setup_fonts
         upgrade_kernel
         install_from_repo
-        choose_prog_to_build
+        __choose_prog_to_build
     )
 
     report "what do you want to do?"
@@ -1344,8 +1345,9 @@ function choose() {
 }
 
 
+# meta-function;
 # offerst steps from install_own_builds():
-function choose_prog_to_build() {
+function __choose_prog_to_build() {
     local steps
 
     steps=(
@@ -1460,6 +1462,10 @@ function check_connection() {
 
 function generate_key() {
     local mail
+
+    if is_ssh_setup; then
+        confirm "key @ ~/.ssh/id_rsa is already there; still generate key?" || return 1
+    fi
 
     report "generating ssh key..."
     report "enter your mail:"
