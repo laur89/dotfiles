@@ -637,9 +637,9 @@ function install_oracle_jdk() {
 function switch_jdk_versions() {
     local avail_javas active_java
 
-    [[ -d "$JDK_INSTALLATION_DIR" ]] || { execute "$JDK_INSTALLATION_DIR does not exist. abort."; return 1; }
+    [[ -d "$JDK_INSTALLATION_DIR" ]] || { err "$JDK_INSTALLATION_DIR does not exist. abort."; return 1; }
     avail_javas="$(find $JDK_INSTALLATION_DIR -mindepth 1 -maxdepth 1 -type d)"
-    [[ -z "$avail_javas" ]] && { err "discovered no java installations @ $JDK_INSTALLATION_DIR"; sleep 5; return 1; }
+    [[ $? -ne 0 || -z "$avail_javas" ]] && { err "discovered no java installations @ $JDK_INSTALLATION_DIR"; sleep 5; return 1; }
 
     while true; do
         if [[ -h "$JDK_LINK_LOC" ]]; then
