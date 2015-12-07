@@ -20,6 +20,8 @@ KEEPASS_REPO_LOC="https://github.com/keepassx/keepassx.git"  # keepassX - open p
 COPYQ_REPO_LOC="https://github.com/hluk/CopyQ.git"           # copyq - awesome clipboard manager
 SYNERGY_REPO_LOC="https://github.com/synergy/synergy.git"    # synergy - share keyboard&mouse between computers on same LAN
 ORACLE_JDK_LOC="http://download.oracle.com/otn-pub/java/jdk/8u65-b17/jdk-8u65-linux-x64.tar.gz"
+JDK_LINK_LOC="/usr/local/jdk_link"
+JDK_INSTALLATION_DIR="/usr/local/javas"
 SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick
                                         # note that contents of that file are somewhat important, as some
                                         # (script-related) configuration lies within.
@@ -602,9 +604,8 @@ function install_own_builds() {
 
 # note that jdk will be installed under /usr/local
 function install_oracle_jdk() {
-    local tarball tmpdir dir java_installation_dir
+    local tarball tmpdir dir
 
-    java_installation_dir="/usr/local/javas"
     tmpdir="$(mktemp -d "jdk-tempdir-XXXXX" -p $TMPDIR)"
 
     report "fetcing $ORACLE_JDK_LOC"
@@ -618,17 +619,51 @@ function install_oracle_jdk() {
     tarball="$(basename $ORACLE_JDK_LOC)"
     extract "$tarball" || { err "extracting $tarball failed."; return 1; }
     dir="$(find -mindepth 1 -maxdepth 1 -type d)"
-    [[ -d "$dir" ]] || { err "couldn find unpacked jdk directory"; return 1; }
+    [[ -d "$dir" ]] || { err "couldn't find unpacked jdk directory"; return 1; }
 
-    execute "sudo mkdir $java_installation_dir"
-    report "installing fetched JDK to $java_installation_dir"
-    execute "sudo mv $dir $java_installation_dir/" || { err "could not move extracted jdk dir ($dir) to $java_installation_dir"; return 1; }
+    [[ -d "$JDK_INSTALLATION_DIR" ]] || execute "sudo mkdir $JDK_INSTALLATION_DIR"
+    report "installing fetched JDK to $JDK_INSTALLATION_DIR"
+    execute "sudo mv $dir $JDK_INSTALLATION_DIR/" || { err "could not move extracted jdk dir ($dir) to $JDK_INSTALLATION_DIR"; return 1; }
 
     # create link:
-    execute "sudo ln -s $java_installation_dir/$(basename $dir) /usr/local/jdk_link"
+    [[ -h "$JDK_LINK_LOC" ]] && execute "sudo rm $JDK_LINK_LOC"
+    execute "sudo ln -s $JDK_INSTALLATION_DIR/$(basename $dir) $JDK_LINK_LOC"
 
     execute "popd"
     execute "rm -rf $tmpdir"
+}
+
+
+function switch_jdk_versions() {
+    local avail_javas active_java
+
+    [[ -d "$JDK_INSTALLATION_DIR" ]] || { execute "$JDK_INSTALLATION_DIR does not exist. abort."; return 1; }
+    avail_javas="$(find $JDK_INSTALLATION_DIR -mindepth 1 -maxdepth 1 -type d)"
+    [[ -z "$avail_javas" ]] && { err "discovered no java installations @ $JDK_INSTALLATION_DIR"; sleep 5; return 1; }
+
+    while true; do
+        if [[ -h "$JDK_LINK_LOC" ]]; then
+            active_java="$(realpath $JDK_LINK_LOC)"
+            if [[ "$avail_javas" == "$active_java" ]]; then
+                report "only one active jdk installation, \"$active_java\" is available, and that is already linked by $JDK_LINK_LOC"
+                return
+            fi
+
+            report "current active java: $(basename $active_java)"
+        fi
+
+        report "select java ver to use (select none to skip the change)\n"
+        select_items "$avail_javas" 1
+
+        if [[ -n "$__SELECTED_ITEMS" ]]; then
+            report "selecting ${__SELECTED_ITEMS}..."
+            [[ -h "$JDK_LINK_LOC" ]] && execute "sudo rm $JDK_LINK_LOC"
+            execute "sudo ln -s $__SELECTED_ITEMS $JDK_LINK_LOC"
+            break
+        else
+            confirm "no items were selected; skip jdk change?" && break
+        fi
+    done
 }
 
 
@@ -1000,7 +1035,7 @@ function install_YCM() {
         execute "wget $CLANG_LLVM_LOC" || { err "wgetting $CLANG_LLVM_LOC failed."; return 1; }
         extract "$tarball" || { err "extracting $tarball failed."; return 1; }
         dir="$(find -mindepth 1 -maxdepth 1 -type d)"
-        [[ -d "$dir" ]] || { err "couldn find unpacked clang directory"; return 1; }
+        [[ -d "$dir" ]] || { err "couldn't find unpacked clang directory"; return 1; }
         [[ -d "$libclang_root" ]] && execute "rm -rf -- $libclang_root"
         execute "mv $dir $libclang_root"
 
@@ -1350,6 +1385,7 @@ function choose_single_task() {
 
     choices=(
         generate_key
+        switch_jdk_versions
         setup_homesick
         setup_config_files
         install_deps
