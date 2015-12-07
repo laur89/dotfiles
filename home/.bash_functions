@@ -640,6 +640,21 @@ function aptsearch() {
     #apt-cache search "$@"
 }
 
+function aptreset() {
+
+    report "note that sudo passwd is required" "$FUNCNAME"
+
+    sudo apt-get clean
+    if [[ -d "/var/lib/apt/lists" ]]; then
+        sudo rm -rf /var/lib/apt/lists/*
+    else
+        err "/var/lib/apt/lists is not a lib; can't delete the contents" "$FUNCNAME"
+    fi
+    sudo apt-get clean
+    sudo apt-get update
+    sudo apt-get upgrade
+}
+
 function aptsrc() { aptsearch "$@"; } # alias
 
 #  Find a pattern in a set of files and highlight them:

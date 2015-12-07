@@ -14,7 +14,7 @@
 #---   Configuration  ---
 #------------------------
 TMPDIR="/tmp"
-CLANG_LLVM_LOC="http://llvm.org/releases/3.7.0/clang+llvm-3.7.0-x86_64-linux-gnu-ubuntu-14.04.tar.xz"
+CLANG_LLVM_LOC="http://llvm.org/releases/3.7.0/clang+llvm-3.7.0-x86_64-linux-gnu-ubuntu-14.04.tar.xz"  # http://llvm.org/releases/download.html
 VIM_REPO_LOC="https://github.com/vim/vim.git"                # vim - yeah.
 KEEPASS_REPO_LOC="https://github.com/keepassx/keepassx.git"  # keepassX - open password manager forked from keepass project
 COPYQ_REPO_LOC="https://github.com/hluk/CopyQ.git"           # copyq - awesome clipboard manager
@@ -104,7 +104,8 @@ function check_dependencies() {
     for prog in git wget tar; do
         if ! command -v $prog >/dev/null; then
             report "$prog not installed yet, installing..."
-            execute "sudo apt-get -qq install $prog"
+            install_block "$prog"
+            #execute "sudo apt-get -qq install $prog"
             report "...done"
         fi
     done
@@ -138,6 +139,8 @@ function setup_hosts() {
 
     if [[ -f "$PRIVATE_CASTLE/backups/hosts" ]]; then
         backup_original_and_copy_file "$PRIVATE_CASTLE/backups/hosts" "$hosts_file_dest"
+    else
+        err "configuration file at \"$PRIVATE_CASTLE/backups/hosts\" does not exist; won't install it."
     fi
 }
 
@@ -154,6 +157,8 @@ function setup_sudoers() {
 
     if [[ -f "$COMMON_DOTFILES/backups/sudoers" ]]; then
         backup_original_and_copy_file "$COMMON_DOTFILES/backups/sudoers" "$sudoers_dest"
+    else
+        err "configuration file at \"$COMMON_DOTFILES/backups/sudoers\" does not exist; won't install it."
     fi
 }
 
@@ -174,6 +179,8 @@ function setup_apt() {
                 ; do
         if [[ -f "$COMMON_DOTFILES/backups/$file" ]]; then
             backup_original_and_copy_file "$COMMON_DOTFILES/backups/$file" "$apt_dir"
+        else
+            err "configuration file at \"$file\" does not exist; won't install it."
         fi
     done
 }
@@ -191,6 +198,8 @@ function setup_crontab() {
 
     if [[ -f "$PRIVATE_CASTLE/backups/crontab" ]]; then
         backup_original_and_copy_file "$PRIVATE_CASTLE/backups/crontab" "$cron_dir"
+    else
+        err "configuration file at \"$PRIVATE_CASTLE/backups/crontab\" does not exist; won't install it."
     fi
 }
 
@@ -560,10 +569,10 @@ function upgrade_kernel() {
     # they keep the kernel and headers in sync:
     if is_64_bit; then
         report "first installing kernel meta-packages..."
-        install_block "
+        install_block '
             linux-image-amd64
             linux-headers-amd64
-        "
+        '
     else
         report "verified we're not running 64bit system. make sure it's correct. skipping kernel meta-package installation."
         sleep 5
@@ -607,7 +616,7 @@ function install_own_builds() {
 }
 
 
-# note that jdk will be installed under /usr/local
+# note that jdk will be installed under $JDK_INSTALLATION_DIR
 function install_oracle_jdk() {
     local tarball tmpdir dir
 
@@ -730,9 +739,9 @@ function install_skype() {
 function install_webdev() {
     is_server && { report "we're server, skipping webdev stack installation."; return; }
 
-    install_block "
+    install_block '
         nodejs
-    "
+    '
 
     execute "sudo npm install -g jshint"
 }
@@ -762,16 +771,16 @@ function build_and_install_synergy() {
     report "building synergy"
 
     report "installing synergy build dependencies..."
-    install_block " \
-        build-essential \
-        cmake \
-        libavahi-compat-libdnssd-dev \
-        libcurl4-openssl-dev \
-        libssl-dev \
-        python \
-        qt4-dev-tools \
-        xorg-dev \
-    "
+    install_block '
+        build-essential
+        cmake
+        libavahi-compat-libdnssd-dev
+        libcurl4-openssl-dev
+        libssl-dev
+        python
+        qt4-dev-tools
+        xorg-dev
+    '
     if [[ "$do_clone" -eq 1 ]]; then
         [[ -d "$builddir" ]] && execute "rm -rf $builddir"
         execute "git clone $SYNERGY_REPO_LOC $builddir" || return 1
@@ -798,12 +807,12 @@ function build_and_install_copyq() {
     report "building copyq"
 
     report "installing copyq build dependencies..."
-    install_block " \
-        libqt4-dev \
-        cmake \
-        libxfixes-dev \
-        libxtst-dev \
-    "
+    install_block '
+        libqt4-dev
+        cmake
+        libxfixes-dev
+        libxtst-dev
+    '
     execute "git clone $COPYQ_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir"
 
@@ -844,14 +853,14 @@ function build_and_install_keepassx() {
     report "building keepassx..."
 
     report "installing keepassx build dependencies..."
-    install_block " \
-        qtbase5-dev \
-        libqt5x11extras5-dev \
-        qttools5-dev \
-        qttools5-dev-tools \
-        libgcrypt20-dev \
-        zlib1g-dev \
-    "
+    install_block '
+        qtbase5-dev
+        libqt5x11extras5-dev
+        qttools5-dev
+        qttools5-dev-tools
+        libgcrypt20-dev
+        zlib1g-dev
+    '
     execute "git clone $KEEPASS_REPO_LOC $tmpdir" || return 1
 
     execute "mkdir $tmpdir/build"
@@ -875,14 +884,14 @@ function install_dwm() {
     [[ -d "$build_dir" ]] || { err "\"$build_dir\" is not a dir. skipping dwm installation"; return 1; }
 
     report "installing dwm build dependencies..."
-    install_block " \
-        suckless-tools \
-        build-essential \
-        libx11-dev \
-        libxinerama-dev \
-        libpango1.0-dev \
-        libxtst-dev \
-    "
+    install_block '
+        suckless-tools
+        build-essential
+        libx11-dev
+        libxinerama-dev
+        libpango1.0-dev
+        libxtst-dev
+    '
 
     execute "pushd $build_dir"
     report "installing dwm..."
@@ -938,7 +947,7 @@ function install_vim() {
     vim_post_install_configuration
 
     report "launching vim, so the initialization could be done (pulling in plugins et al. simply exit vim when it's done.)"
-    echo "initialising vim; simply exit when plugin fetching is complete." | \
+    echo "initialising vim; simply exit when plugin fetching is complete. (quit with ':qa!')" | \
         vim -  # needs to be non-root
 
     # YCM installation AFTER the first vim launch!
@@ -951,9 +960,16 @@ function vim_post_install_configuration() {
 
     stored_vim_sessions="$BASE_DATA_DIR/.vim_sessions"
 
-    # generate links for root:
-    execute "sudo ln -s $HOME/.vimrc /root/"
-    execute "sudo ln -s $HOME/.vim /root/"
+    # generate links for root, if not existing:
+    if ! sudo test -h "/root/.vim"; then
+        if [[ ! -f "$HOME/.vimrc" || ! -d "$HOME/.vim" ]]; then
+            err "either $HOME/.vimrc is not a file or $HOME/.vim is not a dir."
+            err "skipping creating links to /root/"
+        else
+            execute "sudo ln -s $HOME/.vimrc /root/"
+            execute "sudo ln -s $HOME/.vim /root/"
+        fi
+    fi
 
     # link sessions dir, if stored @ $BASE_DATA_DIR: (related to the 'xolox/vim-session' plugin)
     # note we don't want sessions in homesick, as they're likely to be machine-dependent.
@@ -982,20 +998,20 @@ function build_and_install_vim() {
     report "building vim..."
 
     report "installing vim build dependencies..."
-    install_block " \
-        libncurses5-dev \
-        libgnome2-dev \
-        libgnomeui-dev \
-        libgtk2.0-dev \
-        libatk1.0-dev \
-        libbonoboui2-dev \
-        libcairo2-dev \
-        libx11-dev \
-        libxpm-dev \
-        libxt-dev \
-        python-dev \
-        ruby-dev \
-    "
+    install_block '
+        libncurses5-dev
+        libgnome2-dev
+        libgnomeui-dev
+        libgtk2.0-dev
+        libatk1.0-dev
+        libbonoboui2-dev
+        libcairo2-dev
+        libx11-dev
+        libxpm-dev
+        libxt-dev
+        python-dev
+        ruby-dev
+    '
     execute "git clone $VIM_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir"
 
@@ -1089,18 +1105,18 @@ function install_YCM() {
 function setup_fonts() {
     report "installing & setting up fonts..."
 
-    install_block " \
-        ttf-dejavu \
-        ttf-liberation \
-        ttf-mscorefonts-installer \
-        xfonts-terminus \
-        xfonts-75dpi{,-transcoded} \
-        xfonts-100dpi{,-transcoded} \
-        xfonts-mplus \
-        xfonts-bitmap-mule \
-        xfonts-base \
-        fontforge \
-    "
+    install_block '
+        ttf-dejavu
+        ttf-liberation
+        ttf-mscorefonts-installer
+        xfonts-terminus
+        xfonts-75dpi{,-transcoded}
+        xfonts-100dpi{,-transcoded}
+        xfonts-mplus
+        xfonts-bitmap-mule
+        xfonts-base
+        fontforge
+    '
 
     execute "pushd $HOME/.fonts"
     execute "fc-cache -fv"
@@ -1250,11 +1266,11 @@ function install_from_repo() {
     done
 
     if is_laptop; then
-        install_block "
-            xserver-xorg-input-synaptics \
-            blueman \
-            xfce4-power-manager \
-        "
+        install_block '
+            xserver-xorg-input-synaptics
+            blueman
+            xfce4-power-manager
+        '
 
         # consider using  lspci -vnn | grep WLAN -A 12 | grep -iq intel
         if sudo lshw | grep -iA 5 'Wireless interface' | grep -iq 'vendor.*Intel'; then
@@ -1265,11 +1281,11 @@ function install_from_repo() {
 
     install_nvidia
 
-    if is_work; then
-        install_block " \
-            samba-common-bin \
-            davmail \
-        "
+    if [[ "$MODE" == work ]]; then
+        install_block '
+            samba-common-bin
+            davmail
+        '
     fi
 }
 
@@ -1282,7 +1298,7 @@ function install_nvidia() {
     if sudo lshw | grep -iA 5 'display' | grep -iq 'vendor.*NVIDIA'; then
         if confirm "we seem to have NVIDIA card; want to install nvidia drivers?"; then
             report "installing NVIDIA drivers..."
-            install_block "nvidia-driver  nvidia-xconfig"
+            install_block 'nvidia-driver  nvidia-xconfig'
             execute "sudo nvidia-xconfig"
             return $?
         fi
@@ -1338,7 +1354,8 @@ function install_block() {
 }
 
 
-# returns false, if user opts not to build the package, but later install it from the repo by himself
+# returns false, if there's an available package with given value in its name, and
+# user opts not to build the package, but later install it from the repo by himself.
 function should_build_if_avail_in_repo() {
     local package_name packages
 
@@ -1725,21 +1742,6 @@ function is_64_bit() {
 }
 
 
-# note this assumes our .bash_env_vars has already been sourced.
-function is_work() {
-    # sanity:
-    if [[ -z "$WORK_DESKTOP_HOSTNAME" || -z "$WORK_LAPTOP_HOSTNAME" ]]; then
-        err "at least one of the work machines' hostnames were missing; probably the valid .bash_env_vars was not sourced."
-        err "cannot decide whether we're dealing with a work machine or not. have to assume we're not work."
-        return 1
-    fi
-
-    [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" || "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]] \
-        && return 0 \
-        || return 1
-}
-
-
 #----------------------------
 #---  Script entry point  ---
 #----------------------------
@@ -1760,6 +1762,8 @@ validate_and_init
 choose_step
 
 if [[ -e "$EXECUTION_LOG" ]]; then
+    sed -i '/^\s*$/d' "$EXECUTION_LOG"  # strip empty lines
+
     echo -e "\n\n___________________________________________"
     echo -e "\texecution log can be found at \"$EXECUTION_LOG\""
     echo -e "___________________________________________"

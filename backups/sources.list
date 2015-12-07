@@ -25,13 +25,15 @@ deb http://ftp.uk.debian.org/debian/ testing-updates main contrib non-free
 deb-src http://ftp.uk.debian.org/debian/ testing-updates main contrib non-free
 
 # jessie-backports, previously on backports.debian.org
-deb http://ftp.uk.debian.org/debian/ jessie-backports main contrib non-free
-deb-src http://ftp.uk.debian.org/debian/ jessie-backports main contrib non-free
+# do NOT use backports if on testing; testing doesnt have those:
+#deb http://ftp.uk.debian.org/debian/ jessie-backports main contrib non-free
+#deb-src http://ftp.uk.debian.org/debian/ jessie-backports main contrib non-free
 
 # archive (for old fonts for instance):
 #deb http://archive.debian.org/debian-archive/debian woody main
 
 # 3rd party:
+####################################################
 ## spotify:
 deb http://repository.spotify.com stable non-free
 
