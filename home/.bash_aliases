@@ -21,7 +21,7 @@ alias vscode='/data/progs/VSCode-linux-x64/Code' # MS Visual Code (editor)
 #alias clean_failed_mvn="$(find ~/.m2 -name *.lastUpdated -delete)"
 #alias amq="/data/progs/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"
 #alias ulogout="sudo pkill -KILL -u $1"  # user logout
-alias logout="pkill -TERM -u $(whoami) &; sleep 5 && pkill -KILL -u $(whoami) && exit 0"
+alias logout="pkill -TERM -u $(whoami) & sleep 5 && pkill -KILL -u $(whoami) && exit 0"
 #alias logout="pkill -u $USER"   # by default pkill sends SIGTERM signal
 #alias logout='kill -9 -1' # kill all processes *you* can kill
 alias grep="grep --color=auto"
