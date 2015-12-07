@@ -67,6 +67,8 @@ alias vf='cd'
 alias cs='cd'
 alias ct='cd'
 alias sd='cd'
+
+# git:
 alias gti='git'
 alias igt='git'
 alias gitst='git st'
@@ -81,10 +83,12 @@ alias gita='git a'
 alias gitaa='git aa'
 alias gitb='git b'
 #alias gitdi='git di'
-alias gitdi='git difftool --dir-diff' # only diff unstaged files
-alias gitdi-all='git difftool --dir-diff HEAD' # also diff staged files
-alias gitdi-staged='git difftool --dir-diff --cached' # --cached == --staged
-alias gitdi-prev='git difftool --dir-diff HEAD^ HEAD' # local last commit against index
+alias gitdi='git difftool --dir-diff'                    # diff only unstaged files
+alias gitdi-all='git difftool --dir-diff HEAD'           # also diff staged files
+alias gitdi-staged-only='git difftool --dir-diff --cached'    # --cached == --staged, as in diff only staged files
+alias gitdi-prev='git difftool --dir-diff HEAD^ HEAD'    # local last commit against current index (as in last commit; shows what was changed with last commit); does NOT include current uncommited changes);
+#alias gitdi-stash='git difftool --dir-diff stash@{0}^!'  # diff stash against its parent;
+alias gitdi-stash='git difftool --dir-diff stash@{0}^ stash@{0}'  # diff stash against its parent;
 
 alias mkdri='mkdir'
 alias mkdr='mkdir'
