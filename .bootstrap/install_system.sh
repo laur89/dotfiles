@@ -73,6 +73,7 @@ function validate_and_init() {
 
     check_connection || { err "no internet connection. abort."; exit 1; }
 
+    # if you change PRIVATE_CASTLE definitions, make sure you update fetch_castles() as well
     case $MODE in
         work)
             PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/work_dotfiles"
@@ -303,7 +304,7 @@ function setup_dirs() {
 function install_homesick() {
 
     if ! [[ -e "$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick" ]]; then
-        execute "git clone https://github.com/andsens/homeshick.git $BASE_HOMESICK_REPOS_LOC/homeshick"
+        execute "git clone https://github.com/andsens/homeshick.git $BASE_HOMESICK_REPOS_LOC/homeshick" || return 1
 
         execute "pushd $BASE_HOMESICK_REPOS_LOC/homeshick"
         execute "git remote set-url origin git@$github.com:andsens/homeshick.git"
@@ -357,6 +358,7 @@ function clone_or_link_castle() {
 function fetch_castles() {
     local castle user hub
 
+    # !! if you change private repos, make sure you update PRIVATE_CASTLE definitions @ validate_and_init()!
     # first fetch private ones (these might contain missing .ssh or other important dotfiles):
     if [[ "$MODE" == work ]]; then
         clone_or_link_castle work_dotfiles layr gitlab.williamhill-dev.local
@@ -440,7 +442,7 @@ function setup_global_env_vars() {
         execute "sudo ln -s $SHELL_ENVS $global_env_var_loc"
     fi
 
-    if ! sudo grep -q "$USER/.bash_env_vars" /root/.bashrc; then
+    if ! sudo grep -q "source $SHELL_ENVS" /root/.bashrc; then
         execute "echo source $SHELL_ENVS | sudo tee --append /root/.bashrc > /dev/null"
     fi
 }
@@ -457,6 +459,7 @@ function setup_netrc_perms() {
     else
         err "expected to find \"$rc_loc\", but it doesn't exist. \
             if you're not using netrc, better remvoe related logic from ${SELF}."
+        return 1
     fi
 }
 
@@ -470,14 +473,14 @@ function setup_config_files() {
     setup_sudoers
     setup_hosts
     setup_global_env_vars
-    setup_netrc_perms  # TODO: does this really belong under setup_config_files()?
+    setup_netrc_perms
     swap_caps_lock_and_esc
     setup_SSID_checker
 }
 
 
 # network manager wrapper script;
-# writes info to /tmp and manages locking logic for laptops (security, kinda)
+# runs other script that writes info to /tmp and manages locking logic for laptops (security, kinda)
 function setup_SSID_checker() {
     local wrapper_loc  wrapper_dest
 
@@ -523,12 +526,14 @@ function swap_caps_lock_and_esc() {
 
     if ! grep -q 'key <ESC>.*Caps_Lock' $conf_file; then
         # hasn't been replaced yet
-        sudo sed -i 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock        \]   \};/g' $conf_file
+        execute "sudo sed -i 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock        \]   \};/g' $conf_file"
+        [[ $? -ne 0 ]] && { err "replacing esc<->caps @ $conf_file failed"; return 2; }
     fi
 
     if ! grep -q 'key <CAPS>.*Escape' $conf_file; then
         # hasn't been replaced yet
-        sudo sed -i 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS>   \{ \[ Escape     \]   \};/g' $conf_file
+        execute "sudo sed -i 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS>   \{ \[ Escape     \]   \};/g' $conf_file"
+        [[ $? -ne 0 ]] && { err "replacing esc<->caps @ $conf_file failed"; return 2; }
     fi
 }
 
@@ -606,7 +611,7 @@ function install_own_builds() {
 function install_oracle_jdk() {
     local tarball tmpdir dir
 
-    tmpdir="$(mktemp -d "jdk-tempdir-XXXXX" -p $TMPDIR)"
+    tmpdir="$(mktemp -d "jdk-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     report "fetcing $ORACLE_JDK_LOC"
     execute "pushd $tmpdir"
@@ -661,7 +666,7 @@ function switch_jdk_versions() {
             execute "sudo ln -s $__SELECTED_ITEMS $JDK_LINK_LOC"
             break
         else
-            confirm "no items were selected; skip jdk change?" && break
+            confirm "no items were selected; skip jdk change?" && return
         fi
     done
 }
@@ -769,7 +774,7 @@ function build_and_install_synergy() {
     "
     if [[ "$do_clone" -eq 1 ]]; then
         [[ -d "$builddir" ]] && execute "rm -rf $builddir"
-        execute "git clone $SYNERGY_REPO_LOC $builddir"
+        execute "git clone $SYNERGY_REPO_LOC $builddir" || return 1
     fi
 
     execute "pushd $builddir"
@@ -799,7 +804,7 @@ function build_and_install_copyq() {
         libxfixes-dev \
         libxtst-dev \
     "
-    execute "git clone $COPYQ_REPO_LOC $tmpdir"
+    execute "git clone $COPYQ_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir"
 
     execute "cmake ."
@@ -847,7 +852,7 @@ function build_and_install_keepassx() {
         libgcrypt20-dev \
         zlib1g-dev \
     "
-    execute "git clone $KEEPASS_REPO_LOC $tmpdir"
+    execute "git clone $KEEPASS_REPO_LOC $tmpdir" || return 1
 
     execute "mkdir $tmpdir/build"
     execute "pushd $tmpdir/build"
@@ -991,7 +996,7 @@ function build_and_install_vim() {
         python-dev \
         ruby-dev \
     "
-    execute "git clone $VIM_REPO_LOC $tmpdir"
+    execute "git clone $VIM_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir"
 
     execute "./configure \
@@ -1027,7 +1032,7 @@ function install_YCM() {
     function __fetch_libclang() {
         local tmpdir tarball dir
 
-        tmpdir="$(mktemp -d "ycm-tempdir-XXXXX" -p $TMPDIR)"
+        tmpdir="$(mktemp -d "ycm-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
         tarball="$(basename "$CLANG_LLVM_LOC")"
 
         execute "pushd $tmpdir"
@@ -1058,10 +1063,10 @@ function install_YCM() {
     # first make sure we have libclang:
     if [[ -d "$libclang_root" ]]; then
         if ! confirm "found existing libclang at ${libclang_root}; use this one? (answering no will fetch new version)"; then
-            __fetch_libclang
+            __fetch_libclang || { err "fetching libclang failed; aborting YCM installation."; return 1; }
         fi
     else
-        __fetch_libclang
+        __fetch_libclang || { err "fetching libclang failed; aborting YCM installation."; return 1; }
     fi
 
     # clean previous builddir, if existing:
@@ -1251,8 +1256,9 @@ function install_from_repo() {
             xfce4-power-manager \
         "
 
+        # consider using  lspci -vnn | grep WLAN -A 12 | grep -iq intel
         if sudo lshw | grep -iA 5 'Wireless interface' | grep -iq 'vendor.*Intel'; then
-            report "we have intel wifi; installing intel drivers."
+            report "we have intel wifi; installing intel drivers..."
             install_block "firmware-iwlwifi"
         fi
     fi
@@ -1270,11 +1276,13 @@ function install_from_repo() {
 
 # offers to install nvidia drivers, if NVIDIA card is detected
 function install_nvidia() {
+    # https://wiki.debian.org/NvidiaGraphicsDrivers
 
+    # TODO: consider   lspci -vnn | grep VGA -A 12
     if sudo lshw | grep -iA 5 'display' | grep -iq 'vendor.*NVIDIA'; then
         if confirm "we seem to have NVIDIA card; want to install nvidia drivers?"; then
             report "installing NVIDIA drivers..."
-            install_block "nvidia-driver nvidia-xconfig"
+            install_block "nvidia-driver  nvidia-xconfig"
             execute "sudo nvidia-xconfig"
             return $?
         fi
@@ -1341,7 +1349,7 @@ function should_build_if_avail_in_repo() {
         report "FYI, these packages with \"$package_name\" in them are available in repo:"
         echo -e "$packages"
 
-        if ! confirm "do you still wish to build yourself? (answering no will skip the build. you need to manually install it from the repo yourself.)"; then
+        if ! confirm "\tdo you still wish to build yourself?\n\t(answering no will skip the build. you need to manually install it from the repo yourself.)"; then
             return 1
         fi
     fi
@@ -1356,10 +1364,10 @@ function choose_step() {
     while true; do
         select_items "full-install single-task" 1
 
-        if [[ -z "$__SELECTED_ITEMS" ]]; then
-            confirm "no items were selected; exit?" && break
-        else
+        if [[ -n "$__SELECTED_ITEMS" ]]; then
             break
+        else
+            confirm "no items were selected; exit?" && return || continue
         fi
     done
 
@@ -1745,13 +1753,15 @@ sudo -v || { clear; err "is sudo installed? if not, then \"su && apt-get install
 clear
 
 # keep-alive: update existing `sudo` time stamp
-while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+while true; do sudo -n true; sleep 30; kill -0 "$$" || exit; done 2>/dev/null &
 
 check_dependencies
 validate_and_init
 choose_step
 
 if [[ -e "$EXECUTION_LOG" ]]; then
-    report "\n\n\texecution log can be found at \"$EXECUTION_LOG\"\n"
+    echo -e "\n\n___________________________________________"
+    echo -e "\texecution log can be found at \"$EXECUTION_LOG\""
+    echo -e "___________________________________________"
 fi
 
