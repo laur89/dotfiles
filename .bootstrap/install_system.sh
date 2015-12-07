@@ -640,18 +640,18 @@ function switch_jdk_versions() {
     [[ -d "$JDK_INSTALLATION_DIR" ]] || { err "$JDK_INSTALLATION_DIR does not exist. abort."; return 1; }
     avail_javas="$(find $JDK_INSTALLATION_DIR -mindepth 1 -maxdepth 1 -type d)"
     [[ $? -ne 0 || -z "$avail_javas" ]] && { err "discovered no java installations @ $JDK_INSTALLATION_DIR"; sleep 5; return 1; }
-
-    while true; do
-        if [[ -h "$JDK_LINK_LOC" ]]; then
-            active_java="$(realpath $JDK_LINK_LOC)"
-            if [[ "$avail_javas" == "$active_java" ]]; then
-                report "only one active jdk installation, \"$active_java\" is available, and that is already linked by $JDK_LINK_LOC"
-                return
-            fi
-
-            report "current active java: $(basename $active_java)"
+    if [[ -h "$JDK_LINK_LOC" ]]; then
+        active_java="$(realpath $JDK_LINK_LOC)"
+        if [[ "$avail_javas" == "$active_java" ]]; then
+            report "only one active jdk installation, \"$active_java\" is available, and that is already linked by $JDK_LINK_LOC"
+            return
         fi
 
+        active_java="$(basename $active_java)"
+    fi
+
+    while true; do
+        [[ -n "$active_java" ]] && report "current active java: $active_java"
         report "select java ver to use (select none to skip the change)\n"
         select_items "$avail_javas" 1
 
