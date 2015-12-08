@@ -22,6 +22,7 @@ SYNERGY_REPO_LOC="https://github.com/synergy/synergy.git"    # synergy - share k
 ORACLE_JDK_LOC="http://download.oracle.com/otn-pub/java/jdk/8u65-b17/jdk-8u65-linux-x64.tar.gz"
 JDK_LINK_LOC="/usr/local/jdk_link"
 JDK_INSTALLATION_DIR="/usr/local/javas"
+PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
 SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick
                                         # note that contents of that file are somewhat important, as some
                                         # (script-related) configuration lies within.
@@ -137,13 +138,14 @@ function setup_hosts() {
     hosts_file_dest="/etc"
     tmpfile="$TMPDIR/hosts"
 
-    function extract_current_hosts_line() {
+    function _extract_current_hostname_line() {
         local file current
 
         file="$1"
-        current="$(grep '\(127\.0\.1\.1\)\s\+\(.*\)\s\+\(\w\+\)' $file)"
+        #current="$(grep '\(127\.0\.1\.1\)\s\+\(.*\)\s\+\(\w\+\)' $file)"
+        current="$(grep $HOSTNAME $file)"
         if [[ -z "$current" || "$(echo $current | wc -l)" -ne 1 ]]; then
-            err "$file didn't contain expected hostname line (127.0.1.1). check manually."
+            err "$file contained either more or less than 1 line(s) containing our hostname. check manually."
             return 1
         fi
 
@@ -157,7 +159,7 @@ function setup_hosts() {
 
     if [[ -f "$PRIVATE_CASTLE/backups/hosts" ]]; then
         [[ -f "$hosts_file_dest/hosts" ]] || { err "system hosts file is missing!"; return 1; }
-        current_hostline="$(extract_current_hosts_line $hosts_file_dest/hosts)" || return 1
+        current_hostline="$(_extract_current_hostname_line $hosts_file_dest/hosts)" || return 1
         execute "cp $PRIVATE_CASTLE/backups/hosts $tmpfile" || return 1
         execute "sed -i 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' $tmpfile" || return 1
 
@@ -167,7 +169,7 @@ function setup_hosts() {
         err "configuration file at \"$PRIVATE_CASTLE/backups/hosts\" does not exist; won't install it."
     fi
 
-    unset extract_current_hosts_line
+    unset _extract_current_hostname_line
 }
 
 
@@ -335,7 +337,7 @@ function setup_dirs() {
         fi
     done
 
-    # create logdir:
+    # create logdir ($CUSTOM_LOGDIR comes from $SHELL_ENVS):
     if ! [[ -d "$CUSTOM_LOGDIR" ]]; then
         [[ -z "$CUSTOM_LOGDIR" ]] && { err "\$CUSTOM_LOGDIR env var was missing. abort."; sleep 5; return 1; }
 
@@ -360,7 +362,7 @@ function install_homesick() {
         execute "popd"
     fi
 
-    # add the link, because homeshick is not installed in its default location (which is $HOME):
+    # add the link, since homeshick is not installed in its default location (which is $HOME):
     if ! [[ -h "$HOME/.homesick" ]]; then
         execute "ln -s $BASE_DEPS_LOC/homesick $HOME/.homesick"
     fi
@@ -451,7 +453,7 @@ function verify_ssh_key() {
     if is_ssh_setup; then
         IS_SSH_SETUP=1
     else
-        err "didn't find the key at ~/.ssh/id_rsa after generating keys."
+        err "didn't find the key at $PRIVATE_KEY_LOC after generating keys."
     fi
 }
 
@@ -476,7 +478,8 @@ function setup_homesick() {
 function setup_global_env_vars() {
     local global_env_var_loc root_bashrc
 
-    global_env_var_loc='/etc/.bash_env_vars'  # so our env vars would have user-agnostic location as well
+    global_env_var_loc='/etc/.bash_env_vars'  # so our env vars would have user-agnostic location as well;
+                                              # that location will be used by various scripts.
     root_bashrc='/root/.bashrc'
 
     if ! [[ -e "$SHELL_ENVS" ]]; then
@@ -963,11 +966,12 @@ function install_from_deb() {
                 deb_file="$__SELECTED_ITEMS"
                 break
             else
-                confirm "no files selected; skip and build instead?" && { report "ok, won't install from .deb"; return 1; }
+                confirm "no files selected; skip installing from .deb and build $name instead?" && { report "ok, won't install $name from .deb"; return 1; }
             fi
         done
     }
 
+    report "installing ${deb_file}..."
     execute "sudo dpkg -i $deb_file"
     return $?
 }
@@ -1314,7 +1318,7 @@ function install_from_repo() {
             xfce4-power-manager
         '
 
-        # consider using  lspci -vnn | grep WLAN -A 12 | grep -iq intel
+        # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
         if sudo lshw | grep -iA 5 'Wireless interface' | grep -iq 'vendor.*Intel'; then
             report "we have intel wifi; installing intel drivers..."
             install_block "firmware-iwlwifi"
@@ -1336,7 +1340,7 @@ function install_from_repo() {
 function install_nvidia() {
     # https://wiki.debian.org/NvidiaGraphicsDrivers
 
-    # TODO: consider   lspci -vnn | grep VGA -A 12
+    # TODO: consider  lspci -vnn | grep VGA | grep -i nvidia
     if sudo lshw | grep -iA 5 'display' | grep -iq 'vendor.*NVIDIA'; then
         if confirm "we seem to have NVIDIA card; want to install nvidia drivers?"; then
             report "installing NVIDIA drivers..."
@@ -1497,7 +1501,7 @@ function __choose_prog_to_build() {
         select_items "${choices[*]}" 1
 
         if [[ -z "$__SELECTED_ITEMS" ]]; then
-            confirm "no items were selected; exit?" && break || continue
+            confirm "no items were selected; return to previous menu?" && break || continue
         fi
 
         $__SELECTED_ITEMS
@@ -1526,6 +1530,8 @@ function full_install() {
 function confirm() {
     local msg yno
     msg="$1"
+
+    [[ -n "$msg" ]] && msg="\n$msg"
 
     while true; do
         [[ -n "$msg" ]] && echo -e "$msg"
@@ -1582,7 +1588,7 @@ function _sanitize_ssh() {
 
 
 function is_ssh_setup() {
-    [[ -f "$HOME/.ssh/id_rsa" ]] && return 0 || return 1
+    [[ -f "$PRIVATE_KEY_LOC" ]] && return 0 || return 1
 }
 
 
@@ -1605,14 +1611,19 @@ function generate_key() {
     local mail
 
     if is_ssh_setup; then
-        confirm "key @ ~/.ssh/id_rsa is already there; still generate key?" || return 1
+        confirm "key @ $PRIVATE_KEY_LOC already exists; still generate key?" || return 1
+    fi
+
+    if ! command -v ssh-keygen >/dev/null; then
+        err "ssh-keygen is not installed; won't generate ssh key."
+        return 1
     fi
 
     report "generating ssh key..."
     report "enter your mail (eg \"username@server.com\"):"
     read mail
 
-    report "(if asked for location, leave it to default (ie ~/.ssh/id_rsa))"
+    report "(if asked for location, leave it to default (ie $PRIVATE_KEY_LOC))"
     execute "ssh-keygen -t rsa -b 4096 -C \"$mail\""
 }
 
