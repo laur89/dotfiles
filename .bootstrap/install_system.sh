@@ -25,16 +25,15 @@ JDK_INSTALLATION_DIR="/usr/local/javas"
 SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick
                                         # note that contents of that file are somewhat important, as some
                                         # (script-related) configuration lies within.
-
 #------------------------
 #--- Global Variables ---
 #------------------------
 IS_SSH_SETUP=0  # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=
 MODE=
-PACKAGES_FAILED_TO_INSTALL=()  # list of all packages that failed to install during the setup
-LOGGING_LVL=0                  # execution logging level (full install logs everything);
-                               # don't set log level too soon; don't want to persist bullshit.
+PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
+LOGGING_LVL=0                   # execution logging level (full install logs everything);
+                                # don't set log level too soon; don't want to persist bullshit.
 EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%m-%y--%R).log" \
         || EXECUTION_LOG="$HOME/installation-exe.log"
 
@@ -110,11 +109,11 @@ function check_dependencies() {
         fi
     done
 
-    # verify required dirs are existing:
+    # verify required dirs are existing and have write perms:
     for dir in \
             $BASE_DATA_DIR \
                 ; do
-        if ! [[ -d "$dir" && -w "$dir" ]]; then
+        if ! [[ -d "$dir" ]]; then
             if confirm "$dir mountpoint does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
                 execute "sudo mkdir $dir"
                 execute "sudo chmod 777 $dir"
@@ -123,12 +122,32 @@ function check_dependencies() {
                 exit 1
             fi
         fi
+
+        if ! [[ -w "$dir" ]]; then
+            err "$dir does not have write permissions. perhaps 'sudo chmod 777 $dir'?"
+            exit 1
+        fi
     done
 }
 
 
 function setup_hosts() {
-    local hosts_file_dest file
+    local hosts_file_dest file current_hostline tmpfile
+
+    tmpfile="$TMPDIR/hosts"
+
+    function extract_current_hosts_line() {
+        local file current
+
+        file="$1"
+        current="$(grep '\(127\.0\.1\.1\)\s\+\(.*\)\s\+\(\w\+\)' $file)"
+        if [[ -z "$current" || "$(echo $current | wc -l)" -ne 1 ]]; then
+            err "$file didn't contain expected hostname line. check manually."
+            return 1
+        fi
+
+        echo "$current"
+    }
 
     hosts_file_dest="/etc"
 
@@ -138,17 +157,26 @@ function setup_hosts() {
     fi
 
     if [[ -f "$PRIVATE_CASTLE/backups/hosts" ]]; then
-        backup_original_and_copy_file "$PRIVATE_CASTLE/backups/hosts" "$hosts_file_dest"
+        [[ -f "$hosts_file_dest/hosts" ]] || { err "system hosts file is missing!"; return 1; }
+        current_hostline="$(extract_current_hosts_line $hosts_file_dest/hosts)" || return 1
+        execute "cp $PRIVATE_CASTLE/backups/hosts $tmpfile" || return 1
+        execute "sed -i 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' $tmpfile" || return 1
+
+        backup_original_and_copy_file "$tmpfile" "$hosts_file_dest"
+        execute "rm $tmpfile"
     else
         err "configuration file at \"$PRIVATE_CASTLE/backups/hosts\" does not exist; won't install it."
     fi
+
+    unset extract_current_hosts_line
 }
 
 
 function setup_sudoers() {
-    local sudoers_dest file
+    local sudoers_dest file tmpfile
 
     sudoers_dest="/etc"
+    tmpfile="$TMPDIR/sudoers"
 
     if ! [[ -d "$sudoers_dest" ]]; then
         err "$sudoers_dest is not a dir; skipping sudoers file installation"
@@ -156,7 +184,11 @@ function setup_sudoers() {
     fi
 
     if [[ -f "$COMMON_DOTFILES/backups/sudoers" ]]; then
-        backup_original_and_copy_file "$COMMON_DOTFILES/backups/sudoers" "$sudoers_dest"
+        execute "cp $COMMON_DOTFILES/backups/sudoers $tmpfile" || return 1
+        execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
+        backup_original_and_copy_file "$tmpfile" "$sudoers_dest"
+
+        execute "rm $tmpfile"
     else
         err "configuration file at \"$COMMON_DOTFILES/backups/sudoers\" does not exist; won't install it."
     fi
@@ -187,9 +219,10 @@ function setup_apt() {
 
 
 function setup_crontab() {
-    local cron_dir
+    local cron_dir tmpfile
 
-    cron_dir="/etc/cron.d"
+    cron_dir="/etc/cron.d"  # where crontab will be installed at
+    tmpfile="$TMPDIR/crontab"
 
     if ! [[ -d "$cron_dir" ]]; then
         err "$cron_dir is not a dir; skipping crontab installation"
@@ -197,7 +230,11 @@ function setup_crontab() {
     fi
 
     if [[ -f "$PRIVATE_CASTLE/backups/crontab" ]]; then
-        backup_original_and_copy_file "$PRIVATE_CASTLE/backups/crontab" "$cron_dir"
+        execute "cp $PRIVATE_CASTLE/backups/crontab $tmpfile" || return 1
+        execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
+        backup_original_and_copy_file "$tmpfile" "$cron_dir"
+
+        execute "rm $tmpfile"
     else
         err "configuration file at \"$PRIVATE_CASTLE/backups/crontab\" does not exist; won't install it."
     fi
@@ -370,7 +407,7 @@ function fetch_castles() {
     # !! if you change private repos, make sure you update PRIVATE_CASTLE definitions @ validate_and_init()!
     # first fetch private ones (these might contain missing .ssh or other important dotfiles):
     if [[ "$MODE" == work ]]; then
-        clone_or_link_castle work_dotfiles layr gitlab.williamhill-dev.local
+        clone_or_link_castle work_dotfiles laur.aliste gitlab.williamhill-dev.local
     elif [[ "$MODE" == personal ]]; then
         clone_or_link_castle personal-dotfiles layr bitbucket.org
     fi
@@ -438,9 +475,10 @@ function setup_homesick() {
 # creates symlink of our personal '.bash_env_vars' to /etc and sources it also from
 # /root/.bashrc, so the configuration within it could be accessed by scripts et al.
 function setup_global_env_vars() {
-    local global_env_var_loc
+    local global_env_var_loc root_bashrc
 
-    global_env_var_loc='/etc/.bash_env_vars'
+    global_env_var_loc='/etc/.bash_env_vars'  # so our env vars would have user-agnostic location as well
+    root_bashrc='/root/.bashrc'
 
     if ! [[ -e "$SHELL_ENVS" ]]; then
         err "$SHELL_ENVS does not exist. can't link it to $global_env_var_loc"
@@ -451,8 +489,14 @@ function setup_global_env_vars() {
         execute "sudo ln -s $SHELL_ENVS $global_env_var_loc"
     fi
 
-    if ! sudo grep -q "source $SHELL_ENVS" /root/.bashrc; then
-        execute "echo source $SHELL_ENVS | sudo tee --append /root/.bashrc > /dev/null"
+    if sudo test -f $root_bashrc; then
+        if ! sudo grep -q "source $SHELL_ENVS" $root_bashrc; then
+            # hasn't been sourced in $root_bashrc yet:
+            execute "echo source $SHELL_ENVS | sudo tee --append $root_bashrc > /dev/null"
+        fi
+    else
+        err "$root_bashrc doesn't exist; cannot source \"$SHELL_ENVS\" from it!"
+        return 1
     fi
 }
 
@@ -466,8 +510,7 @@ function setup_netrc_perms() {
     if [[ -e "$rc_loc" ]]; then
         execute "chmod 600 $(realpath $rc_loc)"  # realpath, since we cannot change perms via symlink
     else
-        err "expected to find \"$rc_loc\", but it doesn't exist. \
-            if you're not using netrc, better remvoe related logic from ${SELF}."
+        err "expected to find \"$rc_loc\", but it doesn't exist. if you're not using netrc, better remvoe related logic from ${SELF}."
         return 1
     fi
 }
@@ -1330,7 +1373,7 @@ function install_block() {
                     if [[ -n "$__SELECTED_ITEMS" ]]; then
                         if confirm "\nignoring these additional packages:\n\t${__SELECTED_ITEMS}\nok?"; then
                             ignored_packages+=" $__SELECTED_ITEMS "
-                            PACKAGES_FAILED_TO_INSTALL+=( $__SELECTED_ITEMS )
+                            PACKAGES_IGNORED_TO_INSTALL+=( $__SELECTED_ITEMS )
                             list_to_install=( $(remove_items_from_list "${list_to_install[*]}" "$__SELECTED_ITEMS") )
                             break
                         fi
@@ -1341,7 +1384,7 @@ function install_block() {
                     fi
                 done
             else
-                PACKAGES_FAILED_TO_INSTALL+=( ${list_to_install[*]} )
+                PACKAGES_IGNORED_TO_INSTALL+=( ${list_to_install[*]} )
 
                 report "all packages from this block were skipped. this will be reported"
                 sleep 5
@@ -1760,6 +1803,10 @@ while true; do sudo -n true; sleep 30; kill -0 "$$" || exit; done 2>/dev/null &
 check_dependencies
 validate_and_init
 choose_step
+
+if [[ -n "${PACKAGES_IGNORED_TO_INSTALL[*]}" ]]; then
+    echo -e "    ERR INSTALL: ignored installing these packages: \"${PACKAGES_IGNORED_TO_INSTALL[*]}\"" >> "$EXECUTION_LOG"
+fi
 
 if [[ -e "$EXECUTION_LOG" ]]; then
     sed -i '/^\s*$/d' "$EXECUTION_LOG"  # strip empty lines
