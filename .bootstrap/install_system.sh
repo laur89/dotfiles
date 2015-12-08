@@ -105,7 +105,7 @@ function check_dependencies() {
     for prog in git wget tar; do
         if ! command -v $prog >/dev/null; then
             report "$prog not installed yet, installing..."
-            install_block "$prog"
+            install_block "$prog" || { err "unable to install required prog $prog this script depends on. abort."; exit 1; }
             #execute "sudo apt-get install $prog"
             report "...done"
         fi
@@ -1350,7 +1350,7 @@ function install_nvidia() {
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
 function install_block() {
-    local list_to_install extra_apt_params packages_not_found
+    local list_to_install extra_apt_params packages_not_found exit_sig
 
     list_to_install=( $1 )
     extra_apt_params="$2"  # optional
@@ -1384,8 +1384,10 @@ function install_block() {
     fi
 
     execute "sudo apt-get install $extra_apt_params ${list_to_install[*]}"
+    exit_sig=$?
 
     unset find_faulty_packages
+    return $exit_sig
 }
 
 
