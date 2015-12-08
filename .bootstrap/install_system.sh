@@ -1212,7 +1212,6 @@ function install_from_repo() {
         qt4-qtconfig
         tree
         flashplugin-nonfree
-        lxappearance
         htpdate
         apt-show-versions
         apt-xapian-index
@@ -1234,6 +1233,7 @@ function install_from_repo() {
         unrar
         p7zip
         dos2unix
+        lxappearance
         gtk2-engines-murrine
         gtk2-engines-pixbuf
     )
@@ -1273,7 +1273,7 @@ function install_from_repo() {
         lynx
         tmux
         powerline
-        libxm12-utils
+        libxml2-utils
         pidgin
         filezilla
         xclip
@@ -1350,48 +1350,42 @@ function install_nvidia() {
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
 function install_block() {
-    local list_to_install ignored_packages extra_apt_params
+    local list_to_install extra_apt_params packages_not_found
 
     list_to_install=( $1 )
     extra_apt_params="$2"  # optional
 
+    function find_faulty_packages() {
+        local pkg packages_not_found
+
+        packages_not_found=()
+
+        for pkg in ${list_to_install[*]}; do
+            sudo apt-get -qq --dry-run install $pkg || packages_not_found+=( $pkg )
+        done
+
+        echo "${packages_not_found[*]}"
+    }
+
     report "installing these packages:\n${list_to_install[*]}\n"
+    packages_not_found=( $(find_faulty_packages) )
 
-    while true; do
-        if [[ -n "${ignored_packages[*]}" ]]; then
-            report "retrying installation; all ignored packages so far:\n${ignored_packages[*]}\n"
-        fi
+    if [[ -n "${packages_not_found[*]}" ]]; then
+        err "either these packages could not be found from the repo, or some other issue occurred; skipping installing these packages. this will be logged:"
+        err "${packages_not_found[*]}"
 
-        execute "sudo apt-get install $extra_apt_params ${list_to_install[*]}" && break || {
-            if confirm "\n  apparently installation failed. want to de-select some of the packages and try again?"; then
+        list_to_install=( $(remove_items_from_list "${list_to_install[*]}" "${packages_not_found[*]}") )
+        PACKAGES_IGNORED_TO_INSTALL+=( ${packages_not_found[*]} )
+    fi
 
-                while true; do
-                    select_items "${list_to_install[*]}"
+    if [[ -z "${list_to_install[*]}" ]]; then
+        err "all packages got removed. skipping install block."
+        return 1
+    fi
 
-                    if [[ -n "$__SELECTED_ITEMS" ]]; then
-                        if confirm "\nignoring these additional packages:\n\t${__SELECTED_ITEMS}\nok?"; then
-                            ignored_packages+=" $__SELECTED_ITEMS "
-                            PACKAGES_IGNORED_TO_INSTALL+=( $__SELECTED_ITEMS )
-                            list_to_install=( $(remove_items_from_list "${list_to_install[*]}" "$__SELECTED_ITEMS") )
-                            break
-                        fi
-                    else
-                        report "you didn't de-select any packages; will re-try installing anyways..."
-                        sleep 3
-                        break
-                    fi
-                done
-            else
-                PACKAGES_IGNORED_TO_INSTALL+=( ${list_to_install[*]} )
+    execute "sudo apt-get install $extra_apt_params ${list_to_install[*]}"
 
-                report "all packages from this block were skipped. this will be reported"
-                sleep 5
-                return 1
-            fi
-        }
-
-        unset __SELECTED_ITEMS
-    done
+    unset find_faulty_packages
 }
 
 
