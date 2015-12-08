@@ -270,7 +270,7 @@ function install_deps() {
         execute "pushd $BASE_DEPS_LOC/bash-git-prompt"
         execute "git remote set-url origin git@$github.com:magicmonty/bash-git-prompt.git"
         execute "popd"
-    else
+    elif is_ssh_setup; then
         execute "pushd $BASE_DEPS_LOC/bash-git-prompt"
         execute "git pull"
         execute "popd"
@@ -292,7 +292,7 @@ function install_deps() {
         execute "pushd $HOME/.tmux/plugins"
 
         for dir in *; do
-            if [[ -d "$dir" ]]; then
+            if [[ -d "$dir" ]] && is_ssh_setup; then
                 # note we're assuming all dirs under ~/.tmux/plugins are git repos:
                 execute "pushd $dir"
                 execute "git pull"
@@ -354,7 +354,7 @@ function install_homesick() {
         execute "pushd $BASE_HOMESICK_REPOS_LOC/homeshick"
         execute "git remote set-url origin git@$github.com:andsens/homeshick.git"
         execute "popd"
-    else
+    elif is_ssh_setup; then
         execute "pushd $BASE_HOMESICK_REPOS_LOC/homeshick"
         execute "git pull"
         execute "popd"
@@ -828,7 +828,7 @@ function build_and_install_synergy() {
     fi
 
     execute "pushd $builddir"
-    [[ "$do_clone" -ne 1 ]] && execute "git pull"
+    [[ "$do_clone" -ne 1 ]] && is_ssh_setup && execute "git pull"
 
     execute "./hm.sh conf -g1"
     execute "./hm.sh build "
