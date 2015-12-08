@@ -1361,7 +1361,7 @@ function install_block() {
         packages_not_found=()
 
         for pkg in ${list_to_install[*]}; do
-            sudo apt-get -qq --dry-run install $pkg || packages_not_found+=( $pkg )
+            execute "sudo apt-get -qq --dry-run install $pkg" || packages_not_found+=( $pkg )
         done
 
         echo "${packages_not_found[*]}"
