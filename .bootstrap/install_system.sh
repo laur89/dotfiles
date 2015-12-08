@@ -98,7 +98,9 @@ function validate_and_init() {
 
 # check dependencies required for this installation script
 function check_dependencies() {
-    local dir prog
+    local dir prog perms
+
+    perms=777
 
     for prog in git wget tar; do
         if ! command -v $prog >/dev/null; then
@@ -109,14 +111,13 @@ function check_dependencies() {
         fi
     done
 
-    # verify required dirs are existing and have write perms:
+    # verify required dirs are existing and have $perms perms:
     for dir in \
             $BASE_DATA_DIR \
                 ; do
         if ! [[ -d "$dir" ]]; then
             if confirm "$dir mountpoint does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
-                execute "sudo mkdir $dir"
-                execute "sudo chmod 777 $dir"
+                execute "sudo mkdir $dir" || { err "unable to create $dir directory. abort."; exit 1; }
             else
                 err "expected \"$dir\" to be already-existing dir. abort"
                 exit 1
@@ -124,8 +125,7 @@ function check_dependencies() {
         fi
 
         if ! [[ -w "$dir" ]]; then
-            err "$dir does not have write permissions. perhaps 'sudo chmod 777 $dir'?"
-            exit 1
+            execute "sudo chmod $perms $dir" || { err "unable to change $dir permissions to $perms. abort."; exit 1; }
         fi
     done
 }
