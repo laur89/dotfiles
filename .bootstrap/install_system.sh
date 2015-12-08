@@ -769,7 +769,7 @@ function install_skype() {
         execute "sudo apt-get update"
     fi
     execute "wget -O $TMPDIR/skype-install.deb http://www.skype.com/go/getskype-linux-deb" || { err; return 1; }
-    execute "sudo dpkg -i $TMPDIR/skype-install.deb"
+    execute "sudo dpkg -i $TMPDIR/skype-install.deb" || { err; return 1; }
     execute "sudo apt-get -f install"
 
     # store the .deb, just in case:
@@ -795,10 +795,10 @@ function install_keepassx() {
 
     # first find whether we have deb packages from other times:
     if confirm "do you wish to install keepassx from our previous build .deb package, if available?"; then
-        install_from_deb keepassx || build_and_install_keepassx
-    else
-        build_and_install_keepassx
+        install_from_deb keepassx && return 0
     fi
+
+    build_and_install_keepassx
 }
 
 
@@ -933,6 +933,7 @@ function install_dwm() {
         libpango1.0-dev
         libxtst-dev
     '
+    [[ $? -ne 0 ]] && { err "failed to install dwm build deps. aborting build."; return 1; }
 
     execute "pushd $build_dir"
     report "installing dwm..."
@@ -980,9 +981,9 @@ function install_vim() {
 
     # first find whether we have deb packages from other times:
     if confirm "do you wish to install vim from our previous build .deb package, if available?"; then
-        install_from_deb vim || build_and_install_vim
+        install_from_deb vim || build_and_install_vim || return 1
     else
-        build_and_install_vim
+        build_and_install_vim || return 1
     fi
 
     vim_post_install_configuration
