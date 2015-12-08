@@ -1623,8 +1623,7 @@ function generate_key() {
     report "enter your mail (eg \"username@server.com\"):"
     read mail
 
-    report "(if asked for location, leave it to default (ie $PRIVATE_KEY_LOC))"
-    execute "ssh-keygen -t rsa -b 4096 -C \"$mail\""
+    execute "ssh-keygen -t rsa -b 4096 -C \"$mail\" -f $PRIVATE_KEY_LOC"
 }
 
 
