@@ -104,7 +104,7 @@ function check_dependencies() {
         if ! command -v $prog >/dev/null; then
             report "$prog not installed yet, installing..."
             install_block "$prog"
-            #execute "sudo apt-get -qq install $prog"
+            #execute "sudo apt-get install $prog"
             report "...done"
         fi
     done
@@ -633,7 +633,7 @@ function upgrade_kernel() {
 
         if [[ -n "$__SELECTED_ITEMS" ]]; then
             report "installing ${__SELECTED_ITEMS}..."
-            execute "sudo apt-get -qq install $__SELECTED_ITEMS"
+            execute "sudo apt-get install $__SELECTED_ITEMS"
         else
             confirm "no items were selected; skip kernel upgrade?" && break
         fi
@@ -976,7 +976,7 @@ function install_vim() {
 
     report "setting up vim..."
     report "removing already installed vim components..."
-    execute "sudo apt-get --qq remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"
+    execute "sudo apt-get remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"
 
     # first find whether we have deb packages from other times:
     if confirm "do you wish to install vim from our previous build .deb package, if available?"; then
@@ -1362,7 +1362,7 @@ function install_block() {
             report "retrying installation; all ignored packages so far:\n${ignored_packages[*]}\n"
         fi
 
-        execute "sudo apt-get -qq install $extra_apt_params ${list_to_install[*]}" && break || {
+        execute "sudo apt-get install $extra_apt_params ${list_to_install[*]}" && break || {
             if confirm "\n  apparently installation failed. want to de-select some of the packages and try again?"; then
 
                 while true; do
