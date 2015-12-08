@@ -50,10 +50,10 @@ PRIVATE_CASTLE=''  # installation specific private castle location (eg for 'work
 SELF="${0##*/}"
 
 declare -A COLORS
-COLORS=( \
-    [RED]="\033[0;31m" \
-    [YELLOW]="\033[0;33m" \
-    [OFF]="\033[0m" \
+COLORS=(
+    [RED]="\033[0;31m"
+    [YELLOW]="\033[0;33m"
+    [OFF]="\033[0m"
 )
 #-----------------------
 #---    Functions    ---
@@ -134,6 +134,7 @@ function check_dependencies() {
 function setup_hosts() {
     local hosts_file_dest file current_hostline tmpfile
 
+    hosts_file_dest="/etc"
     tmpfile="$TMPDIR/hosts"
 
     function extract_current_hosts_line() {
@@ -142,14 +143,12 @@ function setup_hosts() {
         file="$1"
         current="$(grep '\(127\.0\.1\.1\)\s\+\(.*\)\s\+\(\w\+\)' $file)"
         if [[ -z "$current" || "$(echo $current | wc -l)" -ne 1 ]]; then
-            err "$file didn't contain expected hostname line. check manually."
+            err "$file didn't contain expected hostname line (127.0.1.1). check manually."
             return 1
         fi
 
         echo "$current"
     }
-
-    hosts_file_dest="/etc"
 
     if ! [[ -d "$hosts_file_dest" ]]; then
         err "$hosts_file_dest is not a dir; skipping hosts file installation"
@@ -559,9 +558,7 @@ function setup() {
     execute "source $SHELL_ENVS"  # so we get our env vars after dotfiles are pulled in
 
     setup_config_files
-    install_deps
     setup_dirs  # has to come after .bash_env_vars sourcing so the env vars are in place
-    setup_fonts
 }
 
 
@@ -629,6 +626,7 @@ function upgrade_kernel() {
     [[ -z "${kernels_list[@]}" ]] && { err "apt-cache search didn't find any kernel images. skipping kernel upgrade"; sleep 5; return 1; }
 
     while true; do
+        echo
         report "current kernel: $(uname -r)"
         report "select kernel to install: (select none to skip kernel upgrade)\n"
         select_items "${kernels_list[*]}" 1
@@ -1058,18 +1056,18 @@ function build_and_install_vim() {
     execute "git clone $VIM_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir"
 
-    execute "./configure \
-            --with-features=huge \
-            --enable-multibyte \
-            --enable-rubyinterp \
-            --enable-pythoninterp \
-            --with-python-config-dir=/usr/lib/python2.7/config \
-            --enable-perlinterp \
-            --enable-luainterp \
-            --enable-gui=gtk2 \
-            --enable-cscope \
-            --prefix=/usr \
-    "
+    execute './configure
+            --with-features=huge
+            --enable-multibyte
+            --enable-rubyinterp
+            --enable-pythoninterp
+            --with-python-config-dir=/usr/lib/python2.7/config
+            --enable-perlinterp
+            --enable-luainterp
+            --enable-gui=gtk2
+            --enable-cscope
+            --prefix=/usr
+    '
 
     execute "make VIMRUNTIMEDIR=/usr/share/vim/vim74"
     #!(make sure rutimedir is correct; at this moment 74 was)
@@ -1133,10 +1131,10 @@ function install_YCM() {
 
     execute "mkdir $ycm_build_root"
     execute "pushd $ycm_build_root"
-    execute "cmake -G 'Unix Makefiles' \
-        -DPATH_TO_LLVM_ROOT=$libclang_root \
-        . \
-        ~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp \
+    execute "cmake -G 'Unix Makefiles'
+        -DPATH_TO_LLVM_ROOT=$libclang_root
+        .
+        ~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp
     "
     execute "cmake --build . --target ycm_support_libs --config Release"
     execute "popd"
@@ -1145,7 +1143,7 @@ function install_YCM() {
 }
 
 
-function setup_fonts() {
+function install_and_setup_fonts() {
     report "installing & setting up fonts..."
 
     install_block '
@@ -1174,70 +1172,70 @@ function install_from_repo() {
     local block block1 block2 block3 block4 extra_apt_params
 
     declare -A extra_apt_params
-    extra_apt_params=( \
-        block2=["--no-install-recommends"] \
+    extra_apt_params=(
+       [block2]="--no-install-recommends"
     )
 
-    block1=( \
-        xorg \
-        sudo \
-        alsa-base \
-        alsa-utils \
-        xfce4-volumed \
-        xfce4-notifyd \
-        xscreensaver \
-        smartmontools \
-        gksu \
-        pm-utils \
-        ntfs-3g \
-        dosfstools \
-        checkinstall \
-        build-essential \
-        cmake \
-        python3 \
-        python3-dev \
-        python3-pip \
-        python-dev \
-        python-pip \
-        python-flake8 \
-        python3-flake8 \
-        curl \
-        lshw \
+    block1=(
+        xorg
+        sudo
+        alsa-base
+        alsa-utils
+        xfce4-volumed
+        xfce4-notifyd
+        xscreensaver
+        smartmontools
+        gksu
+        pm-utils
+        ntfs-3g
+        dosfstools
+        checkinstall
+        build-essential
+        cmake
+        python3
+        python3-dev
+        python3-pip
+        python-dev
+        python-pip
+        python-flake8
+        python3-flake8
+        curl
+        lshw
     )
 
-    block2=( \
-        jq \
-        dnsutils \
-        glances \
-        tkremind \
-        remind \
-        qt4-qtconfig \
-        tree \
-        flashplugin-nonfree \
-        lxappearance \
-        htpdate \
-        apt-show-versions \
-        apt-xapian-index \
-        synaptic \
-        mercurial \
-        git \
-        htop \
-        zenity \
-        msmtp \
-        rsync \
-        gparted \
-        network-manager \
-        network-manager-gnome \
-        gsimplecal \
-        gnome-disk-utility \
-        galculator \
-        file-roller \
-        rar \
-        unrar \
-        p7zip \
-        dos2unix \
-        gtk2-engines-murrine \
-        gtk2-engines-pixbuf \
+    block2=(
+        jq
+        dnsutils
+        glances
+        tkremind
+        remind
+        qt4-qtconfig
+        tree
+        flashplugin-nonfree
+        lxappearance
+        htpdate
+        apt-show-versions
+        apt-xapian-index
+        synaptic
+        mercurial
+        git
+        htop
+        zenity
+        msmtp
+        rsync
+        gparted
+        network-manager
+        network-manager-gnome
+        gsimplecal
+        gnome-disk-utility
+        galculator
+        file-roller
+        rar
+        unrar
+        p7zip
+        dos2unix
+        gtk2-engines-murrine
+        gtk2-engines-pixbuf
     )
 
 
@@ -1246,57 +1244,57 @@ function install_from_repo() {
         #- !! gksu no moar recommended; pkexec advised; to use pkexec, you need to define its
         #     action in /usr/share/polkit-1/actions.
 
-    block3=( \
-        iceweasel \
-        icedove \
-        rxvt-unicode-256color \
-        mopidy \
-        mpc \
-        ncmpcpp \
-        geany \
-        libreoffice \
-        zathura \
-        mplayer2 \
-        smplayer \
-        gimp \
-        feh \
-        sxiv \
-        geeqie \
-        imagemagick \
-        calibre \
-        xsel \
-        exuberant-ctags \
-        shellcheck \
-        ranger \
-        spacefm \
-        screenfetch \
-        scrot \
-        mediainfo \
-        lynx \
-        tmux \
-        powerline \
-        libxm12-utils \
-        pidgin \
-        filezilla \
-        xclip \
-        gdebi \
-        etckeeper \
-        lxrandr \
-        transmission \
-        transmission-remote-cli \
+    block3=(
+        iceweasel
+        icedove
+        rxvt-unicode-256color
+        mopidy
+        mpc
+        ncmpcpp
+        geany
+        libreoffice
+        zathura
+        mplayer2
+        smplayer
+        gimp
+        feh
+        sxiv
+        geeqie
+        imagemagick
+        calibre
+        xsel
+        exuberant-ctags
+        shellcheck
+        ranger
+        spacefm
+        screenfetch
+        scrot
+        mediainfo
+        lynx
+        tmux
+        powerline
+        libxm12-utils
+        pidgin
+        filezilla
+        xclip
+        gdebi
+        etckeeper
+        lxrandr
+        transmission
+        transmission-remote-cli
     )
 
-    block4=( \
-        mutt-patched \
-        notmuch-mutt \
-        notmuch \
-        abook \
-        atool \
-        urlview \
-        silversearcher-ag \
-        isync \
-        cowsay \
-        toilet \
+    block4=(
+        mutt-patched
+        notmuch-mutt
+        notmuch
+        abook
+        atool
+        urlview
+        silversearcher-ag
+        isync
+        cowsay
+        toilet
     )
 
     for block in \
@@ -1364,7 +1362,7 @@ function install_block() {
             report "retrying installation; all ignored packages so far:\n${ignored_packages[*]}\n"
         fi
 
-        sudo apt-get -qq install $extra_apt_params ${list_to_install[*]} && break || {
+        execute "sudo apt-get -qq install $extra_apt_params ${list_to_install[*]}" && break || {
             if confirm "\n  apparently installation failed. want to de-select some of the packages and try again?"; then
 
                 while true; do
@@ -1458,7 +1456,7 @@ function choose_single_task() {
         setup_config_files
         install_deps
         setup_dirs
-        setup_fonts
+        install_and_setup_fonts
         upgrade_kernel
         install_nvidia
         install_webdev
@@ -1518,7 +1516,9 @@ function full_install() {
 
     execute "sudo apt-get update"
     upgrade_kernel
+    install_and_setup_fonts  # has to be after apt has been updated
     install_progs
+    install_deps
 }
 
 
