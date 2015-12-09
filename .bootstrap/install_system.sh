@@ -993,7 +993,7 @@ function install_vim() {
     vim_post_install_configuration
 
     report "launching vim, so the initialization could be done (pulling in plugins et al. simply exit vim when it's done.)"
-    echo "initialising vim; simply exit when plugin fetching is complete. (quit with ':qa!')" | \
+    echo 'initialising vim; simply exit when plugin fetching is complete. (quit with  :qa!)' | \
         vim -  # needs to be non-root
 
     # YCM installation AFTER the first vim launch!
