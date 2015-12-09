@@ -1163,6 +1163,8 @@ function install_YCM() {
 
 
 function install_and_setup_fonts() {
+    local dir
+
     report "installing & setting up fonts..."
 
     install_block '
@@ -1178,10 +1180,24 @@ function install_and_setup_fonts() {
         fontforge
     '
 
-    execute "pushd $HOME/.fonts"
-    execute "fc-cache -fv"
+
+    execute "xset +fp ~/.fonts"
     execute "mkfontscale ~/.fonts"
     execute "mkfontdir ~/.fonts"
+    execute "pushd ~/.fonts"
+
+    for dir in * ; do
+        if [[ -d "$dir" ]]; then
+            execute "pushd $dir"
+            execute "xset +fp $PWD"
+            execute "mkfontscale"
+            execute "mkfontdir"
+            execute "popd"
+        fi
+    done
+
+    execute "xset fp rehash"
+    execute "fc-cache -fv"
     execute "popd"
 }
 
