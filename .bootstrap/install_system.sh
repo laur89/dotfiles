@@ -408,11 +408,11 @@ function clone_or_link_castle() {
 function fetch_castles() {
     local castle user hub
 
-    # common private:
-    clone_or_link_castle private-common layr bitbucket.org
-
     # common public castles:
     clone_or_link_castle dotfiles laur89 github.com
+
+    # common private:
+    clone_or_link_castle private-common layr bitbucket.org
 
     # !! if you change private repos, make sure you update PRIVATE_CASTLE definitions @ validate_and_init()!
     if [[ "$MODE" == work ]]; then
