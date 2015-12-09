@@ -73,13 +73,12 @@ function validate_and_init() {
 
     check_connection || { err "no internet connection. abort."; exit 1; }
 
-    # if you change PRIVATE_CASTLE definitions, make sure you update fetch_castles() as well
     case $MODE in
         work)
-            PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/work_dotfiles"
+            true
             ;;
         personal)
-            PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/personal-dotfiles"
+            true
             ;;
         *)
             print_usage
@@ -417,8 +416,10 @@ function fetch_castles() {
     # !! if you change private repos, make sure you update PRIVATE_CASTLE definitions @ validate_and_init()!
     if [[ "$MODE" == work ]]; then
         clone_or_link_castle work_dotfiles laur.aliste gitlab.williamhill-dev.local
+        PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/work_dotfiles"
     elif [[ "$MODE" == personal ]]; then
         clone_or_link_castle personal-dotfiles layr bitbucket.org
+        PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/personal-dotfiles"
     fi
 
     while true; do
