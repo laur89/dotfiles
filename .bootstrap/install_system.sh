@@ -129,6 +129,8 @@ function check_dependencies() {
             execute "sudo chmod $perms $dir" || { err "unable to change $dir permissions to $perms. abort."; exit 1; }
         fi
     done
+
+    execute "mkdir $BASE_DATA_DIR/dev"  # TODO
 }
 
 
@@ -556,7 +558,6 @@ function setup_SSID_checker() {
 
 function setup() {
 
-    execute "mkdir $BASE_DATA_DIR/dev"  # TODO
     setup_homesick
     verify_ssh_key
     execute "source $SHELL_ENVS"  # so we get our env vars after dotfiles are pulled in
