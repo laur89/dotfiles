@@ -538,7 +538,7 @@ function setup_config_files() {
 function setup_SSID_checker() {
     local wrapper_loc  wrapper_dest
 
-    wrapper_loc="/data/dev/scripts/network_manager_SSID_checker_wrapper.sh"
+    wrapper_loc="$BASE_DATA_DIR/dev/scripts/network_manager_SSID_checker_wrapper.sh"
     wrapper_dest="/etc/NetworkManager/dispatcher.d"
 
     if ! [[ -f "$wrapper_loc" ]]; then
