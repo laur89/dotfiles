@@ -111,9 +111,15 @@ function check_dependencies() {
         fi
     done
 
+    # TODO: need to create dev/ already here, since both dotfiles and private-common
+    # either point to it, or point somthing in it; not a good solution.
+    # best finalyse scripts and move them to dotfiles.
+    #
+    #
     # verify required dirs are existing and have $perms perms:
     for dir in \
             $BASE_DATA_DIR \
+            $BASE_DATA_DIR/dev \
                 ; do
         if ! [[ -d "$dir" ]]; then
             if confirm "$dir mountpoint does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
@@ -128,8 +134,6 @@ function check_dependencies() {
             execute "sudo chmod $perms $dir" || { err "unable to change $dir permissions to $perms. abort."; exit 1; }
         fi
     done
-
-    execute "mkdir $BASE_DATA_DIR/dev"  # TODO
 }
 
 
@@ -1369,22 +1373,16 @@ function install_nvidia() {
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
 function install_block() {
-    local list_to_install extra_apt_params packages_not_found exit_sig exit_sig_tmp packages_not_found
+    local list_to_install extra_apt_params packages_not_found exit_sig exit_sig_tmp packages_not_found pkg
 
     list_to_install=( $1 )
     extra_apt_params="$2"  # optional
     packages_not_found=()
 
-    function find_faulty_packages() {
-        local pkg
-
-        for pkg in ${list_to_install[*]}; do
-            execute "sudo apt-get -qq --dry-run install $pkg" || packages_not_found+=( $pkg )
-        done
-    }
-
     report "installing these packages:\n${list_to_install[*]}\n"
-    find_faulty_packages  # populates packages_not_found arr
+    for pkg in ${list_to_install[*]}; do
+        execute "sudo apt-get -qq --dry-run install $pkg" || packages_not_found+=( $pkg )
+    done
 
     if [[ -n "${packages_not_found[*]}" ]]; then
         err "either these packages could not be found from the repo, or some other issue occurred; skipping installing these packages. this will be logged:"
@@ -1403,7 +1401,6 @@ function install_block() {
     execute "sudo apt-get --yes install $extra_apt_params ${list_to_install[*]}"
     exit_sig_tmp=$?
 
-    unset find_faulty_packages
     [[ -n "$exit_sig" ]] && return $exit_sig || return $exit_sig_tmp
 }
 
