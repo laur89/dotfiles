@@ -1355,25 +1355,22 @@ function install_nvidia() {
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
 function install_block() {
-    local list_to_install extra_apt_params packages_not_found exit_sig exit_sig_tmp
+    local list_to_install extra_apt_params packages_not_found exit_sig exit_sig_tmp packages_not_found
 
     list_to_install=( $1 )
     extra_apt_params="$2"  # optional
+    packages_not_found=()
 
     function find_faulty_packages() {
-        local pkg packages_not_found
-
-        packages_not_found=()
+        local pkg
 
         for pkg in ${list_to_install[*]}; do
             execute "sudo apt-get -qq --dry-run install $pkg" || packages_not_found+=( $pkg )
         done
-
-        echo "${packages_not_found[*]}"
     }
 
     report "installing these packages:\n${list_to_install[*]}\n"
-    packages_not_found=( $(find_faulty_packages) )
+    find_faulty_packages  # populates packages_not_found arr
 
     if [[ -n "${packages_not_found[*]}" ]]; then
         err "either these packages could not be found from the repo, or some other issue occurred; skipping installing these packages. this will be logged:"
