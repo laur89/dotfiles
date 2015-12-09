@@ -1410,6 +1410,7 @@ function should_build_if_avail_in_repo() {
         echo -e "$packages"
 
         if ! confirm "\tdo you still wish to build yourself?\n\t(answering 'no' will skip the build. you need to manually install it from the repo yourself.)"; then
+            # TODO: store and log!
             return 1
         fi
     fi
@@ -1802,7 +1803,7 @@ MODE="$1"   # work | personal
 
 # ask for the admin password upfront:
 report "enter sudo password:"
-sudo -v || { clear; err "is sudo installed? if not, then \"su && apt-get install sudo\""; exit 2; }
+sudo -v || { clear; err "is user in sudoers file? is sudo installed? if not, then \"su && apt-get install sudo\""; exit 2; }
 clear
 
 # keep-alive: update existing `sudo` time stamp
@@ -1820,7 +1821,7 @@ if [[ -e "$EXECUTION_LOG" ]]; then
     sed -i '/^\s*$/d' "$EXECUTION_LOG"  # strip empty lines
 
     echo -e "\n\n___________________________________________"
-    echo -e "\texecution log can be found at \"$EXECUTION_LOG\""
+    echo -e "\tscript execution log can be found at \"$EXECUTION_LOG\""
     echo -e "___________________________________________"
 fi
 
