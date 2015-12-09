@@ -869,7 +869,7 @@ function build_and_install_copyq() {
     execute "git clone $COPYQ_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir"
 
-    execute "cmake ."
+    execute 'cmake .'
     execute "make"
 
     create_deb_install_and_store
@@ -920,7 +920,7 @@ function build_and_install_keepassx() {
 
     execute "mkdir $tmpdir/build"
     execute "pushd $tmpdir/build"
-    execute "cmake .."
+    execute 'cmake ..'
     execute "make"
 
     create_deb_install_and_store
@@ -1155,7 +1155,7 @@ function install_YCM() {
         .
         ~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp
     "
-    execute "cmake --build . --target ycm_support_libs --config Release"
+    execute 'cmake --build . --target ycm_support_libs --config Release'
     execute "popd"
 
     unset __fetch_libclang  # to keep the inner function really an inner one (ie private).
