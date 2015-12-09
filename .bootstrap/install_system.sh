@@ -209,6 +209,7 @@ function setup_apt() {
     for file in \
             sources.list \
             preferences \
+            apt.conf \
                 ; do
         if [[ -f "$COMMON_DOTFILES/backups/$file" ]]; then
             backup_original_and_copy_file "$COMMON_DOTFILES/backups/$file" "$apt_dir"
@@ -560,8 +561,8 @@ function setup() {
     verify_ssh_key
     execute "source $SHELL_ENVS"  # so we get our env vars after dotfiles are pulled in
 
-    setup_config_files
     setup_dirs  # has to come after .bash_env_vars sourcing so the env vars are in place
+    setup_config_files
 }
 
 
@@ -689,6 +690,7 @@ function install_oracle_jdk() {
 
     execute "popd"
     execute "rm -rf $tmpdir"
+    return 0
 }
 
 
@@ -735,12 +737,13 @@ function install_synergy() {
 
     # find whether there already is a synergy build dir present:
     if [[ -d "$BASE_BUILDS_DIR/synergy" ]]; then
-        if ! confirm "$BASE_BUILDS_DIR/synergy dir already exists. use that one? (answering 'no' will re-clone repo)"; then
-            re_clone=1
+        if confirm "$BASE_BUILDS_DIR/synergy dir already exists. use that one? (answering 'no' will re-clone repo)"; then
+            re_clone=0
         fi
     fi
 
     build_and_install_synergy $re_clone
+    return $?
 }
 
 
@@ -755,10 +758,11 @@ function install_copyq() {
     fi
 
     build_and_install_copyq
+    return $?
 }
 
 
-function install_skype() {
+function install_skype() {  # https://wiki.debian.org/skype
     is_server && { report "we're server, skipping skype installation."; return; }
 
     report "setting up skype"
@@ -768,12 +772,13 @@ function install_skype() {
     fi
 
     if is_64_bit; then
-        execute "sudo dpkg --add-architecture i386" || { err; return 1; }
+        execute "sudo dpkg --add-architecture i386"
         execute "sudo apt-get update"
+        execute "sudo apt-get -f --yes install"
     fi
     execute "wget -O $TMPDIR/skype-install.deb http://www.skype.com/go/getskype-linux-deb" || { err; return 1; }
-    execute "sudo dpkg -i $TMPDIR/skype-install.deb" || { err; return 1; }
-    execute "sudo apt-get -f install"
+    execute "sudo dpkg -i $TMPDIR/skype-install.deb"  #|| { err; return 1; }  # do not exit on err!
+    execute "sudo apt-get -f --yes install" || { err; return 1; }
 
     # store the .deb, just in case:
     execute "mv $TMPDIR/skype-install.deb $BASE_BUILDS_DIR"
@@ -802,6 +807,7 @@ function install_keepassx() {
     fi
 
     build_and_install_keepassx
+    return $?
 }
 
 
@@ -809,7 +815,7 @@ function build_and_install_synergy() {
     # building instructions from https://github.com/synergy/synergy/wiki/Compiling
     local builddir do_clone
 
-    do_clone="$1"  # set to '1' if synergy repo should be re-cloned
+    do_clone="$1"  # set to '0' if synergy repo should NOT be re-cloned
 
     builddir="$BASE_BUILDS_DIR/synergy"
     report "building synergy"
@@ -825,19 +831,20 @@ function build_and_install_synergy() {
         qt4-dev-tools
         xorg-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
-    if [[ "$do_clone" -eq 1 ]]; then
+    if [[ "$do_clone" -ne 0 ]]; then
         [[ -d "$builddir" ]] && execute "rm -rf $builddir"
         execute "git clone $SYNERGY_REPO_LOC $builddir" || return 1
     fi
 
     execute "pushd $builddir"
-    [[ "$do_clone" -ne 1 ]] && is_ssh_setup && execute "git pull"
+    [[ "$do_clone" -eq 0 ]] && is_ssh_setup && execute "git pull"
 
     execute "./hm.sh conf -g1"
     execute "./hm.sh build "
 
     # note builddir should not be deleted
     execute "popd"
+    return 0
 }
 
 
@@ -867,6 +874,7 @@ function build_and_install_copyq() {
 
     execute "popd"
     execute "rm -rf -- $tmpdir"
+    return 0
 }
 
 
@@ -917,6 +925,7 @@ function build_and_install_keepassx() {
 
     execute "popd"
     execute "rm -rf -- $tmpdir"
+    return 0
 }
 
 
@@ -942,6 +951,7 @@ function install_dwm() {
     report "installing dwm..."
     execute "sudo make clean install"
     execute "popd"
+    return 0
 }
 
 
@@ -1072,14 +1082,16 @@ function build_and_install_vim() {
             --enable-gui=gtk2
             --enable-cscope
             --prefix=/usr
-    '
+    ' || { err 'vim configure build phase failed.'; return 1; }
 
-    execute "make VIMRUNTIMEDIR=/usr/share/vim/vim74"
+    execute "make VIMRUNTIMEDIR=/usr/share/vim/vim74" || { err 'vim make failed'; return 1; }
     #!(make sure rutimedir is correct; at this moment 74 was)
-    create_deb_install_and_store
+    create_deb_install_and_store || { err; return 1; }
 
     execute "popd"
     execute "rm -rf -- $tmpdir"
+
+    return 0
 }
 
 
