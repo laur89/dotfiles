@@ -735,7 +735,7 @@ function install_synergy() {
 
     # find whether there already is a synergy build dir present:
     if [[ -d "$BASE_BUILDS_DIR/synergy" ]]; then
-        if ! confirm "$BASE_BUILDS_DIR/synergy dir already exists. use that one? (answering no will re-clone repo)"; then
+        if ! confirm "$BASE_BUILDS_DIR/synergy dir already exists. use that one? (answering 'no' will re-clone repo)"; then
             re_clone=1
         fi
     fi
@@ -1124,7 +1124,7 @@ function install_YCM() {
 
     # first make sure we have libclang:
     if [[ -d "$libclang_root" ]]; then
-        if ! confirm "found existing libclang at ${libclang_root}; use this one? (answering no will fetch new version)"; then
+        if ! confirm "found existing libclang at ${libclang_root}; use this one? (answering 'no' will fetch new version)"; then
             __fetch_libclang || { err "fetching libclang failed; aborting YCM installation."; return 1; }
         fi
     else
@@ -1403,12 +1403,12 @@ function should_build_if_avail_in_repo() {
 
     package_name="$1"
 
-    packages="$(apt-cache search --names-only $package_name)"
+    packages="$(apt-cache search --names-only $package_name)" || { err; return 1; }
     if [[ -n "$packages" ]]; then
         report "FYI, these packages with \"$package_name\" in them are available in repo:"
         echo -e "$packages"
 
-        if ! confirm "\tdo you still wish to build yourself?\n\t(answering no will skip the build. you need to manually install it from the repo yourself.)"; then
+        if ! confirm "\tdo you still wish to build yourself?\n\t(answering 'no' will skip the build. you need to manually install it from the repo yourself.)"; then
             return 1
         fi
     fi
