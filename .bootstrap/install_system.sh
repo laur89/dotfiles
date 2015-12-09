@@ -1389,7 +1389,7 @@ function install_block() {
         return 1
     fi
 
-    execute "sudo apt-get install $extra_apt_params ${list_to_install[*]}"
+    execute "sudo apt-get --yes install $extra_apt_params ${list_to_install[*]}"
     exit_sig_tmp=$?
 
     unset find_faulty_packages
