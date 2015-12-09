@@ -873,7 +873,7 @@ function build_and_install_copyq() {
 function create_deb_install_and_store() {
     local deb_file
 
-    execute "sudo checkinstall"
+    execute "sudo checkinstall" || { err "checkinstall failed. is it installed? abort."; return 1; }
 
     deb_file="$(find . -type f -name '*.deb')"
     if [[ -f "$deb_file" ]]; then
