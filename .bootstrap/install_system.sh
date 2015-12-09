@@ -1355,7 +1355,7 @@ function install_nvidia() {
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
 function install_block() {
-    local list_to_install extra_apt_params packages_not_found exit_sig
+    local list_to_install extra_apt_params packages_not_found exit_sig exit_sig_tmp
 
     list_to_install=( $1 )
     extra_apt_params="$2"  # optional
@@ -1381,6 +1381,7 @@ function install_block() {
 
         list_to_install=( $(remove_items_from_list "${list_to_install[*]}" "${packages_not_found[*]}") )
         PACKAGES_IGNORED_TO_INSTALL+=( ${packages_not_found[*]} )
+        exit_sig=3
     fi
 
     if [[ -z "${list_to_install[*]}" ]]; then
@@ -1389,10 +1390,10 @@ function install_block() {
     fi
 
     execute "sudo apt-get install $extra_apt_params ${list_to_install[*]}"
-    exit_sig=$?
+    exit_sig_tmp=$?
 
     unset find_faulty_packages
-    return $exit_sig
+    [[ -n "$exit_sig" ]] && return $exit_sig || return $exit_sig_tmp
 }
 
 
