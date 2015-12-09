@@ -824,7 +824,7 @@ function build_and_install_synergy() {
         python
         qt4-dev-tools
         xorg-dev
-    '
+    ' || { err 'failed to install build deps. abort.'; return 1; }
     if [[ "$do_clone" -eq 1 ]]; then
         [[ -d "$builddir" ]] && execute "rm -rf $builddir"
         execute "git clone $SYNERGY_REPO_LOC $builddir" || return 1
@@ -856,7 +856,7 @@ function build_and_install_copyq() {
         cmake
         libxfixes-dev
         libxtst-dev
-    '
+    ' || { err 'failed to install build deps. abort.'; return 1; }
     execute "git clone $COPYQ_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir"
 
@@ -873,6 +873,7 @@ function build_and_install_copyq() {
 function create_deb_install_and_store() {
     local deb_file
 
+    report "creating .deb and installing with checkinstall..."
     execute "sudo checkinstall" || { err "checkinstall failed. is it installed? abort."; return 1; }
 
     deb_file="$(find . -type f -name '*.deb')"
@@ -904,7 +905,7 @@ function build_and_install_keepassx() {
         qttools5-dev-tools
         libgcrypt20-dev
         zlib1g-dev
-    '
+    ' || { err 'failed to install build deps. abort.'; return 1; }
     execute "git clone $KEEPASS_REPO_LOC $tmpdir" || return 1
 
     execute "mkdir $tmpdir/build"
@@ -935,8 +936,7 @@ function install_dwm() {
         libxinerama-dev
         libpango1.0-dev
         libxtst-dev
-    '
-    [[ $? -ne 0 ]] && { err "failed to install dwm build deps. aborting build."; return 1; }
+    ' || { err 'failed to install build deps. abort.'; return 1; }
 
     execute "pushd $build_dir"
     report "installing dwm..."
@@ -1057,7 +1057,7 @@ function build_and_install_vim() {
         libxt-dev
         python-dev
         ruby-dev
-    '
+    ' || { err 'failed to install build deps. abort.'; return 1; }
     execute "git clone $VIM_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir"
 
