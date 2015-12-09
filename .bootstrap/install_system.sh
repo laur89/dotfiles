@@ -355,7 +355,7 @@ function install_homesick() {
         execute "git clone https://github.com/andsens/homeshick.git $BASE_HOMESICK_REPOS_LOC/homeshick" || return 1
 
         execute "pushd $BASE_HOMESICK_REPOS_LOC/homeshick"
-        execute "git remote set-url origin git@$github.com:andsens/homeshick.git"
+        execute "git remote set-url origin git@github.com:andsens/homeshick.git"
         execute "popd"
     elif is_ssh_setup; then
         execute "pushd $BASE_HOMESICK_REPOS_LOC/homeshick"
@@ -406,19 +406,18 @@ function clone_or_link_castle() {
 function fetch_castles() {
     local castle user hub
 
-    # !! if you change private repos, make sure you update PRIVATE_CASTLE definitions @ validate_and_init()!
-    # first fetch private ones (these might contain missing .ssh or other important dotfiles):
-    if [[ "$MODE" == work ]]; then
-        clone_or_link_castle work_dotfiles laur.aliste gitlab.williamhill-dev.local
-    elif [[ "$MODE" == personal ]]; then
-        clone_or_link_castle personal-dotfiles layr bitbucket.org
-    fi
-
     # common private:
     clone_or_link_castle private-common layr bitbucket.org
 
     # common public castles:
     clone_or_link_castle dotfiles laur89 github.com
+
+    # !! if you change private repos, make sure you update PRIVATE_CASTLE definitions @ validate_and_init()!
+    if [[ "$MODE" == work ]]; then
+        clone_or_link_castle work_dotfiles laur.aliste gitlab.williamhill-dev.local
+    elif [[ "$MODE" == personal ]]; then
+        clone_or_link_castle personal-dotfiles layr bitbucket.org
+    fi
 
     while true; do
         if confirm "want to clone another castle?"; then
@@ -557,6 +556,7 @@ function setup_SSID_checker() {
 
 function setup() {
 
+    execute "mkdir $BASE_DATA_DIR/dev"  # TODO
     setup_homesick
     verify_ssh_key
     execute "source $SHELL_ENVS"  # so we get our env vars after dotfiles are pulled in

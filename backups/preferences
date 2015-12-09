@@ -1,10 +1,25 @@
+# Package pinning priorities
+# See http://wiki.debian.org/AptPreferences and http://manpages.debian.net/cgi-bin/man.cgi?query=apt_preferences
+#
+# In nut shell highest PIN gets installed
+#
+# Pining default are as follow which are in addition to our settings:
+#   990 - for version that are not installed but DO belong to our `APT::Default-Relase "stable"` setting.
+#   500 - for versions that are not installed and do not belong to the target release
+#   100 - for packages that already installed, this also means other versions of same package
+#     1 - for experimental packages; packages with "NotAutomatic: yes"
+#
+# Our Pinnings
+#   400 - backports that can safely be installed without the need to update other packages
+#    50 - unstable packages, install forced in the details screen, can result in conflicts
+
 Package: *
 Pin: release l=Debian-Security
 Pin-Priority: 1000
 
 Package: *
 Pin: release a=testing
-Pin-Priority: 700
+Pin-Priority: 990
 
 Package: *
 Pin: release a=stable
@@ -12,7 +27,7 @@ Pin-Priority: 650
 
 Package: *
 Pin: release a=unstable
-Pin-Priority: 600
+Pin-Priority: 50
 
 Package: *
 Pin: release a=oldstable
