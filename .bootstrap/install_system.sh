@@ -74,15 +74,11 @@ function validate_and_init() {
     check_connection || { err "no internet connection. abort."; exit 1; }
 
     case $MODE in
-        work)
-            true
-            ;;
-        personal)
-            true
-            ;;
+        work|personal)
+            true ;;
         *)
             print_usage
-            exit 1
+            exit 1 ;;
     esac
 
     # verify we have our key(s) set up and available:
