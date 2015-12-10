@@ -1246,7 +1246,7 @@ xmlformat() {
     [[ -z "$@" ]] && { echo -e "usage:   $FUNCNAME  <filename>"; return 1; }
     [[ -f "$@" && -r "$@" ]] || { err "provided file \"$*\" is not a regular file or is not readable. abort." "$FUNCNAME"; return 1; }
     check_progs_installed xmllint vim || return 1;
-    xmllint --format -- "$@" | vim  "+set foldlevel=99" -;
+    xmllint --format "$@" | vim  "+set foldlevel=99" -;
 }
 
 function xmlf() { xmlformat "$@"; } # alias for xmlformat;

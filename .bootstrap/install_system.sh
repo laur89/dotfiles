@@ -639,7 +639,7 @@ function upgrade_kernel() {
 
         if [[ -n "$__SELECTED_ITEMS" ]]; then
             report "installing ${__SELECTED_ITEMS}..."
-            execute "sudo apt-get install $__SELECTED_ITEMS"
+            execute "sudo apt-get --yes install $__SELECTED_ITEMS"
         else
             confirm "no items were selected; skip kernel upgrade?" && break
         fi
@@ -775,7 +775,7 @@ function install_skype() {  # https://wiki.debian.org/skype
 
     if is_64_bit; then
         execute "sudo dpkg --add-architecture i386"
-        execute "sudo apt-get update"
+        execute "sudo apt-get --yes update"
         execute "sudo apt-get -f --yes install"
     fi
     execute "wget -O $TMPDIR/skype-install.deb http://www.skype.com/go/getskype-linux-deb" || { err; return 1; }
@@ -1073,18 +1073,18 @@ function build_and_install_vim() {
     execute "git clone $VIM_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir"
 
-    execute './configure
-            --with-features=huge
-            --enable-multibyte
-            --enable-rubyinterp
-            --enable-pythoninterp
-            --with-python-config-dir=/usr/lib/python2.7/config
-            --enable-perlinterp
-            --enable-luainterp
-            --enable-gui=gtk2
-            --enable-cscope
-            --prefix=/usr
-    ' || { err 'vim configure build phase failed.'; return 1; }
+    execute "./configure \
+            --with-features=huge \
+            --enable-multibyte \
+            --enable-rubyinterp \
+            --enable-pythoninterp \
+            --with-python-config-dir=/usr/lib/python2.7/config \
+            --enable-perlinterp \
+            --enable-luainterp \
+            --enable-gui=gtk2 \
+            --enable-cscope \
+            --prefix=/usr \
+    " || { err 'vim configure build phase failed.'; return 1; }
 
     execute "make VIMRUNTIMEDIR=/usr/share/vim/vim74" || { err 'vim make failed'; return 1; }
     #!(make sure rutimedir is correct; at this moment 74 was)
@@ -1150,10 +1150,10 @@ function install_YCM() {
 
     execute "mkdir $ycm_build_root"
     execute "pushd $ycm_build_root"
-    execute "cmake -G 'Unix Makefiles'
-        -DPATH_TO_LLVM_ROOT=$libclang_root
-        .
-        ~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp
+    execute "cmake -G 'Unix Makefiles' \
+        -DPATH_TO_LLVM_ROOT=$libclang_root \
+        . \
+        ~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp \
     "
     execute "cmake --build . --target ycm_support_libs --config Release"
     execute "popd"
@@ -1528,7 +1528,7 @@ function full_install() {
 
     setup
 
-    execute "sudo apt-get update"
+    execute "sudo apt-get --yes update"
     upgrade_kernel
     install_and_setup_fonts  # has to be after apt has been updated
     install_progs
