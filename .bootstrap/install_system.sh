@@ -118,7 +118,7 @@ function check_dependencies() {
             $BASE_DATA_DIR/dev \
                 ; do
         if ! [[ -d "$dir" ]]; then
-            if confirm "$dir mountpoint does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
+            if confirm "$dir mountpoint/dir does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
                 execute "sudo mkdir $dir" || { err "unable to create $dir directory. abort."; exit 1; }
             else
                 err "expected \"$dir\" to be already-existing dir. abort"
@@ -254,7 +254,7 @@ function backup_original_and_copy_file() {
 
     # back up the destination file, if it's already existing:
     if [[ -f "$dest/$filename" ]] && ! [[ -e "$dest/${filename}.orig" ]]; then
-        execute "sudo mv $dest/$filename $dest/${filename}.orig"
+        execute "sudo cp $dest/$filename $dest/${filename}.orig"
     fi
 
     execute "sudo cp $file $dest"
@@ -381,22 +381,30 @@ function clone_or_link_castle() {
     [[ -z "$castle" || -z "$user" || -z "$hub" ]] && { err "either user, repo or castle name were missing"; sleep 2; return 1; }
 
     if [[ -d "$BASE_HOMESICK_REPOS_LOC/$castle" ]]; then
-        report "$castle already exists; linking..."
+        if is_ssh_setup; then
+            report "$castle already exists; pulling & linking"
+            execute "$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick pull $castle"
+        else
+            report "$castle already exists; linking..."
+        fi
 
         execute "$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick link $castle"
     else
         report "cloning ${castle}..."
+        if is_ssh_setup; then
+            execute "$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick clone git@${hub}:$user/${castle}.git"
+        else
+            # note we clone via https, not ssh:
+            execute "$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick clone https://${hub}/$user/${castle}.git"
 
-        # note we clone via https, not ssh:
-        execute "$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick clone https://${hub}/$user/${castle}.git"
-
-        # change just cloned repo remote from https to ssh:
-        execute "pushd $BASE_HOMESICK_REPOS_LOC/$castle"
-        execute "git remote set-url origin git@${hub}:$user/${castle}.git"
-        execute "popd"
+            # change just cloned repo remote from https to ssh:
+            execute "pushd $BASE_HOMESICK_REPOS_LOC/$castle" || return 1
+            execute "git remote set-url origin git@${hub}:$user/${castle}.git"
+            execute "popd"
+        fi
     fi
 
-    # just in case verify whether our ssh issue got solved after cloning/linking:
+    # just in case verify whether our ssh keys got cloned in:
     if [[ "$IS_SSH_SETUP" -eq 0 ]] && is_ssh_setup; then
         _sanitize_ssh
         IS_SSH_SETUP=1
@@ -691,7 +699,7 @@ function install_oracle_jdk() {
     execute "sudo ln -s $JDK_INSTALLATION_DIR/$(basename $dir) $JDK_LINK_LOC"
 
     execute "popd"
-    execute "rm -rf $tmpdir"
+    execute "sudo rm -rf $tmpdir"
     return 0
 }
 
@@ -834,7 +842,7 @@ function build_and_install_synergy() {
         xorg-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
     if [[ "$do_clone" -ne 0 ]]; then
-        [[ -d "$builddir" ]] && execute "rm -rf $builddir"
+        [[ -d "$builddir" ]] && execute "sudo rm -rf $builddir"
         execute "git clone $SYNERGY_REPO_LOC $builddir" || return 1
     fi
 
@@ -875,7 +883,7 @@ function build_and_install_copyq() {
     create_deb_install_and_store
 
     execute "popd"
-    execute "rm -rf -- $tmpdir"
+    execute "sudo rm -rf -- $tmpdir"
     return 0
 }
 
@@ -926,7 +934,7 @@ function build_and_install_keepassx() {
     create_deb_install_and_store
 
     execute "popd"
-    execute "rm -rf -- $tmpdir"
+    execute "sudo rm -rf -- $tmpdir"
     return 0
 }
 
@@ -993,7 +1001,7 @@ function install_vim() {
 
     report "setting up vim..."
     report "removing already installed vim components..."
-    execute "sudo apt-get remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"
+    execute "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"
 
     # first find whether we have deb packages from other times:
     if confirm "do you wish to install vim from our previous build .deb package, if available?"; then
@@ -1033,7 +1041,7 @@ function vim_post_install_configuration() {
     # note we don't want sessions in homesick, as they're likely to be machine-dependent.
     if [[ -d "$stored_vim_sessions" ]]; then
         if ! [[ -h "$HOME/.vim/sessions" ]]; then
-            [[ -d "$HOME/.vim/sessions" ]] && execute "rm -rf $HOME/.vim/sessions"
+            [[ -d "$HOME/.vim/sessions" ]] && execute "sudo rm -rf $HOME/.vim/sessions"
             execute "ln -s $stored_vim_sessions $HOME/.vim/sessions"
         fi
     else  # $stored_vim_sessions does not exist; init it anyways
@@ -1091,7 +1099,7 @@ function build_and_install_vim() {
     create_deb_install_and_store || { err; return 1; }
 
     execute "popd"
-    execute "rm -rf -- $tmpdir"
+    execute "sudo rm -rf -- $tmpdir"
 
     return 0
 }
@@ -1117,11 +1125,11 @@ function install_YCM() {
         extract "$tarball" || { err "extracting $tarball failed."; return 1; }
         dir="$(find -mindepth 1 -maxdepth 1 -type d)"
         [[ -d "$dir" ]] || { err "couldn't find unpacked clang directory"; return 1; }
-        [[ -d "$libclang_root" ]] && execute "rm -rf -- $libclang_root"
+        [[ -d "$libclang_root" ]] && execute "sudo rm -rf -- $libclang_root"
         execute "mv $dir $libclang_root"
 
         execute "popd"
-        execute "rm -rf $tmpdir"
+        execute "sudo rm -rf $tmpdir"
 
         return 0
     }
@@ -1146,7 +1154,7 @@ function install_YCM() {
     fi
 
     # clean previous builddir, if existing:
-    [[ -d "$ycm_build_root" ]] && rm -rf -- "$ycm_build_root"
+    [[ -d "$ycm_build_root" ]] && execute "sudo rm -rf -- $ycm_build_root"
 
     execute "mkdir $ycm_build_root"
     execute "pushd $ycm_build_root"
@@ -1178,6 +1186,7 @@ function install_and_setup_fonts() {
         xfonts-bitmap-mule
         xfonts-base
         fontforge
+        xset
     '
 
 

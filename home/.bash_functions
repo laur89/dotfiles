@@ -640,6 +640,8 @@ function aptsearch() {
     #apt-cache search "$@"
 }
 
+function aptsrc() { aptsearch "$@"; } # alias
+
 function aptreset() {
 
     report "note that sudo passwd is required" "$FUNCNAME"
@@ -654,8 +656,6 @@ function aptreset() {
     sudo apt-get update
     sudo apt-get upgrade
 }
-
-function aptsrc() { aptsearch "$@"; } # alias
 
 #  Find a pattern in a set of files and highlight them:
 #+ (needs a recent version of grep).
