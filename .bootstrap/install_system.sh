@@ -102,7 +102,6 @@ function check_dependencies() {
         if ! command -v $prog >/dev/null; then
             report "$prog not installed yet, installing..."
             install_block "$prog" || { err "unable to install required prog $prog this script depends on. abort."; exit 1; }
-            #execute "sudo apt-get install $prog"
             report "...done"
         fi
     done
@@ -215,7 +214,7 @@ function setup_apt() {
         if [[ -f "$COMMON_DOTFILES/backups/$file" ]]; then
             backup_original_and_copy_file "$COMMON_DOTFILES/backups/$file" "$apt_dir"
         else
-            err "configuration file at \"$file\" does not exist; won't install it."
+            err "configuration file at \"$COMMON_DOTFILES/backups/$file\" does not exist; won't install it."
         fi
     done
 }
@@ -297,9 +296,8 @@ function install_deps() {
 
         for dir in *; do
             if [[ -d "$dir" ]] && is_ssh_setup; then
-                # note we're assuming all dirs under ~/.tmux/plugins are git repos:
                 execute "pushd $dir"
-                execute "git pull"
+                is_git && execute "git pull"
                 execute "popd"
             fi
         done
@@ -308,6 +306,7 @@ function install_deps() {
     fi
 
     execute "sudo pip install git-playback"  # https://github.com/jianli/git-playback
+    execute "sudo pip install img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
     execute "sudo pip3 install scdl"         # https://github.com/flyingrub/scdl
 }
 
@@ -1251,18 +1250,18 @@ function install_from_repo() {
         jq
         dnsutils
         glances
+        htop
         tkremind
         remind
-        qt4-qtconfig
         tree
         flashplugin-nonfree
         htpdate
+        gdebi
+        synaptic
         apt-show-versions
         apt-xapian-index
-        synaptic
         mercurial
         git
-        htop
         zenity
         msmtp
         rsync
@@ -1277,6 +1276,7 @@ function install_from_repo() {
         unrar
         p7zip
         dos2unix
+        qt4-qtconfig
         lxappearance
         gtk2-engines-murrine
         gtk2-engines-pixbuf
@@ -1297,6 +1297,7 @@ function install_from_repo() {
         ncmpcpp
         geany
         libreoffice
+        calibre
         zathura
         mplayer2
         smplayer
@@ -1305,8 +1306,8 @@ function install_from_repo() {
         sxiv
         geeqie
         imagemagick
-        calibre
         xsel
+        xclip
         exuberant-ctags
         shellcheck
         ranger
@@ -1320,8 +1321,6 @@ function install_from_repo() {
         libxml2-utils
         pidgin
         filezilla
-        xclip
-        gdebi
         etckeeper
         lxrandr
         transmission
@@ -1333,10 +1332,11 @@ function install_from_repo() {
         notmuch-mutt
         notmuch
         abook
+        isync
         atool
+        highlight
         urlview
         silversearcher-ag
-        isync
         cowsay
         toilet
     )
@@ -1820,6 +1820,18 @@ function is_laptop() {
 
 function is_64_bit() {
     [[ "$(uname -m)" == x86_64 ]] && return 0 || return 1
+}
+
+
+# Checks whether we're in a git repository.
+#
+# @returns {bool}  true, if we are in git repo.
+function is_git() {
+    if git rev-parse --is-inside-work-tree &>/dev/null; then
+        return 0
+    fi
+
+    return 1
 }
 
 
