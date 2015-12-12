@@ -20,6 +20,7 @@ KEEPASS_REPO_LOC="https://github.com/keepassx/keepassx.git"  # keepassX - open p
 COPYQ_REPO_LOC="https://github.com/hluk/CopyQ.git"           # copyq - awesome clipboard manager
 SYNERGY_REPO_LOC="https://github.com/synergy/synergy.git"    # synergy - share keyboard&mouse between computers on same LAN
 ORACLE_JDK_LOC="http://download.oracle.com/otn-pub/java/jdk/8u65-b17/jdk-8u65-linux-x64.tar.gz"
+SKYPE_LOC="http://www.skype.com/go/getskype-linux-deb"
 JDK_LINK_LOC="/usr/local/jdk_link"
 JDK_INSTALLATION_DIR="/usr/local/javas"
 PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
@@ -73,9 +74,16 @@ function validate_and_init() {
 
     check_connection || { err "no internet connection. abort."; exit 1; }
 
+    # need to define PRIVATE_CASTLE here, as otherwis 'single-step' mode of this
+    # script might fail. be sure the values are in sync with the repos actually
+    # pulled in fetch_castles().
     case $MODE in
-        work|personal)
-            true ;;
+        work)
+            PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/work_dotfiles"
+            ;;
+        personal)
+            PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/personal-dotfiles"
+            ;;
         *)
             print_usage
             exit 1 ;;
@@ -150,6 +158,7 @@ function setup_hosts() {
         fi
 
         echo "$current"
+        return 0
     }
 
     if ! [[ -d "$hosts_file_dest" ]]; then
@@ -166,7 +175,7 @@ function setup_hosts() {
         backup_original_and_copy_file "$tmpfile" "$hosts_file_dest"
         execute "rm $tmpfile"
     else
-        err "configuration file at \"$PRIVATE_CASTLE/backups/hosts\" does not exist; won't install it."
+        err "expected configuration file at \"$PRIVATE_CASTLE/backups/hosts\" does not exist; won't install it."
     fi
 
     unset _extract_current_hostname_line
@@ -191,7 +200,7 @@ function setup_sudoers() {
 
         execute "rm $tmpfile"
     else
-        err "configuration file at \"$COMMON_DOTFILES/backups/sudoers\" does not exist; won't install it."
+        err "expected configuration file at \"$COMMON_DOTFILES/backups/sudoers\" does not exist; won't install it."
     fi
 }
 
@@ -214,7 +223,7 @@ function setup_apt() {
         if [[ -f "$COMMON_DOTFILES/backups/$file" ]]; then
             backup_original_and_copy_file "$COMMON_DOTFILES/backups/$file" "$apt_dir"
         else
-            err "configuration file at \"$COMMON_DOTFILES/backups/$file\" does not exist; won't install it."
+            err "expected configuration file at \"$COMMON_DOTFILES/backups/$file\" does not exist; won't install it."
         fi
     done
 }
@@ -238,7 +247,7 @@ function setup_crontab() {
 
         execute "rm $tmpfile"
     else
-        err "configuration file at \"$PRIVATE_CASTLE/backups/crontab\" does not exist; won't install it."
+        err "expected configuration file at \"$PRIVATE_CASTLE/backups/crontab\" does not exist; won't install it."
     fi
 }
 
@@ -423,14 +432,12 @@ function fetch_castles() {
     # !! if you change private repos, make sure you update PRIVATE_CASTLE definitions @ validate_and_init()!
     if [[ "$MODE" == work ]]; then
         clone_or_link_castle work_dotfiles laur.aliste gitlab.williamhill-dev.local
-        PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/work_dotfiles"
     elif [[ "$MODE" == personal ]]; then
         clone_or_link_castle personal-dotfiles layr bitbucket.org
-        PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/personal-dotfiles"
     fi
 
     while true; do
-        if confirm "want to clone another castle?"; then
+        if confirm "$(report 'want to clone another castle?')"; then
             echo -e "enter git repo domain (eg \"github.com\", \"bitbucket.org\"):"
             read hub
 
@@ -478,7 +485,7 @@ function setup_homesick() {
     https_castles="$($BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick list | grep '\bhttps://\b')"
     if [[ -n "$https_castles" ]]; then
         report "fyi, these homesick castles are for some reason still tracking https remotes:"
-        echo -e "$https_castles"
+        report "$https_castles"
     fi
 }
 
@@ -597,6 +604,8 @@ function swap_caps_lock_and_esc() {
         execute "sudo sed -i 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS>   \{ \[ Escape     \]   \};/g' $conf_file"
         [[ $? -ne 0 ]] && { err "replacing esc<->caps @ $conf_file failed"; return 2; }
     fi
+
+    return 0
 }
 
 
@@ -776,16 +785,16 @@ function install_skype() {  # https://wiki.debian.org/skype
 
     report "setting up skype"
 
-    if confirm "do you wish to install skype from our local .deb package, if available?"; then
-        install_from_deb skype && return 0
-    fi
+    #if confirm "do you wish to install skype from our local .deb package, if available?"; then
+        #install_from_deb skype && return 0
+    #fi
 
     if is_64_bit; then
         execute "sudo dpkg --add-architecture i386"
         execute "sudo apt-get --yes update"
         execute "sudo apt-get -f --yes install"
     fi
-    execute "wget -O $TMPDIR/skype-install.deb http://www.skype.com/go/getskype-linux-deb" || { err; return 1; }
+    execute "wget -O $TMPDIR/skype-install.deb $SKYPE_LOC" || { err; return 1; }
     execute "sudo dpkg -i $TMPDIR/skype-install.deb"  #|| { err; return 1; }  # do not exit on err!
     execute "sudo apt-get -f --yes install" || { err; return 1; }
 
@@ -840,6 +849,7 @@ function build_and_install_synergy() {
         qt4-dev-tools
         xorg-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
+
     if [[ "$do_clone" -ne 0 ]]; then
         [[ -d "$builddir" ]] && execute "sudo rm -rf $builddir"
         execute "git clone $SYNERGY_REPO_LOC $builddir" || return 1
@@ -873,6 +883,7 @@ function build_and_install_copyq() {
         libxfixes-dev
         libxtst-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
+
     execute "git clone $COPYQ_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir"
 
@@ -923,6 +934,7 @@ function build_and_install_keepassx() {
         libgcrypt20-dev
         zlib1g-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
+
     execute "git clone $KEEPASS_REPO_LOC $tmpdir" || return 1
 
     execute "mkdir $tmpdir/build"
@@ -1077,6 +1089,7 @@ function build_and_install_vim() {
         python-dev
         ruby-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
+
     execute "git clone $VIM_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir"
 
@@ -1188,12 +1201,12 @@ function install_and_setup_fonts() {
         xset
     '
 
-
     execute "xset +fp ~/.fonts"
     execute "mkfontscale ~/.fonts"
     execute "mkfontdir ~/.fonts"
     execute "pushd ~/.fonts"
 
+    # also install fonts in sub-dirs:
     for dir in * ; do
         if [[ -d "$dir" ]]; then
             execute "pushd $dir"
