@@ -30,8 +30,8 @@ SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected t
 #------------------------
 #--- Global Variables ---
 #------------------------
-IS_SSH_SETUP=0  # states whether our ssh keys are present. 1 || 0
-__SELECTED_ITEMS=
+IS_SSH_SETUP=0       # states whether our ssh keys are present. 1 || 0
+__SELECTED_ITEMS=''  # only select_items() *writes* into this one.
 MODE=
 PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
 LOGGING_LVL=0                   # execution logging level (full install logs everything);
@@ -145,14 +145,15 @@ function setup_hosts() {
 
     hosts_file_dest="/etc"
     tmpfile="$TMPDIR/hosts"
+    file="$PRIVATE_CASTLE/backups/hosts"
 
     function _extract_current_hostname_line() {
         local file current
 
         file="$1"
         #current="$(grep '\(127\.0\.1\.1\)\s\+\(.*\)\s\+\(\w\+\)' $file)"
-        current="$(grep $HOSTNAME $file)"
-        if [[ -z "$current" || "$(echo $current | wc -l)" -ne 1 ]]; then
+        current="$(grep "$HOSTNAME" "$file")"
+        if [[ -z "$current" || "$(echo "$current" | wc -l)" -ne 1 ]]; then
             err "$file contained either more or less than 1 line(s) containing our hostname. check manually."
             return 1
         fi
@@ -162,20 +163,20 @@ function setup_hosts() {
     }
 
     if ! [[ -d "$hosts_file_dest" ]]; then
-        err "$hosts_file_dest is not a dir; skipping hosts file installation"
+        err "$hosts_file_dest is not a dir; skipping hosts file installation."
         return 1
     fi
 
-    if [[ -f "$PRIVATE_CASTLE/backups/hosts" ]]; then
+    if [[ -f "$file" ]]; then
         [[ -f "$hosts_file_dest/hosts" ]] || { err "system hosts file is missing!"; return 1; }
         current_hostline="$(_extract_current_hostname_line $hosts_file_dest/hosts)" || return 1
-        execute "cp $PRIVATE_CASTLE/backups/hosts $tmpfile" || return 1
+        execute "cp $file $tmpfile" || return 1
         execute "sed -i 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' $tmpfile" || return 1
 
         backup_original_and_copy_file "$tmpfile" "$hosts_file_dest"
         execute "rm $tmpfile"
     else
-        err "expected configuration file at \"$PRIVATE_CASTLE/backups/hosts\" does not exist; won't install it."
+        err "expected configuration file at \"$file\" does not exist; won't install it."
     fi
 
     unset _extract_current_hostname_line
@@ -187,20 +188,21 @@ function setup_sudoers() {
 
     sudoers_dest="/etc"
     tmpfile="$TMPDIR/sudoers"
+    file="$COMMON_DOTFILES/backups/sudoers"
 
     if ! [[ -d "$sudoers_dest" ]]; then
-        err "$sudoers_dest is not a dir; skipping sudoers file installation"
+        err "$sudoers_dest is not a dir; skipping sudoers file installation."
         return 1
     fi
 
-    if [[ -f "$COMMON_DOTFILES/backups/sudoers" ]]; then
-        execute "cp $COMMON_DOTFILES/backups/sudoers $tmpfile" || return 1
+    if [[ -f "$file" ]]; then
+        execute "cp $file $tmpfile" || return 1
         execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
         backup_original_and_copy_file "$tmpfile" "$sudoers_dest"
 
         execute "rm $tmpfile"
     else
-        err "expected configuration file at \"$COMMON_DOTFILES/backups/sudoers\" does not exist; won't install it."
+        err "expected configuration file at \"$file\" does not exist; won't install it."
     fi
 }
 
@@ -211,7 +213,7 @@ function setup_apt() {
     apt_dir="/etc/apt"
 
     if ! [[ -d "$apt_dir" ]]; then
-        err "$apt_dir is not a dir; skipping apt conf installation"
+        err "$apt_dir is not a dir; skipping apt conf installation."
         return 1
     fi
 
@@ -220,34 +222,37 @@ function setup_apt() {
             preferences \
             apt.conf \
                 ; do
-        if [[ -f "$COMMON_DOTFILES/backups/$file" ]]; then
-            backup_original_and_copy_file "$COMMON_DOTFILES/backups/$file" "$apt_dir"
+        file="$COMMON_DOTFILES/backups/$file"
+
+        if [[ -f "$file" ]]; then
+            backup_original_and_copy_file "$file" "$apt_dir"
         else
-            err "expected configuration file at \"$COMMON_DOTFILES/backups/$file\" does not exist; won't install it."
+            err "expected configuration file at \"$file\" does not exist; won't install it."
         fi
     done
 }
 
 
 function setup_crontab() {
-    local cron_dir tmpfile
+    local cron_dir tmpfile file
 
     cron_dir="/etc/cron.d"  # where crontab will be installed at
     tmpfile="$TMPDIR/crontab"
+    file="$PRIVATE_CASTLE/backups/crontab"
 
     if ! [[ -d "$cron_dir" ]]; then
-        err "$cron_dir is not a dir; skipping crontab installation"
+        err "$cron_dir is not a dir; skipping crontab installation."
         return 1
     fi
 
-    if [[ -f "$PRIVATE_CASTLE/backups/crontab" ]]; then
-        execute "cp $PRIVATE_CASTLE/backups/crontab $tmpfile" || return 1
+    if [[ -f "$file" ]]; then
+        execute "cp $file $tmpfile" || return 1
         execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
         backup_original_and_copy_file "$tmpfile" "$cron_dir"
 
         execute "rm $tmpfile"
     else
-        err "expected configuration file at \"$PRIVATE_CASTLE/backups/crontab\" does not exist; won't install it."
+        err "expected configuration file at \"$file\" does not exist; won't install it."
     fi
 }
 
@@ -258,7 +263,7 @@ function backup_original_and_copy_file() {
     file="$1"  # full path of the file to be copied
     dest="$2"  # full path of the destination to copy to
 
-    filename="$(basename $file)"
+    filename="$(basename "$file")"
 
     # back up the destination file, if it's already existing:
     if [[ -f "$dest/$filename" ]] && ! [[ -e "$dest/${filename}.orig" ]]; then
@@ -280,7 +285,7 @@ function install_deps() {
         execute "git clone https://github.com/magicmonty/bash-git-prompt.git $BASE_DEPS_LOC/bash-git-prompt"
 
         execute "pushd $BASE_DEPS_LOC/bash-git-prompt"
-        execute "git remote set-url origin git@$github.com:magicmonty/bash-git-prompt.git"
+        execute "git remote set-url origin git@github.com:magicmonty/bash-git-prompt.git"
         execute "popd"
     elif is_ssh_setup; then
         execute "pushd $BASE_DEPS_LOC/bash-git-prompt"
@@ -297,7 +302,7 @@ function install_deps() {
         report "don't forget to install plugins by running <prefix + I> in tmux later on." & sleep 4
 
         execute "pushd $HOME/.tmux/plugins/tpm"
-        execute "git remote set-url origin git@$github.com:tmux-plugins/tpm.git"
+        execute "git remote set-url origin git@github.com:tmux-plugins/tpm.git"
         execute "popd"
     else
         # update all the tmux plugins
@@ -527,7 +532,7 @@ function setup_netrc_perms() {
     rc_loc="$HOME/.netrc"
 
     if [[ -e "$rc_loc" ]]; then
-        execute "chmod 600 $(realpath $rc_loc)"  # realpath, since we cannot change perms via symlink
+        execute "chmod 600 $(realpath "$rc_loc")"  # realpath, since we cannot change perms via symlink
     else
         err "expected to find \"$rc_loc\", but it doesn't exist. if you're not using netrc, better remvoe related logic from ${SELF}."
         return 1
@@ -704,7 +709,7 @@ function install_oracle_jdk() {
 
     # create link:
     [[ -h "$JDK_LINK_LOC" ]] && execute "sudo rm $JDK_LINK_LOC"
-    execute "sudo ln -s $JDK_INSTALLATION_DIR/$(basename $dir) $JDK_LINK_LOC"
+    execute "sudo ln -s $JDK_INSTALLATION_DIR/$(basename "$dir") $JDK_LINK_LOC"
 
     execute "popd"
     execute "sudo rm -rf $tmpdir"
@@ -725,7 +730,7 @@ function switch_jdk_versions() {
             return
         fi
 
-        active_java="$(basename $active_java)"
+        active_java="$(basename "$active_java")"
     fi
 
     while true; do
@@ -956,7 +961,7 @@ function install_dwm() {
     build_dir="$HOME/.dwm/w0ngBuild/source6.0"
 
     clone_or_link_castle dwm-setup laur89 github.com
-    [[ -d "$build_dir" ]] || { err "\"$build_dir\" is not a dir. skipping dwm installation"; return 1; }
+    [[ -d "$build_dir" ]] || { err "\"$build_dir\" is not a dir. skipping dwm installation."; return 1; }
 
     report "installing dwm build dependencies..."
     install_block '
@@ -1414,8 +1419,14 @@ function install_block() {
     packages_not_found=()
 
     report "installing these packages:\n${list_to_install[*]}\n"
+
+    # extract packages, which, for whatever reason, cannot be installed:
     for pkg in ${list_to_install[*]}; do
-        execute "sudo apt-get -qq --dry-run install $pkg" || packages_not_found+=( $pkg )
+        if [[ -z "$(apt-cache search  --names-only "^$pkg\$")" ]]; then
+            packages_not_found+=( $pkg )
+            continue
+        fi
+        execute "sudo apt-get -qq --dry-run install $extra_apt_params $pkg" || packages_not_found+=( $pkg )
     done
 
     if [[ -n "${packages_not_found[*]}" ]]; then
@@ -1446,7 +1457,7 @@ function should_build_if_avail_in_repo() {
 
     package_name="$1"
 
-    packages="$(apt-cache search --names-only $package_name)" || { err; return 1; }
+    packages="$(apt-cache search --names-only "$package_name")" || { err; return 1; }
     if [[ -n "$packages" ]]; then
         report "FYI, these packages with \"$package_name\" in them are available in repo:"
         echo -e "$packages"
@@ -1476,7 +1487,7 @@ function choose_step() {
 
     case "$__SELECTED_ITEMS" in
         "full-install" ) full_install ;;
-        "single-task" )  choose_single_task ;;
+        "single-task"  ) choose_single_task ;;
     esac
 }
 
@@ -1590,7 +1601,7 @@ function confirm() {
                 return 1
                 ;;
             *)
-                err "incorrect answer; try again. (y/n accepted)"
+                err "incorrect answer; try again. (y/n accepted)" "->"
                 ;;
         esac
     done
