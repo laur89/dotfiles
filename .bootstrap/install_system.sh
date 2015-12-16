@@ -274,6 +274,31 @@ function backup_original_and_copy_file() {
 }
 
 
+function clone_or_pull_repo() {
+    local user repo install_dir hub
+
+    user="$1"
+    repo="$2"
+    install_dir="$3"
+    hub="$4"
+
+    [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
+    [[ -z "$hub" ]] && hub='github.com'  # default to github
+
+    if ! [[ -d "$install_dir/$repo" ]]; then
+        execute "git clone https://$hub/$user/${repo}.git $install_dir/$repo" || return 1
+
+        execute "pushd $install_dir/$repo"
+        execute "git remote set-url origin git@${hub}:$user/${repo}.git"
+        execute "popd"
+    elif is_ssh_setup; then
+        execute "pushd $install_dir/$repo"
+        execute "git pull"
+        execute "popd"
+    fi
+}
+
+
 # "deps" as in git repos/py modules et al our system setup depends on;
 # if equivalent is avaialble at deb repos, its installation should be
 # moved to  install_from_repo()
@@ -281,44 +306,19 @@ function install_deps() {
     local dir
 
     # bash-git-prompt:
-    if ! [[ -d "$BASE_DEPS_LOC/bash-git-prompt" ]]; then
-        execute "git clone https://github.com/magicmonty/bash-git-prompt.git $BASE_DEPS_LOC/bash-git-prompt"
-
-        execute "pushd $BASE_DEPS_LOC/bash-git-prompt"
-        execute "git remote set-url origin git@github.com:magicmonty/bash-git-prompt.git"
-        execute "popd"
-    elif is_ssh_setup; then
-        execute "pushd $BASE_DEPS_LOC/bash-git-prompt"
-        execute "git pull"
-        execute "popd"
-    fi
+    clone_or_pull_repo "magicmonty" "bash-git-prompt" "$BASE_DEPS_LOC"
 
     # git-flow-completion:
-    if ! [[ -d "$BASE_DEPS_LOC/git-flow-completion" ]]; then
-        execute "git clone https://github.com/bobthecow/git-flow-completion.git $BASE_DEPS_LOC/git-flow-completion"
-
-        execute "pushd $BASE_DEPS_LOC/git-flow-completion"
-        execute "git remote set-url origin git@github.com:bobthecow/git-flow-completion.git"
-        execute "popd"
-    elif is_ssh_setup; then
-        execute "pushd $BASE_DEPS_LOC/git-flow-completion"
-        execute "git pull"
-        execute "popd"
-    fi
+    clone_or_pull_repo "bobthecow" "git-flow-completion" "$BASE_DEPS_LOC"
 
     # pearl-ssh perhaps?
 
     # tmux plugin manager:
     if ! [[ -d "$HOME/.tmux/plugins/tpm" ]]; then
-        report "cloning tmux-plugins (plugin manager)..."
-        execute "git clone https://github.com/tmux-plugins/tpm.git ~/.tmux/plugins/tpm"
+        clone_or_pull_repo "tmux-plugins" "tpm" "$HOME/.tmux/plugins"
         report "don't forget to install plugins by running <prefix + I> in tmux later on." & sleep 4
-
-        execute "pushd $HOME/.tmux/plugins/tpm"
-        execute "git remote set-url origin git@github.com:tmux-plugins/tpm.git"
-        execute "popd"
     else
-        # update all the tmux plugins
+        # update all the tmux plugins, including the plugin manager itself:
         execute "pushd $HOME/.tmux/plugins"
 
         for dir in *; do
@@ -378,17 +378,7 @@ function setup_dirs() {
 
 function install_homesick() {
 
-    if ! [[ -e "$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick" ]]; then
-        execute "git clone https://github.com/andsens/homeshick.git $BASE_HOMESICK_REPOS_LOC/homeshick" || return 1
-
-        execute "pushd $BASE_HOMESICK_REPOS_LOC/homeshick"
-        execute "git remote set-url origin git@github.com:andsens/homeshick.git"
-        execute "popd"
-    elif is_ssh_setup; then
-        execute "pushd $BASE_HOMESICK_REPOS_LOC/homeshick"
-        execute "git pull"
-        execute "popd"
-    fi
+    clone_or_pull_repo "andsens" "homeshick" "$BASE_HOMESICK_REPOS_LOC"
 
     # add the link, since homeshick is not installed in its default location (which is $HOME):
     if ! [[ -h "$HOME/.homesick" ]]; then
@@ -398,30 +388,33 @@ function install_homesick() {
 
 
 function clone_or_link_castle() {
-    local castle user hub
+    local castle user hub homesick_exe
 
     castle="$1"
     user="$2"
     hub="$3"  # domain of the git repo, ie github.com/bitbucket.org...
 
+    homesick_exe="$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick"
+
     [[ -z "$castle" || -z "$user" || -z "$hub" ]] && { err "either user, repo or castle name were missing"; sleep 2; return 1; }
+    [[ -e "$homesick_exe" ]] || { err "expected to see homesick script @ $homesick_exe, but didn't. skipping cloning castle $castle"; return 1; }
 
     if [[ -d "$BASE_HOMESICK_REPOS_LOC/$castle" ]]; then
         if is_ssh_setup; then
             report "$castle already exists; pulling & linking"
-            execute "$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick pull $castle"
+            execute "$homesick_exe pull $castle"
         else
             report "$castle already exists; linking..."
         fi
 
-        execute "$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick link $castle"
+        execute "$homesick_exe link $castle"
     else
         report "cloning ${castle}..."
         if is_ssh_setup; then
-            execute "$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick clone git@${hub}:$user/${castle}.git"
+            execute "$homesick_exe clone git@${hub}:$user/${castle}.git"
         else
             # note we clone via https, not ssh:
-            execute "$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick clone https://${hub}/$user/${castle}.git"
+            execute "$homesick_exe clone https://${hub}/$user/${castle}.git"
 
             # change just cloned repo remote from https to ssh:
             execute "pushd $BASE_HOMESICK_REPOS_LOC/$castle" || return 1
