@@ -293,6 +293,19 @@ function install_deps() {
         execute "popd"
     fi
 
+    # git-flow-completion:
+    if ! [[ -d "$BASE_DEPS_LOC/git-flow-completion" ]]; then
+        execute "git clone https://github.com/bobthecow/git-flow-completion.git $BASE_DEPS_LOC/git-flow-completion"
+
+        execute "pushd $BASE_DEPS_LOC/git-flow-completion"
+        execute "git remote set-url origin git@github.com:bobthecow/git-flow-completion.git"
+        execute "popd"
+    elif is_ssh_setup; then
+        execute "pushd $BASE_DEPS_LOC/git-flow-completion"
+        execute "git pull"
+        execute "popd"
+    fi
+
     # pearl-ssh perhaps?
 
     # tmux plugin manager:
@@ -1280,6 +1293,7 @@ function install_from_repo() {
         apt-xapian-index
         mercurial
         git
+        git-flow
         zenity
         msmtp
         rsync
