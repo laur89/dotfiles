@@ -1,0 +1,89 @@
+[user]
+    name = Laur Aliste
+    email = laur.aliste@gmail.com
+[merge]
+    ;tool = meld
+    ;tool = vimdiff
+    tool = my_meld
+    conflictstyle = diff3
+    prompt = false
+[mergetool "my_meld"]
+    ;cmd = meld --auto-merge --diff $BASE $LOCAL --diff $BASE $REMOTE --diff $LOCAL $BASE $REMOTE --output $MERGED
+    ;cmd = meld --diff $BASE $LOCAL --diff $BASE $REMOTE --diff $LOCAL $BASE $REMOTE --output $MERGED
+    ; MJ's cmd:
+    cmd = meld --auto-merge $LOCAL $BASE $REMOTE --output $MERGED --diff $LOCAL $BASE --diff $BASE $REMOTE
+    ;keepBackup = false
+;[mergetool]
+    ;keepBackup = false
+[core]
+    excludesfile = /home/laur/.gitignore_global
+    editor = vim
+    ;autocrlf = input
+    autocrlf = false
+    safecrlf = true
+    pager = less
+[difftool]
+    prompt = true
+[diff]
+    tool = meld
+    ;tool = vimdiff
+;[multidiff]
+    ; see http://www.xenomachina.com/2012/02/multi-diff-with-vim-andor-git.html
+    ; & https://github.com/xenomachina/public/
+    ;tool = vd -f
+[pager]
+    diff = false
+    difftool = false
+[push]
+    default = simple
+[alias]
+    st = status
+    com = commit
+    au = add -u
+    a = add
+    b = branch -a
+    aa = add --all
+    rst = reset
+    di = diff
+    dif = diff
+    stash-unapply = !git stash show -p | git apply -R
+    co = checkout
+    cp = cherry-pick
+    rb = rebase
+    fe = fetch -p
+    pul = pull
+    lg = log -i --all --graph --source --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset'\n --abbrev-commit --date=relative
+
+    commit-undo = reset --soft HEAD~1
+    undo-commit = reset --soft HEAD~1
+    uncommit =    reset --soft HEAD~1
+    #  TODO: this doesn't follow branch, does it?:
+    reset-to-index = !git fetch origin && git reset --hard origin/HEAD
+    rst-to-index =   !git fetch origin && git reset --hard origin/HEAD
+
+    stashtofile = !git stash && git stash show -p stash@{0} > /tmp/stashfile.git && git stash pop
+    stashtofile-pick = !git stash --patch && git stash show -p stash@{0} > /tmp/stashfile.git && git stash pop
+    stash-pick = stash --patch
+    show-stashed = stash show -p stash@{0}
+    stashed-show = stash show -p stash@{0}
+
+    new-branch = checkout -b
+    branch-new = checkout -b
+    branch-delete = branch -D ; deletes local branch
+    delete-branch = branch -D
+    delete-branch-remote = push origin --delete
+    delete-remote-branch = push origin --delete
+    branch-delete-remote = push origin --delete
+    ;  TODO: remove origin? otherwise you won't get autocompletion on brances:
+    ;  or depregate these and remember simply the -u flag?
+    ;branch-push-new = push -u origin
+    ;push-new-branch = push -u origin
+
+;;;;;;;;;;;;;;;;;;;
+;;;; COMMANDSS ;;;;
+;;;;;;;;;;;;;;;;;;;
+; git log --all --oneline
+; git log --all --oneline --author=rickhanlonii | grep "search query"
+; git show a2c25061
+;   or  git show a2c25061 --stat   to show info about commit without diff
+;
