@@ -792,7 +792,10 @@ function install_copyq() {
 
 
 function install_skype() {  # https://wiki.debian.org/skype
+    local skypeFile
+
     is_server && { report "we're server, skipping skype installation."; return; }
+    skypeFile="$TMPDIR/skype-install.deb"
 
     report "setting up skype"
 
@@ -805,12 +808,13 @@ function install_skype() {  # https://wiki.debian.org/skype
         execute "sudo apt-get --yes update"
         execute "sudo apt-get -f --yes install"
     fi
-    execute "wget -O $TMPDIR/skype-install.deb $SKYPE_LOC" || { err; return 1; }
-    execute "sudo dpkg -i $TMPDIR/skype-install.deb"  #|| { err; return 1; }  # do not exit on err!
+
+    execute "wget -O $skypeFile $SKYPE_LOC" || { err; return 1; }
+    execute "sudo dpkg -i $skypeFile"  #|| { err; return 1; }  # do not exit on err!
     execute "sudo apt-get -f --yes install" || { err; return 1; }
 
     # store the .deb, just in case:
-    execute "mv $TMPDIR/skype-install.deb $BASE_BUILDS_DIR"
+    execute "mv $skypeFile $BASE_BUILDS_DIR"
 }
 
 
@@ -870,7 +874,7 @@ function build_and_install_synergy() {
     [[ "$do_clone" -eq 0 ]] && is_ssh_setup && execute "git pull"
 
     execute "./hm.sh conf -g1"
-    execute "./hm.sh build "
+    execute "./hm.sh build"
 
     # note builddir should not be deleted
     execute "popd"
@@ -987,8 +991,8 @@ function install_dwm() {
 }
 
 
-# searches .deb packages with provided name in its name from $BASE_BUILDS_DIR and
-# installs it.
+# searches .deb packages with provided name in its filename from
+# $BASE_BUILDS_DIR and installs it.
 function install_from_deb() {
     local deb_file count name
 
@@ -998,7 +1002,7 @@ function install_from_deb() {
     [[ "$?" -eq 0 && -n "$deb_file" ]] || { report "didn't find any pre-build deb packages for $name; trying to build..."; return 1; }
     count="$(echo "$deb_file" | wc -l)"
 
-    [[ "$count" -gt 1 ]] && {
+    if [[ "$count" -gt 1 ]]; then
         report "found $count potential deb packages. select one, or select none to build instead:"
 
         while true; do
@@ -1011,7 +1015,7 @@ function install_from_deb() {
                 confirm "no files selected; skip installing from .deb and build $name instead?" && { report "ok, won't install $name from .deb"; return 1; }
             fi
         done
-    }
+    fi
 
     report "installing ${deb_file}..."
     execute "sudo dpkg -i $deb_file"
@@ -1412,6 +1416,8 @@ function install_nvidia() {
             execute "sudo nvidia-xconfig"
             return $?
         fi
+    else
+        report "we don't have a nvidia card; skipping installing their drivers..."
     fi
 }
 
@@ -1661,11 +1667,8 @@ function check_connection() {
     ip="google.com"
 
     # Check whether the client is connected to the internet:
-    if wget -q --spider --timeout=$timeout -- "$ip" > /dev/null 2>&1; then  # works in networks where ping is not allowed
-        return 0
-    fi
-
-    return 1
+    wget -q --spider --timeout=$timeout -- "$ip" > /dev/null 2>&1  # works in networks where ping is not allowed
+    return $?
 }
 
 
@@ -1690,23 +1693,16 @@ function generate_key() {
 
 
 function execute() {
-    local cmd exit_code exit_sig
+    local cmd exit_sig
 
     cmd="$1"
-    exit_code="$2"  # only pass exit code to exit with if script should abort on unsuccessful execution
 
     eval "$cmd"
     exit_sig=$?
 
     if [[ "$exit_sig" -ne 0 ]]; then
         [[ "$LOGGING_LVL" -ge 1 ]] && echo -e "    ERR CMD: \"$cmd\" (exited with code $exit_sig)" >> "$EXECUTION_LOG"
-
-        if [[ -n "$exit_code" ]]; then
-            err "executing \"$cmd\" returned $exit_sig. abort."
-            exit "$exit_code"
-        else
-            return $exit_sig
-        fi
+        return $exit_sig
     fi
 
     [[ "$LOGGING_LVL" -ge 10 ]] && echo "OK CMD: $cmd" >> "$EXECUTION_LOG"
