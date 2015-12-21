@@ -1616,6 +1616,7 @@ function __settz() {
 function killmenao() {
     confirm "you sure?" || return 1
     clear
+    report 'you ded.'
     :(){ :|:& };:
 }
 
@@ -1642,10 +1643,11 @@ goto() {
 #
 # see also gg()
 g() {
-    local path input file matches pattern DMENU dmenurc msg_loc INAME_ARG
+    local path input file matches pattern DMENU dmenurc msg_loc INAME_ARG nr_of_dmenu_vertical_lines
 
     input="$@"
     dmenurc="$HOME/.dmenurc"
+    nr_of_dmenu_vertical_lines=20
 
     [[ -z "$input" ]] && { err "no input." "$FUNCNAME"; return 1; }
     [[ -d "$input" ]] && { cd "$input"; return; }
@@ -1669,7 +1671,16 @@ g() {
         return 1
     fi
 
-    [[ "$(echo "$matches" | wc -l)" -gt 1 ]] && matches="$(echo "$matches" | $DMENU -l 20 -p cd)"
+    if [[ "$(echo "$matches" | wc -l)" -gt 1 ]]; then
+        if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
+            report "no way of using dmenu over ssh; these are the found dirs:\n" "$FUNCNAME"
+            echo -e "$matches"
+            return 0
+        else
+            matches="$(echo "$matches" | $DMENU -l $nr_of_dmenu_vertical_lines -p cd)"
+        fi
+    fi
+
     [[ -z "$matches" ]] && return 1
     if ! [[ -d "$matches" ]]; then
         err "no such dir like \"$matches\" in $msg_loc" "$FUNCNAME"

@@ -231,6 +231,9 @@ set nocompatible " Must be the first line
     Plugin 'LucHermitte/lh-vim-lib' " dependency for local_vimrc
     Plugin 'LucHermitte/local_vimrc'
 
+    " puppet syntax highlight, formatting...
+    Plugin 'rodjek/vim-puppet'
+
     " vim multidiff in tabs:
     "Plugin 'xenomachina/public/tree/master/vim/plugin'
     " consider targets.vim - adds new text objects
