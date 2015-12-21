@@ -22,9 +22,11 @@ fi
 # TODO: refactor the massive spaghetti.
 function ffind() {
     local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter exact binary follow_links
-    local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter
+    local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter skip_msgs
 
+    [[ "$1" == --skip_msgs ]] && { skip_msgs=1; shift; }  # skip showing informative messages, as the result will be directly piped to other processes;
     defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
+
     usage="\n$FUNCNAME: find files/dirs by name. smartcase.
     Usage: $FUNCNAME  [options]  \"fileName pattern\" [top_level_dir_to_search_from]
         -r  use regex (so the find specific metacharacters *, ? and [] won't work)
@@ -109,7 +111,7 @@ function ffind() {
     fi
 
 
-    if [[ "$follow_links" == "-L" && "$file_type" == "-type l" ]]; then
+    if [[ "$follow_links" == "-L" && "$file_type" == "-type l" && "$skip_msgs" -ne 1 ]]; then
         report "if both -l and -L flags are set, then ONLY the broken links are being searched.\n" "$FUNCNAME"
         sleep 2
     fi
@@ -123,7 +125,7 @@ function ffind() {
     [[ "$force_case" -eq 1 ]] && unset INAME_ARG
 
 
-    if [[ "$pathOpt" -eq 1 && "$exact" -eq 1 ]]; then
+    if [[ "$pathOpt" -eq 1 && "$exact" -eq 1 && "$skip_msgs" -ne 1 ]]; then
         report "note that using -p and -e flags together means that the pattern has to match whole path, not only the filename!" "$FUNCNAME"
         sleep 2
     fi
@@ -152,7 +154,7 @@ function ffind() {
             return 1
         fi
 
-        if [[ "$SRC" == *\.* ]]; then
+        if [[ "$SRC" == *\.* && "$skip_msgs" -ne 1 ]]; then
             report "note that period (.) will be used as a literal period, not as a wildcard. provide -r flag to use regex.\n" "$FUNCNAME"
         fi
     fi
@@ -193,7 +195,7 @@ function ffind() {
             if [[ "$binary" -eq 1 ]]; then
                 # TODO: this doesnt work atm:
                 err "executalbe binary file search in regex currently unimplemented" "$FUNCNAME"
-                return
+                return 1
                 # this doesn't work atm:
                 eval find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '.*'"$SRC"'.*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             else
@@ -733,6 +735,11 @@ function ffstr() {
 
     # find metacharacter or regex FILENAME (not search pattern) sanity:
     if [[ -n "$2" ]]; then
+        if [[ "$2" == */* ]]; then
+            err "there are slashes in the filename. note that optional 2nd arg is a filename pattern, not a path." "$FUNCNAME"
+            return 1
+        fi
+
         if [[ "$regex" -eq 1 ]]; then
             if [[ "$2" == *\** && "$2" != *\.\** ]]; then
                 err 'err in filename pattern: use .* as wildcards, not a single *; you are misusing regex.' "$FUNCNAME"
@@ -1022,6 +1029,7 @@ function my_ip() {  # Get internal & external ip addies:
 
     if [[ -n "$connected_interface" ]]; then
         __get_internal_ip_for_if "$connected_interface"
+        unset __get_internal_ip_for_if
         return 0
     elif [[ "$__REMOTE_SSH" -eq 1 ]]; then
         if [[ -d "$if_dir" && -r "$if_dir" ]]; then
@@ -1043,10 +1051,12 @@ function my_ip() {  # Get internal & external ip addies:
             __get_internal_ip_for_if "$interface"
         done
 
+        unset __get_internal_ip_for_if
         return 0
     fi
 
     echo "Not connected (at least nothing was returned by find_connected_if())"
+    unset __get_internal_ip_for_if
 }
 
 function myip() { my_ip; } # alias for my_ip
@@ -1461,6 +1471,25 @@ ago() {
     $editor "$match"
 }
 
+# same as fo(), but opens all the found results
+#
+# mnemonic: file open all
+foa() {
+    local opts default_depth
+    default_depth="m10"
+
+    if [[ "$1" == -* ]]; then
+        [[ "$1" != *m* ]] && opts="${1}$default_depth" || opts="${1}"
+        #echo $opts  # debug
+        shift
+    else
+        opts="-$default_depth"
+    fi
+
+    fo --openall $opts "$@"
+}
+
+
 # finds files/dirs using fo() and goes to containing dir (or same dir if found item is already a dir)
 #
 # mnemonic: go go
@@ -1479,6 +1508,10 @@ gg() {
     fo --goto $opts "$@"
 }
 
+fog() {
+    gg $@
+}
+
 # finds files/dirs using ffind() (find wrapper) and opens them.
 # accepts different 'special modes' to be defined as first arg (modes contained in $special_modes array)
 #
@@ -1489,7 +1522,7 @@ fo() {
 
     dmenurc="$HOME/.dmenurc"
     nr_of_dmenu_vertical_lines=20
-    special_modes="--goto"  # special mode definitions; mode basically decides how to deal with the found match
+    special_modes="--goto --openall"  # special mode definitions; mode basically decides how to deal with the found match(es)
     editor="$EDITOR"
     image_viewer="sxiv"
     video_player="smplayer"
@@ -1505,11 +1538,10 @@ fo() {
     fi
 
     # filesearch begins:
-    match="$(ffind "$@")"
-    [[ "$?" -eq 0 ]] || return 1
+    match="$(ffind --skip_msgs "$@")" || return 1
 
     count="$(echo "$match" | wc -l)"
-    [[ "$count" -gt 1 ]] && {
+    [[ "$count" -gt 1 && "$special_mode" != "--openall" ]] && {
         report "found $count items" "$FUNCNAME"
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
@@ -1526,8 +1558,14 @@ fo() {
     # parse special modes, if used:
     if [[ -n "$special_mode" ]]; then
         case $special_mode in
-            --goto) goto "$match"
-            ;;
+            --goto)
+                goto "$match"
+                ;;
+            --openall)
+                # TODO: refactor to support all filetypes
+                "$editor" $match  # (sic) - don't wrap in quotes;
+                #readarray -t matches <<<"$match"
+                ;;
             #*) no need, as mode has already been verified
         esac
 
@@ -1669,9 +1707,7 @@ g() {
     if [[ -z "$matches" ]]; then
         err "no dirs in $msg_loc matching \"$pattern\"" "$FUNCNAME"
         return 1
-    fi
-
-    if [[ "$(echo "$matches" | wc -l)" -gt 1 ]]; then
+    elif [[ "$(echo "$matches" | wc -l)" -gt 1 ]]; then
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
             report "no way of using dmenu over ssh; these are the found dirs:\n" "$FUNCNAME"
             echo -e "$matches"
