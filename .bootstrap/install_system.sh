@@ -324,7 +324,7 @@ function install_deps() {
     # tmux plugin manager:
     if ! [[ -d "$HOME/.tmux/plugins/tpm" ]]; then
         clone_or_pull_repo "tmux-plugins" "tpm" "$HOME/.tmux/plugins"
-        report "don't forget to install plugins by running <prefix + I> in tmux later on." & sleep 4
+        report "don't forget to install plugins by running <prefix + I> in tmux later on." && sleep 4
     else
         # update all the tmux plugins, including the plugin manager itself:
         execute "pushd $HOME/.tmux/plugins"
@@ -340,6 +340,7 @@ function install_deps() {
         execute "popd"
     fi
 
+    # TODO: these are not deps, are they?:
     execute "sudo pip install git-playback"  # https://github.com/jianli/git-playback
     execute "sudo pip install img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
     execute "sudo pip3 install scdl"         # https://github.com/flyingrub/scdl
@@ -746,10 +747,11 @@ function install_progs() {
     install_skype
     install_nvidia
 
-    if [[ "$MODE" == work ]]; then
-        install_altiris
-        install_symantec_endpoint_security
-    fi
+    # TODO:
+    #if [[ "$MODE" == work ]]; then
+        #install_altiris
+        #install_symantec_endpoint_security
+    #fi
 
     if confirm "do you want to install our webdev lot?"; then
         install_webdev
