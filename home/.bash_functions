@@ -1686,7 +1686,7 @@ xclass() {
 ################
 goto() {
     [[ -z "$@" ]] && { err "node operand required" "$FUNCNAME"; return 1; }
-    [[ -d "$@" ]] && { cd -- "$@"; } || cd "$(dirname -- "$@")";
+    [[ -d "$@" ]] && { cd -- "$@"; } || cd -- "$(dirname -- "$@")";
 }
 
 # cd-s to directory by partial match; if multiple matches, opens input via dmenu. smartcase.
@@ -1702,7 +1702,7 @@ g() {
     nr_of_dmenu_vertical_lines=20
 
     [[ -z "$input" ]] && { err "no input." "$FUNCNAME"; return 1; }
-    [[ -d "$input" ]] && { cd "$input"; return; }
+    [[ -d "$input" ]] && { cd -- "$input"; return; }
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
     #[[ "$input" == */* ]] && path="${input%%/*}"  # strip everything after last slash(included)
@@ -1744,7 +1744,7 @@ g() {
         return 1
     fi
 
-    cd "$matches"
+    cd -- "$matches"
 }
 
 
