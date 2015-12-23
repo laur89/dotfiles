@@ -1556,11 +1556,6 @@ fo() {
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
             if [[ "$count" -le 15 ]]; then
                 select_items "$match" 1
-
-                if [[ -n "$__SELECTED_ITEMS" ]]; then
-                    report "no nodes selected." "$FUNCNAME"
-                    return
-                fi
                 match="$__SELECTED_ITEMS"
             else
                 report "no way of using dmenu over ssh; these are the found files:\n" "$FUNCNAME"
@@ -1732,11 +1727,6 @@ g() {
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
             if [[ "$count" -le 15 ]]; then
                 select_items "$matches" 1
-
-                if [[ -n "$__SELECTED_ITEMS" ]]; then
-                    report "no dirs selected." "$FUNCNAME"
-                    return
-                fi
                 matches="$__SELECTED_ITEMS"
             else
                 report "no way of using dmenu over ssh; these are the found dirs:\n" "$FUNCNAME"
