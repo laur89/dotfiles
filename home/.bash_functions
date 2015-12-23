@@ -1483,7 +1483,7 @@ foa() {
 
     if [[ "$opts" == -* ]]; then
         [[ "$opts" != *f* ]] && opts="-f${opts:1}"
-        [[ "$opts" != *m* ]] && opts+="$default_depth"
+        [[ "$opts" != *m* ]] && opts+="$default_depth"  # depth opt has to come last
         #echo $opts  # debug
 
         shift
@@ -1542,24 +1542,35 @@ fo() {
     [[ -z "$@" ]] && { err "args required. see ffind -h" "$FUNCNAME"; return 1; }
     list_contains "$1" "$special_modes" && { special_mode="$1"; shift; }
     if [[ "$__REMOTE_SSH" -ne 1 && -z "$special_mode" ]]; then  # only check for progs if not ssh-d AND not using in "special mode"
-        check_progs_installed find ffind "$PAGER" "$file_mngr" "$editor" "$image_viewer" "$video_player" "$pdf_viewer" dmenu file || return 1
+        check_progs_installed find ffind "$PAGER" "$file_mngr" "$editor" "$image_viewer" \
+                "$video_player" "$pdf_viewer" dmenu file || return 1
     fi
 
     # filesearch begins:
     match="$(ffind --_skip_msgs "$@")" || return 1
 
     count="$(echo "$match" | wc -l)"
-    [[ "$count" -gt 1 && "$special_mode" != "--openall" ]] && {
+    if [[ "$count" -gt 1 && "$special_mode" != "--openall" ]]; then
         report "found $count items" "$FUNCNAME"
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            report "no way of using dmenu over ssh; these are the found files:\n" "$FUNCNAME"
-            echo -e "$match"
-            return 0
+            if [[ "$count" -le 15 ]]; then
+                select_items "$match" 1
+
+                if [[ -n "$__SELECTED_ITEMS" ]]; then
+                    report "no nodes selected." "$FUNCNAME"
+                    return
+                fi
+                match="$__SELECTED_ITEMS"
+            else
+                report "no way of using dmenu over ssh; these are the found files:\n" "$FUNCNAME"
+                echo -e "$match"
+                return 0
+            fi
         else
             match="$(echo "$match" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)"
         fi
-    }
+    fi
     [[ -z "$match" ]] && return 1
     # /filesearch
 
@@ -1689,7 +1700,7 @@ goto() {
 #
 # see also gg()
 g() {
-    local path input file matches pattern DMENU dmenurc msg_loc INAME_ARG nr_of_dmenu_vertical_lines
+    local path input file matches pattern DMENU dmenurc msg_loc INAME_ARG nr_of_dmenu_vertical_lines count
 
     input="$@"
     dmenurc="$HOME/.dmenurc"
@@ -1712,14 +1723,26 @@ g() {
     fi
 
     matches="$(find -L "$path" -maxdepth 1 -mindepth 1 \( -type d \) ${INAME_ARG:--name} '*'"$pattern"'*')"
+    count="$(echo "$matches" | wc -l)"
+
     if [[ -z "$matches" ]]; then
         err "no dirs in $msg_loc matching \"$pattern\"" "$FUNCNAME"
         return 1
-    elif [[ "$(echo "$matches" | wc -l)" -gt 1 ]]; then
+    elif [[ "$count" -gt 1 ]]; then
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            report "no way of using dmenu over ssh; these are the found dirs:\n" "$FUNCNAME"
-            echo -e "$matches"
-            return 0
+            if [[ "$count" -le 15 ]]; then
+                select_items "$matches" 1
+
+                if [[ -n "$__SELECTED_ITEMS" ]]; then
+                    report "no dirs selected." "$FUNCNAME"
+                    return
+                fi
+                matches="$__SELECTED_ITEMS"
+            else
+                report "no way of using dmenu over ssh; these are the found dirs:\n" "$FUNCNAME"
+                echo -e "$matches"
+                return 0
+            fi
         else
             matches="$(echo "$matches" | $DMENU -l $nr_of_dmenu_vertical_lines -p cd)"
         fi
