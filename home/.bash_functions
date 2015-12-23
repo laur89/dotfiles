@@ -1516,6 +1516,7 @@ gg() {
     fo --goto $opts "$@"
 }
 
+# mnemonic: file open go
 fog() {
     gg $@
 }
@@ -1548,8 +1549,8 @@ fo() {
 
     # filesearch begins:
     match="$(ffind --_skip_msgs "$@")" || return 1
-
     count="$(echo "$match" | wc -l)"
+
     if [[ "$count" -gt 1 && "$special_mode" != "--openall" ]]; then
         report "found $count items" "$FUNCNAME"
 
@@ -1569,16 +1570,14 @@ fo() {
     [[ -z "$match" ]] && return 1
     # /filesearch
 
-    # parse special modes, if used:
+    # parse special modes, if any:
     if [[ -n "$special_mode" ]]; then
         case $special_mode in
             --goto)
                 goto "$match"
                 ;;
             --openall)
-                # TODO: refactor to support all filetypes
                 "$editor" $match  # (sic) - don't wrap in quotes;
-                #readarray -t matches <<<"$match"
                 ;;
             #*) no need, as mode has already been verified
         esac
