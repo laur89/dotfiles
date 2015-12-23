@@ -24,7 +24,7 @@ function ffind() {
     local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter exact binary follow_links
     local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter skip_msgs
 
-    [[ "$1" == --skip_msgs ]] && { skip_msgs=1; shift; }  # skip showing informative messages, as the result will be directly piped to other processes;
+    [[ "$1" == --_skip_msgs ]] && { skip_msgs=1; shift; }  # skip showing informative messages, as the result will be directly piped to other processes;
     defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
 
     usage="\n$FUNCNAME: find files/dirs by name. smartcase.
@@ -1471,19 +1471,24 @@ ago() {
     $editor "$match"
 }
 
-# same as fo(), but opens all the found results
+# same as fo(), but opens all the found results; forces regular filetype search.
 #
 # mnemonic: file open all
 foa() {
     local opts default_depth
+
+    opts="$1"
+
     default_depth="m10"
 
-    if [[ "$1" == -* ]]; then
-        [[ "$1" != *m* ]] && opts="${1}$default_depth" || opts="${1}"
+    if [[ "$opts" == -* ]]; then
+        [[ "$opts" != *f* ]] && opts="-f${opts:1}"
+        [[ "$opts" != *m* ]] && opts+="$default_depth"
         #echo $opts  # debug
+
         shift
     else
-        opts="-$default_depth"
+        opts="-f${default_depth}"
     fi
 
     fo --openall $opts "$@"
@@ -1495,10 +1500,13 @@ foa() {
 # mnemonic: go go
 gg() {
     local opts default_depth
+
+    opts="$1"
+
     default_depth="m10"
 
-    if [[ "$1" == -* ]]; then
-        [[ "$1" != *m* ]] && opts="${1}$default_depth" || opts="${1}"
+    if [[ "$opts" == -* ]]; then
+        [[ "$opts" != *m* ]] && opts+="$default_depth"
         #echo $opts  # debug
         shift
     else
@@ -1538,7 +1546,7 @@ fo() {
     fi
 
     # filesearch begins:
-    match="$(ffind --skip_msgs "$@")" || return 1
+    match="$(ffind --_skip_msgs "$@")" || return 1
 
     count="$(echo "$match" | wc -l)"
     [[ "$count" -gt 1 && "$special_mode" != "--openall" ]] && {

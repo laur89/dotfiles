@@ -21,22 +21,47 @@
 # it calls the ssh_pearl function with passed arguments; that way it can be invoked
 # by other scripts. It also forces the TERM env var.
 
-function ssh_pearl(){
-    function _aggregate_scripts(){
-        local fileRc="$1"
-        local dirRc="$2"
+SELF="$(basename "$0")"
+
+function ssh_pearl() {
+    local self rcScript inputrcScript vimrcScript ssh_opts opt commands arg commands_opt
+
+    commands=()
+    ssh_opts=()
+
+    function _aggregate_scripts() {
+        local fileRc dirRc
+
+        fileRc="$1"
+        dirRc="$2"
         [[ -f "${fileRc}" ]] && cat "${fileRc}"
         [[ -d "${dirRc}" ]] && cat "${dirRc}"/*
     }
 
+    [[ -z "$@" ]] && { ssh; return $?; }
+
+    for opt in "$@"; do
+        case "$opt" in
+            --) shift ; break ;;
+            *) ssh_opts+=("$opt") ; shift ;;
+        esac
+    done
+
+    for arg in "$@"; do
+        commands+=("$arg")
+    done
+
+    [[ -n "${commands[@]}" ]] && commands_opt="-c '${commands[*]}'"
+
     command -v base64 >/dev/null 2>&1 || { echo >&2 "pearl-ssh requires base64 to be installed locally. Aborting."; return 1; }
     command -v gzip >/dev/null 2>&1 || { echo >&2 "pearl-ssh requires gzip to be installed locally. Aborting."; return 1; }
-    [[ -z "$@" ]] && { ssh; return $?; }
 
     [[ -z "$PEARL_HOME" ]] && PEARL_HOME=${HOME}/.config/pearl
 
-    local rcScript="$(_aggregate_scripts "$PEARL_HOME/sshrc" "$PEARL_HOME/sshrc.d" | gzip | base64)"
-    local inputrcScript="$(_aggregate_scripts "$PEARL_HOME/sshinputrc" "$PEARL_HOME/sshinputrc.d" | gzip | base64)"
+    rcScript="$(_aggregate_scripts "$PEARL_HOME/bashrc" "$PEARL_HOME/bashrc.d" | gzip | base64)"
+    inputrcScript="$(_aggregate_scripts "$PEARL_HOME/inputrc" "$PEARL_HOME/inputrc.d" | gzip | base64)"
+    vimrcScript="$(_aggregate_scripts "$PEARL_HOME/vimrc" "$PEARL_HOME/vimrc.d" | gzip | base64)"
+    self="$(gzip < "$0" | base64)"
 
     CMD="
         for tmpDir in /tmp \$HOME; do [[ -w \"\$tmpDir\" ]] && { foundTmpDir=\"\$tmpDir\"; break; } done
@@ -44,14 +69,20 @@ function ssh_pearl(){
         command -v base64 >/dev/null 2>&1 || { echo >&2 \"pearl-ssh requires base64 to be installed on the server. Aborting.\"; exit 1; };
         command -v gunzip >/dev/null 2>&1 || { echo >&2 \"pearl-ssh requires gunzip to be installed on the server. Aborting.\"; exit 1; };
         PEARLSSH_HOME=\"\$(mktemp -d pearl-XXXXX -p \"\$foundTmpDir\")\";
+        PEARLSSH_BIN=\"\$(mktemp -d pearl-bin-XXXXX -p \"\$PEARLSSH_HOME\")\";
+        export PEARL_HOME=\"\$PEARLSSH_HOME\";
         trap \"rm -rf \"\$PEARLSSH_HOME\"; exit\" EXIT HUP INT QUIT PIPE TERM;
+        echo \"${rcScript}\" | base64 -di | gunzip > \"\${PEARLSSH_HOME}/bashrc\";
         echo \"${inputrcScript}\" | base64 -di | gunzip > \"\${PEARLSSH_HOME}/inputrc\";
-        echo \"${rcScript}\" | base64 -di | gunzip > \"\${PEARLSSH_HOME}/pearlssh.sh\";
-        INPUTRC=\"\${PEARLSSH_HOME}/inputrc\" bash --rcfile \"\${PEARLSSH_HOME}/pearlssh.sh\" -i;
-        [[ -d \"\${PEARLSSH_HOME}\" ]] && rm -rf \"\${PEARLSSH_HOME}\"
+        echo \"${vimrcScript}\" | base64 -di | gunzip > \"\${PEARLSSH_HOME}/vimrc\";
+        echo \"${self}\" | base64 -di | gunzip > \"\${PEARLSSH_BIN}/$SELF\";
+        chmod -R +x \"\$PEARLSSH_BIN\";
+        export PATH=\$PATH:\$PEARLSSH_BIN;
+        VIMINIT=\"let \\\$MYVIMRC='\${PEARLSSH_HOME}/vimrc' | source \\\$MYVIMRC\" INPUTRC=\"\${PEARLSSH_HOME}/inputrc\" bash --rcfile \"\${PEARLSSH_HOME}/bashrc\" -i ${commands_opt};
     "
 
-    env TERM=xterm-color ssh -t "$@" -- "$CMD"
+    env TERM=xterm-color ssh -t "${ssh_opts[@]}" -- "$CMD"
 }
+
 
 ssh_pearl "$@"
