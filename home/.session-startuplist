@@ -4,24 +4,24 @@
 # Note if you leave last command without '&' (i.e. won't fork to background),
 # you can exit your session by simply ending that application.
 #---------------------------------------------------
-PROGS=( \
-    "urxvtd" \
-    "davmail" \
-    "blueman-applet" \
-    "nm-applet" \
-    "xfce4-volumed" \
-    "xfce4-power-manager" \
-    "skype" \
-    "spacefm" \
-    "keepassx" \
-    "ssh-agent" \
-    "copyq" \
-    "mbsync --all" \
-    "delay_screensaver" \
-    "urxvtc" \
+PROGS=(
+    "urxvtd"
+    "davmail"
+    "blueman-applet"
+    "nm-applet"
+    "xfce4-volumed"
+    "xfce4-power-manager"
+    "skype"
+    "spacefm"
+    "keepassx"
+    "ssh-agent"
+    "copyq"
+    "mbsync --all"
+    "delay_screensaver"
+    "urxvtc"
 
-    "Earth_sunlight_wallpaper_changer.sh" \
-    "sunlight_map_wallpaper_changer.sh" \
+    "Earth_sunlight_wallpaper_changer.sh"
+    "sunlight_map_wallpaper_changer.sh"
     "wait_for_suspend_to_lock_screen.sh"
 )
 

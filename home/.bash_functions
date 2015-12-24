@@ -1529,6 +1529,9 @@ fo() {
     local DMENU match count filetype dmenurc editor image_viewer video_player file_mngr
     local pdf_viewer nr_of_dmenu_vertical_lines special_mode special_modes
 
+    list_contains "$1" "$special_modes" && { special_mode="$1"; shift; }
+    [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
+
     dmenurc="$HOME/.dmenurc"
     nr_of_dmenu_vertical_lines=20
     special_modes="--goto --openall"  # special mode definitions; mode basically decides how to deal with the found match(es)
@@ -1538,10 +1541,7 @@ fo() {
     file_mngr="ranger"
     pdf_viewer="zathura"
 
-    [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
-
     [[ -z "$@" ]] && { err "args required. see ffind -h" "$FUNCNAME"; return 1; }
-    list_contains "$1" "$special_modes" && { special_mode="$1"; shift; }
     if [[ "$__REMOTE_SSH" -ne 1 && -z "$special_mode" ]]; then  # only check for progs if not ssh-d AND not using in "special mode"
         check_progs_installed find ffind "$PAGER" "$file_mngr" "$editor" "$image_viewer" \
                 "$video_player" "$pdf_viewer" dmenu file || return 1
