@@ -1404,11 +1404,12 @@ function mkgit() {
 ## Open file inside git tree on vim ##
 ######################################
 gito() {
-    local DMENU match gitdir count
-    local cwd="$PWD"
-    local dmenurc="$HOME/.dmenurc"
-    local editor="$EDITOR"
-    local nr_of_dmenu_vertical_lines=20
+    local DMENU match gitdir count cwd dmenurc editor nr_of_dmenu_vertical_lines
+
+    cwd="$PWD"
+    dmenurc="$HOME/.dmenurc"
+    editor="$EDITOR"
+    nr_of_dmenu_vertical_lines=20
 
     check_progs_installed git "$editor" dmenu || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
@@ -1437,10 +1438,27 @@ gito() {
     [[ "$cwd" != "$gitdir" ]] && popd &> /dev/null # go back
 
     count="$(echo "$match" | wc -l)"
-    [[ "$count" -gt 1 ]] && { report "found $count items" "$FUNCNAME"; match="$(echo "$match" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)"; }
+
+    if [[ "$count" -gt 1 ]]; then
+        report "found $count items" "$FUNCNAME"
+
+        if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
+            if [[ "$count" -le 20 ]]; then
+                select_items "$match" 1
+                match="$__SELECTED_ITEMS"
+            else
+                report "no way of using dmenu over ssh; these are the found files:\n" "$FUNCNAME"
+                echo -e "$match"
+                return 0
+            fi
+        else
+            match="$(echo "$match" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)"
+        fi
+    fi
+
     #[[ $(echo "$match" | wc -l) -gt 1 ]] && match="$(echo "$match" | bemenu -i -l 20 -p "$editor")"
     [[ -z "$match" ]] && return 1
-    match="$gitdir/$match" # convert to absolute
+    match="$gitdir/$match"  # convert to absolute
     [[ -f "$match" ]] || { err "\"$match\" is not a regular file." "$FUNCNAME"; return 1; }
 
     $editor -- "$match"
@@ -1555,7 +1573,7 @@ fo() {
         report "found $count items" "$FUNCNAME"
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            if [[ "$count" -le 15 ]]; then
+            if [[ "$count" -le 20 ]]; then
                 select_items "$match" 1
                 match="$__SELECTED_ITEMS"
             else
@@ -1724,7 +1742,7 @@ g() {
         return 1
     elif [[ "$count" -gt 1 ]]; then
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            if [[ "$count" -le 15 ]]; then
+            if [[ "$count" -le 20 ]]; then
                 select_items "$matches" 1
                 matches="$__SELECTED_ITEMS"
             else
