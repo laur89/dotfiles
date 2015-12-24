@@ -231,7 +231,7 @@ function ffindproc() {
 # find top 5/x biggest or smallest nodes:
 function __find_top_big_small_fun() {
     local usage opt OPTIND itemsToShow file_type item compiledFileTypeArgs maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_
-    local bigOrSmall du_include_regular_files filesize_print_unit duMaxDepthParam filetypeOptionCounter orig_size_unit
+    local bigOrSmall du_include_regular_files duMaxDepthParam filetypeOptionCounter
 
     reverse="$1" # this basically decides whether we're showing top big or small.
     du_size_unit="$2" # default unit provided by the invoker
@@ -329,53 +329,29 @@ function __find_top_big_small_fun() {
         return 1
     fi
 
-    # TODO: malaga start
+    report "seeking for top $itemsToShow $bigOrSmall files (in $du_size_unit units)...\n" "$FUNCNAME_"
 
-    report "seeking for top $itemsToShow $bigOrSmall files (in $du_size_unit units) ..." "$FUNCNAME_"
+    if [[ "$du_size_unit" == B ]]; then
+        du_size_unit="--bytes"
+    else
+        du_size_unit="--block-size=$du_size_unit"
+    fi
 
     if [[ "$file_type" == "-type f" ]]; then
         # optimization for files-only logic (ie no directories) to avoid expensive
         # calls to other programs (like awk and du).
 
-        orig_size_unit="$du_size_unit"  # store the original size
-        filesize_print_unit="k" # find's printf unit for the filesize; note that this is used merely for the printing not for seeking for the files;
-
-        if ! [[ "$du_size_unit" =~ ^[KMGB]+$ ]]; then
-            err "unsupported block size unit for find: \"$du_size_unit\"" "$FUNCNAME_"
-            echo -e "$usage"
-            return 1
-
-        # convert some of the du types to the find equivalents:
-        elif [[ "$du_size_unit" == B ]]; then
-            filesize_print_unit="s"
-        elif [[ "$du_size_unit" == K ]]; then
-            true
-        else
-            report "note that printed file size is in 1k units (limitation of find's -printf)\n" "$FUNCNAME_"
-            orig_size_unit="K"
-        fi
-
-        # find's printf:
-        #   %s file size in byte   - appears to be the same as du block-size w/o any units
-        #   %k in 1K blocks
-        #   %b in 512byte blocks
-        find $follow_links . -mindepth 1 $maxDepthParam $file_type -printf "%${filesize_print_unit}${orig_size_unit}\t%P\n" 2>/dev/null | \
-            sort -n $reverse | \
-            head -$itemsToShow
+        find $follow_links . -mindepth 1 $maxDepthParam $file_type -exec du -a "$du_size_unit" '{}' +  2>/dev/null | \
+                sort -n $reverse | \
+                head -$itemsToShow
 
     else  # covers both dirs only & dirs+files cases:
-        if [[ "$du_size_unit" == B ]]; then
-            du_size_unit="--bytes"
-        else
-            du_size_unit="--block-size=${du_size_unit}"
-        fi
-
         [[ "$file_type" != "-type d" ]] && du_include_regular_files="--all"  # if not dirs only;
 
         # TODO: here, for top_big_small, consider for i in G M K for the du -h!:
         du $follow_links $du_include_regular_files $du_size_unit $duMaxDepthParam 2>/dev/null | \
-            sort -n $reverse | \
-            head -$itemsToShow
+                sort -n $reverse | \
+                head -$itemsToShow
 
     #
     # !! this one's slow and old, but works with errything, ie dirs and files included:
@@ -418,7 +394,7 @@ function ffindtopsmall() {
 # find smaller/bigger than Xmegas files
 function __find_bigger_smaller_common_fun() {
     local usage opt OPTIND file_type item compiledFileTypeArgs maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_ biggerOrSmaller sizeArg
-    local du_include_regular_files filesize_print_unit duMaxDepthParam plusOrMinus filetypeOptionCounter sizeArgLastChar du_blk_sz orig_size_unit
+    local du_include_regular_files duMaxDepthParam plusOrMinus filetypeOptionCounter sizeArgLastChar du_blk_sz find_size_unit
 
     reverse="$1" # sorting order
     du_size_unit="$2" # default unit provided by the invoker
@@ -516,13 +492,13 @@ function __find_bigger_smaller_common_fun() {
         sizeArgLastChar="${sizeArg:$(( ${#sizeArg} - 1)):1}"
 
         if ! is_digit "$sizeArgLastChar"; then
-            # override du_size_unit defined by the invoker:
-            du_size_unit="$sizeArgLastChar"
-
             if ! [[ "$sizeArgLastChar" =~ ^[KMGTPEZYB]+$ ]]; then
-                err "unsupported du block size unit provided: \"$du_size_unit\"" "$FUNCNAME_"
+                err "unsupported du block size unit provided: \"$sizeArgLastChar\"" "$FUNCNAME_"
                 return 1
             fi
+
+            # override du_size_unit defined by the invoker:
+            du_size_unit="$sizeArgLastChar"
 
             sizeArg="${sizeArg:0:$(( ${#sizeArg} - 1))}"
         fi
@@ -556,18 +532,23 @@ function __find_bigger_smaller_common_fun() {
     elif [[ "$biggerOrSmaller" == "bigger" ]]; then
         plusOrMinus='+'
     else
-        err "could not detect whether we should look for smaller or larger than ${sizeArg}$du_size_unit files" "$FUNCNAME_"
+        err "could not detect whether we should look for smaller or larger than ${sizeArg}$du_size_unit files" "$FUNCNAME"
         return 1
     fi
 
-    report "seeking for files $biggerOrSmaller than ${sizeArg}$du_size_unit ..." "$FUNCNAME_"
+    report "seeking for files $biggerOrSmaller than ${sizeArg}${du_size_unit}...\n" "$FUNCNAME_"
+
+    if [[ "$du_size_unit" == B ]]; then
+        du_blk_sz="--bytes"
+    else
+        du_blk_sz="--block-size=$du_size_unit"
+    fi
 
     if [[ "$file_type" == "-type f" ]]; then
         # optimization for files-only logic (ie no directories) to avoid expensive
         # calls to other programs (like awk and du).
 
-        orig_size_unit="$du_size_unit"  # store the original size
-        filesize_print_unit="k" # find's printf unit for the filesize; note that this is used merely for the printing not for seeking for the files;
+        find_size_unit="$du_size_unit"
 
         if ! [[ "$du_size_unit" =~ ^[KMGB]+$ ]]; then
             err "unsupported block size unit for find: \"$du_size_unit\". refer to man find and search for \"-size\"" "$FUNCNAME_"
@@ -576,22 +557,22 @@ function __find_bigger_smaller_common_fun() {
 
         # convert some of the du types to the find equivalents:
         elif [[ "$du_size_unit" == B ]]; then
-            du_size_unit=c # bytes unit for find
-            filesize_print_unit="s"
+            find_size_unit=c  # bytes unit for find
         elif [[ "$du_size_unit" == K ]]; then
-            du_size_unit=k # kilobytes unit for find
-        else
-            report "note that printed file size is in 1k units (limitation of find's -printf)\n" "$FUNCNAME_"
-            orig_size_unit="K"
+            find_size_unit=k  # kilobytes unit for find
         fi
 
 
+        # old version using find's printf:
         # find's printf:
         # %s file size in byte   - appears to be the same as du block-size w/o any units
         # %k in 1K blocks
         # %b in 512byte blocks
-        find $follow_links . -mindepth 1 $maxDepthParam -size ${plusOrMinus}${sizeArg}${du_size_unit} $file_type -printf "%${filesize_print_unit}${orig_size_unit}\t%P\n" 2>/dev/null | \
-            sort -n $reverse
+        #find $follow_links . -mindepth 1 $maxDepthParam -size ${plusOrMinus}${sizeArg}${du_size_unit} $file_type -printf "%${filesize_print_unit}${orig_size_unit}\t%P\n" 2>/dev/null | \
+            #sort -n $reverse
+
+        find $follow_links . -mindepth 1 $maxDepthParam -size ${plusOrMinus}${sizeArg}${find_size_unit} $file_type -exec du -a "$du_blk_sz" '{}' +  2>/dev/null | \
+                sort -n $reverse
 
     else # directories included, need to use du + awk
         # note that different find commands are defined purely because of < vs > in awk command.; could overcome
@@ -611,16 +592,13 @@ function __find_bigger_smaller_common_fun() {
         #fi
 
         if [[ "$du_size_unit" == B ]]; then
-            du_blk_sz="--bytes"
-            unset du_size_unit # with bytes, --threshold arg doesn't need a unit
-        else
-            du_blk_sz="--block-size=$du_size_unit"
+            unset du_size_unit  # with bytes, --threshold arg doesn't need a unit
         fi
 
         [[ "$file_type" != "-type d" ]] && du_include_regular_files="--all"  # if not dirs only;
 
         du $follow_links $du_include_regular_files $du_blk_sz $duMaxDepthParam --threshold=${plusOrMinus}${sizeArg}${du_size_unit} 2>/dev/null | \
-            sort -n $reverse
+                sort -n $reverse
     fi
 }
 
@@ -1411,13 +1389,16 @@ gito() {
     editor="$EDITOR"
     nr_of_dmenu_vertical_lines=20
 
-    check_progs_installed git "$editor" dmenu || return 1
+    if [[ "$__REMOTE_SSH" -ne 1 ]]; then
+        check_progs_installed git "$editor" dmenu || return 1
+    fi
+
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
     gitdir="$(git rev-parse --show-toplevel)"
-    [[ "$cwd" != "$gitdir" ]] && pushd "$gitdir" &> /dev/null # git root
+    [[ "$cwd" != "$gitdir" ]] && pushd "$gitdir" &> /dev/null  # git root
 
     if [[ -n "$@" ]]; then
         if [[ "$@" == *\** && "$@" != *\.\** ]]; then
