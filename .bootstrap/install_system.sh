@@ -97,6 +97,8 @@ function validate_and_init() {
             exit 1 ;;
     esac
 
+    report "private castle defined as \"$PRIVATE_CASTLE\""
+
     # verify we have our key(s) set up and available:
     if is_ssh_setup; then
         _sanitize_ssh
@@ -525,17 +527,16 @@ function setup_homesick() {
 }
 
 
-# creates symlink of our personal '.bash_env_vars' to /etc and sources it also from
-# /root/.bashrc, so the configuration within it could be accessed by scripts et al.
+# creates symlink of our personal '.bash_env_vars' to /etc & /etc/profile.d/
 function setup_global_env_vars() {
-    local global_env_var_loc root_bashrc
+    local global_env_var_loc global_env_var
 
     global_env_var_loc='/etc/.bash_env_vars'  # so our env vars would have user-agnostic location as well;
                                               # that location will be used by various scripts.
-    root_bashrc='/root/.bashrc'
+    global_env_var='/etc/profile.d/bash_env_vars.sh'  # target name needs to end with .sh
 
     if ! [[ -e "$SHELL_ENVS" ]]; then
-        err "$SHELL_ENVS does not exist. can't link it to $global_env_var_loc"
+        err "$SHELL_ENVS does not exist. can't link it to $global_env_var_loc nor $global_env_var_loc"
         return 1
     fi
 
@@ -543,15 +544,23 @@ function setup_global_env_vars() {
         execute "sudo ln -s $SHELL_ENVS $global_env_var_loc"
     fi
 
-    if sudo test -f $root_bashrc; then
-        if ! sudo grep -q "source $SHELL_ENVS" $root_bashrc; then
-            # hasn't been sourced in $root_bashrc yet:
-            execute "echo source $SHELL_ENVS | sudo tee --append $root_bashrc > /dev/null"
-        fi
+    if ! [[ -d "$(dirname $global_env_var)" ]]; then
+        err "$(dirname $global_env_var) is not a dir; can't install globally for all the users."
     else
-        err "$root_bashrc doesn't exist; cannot source \"$SHELL_ENVS\" from it!"
-        return 1
+        if ! [[ -h "$global_env_var" ]]; then
+            execute "sudo ln -s $SHELL_ENVS $global_env_var"
+        fi
     fi
+
+    #if sudo test -f $root_bashrc; then
+        #if ! sudo grep -q "source $SHELL_ENVS" $root_bashrc; then
+            ## hasn't been sourced in $root_bashrc yet:
+            #execute "echo source $SHELL_ENVS | sudo tee --append $root_bashrc > /dev/null"
+        #fi
+    #else
+        #err "$root_bashrc doesn't exist; cannot source \"$SHELL_ENVS\" from it!"
+        #return 1
+    #fi
 }
 
 
@@ -668,7 +677,8 @@ function install_altiris() {
         wget --no-check-certificate \
             --no-cookies \
             --header 'Cookie: studio.crowd.tokenkey=sy1UCiW0EIXwN5lf7tUMLA00' \
-            -O $TMPDIR/altiris_install.sh $altiris_loc \
+            -O $TMPDIR/altiris_install.sh \
+            -- $altiris_loc \
     " || { err "couldn't find altiris script; read wiki."; return 1; }
 
     execute "chmod +x $TMPDIR/altiris_install.sh"
@@ -704,7 +714,7 @@ function install_symantec_endpoint_security() {
     execute "pushd $tmpdir"
 
     # fetch & install SEP:
-    execute "wget $sep_loc" || return 1
+    execute "wget -- $sep_loc" || return 1
     tarball="$(ls)"
     extract "$tarball" || { err "extracting $tarball failed."; return 1; }
     dir="$(find -mindepth 1 -maxdepth 1 -type d)"
@@ -719,7 +729,7 @@ function install_symantec_endpoint_security() {
     execute "wget --no-check-certificate \
         --no-cookies \
         --header 'Cookie: oraclelicense=accept-securebackup-cookie' \
-        $jce_loc" || { err "unable to wget $jce_loc."; return 1; }
+        -- $jce_loc" || { err "unable to wget $jce_loc."; return 1; }
 
     tarball="$(basename $jce_loc)"
     extract "$tarball" || { err "extracting $tarball failed."; return 1; }
@@ -844,7 +854,7 @@ function install_oracle_jdk() {
     wget --no-check-certificate \
         --no-cookies \
         --header 'Cookie: oraclelicense=accept-securebackup-cookie' \
-        $ORACLE_JDK_LOC
+        -- $ORACLE_JDK_LOC
 
     tarball="$(basename $ORACLE_JDK_LOC)"
     extract "$tarball" || { err "extracting $tarball failed."; return 1; }
@@ -951,7 +961,7 @@ function install_skype() {  # https://wiki.debian.org/skype
         execute "sudo apt-get -f --yes install"
     fi
 
-    execute "wget -O $skypeFile $SKYPE_LOC" || { err; return 1; }
+    execute "wget -O $skypeFile -- $SKYPE_LOC" || { err; return 1; }
     execute "sudo dpkg -i $skypeFile"  #|| { err; return 1; }  # do not exit on err!
     execute "sudo apt-get -f --yes install" || { err; return 1; }
 
@@ -1604,7 +1614,7 @@ function should_build_if_avail_in_repo() {
 
     packages="$(apt-cache search --names-only "$package_name")" || { err; return 1; }
     if [[ -n "$packages" ]]; then
-        report "FYI, these packages with \"$package_name\" in them are available in repo:"
+        report "FYI, these packages with \"$package_name\" in them are available in repo:\n"
         echo -e "$packages"
 
         if ! confirm "\tdo you still wish to build yourself?\n\t(answering 'no' will skip the build. you need to manually install it from the repo yourself.)"; then
