@@ -2,13 +2,13 @@ LA's Debian netinstall base setup
 =================================
 
 Pre-requisities:
-    * Debian testing release netinstall
-    * media/data mountpoint mounted at /data
+* Debian testing release netinstall
+* media/data mountpoint mounted at /data
 
 Notes:
-    *  this setup is heavily dependent on the system configuration found in numerous
-       homeshick castles. Some of them are publicly not accessible, so your milage
-       WILL vary.
+*  this setup is heavily dependent on the system configuration found in numerous
+homeshick castles. Some of them are publicly not accessible, so your milage
+WILL vary.
 
 Installation
 ------------
@@ -40,10 +40,10 @@ steps separately apart from the full installation mode.
 
 This mode is intended to be used througout the system lifetime post-fullinstall.
 It provides maintenance/management options, such as
-    * generating ssh key
-    * switching activejdk versions
-    * upgrading kernel
-    * installing various drivers
-    * installing the base package set
-    * build and/or install software (such as vim, copyq, oracle jdk)
+* generating ssh key
+* switching activejdk versions
+* upgrading kernel
+* installing various drivers
+* installing the base package set
+* build and/or install software (such as vim, copyq, oracle jdk)
 
