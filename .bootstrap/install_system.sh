@@ -311,7 +311,27 @@ function clone_or_pull_repo() {
 # if equivalent is avaialble at deb repos, its installation should be
 # moved to  install_from_repo()
 function install_deps() {
-    local dir
+    function _install_tmux_deps() {
+        local dir
+
+        if ! [[ -d "$HOME/.tmux/plugins/tpm" ]]; then
+            clone_or_pull_repo "tmux-plugins" "tpm" "$HOME/.tmux/plugins"
+            report "don't forget to install plugins by running <prefix + I> in tmux later on." && sleep 4
+        else
+            # update all the tmux plugins, including the plugin manager itself:
+            execute "pushd $HOME/.tmux/plugins"
+
+            for dir in *; do
+                if [[ -d "$dir" ]] && is_ssh_setup; then
+                    execute "pushd $dir"
+                    is_git && execute "git pull"
+                    execute "popd"
+                fi
+            done
+
+            execute "popd"
+        fi
+    }
 
     # bash-git-prompt:
     clone_or_pull_repo "magicmonty" "bash-git-prompt" "$BASE_DEPS_LOC"
@@ -322,28 +342,23 @@ function install_deps() {
     # pearl-ssh perhaps?
 
     # tmux plugin manager:
-    if ! [[ -d "$HOME/.tmux/plugins/tpm" ]]; then
-        clone_or_pull_repo "tmux-plugins" "tpm" "$HOME/.tmux/plugins"
-        report "don't forget to install plugins by running <prefix + I> in tmux later on." && sleep 4
-    else
-        # update all the tmux plugins, including the plugin manager itself:
-        execute "pushd $HOME/.tmux/plugins"
-
-        for dir in *; do
-            if [[ -d "$dir" ]] && is_ssh_setup; then
-                execute "pushd $dir"
-                is_git && execute "git pull"
-                execute "popd"
-            fi
-        done
-
-        execute "popd"
-    fi
+    _install_tmux_deps
 
     # TODO: these are not deps, are they?:
     execute "sudo pip install git-playback"  # https://github.com/jianli/git-playback
     execute "sudo pip install img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
     execute "sudo pip3 install scdl"         # https://github.com/flyingrub/scdl
+
+
+    # work deps:
+    if [[ "$MODE" == work ]]; then
+        # cx toolbox/vagrant env deps:
+        execute "sudo gem install \
+            puppet puppet-lint bundler nokogiri builder \
+        "
+    fi
+
+    unset _install_tmux_deps
 }
 
 
@@ -795,6 +810,7 @@ function upgrade_kernel() {
         if [[ -n "$__SELECTED_ITEMS" ]]; then
             report "installing ${__SELECTED_ITEMS}..."
             execute "sudo apt-get --yes install $__SELECTED_ITEMS"
+            break
         else
             confirm "no items were selected; skip kernel upgrade?" && break
         fi
@@ -1328,6 +1344,7 @@ function install_and_setup_fonts() {
 
     report "installing & setting up fonts..."
 
+    # note we need to install xset in this block as well:
     install_block '
         ttf-dejavu
         ttf-liberation
@@ -1515,11 +1532,6 @@ function install_from_repo() {
             virtualbox
             puppet
         '
-
-        # cx toolbox/vagrant env deps:
-        execute "sudo gem install \
-            puppet puppet-lint bundler nokogiri builder \
-        "
     fi
 }
 
