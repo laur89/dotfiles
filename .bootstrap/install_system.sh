@@ -597,20 +597,20 @@ function setup_config_files() {
 # network manager wrapper script;
 # runs other script that writes info to /tmp and manages locking logic for laptops (security, kinda)
 function setup_SSID_checker() {
-    local wrapper_loc  wrapper_dest
+    local nm_wrapper_loc  nm_wrapper_dest
 
-    wrapper_loc="$BASE_DATA_DIR/dev/scripts/network_manager_SSID_checker_wrapper.sh"
-    wrapper_dest="/etc/NetworkManager/dispatcher.d"
+    nm_wrapper_loc="$BASE_DATA_DIR/dev/scripts/network_manager_SSID_checker_wrapper.sh"
+    nm_wrapper_dest="/etc/NetworkManager/dispatcher.d"
 
-    if ! [[ -f "$wrapper_loc" ]]; then
-        err "$wrapper_loc does not exist; SSID checker won't be installed"
+    if ! [[ -f "$nm_wrapper_loc" ]]; then
+        err "$nm_wrapper_loc does not exist; SSID checker won't be installed"
         return 1
-    elif ! [[ -d "$wrapper_dest" ]]; then
-        err "$wrapper_dest dir does not exist; SSID checker won't be installed"
+    elif ! [[ -d "$nm_wrapper_dest" ]]; then
+        err "$nm_wrapper_dest dir does not exist; SSID checker won't be installed"
         return 1
     fi
 
-    execute "sudo cp $wrapper_loc $wrapper_dest/"
+    execute "sudo cp $nm_wrapper_loc $nm_wrapper_dest/"
     return $?
 }
 
@@ -623,6 +623,17 @@ function setup() {
 
     setup_dirs  # has to come after .bash_env_vars sourcing so the env vars are in place
     setup_config_files
+    setup_additional_apt_keys
+}
+
+
+function setup_additional_apt_keys() {
+
+    # install keys:
+    # mopidy key:
+    execute 'wget -q -O - http://apt.mopidy.com/mopidy.gpg | sudo apt-key add -'
+    # from https://www.spotify.com/es/download/linux/ :
+    execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys BBEBDCB318AD50EC6865090613B00F1FD2C19886'
 }
 
 
@@ -1475,6 +1486,9 @@ function install_from_repo() {
         icedove
         rxvt-unicode-256color
         mopidy
+        mopidy-soundcloud
+        mopidy-spotify
+        mopidy-youtube
         mpc
         ncmpcpp
         geany
