@@ -58,7 +58,7 @@ wmname LG3D &
 #while true; do
     # Log stderror to a file:
     dwm 2>  $CUSTOM_LOGDIR/dwm.log
-    kill_pids "$__bar_pid"
+    #kill_pids "$__bar_pid"
     killall dwm_statusbar && sleep 3 && killall -KILL dwm_statusbar
     # No error logging:
     #dwm >/dev/null 2>&1
