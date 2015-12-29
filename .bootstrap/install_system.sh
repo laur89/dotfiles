@@ -1958,12 +1958,16 @@ function execute() {
 
 
 function select_items() {
-    local options i prompt msg choices num is_single_selection selections
+    local DMENU nr_of_dmenu_vertical_lines dmenurc options options_dmenu i prompt msg choices num is_single_selection selections
 
     # original version stolen from http://serverfault.com/a/298312
     options=( $1 )
     is_single_selection="$2"
+    dmenurc="$HOME/.dmenurc"
+    nr_of_dmenu_vertical_lines=40
     selections=()
+
+    [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
     function __menu() {
         local i
@@ -1977,6 +1981,13 @@ function select_items() {
     }
 
     if [[ "$is_single_selection" -eq 1 ]]; then
+        if [[ -n "$DISPLAY" ]] && command -v dmenu > /dev/null 2>&1; then
+            for i in ${options[*]}; do
+                options_dmenu+="$i\n"
+            done
+            __SELECTED_ITEMS="$(echo -e "$options_dmenu" | $DMENU -l $nr_of_dmenu_vertical_lines -p 'select task')"
+            return
+        fi
         prompt="Check an option, only 1 item can be selected (again to uncheck, ENTER when done): "
     else
         prompt="Check an option, multiple items allowed (again to uncheck, ENTER when done): "
