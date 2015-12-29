@@ -309,11 +309,12 @@ function clone_or_pull_repo() {
 
 
 function install_ssh_server() {
-    local sshd_confdir tmpfile file
+    local sshd_confdir tmpfile config banner
 
     sshd_confdir="/etc/ssh"
     tmpfile="$TMPDIR/sshd_config"
-    file="$PRIVATE_CASTLE/backups/sshd_config"
+    config="$PRIVATE_CASTLE/backups/sshd_config"
+    banner="$PRIVATE_CASTLE/backups/ssh_banner"
 
     confirm "wish to install & configure ssh server?" || return 1
     if is_laptop; then
@@ -327,15 +328,25 @@ function install_ssh_server() {
         return 1
     fi
 
-    if [[ -f "$file" ]]; then
-        execute "cp $file $tmpfile" || return 1
+    # install sshd config:
+    if [[ -f "$config" ]]; then
+        execute "cp $config $tmpfile" || return 1
         #execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
         backup_original_and_copy_file "$tmpfile" "$sshd_confdir"
 
         execute "rm $tmpfile"
     else
-        err "expected configuration file at \"$file\" does not exist; won't install it."
+        err "expected configuration file at \"$config\" does not exist; aborting sshd configuration."
         return 1
+    fi
+
+
+    # install ssh banner:
+    if [[ -f "$banner" ]]; then
+        backup_original_and_copy_file "$banner" "$sshd_confdir"
+    else
+        err "expected sshd banner file at \"$banner\" does not exist; won't install it."
+        #return 1  # don't return
     fi
 
     execute "sudo systemctl start sshd.service"
@@ -353,7 +364,7 @@ function install_sshfs() {
     confirm "wish to install and configure sshfs?" || return 1
     install_block 'sshfs'
 
-    if ! [[ -r "$fuse_conf" ]]; then
+    if ! [[ -r "$fuse_conf" && -f "$fuse_conf" ]]; then
         err "$fuse_conf is not readable; cannot uncomment \"\#user_allow_other\" prop in it."
     elif grep -q '#user_allow_other' "$fuse_conf"; then
         # hasn't been uncommented yet
@@ -362,7 +373,7 @@ function install_sshfs() {
     elif grep -q 'user_allow_other' "$fuse_conf"; then
         true  # do nothing; already uncommented, all good;
     else
-        err "$fuse_conf appears to not contain config value \"user_allow_other\"; check manually."
+        err "$fuse_conf appears not to contain config value \"user_allow_other\"; check manually."
     fi
 
     # TODO: automate?
