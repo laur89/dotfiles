@@ -46,7 +46,7 @@ fi
 
 #python3 $HOME/.dwm/bars/py_bar.py &
 # dzen2 setup:
-$HOME/.dwm/bars/w0ng_bash/statusbar &
+$HOME/.dwm/bars/w0ng_bash/dwm_statusbar &
 __bar_pid=$!
 disown
 
@@ -59,6 +59,7 @@ wmname LG3D &
     # Log stderror to a file:
     dwm 2>  $CUSTOM_LOGDIR/dwm.log
     kill_pids "$__bar_pid"
+    killall dwm_statusbar && sleep 3 && killall -KILL dwm_statusbar
     # No error logging:
     #dwm >/dev/null 2>&1
 #done
