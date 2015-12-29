@@ -318,7 +318,7 @@ function install_deps() {
 
         if ! [[ -d "$HOME/.tmux/plugins/tpm" ]]; then
             clone_or_pull_repo "tmux-plugins" "tpm" "$HOME/.tmux/plugins"
-            report "don't forget to install plugins by running <prefix + I> in tmux later on." && sleep 4
+            report "don't forget to install tmux plugins by running <prefix + I> in tmux later on." && sleep 4
         else
             # update all the tmux plugins, including the plugin manager itself:
             execute "pushd $HOME/.tmux/plugins"
@@ -348,6 +348,8 @@ function install_deps() {
 
     # TODO: these are not deps, are they?:
     execute "sudo pip install git-playback"  # https://github.com/jianli/git-playback
+
+    # this needs apt-get install  python-imaging ?:
     execute "sudo pip install img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
     execute "sudo pip3 install scdl"         # https://github.com/flyingrub/scdl
 
