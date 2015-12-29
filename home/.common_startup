@@ -36,17 +36,20 @@ function enableSmart() {
         err_display "$msg" "$SELF"
         #log "$msg" "$error_log"
         #mail_error_report_and_log "$SELF: unable to scan drives with smartctl --scan on $HOSTNAME" "$msg" "$error_log"
+        return 1
     elif [[ -z "$_disk_list" ]]; then
         msg="no disks returned from \"sudo smartctl --scan\" command."
         err_display "$msg" "$SELF"
         #log "$SELF" "$error_log"
         #mail_error_report_and_log "$SELF: no disks found using smartctl on $HOSTNAME." "$msg" "$error_log"
+        return 1
     fi
 
     for _disk in $_disk_list; do
         disk_check="$(echo "$_disk" | sed 's/.*\///')" # strip everything before last slash (included)
+        [[ -z "$disk_check" ]] && { err_display "something went wrong with cleaning cmartctl returned disk." "$SELF"; }
 
-        # Check whether user given disk is listed in /proc/partitions; if not, send error:
+        # sanity - check whether smartctl found disk is listed in /proc/partitions; if not, send error:
         if grep -Fq "$disk_check" /proc/partitions; then
             #	-s on	enables SMART on device (off would disable); should be somewhere in machine startup script, like rc.local;
             #	-S on	enables autosave of device vendor-specific attributes
@@ -59,6 +62,7 @@ function enableSmart() {
                 err_display "$msg" "$SELF"
                 #log "$msg" "$error_log"
                 #mail_error_report_and_log "$SELF: unable to enable SMART on $HOSTNAME." "$msg" "$error_log"
+                # do NOT return!
             fi
         else
             msg="The disk \"$_disk\" has beed passed to me via
@@ -72,7 +76,8 @@ function enableSmart() {
 }
 ################################################
 
-xrandr --output DP-2 --auto --right-of DP-1 &
+#xrandr --output DP-2 --auto --right-of DP-1 &
+detect_displays.sh &
 
 # Load bitmap fonts:
 xset +fp ~/.fonts

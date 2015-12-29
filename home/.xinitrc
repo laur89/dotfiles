@@ -20,6 +20,8 @@ source $HOME/.common_startup
 
 case "$input" in
     dwm)
+        report "waiting for couple of time to give .common_startup some time to spin up services..."
+        sleep 5
         exec start_dwm
         #exec ck-launch-session dbus-launch --sh-syntax --exit-with-session /usr/local/bin/start_dwm
         #exec /usr/local/bin/start_dwm

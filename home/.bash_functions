@@ -640,6 +640,7 @@ function aptreset() {
 #  Find a pattern in a set of files and highlight them:
 #+ (needs a recent version of grep).
 # !!! deprecated by ag/astr
+# TODO: find whether we could stop using find here and use grep --include & --exclude flags instead.
 function ffstr() {
     local grepcase OPTIND usage opt MAX_RESULT_LINE_LENGTH caseOptCounter force_case regex
     local INAME_ARG maxDepth maxDepthParam defMaxDeptWithFollowLinks follow_links
