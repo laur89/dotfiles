@@ -83,7 +83,7 @@ xset fp rehash
 #xsetroot -cursor_name left_ptr
 
 # Load the Xresources database:
-[[ -r ~/.Xresources ]] && xrdb -merge ~/.Xresources # Do not background!
+[[ -r ~/.Xresources ]] && xrdb -merge ~/.Xresources  # Do not background!
 
 # disable system beep:
 xset -b &
@@ -110,14 +110,20 @@ fi
 #fi
 
 # Check whether logfolder at /var/log and /data/ dir are existing:
-for i in $logdir /data/; do
+for i in \
+        $logdir \
+        /data/ \
+            ; do
     if [[ ! -w "$i" ]]; then
         err_display  "$i is not created or no write permissions granted. Do it!" "$SELF" &
     fi
 done &
 
 # Create necessary directories if don't exist:
-for i in /data/.rsync "$_PERSISTED_TMP"; do
+for i in \
+        /data/.rsync \
+        "$_PERSISTED_TMP" \
+            ; do
     if [[ ! -d "$i" ]] && ! mkdir "$i"; then
         err_display  "Tried to create required directory \"$i\" but mkdir failed." "$SELF" &
     fi
