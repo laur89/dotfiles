@@ -25,6 +25,7 @@ fi
 #python3 $HOME/.dwm/bars/py_bar.py &
 # dzen2 setup:
 $HOME/.dwm/bars/w0ng_bash/statusbar &
+__bar_pid=$!
 disown
 
 # spoof window manager, so java apps would recognize it:
@@ -35,6 +36,7 @@ wmname LG3D &
 #while true; do
     # Log stderror to a file:
     dwm 2>  $CUSTOM_LOGDIR/dwm.log
+    kill_pid "$__bar_pid"
     # No error logging:
     #dwm >/dev/null 2>&1
 #done
