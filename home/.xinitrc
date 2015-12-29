@@ -55,6 +55,7 @@ case "$input" in
         exec bspwm
         ;;
     none | nil | console)
+        xterm
         true
         ;;
     *)
