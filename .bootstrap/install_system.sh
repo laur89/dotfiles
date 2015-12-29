@@ -1752,7 +1752,7 @@ function choose_single_task() {
         install_webdev
         install_from_repo
         install_laptop_deps
-        install_ssh
+        install_ssh_server_or_client
         __choose_prog_to_build
     )
 
@@ -1813,12 +1813,11 @@ function full_install() {
     install_and_setup_fonts  # has to be after apt has been updated
     install_progs
     install_deps
-    install_ssh_server
-    install_ssh
+    install_ssh_server_or_client
 }
 
 
-function install_ssh() {
+function install_ssh_server_or_client() {
     report "what do you want to do?"
 
     while true; do
@@ -1963,6 +1962,7 @@ function select_items() {
     # original version stolen from http://serverfault.com/a/298312
     options=( $1 )
     is_single_selection="$2"
+
     dmenurc="$HOME/.dmenurc"
     nr_of_dmenu_vertical_lines=40
     selections=()
