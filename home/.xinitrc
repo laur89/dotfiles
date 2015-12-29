@@ -56,7 +56,6 @@ case "$input" in
         ;;
     none | nil | console)
         xterm
-        true
         ;;
     *)
         exec "$DEFAULT_SESSION"
