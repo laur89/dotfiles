@@ -114,7 +114,7 @@ function validate_and_init() {
 function check_dependencies() {
     local dir prog perms
 
-    perms=777
+    perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
     for prog in git wget tar; do
         if ! command -v $prog >/dev/null; then
@@ -143,9 +143,8 @@ function check_dependencies() {
             fi
         fi
 
-        if ! [[ -w "$dir" ]]; then
-            execute "sudo chmod $perms $dir" || { err "unable to change $dir permissions to $perms. abort."; exit 1; }
-        fi
+        execute "sudo chown $USER:$USER $dir" || { err "unable to change $dir ownership to $USER:$USER. abort."; exit 1; }
+        execute "sudo chmod $perms $dir" || { err "unable to change $dir permissions to $perms. abort."; exit 1; }
     done
 }
 
@@ -271,7 +270,7 @@ function backup_original_and_copy_file() {
     local file dest filename
 
     file="$1"  # full path of the file to be copied
-    dest="$2"  # full path of the destination to copy to
+    dest="$2"  # full path of the destination directory to copy to
 
     filename="$(basename "$file")"
 
@@ -306,6 +305,70 @@ function clone_or_pull_repo() {
         execute "git pull"
         execute "popd"
     fi
+}
+
+
+function install_ssh_server() {
+    local sshd_confdir tmpfile file
+
+    sshd_confdir="/etc/ssh"
+    tmpfile="$TMPDIR/sshd_config"
+    file="$PRIVATE_CASTLE/backups/sshd_config"
+
+    confirm "wish to install & configure ssh server?" || return 1
+    if is_laptop; then
+        confirm "you're on laptop; sure you wish to install ssh server?" || return 1
+    fi
+
+    install_block 'openssh-server'
+
+    if ! [[ -d "$sshd_confdir" ]]; then
+        err "$sshd_confdir is not a dir; skipping sshd conf installation."
+        return 1
+    fi
+
+    if [[ -f "$file" ]]; then
+        execute "cp $file $tmpfile" || return 1
+        #execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
+        backup_original_and_copy_file "$tmpfile" "$sshd_confdir"
+
+        execute "rm $tmpfile"
+    else
+        err "expected configuration file at \"$file\" does not exist; won't install it."
+        return 1
+    fi
+
+    execute "sudo systemctl start sshd.service"
+    #execute "systemctl enable sshd.service"  # TODO: this is not required, is it?
+
+    return 0
+}
+
+
+function install_sshfs() {
+    local fuse_conf
+
+    fuse_conf="/etc/fuse.conf"
+
+    confirm "wish to install and configure sshfs?" || return 1
+    install_block 'sshfs'
+
+    if ! [[ -r "$fuse_conf" ]]; then
+        err "$fuse_conf is not readable; cannot uncomment \"\#user_allow_other\" prop in it."
+    elif grep -q '#user_allow_other' "$fuse_conf"; then
+        # hasn't been uncommented yet
+        execute "sudo sed -i 's/#user_allow_other/user_allow_other/g' $fuse_conf"
+        [[ $? -ne 0 ]] && { err "uncommenting '#user_allow_other' in $fuse_conf failed"; return 2; }
+    elif grep -q 'user_allow_other' "$fuse_conf"; then
+        true  # do nothing; already uncommented, all good;
+    else
+        err "$fuse_conf appears to not contain config value \"user_allow_other\"; check manually."
+    fi
+
+    # TODO: automate?
+    report "do not forget to set up fstab entry for the sshfs mount!!!" && sleep 4
+
+    return 0
 }
 
 
@@ -1689,6 +1752,7 @@ function choose_single_task() {
         install_webdev
         install_from_repo
         install_laptop_deps
+        install_ssh
         __choose_prog_to_build
     )
 
@@ -1749,8 +1813,29 @@ function full_install() {
     install_and_setup_fonts  # has to be after apt has been updated
     install_progs
     install_deps
+    install_ssh_server
+    install_ssh
 }
 
+
+function install_ssh() {
+    report "what do you want to do?"
+
+    while true; do
+        select_items "client-side server-side" 1
+
+        if [[ -n "$__SELECTED_ITEMS" ]]; then
+            break
+        else
+            confirm "no items were selected; exit?" && return || continue
+        fi
+    done
+
+    case "$__SELECTED_ITEMS" in
+        "server-side" ) install_ssh_server ;;
+        "client-side" ) install_sshfs ;;
+    esac
+}
 
 ###################
 # UTILS (contains no setup-related logic)
@@ -2059,6 +2144,9 @@ if [[ -e "$EXECUTION_LOG" ]]; then
 
     echo -e "\n\n___________________________________________"
     echo -e "\tscript execution log can be found at \"$EXECUTION_LOG\""
+    if grep -q '    ERR' "$EXECUTION_LOG"; then
+        echo -e "${COLORS[RED]}    NOTE: log contains errors.${COLORS[OFF]}"
+    fi
     echo -e "___________________________________________"
 fi
 
