@@ -164,6 +164,10 @@ source "$HOME/.bash-git-prompt/gitprompt.sh"
 # git-flow-competion;....
 source "$HOME/.git-flow-completion/git-flow-completion.bash"
 
+##########################################
+# jump marks:
+source "$HOME/.marks/marks.sh"
+
 # better create symlink to add to PATH:
 #source /data/progs/deps/pearl-ssh/lib/ssh_pearl.sh
 ##########################################

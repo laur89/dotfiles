@@ -2,6 +2,7 @@
 #
 # good source to begin with: http://tldp.org/LDP/abs/html/sample-bashrc.html
 # TODO: check this!: https://github.com/Cloudef/dotfiles-ng/blob/master/#ARCHCONFIG/shell/functions
+# also this for general dotfiles/scripts goodness: https://github.com/Donearm
 #
 #
 # =====================================================================
