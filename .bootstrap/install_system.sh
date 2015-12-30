@@ -426,10 +426,11 @@ function install_deps() {
     # this needs apt-get install  python-imaging ?:
     execute "sudo pip install img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
     execute "sudo pip3 install scdl"         # https://github.com/flyingrub/scdl
+    execute "sudo pip install rtv"           # https://github.com/michael-lazar/rtv (reddit reader)
 
 
     # work deps:
-    if [[ "$MODE" == work ]]; then
+    if [[ "$MODE" == work ]] && ! is_laptop; then  # TODO: do we want to include != laptop?
         # cx toolbox/vagrant env deps:
         execute "sudo gem install \
             puppet puppet-lint bundler nokogiri builder \
