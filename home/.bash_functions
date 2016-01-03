@@ -175,7 +175,7 @@ function ffind() {
     fi
 
     if [[ "$pathOpt" -eq 1 ]]; then
-        [[ -n "$INAME_ARG" ]] && INAME_ARG="-iwholename" || INAME_ARG="-path" # as per man page, -ipath is deprecated
+        [[ -n "$INAME_ARG" ]] && INAME_ARG="-iwholename" || INAME_ARG="-path"  # as per man page, -ipath is deprecated
     elif [[ "$regex" -eq 1 ]]; then
         [[ -n "$INAME_ARG" ]] && INAME_ARG="-regextype posix-extended -iregex" || INAME_ARG="-regextype posix-extended -regex"
     fi
@@ -231,7 +231,7 @@ function ffindproc() {
 
 # find top 5/x biggest or smallest nodes:
 function __find_top_big_small_fun() {
-    local usage opt OPTIND itemsToShow file_type item compiledFileTypeArgs maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_
+    local usage opt OPTIND itemsToShow file_type item maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_
     local bigOrSmall du_include_regular_files duMaxDepthParam filetypeOptionCounter
 
     reverse="$1" # this basically decides whether we're showing top big or small.
@@ -242,7 +242,7 @@ function __find_top_big_small_fun() {
 
     filetypeOptionCounter=0
 
-	if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ && "${#du_size_unit}" -eq 1 ]]; then
+    if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ && "${#du_size_unit}" -eq 1 ]]; then
         err "unsupported du block size unit: \"$du_size_unit\"" "$FUNCNAME_"
         echo -e "$usage"
         return 1
@@ -257,18 +257,6 @@ function __find_top_big_small_fun() {
 
     while getopts "m:fdLh" opt; do
         case "$opt" in
-           #f) file_type="$file_type f"
-           #f) file_type="-type f"
-              #filetypeOptionCounter+=1
-              #shift $((OPTIND-1))
-                #;;
-           ##d) file_type="$file_type d"
-           #d) file_type="-type d"
-              #filetypeOptionCounter+=1
-              ## we don't want to sed maxdepth param here by default, right?
-              ##maxDepthParam="-maxdepth 1"
-              #shift $((OPTIND-1))
-                #;;
            f | d) file_type="-type $opt"
               let filetypeOptionCounter+=1
               shift $((OPTIND-1))
@@ -287,15 +275,6 @@ function __find_top_big_small_fun() {
     done
 
     itemsToShow="$1"
-
-    #if [[ -z "$file_type" ]]; then
-        #compiledFileTypeArgs="-type f"
-    #else
-        #for item in $file_type; do
-            #[[ -z "$compiledFileTypeArgs" ]] && compiledFileTypeArgs="-type $item" \
-                                             #|| compiledFileTypeArgs="$compiledFileTypeArgs -o -type $item"
-        #done
-    #fi
 
     if [[ "$#" -gt 1 ]]; then
         err "maximum of one arg allowed" "$FUNCNAME_"
@@ -321,7 +300,7 @@ function __find_top_big_small_fun() {
             return 1
         fi
     else
-        itemsToShow=10 # default
+        itemsToShow=10  # default
     fi
 
     if [[ "$filetypeOptionCounter" -gt 1 ]]; then
@@ -394,7 +373,7 @@ function ffindtopsmall() {
 
 # find smaller/bigger than Xmegas files
 function __find_bigger_smaller_common_fun() {
-    local usage opt OPTIND file_type item compiledFileTypeArgs maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_ biggerOrSmaller sizeArg
+    local usage opt OPTIND file_type item maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_ biggerOrSmaller sizeArg
     local du_include_regular_files duMaxDepthParam plusOrMinus filetypeOptionCounter sizeArgLastChar du_blk_sz find_size_unit
 
     reverse="$1" # sorting order
@@ -405,7 +384,7 @@ function __find_bigger_smaller_common_fun() {
 
     filetypeOptionCounter=0
 
-	if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ && "${#du_size_unit}" -eq 1 ]]; then
+    if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ && "${#du_size_unit}" -eq 1 ]]; then
         err "unsupported du block size unit: \"$du_size_unit\"" "$FUNCNAME_"
         echo -e "$usage"
         return 1
@@ -432,18 +411,6 @@ function __find_bigger_smaller_common_fun() {
 
     while getopts "m:fdLh" opt; do
         case "$opt" in
-           #f) file_type="$file_type f"
-           #f) file_type="-type f"
-              #filetypeOptionCounter+=1
-              #shift $((OPTIND-1))
-                #;;
-           ##d) file_type="$file_type d"
-           #d) file_type="-type d"
-              #filetypeOptionCounter+=1
-              ## we don't want to sed maxdepth param here by default, right?
-              ##maxDepthParam="-maxdepth 1"
-              #shift $((OPTIND-1))
-                #;;
            f | d) file_type="-type $opt"
               let filetypeOptionCounter+=1
               shift $((OPTIND-1))
@@ -462,15 +429,6 @@ function __find_bigger_smaller_common_fun() {
     done
 
     sizeArg="$1"
-
-    #if [[ -z "$file_type" ]]; then
-        #compiledFileTypeArgs="-type f"
-    #else
-        #for item in $file_type; do
-            #[[ -z "$compiledFileTypeArgs" ]] && compiledFileTypeArgs="-type $item" \
-                                             #|| compiledFileTypeArgs="$compiledFileTypeArgs -o -type $item"
-        #done
-    #fi
 
     if [[ "$#" -ne 1 ]]; then
         err "exactly one arg required" "$FUNCNAME_"
@@ -1818,21 +1776,21 @@ f() {
 # marks (jumps)                             ##
 # from: http://jeroenjanssens.com/2013/08/16/quickly-navigate-your-filesystem-from-the-command-line.html
 ##############################################
-export _MARKPATH=$HOME/.marks
+export _MARKPATH=$HOME/.shell_jump_marks
 
-function jump {
+function jj {
     cd -P "$_MARKPATH/$1" 2>/dev/null || err "no such mark: $1" "$FUNCNAME"
 }
 
-function mark {
+function jm {
     mkdir -p "$_MARKPATH"; ln -s "$(pwd)" "$_MARKPATH/$1"
 }
 
-function unmark {
+function jum {
     rm -i "$_MARKPATH/$1"
 }
 
-function marks {
+function jjj {
     ls -l "$_MARKPATH" | sed 's/  / /g' | cut -d' ' -f9- | sed 's/ -/\t-/g' && echo
 }
 
@@ -1845,7 +1803,7 @@ _completemarks() {
     COMPREPLY=($(compgen -W '${wordlist[@]}' -- "$curw"))
     return 0
 }
-complete -F _completemarks jump unmark
+complete -F _completemarks jj jum
 
 ################################################
 

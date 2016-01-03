@@ -116,7 +116,7 @@ function check_dependencies() {
 
     perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
-    for prog in git wget tar; do
+    for prog in git wget tar realpath dirname; do
         if ! command -v $prog >/dev/null; then
             report "$prog not installed yet, installing..."
             install_block "$prog" || { err "unable to install required prog $prog this script depends on. abort."; exit 1; }
@@ -289,10 +289,9 @@ function clone_or_pull_repo() {
     user="$1"
     repo="$2"
     install_dir="$3"
-    hub="$4"
+    hub=${4:-"github.com"}  # OPTIONAL; if not provided, defaults to github.com;
 
     [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
-    [[ -z "$hub" ]] && hub='github.com'  # default to github
 
     if ! [[ -d "$install_dir/$repo" ]]; then
         execute "git clone https://$hub/$user/${repo}.git $install_dir/$repo" || return 1
@@ -305,6 +304,53 @@ function clone_or_pull_repo() {
         execute "git pull"
         execute "popd"
     fi
+}
+
+
+function install_nfs_server() {
+    local nfs_conf
+
+    nfs_conf="/etc/exports"
+
+    confirm "wish to install & configure nfs server?" || return 1
+    if is_laptop; then
+        confirm "you're on laptop; sure you wish to install nfs server?" || return 1
+    fi
+
+    install_block 'nfs-kernel-server' || { err "unable to install nfs-kernel-server. aborting nfs server install/config."; return 1; }
+
+    if ! [[ -f "$nfs_conf" ]]; then
+        err "$nfs_conf is not a file; skipping nfs server installation."
+        return 1
+    fi
+
+    # TODO: need to add exports!
+
+    # exports the shares:
+    exedute 'sudo exportfs -ra'
+
+    return 0
+}
+
+
+function install_nfs_client() {
+    local nfs_conf mountpoint
+
+    nfs_conf="/etc/exports"
+    mountpoint="/mnt/nfs"
+
+    confirm "wish to install & configure nfs client?" || return 1
+
+    install_block 'nfs-common' || { err "unable to install nfs-common. aborting nfs client install/config."; return 1; }
+
+    # create mountpoint:
+    [[ -d "$mountpoint" ]] || execute "sudo mkdir $mountpoint" || { err; return 1; }
+    execute "sudo chmod 777 $mountpoint"
+
+    # TODO: automate?
+    report "do not forget to set up fstab entry for the nfs mount!!!" && sleep 4
+
+    return 0
 }
 
 
@@ -321,7 +367,7 @@ function install_ssh_server() {
         confirm "you're on laptop; sure you wish to install ssh server?" || return 1
     fi
 
-    install_block 'openssh-server'
+    install_block 'openssh-server' || { err "unable to install openssh-server. aborting sshd install/config."; return 1; }
 
     if ! [[ -d "$sshd_confdir" ]]; then
         err "$sshd_confdir is not a dir; skipping sshd conf installation."
@@ -357,13 +403,16 @@ function install_ssh_server() {
 
 
 function install_sshfs() {
-    local fuse_conf
+    local fuse_conf mountpoint
 
     fuse_conf="/etc/fuse.conf"
+    mountpoint="/mnt/ssh"
 
     confirm "wish to install and configure sshfs?" || return 1
-    install_block 'sshfs'
+    install_block 'sshfs' || { err "unable to install sshfs. aborting sshfs install/config."; return 1; }
 
+    # note that 'user_allow_other' uncommenting makes sense only if our related fstab
+    # entry has the 'allow_other' opt:
     if ! [[ -r "$fuse_conf" && -f "$fuse_conf" ]]; then
         err "$fuse_conf is not readable; cannot uncomment \"\#user_allow_other\" prop in it."
     elif grep -q '#user_allow_other' "$fuse_conf"; then
@@ -375,6 +424,13 @@ function install_sshfs() {
     else
         err "$fuse_conf appears not to contain config value \"user_allow_other\"; check manually."
     fi
+
+    # add us to the fuse group:
+    execute "sudo gpasswd -a $USER fuse"
+
+    # create mountpoint:
+    [[ -d "$mountpoint" ]] || execute "sudo mkdir $mountpoint" || { err; return 1; }
+    execute "sudo chmod 777 $mountpoint"
 
     # TODO: automate?
     report "do not forget to set up fstab entry for the sshfs mount!!!" && sleep 4
@@ -388,14 +444,16 @@ function install_sshfs() {
 # moved to  install_from_repo()
 function install_deps() {
     function _install_tmux_deps() {
-        local dir
+        local dir plugins_dir
 
-        if ! [[ -d "$HOME/.tmux/plugins/tpm" ]]; then
-            clone_or_pull_repo "tmux-plugins" "tpm" "$HOME/.tmux/plugins"
+        plugins_dir="$HOME/.tmux/plugins"
+
+        if ! [[ -d "$plugins_dir/tpm" ]]; then
+            clone_or_pull_repo "tmux-plugins" "tpm" "$plugins_dir"
             report "don't forget to install tmux plugins by running <prefix + I> in tmux later on." && sleep 4
         else
             # update all the tmux plugins, including the plugin manager itself:
-            execute "pushd $HOME/.tmux/plugins"
+            execute "pushd $plugins_dir"
 
             for dir in *; do
                 if [[ -d "$dir" ]] && is_ssh_setup; then
@@ -425,7 +483,7 @@ function install_deps() {
 
     # this needs apt-get install  python-imaging ?:
     execute "sudo pip install img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
-    execute "sudo pip3 install scdl"         # https://github.com/flyingrub/scdl
+    execute "sudo pip3 install scdl"         # https://github.com/flyingrub/scdl (soundcloud downloader)
     execute "sudo pip install rtv"           # https://github.com/michael-lazar/rtv (reddit reader)
 
 
@@ -613,7 +671,7 @@ function setup_global_env_vars() {
     global_env_var='/etc/profile.d/bash_env_vars.sh'  # target name needs to end with .sh
 
     if ! [[ -e "$SHELL_ENVS" ]]; then
-        err "$SHELL_ENVS does not exist. can't link it to $global_env_var_loc nor $global_env_var_loc"
+        err "$SHELL_ENVS does not exist. can't link it to $global_env_var_loc nor $global_env_var"
         return 1
     fi
 
@@ -1765,6 +1823,7 @@ function choose_single_task() {
         install_from_repo
         install_laptop_deps
         install_ssh_server_or_client
+        install_nfs_server_or_client
         __choose_prog_to_build
     )
 
@@ -1826,6 +1885,7 @@ function full_install() {
     install_progs
     install_deps
     install_ssh_server_or_client
+    install_nfs_server_or_client
 }
 
 
@@ -1845,6 +1905,26 @@ function install_ssh_server_or_client() {
     case "$__SELECTED_ITEMS" in
         "server-side" ) install_ssh_server ;;
         "client-side" ) install_sshfs ;;
+    esac
+}
+
+
+function install_nfs_server_or_client() {
+    report "what do you want to do?"
+
+    while true; do
+        select_items "client-side server-side" 1
+
+        if [[ -n "$__SELECTED_ITEMS" ]]; then
+            break
+        else
+            confirm "no items were selected; exit?" && return || continue
+        fi
+    done
+
+    case "$__SELECTED_ITEMS" in
+        "server-side" ) install_nfs_server ;;
+        "client-side" ) install_nfs_client ;;
     esac
 }
 
@@ -1955,6 +2035,7 @@ function execute() {
     cmd="$1"
 
     echo -e "--> executing \"$cmd\""
+    # TODO: collect and log stderr?
     eval "$cmd"
     exit_sig=$?
 
@@ -1997,7 +2078,7 @@ function select_items() {
             for i in ${options[*]}; do
                 options_dmenu+="$i\n"
             done
-            __SELECTED_ITEMS="$(echo -e "$options_dmenu" | $DMENU -l $nr_of_dmenu_vertical_lines -p 'select task')"
+            __SELECTED_ITEMS="$(echo -e "$options_dmenu" | $DMENU -l $nr_of_dmenu_vertical_lines -p 'select item')"
             return
         fi
         prompt="Check an option, only 1 item can be selected (again to uncheck, ENTER when done): "
@@ -2139,12 +2220,31 @@ function __is_work() {
 }
 
 
+function cleanup() {
+    if [[ -n "${PACKAGES_IGNORED_TO_INSTALL[*]}" ]]; then
+        echo -e "    ERR INSTALL: ignored installing these packages: \"${PACKAGES_IGNORED_TO_INSTALL[*]}\"" >> "$EXECUTION_LOG"
+    fi
+
+    if [[ -e "$EXECUTION_LOG" ]]; then
+        sed -i '/^\s*$/d' "$EXECUTION_LOG"  # strip empty lines
+
+        echo -e "\n\n___________________________________________"
+        echo -e "\tscript execution log can be found at \"$EXECUTION_LOG\""
+        if grep -q '    ERR' "$EXECUTION_LOG"; then
+            echo -e "${COLORS[RED]}    NOTE: log contains errors.${COLORS[OFF]}"
+        fi
+        echo -e "___________________________________________"
+    fi
+}
+
+
 #----------------------------
 #---  Script entry point  ---
 #----------------------------
 MODE="$1"   # work | personal
 
 [[ "$EUID" -eq 0 ]] && { err "don't run as root."; exit 1; }
+trap "cleanup; exit" EXIT HUP INT QUIT PIPE TERM;
 
 # ask for the admin password upfront:
 report "enter sudo password:"
@@ -2158,18 +2258,4 @@ check_dependencies
 validate_and_init
 choose_step
 
-if [[ -n "${PACKAGES_IGNORED_TO_INSTALL[*]}" ]]; then
-    echo -e "    ERR INSTALL: ignored installing these packages: \"${PACKAGES_IGNORED_TO_INSTALL[*]}\"" >> "$EXECUTION_LOG"
-fi
-
-if [[ -e "$EXECUTION_LOG" ]]; then
-    sed -i '/^\s*$/d' "$EXECUTION_LOG"  # strip empty lines
-
-    echo -e "\n\n___________________________________________"
-    echo -e "\tscript execution log can be found at \"$EXECUTION_LOG\""
-    if grep -q '    ERR' "$EXECUTION_LOG"; then
-        echo -e "${COLORS[RED]}    NOTE: log contains errors.${COLORS[OFF]}"
-    fi
-    echo -e "___________________________________________"
-fi
-
+exit
