@@ -723,6 +723,7 @@ function ffstr() {
 
     [[ "$force_case" -eq 1 ]] && { grepcase=""; INAME_ARG=""; }
 
+    # TODO: convert to  'find . -name "$ext" -type f -exec grep "$pattern" /dev/null {} +' perhaps?
     if [[ "$regex" -eq 1 ]]; then
         [[ -z "$2" ]] && { err "with -r flag, filename argument is required." "$FUNCNAME"; return 1; }
         [[ -n "$INAME_ARG" ]] && INAME_ARG="-regextype posix-extended -iregex" || INAME_ARG="-regextype posix-extended -regex"
@@ -1263,6 +1264,7 @@ function xmlf() { xmlformat "$@"; } # alias for xmlformat;
 
 function createUsbIso() {
     local file device mountpoint cleaned_devicename usage
+
     file="$1"
     device="$2"
 

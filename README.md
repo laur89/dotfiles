@@ -21,6 +21,7 @@ steps separately apart from the full installation mode.
 
 1. Install Debian testing release netinstall (in reality, any Debian base distro
    should work fine).
+    * can be found from https://www.debian.org/devel/debian-installer/
 2. wget https://github.com/laur89/dotfiles/raw/master/.bootstrap/install_system.sh
 3. chmod +x install_system.sh
 4. install sudo, if not already installed:
