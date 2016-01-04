@@ -825,7 +825,7 @@ function setup_config_files() {
 
 # network manager wrapper script;
 # runs other script that writes info to /tmp and manages locking logic for laptops (security, kinda)
-function setup_SSID_checker() {
+function install_SSID_checker() {
     local nm_wrapper_loc  nm_wrapper_dest
 
     nm_wrapper_loc="$BASE_DATA_DIR/dev/scripts/network_manager_SSID_checker_wrapper.sh"
@@ -1917,7 +1917,7 @@ function choose_single_task() {
         switch_jdk_versions
         setup_homesick
         setup_config_files
-        setup_SSID_checker
+        install_SSID_checker
         install_deps
         setup_dirs
         install_fonts
@@ -1987,7 +1987,7 @@ function full_install() {
     upgrade_kernel
     install_fonts  # has to be after apt has been updated
     install_progs
-    setup_SSID_checker  # has to come after install_progs; otherwise NM wrapper dir won't be present
+    install_SSID_checker  # has to come after install_progs; otherwise NM wrapper dir won't be present
     install_deps
     install_ssh_server_or_client
     install_nfs_server_or_client
