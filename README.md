@@ -26,12 +26,11 @@ steps separately apart from the full installation mode.
 4. install sudo, if not already installed:
     * su
     * apt-get install sudo
-    * vim(.tiny) /etc/sudoers
 5. add your user to /etc/sudoers file, by:
     * echo 'YOUR_USER ALL=(ALL) ALL' >> /etc/sudoers
     *   or:
-    * adduser  YOUR_USERNAME  sudo
-6. sudo aptitude update
+    * adduser  YOUR_USERNAME  sudo    (and logout + login afterwards)
+6. sudo apt-get update
 7. execute script:
     * ./install_system.sh  personal|work
     * select the 'full-install' option.
