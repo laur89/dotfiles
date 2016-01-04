@@ -559,6 +559,7 @@ function setup_dirs() {
     for dir in \
             $_PERSISTED_TMP \
             $BASE_DATA_DIR/.rsync \
+            $BASE_DATA_DIR/vbox_vms \
             $BASE_DATA_DIR/progs \
             $BASE_DATA_DIR/progs/deps \
             $BASE_DATA_DIR/progs/custom_builds \
