@@ -27,6 +27,8 @@ PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
 SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick
                                         # note that contents of that file are somewhat important, as some
                                         # (script-related) configuration lies within.
+NFS_SERVER_SHARE="/data"            # mountpoint to share over NFS
+SSH_SERVER_SHARE="/data"            # mountpoint to share over SSH
 #------------------------
 #--- Global Variables ---
 #------------------------
@@ -309,10 +311,9 @@ function clone_or_pull_repo() {
 
 
 function install_nfs_server() {
-    local nfs_conf client_ip default_mount mountpoint
+    local nfs_conf client_ip mountpoint
 
     nfs_conf="/etc/exports"
-    default_mount="/data"
 
     confirm "wish to install & configure nfs server?" || return 1
     if is_laptop; then
@@ -327,16 +328,16 @@ function install_nfs_server() {
     fi
 
     while true; do
-        if confirm "$(report "add client IP for the exports list (who will access $default_mount)?")"; then
+        if confirm "$(report "add client IP for the exports list (who will access $NFS_SERVER_SHARE)?")"; then
             echo -e "enter client ip:"
             read client_ip
 
             [[ "$client_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: \"$client_ip\""; continue; }
 
-            echo -e "enter mountpoint (leave blank to default to \"$default_mount\"):"
+            echo -e "enter mountpoint (leave blank to default to \"$NFS_SERVER_SHARE\"):"
             read mountpoint
 
-            mountpoint=${mountpoint:-"$default_mount"}
+            mountpoint=${mountpoint:-"$NFS_SERVER_SHARE"}
             [[ -d "$mountpoint" ]] || { err "$mountpoint is not a valid dir."; continue; }
 
             if ! grep -q "${mountpoint}.*${client_ip}" "$nfs_conf"; then
@@ -358,7 +359,7 @@ function install_nfs_server() {
 
 
 function install_nfs_client() {
-    local fstab mountpoint
+    local fstab mountpoint server_ip
 
     fstab="/etc/fstab"
     mountpoint="/mnt/nfs"
@@ -371,9 +372,27 @@ function install_nfs_client() {
     [[ -d "$mountpoint" ]] || execute "sudo mkdir $mountpoint" || { err; return 1; }
     execute "sudo chmod 777 $mountpoint"
 
-    # TODO: automate?
     [[ -f "$fstab" ]] || { err "$fstab does not exist; cannot add fstab entry!"; return 1; }
-    report "do not forget to set up fstab entry for the nfs mount!!!" && sleep 4
+
+    while true; do
+        if confirm "$(report "add nfs server entry to fstab?")"; then
+            echo -e "enter server ip:"
+            read server_ip
+
+            [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: \"$server_ip\""; continue; }
+
+            [[ -d "$mountpoint" ]] || { err "$mountpoint is not a valid dir."; continue; }
+
+            if ! grep -q "${server_ip}:${NFS_SERVER_SHARE}.*${mountpoint}" "$fstab"; then
+                report "adding ${server_ip}:$NFS_SERVER_SHARE mounting to $mountpoint in $fstab"
+                execute "echo ${server_ip}:${NFS_SERVER_SHARE} nfs noauto,x-systemd.automount,x-systemd.device-timeout=10,timeo=14 0 0 | sudo tee --append $fstab > /dev/null"
+            else
+                report "an nfs share entry for ${server_ip}:${NFS_SERVER_SHARE} in $fstab already exists."
+            fi
+        else
+            break
+        fi
+    done
 
     return 0
 }
@@ -423,10 +442,11 @@ function install_ssh_server() {
 
 
 function install_sshfs() {
-    local fuse_conf mountpoint
+    local fuse_conf mountpoint fstab server_ip
 
     fuse_conf="/etc/fuse.conf"
     mountpoint="/mnt/ssh"
+    fstab="/etc/fstab"
 
     confirm "wish to install and configure sshfs?" || return 1
     install_block 'sshfs' || { err "unable to install sshfs. aborting sshfs install/config."; return 1; }
@@ -452,8 +472,27 @@ function install_sshfs() {
     [[ -d "$mountpoint" ]] || execute "sudo mkdir $mountpoint" || { err; return 1; }
     execute "sudo chmod 777 $mountpoint"
 
-    # TODO: automate?
-    report "do not forget to set up fstab entry for the sshfs mount!!!" && sleep 4
+    [[ -f "$fstab" ]] || { err "$fstab does not exist; cannot add fstab entry!"; return 1; }
+
+    while true; do
+        if confirm "$(report "add sshfs entry to fstab?")"; then
+            echo -e "enter server ip:"
+            read server_ip
+
+            [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: \"$server_ip\""; continue; }
+
+            [[ -d "$mountpoint" ]] || { err "$mountpoint is not a valid dir."; continue; }
+
+            if ! grep -q "${USER}@${server_ip}:${SSH_SERVER_SHARE}.*${mountpoint}" "$fstab"; then
+                report "adding ${server_ip}:$SSH_SERVER_SHARE mounting to $mountpoint in $fstab"
+                execute "echo ${USER}@${server_ip}:${SSH_SERVER_SHARE} fuse.sshfs port=443,noauto,x-systemd.automount,_netdev,users,idmap=user,IdentityFile=/home/laur/.ssh/id_rsa_only_for_server_connect,allow_other,reconnect 0 0 | sudo tee --append $fstab > /dev/null"
+            else
+                report "an ssh share entry for ${server_ip}:${SSH_SERVER_SHARE} in $fstab already exists."
+            fi
+        else
+            break
+        fi
+    done
 
     return 0
 }
