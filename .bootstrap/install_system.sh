@@ -473,6 +473,9 @@ function install_deps() {
     # git-flow-completion:
     clone_or_pull_repo "bobthecow" "git-flow-completion" "$BASE_DEPS_LOC"
 
+    # bars in shell:
+    clone_or_pull_repo "holman" "spark" "$BASE_DEPS_LOC"  # https://github.com/holman/spark
+
     # pearl-ssh perhaps?
 
     # tmux plugin manager:
@@ -493,6 +496,12 @@ function install_deps() {
         execute "sudo gem install \
             puppet puppet-lint bundler nokogiri builder \
         "
+    fi
+
+    # laptop deps:
+    if is_laptop; then
+        # batt output (requires spark):
+        clone_or_pull_repo "Goles" "Battery" "$BASE_DEPS_LOC"  # https://github.com/Goles/Battery
     fi
 
     unset _install_tmux_deps
@@ -701,12 +710,13 @@ function setup_global_env_vars() {
 
 # netrc file has to be accessible only by its owner.
 function setup_netrc_perms() {
-    local rc_loc
+    local rc_loc perms
 
     rc_loc="$HOME/.netrc"
+    perms=600
 
     if [[ -e "$rc_loc" ]]; then
-        execute "chmod 600 $(realpath "$rc_loc")"  # realpath, since we cannot change perms via symlink
+        execute "chmod $perms $(realpath "$rc_loc")"  # realpath, since we cannot change perms via symlink
     else
         err "expected to find \"$rc_loc\", but it doesn't exist. if you're not using netrc, better remvoe related logic from ${SELF}."
         return 1

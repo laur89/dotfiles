@@ -610,6 +610,14 @@ set nocompatible " Must be the first line
 
     """ }}}
 
+    " Maps to resizing a window split (Warn: conflict with indentation)
+    if bufwinnr(1)
+        "map <silent> < <C-w><
+        map <silent> - <C-W>-
+        map <silent> + <C-W>+
+        "map <silent> > <C-w>>
+    endif
+
     """ Functions or fancy binds {{{
         """ Toggle syntax highlighting {{{
             function! ToggleSyntaxHighlighthing()
