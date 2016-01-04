@@ -1560,8 +1560,10 @@ function install_fonts() {
         ttf-liberation
         ttf-mscorefonts-installer
         xfonts-terminus
-        xfonts-75dpi{,-transcoded}
-        xfonts-100dpi{,-transcoded}
+        xfonts-75dpi
+        xfonts-75dpi-transcoded
+        xfonts-100dpi
+        xfonts-100dpi-transcoded
         xfonts-mplus
         xfonts-bitmap-mule
         xfonts-base
