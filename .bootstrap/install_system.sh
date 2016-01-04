@@ -780,7 +780,6 @@ function setup_config_files() {
     setup_global_env_vars
     setup_netrc_perms
     swap_caps_lock_and_esc
-    setup_SSID_checker
 }
 
 
@@ -1870,6 +1869,7 @@ function choose_single_task() {
         switch_jdk_versions
         setup_homesick
         setup_config_files
+        setup_SSID_checker
         install_deps
         setup_dirs
         install_fonts
@@ -1939,6 +1939,7 @@ function full_install() {
     upgrade_kernel
     install_fonts  # has to be after apt has been updated
     install_progs
+    setup_SSID_checker  # has to come after install_progs; otherwise NM wrapper dir won't be present
     install_deps
     install_ssh_server_or_client
     install_nfs_server_or_client
