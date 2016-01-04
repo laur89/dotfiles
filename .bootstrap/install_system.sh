@@ -44,9 +44,10 @@ EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%m-%y--%R).log" \
 #------------------------
 BASE_DATA_DIR="/data"
 BASE_DEPS_LOC="$BASE_DATA_DIR/progs/deps"  # hosting stuff like homeshick, bash-git-prompt...
-BASE_BUILDS_DIR="$BASE_DATA_DIR/progs/custom_builds"
+BASE_BUILDS_DIR="$BASE_DATA_DIR/progs/custom_builds"  # hosts our built progs and/or their .deb packages;
 BASE_HOMESICK_REPOS_LOC="$BASE_DEPS_LOC/homesick/repos"
 COMMON_DOTFILES="$BASE_HOMESICK_REPOS_LOC/dotfiles"
+COMMON_PRIVATE_DOTFILES="$BASE_HOMESICK_REPOS_LOC/private-common"
 PRIVATE_CASTLE=''  # installation specific private castle location (eg for 'work' or 'personal')
 
 SELF="${0##*/}"
@@ -116,7 +117,7 @@ function check_dependencies() {
 
     perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
-    for prog in git wget tar realpath dirname; do
+    for prog in git wget tar realpath dirname tee; do
         if ! command -v $prog >/dev/null; then
             report "$prog not installed yet, installing..."
             install_block "$prog" || { err "unable to install required prog $prog this script depends on. abort."; exit 1; }
@@ -308,9 +309,10 @@ function clone_or_pull_repo() {
 
 
 function install_nfs_server() {
-    local nfs_conf
+    local nfs_conf client_ip default_mount mountpoint
 
     nfs_conf="/etc/exports"
+    default_mount="/data"
 
     confirm "wish to install & configure nfs server?" || return 1
     if is_laptop; then
@@ -324,7 +326,29 @@ function install_nfs_server() {
         return 1
     fi
 
-    # TODO: need to add exports!
+    while true; do
+        if confirm "$(report "add client IP for the exports list (who will access $default_mount)?")"; then
+            echo -e "enter client ip:"
+            read client_ip
+
+            [[ "$client_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: \"$client_ip\""; continue; }
+
+            echo -e "enter mountpoint (leave blank to default to \"$default_mount\"):"
+            read mountpoint
+
+            mountpoint=${mountpoint:-"$default_mount"}
+            [[ -d "$mountpoint" ]] || { err "$mountpoint is not a valid dir."; continue; }
+
+            if ! grep -q "${mountpoint}.*${client_ip}" "$nfs_conf"; then
+                report "adding $mountpoint for $client_ip to $nfs_conf"
+                execute "echo $mountpoint ${client_ip}\(rw,sync,no_subtree_check\) | sudo tee --append $nfs_conf > /dev/null"
+            else
+                report "an entry for exposing $mountpoint to $client_ip is already present in $nfs_conf"
+            fi
+        else
+            break
+        fi
+    done
 
     # exports the shares:
     exedute 'sudo exportfs -ra'
@@ -334,9 +358,9 @@ function install_nfs_server() {
 
 
 function install_nfs_client() {
-    local nfs_conf mountpoint
+    local fstab mountpoint
 
-    nfs_conf="/etc/exports"
+    fstab="/etc/fstab"
     mountpoint="/mnt/nfs"
 
     confirm "wish to install & configure nfs client?" || return 1
@@ -348,6 +372,7 @@ function install_nfs_client() {
     execute "sudo chmod 777 $mountpoint"
 
     # TODO: automate?
+    [[ -f "$fstab" ]] || { err "$fstab does not exist; cannot add fstab entry!"; return 1; }
     report "do not forget to set up fstab entry for the nfs mount!!!" && sleep 4
 
     return 0
@@ -355,12 +380,11 @@ function install_nfs_client() {
 
 
 function install_ssh_server() {
-    local sshd_confdir tmpfile config banner
+    local sshd_confdir config banner
 
     sshd_confdir="/etc/ssh"
-    tmpfile="$TMPDIR/sshd_config"
-    config="$PRIVATE_CASTLE/backups/sshd_config"
-    banner="$PRIVATE_CASTLE/backups/ssh_banner"
+    config="$COMMON_PRIVATE_DOTFILES/backups/sshd_config"
+    banner="$COMMON_PRIVATE_DOTFILES/backups/ssh_banner"
 
     confirm "wish to install & configure ssh server?" || return 1
     if is_laptop; then
@@ -376,11 +400,7 @@ function install_ssh_server() {
 
     # install sshd config:
     if [[ -f "$config" ]]; then
-        execute "cp $config $tmpfile" || return 1
-        #execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-        backup_original_and_copy_file "$tmpfile" "$sshd_confdir"
-
-        execute "rm $tmpfile"
+        backup_original_and_copy_file "$config" "$sshd_confdir"
     else
         err "expected configuration file at \"$config\" does not exist; aborting sshd configuration."
         return 1
@@ -392,7 +412,7 @@ function install_ssh_server() {
         backup_original_and_copy_file "$banner" "$sshd_confdir"
     else
         err "expected sshd banner file at \"$banner\" does not exist; won't install it."
-        #return 1  # don't return
+        #return 1  # don't return, it's just a banner.
     fi
 
     execute "sudo systemctl start sshd.service"
@@ -437,6 +457,30 @@ function install_sshfs() {
 
     return 0
 }
+
+
+#function setup_ssh_config() {
+    #local ssh_confdir ssh_conf
+
+    #ssh_confdir="/etc/ssh"
+    #ssh_conf="$COMMON_DOTFILES/backups/ssh_config"
+
+    ## install ssh config:
+    ######################
+    #if ! [[ -d "$ssh_confdir" ]]; then
+        #err "$ssh_confdir is not a dir; skipping ssh conf installation."
+        #return 1
+    #fi
+
+    #if [[ -f "$ssh_conf" ]]; then
+        #backup_original_and_copy_file "$ssh_conf" "$ssh_confdir"
+    #else
+        #err "expected ssh configuration file at \"$ssh_conf\" does not exist; aborting ssh (client) configuration."
+        #return 1
+    #fi
+
+    #return 0
+#}
 
 
 # "deps" as in git repos/py modules et al our system setup depends on;
@@ -731,6 +775,7 @@ function setup_config_files() {
     setup_apt
     setup_crontab
     setup_sudoers
+    #setup_ssh_config   # better stick to ~/.ssh/config, rite?
     setup_hosts
     setup_global_env_vars
     setup_netrc_perms
@@ -777,7 +822,8 @@ function setup_additional_apt_keys() {
     # install keys:
     # mopidy key:
     execute 'wget -q -O - http://apt.mopidy.com/mopidy.gpg | sudo apt-key add -'
-    # from https://www.spotify.com/es/download/linux/ :
+
+    # spotify: (from https://www.spotify.com/es/download/linux/):
     execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys BBEBDCB318AD50EC6865090613B00F1FD2C19886'
 }
 
@@ -1505,12 +1551,11 @@ function install_YCM() {
 }
 
 
-function install_and_setup_fonts() {
+function install_fonts() {
     local dir
 
-    report "installing & setting up fonts..."
+    report "installing fonts..."
 
-    # note we need to install xset in this block as well:
     install_block '
         ttf-dejavu
         ttf-liberation
@@ -1522,28 +1567,28 @@ function install_and_setup_fonts() {
         xfonts-bitmap-mule
         xfonts-base
         fontforge
-        xset
     '
 
-    execute "xset +fp ~/.fonts"
-    execute "mkfontscale ~/.fonts"
-    execute "mkfontdir ~/.fonts"
-    execute "pushd ~/.fonts"
+    # TODO: guess we can't use xset when xserver is not yet running:
+    #execute "xset +fp ~/.fonts"
+    #execute "mkfontscale ~/.fonts"
+    #execute "mkfontdir ~/.fonts"
+    #execute "pushd ~/.fonts"
 
-    # also install fonts in sub-dirs:
-    for dir in * ; do
-        if [[ -d "$dir" ]]; then
-            execute "pushd $dir"
-            execute "xset +fp $PWD"
-            execute "mkfontscale"
-            execute "mkfontdir"
-            execute "popd"
-        fi
-    done
+    ## also install fonts in sub-dirs:
+    #for dir in * ; do
+        #if [[ -d "$dir" ]]; then
+            #execute "pushd $dir"
+            #execute "xset +fp $PWD"
+            #execute "mkfontscale"
+            #execute "mkfontdir"
+            #execute "popd"
+        #fi
+    #done
 
-    execute "xset fp rehash"
-    execute "fc-cache -fv"
-    execute "popd"
+    #execute "xset fp rehash"
+    #execute "fc-cache -fv"
+    #execute "popd"
 }
 
 
@@ -1757,6 +1802,7 @@ function install_block() {
         return 1
     fi
 
+    sleep 1  # just in case sleep for a bit
     execute "sudo apt-get --yes install $extra_apt_params ${list_to_install[*]}"
     exit_sig_tmp=$?
 
@@ -1826,7 +1872,7 @@ function choose_single_task() {
         setup_config_files
         install_deps
         setup_dirs
-        install_and_setup_fonts
+        install_fonts
         upgrade_kernel
         install_nvidia
         install_webdev
@@ -1891,7 +1937,7 @@ function full_install() {
 
     execute "sudo apt-get --yes update"
     upgrade_kernel
-    install_and_setup_fonts  # has to be after apt has been updated
+    install_fonts  # has to be after apt has been updated
     install_progs
     install_deps
     install_ssh_server_or_client
