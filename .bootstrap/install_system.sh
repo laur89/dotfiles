@@ -995,9 +995,9 @@ function install_laptop_deps() {
             xfce4-power-manager
         '
 
+        # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
         wifi_info="$(sudo lshw | grep -iA 5 'Wireless interface')"
 
-        # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
         if echo "$wifi_info" | grep -iq 'vendor.*Intel'; then
             report "we have intel wifi; installing intel drivers..."
             install_block "firmware-iwlwifi"
