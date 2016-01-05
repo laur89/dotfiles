@@ -10,7 +10,6 @@ PROGS=(
     "skype"
     "spacefm"
     "keepassx"
-    "ssh-agent"
     "copyq"
     "mbsync --all"
     "delay_screensaver"
@@ -30,6 +29,7 @@ PROGS=(
     #"nm-applet"
     #"xfce4-power-manager"
     #"xfce4-volumed"
+    #"ssh-agent"
 
 # alternative to lock automatically when suspending/hibernating: (requires xss-lock)
 # (currently using the shellscript that listens to dbus messages)
