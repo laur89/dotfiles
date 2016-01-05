@@ -486,7 +486,7 @@ function install_sshfs() {
 
             if ! grep -q "${USER}@${server_ip}:${SSH_SERVER_SHARE}.*${mountpoint}" "$fstab"; then
                 report "adding ${server_ip}:$SSH_SERVER_SHARE mounting to $mountpoint in $fstab"
-                execute "echo ${USER}@${server_ip}:${SSH_SERVER_SHARE} fuse.sshfs port=443,noauto,x-systemd.automount,_netdev,users,idmap=user,IdentityFile=/home/laur/.ssh/id_rsa_only_for_server_connect,allow_other,reconnect 0 0 | sudo tee --append $fstab > /dev/null"
+                execute "echo ${USER}@${server_ip}:${SSH_SERVER_SHARE} $mountpoint fuse.sshfs port=443,noauto,x-systemd.automount,_netdev,users,idmap=user,IdentityFile=/home/laur/.ssh/id_rsa_only_for_server_connect,allow_other,reconnect 0 0 | sudo tee --append $fstab > /dev/null"
             else
                 report "an ssh share entry for ${server_ip}:${SSH_SERVER_SHARE} in $fstab already exists."
             fi
@@ -2003,10 +2003,17 @@ function full_install() {
     upgrade_kernel
     install_fonts  # has to be after apt has been updated
     install_progs
-    install_SSID_checker  # has to come after install_progs; otherwise NM wrapper dir won't be present
+    post_install_progs_setup
     install_deps
     install_ssh_server_or_client
     install_nfs_server_or_client
+}
+
+
+function post_install_progs_setup() {
+
+    install_SSID_checker  # has to come after install_progs; otherwise NM wrapper dir won't be present
+    execute "sudo alsactl init"
 }
 
 
