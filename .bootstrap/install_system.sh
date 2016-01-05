@@ -1678,6 +1678,7 @@ function install_from_repo() {
         python3-flake8
         curl
         lshw
+        lm-sensors
     )
 
     block2=(
@@ -1703,6 +1704,7 @@ function install_from_repo() {
         gparted
         network-manager
         network-manager-gnome
+        gnome-keyring
         gsimplecal
         gnome-disk-utility
         galculator
