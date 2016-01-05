@@ -824,6 +824,30 @@ function setup_config_files() {
 }
 
 
+function install_acpi_events() {
+    local event_file  acpi_eventdir  eventfilesdir
+
+    acpi_eventdir="/etc/acpi/events"
+    eventfilesdir="$COMMON_DOTFILES/backups/acpi_event_triggers"
+
+    if ! [[ -d "$acpi_eventdir" ]]; then
+        err "$acpi_eventdir dir does not exist; acpi event triggers won't be installed"
+        return 1
+    elif ! [[ -d "$eventfilesdir" ]]; then
+        err "$eventfilesdir dir does not exist; acpi event triggers won't be installed"
+        return 1
+    fi
+
+    for event_file in $eventfilesdir/* ; do
+        if [[ -f "$event_file" ]]; then
+            execute "sudo cp $event_file $acpi_eventdir"
+        fi
+    done
+
+    return 0
+}
+
+
 # network manager wrapper script;
 # runs other script that writes info to /tmp and manages locking logic for laptops (security, kinda)
 function install_SSID_checker() {
@@ -1678,6 +1702,7 @@ function install_from_repo() {
         python3-flake8
         curl
         lshw
+        acpid
         lm-sensors
     )
 
@@ -1937,6 +1962,7 @@ function choose_single_task() {
         setup_homesick
         setup_config_files
         install_SSID_checker
+        install_acpi_events
         install_deps
         setup_dirs
         install_fonts
@@ -2015,6 +2041,7 @@ function full_install() {
 
 function post_install_progs_setup() {
 
+    install_acpi_events
     install_SSID_checker  # has to come after install_progs; otherwise NM wrapper dir won't be present
     execute "sudo alsactl init"
 }
