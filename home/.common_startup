@@ -6,6 +6,7 @@
 session_startfile="$HOME/.session-startuplist"
 logdir="$CUSTOM_LOGDIR"
 SELF=".common_startup"
+autostart=()
 ################################################
 
 #### ENTRY ####
@@ -106,6 +107,57 @@ else
     fi
 fi
 
+# Secondary autostart directory, nothing important started here so okay to skip in clean for minimal session
+if [[ -d $HOME/.config/autostart ]]; then
+    for n in $HOME/.config/autostart/*; do
+        m=$(cat "$n")
+        case $m in
+        *OnlyShowIn*)
+            ;;
+        *)
+            autostart+=("$(echo "$m" | grep -m 1 "Exec=" | sed 's/Exec=//g')")
+            ;;
+        esac
+    done
+    unset n
+    unset m
+fi
+
+# System autostart directories
+if [[ -d /etc/X11/xinit/xinitrc.d ]]; then
+  for f in /etc/X11/xinit/xinitrc.d/*; do
+    autostart+=("$f")
+  done
+  unset f
+fi
+
+if [[ -d /etc/xdg/autostart ]]; then
+    for y in /etc/xdg/autostart/*; do
+        x=$(cat "$y")
+        case "$x" in
+        *OnlyShowIn*)
+            # There ain't no-one in the 'verse putting "OnlyShowIn=dwm" in a .desktop file
+            # Similarly, ain't no-one putting "NotShowIn=dwm" in a .desktop file. Hence, both cases are ignored
+            ;;
+        *)
+            autostart+=("$(echo "$x" | grep -m 1 "Exec=" | sed 's/Exec=//g')")
+            ;;
+        esac
+    done
+    unset y
+    unset x
+fi
+
+export GNOME_KEYRING_CONTROL GNOME_KEYRING_PID GPG_AGENT_INFO SSH_AUTH_SOCK &
+
+# Runs everything in the autostart array simultaneously without blocking startup
+for x in "${autostart[@]}"; do
+    eval "$x" &
+    # Give it a little time to start
+    sleep 0.1s
+done
+
+
 ## Start gpg-agent daemon
 #if [[ -x /usr/bin/gpg-agent ]]; then
 #kill $(ps ux | awk '/gpg-agent/ && !/awk/ {print $2}') >/dev/null 2>&1
@@ -141,4 +193,4 @@ check_max_allowed_size "$logdir" "$allowed_size"
 
 enableSmart &
 
-unset i
+unset i x
