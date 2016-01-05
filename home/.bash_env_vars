@@ -90,7 +90,8 @@ fi
 #if [[ "$(tty)" == "/dev/tty1" ]]; then
 #if [[ "$-" != *i* ]] && [[ -z "$DISPLAY" ]]; then
 #if [ "$PS1" ] ; then # interactive shell
-if [[ "$EUID" -eq 0 && -z "$DISPLAY" ]] || [[ "$-" != *i* ]]; then
+#if [[ "$EUID" -eq 0 && -z "$DISPLAY" ]] || [[ "$-" != *i* ]]; then
+if [[ "$-" != *i* ]]; then
 
 #if ! shopt -q login_shell; then
 #if [[ "$(tty)" != "/dev/tty1" ]] && [[ \"\$(who | cut -d' ' -f1 | sort | uniq)\" == \"\$usr\" ]]; do
