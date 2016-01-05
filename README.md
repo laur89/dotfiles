@@ -41,7 +41,7 @@ steps separately apart from the full installation mode.
 This mode is intended to be used througout the system lifetime post-fullinstall.
 It provides maintenance/management options, such as
 * generating ssh key
-* switching activejdk versions
+* switching active jdk versions
 * upgrading kernel
 * installing various drivers
 * installing the base package set
