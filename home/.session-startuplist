@@ -14,6 +14,7 @@ PROGS=(
     "mbsync --all"
     "delay_screensaver"
     "urxvtc"
+    "xfce4-volumed"
 
     "Earth_sunlight_wallpaper_changer.sh"
     "sunlight_map_wallpaper_changer.sh"
@@ -28,7 +29,6 @@ PROGS=(
     #"blueman-applet"
     #"nm-applet"
     #"xfce4-power-manager"
-    #"xfce4-volumed"
     #"ssh-agent"
 
 # alternative to lock automatically when suspending/hibernating: (requires xss-lock)
