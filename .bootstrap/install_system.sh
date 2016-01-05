@@ -1779,6 +1779,7 @@ function install_from_repo() {
         silversearcher-ag
         cowsay
         toilet
+        lolcat
     )
 
     for block in \
