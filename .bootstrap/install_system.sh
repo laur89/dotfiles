@@ -1831,6 +1831,7 @@ function install_block() {
     list_to_install=( $1 )
     extra_apt_params="$2"  # optional
     packages_not_found=()
+    exit_sig=0
 
     report "installing these packages:\n${list_to_install[*]}\n"
 
@@ -1855,16 +1856,17 @@ function install_block() {
         exit_sig="$SOME_PACKAGE_IGNORED_EXIT_CODE"
     fi
 
-    if [[ -z "${list_to_install[*]}" ]]; then
-        err "all packages got removed. skipping install block."
-        return 1
-    fi
+    #if [[ -z "${list_to_install[*]}" ]]; then
+        #err "all packages got removed. skipping install block."
+        #return 1
+    #fi
 
     #sleep 1  # just in case sleep for a bit
     #execute "sudo apt-get --yes install $extra_apt_params ${list_to_install[*]}"
     #exit_sig_tmp=$?
 
-    [[ -n "$exit_sig" ]] && return $exit_sig || return $exit_sig_tmp
+    #[[ -n "$exit_sig" ]] && return $exit_sig || return $exit_sig_tmp
+    [[ -n "$exit_sig_tmp" ]] && return $exit_sig_tmp || return $exit_sig
 }
 
 
