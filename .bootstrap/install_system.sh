@@ -1840,14 +1840,17 @@ function install_block() {
             packages_not_found+=( $pkg )
             continue
         fi
-        execute "sudo apt-get -qq --dry-run install $extra_apt_params $pkg" || packages_not_found+=( $pkg )
+        if execute "sudo apt-get -qq --dry-run install $extra_apt_params $pkg"; then
+            execute "sudo apt-get --yes install $extra_apt_params $pkg" || exit_sig_tmp=$?
+        else
+            packages_not_found+=( $pkg )
+        fi
     done
 
     if [[ -n "${packages_not_found[*]}" ]]; then
         err "either these packages could not be found from the repo, or some other issue occurred; skipping installing these packages. this will be logged:"
         err "${packages_not_found[*]}"
 
-        list_to_install=( $(remove_items_from_list "${list_to_install[*]}" "${packages_not_found[*]}") )
         PACKAGES_IGNORED_TO_INSTALL+=( ${packages_not_found[*]} )
         exit_sig="$SOME_PACKAGE_IGNORED_EXIT_CODE"
     fi
@@ -1857,9 +1860,9 @@ function install_block() {
         return 1
     fi
 
-    sleep 1  # just in case sleep for a bit
-    execute "sudo apt-get --yes install $extra_apt_params ${list_to_install[*]}"
-    exit_sig_tmp=$?
+    #sleep 1  # just in case sleep for a bit
+    #execute "sudo apt-get --yes install $extra_apt_params ${list_to_install[*]}"
+    #exit_sig_tmp=$?
 
     [[ -n "$exit_sig" ]] && return $exit_sig || return $exit_sig_tmp
 }
