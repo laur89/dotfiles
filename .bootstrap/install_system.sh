@@ -1827,7 +1827,6 @@ function install_from_repo() {
     if [[ "$MODE" == work ]]; then
         install_block '
             samba-common-bin
-            davmail
             ruby-dev
             vagrant
             virtualbox
