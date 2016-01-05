@@ -51,6 +51,7 @@ BASE_HOMESICK_REPOS_LOC="$BASE_DEPS_LOC/homesick/repos"
 COMMON_DOTFILES="$BASE_HOMESICK_REPOS_LOC/dotfiles"
 COMMON_PRIVATE_DOTFILES="$BASE_HOMESICK_REPOS_LOC/private-common"
 PRIVATE_CASTLE=''  # installation specific private castle location (eg for 'work' or 'personal')
+SOME_PACKAGE_IGNORED_EXIT_CODE=37
 
 SELF="${0##*/}"
 
@@ -1011,6 +1012,7 @@ function install_laptop_deps() {
 
 function install_progs() {
 
+    execute "sudo apt-get --yes update"
     install_from_repo
     install_laptop_deps
     install_own_builds
@@ -1780,7 +1782,13 @@ function install_from_repo() {
             block3 \
             block4 \
                 ; do
+        # update apt-get before each main block; had issues with first one returning code 100:
+        execute "sudo apt-get --yes update"
         install_block "$(eval echo "\${$block[@]}")" "${extra_apt_params[$block]}"
+        if [[ "$?" -ne 0 && "$?" -ne "$SOME_PACKAGE_IGNORED_EXIT_CODE" ]]; then
+            err "one of the main-block installation failed. fix this before rerunning."
+            exit 1
+        fi
     done
 
 
@@ -1841,7 +1849,7 @@ function install_block() {
 
         list_to_install=( $(remove_items_from_list "${list_to_install[*]}" "${packages_not_found[*]}") )
         PACKAGES_IGNORED_TO_INSTALL+=( ${packages_not_found[*]} )
-        exit_sig=3
+        exit_sig="$SOME_PACKAGE_IGNORED_EXIT_CODE"
     fi
 
     if [[ -z "${list_to_install[*]}" ]]; then
