@@ -62,6 +62,7 @@ fi
 #ResultActive=yes
 
 /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
+/usr/bin/gnome-keyring-daemon --start --components=secrets,ssh &
 
 for PROG in "${PROGS[@]}"; do
     if ! is_proc_running "$PROG"; then
