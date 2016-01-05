@@ -2187,7 +2187,7 @@ function select_items() {
     }
 
     if [[ "$is_single_selection" -eq 1 ]]; then
-        if [[ -n "$DISPLAY" ]] && command -v dmenu > /dev/null 2>&1; then
+        if xset q &>/dev/null && [[ -n "$DISPLAY" ]] && command -v dmenu > /dev/null 2>&1; then
             for i in ${options[*]}; do
                 options_dmenu+="$i\n"
             done
