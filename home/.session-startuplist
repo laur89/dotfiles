@@ -61,7 +61,7 @@ fi
 #ResultInactive=no
 #ResultActive=yes
 
-#/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
+/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
 
 for PROG in "${PROGS[@]}"; do
     if ! is_proc_running "$PROG"; then
