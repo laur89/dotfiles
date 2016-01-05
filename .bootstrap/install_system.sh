@@ -597,8 +597,8 @@ function setup_dirs() {
 
     # create dirs:
     for dir in \
-            $_PERSISTED_TMP \
             $BASE_DATA_DIR/.rsync \
+            $BASE_DATA_DIR/tmp \
             $BASE_DATA_DIR/vbox_vms \
             $BASE_DATA_DIR/progs \
             $BASE_DATA_DIR/progs/deps \
@@ -1113,6 +1113,9 @@ function install_oracle_jdk() {
     [[ -d "$JDK_INSTALLATION_DIR" ]] || execute "sudo mkdir $JDK_INSTALLATION_DIR"
     report "installing fetched JDK to $JDK_INSTALLATION_DIR"
     execute "sudo mv $dir $JDK_INSTALLATION_DIR/" || { err "could not move extracted jdk dir ($dir) to $JDK_INSTALLATION_DIR"; return 1; }
+
+    # change ownership to root:
+    execute "sudo chown -R root:root $JDK_INSTALLATION_DIR/$(basename "$dir")"
 
     # create link:
     [[ -h "$JDK_LINK_LOC" ]] && execute "sudo rm $JDK_LINK_LOC"
@@ -2377,3 +2380,14 @@ validate_and_init
 choose_step
 
 exit
+
+
+# ISSUES:
+# if no sound, make sure alsa is defaulting to right card:
+# aplay -l   and check card number; probably it's defaulting to 0;
+# you want it to use the PCH device; if somehtings wrong, then
+# create either /etc/asound.conf or $HOME/.asoundrc with these 3 lines:
+    #defaults.ctl.card 1
+    #defaults.pcm.card 1
+    #defaults.timer.card 1
+# in that case you probably need to change the device xfce4-volumed is controlling
