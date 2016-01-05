@@ -816,7 +816,7 @@ function setup_config_files() {
     setup_apt
     setup_crontab
     setup_sudoers
-    #setup_ssh_config   # better stick to ~/.ssh/config, rite?
+    #setup_ssh_config   # better stick to ~/.ssh/config, rite?  # TODO
     setup_hosts
     setup_global_env_vars
     setup_netrc_perms
@@ -825,20 +825,20 @@ function setup_config_files() {
 
 
 function install_acpi_events() {
-    local event_file  acpi_eventdir  eventfilesdir
+    local event_file  acpi_eventdir  src_eventfiles_dir
 
     acpi_eventdir="/etc/acpi/events"
-    eventfilesdir="$COMMON_DOTFILES/backups/acpi_event_triggers"
+    src_eventfiles_dir="$COMMON_DOTFILES/backups/acpi_event_triggers"
 
     if ! [[ -d "$acpi_eventdir" ]]; then
         err "$acpi_eventdir dir does not exist; acpi event triggers won't be installed"
         return 1
-    elif ! [[ -d "$eventfilesdir" ]]; then
-        err "$eventfilesdir dir does not exist; acpi event triggers won't be installed"
+    elif ! [[ -d "$src_eventfiles_dir" ]]; then
+        err "$src_eventfiles_dir dir does not exist; acpi event triggers won't be installed (since trigger files cannot be found)"
         return 1
     fi
 
-    for event_file in $eventfilesdir/* ; do
+    for event_file in $src_eventfiles_dir/* ; do
         if [[ -f "$event_file" ]]; then
             execute "sudo cp $event_file $acpi_eventdir"
         fi
@@ -1026,7 +1026,8 @@ function install_laptop_deps() {
         if echo "$wifi_info" | grep -iq 'vendor.*Intel'; then
             report "we have intel wifi; installing intel drivers..."
             install_block "firmware-iwlwifi"
-        elif echo "$wifi_info" | grep -iq 'vendor.*Realtek'; then
+        elif echo "$wifi_info" | grep -iq 'vendor.*Realtek' && \
+                confirm "we seem to have realtek wifi; want to install firmware-realtek?"; then
             report "we have realtek wifi; installing realtek drivers..."
             install_block "firmware-realtek"
         fi
