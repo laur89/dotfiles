@@ -127,8 +127,8 @@ else    # is NOT laptop, assuming desktop
     if ! is_proc_running synergys; then
         echo "Launching syndergy server"
         if [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" ]]; then
-            synergys -f --no-tray --debug INFO --name work-desktop -c /home/laur/synergy.conf --log $CUSTOM_LOGDIR/synergy_server.log --address :24800 &
-            #/data/progs/custom_builds/synergy/bin/synergys -f --no-tray --debug INFO --name work-desktop -c /home/laur/synergy.conf --log $CUSTOM_LOGDIR/synergy_server.log --address :24800 &
+            synergys -f --no-tray --debug INFO --name work-desktop -c ~/synergy.conf --log $CUSTOM_LOGDIR/synergy_server.log --address :24800 &
+            #/data/progs/custom_builds/synergy/bin/synergys -f --no-tray --debug INFO --name work-desktop -c ~/synergy.conf --log $CUSTOM_LOGDIR/synergy_server.log --address :24800 &
         else
             # TODO personal deskderp
             echo "TODO"
@@ -139,7 +139,7 @@ fi
 ###############################
 # modify configs:
 if is_laptop; then
-    sed --follow-symlinks -i '/^lockTimeout:/s/^lockTimeout:.*/lockTimeout:\t0:00:05/g' /home/laur/.xscreensaver &
+    sed --follow-symlinks -i '/^lockTimeout:/s/^lockTimeout:.*/lockTimeout:\t0:00:05/g' ~/.xscreensaver &
 fi
 
 

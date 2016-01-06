@@ -183,13 +183,14 @@ function setup_hosts() {
     if [[ -f "$file" ]]; then
         [[ -f "$hosts_file_dest/hosts" ]] || { err "system hosts file is missing!"; return 1; }
         current_hostline="$(_extract_current_hostname_line $hosts_file_dest/hosts)" || return 1
-        execute "cp $file $tmpfile" || return 1
-        execute "sed -i 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' $tmpfile" || return 1
+        execute "cp $file $tmpfile" || { err; return 1; }
+        execute "sed -i 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' $tmpfile" || { err; return 1; }
 
         backup_original_and_copy_file "$tmpfile" "$hosts_file_dest"
         execute "rm $tmpfile"
     else
         err "expected configuration file at \"$file\" does not exist; won't install it."
+        return 1
     fi
 
     unset _extract_current_hostname_line
@@ -216,6 +217,7 @@ function setup_sudoers() {
         execute "rm $tmpfile"
     else
         err "expected configuration file at \"$file\" does not exist; won't install it."
+        return 1
     fi
 }
 
@@ -1046,7 +1048,7 @@ function install_progs() {
     install_skype
     install_nvidia
 
-    # TODO:
+    # TODO; delete?:
     #if [[ "$MODE" == work ]]; then
         #install_altiris
         #install_symantec_endpoint_security
@@ -1477,9 +1479,10 @@ function install_vim() {
 
 
 function vim_post_install_configuration() {
-    local stored_vim_sessions
+    local stored_vim_sessions vim_sessiondir
 
     stored_vim_sessions="$BASE_DATA_DIR/.vim_sessions"
+    vim_sessiondir="$HOME/.vim/sessions"
 
     # generate links for root, if not existing:
     if ! sudo test -h "/root/.vim"; then
@@ -1495,18 +1498,18 @@ function vim_post_install_configuration() {
     # link sessions dir, if stored @ $BASE_DATA_DIR: (related to the 'xolox/vim-session' plugin)
     # note we don't want sessions in homesick, as they're likely to be machine-dependent.
     if [[ -d "$stored_vim_sessions" ]]; then
-        if ! [[ -h "$HOME/.vim/sessions" ]]; then
-            [[ -d "$HOME/.vim/sessions" ]] && execute "sudo rm -rf $HOME/.vim/sessions"
-            execute "ln -s $stored_vim_sessions $HOME/.vim/sessions"
+        if ! [[ -h "$vim_sessiondir" ]]; then
+            [[ -d "$vim_sessiondir" ]] && execute "sudo rm -rf $vim_sessiondir"
+            execute "ln -s $stored_vim_sessions $vim_sessiondir"
         fi
     else  # $stored_vim_sessions does not exist; init it anyways
-        if [[ -d "$HOME/.vim/sessions" ]]; then
-            execute "mv $HOME/.vim/sessions $stored_vim_sessions"
+        if [[ -d "$vim_sessiondir" ]]; then
+            execute "mv $vim_sessiondir $stored_vim_sessions"
         else
             execute "mkdir $stored_vim_sessions"
         fi
 
-        execute "ln -s $stored_vim_sessions $HOME/.vim/sessions"
+        execute "ln -s $stored_vim_sessions $vim_sessiondir"
     fi
 }
 
@@ -1743,6 +1746,7 @@ function install_from_repo() {
         lxappearance
         gtk2-engines-murrine
         gtk2-engines-pixbuf
+        meld
     )
 
 
