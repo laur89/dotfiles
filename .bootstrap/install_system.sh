@@ -2042,14 +2042,14 @@ function full_install() {
 
 function post_install_progs_setup() {
 
-    install_acpi_events
+    install_acpi_events   # has to be after install_progs, so acpid is already insalled and events/ dir present;
     install_SSID_checker  # has to come after install_progs; otherwise NM wrapper dir won't be present
-    execute "sudo alsactl init"
+    execute "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
 }
 
 
 function install_ssh_server_or_client() {
-    report "what do you want to do?"
+    report "installing ssh. what do you want to do?"
 
     while true; do
         select_items "client-side server-side" 1
@@ -2069,7 +2069,7 @@ function install_ssh_server_or_client() {
 
 
 function install_nfs_server_or_client() {
-    report "what do you want to do?"
+    report "installing nfs. what do you want to do?"
 
     while true; do
         select_items "client-side server-side" 1
