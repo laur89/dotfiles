@@ -1873,6 +1873,7 @@ function install_block() {
             continue
         fi
         if execute "sudo apt-get -qq --dry-run install $extra_apt_params $pkg"; then
+            sleep 0.1
             execute "sudo apt-get --yes install $extra_apt_params $pkg" || exit_sig_tmp=$?
         else
             packages_not_found+=( $pkg )
