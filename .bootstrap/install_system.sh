@@ -381,7 +381,6 @@ function install_nfs_client() {
         if confirm "$(report "add nfs server entry to fstab?")"; then
             echo -e "enter server ip:"
             read server_ip
-
             [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: \"$server_ip\""; continue; }
 
             [[ -d "$mountpoint" ]] || { err "$mountpoint is not a valid dir."; continue; }
@@ -445,11 +444,12 @@ function install_ssh_server() {
 
 
 function install_sshfs() {
-    local fuse_conf mountpoint fstab server_ip
+    local fuse_conf mountpoint fstab server_ip remote_user ssh_port
 
     fuse_conf="/etc/fuse.conf"
     mountpoint="/mnt/ssh"
     fstab="/etc/fstab"
+    ssh_port=443
 
     confirm "wish to install and configure sshfs?" || return 1
     install_block 'sshfs' || { err "unable to install sshfs. aborting sshfs install/config."; return 1; }
@@ -481,20 +481,28 @@ function install_sshfs() {
         if confirm "$(report "add sshfs entry to fstab?")"; then
             echo -e "enter server ip:"
             read server_ip
-
             [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: \"$server_ip\""; continue; }
+
+            echo -e "enter remote user to log in as (leave blank to default to our current user, ${USER}):"
+            read remote_user
+            [[ -z "$remote_user" ]] && remote_user="$USER"
 
             [[ -d "$mountpoint" ]] || { err "$mountpoint is not a valid dir."; continue; }
 
-            if ! grep -q "${USER}@${server_ip}:${SSH_SERVER_SHARE}.*${mountpoint}" "$fstab"; then
+            if ! grep -q "${remote_user}@${server_ip}:${SSH_SERVER_SHARE}.*${mountpoint}" "$fstab"; then
                 report "adding ${server_ip}:$SSH_SERVER_SHARE mounting to $mountpoint in $fstab"
-                execute "echo ${USER}@${server_ip}:${SSH_SERVER_SHARE} $mountpoint fuse.sshfs port=443,noauto,x-systemd.automount,_netdev,users,idmap=user,IdentityFile=/home/laur/.ssh/id_rsa_only_for_server_connect,allow_other,reconnect 0 0 | sudo tee --append $fstab > /dev/null"
+                execute "echo ${remote_user}@${server_ip}:${SSH_SERVER_SHARE} $mountpoint fuse.sshfs port=${ssh_port},noauto,x-systemd.automount,_netdev,users,idmap=user,IdentityFile=$HOME/.ssh/id_rsa_only_for_server_connect,allow_other,reconnect 0 0 \
+                        | sudo tee --append $fstab > /dev/null"
             else
                 report "an ssh share entry for ${server_ip}:${SSH_SERVER_SHARE} in $fstab already exists."
             fi
         else
             break
         fi
+
+        report "ssh-ing to $server_ip so our root would have the remote in the /root/.ssh/known_hosts..."
+        report "select yes to add entry to known hosts"
+        execute "sudo ssh -p ${ssh_port} -o ConnectTimeout=5 ${remote_user}@$server_ip echo ok"
     done
 
     return 0
@@ -1872,6 +1880,7 @@ function install_block() {
 
     # extract packages, which, for whatever reason, cannot be installed:
     for pkg in ${list_to_install[*]}; do
+        # TODO: is there any point for this?:
         if [[ -z "$(apt-cache search  --names-only "^$pkg\$")" ]]; then
             packages_not_found+=( $pkg )
             continue
