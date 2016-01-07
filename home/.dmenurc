@@ -3,7 +3,7 @@
 #
 # multi-selection patch: http://lists.suckless.org/dev/0109/26302.html
 
-__font='-*-terminus-medium-r-*-*-12-*-*-*-*-*-*-*'
+__font='Terminus-12'
 
 __nb=#1d1f21    # normal bg
 __nf=#7f8185    # normal fg
