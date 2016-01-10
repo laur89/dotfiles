@@ -1381,6 +1381,8 @@ function build_and_install_keepassx() {
 
     report "installing keepassx build dependencies..."
     install_block '
+        build-essential
+        cmake
         qtbase5-dev
         libqt5x11extras5-dev
         qttools5-dev

@@ -1608,10 +1608,11 @@ fo() {
         return
     fi
 
+    report "opening \"$match\"" "$FUNCNAME"
     # note that test will resolve links to files and dirs as well;
     # TODO: instead of file, use xdg-open?
     if [[ -f "$match" ]]; then
-        filetype="$(file -iLb -- "$match")"
+        filetype="$(file -iLb -- "$match")" || { err "issues testing \"$match\" with \$file"; return 1; }
 
         case "$filetype" in
             image/*)
@@ -1734,12 +1735,9 @@ g() {
     [[ -z "$pattern" ]] && { err "no search pattern provided" "$FUNCNAME"; return 1; }
     [[ "$path" == '.' ]] && msg_loc="here" || msg_loc="$path/"
 
-    if [[ "$(tolowercase "$pattern")" == "$pattern" ]]; then
-        # provided pattern was lowercase, make it case insensitive:
-        INAME_ARG="-iname"
-    fi
+    [[ "$(tolowercase "$pattern")" == "$pattern" ]] && INAME_ARG="-iname"
 
-    matches="$(find -L "$path" -maxdepth 1 -mindepth 1 \( -type d \) ${INAME_ARG:--name} '*'"$pattern"'*')"
+    matches="$(find -L "$path" -maxdepth 1 -mindepth 1 -type d ${INAME_ARG:--name} '*'"$pattern"'*')"
     count="$(echo "$matches" | wc -l)"
 
     if [[ -z "$matches" ]]; then
@@ -1761,10 +1759,7 @@ g() {
     fi
 
     [[ -z "$matches" ]] && return 1
-    if ! [[ -d "$matches" ]]; then
-        err "no such dir like \"$matches\" in $msg_loc" "$FUNCNAME"
-        return 1
-    fi
+    [[ -d "$matches" ]] || { err "no such dir like \"$matches\" in $msg_loc" "$FUNCNAME"; return 1; }
 
     cd -- "$matches"
 }
