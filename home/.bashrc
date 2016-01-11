@@ -118,20 +118,23 @@ if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
     for i in \
             $HOME/.bash_env_vars \
             $HOME/.bash_env_vars_overrides \
-                ; do # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
+                ; do  # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
         if [[ -r "$i" ]]; then
+            echo "yuop, $i readable" >> /tmp/bashrc_import
             source "$i"
         #else
             #echo -e "file \"$i\" to be sourced does not exist or is not readable!"
         fi
     done
+
+    unset i
 fi
 
 # this needs to be outside env_vars, unless you're gonna load those every time bashrc is loaded;
 case "$TERM" in
     xterm* | rxvt-unicode-256color )
         export TERM=xterm-256color
-        ;;
+    ;;
 esac
 
 if ! type __BASH_FUNS_LOADED_MARKER > /dev/null 2>&1; then
