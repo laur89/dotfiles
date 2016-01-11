@@ -115,7 +115,10 @@ fi
 # source own functions and env vars:
 
 if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
-    for i in $HOME/.bash_env_vars $HOME/.bash_env_vars_overrides; do # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
+    for i in \
+            $HOME/.bash_env_vars \
+            $HOME/.bash_env_vars_overrides \
+                ; do # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
         if [[ -r "$i" ]]; then
             source "$i"
         #else
