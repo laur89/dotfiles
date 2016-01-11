@@ -122,7 +122,8 @@ if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
         if [[ -r "$i" ]]; then
             echo "yuop, $i readable" >> /tmp/bashrc_import
             source "$i"
-        #else
+        else
+            echo "NOAP, $i NOT readable" >> /tmp/bashrc_import
             #echo -e "file \"$i\" to be sourced does not exist or is not readable!"
         fi
     done
