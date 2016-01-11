@@ -1771,6 +1771,15 @@ function wifi_list() {
 }
 
 
+function keepsudo() {
+    while true; do
+        sudo -n true
+        sleep 30
+        kill -0 "$$" || exit
+    done 2>/dev/null &
+}
+
+
 ####################
 ## Copy && Follow ##
 ####################

@@ -767,16 +767,16 @@ function setup_homesick() {
 }
 
 
-# creates symlink of our personal '.bash_env_vars' to /etc & /etc/profile.d/
+# creates symlink of our personal '.bash_env_vars' to /etc
 function setup_global_env_vars() {
     local global_env_var_loc global_env_var
 
     global_env_var_loc='/etc/.bash_env_vars'  # so our env vars would have user-agnostic location as well;
                                               # that location will be used by various scripts.
-    global_env_var='/etc/profile.d/bash_env_vars.sh'  # target name needs to end with .sh
+    #global_env_var='/etc/profile.d/bash_env_vars.sh'  # target name needs to end with .sh
 
     if ! [[ -e "$SHELL_ENVS" ]]; then
-        err "$SHELL_ENVS does not exist. can't link it to $global_env_var_loc nor $global_env_var"
+        err "$SHELL_ENVS does not exist. can't link it to $global_env_var_loc"
         return 1
     fi
 
@@ -784,13 +784,14 @@ function setup_global_env_vars() {
         execute "sudo ln -s $SHELL_ENVS $global_env_var_loc"
     fi
 
-    if ! [[ -d "$(dirname $global_env_var)" ]]; then
-        err "$(dirname $global_env_var) is not a dir; can't install globally for all the users."
-    else
-        if ! [[ -h "$global_env_var" ]]; then
-            execute "sudo ln -s $SHELL_ENVS $global_env_var"
-        fi
-    fi
+    # don't create; otherwise gobal_env_var will prevent loading env_var_overrides in our .bashrc!
+    #if ! [[ -d "$(dirname $global_env_var)" ]]; then
+        #err "$(dirname $global_env_var) is not a dir; can't install globally for all the users."
+    #else
+        #if ! [[ -h "$global_env_var" ]]; then
+            #execute "sudo ln -s $SHELL_ENVS $global_env_var"
+        #fi
+    #fi
 
     #if sudo test -f $root_bashrc; then
         #if ! sudo grep -q "source $SHELL_ENVS" $root_bashrc; then
