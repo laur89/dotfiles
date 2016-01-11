@@ -120,10 +120,8 @@ if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
             $HOME/.bash_env_vars_overrides \
                 ; do  # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
         if [[ -r "$i" ]]; then
-            echo "yuop, $i readable" >> /tmp/bashrc_import
             source "$i"
-        else
-            echo "NOAP, $i NOT readable" >> /tmp/bashrc_import
+        #else
             #echo -e "file \"$i\" to be sourced does not exist or is not readable!"
         fi
     done
