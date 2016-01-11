@@ -76,8 +76,6 @@ function print_usage() {
 
 function validate_and_init() {
 
-    check_connection || { err "no internet connection. abort."; exit 1; }
-
     # need to define PRIVATE_CASTLE here, as otherwis 'single-step' mode of this
     # script might fail. be sure the values are in sync with the repos actually
     # pulled in fetch_castles().
@@ -100,6 +98,8 @@ function validate_and_init() {
             print_usage
             exit 1 ;;
     esac
+
+    check_connection || { err "no internet connection. abort."; exit 1; }
 
     report "private castle defined as \"$PRIVATE_CASTLE\""
 
@@ -263,7 +263,8 @@ function setup_crontab() {
     if [[ -f "$file" ]]; then
         execute "cp $file $tmpfile" || return 1
         execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-        backup_original_and_copy_file "$tmpfile" "$cron_dir"
+        #backup_original_and_copy_file "$tmpfile" "$cron_dir"  # don't create backup - dont wanna end up with 2 crontabs
+        execute "sudo cp $tmpfile $cron_dir"
 
         execute "rm $tmpfile"
     else
@@ -478,7 +479,7 @@ function install_sshfs() {
     [[ -f "$fstab" ]] || { err "$fstab does not exist; cannot add fstab entry!"; return 1; }
 
     while true; do
-        if confirm "$(report "add sshfs entry to fstab?")"; then
+        if confirm "$(report "add ${server_ip:+another} sshfs entry to fstab?")"; then
             echo -e "enter server ip:"
             read server_ip
             [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: \"$server_ip\""; continue; }
@@ -1775,6 +1776,7 @@ function install_from_repo() {
         mopidy-youtube
         mpc
         ncmpcpp
+        ncmpc
         geany
         libreoffice
         calibre
@@ -2060,6 +2062,7 @@ function post_install_progs_setup() {
     install_acpi_events   # has to be after install_progs, so acpid is already insalled and events/ dir present;
     install_SSID_checker  # has to come after install_progs; otherwise NM wrapper dir won't be present
     execute "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
+    execute "mopidy local scan"
 }
 
 
@@ -2428,8 +2431,8 @@ clear
 # keep-alive: update existing `sudo` time stamp
 while true; do sudo -n true; sleep 30; kill -0 "$$" || exit; done 2>/dev/null &
 
-check_dependencies
 validate_and_init
+check_dependencies
 choose_step
 
 exit

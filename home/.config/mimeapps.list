@@ -13,6 +13,7 @@ application/x-extension-xht=userapp-Iceweasel-UPT6RX.desktop
 x-scheme-handler/mailto=userapp-Icedove-PFMSRX.desktop
 message/rfc822=userapp-Icedove-PFMSRX.desktop
 application/x-extension-eml=userapp-Icedove-PFMSRX.desktop
+application/pdf=zathura-pdf-poppler.desktop;
 
 [Added Associations]
 x-scheme-handler/http=userapp-Iceweasel-UPT6RX.desktop;
@@ -29,3 +30,4 @@ application/x-extension-xht=userapp-Iceweasel-UPT6RX.desktop;
 x-scheme-handler/mailto=userapp-Icedove-PFMSRX.desktop;
 message/rfc822=userapp-Icedove-PFMSRX.desktop;
 application/x-extension-eml=userapp-Icedove-PFMSRX.desktop;
+application/pdf=zathura-pdf-poppler.desktop;

@@ -73,7 +73,7 @@ export _DEF_CON_IF="/tmp/connected_default_if.dat"
 export _CON_IF="/tmp/connected_interfaces.dat"
 export _TRUSTED_CON_MARKER="/tmp/connected_trusted_NW.dat"
 
-export _MAX_STARTING_VOL_FOR_EARPHONES=80
+export _MAX_STARTING_VOL_FOR_EARPHONES=90
 
 if [[ -d "/data/tmp" && -w "/data/tmp" ]]; then
     export _PERSISTED_TMP="/data/tmp"
