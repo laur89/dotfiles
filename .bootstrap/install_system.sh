@@ -16,6 +16,7 @@
 TMPDIR="/tmp"
 CLANG_LLVM_LOC="http://llvm.org/releases/3.7.0/clang+llvm-3.7.0-x86_64-linux-gnu-ubuntu-14.04.tar.xz"  # http://llvm.org/releases/download.html
 VIM_REPO_LOC="https://github.com/vim/vim.git"                # vim - yeah.
+NVIM_REPO_LOC="https://github.com/neovim/neovim.git"         # nvim - yeah.
 KEEPASS_REPO_LOC="https://github.com/keepassx/keepassx.git"  # keepassX - open password manager forked from keepass project
 COPYQ_REPO_LOC="https://github.com/hluk/CopyQ.git"           # copyq - awesome clipboard manager
 SYNERGY_REPO_LOC="https://github.com/synergy/synergy.git"    # synergy - share keyboard&mouse between computers on same LAN
@@ -1119,6 +1120,7 @@ function upgrade_kernel() {
 function install_own_builds() {
 
     install_vim
+    install_neovim
     install_keepassx
     install_copyq
     install_synergy
@@ -1472,6 +1474,53 @@ function install_from_deb() {
     report "installing ${deb_file}..."
     execute "sudo dpkg -i $deb_file"
     return $?
+}
+
+#https://github.com/neovim/neovim/wiki/Building-Neovim
+function install_neovim() {
+    local tmpdir
+
+    tmpdir="$TMPDIR/nvim-build-${RANDOM}"
+    report "setting up nvim..."
+
+    # first find whether we have deb packages from other times:
+    if confirm "do you wish to install vim from our previous build .deb package, if available?"; then
+        install_from_deb neovim && return 0
+    fi
+
+    report "building neovim..."
+
+    report "installing neovim build dependencies..."
+    install_block '
+        libtool
+        libtool-bin
+        autoconf
+        automake
+        cmake
+        g++
+        pkg-config unzip
+    ' || { err 'failed to install neovim build deps. abort.'; return 1; }
+
+    execute "git clone $NVIM_REPO_LOC $tmpdir" || return 1
+    execute "pushd $tmpdir"
+
+    execute "make" || { err; return 1; }
+    create_deb_install_and_store || { err; return 1; }
+
+    # post-install config:
+
+    # create links (as per https://neovim.io/doc/user/nvim_from_vim.html):
+    execute "ln -s ~/.vim ~/.config/nvim"
+    execute "ln -s $HOME~/.vimrc $HOME/.config/nvim/init.vim"
+
+    # as per https://neovim.io/doc/user/nvim_python.html#nvim-python :
+    execute " sudo pip2 install neovim"
+    execute " sudo pip3 install neovim"
+
+    execute "popd"
+    execute "sudo rm -rf -- $tmpdir"
+
+    return 0
 }
 
 
@@ -1858,6 +1907,7 @@ function install_from_repo() {
             vagrant
             virtualbox
             puppet
+            docker.io
         '
     fi
 }
@@ -2026,6 +2076,7 @@ function __choose_prog_to_build() {
 
     choices=(
         install_vim
+        install_neovim
         install_YCM
         install_keepassx
         install_copyq

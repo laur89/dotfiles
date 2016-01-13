@@ -374,7 +374,9 @@ set nocompatible " Must be the first line
                                                     " of each file vim checks for
                                                     " initializations. basically
                                                     " for file-specific settings.
-    set viminfo+=n~/.vim/viminfo
+    if !has('nvim')
+        set viminfo+=n~/.vim/viminfo
+    endif
 
 
     """ In order exiting insert mode in vim-airline/bufferline wouldn't lag that much: {{{
