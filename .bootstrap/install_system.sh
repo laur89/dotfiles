@@ -112,6 +112,14 @@ function validate_and_init() {
         report "ssh keys not present at the moment, be prepared to enter user & passwd for private git repos."
         IS_SSH_SETUP=0
     fi
+
+    # ask for the admin password upfront:
+    report "enter sudo password:"
+    sudo -v || { clear; err "is user in sudoers file? is sudo installed? if not, then \"su && apt-get install sudo\""; exit 2; }
+    clear
+
+    # keep-alive: update existing `sudo` time stamp
+    while true; do sudo -n true; sleep 30; kill -0 "$$" || exit; done 2>/dev/null &
 }
 
 
@@ -2486,14 +2494,6 @@ MODE="$1"   # work | personal
 
 [[ "$EUID" -eq 0 ]] && { err "don't run as root."; exit 1; }
 trap "cleanup; exit" EXIT HUP INT QUIT PIPE TERM;
-
-# ask for the admin password upfront:
-report "enter sudo password:"
-sudo -v || { clear; err "is user in sudoers file? is sudo installed? if not, then \"su && apt-get install sudo\""; exit 2; }
-clear
-
-# keep-alive: update existing `sudo` time stamp
-while true; do sudo -n true; sleep 30; kill -0 "$$" || exit; done 2>/dev/null &
 
 validate_and_init
 check_dependencies
