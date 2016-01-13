@@ -1497,7 +1497,7 @@ function install_neovim() {
         autoconf
         automake
         cmake
-        g++
+        g\+\+
         pkg-config
         unzip
     ' || { err 'failed to install neovim build deps. abort.'; return 1; }
@@ -1935,7 +1935,7 @@ function install_nvidia() {
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
 function install_block() {
-    local list_to_install extra_apt_params packages_not_found exit_sig exit_sig_tmp packages_not_found pkg
+    local list_to_install extra_apt_params packages_not_found exit_sig exit_sig_tmp packages_not_found pkg result
 
     list_to_install=( $1 )
     extra_apt_params="$2"  # optional
@@ -1947,7 +1947,8 @@ function install_block() {
     # extract packages, which, for whatever reason, cannot be installed:
     for pkg in ${list_to_install[*]}; do
         # TODO: is there any point for this?:
-        if [[ -z "$(apt-cache search  --names-only "^$pkg\$")" ]]; then
+        result="$(apt-cache search  --names-only "^$pkg\$")" || { err "apt-cache search failed for \"$pkg\""; packages_not_found+=( $pkg ); continue; }
+        if [[ -z "$result" ]]; then
             packages_not_found+=( $pkg )
             continue
         fi
