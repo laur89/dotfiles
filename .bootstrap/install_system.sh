@@ -1511,8 +1511,8 @@ function install_neovim() {
     # post-install config:
 
     # create links (as per https://neovim.io/doc/user/nvim_from_vim.html):
-    execute "ln -s ~/.vim ~/.config/nvim"
-    execute "ln -s $HOME~/.vimrc $HOME/.config/nvim/init.vim"
+    execute "ln -s $HOME/.vim $HOME/.config/nvim"
+    execute "ln -s $HOME/.vimrc $HOME/.config/nvim/init.vim"
 
     # as per https://neovim.io/doc/user/nvim_python.html#nvim-python :
     execute " sudo pip2 install neovim"
