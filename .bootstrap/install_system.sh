@@ -1064,9 +1064,7 @@ function install_progs() {
         #install_symantec_endpoint_security
     #fi
 
-    if confirm "do you want to install our webdev lot?"; then
-        install_webdev
-    fi
+    confirm "do you want to install our webdev lot?" && install_webdev
 }
 
 
@@ -1260,13 +1258,24 @@ function install_skype() {  # https://wiki.debian.org/skype
 
 
 function install_webdev() {
-    is_server && { report "we're server, skipping webdev stack installation."; return; }
+    is_server && { report "we're server, skipping webdev env installation."; return; }
 
     install_block '
         nodejs
+        npm
     '
 
-    execute "sudo npm install -g jshint"
+    # TODO: create link for node? (there's a different package called 'node' for debian)
+    if ! command -v node >/dev/null; then
+        execute "sudo ln -s $(which nodejs) /usr/bin/node"
+    fi
+
+    # update npm:
+    execute "sudo npm install npm -g" && sleep 1
+
+    # install npm modules:
+    execute "sudo npm install -g \
+        jshint grunt-cli"
 }
 
 

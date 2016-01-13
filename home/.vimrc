@@ -169,7 +169,7 @@ set nocompatible " Must be the first line
     Plugin 'bkad/CamelCaseMotion'
 
     " typos:
-    Plugin 'chip/vim-fat-finger'
+    "Plugin 'chip/vim-fat-finger'
 
     " rainbow parnes:
     "Plugin 'kien/rainbow_parentheses.vim'
