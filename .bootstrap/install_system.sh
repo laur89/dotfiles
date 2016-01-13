@@ -1498,7 +1498,8 @@ function install_neovim() {
         automake
         cmake
         g++
-        pkg-config unzip
+        pkg-config
+        unzip
     ' || { err 'failed to install neovim build deps. abort.'; return 1; }
 
     execute "git clone $NVIM_REPO_LOC $tmpdir" || return 1
