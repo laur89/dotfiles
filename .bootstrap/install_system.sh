@@ -1485,28 +1485,31 @@ function install_neovim() {
 
     # first find whether we have deb packages from other times:
     if confirm "do you wish to install vim from our previous build .deb package, if available?"; then
-        install_from_deb neovim && return 0
+        install_from_deb neovim || return 1
+    else
+        report "building neovim..."
+
+        report "installing neovim build dependencies..."
+        install_block '
+            libtool
+            libtool-bin
+            autoconf
+            automake
+            cmake
+            g\+\+
+            pkg-config
+            unzip
+        ' || { err 'failed to install neovim build deps. abort.'; return 1; }
+
+        execute "git clone $NVIM_REPO_LOC $tmpdir" || return 1
+        execute "pushd $tmpdir"
+
+        execute "make" || { err; return 1; }
+        create_deb_install_and_store || { err; return 1; }
+
+        execute "popd"
+        execute "sudo rm -rf -- $tmpdir"
     fi
-
-    report "building neovim..."
-
-    report "installing neovim build dependencies..."
-    install_block '
-        libtool
-        libtool-bin
-        autoconf
-        automake
-        cmake
-        g\+\+
-        pkg-config
-        unzip
-    ' || { err 'failed to install neovim build deps. abort.'; return 1; }
-
-    execute "git clone $NVIM_REPO_LOC $tmpdir" || return 1
-    execute "pushd $tmpdir"
-
-    execute "make" || { err; return 1; }
-    create_deb_install_and_store || { err; return 1; }
 
     # post-install config:
 
@@ -1517,9 +1520,6 @@ function install_neovim() {
     # as per https://neovim.io/doc/user/nvim_python.html#nvim-python :
     execute " sudo pip2 install neovim"
     execute " sudo pip3 install neovim"
-
-    execute "popd"
-    execute "sudo rm -rf -- $tmpdir"
 
     return 0
 }
