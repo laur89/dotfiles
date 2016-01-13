@@ -1778,6 +1778,7 @@ function install_from_repo() {
         mpc
         ncmpcpp
         ncmpc
+        audacity
         geany
         libreoffice
         calibre
