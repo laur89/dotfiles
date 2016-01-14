@@ -397,7 +397,7 @@ function install_nfs_client() {
 
             if ! grep -q "${server_ip}:${NFS_SERVER_SHARE}.*${mountpoint}" "$fstab"; then
                 report "adding ${server_ip}:$NFS_SERVER_SHARE mounting to $mountpoint in $fstab"
-                execute "echo ${server_ip}:${NFS_SERVER_SHARE} nfs noauto,x-systemd.automount,x-systemd.device-timeout=10,timeo=14 0 0 | sudo tee --append $fstab > /dev/null"
+                execute "echo ${server_ip}:${NFS_SERVER_SHARE} ${mountpoint} nfs noauto,x-systemd.automount,x-systemd.device-timeout=10,timeo=14 0 0 | sudo tee --append $fstab > /dev/null"
             else
                 report "an nfs share entry for ${server_ip}:${NFS_SERVER_SHARE} in $fstab already exists."
             fi
