@@ -580,6 +580,9 @@ function install_deps() {
     # bars in shell:
     clone_or_pull_repo "holman" "spark" "$BASE_DEPS_LOC"  # https://github.com/holman/spark
 
+    # imgur screenshooter-uploader:
+    clone_or_pull_repo "jomo" "imgur-screenshot" "$BASE_DEPS_LOC"  # https://github.com/jomo/imgur-screenshot.git
+
     # pearl-ssh perhaps?
 
     # tmux plugin manager:
@@ -830,6 +833,24 @@ function setup_netrc_perms() {
 }
 
 
+function setup_root_prompt() {
+    local root_bashrc ps1
+
+    root_bashrc="/root/.bashrc"
+    ps1='PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} -eq 0 ]]; then echo \[\033[0;33m\]\u\[\033[0;37m\]@\[\033\[\033[0;31m\]\h; else echo \[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # own_def_marker'
+
+    if sudo test -f $root_bashrc; then
+        if ! sudo grep -q 'PS1=.*own_def_marker' $root_bashrc; then
+            # PS1 hasn't been defined yet:
+            execute "echo $ps1 | sudo tee --append $root_bashrc > /dev/null"
+        fi
+    else
+        err "$root_bashrc doesn't exist; cannot add PS1 (prompt) definition to it!"
+        return 1
+    fi
+}
+
+
 # setup system config files (the ones not living under $HOME, ie not managed by homesick)
 # has to be invoked AFTER homeschick castles are cloned/pulled!
 function setup_config_files() {
@@ -841,6 +862,7 @@ function setup_config_files() {
     setup_hosts
     setup_global_env_vars
     setup_netrc_perms
+    setup_root_prompt
     swap_caps_lock_and_esc
 }
 
@@ -1826,6 +1848,7 @@ function install_from_repo() {
         gtk2-engines-murrine
         gtk2-engines-pixbuf
         meld
+        gthumb
     )
 
 

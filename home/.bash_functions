@@ -575,8 +575,8 @@ function ffindsmallerthan() {
 
 function aptsearch() {
     [[ -z "$@" ]] && { err "provide partial package name to search for." "$FUNCNAME"; return 1; }
-    aptitude search -- "$@"
-    #apt-cache search "$@"
+    apt-cache search -- "$@"
+    #aptitude search -- "$@"
 }
 
 function aptsrc() { aptsearch "$@"; } # alias
