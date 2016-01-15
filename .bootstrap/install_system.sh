@@ -1889,7 +1889,6 @@ function install_from_repo() {
         spacefm
         screenfetch
         scrot
-        shutter
         mediainfo
         lynx
         tmux
