@@ -234,6 +234,9 @@ set nocompatible " Must be the first line
     " puppet syntax highlight, formatting...
     Plugin 'rodjek/vim-puppet'
 
+    " tabline + tab rename
+    Plugin 'gcmt/taboo.vim'
+
     " vim multidiff in tabs:
     "Plugin 'xenomachina/public/tree/master/vim/plugin'
     " consider targets.vim - adds new text objects
@@ -289,10 +292,10 @@ set nocompatible " Must be the first line
             set t_Co=256
         """ }}}
 
-        """ Tab colors   (overwritten by lightline?) {{{ "currently disabled because of airline tab extension
-                "hi TabLineFill ctermfg=NONE ctermbg=233
-                "hi TabLine ctermfg=241 ctermbg=233
-                "hi TabLineSel ctermfg=250 ctermbg=233
+        """ Tab colors   (overwritten by lightline?) {{{ "comment out if using airline tab extension
+                hi TabLineFill ctermfg=NONE ctermbg=233
+                hi TabLine ctermfg=241 ctermbg=233
+                hi TabLineSel ctermfg=250 ctermbg=233
         """ }}}
 
         """ Custom highlighting, where NONE uses terminal background {{{
@@ -824,17 +827,17 @@ set nocompatible " Must be the first line
     "let g:airline#extensions#tmuxline#enabled = 1
     let g:airline#extensions#bufferline#enabled = 0
     "let g:airline#extensions#bufferline#overwrite_variables = 1
-    let g:airline#extensions#tabline#enabled = 1
+    "let g:airline#extensions#tabline#enabled = 1  "when using this, comment out tab colring (doesn't break it, just pointless)
 
     " bufferline:
-    let g:bufferline_active_buffer_left = '['
-    let g:bufferline_active_buffer_right = ']'
-    let g:bufferline_modified = '+'
+    "let g:bufferline_active_buffer_left = '['
+    "let g:bufferline_active_buffer_right = ']'
+    "let g:bufferline_modified = '+'
     let g:bufferline_show_bufnr = 0
     let g:bufferline_rotate = 1  " scrolling with fixed current buf position
-    let g:bufferline_inactive_highlight = 'StatusLineNC'
-    let g:bufferline_active_highlight = 'StatusLine'
-    let g:bufferline_echo = 1
+    "let g:bufferline_inactive_highlight = 'StatusLineNC'
+    "let g:bufferline_active_highlight = 'StatusLine'
+    "let g:bufferline_echo = 1
     let g:bufferline_fixed_index = 0 "always first
 
     " TagBar

@@ -1623,7 +1623,12 @@ fo() {
                 "$PAGER" "$match"
                 ;;
             application/xml*)
-                xmlformat "$match"
+                if [[ "$(wc -l < "$match")" -gt 2 ]]; then
+                    # assuming it's already formatted:
+                    "$editor" "$match"
+                else
+                    xmlformat "$match"
+                fi
                 ;;
             video/*)
                 "$video_player" "$match"

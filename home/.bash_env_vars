@@ -6,7 +6,7 @@ export JAVA_HOME=/usr/local/jdk_link
 export M2_HOME=/data/progs/maven/mvn_link
 export M2=$M2_HOME/bin
 
-export EDITOR=vim
+command -v nvim > /dev/null 2>&1 && export EDITOR=nvim || export EDITOR=vim
 export VISUAL=geany  # gvim doesn't play well with some stuff, eg crontab -e
 export PAGER=less
 export BROWSER=/usr/bin/iceweasel
