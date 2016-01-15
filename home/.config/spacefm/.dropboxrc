@@ -1,12 +1,11 @@
 ## configuration file for dropbox spacefm plugin
 
 # set your dropbox folder here
-DROPBOXFOLDER=/home/laur/Dropbox
+DROPBOXFOLDER=/data/Dropbox
 
 # set/choose your clipboard command here
 #CLIPBOARDCMD="parcellite -c"
-#CLIPBOARDCMD="xclip -i -selection clipboard"
-CLIPBOARDCMD="parcellite -c"
+CLIPBOARDCMD="xclip -i -selection clipboard"
 
 # set your BROWSER here
 # if not set uses env BROWSER var or xdg-open

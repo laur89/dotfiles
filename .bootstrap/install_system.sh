@@ -1936,6 +1936,7 @@ function install_from_repo() {
     if [[ "$MODE" == work ]]; then
         install_block '
             samba-common-bin
+            smbclient
             ruby-dev
             vagrant
             virtualbox
