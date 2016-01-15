@@ -1880,6 +1880,7 @@ function install_from_repo() {
         sxiv
         geeqie
         imagemagick
+        pinta
         xsel
         xclip
         exuberant-ctags
