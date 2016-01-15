@@ -1,3 +1,8 @@
 https://github.com/IgnorantGuru/spacefm/wiki/Plugins
 
-note that the .dropbox-cli.py came from http://linux.dropbox.com/packages/dropbox.py
+Plugin info:
+- note that the .dropbox-cli.py came from http://linux.dropbox.com/packages/dropbox.py
+- mounttools, advanced find & trash require accompanied scripts to be found in path.
+
+-----------
+To add stuff to right click menu, then right click on right-click-opened-menu, and select New...
