@@ -1,0 +1,184 @@
+#!/bin/bash
+: <<COMMENT
+  Copyright (C) 2012 Tri Le <trile7 at gmail dot com>
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+COMMENT
+
+version="trash v0.4.0"
+
+function info {
+  for i; do
+    infofile=${i/\/files\//\/info\/}.trashinfo
+    [[ -f $infofile ]] || continue
+    cat "$infofile"
+    echo "---------"
+  done
+  }
+
+function restore {
+  for i; do
+    infofile=${i/\/files\//\/info\/}.trashinfo
+    opath=`grep -m1 Path= "$infofile" | cut -d'=' -f2`
+    if [[ -z $opath ]]; then
+      echo "cannot restore $i due to missing original filepath"
+      continue
+    fi
+    if [[ -h $i ]]; then
+      f=`readlink "$i"`
+      infofile2=${f/\/files\//\/info\/}.trashinfo
+      if [[ ! -e $f ]]; then
+        echo "$f no longer exists...restore fails."
+        continue
+      fi
+    else f=$i; i=$trashcan/files/${i##*/}; infofile2=$trashcan/info/${i##*/}.trashinfo
+    fi
+    restoredir=`dirname "$opath"`
+    dupname "$i" "$restoredir"
+    [[ -e $restoredir/$fullfn ]] && continue
+    mkdir -p "$restoredir" || continue
+    mv "$f" "$restoredir/$fullfn" && rm -f "$i" "$infofile" "$infofile2"
+  done
+  }
+
+function movetotrash {
+  for i; do
+    dname=`dirname "$i"`
+    cd "$dname"; i=$PWD/`basename "$i"`
+    if [[ ! -w $i ]]; then
+      echo "Cannot trash $i.  Permission denied"; continue
+    fi
+    if [[ ! -e $i ]]; then
+      echo "$i doesn't exist"
+      continue
+    fi
+    if [[ `stat -c %s "$i"` -gt $maxsize ]]; then
+      echo "skip $i because it's larger than $maxsize"
+      continue
+    fi
+    topdir=`stat -c %m "$i"`
+    [[ $topdir == $trashcan_mntpoint ]] && localtrash=$trashcan || localtrash=$topdir/.Trash-$USER
+    if echo $i | grep -q $localtrash; then
+      echo "cannot trash $i because it's already in the trashcan"
+      continue
+    fi
+    if mkdir -p "$localtrash"/{files,info}; then
+      chmod --quiet +t "$localtrash"/{files,info}
+    else
+      echo "cannot create local trashcan at $trashcan"
+      continue
+    fi
+    dupname "$i" "$trashcan/files" || continue
+    [[ -e $trashcan/files/$fullfn ]] && continue
+    mv "$i" "$localtrash/files/$fullfn" || continue
+    echo -e "[$fullfn trash info]\nPath=$i\nDeletionDate=`date`" > "$localtrash/info/$fullfn.trashinfo"
+    [[ $localtrash = $trashcan ]] && continue
+    ln -sf "$localtrash/files/$fullfn" "$trashcan/files/$fullfn"
+    ln -sf "$localtrash/info/$fullfn.trashinfo" "$trashcan/info/$fullfn.trashinfo"
+  done
+  }
+
+function delete {
+  for i; do
+    if [[ -h $i ]]; then
+      i2=`readlink "$i"`
+    else
+      i2=$trashcan/files/`basename "$i"`
+    fi
+    infofile=${i/\/files\//\/info\/}.trashinfo
+    infofile2=${i2/\/files\//\/info\/}.trashinfo
+    rm -Rf "$i" "$infofile" "$i2" "$infofile2"
+  done
+  }
+
+function emptycans {
+  if [[ $1 = "uid" ]]; then id=`id|grep -o uid=[[:digit:]]*|cut -d"=" -f2`
+  else
+    id=$USER
+    rm -Rf "$trashcan"/{files,info,expunged}/{*,.*} 2>/dev/null
+  fi
+  IFS=$'\n'
+  mntpoints=(`mount`)
+  IFS=$oIFS
+  for i in "${mntpoints[@]}"; do
+    j=($i)
+    case ${j[2]} in
+      /) localtrash=/.Trash-$id ;;
+      *) localtrash=${j[2]}/.Trash-$id ;;
+    esac
+    [[ -d $localtrash && -w $localtrash ]] && rm -Rf "$localtrash"/{files,info,expunged}/{*,.*} 2>/dev/null
+  done
+  return 0
+  }
+
+function dupname { #arg1: filepath arg2: targetdir ret: fullfn
+  j=0
+  fn=`basename "$1"`
+  ext=${fn##*.}
+  if [[ $ext == $fn ]]; then ext=""
+  else
+    ext=.$ext
+    fn=${fn%.*}
+  fi
+  fullfn=$fn$ext
+  while [[ -e $2/$fullfn ]]; do
+    fn=${fn%_*}_$((j++))
+    fullfn=$fn$ext
+    if [[ $j -gt 99 ]]; then
+      echo "too many conflict for $fpath in $targetdir"
+      return 1
+    fi
+  done
+  }
+
+function usage {
+cat <<EOF
+$version
+$0 [--config cfg] files            #move file to trashcan
+$0 [--config cfg] --restore files  #restore item to its orginal location
+$0 [--config cfg] --empty          #remove all items in trashcan-username
+$0 [--config cfg] --empty-uid      #remove all items in trashcan-uid
+$0 [--config cfg] --empty-both     #remove all items in trashcan-{username,uid}
+$0 [--config cfg] --delete files   #remove selected items in trashcan
+$0 [--config cfg] --info files     #show trash file info
+$0 [--config cfg] --list           #list trashcan content
+$0 [--config cfg] --readme         #show readme file
+
+trashcan is $trashcan/files and max file size to trash is $maxsize
+EOF
+}
+
+oIFS=$IFS
+if [[ $1 == --config ]]; then
+  cfg=$2; shift 2
+fi
+[[ -f ${cfg:=$HOME/.trashrc} ]] && source "$cfg"
+maxsize=${maxsize:=1000000000}
+trashcan=${trashcan:=$HOME/.local/share/Trash}
+trashcan_mntpoint=`stat -c %m "$trashcan"`
+if ! mkdir -p "$trashcan"/{files,info}; then
+  echo "cannot create trashcan"; exit 1
+fi
+case $1 in
+  --help|-h) usage ;;
+  --readme) readme=`readlink -f "$0"`.readme; cat "$readme" ;;
+  --info) shift; info "$@" ;;
+  --empty) emptycans ;;
+  --empty-uid) emptycans uid ;;
+  --empty-both) emptycans; emptycans uid ;;
+  --restore) shift; restore "$@" ;;
+  --delete) shift; delete "$@" ;;
+  --list) ls --color=auto -l "$trashcan/files" ;;
+  *) movetotrash "$@" ;;
+esac
