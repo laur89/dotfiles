@@ -1146,6 +1146,7 @@ function unpack() { extract "$@"; }
 function extract() {
     local file="$*"
     local file_without_extension="${file%.*}"
+    #file_extension="${file##*.}"
 
     if [[ -z "$file" ]]; then
         err "gimme file to extract plz." "$FUNCNAME"

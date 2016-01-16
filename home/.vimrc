@@ -140,6 +140,9 @@ set nocompatible " Must be the first line
     " C# support:
     Plugin 'OmniSharp/omnisharp-vim'
 
+    " charp additions (mainly better syntax highlight):
+    Plugin 'OrangeT/vim-csharp'
+
     " Node.js:
     Plugin 'moll/vim-node'
 

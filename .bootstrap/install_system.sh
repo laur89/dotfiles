@@ -397,7 +397,8 @@ function install_nfs_client() {
 
             if ! grep -q "${server_ip}:${NFS_SERVER_SHARE}.*${mountpoint}" "$fstab"; then
                 report "adding ${server_ip}:$NFS_SERVER_SHARE mounting to $mountpoint in $fstab"
-                execute "echo ${server_ip}:${NFS_SERVER_SHARE} ${mountpoint} nfs noauto,x-systemd.automount,x-systemd.device-timeout=10,timeo=14 0 0 | sudo tee --append $fstab > /dev/null"
+                execute "echo ${server_ip}:${NFS_SERVER_SHARE} ${mountpoint} nfs noauto,x-systemd.automount,x-systemd.device-timeout=10,timeo=14 0 0 \
+                        | sudo tee --append $fstab > /dev/null"
             else
                 report "an nfs share entry for ${server_ip}:${NFS_SERVER_SHARE} in $fstab already exists."
             fi
@@ -833,20 +834,20 @@ function setup_netrc_perms() {
 }
 
 
-function setup_root_prompt() {
-    local root_bashrc ps1
+function setup_global_prompt() {
+    local global_bashrc ps1
 
-    root_bashrc="/root/.bashrc"
-    ps1='PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} -eq 0 ]]; then echo \[\033[0;33m\]\u\[\033[0;37m\]@\[\033\[\033[0;31m\]\h; else echo \[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # own_def_marker'
+    global_bashrc="/etc/bash.bashrc"
+    ps1='PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} -eq 0 ]]; then echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033\[\033[0;31m\]\h"; else echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h"; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # own_def_marker'
 
-    if sudo test -f $root_bashrc; then
-        if ! sudo grep -q 'PS1=.*own_def_marker' $root_bashrc; then
-            # PS1 hasn't been defined yet:
-            execute "echo $ps1 | sudo tee --append $root_bashrc > /dev/null"
-        fi
-    else
-        err "$root_bashrc doesn't exist; cannot add PS1 (prompt) definition to it!"
+    if ! sudo test -f $global_bashrc; then
+        err "$global_bashrc doesn't exist; cannot add PS1 (prompt) definition to it!"
         return 1
+    fi
+
+    if ! sudo grep -q '^PS1=.*# own_def_marker$' $global_bashrc; then
+        # PS1 hasn't been defined yet:
+        execute "echo '$ps1' | sudo tee --append $global_bashrc > /dev/null"
     fi
 }
 
@@ -862,7 +863,7 @@ function setup_config_files() {
     setup_hosts
     setup_global_env_vars
     setup_netrc_perms
-    setup_root_prompt
+    setup_global_prompt
     swap_caps_lock_and_esc
 }
 
