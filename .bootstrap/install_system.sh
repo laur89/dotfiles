@@ -1312,7 +1312,7 @@ function install_webdev() {
 
     # install npm modules:
     execute "sudo npm install -g \
-        jshint grunt-cli"
+        jshint grunt-cli csslint"
 }
 
 
