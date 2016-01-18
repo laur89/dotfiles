@@ -1810,6 +1810,7 @@ function install_from_repo() {
         python-pip
         python-flake8
         python3-flake8
+        devscripts
         curl
         lshw
         acpid
