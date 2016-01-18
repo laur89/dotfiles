@@ -13,9 +13,11 @@ export BROWSER=/usr/bin/iceweasel
 export DEITY=
 # add additional locations to $PATH:
 export PATH=$PATH:$JAVA_HOME/bin:$M2:/data/dev/scripts/system:$HOME/bin
+# ruby env (rbenv):
+export PATH="$HOME/.rbenv/bin:$PATH"
 
 export CUSTOM_LOGDIR="/var/log/custom_logs"
-export PANEL_FIFO="/tmp/panel-fifo" # for BSPWM
+export PANEL_FIFO="/tmp/panel-fifo"  # for BSPWM
 
 # Colorize less (from http://unix.stackexchange.com/questions/119/colors-in-man-pages)
 # get color support for less:

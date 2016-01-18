@@ -166,6 +166,10 @@ source "$HOME/.bash-git-prompt/gitprompt.sh"
 
 
 ##########################################
+#ruby env (rbenv) - enable shims and autocompletion:
+command -v rbenv >/dev/null 2>/dev/null && eval "$(rbenv init -)"
+
+##########################################
 # git-flow-competion;....
 source "$HOME/.git-flow-completion/git-flow-completion.bash"
 

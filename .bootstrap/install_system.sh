@@ -1312,7 +1312,33 @@ function install_webdev() {
 
     # install npm modules:
     execute "sudo npm install -g \
-        jshint grunt-cli csslint"
+        jshint grunt-cli csslint \
+    "
+
+    # ruby:
+    ##################################
+    install_block '
+        ruby-build
+        rbenv
+    '
+
+    # rbenv recommended deps (https://github.com/rbenv/ruby-build/wiki):
+    install_block '
+        autoconf
+        bison
+        build-essential
+        libssl-dev libyaml-dev
+        libreadline6-dev
+        zlib1g-dev
+        libncurses5-dev
+        libffi-dev
+        libgdbm3
+        libgdbm-dev
+    '
+
+    # this would install it globally; better install new local ver by
+    # rbenv install <ver> && rbenv global <ver> && gem install rails
+    #execute 'sudo gem install rails'
 }
 
 
