@@ -36,6 +36,7 @@ SSH_SERVER_SHARE="/data"            # mountpoint to share over SSH
 IS_SSH_SETUP=0       # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=''  # only select_items() *writes* into this one.
 MODE=
+FULL_INSTALL=0
 PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
 LOGGING_LVL=0                   # execution logging level (full install logs everything);
                                 # don't set log level too soon; don't want to persist bullshit.
@@ -865,6 +866,8 @@ function setup_config_files() {
     setup_netrc_perms
     setup_global_prompt
     swap_caps_lock_and_esc
+
+    [[ "$FULL_INSTALL" -ne 1 ]] && post_install_progs_setup
 }
 
 
@@ -908,6 +911,7 @@ function install_SSID_checker() {
         return 1
     fi
 
+    # do not create .orig backup!
     execute "sudo cp $nm_wrapper_loc $nm_wrapper_dest/"
     return $?
 }
@@ -2063,6 +2067,7 @@ function choose_single_task() {
     local choices
 
     LOGGING_LVL=1
+    FULL_INSTALL=0
 
     # need to assume .bash_env_vars are there:
     if [[ -f "$SHELL_ENVS" ]]; then
@@ -2072,14 +2077,16 @@ function choose_single_task() {
     fi
 
     choices=(
+        setup
+        setup_homesick
+        setup_dirs
+        setup_config_files
+
         generate_key
         switch_jdk_versions
-        setup_homesick
-        setup_config_files
         install_SSID_checker
         install_acpi_events
         install_deps
-        setup_dirs
         install_fonts
         upgrade_kernel
         install_nvidia
@@ -2141,6 +2148,7 @@ function __choose_prog_to_build() {
 function full_install() {
 
     LOGGING_LVL=10
+    FULL_INSTALL=1
 
     setup
 
