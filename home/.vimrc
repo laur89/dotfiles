@@ -954,7 +954,7 @@ set nocompatible " Must be the first line
     let g:syntastic_c_auto_refresh_includes = 1
 
     let g:syntastic_python_checkers = ['flake8', 'python']
-    let g:syntastic_bash_checkers = ['shellcheck', 'checkbashisms']
+    let g:syntastic_bash_checkers = ['shellcheck']
     let g:syntastic_sh_checkers = ['shellcheck', 'checkbashisms']
     let g:syntastic_javascript_checkers = ['jshint']
     let g:syntastic_css_checkers = ['csslint']
