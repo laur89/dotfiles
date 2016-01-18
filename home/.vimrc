@@ -539,14 +539,14 @@ set nocompatible " Must be the first line
         vnoremap / /\v
 
         " Disable arrow keys:
-        nnoremap <up> <nop>
-        nnoremap <down> <nop>
-        nnoremap <left> <nop>
-        nnoremap <right> <nop>
-        inoremap <up> <nop>
-        inoremap <down> <nop>
-        inoremap <left> <nop>
-        inoremap <right> <nop>
+        "nnoremap <up> <nop>
+        "nnoremap <down> <nop>
+        "nnoremap <left> <nop>
+        "nnoremap <right> <nop>
+        "inoremap <up> <nop>
+        "inoremap <down> <nop>
+        "inoremap <left> <nop>
+        "inoremap <right> <nop>
 
         " move in insert mode:
         " (disabled now, co c-j/k could be used in YCM list)
@@ -619,10 +619,15 @@ set nocompatible " Must be the first line
     """ }}}
 
     " Maps to resizing a window split (Warn: conflict with indentation)
+    " tags: window resize window resizing window
     if bufwinnr(1)
         "map <silent> < <C-w><
         map <silent> - <C-W>-
         map <silent> + <C-W>+
+        map <silent> <down>  <C-W>-
+        map <silent> <up>    <C-W>+
+        map <silent> <left>  <C-W><
+        map <silent> <right> <C-W>>
         "map <silent> > <C-w>>
     endif
 
