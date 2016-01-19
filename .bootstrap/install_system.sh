@@ -1974,7 +1974,12 @@ function install_from_repo() {
             virtualbox
             puppet
             docker.io
+            nfs-common
+            nfs-kernel-server
         '
+
+        # note that both nfs-common & nfs-kernel-server at this point are required
+        # for the work's vagrant setup.
     fi
 }
 
