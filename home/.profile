@@ -21,6 +21,9 @@ if [ -d "$HOME/bin" ] ; then
     PATH="$HOME/bin:$PATH"
 fi
 
+##############################################
+# siit alates kõik enda defineeritud:
+##############################################
 # start X; note the ssh-agent:
 if [ -z "$DISPLAY" ] && [ "$(tty)" == "/dev/tty1" ]; then
     echo -e "Enter DE/WM:"
