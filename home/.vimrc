@@ -496,7 +496,8 @@ set nocompatible " Must be the first line
 
         " buffer delete fix (fix as in won't exit the window when dropping buffer, eg
         " with NerdTree):
-        nnoremap <leader>q :bp<cr>:bd #<cr>
+        "nnoremap <leader>q :bp<cr>:bd #<cr>  "old
+        nnoremap <leader>q :e #<cr>:bd #<cr>
 
         " Bubbling (bracket matching)
         nmap <C-up> [e
