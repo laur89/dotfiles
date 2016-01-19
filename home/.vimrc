@@ -387,7 +387,7 @@ set nocompatible " Must be the first line
 
 
     """ In order exiting insert mode in vim-airline/bufferline wouldn't lag that much: {{{
-        if ! has('gui_running')
+        if !has('nvim') && !has('gui_running')
             set ttimeoutlen=10
             augroup FastEscape
                 autocmd!
