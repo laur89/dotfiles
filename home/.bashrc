@@ -117,7 +117,6 @@ fi
 if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
     for i in \
             $HOME/.bash_env_vars \
-            $HOME/.bash_env_vars_overrides \
                 ; do  # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
         if [[ -r "$i" ]]; then
             source "$i"
@@ -125,6 +124,12 @@ if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
             #echo -e "file \"$i\" to be sourced does not exist or is not readable!"
         fi
     done
+
+    if [[ -d "$HOME/.bash_env_vars_overrides" ]]; then
+        for i in $HOME/.bash_env_vars_overrides/*; do
+            [[ -f "$i" ]] && source "$i"
+        done
+    fi
 
     unset i
 fi
