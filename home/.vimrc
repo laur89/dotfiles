@@ -122,7 +122,8 @@ set nocompatible " Must be the first line
     Plugin 'scrooloose/nerdtree'
 
     " Visualise the undo tree
-    Plugin 'sjl/gundo.vim'
+    "Plugin 'sjl/gundo.vim'
+    Plugin 'simnalamburt/vim-mundo'  " gundo fork with neovim support
 
     " fast mechanism to open files and buffers.
     " requires compiling - read the docs/wiki!
