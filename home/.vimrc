@@ -138,6 +138,9 @@ set nocompatible " Must be the first line
     " Go-lang/golang/go lang support:
     Plugin 'fatih/vim-go'
 
+    " Scala
+    Plugin 'derekwyatt/vim-scala'
+
     " C# support:
     Plugin 'OmniSharp/omnisharp-vim'
 
@@ -180,7 +183,8 @@ set nocompatible " Must be the first line
     Plugin 'luochen1990/rainbow'
 
     " tern for vim (tern is a standalone js analyzer)
-    " depends on tern!
+    " depends on tern! - https://github.com/ternjs/tern
+    " @ .vim/bundle/tern_for_vim:  npm install tern
     Plugin 'marijnh/tern_for_vim'
 
     " easy find and replace across multiple files

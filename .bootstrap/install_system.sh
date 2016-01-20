@@ -1608,6 +1608,32 @@ function install_vim() {
 
     # YCM installation AFTER the first vim launch!
     install_YCM
+    install_vim_plugin_deps
+}
+
+
+function install_vim_plugin_deps() {
+    local vim_pluginsdir
+
+    readonly vim_pluginsdir="$HOME/.vim/bundle"
+
+    function install_tern_for_vim_deps() {
+        local plugindir
+        readonly plugindir="$vim_pluginsdir/tern_for_vim"
+
+        if ! command -v npm >/dev/null; then
+            install_block 'npm' || return 1
+        fi
+
+        [[ -d "$plugindir" ]] || { err "$plugindir is not a dir."; return 1; }
+        execute "pushd $plugindir" || return 1
+        execute "npm install"
+        execute "popd"
+    }
+
+    # install plugin deps:
+    # tern: https://github.com/ternjs/tern_for_vim
+    install_tern_for_vim_deps
 }
 
 
