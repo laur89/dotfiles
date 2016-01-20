@@ -13,23 +13,23 @@
 #------------------------
 #---   Configuration  ---
 #------------------------
-TMPDIR="/tmp"
-CLANG_LLVM_LOC="http://llvm.org/releases/3.7.0/clang+llvm-3.7.0-x86_64-linux-gnu-ubuntu-14.04.tar.xz"  # http://llvm.org/releases/download.html
-VIM_REPO_LOC="https://github.com/vim/vim.git"                # vim - yeah.
-NVIM_REPO_LOC="https://github.com/neovim/neovim.git"         # nvim - yeah.
-KEEPASS_REPO_LOC="https://github.com/keepassx/keepassx.git"  # keepassX - open password manager forked from keepass project
-COPYQ_REPO_LOC="https://github.com/hluk/CopyQ.git"           # copyq - awesome clipboard manager
-SYNERGY_REPO_LOC="https://github.com/synergy/synergy.git"    # synergy - share keyboard&mouse between computers on same LAN
-ORACLE_JDK_LOC="http://download.oracle.com/otn-pub/java/jdk/8u65-b17/jdk-8u65-linux-x64.tar.gz"
-SKYPE_LOC="http://www.skype.com/go/getskype-linux-deb"
-JDK_LINK_LOC="/usr/local/jdk_link"
-JDK_INSTALLATION_DIR="/usr/local/javas"
-PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
-SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick
-                                        # note that contents of that file are somewhat important, as some
-                                        # (script-related) configuration lies within.
-NFS_SERVER_SHARE="/data"            # mountpoint to share over NFS
-SSH_SERVER_SHARE="/data"            # mountpoint to share over SSH
+readonly TMPDIR="/tmp"
+readonly CLANG_LLVM_LOC="http://llvm.org/releases/3.7.0/clang+llvm-3.7.0-x86_64-linux-gnu-ubuntu-14.04.tar.xz"  # http://llvm.org/releases/download.html
+readonly VIM_REPO_LOC="https://github.com/vim/vim.git"                # vim - yeah.
+readonly NVIM_REPO_LOC="https://github.com/neovim/neovim.git"         # nvim - yeah.
+readonly KEEPASS_REPO_LOC="https://github.com/keepassx/keepassx.git"  # keepassX - open password manager forked from keepass project
+readonly COPYQ_REPO_LOC="https://github.com/hluk/CopyQ.git"           # copyq - awesome clipboard manager
+readonly SYNERGY_REPO_LOC="https://github.com/synergy/synergy.git"    # synergy - share keyboard&mouse between computers on same LAN
+readonly ORACLE_JDK_LOC="http://download.oracle.com/otn-pub/java/jdk/8u65-b17/jdk-8u65-linux-x64.tar.gz"
+readonly SKYPE_LOC="http://www.skype.com/go/getskype-linux-deb"
+readonly JDK_LINK_LOC="/usr/local/jdk_link"
+readonly JDK_INSTALLATION_DIR="/usr/local/javas"
+readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
+readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick
+                                                 # note that contents of that file are somewhat important, as some
+                                                 # (script-related) configuration lies within.
+readonly NFS_SERVER_SHARE="/data"            # mountpoint to share over NFS
+readonly SSH_SERVER_SHARE="/data"            # mountpoint to share over SSH
 #------------------------
 #--- Global Variables ---
 #------------------------
@@ -46,19 +46,19 @@ EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%m-%y--%R).log" \
 #------------------------
 #--- Global Constants ---
 #------------------------
-BASE_DATA_DIR="/data"
-BASE_DEPS_LOC="$BASE_DATA_DIR/progs/deps"  # hosting stuff like homeshick, bash-git-prompt...
-BASE_BUILDS_DIR="$BASE_DATA_DIR/progs/custom_builds"  # hosts our built progs and/or their .deb packages;
-BASE_HOMESICK_REPOS_LOC="$BASE_DEPS_LOC/homesick/repos"
-COMMON_DOTFILES="$BASE_HOMESICK_REPOS_LOC/dotfiles"
-COMMON_PRIVATE_DOTFILES="$BASE_HOMESICK_REPOS_LOC/private-common"
+readonly BASE_DATA_DIR="/data"
+readonly BASE_DEPS_LOC="$BASE_DATA_DIR/progs/deps"  # hosting stuff like homeshick, bash-git-prompt...
+readonly BASE_BUILDS_DIR="$BASE_DATA_DIR/progs/custom_builds"  # hosts our built progs and/or their .deb packages;
+readonly BASE_HOMESICK_REPOS_LOC="$BASE_DEPS_LOC/homesick/repos"
+readonly COMMON_DOTFILES="$BASE_HOMESICK_REPOS_LOC/dotfiles"
+readonly COMMON_PRIVATE_DOTFILES="$BASE_HOMESICK_REPOS_LOC/private-common"
+readonly SOME_PACKAGE_IGNORED_EXIT_CODE=37
 PRIVATE_CASTLE=''  # installation specific private castle location (eg for 'work' or 'personal')
-SOME_PACKAGE_IGNORED_EXIT_CODE=37
 
-SELF="${0##*/}"
+readonly SELF="${0##*/}"
 
 declare -A COLORS
-COLORS=(
+readonly COLORS=(
     [RED]="\033[0;31m"
     [YELLOW]="\033[0;33m"
     [OFF]="\033[0m"
@@ -128,7 +128,7 @@ function validate_and_init() {
 function check_dependencies() {
     local dir prog perms
 
-    perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
+    readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
     for prog in git wget tar realpath dirname tee; do
         if ! command -v $prog >/dev/null; then
@@ -166,16 +166,16 @@ function check_dependencies() {
 function setup_hosts() {
     local hosts_file_dest file current_hostline tmpfile
 
-    hosts_file_dest="/etc"
-    tmpfile="$TMPDIR/hosts"
-    file="$PRIVATE_CASTLE/backups/hosts"
+    readonly hosts_file_dest="/etc"
+    readonly tmpfile="$TMPDIR/hosts"
+    readonly file="$PRIVATE_CASTLE/backups/hosts"
 
     function _extract_current_hostname_line() {
         local file current
 
-        file="$1"
+        readonly file="$1"
         #current="$(grep '\(127\.0\.1\.1\)\s\+\(.*\)\s\+\(\w\+\)' $file)"
-        current="$(grep "$HOSTNAME" "$file")"
+        readonly current="$(grep "$HOSTNAME" "$file")"
         if [[ -z "$current" || "$(echo "$current" | wc -l)" -ne 1 ]]; then
             err "$file contained either more or less than 1 line(s) containing our hostname. check manually."
             return 1
@@ -192,7 +192,7 @@ function setup_hosts() {
 
     if [[ -f "$file" ]]; then
         [[ -f "$hosts_file_dest/hosts" ]] || { err "system hosts file is missing!"; return 1; }
-        current_hostline="$(_extract_current_hostname_line $hosts_file_dest/hosts)" || return 1
+        readonly current_hostline="$(_extract_current_hostname_line $hosts_file_dest/hosts)" || return 1
         execute "cp $file $tmpfile" || { err; return 1; }
         execute "sed -i 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' $tmpfile" || { err; return 1; }
 
@@ -210,9 +210,9 @@ function setup_hosts() {
 function setup_sudoers() {
     local sudoers_dest file tmpfile
 
-    sudoers_dest="/etc"
-    tmpfile="$TMPDIR/sudoers"
-    file="$COMMON_DOTFILES/backups/sudoers"
+    readonly sudoers_dest="/etc"
+    readonly tmpfile="$TMPDIR/sudoers"
+    readonly file="$COMMON_DOTFILES/backups/sudoers"
 
     if ! [[ -d "$sudoers_dest" ]]; then
         err "$sudoers_dest is not a dir; skipping sudoers file installation."
@@ -235,7 +235,7 @@ function setup_sudoers() {
 function setup_apt() {
     local apt_dir file
 
-    apt_dir="/etc/apt"
+    readonly apt_dir="/etc/apt"
 
     if ! [[ -d "$apt_dir" ]]; then
         err "$apt_dir is not a dir; skipping apt conf installation."
@@ -261,9 +261,9 @@ function setup_apt() {
 function setup_crontab() {
     local cron_dir tmpfile file
 
-    cron_dir="/etc/cron.d"  # where crontab will be installed at
-    tmpfile="$TMPDIR/crontab"
-    file="$PRIVATE_CASTLE/backups/crontab"
+    readonly cron_dir="/etc/cron.d"  # where crontab will be installed at
+    readonly tmpfile="$TMPDIR/crontab"
+    readonly file="$PRIVATE_CASTLE/backups/crontab"
 
     if ! [[ -d "$cron_dir" ]]; then
         err "$cron_dir is not a dir; skipping crontab installation."
@@ -286,10 +286,10 @@ function setup_crontab() {
 function backup_original_and_copy_file() {
     local file dest filename
 
-    file="$1"  # full path of the file to be copied
-    dest="$2"  # full path of the destination directory to copy to
+    readonly file="$1"  # full path of the file to be copied
+    readonly dest="$2"  # full path of the destination directory to copy to
 
-    filename="$(basename "$file")"
+    readonly filename="$(basename "$file")"
 
     # back up the destination file, if it's already existing:
     if [[ -f "$dest/$filename" ]] && ! [[ -e "$dest/${filename}.orig" ]]; then
@@ -303,10 +303,10 @@ function backup_original_and_copy_file() {
 function clone_or_pull_repo() {
     local user repo install_dir hub
 
-    user="$1"
-    repo="$2"
-    install_dir="$3"
-    hub=${4:-"github.com"}  # OPTIONAL; if not provided, defaults to github.com;
+    readonly user="$1"
+    readonly repo="$2"
+    readonly install_dir="$3"
+    readonly hub=${4:-"github.com"}  # OPTIONAL; if not provided, defaults to github.com;
 
     [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
 
@@ -327,7 +327,7 @@ function clone_or_pull_repo() {
 function install_nfs_server() {
     local nfs_conf client_ip mountpoint
 
-    nfs_conf="/etc/exports"
+    readonly nfs_conf="/etc/exports"
 
     confirm "wish to install & configure nfs server?" || return 1
     if is_laptop; then
@@ -375,8 +375,8 @@ function install_nfs_server() {
 function install_nfs_client() {
     local fstab mountpoint server_ip
 
-    fstab="/etc/fstab"
-    mountpoint="/mnt/nfs"
+    readonly fstab="/etc/fstab"
+    readonly mountpoint="/mnt/nfs"
 
     confirm "wish to install & configure nfs client?" || return 1
 
@@ -415,9 +415,9 @@ function install_nfs_client() {
 function install_ssh_server() {
     local sshd_confdir config banner
 
-    sshd_confdir="/etc/ssh"
-    config="$COMMON_PRIVATE_DOTFILES/backups/sshd_config"
-    banner="$COMMON_PRIVATE_DOTFILES/backups/ssh_banner"
+    readonly sshd_confdir="/etc/ssh"
+    readonly config="$COMMON_PRIVATE_DOTFILES/backups/sshd_config"
+    readonly banner="$COMMON_PRIVATE_DOTFILES/backups/ssh_banner"
 
     confirm "wish to install & configure ssh server?" || return 1
     if is_laptop; then
@@ -458,10 +458,10 @@ function install_ssh_server() {
 function install_sshfs() {
     local fuse_conf mountpoint fstab server_ip remote_user ssh_port
 
-    fuse_conf="/etc/fuse.conf"
-    mountpoint="/mnt/ssh"
-    fstab="/etc/fstab"
-    ssh_port=443
+    readonly fuse_conf="/etc/fuse.conf"
+    readonly mountpoint="/mnt/ssh"
+    readonly fstab="/etc/fstab"
+    readonly ssh_port=443
 
     confirm "wish to install and configure sshfs?" || return 1
     install_block 'sshfs' || { err "unable to install sshfs. aborting sshfs install/config."; return 1; }
@@ -552,7 +552,7 @@ function install_deps() {
     function _install_tmux_deps() {
         local dir plugins_dir
 
-        plugins_dir="$HOME/.tmux/plugins"
+        readonly plugins_dir="$HOME/.tmux/plugins"
 
         if ! [[ -d "$plugins_dir/tpm" ]]; then
             clone_or_pull_repo "tmux-plugins" "tpm" "$plugins_dir"
@@ -670,11 +670,11 @@ function install_homesick() {
 function clone_or_link_castle() {
     local castle user hub homesick_exe
 
-    castle="$1"
-    user="$2"
-    hub="$3"  # domain of the git repo, ie github.com/bitbucket.org...
+    readonly castle="$1"
+    readonly user="$2"
+    readonly hub="$3"  # domain of the git repo, ie github.com/bitbucket.org...
 
-    homesick_exe="$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick"
+    readonly homesick_exe="$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick"
 
     [[ -z "$castle" || -z "$user" || -z "$hub" ]] && { err "either user, repo or castle name were missing"; sleep 2; return 1; }
     [[ -e "$homesick_exe" ]] || { err "expected to see homesick script @ $homesick_exe, but didn't. skipping cloning castle $castle"; return 1; }
@@ -773,7 +773,7 @@ function setup_homesick() {
     fetch_castles
 
     # just in case check if any of the castles are still tracking https instead of ssh:
-    https_castles="$($BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick list | grep '\bhttps://\b')"
+    readonly https_castles="$($BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick list | grep '\bhttps://\b')"
     if [[ -n "$https_castles" ]]; then
         report "fyi, these homesick castles are for some reason still tracking https remotes:"
         report "$https_castles"
@@ -783,11 +783,10 @@ function setup_homesick() {
 
 # creates symlink of our personal '.bash_env_vars' to /etc
 function setup_global_env_vars() {
-    local global_env_var_loc global_env_var
+    local global_env_var_loc
 
-    global_env_var_loc='/etc/.bash_env_vars'  # so our env vars would have user-agnostic location as well;
+    readonly global_env_var_loc='/etc/.bash_env_vars'  # so our env vars would have user-agnostic location as well;
                                               # that location will be used by various scripts.
-    #global_env_var='/etc/profile.d/bash_env_vars.sh'  # target name needs to end with .sh
 
     if ! [[ -e "$SHELL_ENVS" ]]; then
         err "$SHELL_ENVS does not exist. can't link it to $global_env_var_loc"
@@ -823,8 +822,8 @@ function setup_global_env_vars() {
 function setup_netrc_perms() {
     local rc_loc perms
 
-    rc_loc="$HOME/.netrc"
-    perms=600
+    readonly rc_loc="$HOME/.netrc"
+    readonly perms=600
 
     if [[ -e "$rc_loc" ]]; then
         execute "chmod $perms $(realpath "$rc_loc")"  # realpath, since we cannot change perms via symlink
@@ -838,8 +837,8 @@ function setup_netrc_perms() {
 function setup_global_prompt() {
     local global_bashrc ps1
 
-    global_bashrc="/etc/bash.bashrc"
-    ps1='PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} -eq 0 ]]; then echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033\[\033[0;31m\]\h"; else echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h"; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # own_def_marker'
+    readonly global_bashrc="/etc/bash.bashrc"
+    readonly ps1='PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} -eq 0 ]]; then echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033\[\033[0;31m\]\h"; else echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h"; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # own_def_marker'
 
     if ! sudo test -f $global_bashrc; then
         err "$global_bashrc doesn't exist; cannot add PS1 (prompt) definition to it!"
@@ -874,8 +873,8 @@ function setup_config_files() {
 function install_acpi_events() {
     local event_file  acpi_eventdir  src_eventfiles_dir
 
-    acpi_eventdir="/etc/acpi/events"
-    src_eventfiles_dir="$COMMON_DOTFILES/backups/acpi_event_triggers"
+    readonly acpi_eventdir="/etc/acpi/events"
+    readonly src_eventfiles_dir="$COMMON_DOTFILES/backups/acpi_event_triggers"
 
     if ! [[ -d "$acpi_eventdir" ]]; then
         err "$acpi_eventdir dir does not exist; acpi event triggers won't be installed"
@@ -900,8 +899,8 @@ function install_acpi_events() {
 function install_SSID_checker() {
     local nm_wrapper_loc  nm_wrapper_dest
 
-    nm_wrapper_loc="$BASE_DATA_DIR/dev/scripts/network_manager_SSID_checker_wrapper.sh"
-    nm_wrapper_dest="/etc/NetworkManager/dispatcher.d"
+    readonly nm_wrapper_loc="$BASE_DATA_DIR/dev/scripts/network_manager_SSID_checker_wrapper.sh"
+    readonly nm_wrapper_dest="/etc/NetworkManager/dispatcher.d"
 
     if ! [[ -f "$nm_wrapper_loc" ]]; then
         err "$nm_wrapper_loc does not exist; SSID checker won't be installed"
@@ -944,7 +943,7 @@ function setup_additional_apt_keys() {
 function swap_caps_lock_and_esc() {
     local conf_file
 
-    conf_file="/usr/share/X11/xkb/symbols/pc"
+    readonly conf_file="/usr/share/X11/xkb/symbols/pc"
 
     if ! [[ -f "$conf_file" ]]; then
         err "cannot swap esc<->caps: \"$conf_file\" does not exist; abort;"
@@ -1069,7 +1068,7 @@ function install_laptop_deps() {
         '
 
         # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
-        wifi_info="$(sudo lshw | grep -iA 5 'Wireless interface')"
+        readonly wifi_info="$(sudo lshw | grep -iA 5 'Wireless interface')"
 
         if echo "$wifi_info" | grep -iq 'vendor.*Intel'; then
             report "we have intel wifi; installing intel drivers..."
@@ -1108,7 +1107,7 @@ function upgrade_kernel() {
     local package_line kernels_list amd64_arch
 
     kernels_list=()
-    is_64_bit && amd64_arch="amd64"
+    is_64_bit && readonly amd64_arch="amd64"
 
     # install kernel meta-packages:
     # NOTE: these meta-packages only required, if using non-stable debian;
@@ -1167,7 +1166,7 @@ function install_own_builds() {
 function install_oracle_jdk() {
     local tarball tmpdir dir
 
-    tmpdir="$(mktemp -d "jdk-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    readonly tmpdir="$(mktemp -d "jdk-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     report "fetcing $ORACLE_JDK_LOC"
     execute "pushd $tmpdir"
@@ -1177,7 +1176,7 @@ function install_oracle_jdk() {
         --header 'Cookie: oraclelicense=accept-securebackup-cookie' \
         -- $ORACLE_JDK_LOC
 
-    tarball="$(basename $ORACLE_JDK_LOC)"
+    readonly tarball="$(basename $ORACLE_JDK_LOC)"
     extract "$tarball" || { err "extracting $tarball failed."; return 1; }
     dir="$(find -mindepth 1 -maxdepth 1 -type d)"
     [[ -d "$dir" ]] || { err "couldn't find unpacked jdk directory"; return 1; }
@@ -1203,7 +1202,7 @@ function switch_jdk_versions() {
     local avail_javas active_java
 
     [[ -d "$JDK_INSTALLATION_DIR" ]] || { err "$JDK_INSTALLATION_DIR does not exist. abort."; return 1; }
-    avail_javas="$(find $JDK_INSTALLATION_DIR -mindepth 1 -maxdepth 1 -type d)"
+    readonly avail_javas="$(find $JDK_INSTALLATION_DIR -mindepth 1 -maxdepth 1 -type d)"
     [[ $? -ne 0 || -z "$avail_javas" ]] && { err "discovered no java installations @ $JDK_INSTALLATION_DIR"; sleep 5; return 1; }
     if [[ -h "$JDK_LINK_LOC" ]]; then
         active_java="$(realpath $JDK_LINK_LOC)"
@@ -1212,7 +1211,7 @@ function switch_jdk_versions() {
             return
         fi
 
-        active_java="$(basename "$active_java")"
+        readonly active_java="$(basename "$active_java")"
     fi
 
     while true; do
@@ -1271,7 +1270,7 @@ function install_skype() {  # https://wiki.debian.org/skype
     local skypeFile
 
     is_server && { report "we're server, skipping skype installation."; return; }
-    skypeFile="$TMPDIR/skype-install.deb"
+    readonly skypeFile="$TMPDIR/skype-install.deb"
 
     report "setting up skype"
 
@@ -1361,9 +1360,9 @@ function build_and_install_synergy() {
     # building instructions from https://github.com/synergy/synergy/wiki/Compiling
     local builddir do_clone
 
-    do_clone="$1"  # set to '0' if synergy repo should NOT be re-cloned
+    readonly do_clone="$1"  # set to '0' if synergy repo should NOT be re-cloned
 
-    builddir="$BASE_BUILDS_DIR/synergy"
+    readonly builddir="$BASE_BUILDS_DIR/synergy"
     report "building synergy"
 
     report "installing synergy build dependencies..."
@@ -1399,7 +1398,7 @@ function build_and_install_copyq() {
     # building instructions from https://github.com/hluk/CopyQ/blob/master/INSTALL
     local tmpdir
 
-    tmpdir="$TMPDIR/copyq-build-${RANDOM}"
+    readonly tmpdir="$TMPDIR/copyq-build-${RANDOM}"
 
     should_build_if_avail_in_repo copyq || { report "skipping building of copyq remember to install it from the repo after the install!"; return; }
     report "building copyq"
@@ -1432,7 +1431,7 @@ function create_deb_install_and_store() {
     report "creating .deb and installing with checkinstall..."
     execute "sudo checkinstall" || { err "checkinstall failed. is it installed? abort."; return 1; }
 
-    deb_file="$(find . -type f -name '*.deb')"
+    readonly deb_file="$(find . -type f -name '*.deb')"
     if [[ -f "$deb_file" ]]; then
         report "moving built package \"$deb_file\" to $BASE_BUILDS_DIR"
         execute "mv $deb_file $BASE_BUILDS_DIR/"
@@ -1450,7 +1449,7 @@ function build_and_install_keepassx() {
 
     should_build_if_avail_in_repo keepassx || { report "skipping building of keepassx. remember to install it from the repo after the install!"; return; }
 
-    tmpdir="$TMPDIR/keepassx-build-${RANDOM}"
+    readonly tmpdir="$TMPDIR/keepassx-build-${RANDOM}"
     report "building keepassx..."
 
     report "installing keepassx build dependencies..."
@@ -1483,7 +1482,7 @@ function build_and_install_keepassx() {
 function install_dwm() {
     local build_dir
 
-    build_dir="$HOME/.dwm/w0ngBuild/source6.0"
+    readonly build_dir="$HOME/.dwm/w0ngBuild/source6.0"
 
     clone_or_link_castle dwm-setup laur89 github.com
     [[ -d "$build_dir" ]] || { err "\"$build_dir\" is not a dir. skipping dwm installation."; return 1; }
@@ -1511,11 +1510,11 @@ function install_dwm() {
 function install_from_deb() {
     local deb_file count name
 
-    name="$1"
+    readonly name="$1"
 
     deb_file="$(find $BASE_BUILDS_DIR -type f -iname "*$name*.deb")"
     [[ "$?" -eq 0 && -n "$deb_file" ]] || { report "didn't find any pre-build deb packages for $name; trying to build..."; return 1; }
-    count="$(echo "$deb_file" | wc -l)"
+    readonly count="$(echo "$deb_file" | wc -l)"
 
     if [[ "$count" -gt 1 ]]; then
         report "found $count potential deb packages. select one, or select none to build instead:"
@@ -1539,9 +1538,11 @@ function install_from_deb() {
 
 #https://github.com/neovim/neovim/wiki/Building-Neovim
 function install_neovim() {
-    local tmpdir
+    local tmpdir nvim_confdir
 
-    tmpdir="$TMPDIR/nvim-build-${RANDOM}"
+    readonly tmpdir="$TMPDIR/nvim-build-${RANDOM}"
+    readonly nvim_confdir="$HOME/.config/nvim"
+
     report "setting up nvim..."
 
     # first find whether we have deb packages from other times:
@@ -1575,8 +1576,8 @@ function install_neovim() {
     # post-install config:
 
     # create links (as per https://neovim.io/doc/user/nvim_from_vim.html):
-    execute "ln -s $HOME/.vim $HOME/.config/nvim"
-    execute "ln -s $HOME/.vimrc $HOME/.config/nvim/init.vim"
+    execute "ln -s $HOME/.vim $nvim_confdir"
+    execute "ln -s $HOME/.vimrc $nvim_confdir/init.vim"
 
     # as per https://neovim.io/doc/user/nvim_python.html#nvim-python :
     execute " sudo pip2 install neovim"
@@ -1613,8 +1614,8 @@ function install_vim() {
 function vim_post_install_configuration() {
     local stored_vim_sessions vim_sessiondir
 
-    stored_vim_sessions="$BASE_DATA_DIR/.vim_sessions"
-    vim_sessiondir="$HOME/.vim/sessions"
+    readonly stored_vim_sessions="$BASE_DATA_DIR/.vim_sessions"
+    readonly vim_sessiondir="$HOME/.vim/sessions"
 
     # generate links for root, if not existing:
     if ! sudo test -h "/root/.vim"; then
@@ -1650,7 +1651,7 @@ function build_and_install_vim() {
     # building instructions from https://github.com/Valloric/YouCompleteMe/wiki/Building-Vim-from-source
     local tmpdir
 
-    tmpdir="$TMPDIR/vim-build-${RANDOM}"
+    readonly tmpdir="$TMPDIR/vim-build-${RANDOM}"
     report "building vim..."
 
     report "installing vim build dependencies..."
@@ -1700,15 +1701,15 @@ function install_YCM() {
     # note: instructions & info here: https://github.com/Valloric/YouCompleteMe
     local ycm_root  ycm_build_root  libclang_root
 
-    ycm_root="$BASE_BUILDS_DIR/YCM"
-    ycm_build_root="$ycm_root/ycm_build"
-    libclang_root="$ycm_root/llvm"
+    readonly ycm_root="$BASE_BUILDS_DIR/YCM"
+    readonly ycm_build_root="$ycm_root/ycm_build"
+    readonly libclang_root="$ycm_root/llvm"
 
     function __fetch_libclang() {
         local tmpdir tarball dir
 
-        tmpdir="$(mktemp -d "ycm-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-        tarball="$(basename "$CLANG_LLVM_LOC")"
+        readonly tmpdir="$(mktemp -d "ycm-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+        readonly tarball="$(basename "$CLANG_LLVM_LOC")"
 
         execute "pushd $tmpdir"
         report "fetching $CLANG_LLVM_LOC"
@@ -1809,11 +1810,11 @@ function install_from_repo() {
     local block block1 block2 block3 block4 extra_apt_params
 
     declare -A extra_apt_params
-    extra_apt_params=(
+    readonly extra_apt_params=(
        [block2]="--no-install-recommends"
     )
 
-    block1=(
+    readonly block1=(
         xorg
         sudo
         alsa-base
@@ -1843,7 +1844,7 @@ function install_from_repo() {
         lm-sensors
     )
 
-    block2=(
+    readonly block2=(
         jq
         dnsutils
         glances
@@ -1889,7 +1890,7 @@ function install_from_repo() {
         #- !! gksu no moar recommended; pkexec advised; to use pkexec, you need to define its
         #     action in /usr/share/polkit-1/actions.
 
-    block3=(
+    readonly block3=(
         iceweasel
         icedove
         rxvt-unicode-256color
@@ -1934,7 +1935,7 @@ function install_from_repo() {
         transmission-remote-cli
     )
 
-    block4=(
+    readonly block4=(
         mutt-patched
         notmuch-mutt
         notmuch
@@ -2007,8 +2008,8 @@ function install_nvidia() {
 function install_block() {
     local list_to_install extra_apt_params packages_not_found exit_sig exit_sig_tmp packages_not_found pkg result
 
-    list_to_install=( $1 )
-    extra_apt_params="$2"  # optional
+    readonly list_to_install=( $1 )
+    readonly extra_apt_params="$2"  # optional
     packages_not_found=()
     exit_sig=0
 
@@ -2057,9 +2058,9 @@ function install_block() {
 function should_build_if_avail_in_repo() {
     local package_name packages
 
-    package_name="$1"
+    readonly package_name="$1"
 
-    packages="$(apt-cache search --names-only "$package_name")" || { err; return 1; }
+    readonly packages="$(apt-cache search --names-only "$package_name")" || { err; return 1; }
     if [[ -n "$packages" ]]; then
         report "FYI, these packages with \"$package_name\" in them are available in repo:\n"
         echo -e "$packages"
@@ -2108,7 +2109,7 @@ function choose_single_task() {
         err "expected \"$SHELL_ENVS\" to exist; note that some configuration might be missing."
     fi
 
-    choices=(
+    readonly choices=(
         setup
         setup_homesick
         setup_dirs
@@ -2149,7 +2150,7 @@ function choose_single_task() {
 function __choose_prog_to_build() {
     local choices
 
-    choices=(
+    readonly choices=(
         install_vim
         install_neovim
         install_YCM
@@ -2249,9 +2250,8 @@ function install_nfs_server_or_client() {
 
 function confirm() {
     local msg yno
-    msg="$1"
 
-    [[ -n "$msg" ]] && msg="\n$msg"
+    readonly msg=${1:+"\n$msg"}
 
     while true; do
         [[ -n "$msg" ]] && echo -e "$msg"
@@ -2276,8 +2276,8 @@ function confirm() {
 function err() {
     local msg caller_name
 
-    msg="$1"
-    caller_name="$2" # OPTIONAL
+    readonly msg="$1"
+    readonly caller_name="$2" # OPTIONAL
 
     [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "    ERR LOG: $msg" >> "$EXECUTION_LOG"
     echo -e "${COLORS[RED]}${caller_name:-"error"}:${COLORS[OFF]} ${msg:-"Abort"}" 1>&2
@@ -2287,8 +2287,8 @@ function err() {
 function report() {
     local msg caller_name
 
-    msg="$1"
-    caller_name="$2" # OPTIONAL
+    readonly msg="$1"
+    readonly caller_name="$2" # OPTIONAL
 
     [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "OK LOG: $msg" >> "$EXECUTION_LOG"
     echo -e "${COLORS[YELLOW]}${caller_name:-"INFO"}:${COLORS[OFF]} ${msg:-"--info lvl message placeholder--"}"
@@ -2315,8 +2315,8 @@ function is_ssh_setup() {
 function check_connection() {
     local timeout ip
 
-    timeout=5  # in seconds
-    ip="google.com"
+    readonly timeout=5  # in seconds
+    readonly ip="google.com"
 
     # Check whether the client is connected to the internet:
     wget -q --spider --timeout=$timeout -- "$ip" > /dev/null 2>&1  # works in networks where ping is not allowed
@@ -2347,12 +2347,12 @@ function generate_key() {
 function execute() {
     local cmd exit_sig
 
-    cmd="$1"
+    readonly cmd="$1"
 
     echo -e "--> executing \"$cmd\""
     # TODO: collect and log stderr?
     eval "$cmd"
-    exit_sig=$?
+    readonly exit_sig=$?
 
     if [[ "$exit_sig" -ne 0 ]]; then
         [[ "$LOGGING_LVL" -ge 1 ]] && echo -e "    ERR CMD: \"$cmd\" (exited with code $exit_sig)" >> "$EXECUTION_LOG"
@@ -2368,11 +2368,11 @@ function select_items() {
     local DMENU nr_of_dmenu_vertical_lines dmenurc options options_dmenu i prompt msg choices num is_single_selection selections
 
     # original version stolen from http://serverfault.com/a/298312
-    options=( $1 )
-    is_single_selection="$2"
+    readonly options=( $1 )
+    readonly is_single_selection="$2"
 
-    dmenurc="$HOME/.dmenurc"
-    nr_of_dmenu_vertical_lines=40
+    readonly dmenurc="$HOME/.dmenurc"
+    readonly nr_of_dmenu_vertical_lines=40
     selections=()
 
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
@@ -2396,9 +2396,9 @@ function select_items() {
             __SELECTED_ITEMS="$(echo -e "$options_dmenu" | $DMENU -l $nr_of_dmenu_vertical_lines -p 'select item')"
             return
         fi
-        prompt="Check an option, only 1 item can be selected (again to uncheck, ENTER when done): "
+        readonly prompt="Check an option, only 1 item can be selected (again to uncheck, ENTER when done): "
     else
-        prompt="Check an option, multiple items allowed (again to uncheck, ENTER when done): "
+        readonly prompt="Check an option, multiple items allowed (again to uncheck, ENTER when done): "
     fi
 
     while __menu && read -rp "$prompt" num && [[ "$num" ]]; do
@@ -2433,7 +2433,7 @@ function remove_items_from_list() {
     [[ "$#" -ne 2 ]] && { err "exactly 2 args required" "$FUNCNAME"; return 1; }
 
     orig_list=( $1 )
-    elements_to_remove=( $2 )
+    readonly elements_to_remove=( $2 )
 
     for i in "${!orig_list[@]}"; do
         for j in "${elements_to_remove[@]}"; do
@@ -2446,7 +2446,9 @@ function remove_items_from_list() {
 
 
 function extract() {
-    local file="$*"
+    local file
+
+    readonly file="$*"
 
     if [[ -z "$file" ]]; then
         err "gimme file to extract plz." "$FUNCNAME"
@@ -2498,7 +2500,8 @@ function is_server() {
 # @returns {bool}   true if system is a laptop.
 function is_laptop() {
     local file pwr_supply_dir
-    pwr_supply_dir="/sys/class/power_supply"
+
+    readonly pwr_supply_dir="/sys/class/power_supply"
 
     # sanity:
     [[ -d "$pwr_supply_dir" ]] || { err "$pwr_supply_dir is not a valid dir! cannot decide if we're a laptop; assuming we're not. abort." "$FUNCNAME"; sleep 5; return 1; }
@@ -2556,7 +2559,7 @@ function cleanup() {
 #----------------------------
 #---  Script entry point  ---
 #----------------------------
-MODE="$1"   # work | personal
+readonly MODE="$1"   # work | personal
 
 [[ "$EUID" -eq 0 ]] && { err "don't run as root."; exit 1; }
 trap "cleanup; exit" EXIT HUP INT QUIT PIPE TERM;
