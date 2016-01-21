@@ -2163,15 +2163,11 @@ function choose_single_task() {
 
     report "what do you want to do?"
 
-    while true; do
-        select_items "${choices[*]}" 1
+    select_items "${choices[*]}" 1
 
-        if [[ -z "$__SELECTED_ITEMS" ]]; then
-            confirm "no items were selected; exit?" && break || continue
-        fi
+    [[ -z "$__SELECTED_ITEMS" ]] && return
 
-        $__SELECTED_ITEMS
-    done
+    $__SELECTED_ITEMS
 }
 
 
@@ -2196,15 +2192,11 @@ function __choose_prog_to_build() {
 
     report "what do you want to build/install?"
 
-    while true; do
-        select_items "${choices[*]}" 1
+    select_items "${choices[*]}" 1
 
-        if [[ -z "$__SELECTED_ITEMS" ]]; then
-            confirm "no items were selected; return to previous menu?" && break || continue
-        fi
+    [[ -z "$__SELECTED_ITEMS" ]] && return
 
-        $__SELECTED_ITEMS
-    done
+    $__SELECTED_ITEMS
 }
 
 

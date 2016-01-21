@@ -981,6 +981,20 @@ function lgrep() {
     fi
 }
 
+
+function histgrep() {
+    local input
+
+    readonly input="$*"
+
+    [[ -z "$input" ]] && { err "command to look up from history required." "$FUNCNAME"; return 1; }
+    history \
+        | grep -Ev "^\s+[0-9]+\s+${FUNCNAME}\s+" \
+        | cut -d ' ' -f3- \
+        | grep -iE --color=auto "$input"
+}
+
+
 # Make your directories and files access rights sane.
 # (sane as in rw for owner, r for group, none for others)
 function sanitize() {
