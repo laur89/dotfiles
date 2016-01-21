@@ -1617,7 +1617,7 @@ function install_vim_plugin_deps() {
 
     readonly vim_pluginsdir="$HOME/.vim/bundle"
 
-    function install_tern_for_vim_deps() {
+    function _install_tern_for_vim_deps() {
         local plugindir
         readonly plugindir="$vim_pluginsdir/tern_for_vim"
 
@@ -1633,7 +1633,9 @@ function install_vim_plugin_deps() {
 
     # install plugin deps:
     # tern: https://github.com/ternjs/tern_for_vim
-    install_tern_for_vim_deps
+    _install_tern_for_vim_deps
+
+    unset _install_tern_for_vim_deps
 }
 
 
@@ -1868,6 +1870,7 @@ function install_from_repo() {
         lshw
         acpid
         lm-sensors
+        macchanger
     )
 
     readonly block2=(
@@ -1896,6 +1899,7 @@ function install_from_repo() {
         gnome-keyring
         gsimplecal
         gnome-disk-utility
+        system-config-printer
         galculator
         file-roller
         rar
