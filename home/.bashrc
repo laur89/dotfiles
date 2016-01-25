@@ -189,29 +189,34 @@ fi
 #compile .ssh/.config
 ##########################################
 __check_and_compile_ssh_config() {
+    local curr_md5sum stored_md5sum
+
+    readonly curr_md5sum="/tmp/.current_ssh_md5sum"
+    readonly stored_md5sum="$_PERSISTED_TMP/.last_known_ssh_md5sum"
+
     __store_current_ssh_md5sum() {
-        find . -type f -exec md5sum {} \; | sort -k 34 | md5sum > "/tmp/.current_ssh_md5sum"
+        find . -type f -exec md5sum {} \; | sort -k 34 | md5sum > "$curr_md5sum"
     }
 
-    cd "$HOME/.ssh" || return 1
-    __store_current_ssh_md5sum
-
-    if [[ -e "$_PERSISTED_TMP/.last_known_ssh_md5sum" && "$(cat "$_PERSISTED_TMP/.last_known_ssh_md5sum")" != "$(cat /tmp/.current_ssh_md5sum)" ]] \
-            || ! [[ -e "$HOME/.ssh/config" ]]; then
-        [[ -f ~/.ssh/config ]] && mv ~/.ssh/config "$HOME/.ssh/config.bak.$(date -Ins)"
-        cat ~/.ssh/config.d/* > ~/.ssh/config
-        # md5sum again, since sshconfig was regenerated:
+    if [[ -d "$HOME/.ssh/config.d" && -n "$(ls "$HOME/.ssh/config.d")" ]]; then
+        cd "$HOME/.ssh" || return 1
         __store_current_ssh_md5sum
-    fi
 
-    mv -- /tmp/.current_ssh_md5sum "$_PERSISTED_TMP/.last_known_ssh_md5sum"
+        if [[ -e "$stored_md5sum" && "$(cat "$stored_md5sum")" != "$(cat $curr_md5sum)" ]] \
+                || ! [[ -e "$HOME/.ssh/config" ]]; then
+            [[ -f ~/.ssh/config ]] && mv ~/.ssh/config "$HOME/.ssh/config.bak.$(date -Ins)"
+            cat ~/.ssh/config.d/* > ~/.ssh/config
+            # md5sum again, since sshconfig was regenerated:
+            __store_current_ssh_md5sum
+        fi
+
+        mv -- "$curr_md5sum" "$stored_md5sum"
+    fi
 
     unset __store_current_ssh_md5sum
 }
 
-if [[ -d "$HOME/.ssh/config.d" && -n "$(ls "$HOME/.ssh/config.d")" ]]; then
-    ( __check_and_compile_ssh_config )
-fi
+( __check_and_compile_ssh_config )
 ##########################################
 
 #override history size:
