@@ -354,6 +354,9 @@ function install_nfs_server() {
             mountpoint=${mountpoint:-"$NFS_SERVER_SHARE"}
             [[ -d "$mountpoint" ]] || { err "$mountpoint is not a valid dir."; continue; }
 
+            # TODO: automate multi client/range options:
+            # entries are basically:         directory machine1(option11,option12) machine2(option21,option22)
+            # to set a range of ips, then:   directory 192.168.0.0/255.255.255.0(ro)
             if ! grep -q "${mountpoint}.*${client_ip}" "$nfs_conf"; then
                 report "adding $mountpoint for $client_ip to $nfs_conf"
                 execute "echo $mountpoint ${client_ip}\(rw,sync,no_subtree_check\) | sudo tee --append $nfs_conf > /dev/null"
@@ -366,7 +369,7 @@ function install_nfs_server() {
     done
 
     # exports the shares:
-    exedute 'sudo exportfs -ra'
+    execute 'sudo exportfs -ra'
 
     return 0
 }
@@ -398,7 +401,7 @@ function install_nfs_client() {
 
             if ! grep -q "${server_ip}:${NFS_SERVER_SHARE}.*${mountpoint}" "$fstab"; then
                 report "adding ${server_ip}:$NFS_SERVER_SHARE mounting to $mountpoint in $fstab"
-                execute "echo ${server_ip}:${NFS_SERVER_SHARE} ${mountpoint} nfs noauto,x-systemd.automount,x-systemd.device-timeout=10,timeo=14 0 0 \
+                execute "echo ${server_ip}:${NFS_SERVER_SHARE} ${mountpoint} nfs noauto,x-systemd.automount,x-systemd.device-timeout=10,timeo=14,rsize=8192,wsize=8192 0 0 \
                         | sudo tee --append $fstab > /dev/null"
             else
                 report "an nfs share entry for ${server_ip}:${NFS_SERVER_SHARE} in $fstab already exists."

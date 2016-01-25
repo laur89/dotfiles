@@ -186,6 +186,25 @@ if ! ssh-add -l > /dev/null 2>&1; then
 fi
 ##########################################
 
+#compile .ssh/.config
+##########################################
+if [[ -d "$HOME/.ssh/config.d" && -n "$(ls $HOME/.ssh/config.d)" ]]; then
+    cd $HOME/.ssh
+    find . -type f -exec md5sum {} \; | sort -k 34 | md5sum > "/tmp/.current_ssh_md5sum"
+
+    if [[ -e "$_PERSISTED_TMP/.last_known_ssh_md5sum" && "$(cat $_PERSISTED_TMP/.last_known_ssh_md5sum)" != "$(cat /tmp/.current_ssh_md5sum)" ]] \
+            || ! [[ -e "$HOME/.ssh/config" ]]; then
+        cat ~/.ssh/config.d/* > ~/.ssh/config
+        # md5sum again, since sshconfig was regenerated:
+        find . -type f -exec md5sum {} \; | sort -k 34 | md5sum > "/tmp/.current_ssh_md5sum"
+    fi
+
+    mv -- /tmp/.current_ssh_md5sum $_PERSISTED_TMP/.last_known_ssh_md5sum
+
+    cd -
+fi
+##########################################
+
 #override history size:
 HISTSIZE=-1
 HISTFILESIZE=-1
