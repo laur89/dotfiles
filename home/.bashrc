@@ -189,10 +189,11 @@ fi
 #compile .ssh/.config
 ##########################################
 __check_and_compile_ssh_config() {
-    local curr_md5sum stored_md5sum
+    local curr_md5sum stored_md5sum ssh_config
 
     readonly curr_md5sum="/tmp/.current_ssh_md5sum"
     readonly stored_md5sum="$_PERSISTED_TMP/.last_known_ssh_md5sum"
+    readonly ssh_config="$HOME/.ssh/config"
 
     __store_current_ssh_md5sum() {
         find . -type f -exec md5sum {} \; | sort -k 34 | md5sum > "$curr_md5sum"
@@ -203,9 +204,9 @@ __check_and_compile_ssh_config() {
         __store_current_ssh_md5sum
 
         if [[ -e "$stored_md5sum" && "$(cat "$stored_md5sum")" != "$(cat $curr_md5sum)" ]] \
-                || ! [[ -e "$HOME/.ssh/config" ]]; then
-            [[ -f ~/.ssh/config ]] && mv ~/.ssh/config "$HOME/.ssh/config.bak.$(date -Ins)"
-            cat ~/.ssh/config.d/* > ~/.ssh/config
+                || ! [[ -e "$ssh_config" ]]; then
+            [[ -f "$ssh_config" ]] && mv "$ssh_config" "$HOME/.ssh/config.bak.$(date -Ins)"
+            cat ~/.ssh/config.d/* > "$ssh_config"
             # md5sum again, since sshconfig was regenerated:
             __store_current_ssh_md5sum
         fi
