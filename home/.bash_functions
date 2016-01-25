@@ -989,9 +989,9 @@ function histgrep() {
 
     [[ -z "$input" ]] && { err "command to look up from history required." "$FUNCNAME"; return 1; }
     history \
-        | grep -Ev "^\s+[0-9]+\s+${FUNCNAME}\s+" \
+        | grep -Ev -- "^\s+[0-9]+\s+${FUNCNAME}\s+" \
         | cut -d ' ' -f3- \
-        | grep -iE --color=auto "$input"
+        | grep -iE --color=auto -- "$input"
 }
 
 
@@ -1278,16 +1278,36 @@ xmlformat() {
 function xmlf() { xmlformat "$@"; } # alias for xmlformat;
 
 function createUsbIso() {
-    local file device mountpoint cleaned_devicename usage
+    local file device mountpoint cleaned_devicename usage override_dev_partitioncheck OPTIND partition
 
-    file="$1"
-    device="$2"
+    readonly usage="${FUNCNAME}: burn images to usb.
+    Usage:   $FUNCNAME  [options]  image.file  device
+        -o  allow selecting devices whose name ends with a digit (note that you
+            should be selecting a whole device instead of its parition (ie sda vs sda1),
+            but some devices have weird names (eg sd cards)
 
-    cleaned_devicename="${device%/}" # strip trailing slash
-    cleaned_devicename="${cleaned_devicename##*/}"  # strip everything before last slash (slash included)
-    usage="usage:   $FUNCNAME  image.file  device\nexample: $FUNCNAME  file.iso  /dev/sdh"
+    example: $FUNCNAME  file.iso  /dev/sdh"
 
     check_progs_installed   dd lsblk umount sudo || return 1
+
+    while getopts "ho" opt; do
+        case "$opt" in
+           h) echo -e "$usage";
+              return 0
+              ;;
+           o) override_dev_partitioncheck=1
+              shift $((OPTIND-1))
+              ;;
+           *) echo -e "$usage";
+              return 1
+              ;;
+        esac
+    done
+
+    readonly file="$1"
+    readonly device="${2%/}" # strip trailing slash
+
+    readonly cleaned_devicename="${device##*/}"  # strip everything before last slash (slash included)
 
     if [[ -z "$file" || -z "$device" || -z "$cleaned_devicename" ]]; then
         err "either file or device weren't provided" "$FUNCNAME"
@@ -1301,15 +1321,19 @@ function createUsbIso() {
         err "$device does not exist" "$FUNCNAME"
         echo -e "$usage"
         return 1;
-    elif ! ls /dev | grep -- "\b$cleaned_devicename\b" > /dev/null 2>&1 ;then
+    elif ! ls /dev | grep -- "\b${cleaned_devicename}\b" > /dev/null 2>&1 ;then
         err "$cleaned_devicename does not exist in /dev" "$FUNCNAME"
         echo -e "$usage"
         return 1;
-    elif [[ "${cleaned_devicename:$(( ${#cleaned_devicename} - 1)):1}" =~ ^[0-9:]+$ ]]; then
+    elif [[ "$override_dev_partitioncheck" -ne 1 ]] && [[ "$cleaned_devicename" =~ .*[0-9]+$ ]]; then
         # as per arch wiki
         err "please don't provide partition, but a drive, e.g. /dev/sdh instad of /dev/sdh1" "$FUNCNAME"
+        report "note you can override this check with the -o flag." "$FUNCNAME"
         echo -e "$usage"
         return 1
+    elif [[ "$override_dev_partitioncheck" -eq 1 ]] && [[ "$cleaned_devicename" =~ .*[0-9]+$ ]]; then
+        report "you've selected to override partition check (ie making sure you select device, not its partition.)" "$FUNCNAME"
+        confirm "you're sure that $cleaned_devicename is the device you wish to check?" "$FUNCNAME" || return 1
     fi
 
     #echo "please provide passwd for running fdisk -l to confirm the selected device is the right one:"
@@ -1319,17 +1343,20 @@ function createUsbIso() {
     confirm  "\nis selected device - $device - the correct one (be VERY sure!)? (y/n)" || return 1
 
     # find if device is mounted:
-    #  TODO: what about partition mountpoints????
     #lsblk -o name,size,mountpoint /dev/sda
-    mountpoint="$(lsblk -o mountpoint -- "$device" | sed -n 3p)"
-    if [[ -n "$mountpoint" ]]; then
-        report "$device appears to be mounted at $mountpoint, trying to unmount..." "$FUNCNAME"
-        if ! umount "$mountpoint"; then
-            err "something went wrong with unmounting. please unmount the device and try again." "$FUNCNAME"
-            return 1
+    report "unmounting $cleaned_devicename partitions... (may ask for sudo password)"
+    for partition in ${device}* ; do
+        mountpoint="$(lsblk -o mountpoint -- "$partition")" || { err "some issue occurred running lsblk -o mountpoint $partition" "$FUNCNAME"; return 1; }
+        mountpoint="$(echo "$mountpoint" | sed -n 2p)"
+        if [[ -n "$mountpoint" ]]; then
+            report "$partition appears to be mounted at $mountpoint, trying to unmount..." "$FUNCNAME"
+            if ! sudo umount "$mountpoint"; then
+                err "something went wrong with unmounting ${mountpoint}. please unmount the device and try again." "$FUNCNAME"
+                return 1
+            fi
+            report "...success." "$FUNCNAME"
         fi
-        report "...success." "$FUNCNAME"
-    fi
+    done
 
     report "Please provide sudo passwd for running dd:" "$FUNCNAME"
     sudo echo "..."
