@@ -201,7 +201,7 @@ if [[ -d "$HOME/.ssh/config.d" && -n "$(ls $HOME/.ssh/config.d)" ]]; then
 
     mv -- /tmp/.current_ssh_md5sum $_PERSISTED_TMP/.last_known_ssh_md5sum
 
-    cd -
+    cd
 fi
 ##########################################
 
