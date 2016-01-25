@@ -205,7 +205,7 @@ __check_and_compile_ssh_config() {
 
         if [[ -e "$stored_md5sum" && "$(cat "$stored_md5sum")" != "$(cat $curr_md5sum)" ]] \
                 || ! [[ -e "$ssh_config" ]]; then
-            [[ -f "$ssh_config" ]] && mv "$ssh_config" "$HOME/.ssh/config.bak.$(date -Ins)"
+            [[ -f "$ssh_config" ]] && mv "$ssh_config" "${ssh_config}.bak.$(date -Ins)"
             cat ~/.ssh/config.d/* > "$ssh_config"
             # md5sum again, since sshconfig was regenerated:
             __store_current_ssh_md5sum
