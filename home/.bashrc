@@ -200,7 +200,7 @@ __check_and_compile_ssh_config() {
     }
 
     if [[ -d "$HOME/.ssh/config.d" && -n "$(ls "$HOME/.ssh/config.d")" ]]; then
-        cd "$HOME/.ssh" || return 1
+        cd "$HOME/.ssh" || return 1  # move to ~/.ssh, since we execute find relative to curr dir;
         __store_current_ssh_md5sum
 
         if [[ -e "$stored_md5sum" && "$(cat "$stored_md5sum")" != "$(cat $curr_md5sum)" ]] \
