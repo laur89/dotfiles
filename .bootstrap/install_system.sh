@@ -1966,6 +1966,7 @@ function install_from_repo() {
         lxrandr
         transmission
         transmission-remote-cli
+        transmission-remote-gtk
     )
 
     readonly block4=(
