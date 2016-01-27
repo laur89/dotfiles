@@ -33,7 +33,6 @@
     ; & https://github.com/xenomachina/public/
     ;tool = vd -f
 [pager]
-    diff = false
     difftool = false
 [push]
     default = simple
