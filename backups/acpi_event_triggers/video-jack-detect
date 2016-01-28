@@ -1,0 +1,2 @@
+event=jack/*
+action=/data/dev/scripts/system/video_plug_event.sh %e
