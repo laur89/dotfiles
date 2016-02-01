@@ -22,10 +22,12 @@ if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
 fi
 
 ################################################
-# enables offline SMART checks on system drives
+# enables offline SMART checks on system drives. note that smart manual says these settings
+# should outlive reboots, but it's still good idea to make sure.
 function enableSmart() {
-    local _disk_list _disk _status msg disk_check
+    local _disk_list _disk _status msg disk_check processed_disks_count
 
+    processed_disks_count=0
     check_progs_installed /usr/sbin/smartctl || return 1
 
     _disk_list="$(sudo smartctl --scan)"
@@ -47,7 +49,7 @@ function enableSmart() {
     fi
 
     for _disk in $_disk_list; do
-        disk_check="$(echo "$_disk" | sed 's/.*\///')" # strip everything before last slash (included)
+        disk_check="$(echo "$_disk" | sed 's/.*\///')"  # strip everything before last slash (included)
         [[ -z "$disk_check" ]] && { err_display "something went wrong with cleaning cmartctl returned disk." "$SELF"; }
 
         # sanity - check whether smartctl found disk is listed in /proc/partitions; if not, send error:
@@ -65,8 +67,10 @@ function enableSmart() {
                 #mail_error_report_and_log "$SELF: unable to enable SMART on $HOSTNAME." "$msg" "$error_log"
                 # do NOT return!
             fi
-        else
-            msg="The disk \"$_disk\" has beed passed to me via
+
+            let processed_disks_count+=1
+        else  # err
+            msg="The disk \"$_disk\" has been passed to me via
     \"sudo smartctl --scan\" command, but it cannot be located in
     /proc/partitions. Unmounted/mismounted volume perhaps?"
             err_display "$msg" "$SELF"
@@ -74,11 +78,14 @@ function enableSmart() {
             #mail_error_report_and_log "invalid drive detected on $HOSTNAME" "$msg" "$error_log"
         fi
     done
+
+    display_message "${SELF}: enabled SMART for ${processed_disks_count} drives." $(( 30 * 1000))
 }
+
 ################################################
 
 #xrandr --output DP-2 --auto --right-of DP-1 &
-detect_displays.sh &
+check_progs_installed detect_displays.sh && detect_displays.sh &
 
 # Load bitmap fonts:
 xset +fp ~/.fonts
