@@ -26,15 +26,15 @@ URxvt*scrollTtyOutput: false
 URxvt*scrollTtyKeypress: true
 URxvt*secondaryScroll: true
 URxvt*saveLines: 80000
-URxvt*url-Launcher: iceweasel
+URxvt*url-Launcher: xdg-open
 ! matcher :
 URxvt.keysym.C-Delete: perl:matcher:last
 URxvt.keysym.M-Delete: perl:matcher:list
-URxvt.matcher.button:     1
+URxvt.matcher.button:     2
 URxvt.termName:    xterm-color
 
 !! matcher -  Full Path Patterns
-URxvt.matcher.pattern.1:  \\bwww\\.[\\w-]+\\.[\\w./?&@#-]*[\\w/-]
+!URxvt.matcher.pattern.1:  \\bwww\\.[\\w-]+\\.[\\w./?&@#-]*[\\w/-]
 !URxvt.matcher.pattern.2:  \\B(/\\S+?):(\\d+)(?=:|$)
 !URxvt.matcher.launcher.2: gvim +$2 $1
 URxvt.matcher.pattern.2: ^(/[\\S]+):?
@@ -51,8 +51,8 @@ URxvt.colorUL: #4682B4
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 URxvt.keysym.M-u: perl:url-select:select_next
 URxvt.url-select.underline:                     true
-!URxvt.url-select.launcher: /usr/bin/xdg-open
-URxvt.url-select.launcher:                      /usr/bin/iceweasel
+URxvt.url-select.launcher: /usr/bin/xdg-open
+!URxvt.url-select.launcher:                      /usr/bin/iceweasel
 !URvxt.url-select.button:    Mouse button to click-open URLs (default: 2)
 !
 !!! keyboard-select:
@@ -75,7 +75,7 @@ URxvt.perl-ext-common: default,clipboard,tabbedex,keyboard-select,vtwheel,matche
 URxvt.keysym.Shift-Control-T: perl:tabbedex:new_tab
 URxvt.keysym.Shift-t: perl:tabbedex:new_tab
 URxvt.keysym.Control-Tab: perl:tabbedex:next_tab
-URxvt.keysym.Control-Shift-Tab: perl:tabbedex:prev_tab
+URxvt.keysym.Shift-Control-Tab: perl:tabbedex:prev_tab
 !
 !URxvt.tabbed.tabbar-fg: 12
 !URxvt.tabbed.tabbar-bg: 0
@@ -85,6 +85,7 @@ URxvt.tabbed.tabbar-fg: 1
 URxvt.tabbed.tabbar-bg: 0
 URxvt.tabbed.tab-fg:    3
 URxvt.tabbed.tab-bg:    7
+
 ! autohide tabbar if only one tab:
 URxvt.tabbed.autohide: false
 !URxvt.tabbed.new-button: true
@@ -885,8 +886,9 @@ URxvt4*scrollColor:        #000000
 !xterm*color13: rgb:fc/54/fc
 !xterm*color14: rgb:54/fc/fc
 !xterm*color15: rgb:fc/fc/fc
+
 !!!!!!!!!!!!!!1
-!2nd:
+!  2nd xterm conf:
 !!!!!!!!!!!!!!
 XTerm*background:                       grey15
  XTerm*foreground:                       grey75
