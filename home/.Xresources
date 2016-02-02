@@ -100,8 +100,9 @@ URxvt.iso14755: False
 
 ! man page colors:
 *VT100.colorBDMode:                   true
+*VT100.colorDB:                       magenta
 *VT100.colorULMode:                   true
-*VT100.colorUL:                       magenta
+*VT100.colorUL:                       cyan
 *VT100.veryBoldColors:                6
 
 ! allow ctrl+arrow keys by-word motions:

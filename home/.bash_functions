@@ -135,8 +135,8 @@ function ffind() {
         if [[ ! -d "$SRCDIR" ]]; then
             err "provided directory to search from (\"$SRCDIR\") is not a directory. abort." "$FUNCNAME"
             return 1
-        elif [[ "${SRCDIR:$(( ${#SRCDIR} - 1)):1}" != "/" ]]; then
-            SRCDIR="${SRCDIR}/" # add trailing slash if missing; required for gnu find; TODO: is it really the case??
+        elif [[ "$SRCDIR" != */ ]]; then
+            SRCDIR="${SRCDIR}/"  # add trailing slash if missing; required for gnu find; necessary in case it's a link.
         fi
     fi
 

@@ -31,7 +31,7 @@ set nocompatible " Must be the first line
     """ }}}
 
     """ Github repos, uncomment to disable a plugin {{{
-    " consider NeoBundle
+    " consider NeoBundle or vim-plug
     Plugin 'gmarik/Vundle.vim'
 
     """ Local plugins (and only plugins in this file!) {{{
@@ -329,6 +329,7 @@ set nocompatible " Must be the first line
         set relativenumber                          " linenumbers are relative
         set scrolloff=3                             " lines above/below cursor
         set showcmd                                 " show cmds being typed
+        set clipboard+=unnamed                      " use os clipboard by default
         set title                                   " window title
         set vb t_vb=                                " disable beep and flashing
         set wildignore=.bak,.pyc,.o,.ojb,.a,
@@ -385,6 +386,9 @@ set nocompatible " Must be the first line
                                                     " of each file vim checks for
                                                     " initializations. basically
                                                     " for file-specific settings.
+    set nomodeline                                  " security
+    set lazyredraw                                  " redraw only when need to
+
     if !has('nvim')
         set viminfo+=n~/.vim/viminfo
     endif
@@ -447,7 +451,7 @@ set nocompatible " Must be the first line
         if has('persistent_undo') && exists("&undodir")
             set undodir=$HOME/.vim/undo/            " where to store undofiles
             set undofile                            " enable undofile
-            set undolevels=500                      " max undos stored
+            set undolevels=300                      " max undos stored
             set undoreload=10000                    " buffer stored undos
         endif
     """ }}}
