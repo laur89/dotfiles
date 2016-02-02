@@ -125,6 +125,7 @@ if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
         fi
     done
 
+    # TODO: this sourcing is not working atm:
     if [[ -d "$HOME/.bash_env_vars_overrides" ]]; then
         for i in $HOME/.bash_env_vars_overrides/*; do
             [[ -f "$i" ]] && source "$i"
@@ -189,24 +190,27 @@ fi
 #compile .ssh/.config
 ##########################################
 __check_and_compile_ssh_config() {
-    local curr_md5sum stored_md5sum ssh_config
+    local curr_md5sum stored_md5sum ssh_config ssh_configdir
 
-    readonly curr_md5sum="/tmp/.current_ssh_md5sum"
+    readonly curr_md5sum="/tmp/.current_ssh_md5sum.$$"  # add PID stamp so concurrent terminals wouldn't be
+                                                        # fighting over the same file (eg when restoring tmux)
     readonly stored_md5sum="$_PERSISTED_TMP/.last_known_ssh_md5sum"
     readonly ssh_config="$HOME/.ssh/config"
+    readonly ssh_configdir="$HOME/.ssh/config.d"  # dir holding the ssh config files that will be
+                                                  # merged into a single ~/.ssh/config file.
 
     __store_current_ssh_md5sum() {
         find . -type f -exec md5sum {} \; | sort -k 34 | md5sum > "$curr_md5sum"
     }
 
-    if [[ -d "$HOME/.ssh/config.d" && -n "$(ls "$HOME/.ssh/config.d")" ]]; then
+    if [[ -d "$ssh_configdir" && -n "$(ls "$ssh_configdir")" ]]; then
         cd "$HOME/.ssh" || return 1  # move to ~/.ssh, since we execute find relative to curr dir;
         __store_current_ssh_md5sum
 
-        if [[ -e "$stored_md5sum" && "$(cat "$stored_md5sum")" != "$(cat $curr_md5sum)" ]] \
+        if [[ -e "$stored_md5sum" && "$(cat "$stored_md5sum")" != "$(cat "$curr_md5sum")" ]] \
                 || ! [[ -e "$ssh_config" ]]; then
             [[ -f "$ssh_config" ]] && mv "$ssh_config" "${ssh_config}.bak.$(date -Ins)"
-            cat ~/.ssh/config.d/* > "$ssh_config"
+            cat "$ssh_configdir"/* > "$ssh_config"
             # md5sum again, since sshconfig was regenerated:
             __store_current_ssh_md5sum
         fi
@@ -217,7 +221,7 @@ __check_and_compile_ssh_config() {
     unset __store_current_ssh_md5sum
 }
 
-( __check_and_compile_ssh_config )
+( __check_and_compile_ssh_config )  # execute in subshell because of cd-ing
 ##########################################
 
 #override history size:
