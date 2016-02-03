@@ -1893,6 +1893,7 @@ function install_from_repo() {
         mercurial
         git
         git-flow
+        git-cola
         zenity
         msmtp
         rsync

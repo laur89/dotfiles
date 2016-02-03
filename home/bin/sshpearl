@@ -78,6 +78,11 @@ function ssh_pearl() {
         echo \"${self}\" | base64 -di | gunzip > \"\${PEARLSSH_BIN}/$SELF\";
         chmod -R +x \"\$PEARLSSH_BIN\";
         export PATH=\$PATH:\$PEARLSSH_BIN;
+
+        # increments the number of dashes to be ued in PS1 env var to indicate
+        # the ssh-ing depth, as in how deep in ssh-sessions are we:
+        export _SSH_PEARL_DEPTH_DASHES=${_SSH_PEARL_DEPTH_DASHES}-
+
         VIMINIT=\"let \\\$MYVIMRC='\${PEARLSSH_HOME}/vimrc' | source \\\$MYVIMRC\" INPUTRC=\"\${PEARLSSH_HOME}/inputrc\" bash --rcfile \"\${PEARLSSH_HOME}/bashrc\" -i ${commands_opt};
     "
 

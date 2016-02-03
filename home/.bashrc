@@ -190,35 +190,27 @@ fi
 #compile .ssh/.config
 ##########################################
 __check_and_compile_ssh_config() {
-    local curr_md5sum stored_md5sum ssh_config ssh_configdir
+    local stored_md5sum ssh_config ssh_configdir modified current_md5sum
 
-    readonly curr_md5sum="/tmp/.current_ssh_md5sum.$$"  # add PID stamp so concurrent terminals wouldn't be
-                                                        # fighting over the same file (eg when restoring tmux)
     readonly stored_md5sum="$_PERSISTED_TMP/.last_known_ssh_md5sum"
     readonly ssh_config="$HOME/.ssh/config"
     readonly ssh_configdir="$HOME/.ssh/config.d"  # dir holding the ssh config files that will be
                                                   # merged into a single ~/.ssh/config file.
 
-    __store_current_ssh_md5sum() {
-        find . -type f -exec md5sum {} \; | sort -k 34 | md5sum > "$curr_md5sum"
-    }
-
     if [[ -d "$ssh_configdir" && -n "$(ls "$ssh_configdir")" ]]; then
-        cd "$HOME/.ssh" || return 1  # move to ~/.ssh, since we execute find relative to curr dir;
-        __store_current_ssh_md5sum
+        cd "$ssh_configdir" || return 1  # move to $ssh_configdir, since we execute find relative to curr dir;
+        readonly current_md5sum="$(find . -type f -exec md5sum {} \; | sort -k 34 | md5sum)"
 
-        if [[ -e "$stored_md5sum" && "$(cat "$stored_md5sum")" != "$(cat "$curr_md5sum")" ]] \
+        if [[ -e "$stored_md5sum" && "$(cat "$stored_md5sum")" != "$current_md5sum" ]] \
                 || ! [[ -e "$ssh_config" ]]; then
             [[ -f "$ssh_config" ]] && mv "$ssh_config" "${ssh_config}.bak.$(date -Ins)"
             cat "$ssh_configdir"/* > "$ssh_config"
-            # md5sum again, since sshconfig was regenerated:
-            __store_current_ssh_md5sum
+            modified=1
         fi
 
-        mv -- "$curr_md5sum" "$stored_md5sum"
+        # avoid pointless $stored_md5sum writing:
+        [[ "$modified" -eq 1 || ! -e "$stored_md5sum" ]] && echo "$current_md5sum" > "$stored_md5sum"  # md5sum again, since sshconfig might have been regenerated
     fi
-
-    unset __store_current_ssh_md5sum
 }
 
 ( __check_and_compile_ssh_config )  # execute in subshell because of cd-ing
