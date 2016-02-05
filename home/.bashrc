@@ -195,7 +195,7 @@ __check_and_compile_ssh_config() {
     readonly stored_md5sum="$_PERSISTED_TMP/.last_known_ssh_md5sum"
     readonly ssh_config="$HOME/.ssh/config"
     readonly ssh_configdir="$HOME/.ssh/config.d"  # dir holding the ssh config files that will be
-                                                  # merged into a single ~/.ssh/config file.
+                                                  # merged into a single $ssh_config
 
     if [[ -d "$ssh_configdir" && -n "$(ls "$ssh_configdir")" ]]; then
         cd "$ssh_configdir" || return 1  # move to $ssh_configdir, since we execute find relative to curr dir;
@@ -209,8 +209,10 @@ __check_and_compile_ssh_config() {
         fi
 
         # avoid pointless $stored_md5sum writing:
-        [[ "$modified" -eq 1 || ! -e "$stored_md5sum" ]] && echo "$current_md5sum" > "$stored_md5sum"  # md5sum again, since sshconfig might have been regenerated
+        [[ "$modified" -eq 1 || ! -e "$stored_md5sum" ]] && echo "$current_md5sum" > "$stored_md5sum"
     fi
+
+    return 0
 }
 
 ( __check_and_compile_ssh_config )  # execute in subshell because of cd-ing

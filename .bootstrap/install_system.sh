@@ -582,7 +582,7 @@ function install_deps() {
     # git-flow-completion:
     clone_or_pull_repo "bobthecow" "git-flow-completion" "$BASE_DEPS_LOC"
 
-    # bars in shell:
+    # bars (as in bar-charts) in shell:
     clone_or_pull_repo "holman" "spark" "$BASE_DEPS_LOC"  # https://github.com/holman/spark
 
     # imgur screenshooter-uploader:
