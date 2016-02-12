@@ -29,7 +29,9 @@ function ffind() {
     defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
 
     usage="\n$FUNCNAME: find files/dirs by name. smartcase.
+
     Usage: $FUNCNAME  [options]  \"fileName pattern\" [top_level_dir_to_search_from]
+
         -r  use regex (so the find specific metacharacters *, ? and [] won't work)
         -i  force case insensitive
         -s  force case sensitivity
@@ -592,8 +594,8 @@ function aptreset() {
         err "/var/lib/apt/lists is not a lib; can't delete the contents" "$FUNCNAME"
     fi
     sudo apt-get clean
-    sudo apt-get update
-    sudo apt-get upgrade
+    #sudo apt-get update
+    #sudo apt-get upgrade
 }
 
 #  Find a pattern in a set of files and highlight them:
@@ -721,10 +723,16 @@ function ffstr() {
         INAME_ARG="-iname"
     fi
 
-    [[ "$force_case" -eq 1 ]] && { grepcase=""; INAME_ARG=""; }
+    [[ "$force_case" -eq 1 ]] && unset grepcase INAME_ARG
 
-    # TODO: convert to  'find . -name "$ext" -type f -exec grep "$pattern" /dev/null {} +' perhaps?
+    ## Clean grep-only solution: (in this case the maxdepth option goes out the window)
+    #if [[ -z "$2" ]]; then
+        #[[ -n "$follow_links" ]] && follow_links=R || follow_links=r
+        #grep -E${follow_links} --color=always -sn ${grepcase} -- "$1"
+
+    #elif [[ "$regex" -eq 1 ]]; then
     if [[ "$regex" -eq 1 ]]; then
+        # TODO: convert to  'find . -name "$ext" -type f -exec grep "$pattern" /dev/null {} +' perhaps?
         [[ -z "$2" ]] && { err "with -r flag, filename argument is required." "$FUNCNAME"; return 1; }
         [[ -n "$INAME_ARG" ]] && INAME_ARG="-regextype posix-extended -iregex" || INAME_ARG="-regextype posix-extended -regex"
 
@@ -1891,14 +1899,30 @@ f() {
 # marks (jumps)                             ##
 # from: http://jeroenjanssens.com/2013/08/16/quickly-navigate-your-filesystem-from-the-command-line.html
 ##############################################
-export _MARKPATH=$HOME/.shell_jump_marks
+_MARKPATH_LOC=.shell_jump_marks
+
+if [[ "$EUID" -eq 0 ]]; then
+    for i in $(find /home -mindepth 2 -maxdepth 2 -type d -name $_MARKPATH_LOC); do
+        _MARKPATH="$i"
+        break  # break on first found dir
+    done
+    unset i
+
+    [[ -z "$_MARKPATH" ]] && _MARKPATH="$HOME/$_MARKPATH_LOC"
+else
+    _MARKPATH="$HOME/$_MARKPATH_LOC"
+fi
+
+export _MARKPATH
+unset _MARKPATH_LOC
 
 function jj {
     cd -P "$_MARKPATH/$1" 2>/dev/null || err "no such mark: $1" "$FUNCNAME"
 }
 
 function jm {
-    mkdir -p "$_MARKPATH"; ln -s "$(pwd)" "$_MARKPATH/$1"
+    mkdir -p "$_MARKPATH"
+    ln -s "$(pwd)" "$_MARKPATH/$1" || return 1
 }
 
 function jum {

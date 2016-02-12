@@ -44,6 +44,7 @@
     b = branch -a
     aa = add --all
     rst = reset
+    rvrt = revert
     di = diff
     dif = diff
     stash-unapply = !git stash show -p | git apply -R
