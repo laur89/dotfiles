@@ -1921,6 +1921,8 @@ function jj {
 }
 
 function jm {
+    [[ $# -ne 1 ]] && { err "exactly one arg accepted" "$FUNCNAME"; return 1; }
+    [[ -z "$1" ]] && { err "need to give a mark name to remove." "$FUNCNAME"; return 1; }
     mkdir -p "$_MARKPATH"
     ln -s "$(pwd)" "$_MARKPATH/$1" || return 1
 }
