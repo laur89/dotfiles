@@ -1,2 +1,2 @@
-event=jack/*
+event=jack/videoout
 action=/data/dev/scripts/system/video_plug_event.sh %e

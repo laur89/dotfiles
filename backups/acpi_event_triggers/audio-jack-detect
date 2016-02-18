@@ -1,2 +1,2 @@
-event=jack/*
+event=jack/headphone
 action=/data/dev/scripts/system/headphone_plug_event.sh %e

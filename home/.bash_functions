@@ -1899,22 +1899,18 @@ f() {
 # marks (jumps)                             ##
 # from: http://jeroenjanssens.com/2013/08/16/quickly-navigate-your-filesystem-from-the-command-line.html
 ##############################################
-_MARKPATH_LOC=.shell_jump_marks
+_MARKPATH_DIR=.shell_jump_marks
 
 if [[ "$EUID" -eq 0 ]]; then
-    for i in $(find /home -mindepth 2 -maxdepth 2 -type d -name $_MARKPATH_LOC); do
+    while IFS= read -r -d '' i; do
         _MARKPATH="$i"
         break  # break on first found dir
-    done
+    done <   <(find /home -mindepth 2 -maxdepth 2 -type d -name $_MARKPATH_DIR -print0)
     unset i
-
-    [[ -z "$_MARKPATH" ]] && _MARKPATH="$HOME/$_MARKPATH_LOC"
-else
-    _MARKPATH="$HOME/$_MARKPATH_LOC"
 fi
 
-export _MARKPATH
-unset _MARKPATH_LOC
+export _MARKPATH="${_MARKPATH:-$HOME/$_MARKPATH_DIR}"
+unset _MARKPATH_DIR
 
 function jj {
     cd -P "$_MARKPATH/$1" 2>/dev/null || err "no such mark: $1" "$FUNCNAME"
