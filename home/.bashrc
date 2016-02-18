@@ -230,5 +230,6 @@ shopt -s cdspell        # try to correct typos in path
 shopt -s dotglob        # include dotfiles in path expansion
 shopt -s hostcomplete   # try to autocomplete hostnames
 shopt -s huponexit      # send SIGHUP on when interactive login shell exits
+shopt -s globstar       # ** in pathname expansion will match all files and zero or more directories and subdirs
 
 unset MAILCHECK

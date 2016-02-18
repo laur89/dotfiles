@@ -62,6 +62,7 @@ set nocompatible " Must be the first line
 
     " Glorious colorscheme
     Plugin 'nanotech/jellybeans.vim'
+    "Plug 'mhinz/vim-janah'  " A dark colorscheme for Vim.
 
     " Super easy commenting, toggle comments etc
     Plugin 'scrooloose/nerdcommenter'
@@ -113,7 +114,7 @@ set nocompatible " Must be the first line
     Plugin 'xolox/vim-misc'
     Plugin 'xolox/vim-easytags' " alternative shoud be taginator?
     Plugin 'xolox/vim-session'
-    Plugin 'xolox/vim-notes'
+    Plugin 'xolox/vim-notes'  " alternative: http://orgmode.org/
 
     " Selfexplanatory...
     Plugin 'jlanzarotta/bufexplorer'
@@ -159,6 +160,9 @@ set nocompatible " Must be the first line
     " supertab: (only so YCM and UltiSnips could play along, otherwise don't need)
     " <Tab> everything!
     Plugin 'ervandew/supertab'
+
+    " basically here only so vim-puppet can auto-align rockets:
+    "Plugin 'godlygeek/tabular'
 
     " yankring: hold copy of yanked elements:
     " alternative: yankstack
@@ -760,8 +764,8 @@ set nocompatible " Must be the first line
         map <C-n> :NERDTreeToggle<CR>
         map <leader>r :NERDTreeFind<cr> " move to currently opened file in nerdtree
 
-        " Gundo toggle:
-        nnoremap <F5> :GundoToggle<CR>
+        " Gundo/Mundo toggle:
+        nnoremap <F5> :MundoToggle<CR>
 
         " vim-tmux-navigator:
         nnoremap <silent> <c-h> :TmuxNavigateLeft<cr>
