@@ -192,7 +192,7 @@ fi
 __check_and_compile_ssh_config() {
     local stored_md5sum ssh_config ssh_configdir modified current_md5sum
 
-    readonly stored_md5sum="$_PERSISTED_TMP/.last_known_ssh_md5sum"
+    readonly stored_md5sum="$_PERSISTED_TMP/.last_known_sshconfigdir_md5sum"
     readonly ssh_config="$HOME/.ssh/config"
     readonly ssh_configdir="$HOME/.ssh/config.d"  # dir holding the ssh config files that will be
                                                   # merged into a single $ssh_config

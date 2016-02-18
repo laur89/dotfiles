@@ -14,7 +14,7 @@
 #---   Configuration  ---
 #------------------------
 readonly TMPDIR="/tmp"
-readonly CLANG_LLVM_LOC="http://llvm.org/releases/3.7.0/clang+llvm-3.7.0-x86_64-linux-gnu-ubuntu-14.04.tar.xz"  # http://llvm.org/releases/download.html
+readonly CLANG_LLVM_LOC="http://llvm.org/releases/3.7.1/clang+llvm-3.7.1-x86_64-linux-gnu-ubuntu-15.10.tar.xz"  # http://llvm.org/releases/download.html
 readonly VIM_REPO_LOC="https://github.com/vim/vim.git"                # vim - yeah.
 readonly NVIM_REPO_LOC="https://github.com/neovim/neovim.git"         # nvim - yeah.
 readonly KEEPASS_REPO_LOC="https://github.com/keepassx/keepassx.git"  # keepassX - open password manager forked from keepass project
@@ -1103,6 +1103,23 @@ function install_progs() {
     #fi
 
     confirm "do you want to install our webdev lot?" && install_webdev
+    install_npm_modules
+}
+
+
+# system deps, which depend on npm & nodejs
+function install_npm_modules() {
+
+
+    if ! command -v nodejs >/dev/null || ! command -v npm >/dev/null; then
+        report "need to install npm & nodejs first..."
+        install_block '
+            nodejs
+            npm
+        ' || { err; return 1; }
+    fi
+
+    execute "sudo -H npm install -g ungit"  # https://github.com/FredrikNoren/ungit  (note the required -H)
 }
 
 
@@ -1302,7 +1319,7 @@ function install_webdev() {
     install_block '
         nodejs
         npm
-    '
+    ' || { err; return 1; }
 
     # TODO: create link for node? (there's a different package called 'node' for debian)
     if ! command -v node >/dev/null; then
