@@ -1891,6 +1891,7 @@ function install_from_repo() {
         acpid
         lm-sensors
         macchanger
+        ufw
     )
 
     readonly block2=(

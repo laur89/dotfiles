@@ -638,10 +638,10 @@ set nocompatible " Must be the first line
         "map <silent> < <C-w><
         map <silent> - <C-W>-
         map <silent> + <C-W>+
-        map <silent> <down>  <C-W>-
-        map <silent> <up>    <C-W>+
-        map <silent> <left>  <C-W><
-        map <silent> <right> <C-W>>
+        map <silent> <down>  3<C-W>-
+        map <silent> <up>    3<C-W>+
+        map <silent> <left>  3<C-W><
+        map <silent> <right> 3<C-W>>
         "map <silent> > <C-w>>
     endif
 
