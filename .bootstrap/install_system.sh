@@ -369,7 +369,7 @@ function install_nfs_server() {
     done
 
     # exports the shares:
-    execute 'sudo exportfs -ra'
+    execute 'sudo exportfs -ra' || err
 
     return 0
 }

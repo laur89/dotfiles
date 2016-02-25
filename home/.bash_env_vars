@@ -1,23 +1,15 @@
-# defines the env vars that should be included in each shell session.
+# defines the COMMON env vars that should be included in each shell session.
 #
 # !! might be used by root as well!
 #
-export JAVA_HOME=/usr/local/jdk_link
-export M2_HOME=/data/progs/maven/mvn_link
-export M2=$M2_HOME/bin
+# load local (ie non-ssh) system's vars:
+[[ -z "$PEARL_HOME" ]] && source .bash_env_vars_local
 
 command -v nvim > /dev/null 2>&1 && export EDITOR=nvim || export EDITOR=vim
 export VISUAL=geany  # gvim doesn't play well with some stuff, eg crontab -e
 export PAGER=less
 export BROWSER=/usr/bin/iceweasel
 export DEITY=
-# add additional locations to $PATH:
-export PATH=$PATH:$JAVA_HOME/bin:$M2:/data/dev/scripts/system:$HOME/bin
-# ruby env (rbenv):
-export PATH="$HOME/.rbenv/bin:$PATH"
-
-export CUSTOM_LOGDIR="/var/log/custom_logs"
-export PANEL_FIFO="/tmp/panel-fifo"  # for BSPWM
 
 # Colorize less (from http://unix.stackexchange.com/questions/119/colors-in-man-pages)
 # get color support for less:
@@ -45,42 +37,11 @@ export LESS_TERMCAP_ZW=$(tput rsupm)
 #export LESS_TERMCAP_ue=$(printf "\e[0m") \
 #export LESS_TERMCAP_us=$(printf "\e[1;32m")
 
-#export HGRCPATH="$HOME/.config/hg/hgrc"
-export PASSWORD_STORE_DIR="$HOME/.config/password-store"
-export GNUPGHOME="$HOME/.config/gnupg"
-
-# Update RC file locations for apps that don't support XDG:
-#export GTK2_RC_FILES="$HOME/.config/gtk-2.0/gtkrc"
-export GTK2_RC_FILES=$HOME/.gtkrc-2.0
-
-export XDG_CONFIG_HOME="/home/$USER/.config"
-export XDG_DATA_DIR="/home/$USER/.config"
-export XDG_CACHE_HOME="/home/$USER/.cache"
-export XDG_DOWNLOAD_DIR="/home/$USER/Downloads"
-
-#export POWERLINE_CONFIG_COMMAND="powerline-config"
-## /usr/local/bin/powerline-config
-export POWERLINE_NO_SHELL_PROMPT=NOPE.jpeg
-
-# hostnames
-export WORK_DESKTOP_HOSTNAME="WHOD5001556"
-export WORK_LAPTOP_HOSTNAME="WHOL5001981"
-export PERSONAL_DESKTOP_HOSTNAME="aliste"
-export PERSONAL_LAPTOP_HOSTNAME="8570w"
-
-# scripts' settings:
-# ###################
-export _SCRIPTS_COMMONS="/data/dev/scripts/system/utils.sh"
-export _DEF_CON_IF="/tmp/connected_default_if.dat"
-export _CON_IF="/tmp/connected_interfaces.dat"
-export _TRUSTED_CON_MARKER="/tmp/connected_trusted_NW.dat"
-
-export _MAX_STARTING_VOL_FOR_EARPHONES=90
 
 if [[ -d "/data/tmp" && -w "/data/tmp" ]]; then
     export _PERSISTED_TMP="/data/tmp"
 else
-    echo -e "bash_env_vars: preferred persisted tempdir at /data/tmp not found; defaulting to /tmp"
+    [[ -z "$PEARL_HOME" ]] && echo -e "bash_env_vars: preferred persisted tempdir at /data/tmp not found; defaulting to /tmp"
     export _PERSISTED_TMP="/tmp"
 fi
 

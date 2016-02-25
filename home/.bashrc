@@ -189,7 +189,7 @@ fi
 
 #compile .ssh/.config
 ##########################################
-__check_and_compile_ssh_config() {
+__check_for_change_and_compile_ssh_config() {
     local stored_md5sum ssh_config ssh_configdir modified current_md5sum
 
     readonly stored_md5sum="$_PERSISTED_TMP/.last_known_sshconfigdir_md5sum"
@@ -215,15 +215,19 @@ __check_and_compile_ssh_config() {
     return 0
 }
 
-( __check_and_compile_ssh_config )  # execute in subshell because of cd-ing
+( __check_for_change_and_compile_ssh_config )  # execute in subshell because of cd-ing
 ##########################################
 
 #override history size:
-HISTSIZE=-1
-HISTFILESIZE=-1
+export HISTSIZE=-1
+export HISTFILESIZE=-1
 
 # ignore dups:
 export HISTCONTROL=ignoredups
+#export HISTCONTROL=ignoreboth
+export HISTIGNORE='ls:bg:fg:history'  # ignore commands from history
+export HISTTIMEFORMAT='%F %T '
+export PROMPT_COMMAND='history -a'  # save comand to history immediately, not after the session terminates
 
 shopt -u mailwarn       # disable mail notification:
 shopt -s cdspell        # try to correct typos in path

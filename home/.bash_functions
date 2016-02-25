@@ -997,8 +997,6 @@ function histgrep() {
 
     [[ -z "$input" ]] && { err "command to look up from history required." "$FUNCNAME"; return 1; }
     history \
-        | grep -Ev -- "^\s+[0-9]+\s+${FUNCNAME}\s+" \
-        | cut -d ' ' -f3- \
         | grep -iE --color=auto -- "$input"
 }
 
