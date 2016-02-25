@@ -83,6 +83,9 @@ function ssh_pearl() {
         # the ssh-ing depth, as in how deep in ssh-sessions are we:
         export _SSH_PEARL_DEPTH_DASHES=${_SSH_PEARL_DEPTH_DASHES}-
 
+        # export it to var, so root could import our stuff as well (via sudo -E su   to pass env vars):
+        export zzz=\"eval VIMINIT=\\\"let \\\$MYVIMRC='\${PEARLSSH_HOME}/vimrc' | source \\\$MYVIMRC\\\" INPUTRC=\\\"\${PEARLSSH_HOME}/inputrc\\\" bash --rcfile \\\"\${PEARLSSH_HOME}/bashrc\\\" -i ${commands_opt};\"
+
         VIMINIT=\"let \\\$MYVIMRC='\${PEARLSSH_HOME}/vimrc' | source \\\$MYVIMRC\" INPUTRC=\"\${PEARLSSH_HOME}/inputrc\" bash --rcfile \"\${PEARLSSH_HOME}/bashrc\" -i ${commands_opt};
     "
 
