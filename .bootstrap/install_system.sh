@@ -790,7 +790,6 @@ function setup_global_env_vars() {
 
     readonly real_file_locations=(
         "$SHELL_ENVS"
-        "$HOME/.bash_env_vars_local"
     )
     readonly global_env_var_loc='/etc'  # so our env vars would have user-agnostic location as well;
                                         # that location will be used by various scripts.
