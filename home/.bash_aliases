@@ -57,6 +57,8 @@ alias vdiff="vimdiff"
 alias mkdir='mkdir -p'
 alias rmrf='rm -rf'
 alias psef='ps -ef'
+alias gosu='sudo -E su'
+
 #
 # hate the typos:
 alias mut="mutt"
