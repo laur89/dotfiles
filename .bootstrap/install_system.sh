@@ -786,19 +786,25 @@ function setup_homesick() {
 
 # creates symlink of our personal '.bash_env_vars' to /etc
 function setup_global_env_vars() {
-    local global_env_var_loc
+    local global_env_var_loc real_file_locations file filename
 
-    readonly global_env_var_loc='/etc/.bash_env_vars'  # so our env vars would have user-agnostic location as well;
-                                              # that location will be used by various scripts.
+    readonly real_file_locations=(
+        "$SHELL_ENVS"
+        "$HOME/.bash_env_vars_local"
+    )
+    readonly global_env_var_loc='/etc'  # so our env vars would have user-agnostic location as well;
+                                        # that location will be used by various scripts.
 
-    if ! [[ -e "$SHELL_ENVS" ]]; then
-        err "$SHELL_ENVS does not exist. can't link it to $global_env_var_loc"
-        return 1
-    fi
+    for file in "${real_file_locations[@]}"; do
+        if ! [[ -f "$file" ]]; then
+            err "$file does not exist. can't link it to ${global_env_var_loc}/"
+            return 1
+        fi
 
-    if ! [[ -h "$global_env_var_loc" ]]; then
-        execute "sudo ln -s $SHELL_ENVS $global_env_var_loc"
-    fi
+        filename="$(basename "$file")"
+        [[ -h "${global_env_var_loc}/$filename" ]] && execute "sudo rm ${global_env_var_loc}/$filename"
+        execute "sudo ln -s $file ${global_env_var_loc}/"
+    done
 
     # don't create; otherwise gobal_env_var will prevent loading env_var_overrides in our .bashrc!
     #if ! [[ -d "$(dirname $global_env_var)" ]]; then
