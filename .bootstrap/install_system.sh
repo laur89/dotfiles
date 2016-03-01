@@ -2316,7 +2316,7 @@ function install_nfs_server_or_client() {
 function confirm() {
     local msg yno
 
-    readonly msg=${1:+"\n$msg"}
+    readonly msg=${1:+"\n$1"}
 
     while true; do
         [[ -n "$msg" ]] && echo -e "$msg"
