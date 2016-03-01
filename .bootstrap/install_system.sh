@@ -1808,7 +1808,7 @@ function install_YCM() {
         . \
         ~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp \
     "
-    execute 'cmake --build . --target ycm_support_libs --config Release'
+    execute 'cmake --build . --target ycm_core --config Release'
     execute "popd"
 
     unset __fetch_libclang  # to keep the inner function really an inner one (ie private).
