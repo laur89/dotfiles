@@ -1752,11 +1752,12 @@ function build_and_install_vim() {
 
 function install_YCM() {
     # note: instructions & info here: https://github.com/Valloric/YouCompleteMe
-    local ycm_root  ycm_build_root  libclang_root
+    local ycm_root  ycm_build_root  libclang_root  ycm_third_party_rootdir
 
     readonly ycm_root="$BASE_BUILDS_DIR/YCM"
     readonly ycm_build_root="$ycm_root/ycm_build"
     readonly libclang_root="$ycm_root/llvm"
+    readonly ycm_third_party_rootdir="$HOME/.vim/bundle/YouCompleteMe/third_party/ycmd/third_party"
 
     function __fetch_libclang() {
         local tmpdir tarball dir
@@ -1801,6 +1802,7 @@ function install_YCM() {
     # clean previous builddir, if existing:
     [[ -d "$ycm_build_root" ]] && execute "sudo rm -rf -- $ycm_build_root"
 
+    # build:
     execute "mkdir $ycm_build_root"
     execute "pushd $ycm_build_root"
     execute "cmake -G 'Unix Makefiles' \
@@ -1810,6 +1812,19 @@ function install_YCM() {
     "
     execute 'cmake --build . --target ycm_core --config Release'
     execute "popd"
+
+    ############
+    # set up support for additional languages:
+    # C#:
+    execute "pushd $ycm_third_party_rootdir/OmniSharpServer"
+    execute "xbuild"
+    execute "popd"
+
+    # js:
+    execute "pushd $ycm_third_party_rootdir/tern"
+    execute "npm install --production"
+    execute "popd"
+
 
     unset __fetch_libclang  # to keep the inner function really an inner one (ie private).
 }
