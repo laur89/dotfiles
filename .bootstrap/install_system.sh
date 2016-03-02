@@ -2266,7 +2266,7 @@ function post_install_progs_setup() {
     install_acpi_events   # has to be after install_progs, so acpid is already insalled and events/ dir present;
     install_SSID_checker  # has to come after install_progs; otherwise NM wrapper dir won't be present
     execute "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
-    execute "mopidy local scan"
+    execute "mopidy local scan"  # update mopidy library
 }
 
 
