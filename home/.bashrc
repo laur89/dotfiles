@@ -112,6 +112,30 @@ fi
 # good source http://tldp.org/LDP/abs/html/sample-bashrc.html
 #
 #
+
+##########################################
+# shell opts:
+#override history size:
+export HISTSIZE=-1
+export HISTFILESIZE=-1
+
+# ignore dups:
+#export HISTCONTROL=ignoredups
+export HISTCONTROL=ignoreboth
+export HISTIGNORE='ls:bg:fg:history'  # ignore commands from history
+export HISTTIMEFORMAT='%F %T '
+export PROMPT_COMMAND='history -a'  # save comand to history immediately, not after the session terminates
+
+shopt -u mailwarn       # disable mail notification:
+shopt -s cdspell        # try to correct typos in path
+shopt -s dotglob        # include dotfiles in path expansion
+shopt -s hostcomplete   # try to autocomplete hostnames
+shopt -s huponexit      # send SIGHUP on when interactive login shell exits
+shopt -s globstar       # ** in pathname expansion will match all files and zero or more directories and subdirs
+
+unset MAILCHECK
+##########################################
+
 # source own functions and env vars:
 
 if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
@@ -179,8 +203,6 @@ command -v rbenv >/dev/null 2>/dev/null && eval "$(rbenv init -)"
 # git-flow-competion;....
 source "$HOME/.git-flow-completion/git-flow-completion.bash"
 
-# better create symlink to add to PATH:
-#source /data/progs/deps/pearl-ssh/lib/ssh_pearl.sh
 ##########################################
 if ! ssh-add -l > /dev/null 2>&1; then
     ssh-add
@@ -216,24 +238,3 @@ __check_for_change_and_compile_ssh_config() {
 }
 
 ( __check_for_change_and_compile_ssh_config )  # execute in subshell because of cd-ing
-##########################################
-
-#override history size:
-export HISTSIZE=-1
-export HISTFILESIZE=-1
-
-# ignore dups:
-#export HISTCONTROL=ignoredups
-export HISTCONTROL=ignoreboth
-export HISTIGNORE='ls:bg:fg:history'  # ignore commands from history
-export HISTTIMEFORMAT='%F %T '
-export PROMPT_COMMAND='history -a'  # save comand to history immediately, not after the session terminates
-
-shopt -u mailwarn       # disable mail notification:
-shopt -s cdspell        # try to correct typos in path
-shopt -s dotglob        # include dotfiles in path expansion
-shopt -s hostcomplete   # try to autocomplete hostnames
-shopt -s huponexit      # send SIGHUP on when interactive login shell exits
-shopt -s globstar       # ** in pathname expansion will match all files and zero or more directories and subdirs
-
-unset MAILCHECK
