@@ -83,14 +83,24 @@ function ssh_pearl() {
         # the ssh-ing depth, as in how deep in ssh-sessions are we:
         export _SSH_PEARL_DEPTH_DASHES=${_SSH_PEARL_DEPTH_DASHES}-
 
-        # export it to var, so root could import our stuff as well (via sudo -E su   to pass env vars):
-        export zzz=\"eval VIMINIT=\\\"let \\\$MYVIMRC='\${PEARLSSH_HOME}/vimrc' | source \\\$MYVIMRC\\\" INPUTRC=\\\"\${PEARLSSH_HOME}/inputrc\\\" bash --rcfile \\\"\${PEARLSSH_HOME}/bashrc\\\" -i ${commands_opt};\"
+        ## logic to provide going root with the same shell config:
+        if ! grep -q 'pearl-ssh local function additions.*overrides' \"\${PEARLSSH_HOME}/bashrc\"; then
+            echo -e \"# pearl-ssh local function additions/overrides:\\nunalias gosu >/dev/null 2>/dev/null\" >> \"\${PEARLSSH_HOME}/bashrc\"
+        fi
+
+        # delete previous gosu() definition:
+        sed -i '/^gosu().*VIMINIT.*bash/d' \"\${PEARLSSH_HOME}/bashrc\"
+        echo -e \"gosu() { VIMINIT=\\\"let \\\\\\\$MYVIMRC='\${PEARLSSH_HOME}/vimrc' | source \\\\\\\$MYVIMRC\\\" INPUTRC=\\\"\${PEARLSSH_HOME}/inputrc\\\" sudo -E bash --rcfile \\\"\${PEARLSSH_HOME}/bashrc\\\" -i ${commands_opt}; }\" >> \"\${PEARLSSH_HOME}/bashrc\"
 
         VIMINIT=\"let \\\$MYVIMRC='\${PEARLSSH_HOME}/vimrc' | source \\\$MYVIMRC\" INPUTRC=\"\${PEARLSSH_HOME}/inputrc\" bash --rcfile \"\${PEARLSSH_HOME}/bashrc\" -i ${commands_opt};
+
+
     "
 
     env TERM=xterm-color ssh -t "${ssh_opts[@]}" -- "$CMD"
 }
+    # see töötab kui tahta command var-i salvestada:
+    #rr="eval VIMINIT=\"let \\\$MYVIMRC='/tmp/pearl-GEUUz/vimrc' | source \\\$MYVIMRC\" INPUTRC=\"/tmp/pearl-GEUUz/inputrc\" bash --rcfile /tmp/pearl-GEUUz/bashrc -i ;"
 
 
 ssh_pearl "$@"
