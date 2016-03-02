@@ -1900,32 +1900,45 @@ f() {
 _MARKPATH_DIR=.shell_jump_marks
 
 if [[ "$EUID" -eq 0 ]]; then
-    while IFS= read -r -d '' i; do
-        _MARKPATH="$i"
-        break  # break on first found dir
-    done <   <(find /home -mindepth 2 -maxdepth 2 -type d -name $_MARKPATH_DIR -print0)
-    unset i
+    unset _MARKPATH  # otherwise we'll use the regular user defined _MARKPATH who changed into su
+    _MARKPATH="$(find /home -mindepth 2 -maxdepth 2 -type d -name $_MARKPATH_DIR -print0 -quit)"
 fi
 
 export _MARKPATH="${_MARKPATH:-$HOME/$_MARKPATH_DIR}"
 unset _MARKPATH_DIR
 
 function jj {
+    [[ -d "$_MARKPATH" ]] || { err "no marks saved in $_MARKPATH" "$FUNCNAME"; return 1; }
     cd -P "$_MARKPATH/$1" 2>/dev/null || err "no such mark: $1" "$FUNCNAME"
 }
 
 function jm {
+    local overwrite target
+
+    [[ "$1" == "-o" ]] && { overwrite=1; shift; }
+
     [[ $# -ne 1 ]] && { err "exactly one arg accepted" "$FUNCNAME"; return 1; }
     [[ -z "$1" ]] && { err "need to give a mark name to remove." "$FUNCNAME"; return 1; }
     mkdir -p "$_MARKPATH"
-    ln -s "$(pwd)" "$_MARKPATH/$1" || return 1
+    readonly target="$_MARKPATH/$1"
+    [[ "$overwrite" -eq 1 ]] && rm "$target" >/dev/null 2>/dev/null
+    [[ -e "$target" ]] && { err "$target already exists; use jmo or jm -o to overwrite." "$FUNCNAME"; return 1; }
+
+    ln -s "$(pwd)" "$target" || return 1
+}
+
+# mnemonic: jm overvrite
+function jmo {
+    jm -o "$@"
 }
 
 function jum {
+    [[ -d "$_MARKPATH" ]] || { err "no marks saved in $_MARKPATH" "$FUNCNAME"; return 1; }
     rm -i "$_MARKPATH/$1"
 }
 
 function jjj {
+    [[ -d "$_MARKPATH" ]] || { err "no marks saved in $_MARKPATH" "$FUNCNAME"; return 1; }
     ls -l "$_MARKPATH" | sed 's/  / /g' | cut -d' ' -f9- | sed 's/ -/\t-/g' && echo
 }
 
