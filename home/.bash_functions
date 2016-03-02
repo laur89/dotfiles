@@ -1917,11 +1917,10 @@ function jm {
 
     [[ "$1" == "-o" ]] && { readonly overwrite=1; shift; }
 
-    [[ $# -ne 1 ]] && { err "exactly one arg accepted" "$FUNCNAME"; return 1; }
-    [[ -z "$1" ]] && { err "need to give a mark name to remove." "$FUNCNAME"; return 1; }
+    [[ $# -ne 1 || -z "$1" ]] && { err "exactly one arg accepted" "$FUNCNAME"; return 1; }
     mkdir -p "$_MARKPATH"
     readonly target="$_MARKPATH/$1"
-    [[ "$overwrite" -eq 1 ]] && rm "$target" >/dev/null 2>/dev/null
+    [[ "$overwrite" -eq 1 && -e "$target" ]] && rm "$target" >/dev/null 2>/dev/null
     [[ -e "$target" ]] && { err "$target already exists; use jmo or jm -o to overwrite." "$FUNCNAME"; return 1; }
 
     ln -s "$(pwd)" "$target" || return 1
