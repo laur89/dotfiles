@@ -1899,11 +1899,11 @@ f() {
 ##############################################
 _MARKPATH_DIR=.shell_jump_marks
 
+unset _MARKPATH  # otherwise we'll use the regular user defined _MARKPATH who changed into su
 if [[ "$EUID" -eq 0 ]]; then
     _MARKPATH="$(find /home -mindepth 2 -maxdepth 2 -type d -name $_MARKPATH_DIR -print0 -quit)"
 fi
 
-unset _MARKPATH  # otherwise we'll use the regular user defined _MARKPATH who changed into su
 export _MARKPATH="${_MARKPATH:-$HOME/$_MARKPATH_DIR}"
 unset _MARKPATH_DIR
 
