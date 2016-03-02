@@ -1915,7 +1915,7 @@ function jj {
 function jm {
     local overwrite target
 
-    [[ "$1" == "-o" ]] && { overwrite=1; shift; }
+    [[ "$1" == "-o" ]] && { readonly overwrite=1; shift; }
 
     [[ $# -ne 1 ]] && { err "exactly one arg accepted" "$FUNCNAME"; return 1; }
     [[ -z "$1" ]] && { err "need to give a mark name to remove." "$FUNCNAME"; return 1; }
