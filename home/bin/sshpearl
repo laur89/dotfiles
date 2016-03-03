@@ -88,7 +88,7 @@ function ssh_pearl() {
             echo -e \"# pearl-ssh local function additions/overrides:\\nunalias gosu >/dev/null 2>/dev/null\" >> \"\${PEARLSSH_HOME}/bashrc\"
         fi
 
-        # delete previous gosu() definition:
+        # delete previous gosu() alias definition:
         sed -i '/^gosu().*VIMINIT.*bash/d' \"\${PEARLSSH_HOME}/bashrc\"
         echo -e \"gosu() { VIMINIT=\\\"let \\\\\\\$MYVIMRC='\${PEARLSSH_HOME}/vimrc' | source \\\\\\\$MYVIMRC\\\" INPUTRC=\\\"\${PEARLSSH_HOME}/inputrc\\\" sudo -E bash --rcfile \\\"\${PEARLSSH_HOME}/bashrc\\\" -i ${commands_opt}; }\" >> \"\${PEARLSSH_HOME}/bashrc\"
 

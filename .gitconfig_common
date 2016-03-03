@@ -67,6 +67,7 @@
     stash-pick = stash --patch
     show-stashed = stash show -p stash@{0}
     stashed-show = stash show -p stash@{0}
+    stashdrop = !git stash && git stash drop
 
     new-branch = checkout -b
     branch-new = checkout -b
