@@ -68,6 +68,7 @@
     show-stashed = stash show -p stash@{0}
     stashed-show = stash show -p stash@{0}
     stashdrop = !git stash && git stash drop
+    keepstaged = !git stash save --keep-index
 
     new-branch = checkout -b
     branch-new = checkout -b
