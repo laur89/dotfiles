@@ -1093,6 +1093,11 @@ function install_laptop_deps() {
 function install_progs() {
 
     execute "sudo apt-get --yes update"
+
+    #confirm "do you want to install our webdev lot?" && install_webdev
+    install_webdev
+    install_npm_modules
+
     install_from_repo
     install_laptop_deps
     install_own_builds
@@ -1106,9 +1111,6 @@ function install_progs() {
         #install_altiris
         #install_symantec_endpoint_security
     #fi
-
-    confirm "do you want to install our webdev lot?" && install_webdev
-    install_npm_modules
 }
 
 
@@ -1124,7 +1126,7 @@ function install_npm_modules() {
         ' || { err; return 1; }
     fi
 
-    execute "sudo -H npm install -g ungit"  # https://github.com/FredrikNoren/ungit  (note the required -H)
+    execute "sudo -H npm install -g ungit"  # https://github.com/FredrikNoren/ungit  (note the required -H for ungit)
 }
 
 
