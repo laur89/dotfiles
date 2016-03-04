@@ -48,6 +48,7 @@ if [[ -z "$PEARL_HOME" ]]; then
     export _SCRIPTS_COMMONS="/data/dev/scripts/system/utils.sh"
     export _DEF_CON_IF="/tmp/connected_default_if.dat"
     export _CON_IF="/tmp/connected_interfaces.dat"
+    export _WIRELESS_IF="/tmp/wireless_interfaces.dat"
     export _TRUSTED_CON_MARKER="/tmp/connected_trusted_NW.dat"
 
     export _MAX_STARTING_VOL_FOR_EARPHONES=90

@@ -121,7 +121,7 @@ if is_laptop; then
             echo "TODO"
         fi
 
-        setxkbmap ee & # otherwise using server's keyboard defaults to us map;
+        setxkbmap ee &  # otherwise using server's keyboard defaults to us map;
     fi
 else    # is NOT laptop, assuming desktop
     if ! is_proc_running synergys; then

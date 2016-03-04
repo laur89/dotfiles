@@ -3,17 +3,6 @@
 # and will in turn execute $session_startfile
 
 # ==============================
-# env vars import has to be the first thing:
-if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
-    _global_env_var_loc='/etc/.bash_env_vars'
-
-    if [[ -r "$_global_env_var_loc" ]]; then
-        source "$_global_env_var_loc"
-    else
-        echo -e "\nError: env vars file \"$_global_env_var_loc\" not found! Abort."
-        exit 1
-    fi
-fi
 ####
 # import common:
 if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
@@ -47,7 +36,7 @@ fi
 #python3 $HOME/.dwm/bars/py_bar.py &
 # dzen2 setup:
 $HOME/.dwm/bars/w0ng_bash/dwm_statusbar &
-__bar_pid=$!
+#__bar_pid=$!
 disown
 
 # spoof window manager, so java apps would recognize it:

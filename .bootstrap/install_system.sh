@@ -1956,6 +1956,7 @@ function install_from_repo() {
         gtk2-engines-pixbuf
         meld
         gthumb
+        pastebinit
     )
 
 
