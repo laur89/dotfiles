@@ -1466,7 +1466,7 @@ function mkgit() {
 ## Open file inside git tree on vim ##
 ######################################
 gito() {
-    local DMENU match gitdir count cwd dmenurc editor nr_of_dmenu_vertical_lines
+    local DMENU match git_root count cwd dmenurc editor nr_of_dmenu_vertical_lines
 
     cwd="$PWD"
     dmenurc="$HOME/.dmenurc"
@@ -1481,17 +1481,17 @@ gito() {
 
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
-    gitdir="$(git rev-parse --show-toplevel)"
-    [[ "$cwd" != "$gitdir" ]] && pushd "$gitdir" &> /dev/null  # git root
+    git_root="$(git rev-parse --show-toplevel)"
+    [[ "$cwd" != "$git_root" ]] && pushd "$git_root" &> /dev/null  # git root
 
     if [[ -n "$@" ]]; then
         if [[ "$@" == *\** && "$@" != *\.\** ]]; then
             err 'use .* as wildcards, not a single *' "$FUNCNAME"
-            [[ "$cwd" != "$gitdir" ]] && popd &> /dev/null # go back
+            [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
             return 1
         elif [[ "$(echo "$@" | tr -dc '.' | wc -m)" -lt "$(echo "$@" | tr -dc '*' | wc -m)" ]]; then
             err "nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
-            [[ "$cwd" != "$gitdir" ]] && popd &> /dev/null # go back
+            [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
             return 1
         fi
 
@@ -1500,7 +1500,7 @@ gito() {
         match="$(git ls-files)"
     fi
 
-    [[ "$cwd" != "$gitdir" ]] && popd &> /dev/null # go back
+    [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
 
     count="$(echo "$match" | wc -l)"
 
@@ -1508,7 +1508,7 @@ gito() {
         report "found $count items" "$FUNCNAME"
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            if [[ "$count" -le 30 ]]; then
+            if [[ "$count" -le 200 ]]; then
                 select_items "$match" 1
                 match="$__SELECTED_ITEMS"
             else
@@ -1523,7 +1523,7 @@ gito() {
 
     #[[ $(echo "$match" | wc -l) -gt 1 ]] && match="$(echo "$match" | bemenu -i -l 20 -p "$editor")"
     [[ -z "$match" ]] && return 1
-    match="$gitdir/$match"  # convert to absolute
+    match="$git_root/$match"  # convert to absolute
     [[ -f "$match" ]] || { err "\"$match\" is not a regular file." "$FUNCNAME"; return 1; }
 
     $editor -- "$match"
@@ -1640,7 +1640,7 @@ fo() {
         report "found $count items" "$FUNCNAME"
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            if [[ "$count" -le 30 ]]; then
+            if [[ "$count" -le 200 ]]; then
                 select_items "$match" $single_selection
                 match=( $__SELECTED_ITEMS )
             else
@@ -1867,7 +1867,7 @@ g() {
         return 1
     elif [[ "$count" -gt 1 ]]; then
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            if [[ "$count" -le 30 ]]; then
+            if [[ "$count" -le 200 ]]; then
                 select_items "$matches" 1
                 matches="$__SELECTED_ITEMS"
             else
