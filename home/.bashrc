@@ -149,7 +149,6 @@ if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
         fi
     done
 
-    # TODO: this sourcing is not working atm:
     if [[ -d "$HOME/.bash_env_vars_overrides" ]]; then
         for i in $HOME/.bash_env_vars_overrides/*; do
             [[ -f "$i" ]] && source "$i"
@@ -168,11 +167,19 @@ esac
 
 if ! type __BASH_FUNS_LOADED_MARKER > /dev/null 2>&1; then
     [[ -r "$HOME/.bash_functions" ]] && source "$HOME/.bash_functions"
+
+    if [[ -d "$HOME/.bash_funs_overrides" ]]; then
+        for i in $HOME/.bash_funs_overrides/*; do
+            [[ -f "$i" ]] && source "$i"
+        done
+
+        unset i
+    fi
 fi
 
 # source homeshick:
-source "$HOME/.homesick/repos/homeshick/homeshick.sh"
-source "$HOME/.homesick/repos/homeshick/completions/homeshick-completion.bash"
+[[ -e "$HOME/.homesick/repos/homeshick" ]] && source "$HOME/.homesick/repos/homeshick/homeshick.sh"
+[[ -e "$HOME/.homesick/repos/homeshick" ]] && source "$HOME/.homesick/repos/homeshick/completions/homeshick-completion.bash"
 
 # bash-git-prompt conf:
 # see provide'ib promptile git repo info; override'ib üleval defineeritud PS1 (põmst sama asjaga kui olen ümber modinud)
@@ -186,7 +193,7 @@ GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274
 # prompt without the bash-git-promt would be:
 #   PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
 #source /data/progs/deps/bash-git-prompt/gitprompt.sh
-source "$HOME/.bash-git-prompt/gitprompt.sh"
+[[ -e "$HOME/.bash-git-prompt/gitprompt.sh" ]] && source "$HOME/.bash-git-prompt/gitprompt.sh"
 #
 # ...or powerline:
 #pwrLineLoc=/usr/local/lib/python2.7/dist-packages/powerline/bindings/bash/powerline.sh
@@ -201,7 +208,7 @@ command -v rbenv >/dev/null 2>/dev/null && eval "$(rbenv init -)"
 
 ##########################################
 # git-flow-competion;....
-source "$HOME/.git-flow-completion/git-flow-completion.bash"
+[[ -e "$HOME/.git-flow-completion" ]] && source "$HOME/.git-flow-completion/git-flow-completion.bash"
 
 ##########################################
 if ! ssh-add -l > /dev/null 2>&1; then
