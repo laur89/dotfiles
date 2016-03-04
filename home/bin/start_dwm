@@ -3,7 +3,6 @@
 # and will in turn execute $session_startfile
 
 # ==============================
-####
 # import common:
 if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
     if [[ -r "$_SCRIPTS_COMMONS" ]]; then
