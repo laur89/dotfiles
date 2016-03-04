@@ -24,6 +24,7 @@ fi
 function ffind() {
     local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter exact binary follow_links
     local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter skip_msgs
+    local quitFlag
 
     [[ "$1" == --_skip_msgs ]] && { skip_msgs=1; shift; }  # skip showing informative messages, as the result will be directly piped to other processes;
     defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
@@ -40,6 +41,7 @@ function ffind() {
         -l  search for symbolic links
         -b  search for executable binaries
         -L  follow symlinks
+        -q  provide find the -quit flag (exit on first found item)
         -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;
         -e  search for exact filename, not for a partial (you still can use * wildcards)
         -p  expand the pattern search for path as well (adds the -path option)"
@@ -47,7 +49,7 @@ function ffind() {
     filetypeOptionCounter=0
     caseOptCounter=0
 
-    while getopts "m:isrefdlbLph" opt; do
+    while getopts "m:isrefdlbLqph" opt; do
         case "$opt" in
            i) INAME_ARG="-iname"
               caseOptCounter+=1
@@ -83,6 +85,9 @@ function ffind() {
                 ;;
            h) echo -e "$usage"
               return 0
+                ;;
+           q) quitFlag="-quit"
+              shift $((OPTIND-1))
                 ;;
            *) echo -e "$usage"; return 1 ;;
         esac
@@ -186,9 +191,9 @@ function ffind() {
     #find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' | grep -i --color=auto "$SRC" 2>/dev/null
     if [[ "$exact" -eq 1 ]]; then # no regex with exact; they are excluded.
         if [[ "$binary" -eq 1 ]]; then
-            find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" "$SRC" -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
+            find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" "$SRC" -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
         else
-            find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" "$SRC" 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
+            find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" "$SRC" -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
         fi
     else # partial filename match, ie add * padding
         if [[ "$regex" -eq 1 ]]; then  # using regex, need to change the * padding around $SRC
@@ -200,17 +205,17 @@ function ffind() {
                 err "executalbe binary file search in regex currently unimplemented" "$FUNCNAME"
                 return 1
                 # this doesn't work atm:
-                eval find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '.*'"$SRC"'.*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
+                eval find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '.*'"$SRC"'.*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             else
                 report "!!! running with eval, be careful !!!" "$FUNCNAME"
                 sleep 2
-                eval find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '.*'"$SRC"'.*' 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
+                eval find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '.*'"$SRC"'.*' -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             fi
         else  # no regex
             if [[ "$binary" -eq 1 ]]; then
-                find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
+                find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             else
-                find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
+                find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             fi
         fi
     fi
@@ -1275,8 +1280,13 @@ clock() {
 }
 
 xmlformat() {
+    local file
+
     [[ -z "$@" ]] && { echo -e "usage:   $FUNCNAME  <filename>"; return 1; }
-    [[ -f "$@" && -r "$@" ]] || { err "provided file \"$*\" is not a regular file or is not readable. abort." "$FUNCNAME"; return 1; }
+    for file in "$@"; do
+        [[ -f "$file" && -r "$file" ]] || { err "provided file \"$file\" is not a regular file or is not readable. abort." "$FUNCNAME"; return 1; }
+    done
+
     check_progs_installed xmllint "$EDITOR" || return 1;
     xmllint --format "$@" | "$EDITOR"  "+set foldlevel=99" -;
 }
@@ -1598,7 +1608,7 @@ fog() {
 # mnemonic: file open
 fo() {
     local DMENU match count filetype dmenurc editor image_viewer video_player file_mngr
-    local pdf_viewer nr_of_dmenu_vertical_lines special_mode special_modes
+    local pdf_viewer nr_of_dmenu_vertical_lines special_mode special_modes single_selection
 
     dmenurc="$HOME/.dmenurc"
     nr_of_dmenu_vertical_lines=20
@@ -1622,23 +1632,25 @@ fo() {
     match="$(ffind --_skip_msgs "$@")" || return 1
     count="$(echo "$match" | wc -l)"
 
+    [[ "$special_mode" == --goto ]] && single_selection=1
+
     if [[ "$count" -gt 1 && "$special_mode" != "--openall" ]]; then
         report "found $count items" "$FUNCNAME"
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
             if [[ "$count" -le 20 ]]; then
-                select_items "$match" 1
-                match="$__SELECTED_ITEMS"
+                select_items "$match" $single_selection
+                match=( $__SELECTED_ITEMS )
             else
                 report "no way of using dmenu over ssh; these are the found files:\n" "$FUNCNAME"
                 echo -e "$match"
                 return 0
             fi
         else
-            match="$(echo "$match" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)"
+            match=( $(echo "$match" | $DMENU -l $nr_of_dmenu_vertical_lines -p open) )
         fi
     fi
-    [[ -z "$match" ]] && return 1
+    [[ -z "${match[*]}" ]] && return 1
     # /filesearch
 
     # parse special modes, if any:
@@ -1656,58 +1668,113 @@ fo() {
         return
     fi
 
-    report "opening \"$match\"" "$FUNCNAME"
-    # note that test will resolve links to files and dirs as well;
-    # TODO: instead of file, use xdg-open?
-    if [[ -f "$match" ]]; then
-        filetype="$(file -iLb -- "$match")" || { err "issues testing \"$match\" with \$file"; return 1; }
 
-        case "$filetype" in
-            image/*)
-                "$image_viewer" "$match"
-                ;;
-            application/octet-stream*)
-                # should be the logs on server
-                "$PAGER" "$match"
-                ;;
-            application/xml*)
-                if [[ "$(wc -l < "$match")" -gt 2 ]]; then
-                    # assuming it's already formatted:
-                    "$editor" "$match"
-                else
-                    xmlformat "$match"
-                fi
-                ;;
-            video/*)
-                "$video_player" "$match"
-                ;;
-            text/*)
-                "$editor" "$match"
-                ;;
-            application/pdf*)
-                "$pdf_viewer" "$match"
-                ;;
-            application/x-elc*) # TODO: what is it exactly?
-                "$editor" "$match"
-                ;;
-            'application/x-executable; charset=binary'*)
-                confirm "$match is executable. want to launch it from here?" || return
-                report "launching ${match}..." "$FUNCNAME"
-                "$match"
-                ;;
-            #'inode/directory;'*)
-                #"$file_mngr" "$match"
-            *)
-                err "dunno what to open this type of file with:\n\t$filetype" "$FUNCNAME"
-                return 1
-                ;;
-        esac
-    elif [[ -d "$match" ]]; then
-        "$file_mngr" "$match"
-    else
-        err "\"$match\" isn't either regular file nor a dir." "$FUNCNAME"
-        return 1
-    fi
+    count="${#match[@]}"
+    # define filetype only by the first node:
+    filetype="$(file -iLb -- "${match[0]}")" || { err "issues testing \"${match[0]}\" with \$file"; return 1; }
+
+    report "opening \"${match[*]}\"" "$FUNCNAME"
+
+    case "$filetype" in
+        image/*)
+            "$image_viewer" "${match[@]}"
+            ;;
+        application/octet-stream*)
+            # should be the logs on server
+            "$PAGER" "${match[@]}"
+            ;;
+        application/xml*)
+            [[ "$count" -gt 1 ]] && { report "won't format multiple xml files! will just open them"; sleep 1.5; }
+            if [[ "$(wc -l < "${match[0]}")" -gt 2 || "$count" -gt 1 ]]; then
+                # assuming it's already formatted:
+                "$editor" "${match[@]}"
+            else
+                xmlformat "${match[@]}"
+            fi
+            ;;
+        video/*)
+            "$video_player" "${match[@]}"
+            ;;
+        text/*)
+            "$editor" "${match[@]}"
+            ;;
+        application/pdf*)
+            "$pdf_viewer" "${match[@]}"
+            ;;
+        application/x-elc*) # TODO: what is it exactly?
+            "$editor" "${match[@]}"
+            ;;
+        'application/x-executable; charset=binary'*)
+            [[ "$count" -gt 1 ]] && { report "won't execute multiple files! select one please"; return 1; }
+            confirm "${match[*]} is executable. want to launch it from here?" || return
+            report "launching ${match[0]}..." "$FUNCNAME"
+            ${match[0]}
+            ;;
+        'inode/directory;'*)
+            [[ "$count" -gt 1 ]] && { report "won't navigate to multiple dirs! select one please"; return 1; }
+            "$file_mngr" "${match[0]}"
+            ;;
+        *)
+            err "dunno what to open this type of file with:\n\t$filetype" "$FUNCNAME"
+            return 1
+            ;;
+    esac
+
+
+
+    ## TODO: old, safer verions where only one file was opened at a time:
+    ##
+    ## note that test will resolve links to files and dirs as well;
+    ## TODO: instead of file, use xdg-open?
+    #if [[ -f "$match" ]]; then
+        #filetype="$(file -iLb -- "$match")" || { err "issues testing \"$match\" with \$file"; return 1; }
+
+        #case "$filetype" in
+            #image/*)
+                #"$image_viewer" "$match"
+                #;;
+            #application/octet-stream*)
+                ## should be the logs on server
+                #"$PAGER" "$match"
+                #;;
+            #application/xml*)
+                #if [[ "$(wc -l < "$match")" -gt 2 ]]; then
+                    ## assuming it's already formatted:
+                    #"$editor" "$match"
+                #else
+                    #xmlformat "$match"
+                #fi
+                #;;
+            #video/*)
+                #"$video_player" "$match"
+                #;;
+            #text/*)
+                #"$editor" "$match"
+                #;;
+            #application/pdf*)
+                #"$pdf_viewer" "$match"
+                #;;
+            #application/x-elc*) # TODO: what is it exactly?
+                #"$editor" "$match"
+                #;;
+            #'application/x-executable; charset=binary'*)
+                #confirm "$match is executable. want to launch it from here?" || return
+                #report "launching ${match}..." "$FUNCNAME"
+                #"$match"
+                #;;
+            ##'inode/directory;'*)
+                ##"$file_mngr" "$match"
+            #*)
+                #err "dunno what to open this type of file with:\n\t$filetype" "$FUNCNAME"
+                #return 1
+                #;;
+        #esac
+    #elif [[ -d "$match" ]]; then
+        #"$file_mngr" "$match"
+    #else
+        #err "\"$match\" isn't either regular file nor a dir." "$FUNCNAME"
+        #return 1
+    #fi
 }
 
 function sethometime() { setestoniatime; }  # home is where you make it;
