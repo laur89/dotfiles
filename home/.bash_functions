@@ -84,12 +84,14 @@ function ffind() {
               shift $((OPTIND-1))
                 ;;
            h) echo -e "$usage"
-              return 0
+              [[ "$skip_msgs" -eq 1 ]] && return 9 || return 0
                 ;;
            q) quitFlag="-quit"
               shift $((OPTIND-1))
                 ;;
-           *) echo -e "$usage"; return 1 ;;
+           *) echo -e "$usage"
+              [[ "$skip_msgs" -eq 1 ]] && return 9 || return 1
+                ;;
         esac
     done
 
@@ -1506,7 +1508,7 @@ gito() {
         report "found $count items" "$FUNCNAME"
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            if [[ "$count" -le 20 ]]; then
+            if [[ "$count" -le 30 ]]; then
                 select_items "$match" 1
                 match="$__SELECTED_ITEMS"
             else
@@ -1638,7 +1640,7 @@ fo() {
         report "found $count items" "$FUNCNAME"
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            if [[ "$count" -le 20 ]]; then
+            if [[ "$count" -le 30 ]]; then
                 select_items "$match" $single_selection
                 match=( $__SELECTED_ITEMS )
             else
@@ -1865,7 +1867,7 @@ g() {
         return 1
     elif [[ "$count" -gt 1 ]]; then
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            if [[ "$count" -le 20 ]]; then
+            if [[ "$count" -le 30 ]]; then
                 select_items "$matches" 1
                 matches="$__SELECTED_ITEMS"
             else
