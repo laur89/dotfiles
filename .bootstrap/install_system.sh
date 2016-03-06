@@ -2036,7 +2036,7 @@ function install_from_repo() {
         execute "sudo apt-get --yes update"
         install_block "$(eval echo "\${$block[@]}")" "${extra_apt_params[$block]}"
         if [[ "$?" -ne 0 && "$?" -ne "$SOME_PACKAGE_IGNORED_EXIT_CODE" ]]; then
-            err "one of the main-block installation failed. fix this before rerunning."
+            err "one of the main-block installation failed. fix this before re-running."
             exit 1
         fi
     done
