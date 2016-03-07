@@ -1578,7 +1578,7 @@ function install_neovim() {
     else
         report "building neovim..."
 
-        report "installing neovim build dependencies..."
+        report "installing neovim build dependencies..."  # https://github.com/neovim/neovim/wiki/Building-Neovim#build-prerequisites
         install_block '
             libtool
             libtool-bin
@@ -1588,6 +1588,9 @@ function install_neovim() {
             g\+\+
             pkg-config
             unzip
+            libmsgpack-dev
+            libuv-dev
+            libluajit-5.1-dev
         ' || { err 'failed to install neovim build deps. abort.'; return 1; }
 
         execute "git clone $NVIM_REPO_LOC $tmpdir" || return 1

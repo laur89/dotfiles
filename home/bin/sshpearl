@@ -79,7 +79,7 @@ function ssh_pearl() {
         chmod -R +x \"\$PEARLSSH_BIN\";
         export PATH=\$PATH:\$PEARLSSH_BIN;
 
-        # increments the number of dashes to be ued in PS1 env var to indicate
+        # increments the number of dashes to be used in PS1 env var to indicate
         # the ssh-ing depth, as in how deep in ssh-sessions are we:
         export _SSH_PEARL_DEPTH_DASHES=${_SSH_PEARL_DEPTH_DASHES}-
 
@@ -88,8 +88,8 @@ function ssh_pearl() {
             echo -e \"# pearl-ssh local function additions/overrides:\\nunalias gosu >/dev/null 2>/dev/null\" >> \"\${PEARLSSH_HOME}/bashrc\"
         fi
 
-        # delete previous gosu() alias definition:
-        sed -i '/^gosu().*VIMINIT.*bash/d' \"\${PEARLSSH_HOME}/bashrc\"
+        # delete previous (as in the one inherited from the previous ssh session) gosu() function definition:
+        sed -i '/^gosu().*VIMINIT.*INPUTRC.*bash/d' \"\${PEARLSSH_HOME}/bashrc\"
         echo -e \"gosu() { VIMINIT=\\\"let \\\\\\\$MYVIMRC='\${PEARLSSH_HOME}/vimrc' | source \\\\\\\$MYVIMRC\\\" INPUTRC=\\\"\${PEARLSSH_HOME}/inputrc\\\" sudo -E bash --rcfile \\\"\${PEARLSSH_HOME}/bashrc\\\" -i ${commands_opt}; }\" >> \"\${PEARLSSH_HOME}/bashrc\"
 
         # entry:
