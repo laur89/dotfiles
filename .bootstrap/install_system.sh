@@ -2028,6 +2028,7 @@ function install_from_repo() {
         cowsay
         toilet
         lolcat
+        figlet
     )
 
     for block in \
