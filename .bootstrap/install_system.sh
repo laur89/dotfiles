@@ -1969,6 +1969,7 @@ function install_from_repo() {
         iceweasel
         icedove
         rxvt-unicode-256color
+        guake
         mopidy
         mopidy-soundcloud
         mopidy-spotify
@@ -2270,6 +2271,7 @@ function post_install_progs_setup() {
     install_SSID_checker  # has to come after install_progs; otherwise NM wrapper dir won't be present
     execute "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
     execute "mopidy local scan"  # update mopidy library
+    execute "sudo sensors-detect"  # answer enter for default values
 }
 
 
