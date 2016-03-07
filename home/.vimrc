@@ -575,6 +575,9 @@ set nocompatible " Must be the first line
         " Go to the middle of the line:
         map gm :call cursor(0, virtcol('$')/2)<CR>
 
+        " execute current line in shell and replace it with output from the command:
+        noremap Q !!$SHELL<CR>
+
     """ }}}
 
     """ Window movement/management {{{
