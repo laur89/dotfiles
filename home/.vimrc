@@ -572,8 +572,8 @@ set nocompatible " Must be the first line
         " avoid typos:
         nnoremap ; :
 
-        " Go to the middle of the line TODO: doesnt work
-        nmap gm :exe 'normal '.(virtcol('$')/2).'\\|'<CR>
+        " Go to the middle of the line:
+        map gm :call cursor(0, virtcol('$')/2)<CR>
 
     """ }}}
 
