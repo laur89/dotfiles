@@ -1004,6 +1004,7 @@ function histgrep() {
 
     [[ -z "$input" ]] && { err "command to look up from history required." "$FUNCNAME"; return 1; }
     history \
+        | grep -v " $FUNCNAME " \
         | grep -iE --color=auto -- "$input"
 }
 
