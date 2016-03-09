@@ -578,17 +578,24 @@ function install_deps() {
 
     # bash-git-prompt:
     clone_or_pull_repo "magicmonty" "bash-git-prompt" "$BASE_DEPS_LOC"
+    create_link "${BASE_DEPS_LOC}/bash-git-prompt" "$HOME/.bash-git-prompt"
 
     # git-flow-completion:
     clone_or_pull_repo "bobthecow" "git-flow-completion" "$BASE_DEPS_LOC"
+    create_link "${BASE_DEPS_LOC}/git-flow-completion" "$HOME/.git-flow-completion"
 
     # bars (as in bar-charts) in shell:
     clone_or_pull_repo "holman" "spark" "$BASE_DEPS_LOC"  # https://github.com/holman/spark
+    create_link "${BASE_DEPS_LOC}/spark/spark" "$HOME/bin/spark"
 
     # imgur screenshooter-uploader:
     clone_or_pull_repo "jomo" "imgur-screenshot" "$BASE_DEPS_LOC"  # https://github.com/jomo/imgur-screenshot.git
+    create_link "${BASE_DEPS_LOC}/imgur-screenshot/imgur-screenshot.sh" "$HOME/bin/imgur-screenshot"
 
-    # pearl-ssh perhaps?
+    # fuzzy file finder/command completer etc:
+    clone_or_pull_repo "junegunn" "fzf" "$BASE_DEPS_LOC"  # https://github.com/junegunn/fzf
+    create_link "${BASE_DEPS_LOC}/fzf" "$HOME/.fzf"
+    execute "$HOME/.fzf/install" || err "could not install fzf"
 
     # tmux plugin manager:
     _install_tmux_deps
@@ -614,6 +621,7 @@ function install_deps() {
     if is_laptop; then
         # batt output (requires spark):
         clone_or_pull_repo "Goles" "Battery" "$BASE_DEPS_LOC"  # https://github.com/Goles/Battery
+        create_link "${BASE_DEPS_LOC}/Battery/battery" "$HOME/bin/battery"
     fi
 
     unset _install_tmux_deps
@@ -664,9 +672,7 @@ function install_homesick() {
     clone_or_pull_repo "andsens" "homeshick" "$BASE_HOMESICK_REPOS_LOC"
 
     # add the link, since homeshick is not installed in its default location (which is $HOME):
-    if ! [[ -h "$HOME/.homesick" ]]; then
-        execute "ln -s $BASE_DEPS_LOC/homesick $HOME/.homesick"
-    fi
+    create_link "$BASE_DEPS_LOC/homesick" "$HOME/.homesick"
 }
 
 
@@ -2602,6 +2608,19 @@ function is_git() {
     fi
 
     return 1
+}
+
+
+function create_link() {
+    local src target
+
+    readonly src="$1"
+    readonly target="$2"
+
+    [[ -h "$target" ]] && execute "rm $target"
+    execute "ln -s $src $target"
+
+    return 0
 }
 
 
