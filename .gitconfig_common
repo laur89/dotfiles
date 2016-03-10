@@ -41,7 +41,7 @@
     com = commit
     au = add -u
     a = add
-    b = branch -a
+    b = branch -avv
     aa = add --all
     rst = reset
     rvrt = revert

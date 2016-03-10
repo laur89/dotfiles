@@ -1672,21 +1672,27 @@ function install_vim_plugin_deps() {
 
 
 function vim_post_install_configuration() {
-    local stored_vim_sessions vim_sessiondir
+    local stored_vim_sessions vim_sessiondir i
 
     readonly stored_vim_sessions="$BASE_DATA_DIR/.vim_sessions"
     readonly vim_sessiondir="$HOME/.vim/sessions"
 
     # generate links for root, if not existing:
-    if ! sudo test -h "/root/.vim"; then
-        if [[ ! -f "$HOME/.vimrc" || ! -d "$HOME/.vim" ]]; then
-            err "either $HOME/.vimrc is not a file or $HOME/.vim is not a dir."
-            err "skipping creating links to /root/"
+    for i in \
+            .vim \
+            .vimrc \
+            .vimrc.first \
+            .vimrc.last \
+                ; do
+        i="$HOME/$i"
+
+        if [[ ! -f "$i" && ! -d "$i" ]]; then
+            err "$i does not exist - can't link to /root/"
+            continue
         else
-            create_link -s "$HOME/.vimrc" "/root/"
-            create_link -s "$HOME/.vim" "/root/"
+            create_link -s "$i" "/root/"
         fi
-    fi
+    done
 
     # link sessions dir, if stored @ $BASE_DATA_DIR: (related to the 'xolox/vim-session' plugin)
     # note we don't want sessions in homesick, as they're likely to be machine-dependent.

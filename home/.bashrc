@@ -116,7 +116,7 @@ fi
 ##########################################
 # shell opts:
 #override history size:
-export HISTSIZE=-1
+export HISTSIZE=10000
 export HISTFILESIZE=-1
 
 # ignore dups:
