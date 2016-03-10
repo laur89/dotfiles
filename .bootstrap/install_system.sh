@@ -792,7 +792,7 @@ function setup_homesick() {
 
 # creates symlink of our personal '.bash_env_vars' to /etc
 function setup_global_env_vars() {
-    local global_env_var_loc real_file_locations file filename
+    local global_env_var_loc real_file_locations file
 
     readonly real_file_locations=(
         "$SHELL_ENVS"
@@ -806,9 +806,7 @@ function setup_global_env_vars() {
             return 1
         fi
 
-        filename="$(basename "$file")"
-        [[ -h "${global_env_var_loc}/$filename" ]] && execute "sudo rm ${global_env_var_loc}/$filename"
-        execute "sudo ln -s $file ${global_env_var_loc}/"
+        create_link -s "$file" "${global_env_var_loc}/"
     done
 
     # don't create; otherwise gobal_env_var will prevent loading env_var_overrides in our .bashrc!
@@ -1222,8 +1220,7 @@ function install_oracle_jdk() {
     execute "sudo chown -R root:root $JDK_INSTALLATION_DIR/$(basename "$dir")"
 
     # create link:
-    [[ -h "$JDK_LINK_LOC" ]] && execute "sudo rm $JDK_LINK_LOC"
-    execute "sudo ln -s $JDK_INSTALLATION_DIR/$(basename "$dir") $JDK_LINK_LOC"
+    create_link -s "$JDK_INSTALLATION_DIR/$(basename "$dir")" "$JDK_LINK_LOC"
 
     execute "popd"
     execute "sudo rm -rf $tmpdir"
@@ -1254,8 +1251,7 @@ function switch_jdk_versions() {
 
         if [[ -n "$__SELECTED_ITEMS" ]]; then
             report "selecting ${__SELECTED_ITEMS}..."
-            [[ -h "$JDK_LINK_LOC" ]] && execute "sudo rm $JDK_LINK_LOC"
-            execute "sudo ln -s $__SELECTED_ITEMS $JDK_LINK_LOC"
+            create_link -s "$__SELECTED_ITEMS" "$JDK_LINK_LOC"
             break
         else
             confirm "no items were selected; skip jdk change?" && return
@@ -1336,7 +1332,7 @@ function install_webdev() {
 
     # TODO: create link for node? (there's a different package called 'node' for debian)
     if ! command -v node >/dev/null; then
-        execute "sudo ln -s $(which nodejs) /usr/bin/node"
+        create_link -s "$(which nodejs)" "/usr/bin/node"
     fi
 
     # update npm:
@@ -1612,8 +1608,8 @@ function install_neovim() {
     # post-install config:
 
     # create links (as per https://neovim.io/doc/user/nvim_from_vim.html):
-    execute "ln -s $HOME/.vim $nvim_confdir"
-    execute "ln -s $HOME/.vimrc $nvim_confdir/init.vim"
+    create_link "$HOME/.vim" "$nvim_confdir"
+    create_link "$HOME/.vimrc" "$nvim_confdir/init.vim"
 
     # as per https://neovim.io/doc/user/nvim_python.html#nvim-python :
     execute " sudo pip2 install neovim"
@@ -1687,8 +1683,8 @@ function vim_post_install_configuration() {
             err "either $HOME/.vimrc is not a file or $HOME/.vim is not a dir."
             err "skipping creating links to /root/"
         else
-            execute "sudo ln -s $HOME/.vimrc /root/"
-            execute "sudo ln -s $HOME/.vim /root/"
+            create_link -s "$HOME/.vimrc" "/root/"
+            create_link -s "$HOME/.vim" "/root/"
         fi
     fi
 
@@ -1697,7 +1693,7 @@ function vim_post_install_configuration() {
     if [[ -d "$stored_vim_sessions" ]]; then
         if ! [[ -h "$vim_sessiondir" ]]; then
             [[ -d "$vim_sessiondir" ]] && execute "sudo rm -rf $vim_sessiondir"
-            execute "ln -s $stored_vim_sessions $vim_sessiondir"
+            create_link "$stored_vim_sessions" "$vim_sessiondir"
         fi
     else  # $stored_vim_sessions does not exist; init it anyways
         if [[ -d "$vim_sessiondir" ]]; then
@@ -1706,7 +1702,7 @@ function vim_post_install_configuration() {
             execute "mkdir $stored_vim_sessions"
         fi
 
-        execute "ln -s $stored_vim_sessions $vim_sessiondir"
+        create_link "$stored_vim_sessions" "$vim_sessiondir"
     fi
 }
 
@@ -2612,13 +2608,19 @@ function is_git() {
 
 
 function create_link() {
-    local src target
+    local src target filename sudo
 
+    [[ "$1" == -s || "$1" == --sudo ]] && { shift; sudo=sudo; }
     readonly src="$1"
-    readonly target="$2"
+    target="$2"
 
-    [[ -h "$target" ]] && execute "rm $target"
-    execute "ln -s $src $target"
+    if [[ "$target" == */ && -d "$target" ]]; then
+        readonly filename="$(basename "$src")"
+        target="${target}$filename"
+    fi
+
+    [[ -h "$target" ]] && execute "$sudo rm $target"
+    execute "$sudo ln -s $src $target"
 
     return 0
 }
