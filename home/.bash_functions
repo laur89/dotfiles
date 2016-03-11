@@ -1504,9 +1504,11 @@ gito() {
     [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
 
     count="$(echo "$matches" | wc -l)"
+    match=("$matches")
 
     if [[ "$count" -gt 1 ]]; then
         report "found $count items" "$FUNCNAME"
+        match=()
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
             if [[ "$count" -le 200 ]]; then
@@ -1640,10 +1642,11 @@ fo() {
     # filesearch begins:
     matches="$(ffind --_skip_msgs "$@")" || return 1
     count="$(echo "$matches" | wc -l)"
-    match=()
+    match=("$matches")
 
     if [[ "$count" -gt 1 && "$special_mode" != "--openall" ]]; then
         report "found $count items" "$FUNCNAME"
+        match=()
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
             if [[ "$count" -le 200 ]]; then
@@ -1876,11 +1879,14 @@ g() {
 
     matches="$(find -L "$path" -maxdepth 1 -mindepth 1 -type d ${INAME_ARG:--name} '*'"$pattern"'*')"
     count="$(echo "$matches" | wc -l)"
+    match=("$matches")
 
     if [[ -z "$matches" ]]; then
         err "no dirs in $msg_loc matching \"$pattern\"" "$FUNCNAME"
         return 1
     elif [[ "$count" -gt 1 ]]; then
+        match=()
+
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
             if [[ "$count" -le 200 ]]; then
                 while read i; do
