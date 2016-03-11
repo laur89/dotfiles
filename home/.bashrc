@@ -177,6 +177,15 @@ if ! type __BASH_FUNS_LOADED_MARKER > /dev/null 2>&1; then
     fi
 fi
 
+# sys-specific aliases:
+if [[ -d "$HOME/.bash_aliases_overrides" ]]; then
+    for i in $HOME/.bash_aliases_overrides/*; do
+        [[ -f "$i" ]] && source "$i"
+    done
+
+    unset i
+fi
+
 # source homeshick:
 [[ -e "$HOME/.homesick/repos/homeshick" ]] && source "$HOME/.homesick/repos/homeshick/homeshick.sh"
 [[ -e "$HOME/.homesick/repos/homeshick" ]] && source "$HOME/.homesick/repos/homeshick/completions/homeshick-completion.bash"
