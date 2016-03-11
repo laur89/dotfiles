@@ -1467,7 +1467,7 @@ function mkgit() {
 ## Open file inside git tree on vim ##
 ######################################
 gito() {
-    local DMENU match git_root count cwd dmenurc editor nr_of_dmenu_vertical_lines
+    local DMENU match matches git_root count cwd dmenurc editor nr_of_dmenu_vertical_lines i
 
     cwd="$PWD"
     dmenurc="$HOME/.dmenurc"
@@ -1496,35 +1496,41 @@ gito() {
             return 1
         fi
 
-        match="$(git ls-files | grep -Ei -- "$@")"
+        matches="$(git ls-files | grep -Ei -- "$@")"
     else
-        match="$(git ls-files)"
+        matches="$(git ls-files)"
     fi
 
     [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
 
-    count="$(echo "$match" | wc -l)"
+    count="$(echo "$matches" | wc -l)"
 
     if [[ "$count" -gt 1 ]]; then
         report "found $count items" "$FUNCNAME"
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
             if [[ "$count" -le 200 ]]; then
-                select_items "$match" 1
-                match="$__SELECTED_ITEMS"
+                while read i; do
+                    match+=( "$i" )
+                done < <(echo "$matches")
+
+                select_items --single "${match[@]}"
+                match=("${__SELECTED_ITEMS[@]}")
             else
                 report "no way of using dmenu over ssh; these are the found files:\n" "$FUNCNAME"
-                echo -e "$match"
+                echo -e "$matches"
                 return 0
             fi
         else
-            match="$(echo "$match" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)"
+            while read i; do
+                match+=( "$i" )
+            done < <(echo "$matches" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)
         fi
     fi
 
     #[[ $(echo "$match" | wc -l) -gt 1 ]] && match="$(echo "$match" | bemenu -i -l 20 -p "$editor")"
-    [[ -z "$match" ]] && return 1
-    match="$git_root/$match"  # convert to absolute
+    [[ -z "${match[*]}" ]] && return 1
+    match="$git_root/${match[0]}"  # convert to absolute
     [[ -f "$match" ]] || { err "\"$match\" is not a regular file." "$FUNCNAME"; return 1; }
 
     $editor -- "$match"
@@ -1610,8 +1616,8 @@ fog() {
 #
 # mnemonic: file open
 fo() {
-    local DMENU match count filetype dmenurc editor image_viewer video_player file_mngr
-    local pdf_viewer nr_of_dmenu_vertical_lines special_mode special_modes single_selection
+    local DMENU matches match count filetype dmenurc editor image_viewer video_player file_mngr
+    local pdf_viewer nr_of_dmenu_vertical_lines special_mode special_modes single_selection i
 
     dmenurc="$HOME/.dmenurc"
     nr_of_dmenu_vertical_lines=20
@@ -1632,38 +1638,46 @@ fo() {
     fi
 
     # filesearch begins:
-    match="$(ffind --_skip_msgs "$@")" || return 1
-    count="$(echo "$match" | wc -l)"
-
-    [[ "$special_mode" == --goto ]] && single_selection=1
+    matches="$(ffind --_skip_msgs "$@")" || return 1
+    count="$(echo "$matches" | wc -l)"
+    match=()
 
     if [[ "$count" -gt 1 && "$special_mode" != "--openall" ]]; then
         report "found $count items" "$FUNCNAME"
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
             if [[ "$count" -le 200 ]]; then
-                select_items "$match" $single_selection
-                match=( $__SELECTED_ITEMS )
+                [[ "$special_mode" == --goto ]] && single_selection="--single"
+
+                while read i; do
+                    match+=( "$i" )
+                done < <(echo "$matches")
+
+                select_items $single_selection "${match[@]}"
+                match=("${__SELECTED_ITEMS[@]}")
             else
                 report "no way of using dmenu over ssh; these are the found files:\n" "$FUNCNAME"
-                echo -e "$match"
+                echo -e "$matches"
                 return 0
             fi
         else
-            match=( $(echo "$match" | $DMENU -l $nr_of_dmenu_vertical_lines -p open) )
+            while read i; do
+                match+=( "$i" )
+            done < <(echo "$matches" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)
         fi
+
+        [[ -z "${match[*]}" ]] && return 1
     fi
-    [[ -z "${match[*]}" ]] && return 1
     # /filesearch
 
     # parse special modes, if any:
     if [[ -n "$special_mode" ]]; then
         case $special_mode in
             --goto)
-                goto "$match"
+                goto "${match[@]}"  # note that for --goto only one item should be allowed to select
                 ;;
             --openall)
-                "$editor" $match  # (sic) - don't wrap in quotes;
+                "$editor" $matches  # (sic) - don't wrap in quotes + sic @ matches not match
                 ;;
             #*) no need, as mode has already been verified
         esac
@@ -1688,7 +1702,7 @@ fo() {
             ;;
         application/xml*)
             [[ "$count" -gt 1 ]] && { report "won't format multiple xml files! will just open them"; sleep 1.5; }
-            if [[ "$(wc -l < "${match[0]}")" -gt 2 || "$count" -gt 1 ]]; then
+            if [[ "$(wc -l < "${match[0]}")" -gt 2 || "$count" -gt 1 ]]; then  # note if more than 2 lines we also assume it's already formatted;
                 # assuming it's already formatted:
                 "$editor" "${match[@]}"
             else
@@ -1841,7 +1855,7 @@ goto() {
 #
 # see also gg()
 g() {
-    local path input file matches pattern DMENU dmenurc msg_loc INAME_ARG nr_of_dmenu_vertical_lines count
+    local path input file match matches pattern DMENU dmenurc msg_loc INAME_ARG nr_of_dmenu_vertical_lines count i
 
     input="$@"
     dmenurc="$HOME/.dmenurc"
@@ -1869,22 +1883,28 @@ g() {
     elif [[ "$count" -gt 1 ]]; then
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
             if [[ "$count" -le 200 ]]; then
-                select_items "$matches" 1
-                matches="$__SELECTED_ITEMS"
+                while read i; do
+                    match+=( "$i" )
+                done < <(echo "$matches")
+
+                select_items --single "${match[@]}"
+                match=("${__SELECTED_ITEMS[@]}")
             else
                 report "no way of using dmenu over ssh; these are the found dirs:\n" "$FUNCNAME"
                 echo -e "$matches"
                 return 0
             fi
         else
-            matches="$(echo "$matches" | $DMENU -l $nr_of_dmenu_vertical_lines -p cd)"
+            while read i; do
+                match+=( "$i" )
+            done < <(echo "$matches" | $DMENU -l $nr_of_dmenu_vertical_lines -p cd)
         fi
     fi
 
-    [[ -z "$matches" ]] && return 1
-    [[ -d "$matches" ]] || { err "no such dir like \"$matches\" in $msg_loc" "$FUNCNAME"; return 1; }
+    [[ -z "${match[*]}" ]] && return 1
+    [[ -d "${match[0]}" ]] || { err "no such dir like \"${match[0]}\" in $msg_loc" "$FUNCNAME"; return 1; }
 
-    cd -- "$matches"
+    cd -- "${match[0]}"
 }
 
 
