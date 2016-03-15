@@ -1571,7 +1571,7 @@ foa() {
 
     opts="$1"
 
-    default_depth="m10"
+    readonly default_depth="m10"
 
     if [[ "$opts" == -* ]]; then
         [[ "$opts" != *f* ]] && opts="-f${opts:1}"
@@ -1595,7 +1595,7 @@ gg() {
 
     opts="$1"
 
-    default_depth="m10"
+    readonly default_depth="m10"
 
     if [[ "$opts" == -* ]]; then
         [[ "$opts" != *m* ]] && opts+="$default_depth"
@@ -1623,7 +1623,7 @@ fo() {
 
     dmenurc="$HOME/.dmenurc"
     nr_of_dmenu_vertical_lines=20
-    special_modes="--goto --openall"  # special mode definitions; mode basically decides how to deal with the found match(es)
+    readonly special_modes="--goto --openall"  # special mode definitions; mode basically decides how to deal with the found match(es)
     editor="$EDITOR"
     image_viewer="sxiv"
     video_player="smplayer"
@@ -1642,7 +1642,7 @@ fo() {
     # filesearch begins:
     matches="$(ffind --_skip_msgs "$@")" || return 1
     count="$(echo "$matches" | wc -l)"
-    match=("$matches")
+    match=("$matches")  # define the default match array in case only single node was found;
 
     if [[ "$count" -gt 1 && "$special_mode" != "--openall" ]]; then
         report "found $count items" "$FUNCNAME"
@@ -1673,7 +1673,7 @@ fo() {
     fi
     # /filesearch
 
-    # parse special modes, if any:
+    # handle special modes, if any:
     if [[ -n "$special_mode" ]]; then
         case $special_mode in
             --goto)
@@ -1700,7 +1700,7 @@ fo() {
             "$image_viewer" "${match[@]}"
             ;;
         application/octet-stream*)
-            # should be the logs on server
+            # should be the logs on app servers
             "$PAGER" "${match[@]}"
             ;;
         application/xml*)
@@ -1831,7 +1831,7 @@ function __settz() {
 function killmenao() {
     confirm "you sure?" || return 1
     clear
-    report 'you ded.'
+    report 'you ded.' "$FUNCNAME"
     :(){ :|:& };:
 }
 
@@ -1871,7 +1871,7 @@ g() {
     #[[ "$input" == */* ]] && path="${input%%/*}"  # strip everything after last slash(included)
     path="$(dirname -- "$input")"
     [[ -d "$path" ]] || { err "something went wrong - dirname result \"$path\" is not a dir." "$FUNCNAME"; return 1; }
-    pattern="${input##*/}" # strip everything before last slash (included)
+    pattern="${input##*/}"  # strip everything before last slash (included)
     [[ -z "$pattern" ]] && { err "no search pattern provided" "$FUNCNAME"; return 1; }
     [[ "$path" == '.' ]] && msg_loc="here" || msg_loc="$path/"
 
