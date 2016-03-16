@@ -806,7 +806,7 @@ function setup_global_env_vars() {
             return 1
         fi
 
-        create_link -s "$file" "${global_env_var_loc}/"
+        create_link --sudo "$file" "${global_env_var_loc}/"
     done
 
     # don't create; otherwise gobal_env_var will prevent loading env_var_overrides in our .bashrc!
@@ -1220,7 +1220,7 @@ function install_oracle_jdk() {
     execute "sudo chown -R root:root $JDK_INSTALLATION_DIR/$(basename "$dir")"
 
     # create link:
-    create_link -s "$JDK_INSTALLATION_DIR/$(basename "$dir")" "$JDK_LINK_LOC"
+    create_link --sudo "$JDK_INSTALLATION_DIR/$(basename "$dir")" "$JDK_LINK_LOC"
 
     execute "popd"
     execute "sudo rm -rf $tmpdir"
@@ -1251,7 +1251,7 @@ function switch_jdk_versions() {
 
         if [[ -n "$__SELECTED_ITEMS" ]]; then
             report "selecting ${__SELECTED_ITEMS}..."
-            create_link -s "$__SELECTED_ITEMS" "$JDK_LINK_LOC"
+            create_link --sudo "$__SELECTED_ITEMS" "$JDK_LINK_LOC"
             break
         else
             confirm "no items were selected; skip jdk change?" && return
@@ -1332,7 +1332,7 @@ function install_webdev() {
 
     # TODO: create link for node? (there's a different package called 'node' for debian)
     if ! command -v node >/dev/null; then
-        create_link -s "$(which nodejs)" "/usr/bin/node"
+        create_link --sudo "$(which nodejs)" "/usr/bin/node"
     fi
 
     # update npm:
@@ -1690,7 +1690,7 @@ function vim_post_install_configuration() {
             err "$i does not exist - can't link to /root/"
             continue
         else
-            create_link -s "$i" "/root/"
+            create_link --sudo "$i" "/root/"
         fi
     done
 
@@ -2613,19 +2613,20 @@ function is_git() {
 }
 
 
+# pass '-s' or '--sudo' as first arg to execute as sudo
 function create_link() {
     local src target filename sudo
 
-    [[ "$1" == -s || "$1" == --sudo ]] && { shift; sudo=sudo; }
+    [[ "$1" == -s || "$1" == --sudo ]] && { shift; readonly sudo=sudo; }
     readonly src="$1"
     target="$2"
 
-    if [[ "$target" == */ && -d "$target" ]]; then
+    if [[ "$target" == */ ]] && $sudo test -d "$target"; then
         readonly filename="$(basename "$src")"
         target="${target}$filename"
     fi
 
-    [[ -h "$target" ]] && execute "$sudo rm $target"
+    $sudo test -h "$target" && execute "$sudo rm $target"
     execute "$sudo ln -s $src $target"
 
     return 0
