@@ -1072,24 +1072,24 @@ function install_symantec_endpoint_security() {
 function install_laptop_deps() {
     local wifi_info
 
-    if is_laptop; then
-        install_block '
-            xserver-xorg-input-synaptics
-            blueman
-            xfce4-power-manager
-        '
+    is_laptop || return
 
-        # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
-        readonly wifi_info="$(sudo lshw | grep -iA 5 'Wireless interface')"
+    install_block '
+        xserver-xorg-input-synaptics
+        blueman
+        xfce4-power-manager
+    '
 
-        if echo "$wifi_info" | grep -iq 'vendor.*Intel'; then
-            report "we have intel wifi; installing intel drivers..."
-            install_block "firmware-iwlwifi"
-        elif echo "$wifi_info" | grep -iq 'vendor.*Realtek' && \
-                confirm "we seem to have realtek wifi; want to install firmware-realtek?"; then
-            report "we have realtek wifi; installing realtek drivers..."
-            install_block "firmware-realtek"
-        fi
+    # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
+    readonly wifi_info="$(sudo lshw | grep -iA 5 'Wireless interface')"
+
+    if echo "$wifi_info" | grep -iq 'vendor.*Intel'; then
+        report "we have intel wifi; installing intel drivers..."
+        install_block "firmware-iwlwifi"
+    elif echo "$wifi_info" | grep -iq 'vendor.*Realtek' && \
+            confirm "we seem to have realtek wifi; want to install firmware-realtek?"; then
+        report "we have realtek wifi; installing realtek drivers..."
+        install_block "firmware-realtek"
     fi
 }
 
