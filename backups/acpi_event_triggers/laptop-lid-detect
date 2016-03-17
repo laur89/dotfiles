@@ -1,0 +1,2 @@
+event=button/lid
+action=/data/dev/scripts/system/laptop_lid_event.sh %e

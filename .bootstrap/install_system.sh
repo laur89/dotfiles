@@ -14,14 +14,14 @@
 #---   Configuration  ---
 #------------------------
 readonly TMPDIR="/tmp"
-readonly CLANG_LLVM_LOC="http://llvm.org/releases/3.7.1/clang+llvm-3.7.1-x86_64-linux-gnu-ubuntu-15.10.tar.xz"  # http://llvm.org/releases/download.html
+readonly CLANG_LLVM_LOC="http://llvm.org/releases/3.8.0/clang+llvm-3.8.0-x86_64-linux-gnu-debian8.tar.xz"  # http://llvm.org/releases/download.html
 readonly VIM_REPO_LOC="https://github.com/vim/vim.git"                # vim - yeah.
 readonly NVIM_REPO_LOC="https://github.com/neovim/neovim.git"         # nvim - yeah.
 readonly KEEPASS_REPO_LOC="https://github.com/keepassx/keepassx.git"  # keepassX - open password manager forked from keepass project
 readonly COPYQ_REPO_LOC="https://github.com/hluk/CopyQ.git"           # copyq - awesome clipboard manager
 readonly SYNERGY_REPO_LOC="https://github.com/synergy/synergy.git"    # synergy - share keyboard&mouse between computers on same LAN
-readonly ORACLE_JDK_LOC="http://download.oracle.com/otn-pub/java/jdk/8u65-b17/jdk-8u65-linux-x64.tar.gz"
-readonly SKYPE_LOC="http://www.skype.com/go/getskype-linux-deb"
+readonly ORACLE_JDK_LOC="http://download.oracle.com/otn-pub/java/jdk/8u73-b02/jdk-8u73-linux-x64.tar.gz"   # http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+readonly SKYPE_LOC="http://www.skype.com/go/getskype-linux-deb"       # http://www.skype.com/en/download-skype/skype-for-computer/
 readonly JDK_LINK_LOC="/usr/local/jdk_link"
 readonly JDK_INSTALLATION_DIR="/usr/local/javas"
 readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
@@ -70,7 +70,7 @@ readonly COLORS=(
 
 function print_usage() {
 
-    printf "${SELF}:  install system.
+    printf "${SELF}:  install/provision system.
         usage: $SELF  work|personal
     "
 }
@@ -1250,6 +1250,7 @@ function switch_jdk_versions() {
         select_items "$avail_javas" 1
 
         if [[ -n "$__SELECTED_ITEMS" ]]; then
+            [[ -d "$__SELECTED_ITEMS" ]] || { err "$__SELECTED_ITEMS is not a valid dir; try again."; continue; }
             report "selecting ${__SELECTED_ITEMS}..."
             create_link --sudo "$__SELECTED_ITEMS" "$JDK_LINK_LOC"
             break
@@ -1355,7 +1356,8 @@ function install_webdev() {
         autoconf
         bison
         build-essential
-        libssl-dev libyaml-dev
+        libssl-dev
+        libyaml-dev
         libreadline6-dev
         zlib1g-dev
         libncurses5-dev
@@ -1923,6 +1925,9 @@ function install_from_repo() {
         lshw
         acpid
         lm-sensors
+        psensor
+        xsensors
+        hardinfo
         macchanger
         ufw
     )
@@ -2658,7 +2663,7 @@ function cleanup() {
         echo -e "___________________________________________"
     fi
 
-    __CLEANUP_EXECUTED_MARKER=1  # states cleanup() has been invoked;
+    readonly __CLEANUP_EXECUTED_MARKER=1  # states cleanup() has been invoked;
 }
 
 

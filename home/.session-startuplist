@@ -113,7 +113,8 @@ fi
 if is_laptop; then
     if ! is_proc_running synergyc; then
         echo "Launching syndergy client"
-        if [[ "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]]; then
+
+        if is_work; then
             synergyc -f --no-tray --debug INFO --name work-laptop 10.180.18.149:24800 &
             #/data/progs/custom_builds/synergy/bin/synergyc -f --no-tray --debug INFO --name work-laptop 10.180.18.149:24800 &
         else
@@ -126,7 +127,8 @@ if is_laptop; then
 else    # is NOT laptop, assuming desktop
     if ! is_proc_running synergys; then
         echo "Launching syndergy server"
-        if [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" ]]; then
+
+        if is_work; then
             synergys -f --no-tray --debug INFO --name work-desktop -c ~/synergy.conf --log $CUSTOM_LOGDIR/synergy_server.log --address :24800 &
             #/data/progs/custom_builds/synergy/bin/synergys -f --no-tray --debug INFO --name work-desktop -c ~/synergy.conf --log $CUSTOM_LOGDIR/synergy_server.log --address :24800 &
         else
