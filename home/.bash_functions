@@ -1340,7 +1340,7 @@ function createUsbIso() {
         err "$device does not exist" "$FUNCNAME"
         echo -e "$usage"
         return 1;
-    elif ! ls /dev | grep -- "\b${cleaned_devicename}\b" > /dev/null 2>&1 ;then
+    elif ! ls /dev | grep -q -- "\b${cleaned_devicename}\b" > /dev/null 2>&1 ;then
         err "$cleaned_devicename does not exist in /dev" "$FUNCNAME"
         echo -e "$usage"
         return 1;
@@ -1435,7 +1435,7 @@ function mkgit() {
     fi
 
     # check dir
-    [[ -n "$dir" ]] || {
+    [[ -z "$dir" ]] && {
        err "$usage" "$FUNCNAME"
        return 1
     }
@@ -1454,6 +1454,12 @@ function mkgit() {
        err "already a git repo: $dir" "$FUNCNAME"
        return 1
     }
+
+    # TODO: remote repo needs to be first created via REST:
+    #curl --user $username:$password https://api.bitbucket.org/1.0/repositories/ --data name=$reponame --data is_private='true'
+    #git remote add origin git@bitbucket.org:$username/$reponame.git
+    #git push -u origin --all
+    #git push -u origin --tags
 
     cd -- "$dir"
     git init || { err "bad return from git init" "$FUNCNAME"; return 1; }
@@ -1962,7 +1968,7 @@ function mkf() { mkcd "$@"; } # alias to mkcd
 shot() {
     local mon file
 
-    check_progs_installed ffcast || return 1
+    check_progs_installed ffcast scrot || return 1
 
     mon=$@
     file="$HOME/shot-$(date +'%H:%M-%d-%m-%Y').png"
@@ -1973,21 +1979,35 @@ shot() {
 ###################
 ## Capture video ##
 ###################
+# also consider running  vokoscreen  instead.
 capture() {
-    local dimensions name
+    local name screen_dimensions regex
 
     readonly name="$1"
 
-    [[ -z "$name" ]] && { err "need to provide output file as first arg (without an extension)." "$FUNCNAME"; return 1; }
     check_progs_installed ffmpeg || return 1
+    [[ -z "$name" ]] && { err "need to provide output file as first arg (without an extension)." "$FUNCNAME"; return 1; }
 
-    readonly dimensions="$(xdpyinfo |awk '/dimensions:/{printf $2}')" || { err "unable to find screen dimensions fia xdpyinfo" "$FUNCNAME"; return 1; }
+    readonly regex='^[0-9]+x[0-9]+$'
+    readonly screen_dimensions="$(xdpyinfo | awk '/dimensions:/{printf $2}')" || { err "unable to find screen dimensions via xdpyinfo" "$FUNCNAME"; return 1; }
+    [[ "$screen_dimensions" =~ $regex ]] || { err "found screen dimensions \"$screen_dimensions\" do not conform with validation regex \"$regex\"" "$FUNCNAME"; return 1; }
 
-    # find dimensions:
-        #xdpyinfo |awk '/dimensions:/{printf $2}'
     #recordmydesktop --display=$DISPLAY --width=1024 height=768 -x=1680 -y=0 --fps=15 --no-sound --delay=10
     #recordmydesktop --display=0 --width=1920 height=1080 --fps=15 --no-sound --delay=10
-    ffmpeg -f alsa -ac 2 -i default -framerate 25 -f x11grab -s "$dimensions" -i $DISPLAY -acodec pcm_s16le -vcodec libx264 "${name}.mkv"
+    ffmpeg -f alsa -ac 2 -i default -framerate 25 -f x11grab -s "$screen_dimensions" -i "$DISPLAY" -acodec pcm_s16le -vcodec libx264 "${name}.mkv"
+
+    ## lossless recording (from https://wiki.archlinux.org/index.php/FFmpeg#x264_lossless):
+    #ffmpeg -i "$DISPLAY" -c:v libx264 -preset ultrafast -qp 0 -c:a copy "${name}.mkv"
+    ## also lossless, but smaller output file:
+    #ffmpeg -i "$DISPLAY" -c:v libx264 -preset veryslow -qp 0 -c:a copy "${name}.mkv"
+}
+
+# takes an input file and outputs mkv container for youtube:
+# stolen from https://wiki.archlinux.org/index.php/FFmpeg#YouTube
+ytconvert() {
+    [[ "$#" -ne 2 ]] && { err "exactly 2 args required - input file to convert, and output filename (without extension)." "$FUNCNAME"; return 1; }
+    [[ -f "$1" ]] || { err "need to provide an input file as first argument." "$FUNCNAME"; return 1; }
+    ffmpeg -i "$1" -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -c:a copy "$2.mkv"
 }
 
 ##############################################
@@ -2017,6 +2037,7 @@ function jj {
     cd -P "$_MARKPATH/$1" 2>/dev/null || err "no such mark: $1" "$FUNCNAME"
 }
 
+# pass '-o' as first arg to force overwrite existing target link
 function jm {
     local overwrite target
 
@@ -2026,7 +2047,7 @@ function jm {
     mkdir -p "$_MARKPATH"
     readonly target="$_MARKPATH/$1"
     [[ "$overwrite" -eq 1 && -h "$target" ]] && rm "$target" >/dev/null 2>/dev/null
-    [[ -h "$target" ]] && { err "$target already exists; use jmo or jm -o to overwrite." "$FUNCNAME"; return 1; }
+    [[ -h "$target" ]] && { err "$target already exists; use jmo or $FUNCNAME -o to overwrite." "$FUNCNAME"; return 1; }
 
     ln -s "$(pwd)" "$target" || return 1
 }
