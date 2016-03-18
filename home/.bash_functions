@@ -1987,6 +1987,7 @@ capture() {
 
     check_progs_installed ffmpeg || return 1
     [[ -z "$name" ]] && { err "need to provide output file as first arg (without an extension)." "$FUNCNAME"; return 1; }
+    [[ "$-" != *i* ]] && echo wut > /tmp/capture_blocked_marker_deleteme && return 1  # don't launch if we're not in interactive shell;
 
     readonly regex='^[0-9]+x[0-9]+$'
     readonly screen_dimensions="$(xdpyinfo | awk '/dimensions:/{printf $2}')" || { err "unable to find screen dimensions via xdpyinfo" "$FUNCNAME"; return 1; }
