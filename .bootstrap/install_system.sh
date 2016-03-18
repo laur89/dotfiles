@@ -2014,6 +2014,8 @@ function install_from_repo() {
         spacefm
         screenfetch
         scrot
+        vokoscreen
+        screenkey
         mediainfo
         lynx
         tmux

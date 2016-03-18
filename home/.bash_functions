@@ -1974,11 +1974,20 @@ shot() {
 ## Capture video ##
 ###################
 capture() {
-    check_progs_installed recordmydesktop || return 1
+    local dimensions name
 
+    readonly name="$1"
+
+    [[ -z "$name" ]] && { err "need to provide output file as first arg (without an extension)." "$FUNCNAME"; return 1; }
+    check_progs_installed ffmpeg || return 1
+
+    readonly dimensions="$(xdpyinfo |awk '/dimensions:/{printf $2}')" || { err "unable to find screen dimensions fia xdpyinfo" "$FUNCNAME"; return 1; }
+
+    # find dimensions:
+        #xdpyinfo |awk '/dimensions:/{printf $2}'
     #recordmydesktop --display=$DISPLAY --width=1024 height=768 -x=1680 -y=0 --fps=15 --no-sound --delay=10
     #recordmydesktop --display=0 --width=1920 height=1080 --fps=15 --no-sound --delay=10
-    ffcast -w ffmpeg -f alsa -ac 2 -i hw:0,2 -f x11grab -s %s -i %D+%c -acodec pcm_s16le -vcodec huffyuv "$@"
+    ffmpeg -f alsa -ac 2 -i default -framerate 25 -f x11grab -s "$dimensions" -i $DISPLAY -acodec pcm_s16le -vcodec libx264 "${name}.mkv"
 }
 
 ##############################################
