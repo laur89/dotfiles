@@ -22,6 +22,8 @@
     autocrlf = false
     safecrlf = true
     pager = less
+[pull]
+    rebase = true
 [difftool]
     prompt = true
 [diff]

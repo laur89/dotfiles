@@ -122,7 +122,7 @@ export HISTFILESIZE=-1
 # ignore dups:
 #export HISTCONTROL=ignoredups
 export HISTCONTROL=ignoreboth
-export HISTIGNORE='ls:bg:fg:history'  # ignore commands from history
+export HISTIGNORE='ls:bg:fg:history:c:lt:lat:latr:ltr'  # ignore commands from history
 export HISTTIMEFORMAT='%F %T '
 export PROMPT_COMMAND='history -a'  # save comand to history immediately, not after the session terminates
 
