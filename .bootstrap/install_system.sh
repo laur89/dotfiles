@@ -25,7 +25,7 @@ readonly SKYPE_LOC="http://www.skype.com/go/getskype-linux-deb"       # http://w
 readonly JDK_LINK_LOC="/usr/local/jdk_link"
 readonly JDK_INSTALLATION_DIR="/usr/local/javas"
 readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
-readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick
+readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
 readonly NFS_SERVER_SHARE="/data"            # mountpoint to share over NFS
@@ -36,10 +36,11 @@ readonly SSH_SERVER_SHARE="/data"            # mountpoint to share over SSH
 IS_SSH_SETUP=0       # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=''  # only select_items() *writes* into this one.
 MODE=
-FULL_INSTALL=0
+FULL_INSTALL=0                  # whether script is performing full install or not. 1 || 0
 PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
 LOGGING_LVL=0                   # execution logging level (full install logs everything);
                                 # don't set log level too soon; don't want to persist bullshit.
+                                # levels are currently 0, 1 and 10, 1 being the lowest (least amount of events logged.)
 EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%m-%y--%R).log" \
         || EXECUTION_LOG="$HOME/installation-exe.log"
 
@@ -883,13 +884,13 @@ function setup_config_files() {
 
 
 function install_acpi_events() {
-    local event_file  acpi_eventdir  src_eventfiles_dir
+    local event_file  system_acpi_eventdir  src_eventfiles_dir
 
-    readonly acpi_eventdir="/etc/acpi/events"
+    readonly system_acpi_eventdir="/etc/acpi/events"
     readonly src_eventfiles_dir="$COMMON_DOTFILES/backups/acpi_event_triggers"
 
-    if ! [[ -d "$acpi_eventdir" ]]; then
-        err "$acpi_eventdir dir does not exist; acpi event triggers won't be installed"
+    if ! [[ -d "$system_acpi_eventdir" ]]; then
+        err "$system_acpi_eventdir dir does not exist; acpi event triggers won't be installed"
         return 1
     elif ! [[ -d "$src_eventfiles_dir" ]]; then
         err "$src_eventfiles_dir dir does not exist; acpi event triggers won't be installed (since trigger files cannot be found)"
@@ -898,7 +899,7 @@ function install_acpi_events() {
 
     for event_file in $src_eventfiles_dir/* ; do
         if [[ -f "$event_file" ]]; then
-            execute "sudo cp $event_file $acpi_eventdir"
+            execute "sudo cp $event_file $system_acpi_eventdir"
         fi
     done
 
@@ -1327,31 +1328,39 @@ function install_webdev() {
     is_server && { report "we're server, skipping webdev env installation."; return; }
 
     install_block '
+        ruby
         nodejs
         npm
     ' || { err; return 1; }
 
-    # TODO: create link for node? (there's a different package called 'node' for debian)
+    # create link for node (there's a different package called 'node' for debian,
+    # that's why the 'node' executable is very likely to be missing from the $PATH:
     if ! command -v node >/dev/null; then
+        command -v nodejs >/dev/null || { err "nodejs is not on \$PATH; can't create 'node' link to it. fix it."; }
         create_link --sudo "$(which nodejs)" "/usr/bin/node"
     fi
 
-    # update npm:
-    execute "sudo npm install npm -g" && sleep 1
+    # first thing update npm:
+    execute "sudo npm install npm -g" && sleep 0.5
 
     # install npm modules:
     execute "sudo npm install -g \
         jshint grunt-cli csslint \
     "
 
-    # ruby:
+    # install ruby modules:          # sass: http://sass-lang.com/install
+    execute "sudo gem install \
+        sass \
+    "
+
+    # ruby (rbenv):
     ##################################
     install_block '
         ruby-build
         rbenv
     '
 
-    # rbenv recommended deps (https://github.com/rbenv/ruby-build/wiki):
+    # ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki):
     install_block '
         autoconf
         bison
@@ -2197,7 +2206,7 @@ function choose_single_task() {
     local choices
 
     LOGGING_LVL=1
-    FULL_INSTALL=0
+    readonly FULL_INSTALL=0
 
     # need to assume .bash_env_vars are there:
     if [[ -f "$SHELL_ENVS" ]]; then
@@ -2270,7 +2279,7 @@ function __choose_prog_to_build() {
 function full_install() {
 
     LOGGING_LVL=10
-    FULL_INSTALL=1
+    readonly FULL_INSTALL=1
 
     setup
 

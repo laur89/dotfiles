@@ -1,13 +1,14 @@
 #!/bin/bash
 # makes dmenu identical across all scripts by sourcing this file
 #
-# multi-selection patch: http://lists.suckless.org/dev/0109/26302.html
+# !NOTE! needs to define global DMENU
+#
 
-__font='Terminus-9'
+readonly __font='Terminus-9'
 
-__nb=#1d1f21    # normal bg
-__nf=#7f8185    # normal fg
-__sb=#1d1f21    # selected bg
-__sf=#c5c8c6    # selected fg
+readonly __nb=#1d1f21    # normal bg
+readonly __nf=#7f8185    # normal fg
+readonly __sb=#1d1f21    # selected bg
+readonly __sf=#c5c8c6    # selected fg
 
-DMENU="dmenu -i -fn $__font -nb $__nb -nf $__nf -sb $__sb -sf $__sf "
+readonly DMENU="dmenu -i -fn $__font -nb $__nb -nf $__nf -sb $__sb -sf $__sf "
