@@ -2658,7 +2658,7 @@ function __is_work() {
 
 
 function cleanup() {
-    [[ "$__CLEANUP_EXECUTED_MARKER" -eq 1 ]] && return  # don't clean up more than once.
+    [[ "$__CLEANUP_EXECUTED_MARKER" -eq 1 ]] && return  # don't invoke more than once.
 
     if [[ -n "${PACKAGES_IGNORED_TO_INSTALL[*]}" ]]; then
         echo -e "    ERR INSTALL: ignored installing these packages: \"${PACKAGES_IGNORED_TO_INSTALL[*]}\"" >> "$EXECUTION_LOG"
