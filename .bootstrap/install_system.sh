@@ -2296,17 +2296,20 @@ function full_install() {
 
 # as per    https://confluence.jetbrains.com/display/IDEADEV/Inotify+Watches+Limit
 function increase_inotify_watches_limit() {
-    local value line sysctl
+    local sysctl property value
 
     readonly sysctl="/etc/sysctl.conf"
+    readonly property='fs.inotify.max_user_watches'
     readonly value=524288
-    readonly line="fs.inotify.max_user_watches = $value"
 
     [[ -f "$sysctl" ]] || { err "$sysctl is not a valid file. can't increase inotify watches limit for IDEA"; return 1; }
 
-    # increases inotify watches limit (for intellij idea):
-    if ! grep -qi "^${line}\$" "$sysctl"; then
-        execute "echo $line | sudo tee --append $sysctl > /dev/null"
+    if ! grep -q "^$property = $value\$" "$sysctl"; then
+        # just in case delete all same prop definitions, regardless of its value:
+        execute "sudo sed -i '/^$property/d' \"$sysctl\""
+
+        # increase inotify watches limit (for intellij idea):
+        execute "echo $property = $value | sudo tee --append $sysctl > /dev/null"
 
         # apply the change:
         execute "sudo sysctl -p"
