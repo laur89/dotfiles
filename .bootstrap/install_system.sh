@@ -2294,6 +2294,26 @@ function full_install() {
 }
 
 
+# as per    https://confluence.jetbrains.com/display/IDEADEV/Inotify+Watches+Limit
+function increase_inotify_watches_limit() {
+    local value line sysctl
+
+    readonly sysctl="/etc/sysctl.conf"
+    readonly value=524288
+    readonly line="fs.inotify.max_user_watches = $value"
+
+    [[ -f "$sysctl" ]] || { err "$sysctl is not a valid file. can't increase inotify watches limit for IDEA"; return 1; }
+
+    # increases inotify watches limit (for intellij idea):
+    if ! grep -qi "^${line}\$" "$sysctl"; then
+        execute "echo $line | sudo tee --append $sysctl > /dev/null"
+
+        # apply the change:
+        execute "sudo sysctl -p"
+    fi
+}
+
+
 function post_install_progs_setup() {
 
     install_acpi_events   # has to be after install_progs, so acpid is already insalled and events/ dir present;
@@ -2301,6 +2321,7 @@ function post_install_progs_setup() {
     execute "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
     execute "mopidy local scan"  # update mopidy library
     execute "sudo sensors-detect"  # answer enter for default values
+    increase_inotify_watches_limit  # for intellij IDEA
 }
 
 
