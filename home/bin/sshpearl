@@ -21,7 +21,7 @@
 # it calls the ssh_pearl function with passed arguments; that way it can be invoked
 # by other scripts. It also forces the TERM env var.
 
-SELF="$(basename "$0")"
+readonly SELF="$(basename "$0")"
 
 function ssh_pearl() {
     local self rcScript inputrcScript vimrcScript ssh_opts opt commands arg commands_opt cmd

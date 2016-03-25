@@ -2317,6 +2317,15 @@ function increase_inotify_watches_limit() {
 }
 
 
+# add our user to docker group so it could be run as non-root:
+function setup_docker() {
+    execute "sudo adduser ${USER} docker"      # add user to docker group
+    #execute "sudo gpasswd -a ${USER} docker"  # add user to docker group
+    execute "sudo service docker restart"
+    execute "newgrp docker"
+}
+
+
 function post_install_progs_setup() {
 
     install_acpi_events   # has to be after install_progs, so acpid is already insalled and events/ dir present;
@@ -2325,6 +2334,7 @@ function post_install_progs_setup() {
     execute "mopidy local scan"  # update mopidy library
     execute "sudo sensors-detect"  # answer enter for default values
     increase_inotify_watches_limit  # for intellij IDEA
+    setup_docker
 }
 
 

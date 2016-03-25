@@ -15,6 +15,7 @@ PROGS=(
     "delay_screensaver"
     "urxvtc"
     "xfce4-volumed"
+    guake
 
     "Earth_sunlight_wallpaper_changer.sh"
     "sunlight_map_wallpaper_changer.sh"
