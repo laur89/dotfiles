@@ -2034,6 +2034,7 @@ function install_from_repo() {
         pidgin
         filezilla
         etckeeper
+        gradle
         lxrandr
         transmission
         transmission-remote-cli
@@ -2296,20 +2297,20 @@ function full_install() {
 
 # as per    https://confluence.jetbrains.com/display/IDEADEV/Inotify+Watches+Limit
 function increase_inotify_watches_limit() {
-    local sysctl property value
+    local sysctl_conf property value
 
-    readonly sysctl="/etc/sysctl.conf"
+    readonly sysctl_conf="/etc/sysctl.conf"
     readonly property='fs.inotify.max_user_watches'
     readonly value=524288
 
-    [[ -f "$sysctl" ]] || { err "$sysctl is not a valid file. can't increase inotify watches limit for IDEA"; return 1; }
+    [[ -f "$sysctl_conf" ]] || { err "$sysctl_conf is not a valid file. can't increase inotify watches limit for IDEA"; return 1; }
 
-    if ! grep -q "^$property = $value\$" "$sysctl"; then
+    if ! grep -q "^$property = $value\$" "$sysctl_conf"; then
         # just in case delete all same prop definitions, regardless of its value:
-        execute "sudo sed -i '/^$property/d' \"$sysctl\""
+        execute "sudo sed -i '/^$property/d' \"$sysctl_conf\""
 
         # increase inotify watches limit (for intellij idea):
-        execute "echo $property = $value | sudo tee --append $sysctl > /dev/null"
+        execute "echo $property = $value | sudo tee --append $sysctl_conf > /dev/null"
 
         # apply the change:
         execute "sudo sysctl -p"
@@ -2326,6 +2327,8 @@ function setup_docker() {
 }
 
 
+# configs & settings that can/need to be installed after the related programs have
+# been installed.
 function post_install_progs_setup() {
 
     install_acpi_events   # has to be after install_progs, so acpid is already insalled and events/ dir present;

@@ -116,6 +116,7 @@ if is_laptop; then
         echo "Launching syndergy client"
 
         if is_work; then
+            # if need to change the command, make sure to update in acpi lid handler (laptop_lid_event.sh) as well:
             synergyc -f --no-tray --debug INFO --name work-laptop 10.180.18.149:24800 &
             #/data/progs/custom_builds/synergy/bin/synergyc -f --no-tray --debug INFO --name work-laptop 10.180.18.149:24800 &
         else

@@ -10,9 +10,10 @@ if [[ -z "$PEARL_HOME" ]]; then
     export JAVA_HOME=/usr/local/jdk_link
     export M2_HOME=/data/progs/maven/mvn_link
     export M2=$M2_HOME/bin
+    export GRADLE_HOME=/usr/share/gradle
 
     # add additional locations to $PATH:
-    export PATH=$PATH:$JAVA_HOME/bin:$M2:/data/dev/scripts/system:$HOME/bin
+    export PATH=$PATH:$JAVA_HOME/bin:$M2:/data/dev/scripts/system:$HOME/bin:$GRADLE_HOME/bin
     # ruby env (rbenv):
     export PATH="$HOME/.rbenv/bin:$PATH"
 
