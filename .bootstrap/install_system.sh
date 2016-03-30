@@ -1075,6 +1075,7 @@ function install_laptop_deps() {
 
     is_laptop || return
 
+    # xserver-xorg-input-synaptics  gives syndaemon
     install_block '
         xserver-xorg-input-synaptics
         blueman
@@ -2627,7 +2628,7 @@ function extract() {
 
 
 function is_server() {
-    [[ "$HOSTNAME" == server* ]] && return 0 || return 1
+    [[ "$HOSTNAME" == *"server"* ]] && return 0 || return 1
 }
 
 
