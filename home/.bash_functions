@@ -759,8 +759,9 @@ function ffstr() {
 
 function memmost(){
     # $1: number of process to view (default 10).
-    local num=$1
-    [ "$num" == "" ] && num="10"
+    local num
+
+    readonly num=${1:-10}
 
     local ps_out=$(ps -auxf)
     echo "$ps_out" | head -n 1
@@ -1828,14 +1829,14 @@ function __settz() {
 
     check_progs_installed timedatectl || return 1
     [[ -z "$tz" ]] && { err "provide a timezone to switch to (e.g. Europe/Madrid)." "$FUNCNAME"; return 1; }
-    [[ "$tz" != */* ]] && { err "invalid timezone format; has to be in a format like Europe/Madrid." "$FUNCNAME"; return 1; }
+    [[ "$tz" != */* ]] && { err "invalid timezone format; has to be in a format like \"Europe/Madrid\"." "$FUNCNAME"; return 1; }
 
     timedatectl set-timezone "$tz"
     return $?
 }
 
 function killmenao() {
-    confirm "you sure?" || return 1
+    confirm "you sure?" || return
     clear
     report 'you ded.' "$FUNCNAME"
     :(){ :|:& };:
@@ -1881,9 +1882,9 @@ g() {
     [[ -z "$pattern" ]] && { err "no search pattern provided" "$FUNCNAME"; return 1; }
     [[ "$path" == '.' ]] && msg_loc="here" || msg_loc="$path/"
 
-    [[ "$(tolowercase "$pattern")" == "$pattern" ]] && INAME_ARG="-iname"
+    [[ "$(tolowercase "$pattern")" == "$pattern" ]] && INAME_ARG="iname"
 
-    matches="$(find -L "$path" -maxdepth 1 -mindepth 1 -type d ${INAME_ARG:--name} '*'"$pattern"'*')"
+    matches="$(find -L "$path" -maxdepth 1 -mindepth 1 -type d -${INAME_ARG:-name} '*'"$pattern"'*')"
     count="$(echo "$matches" | wc -l)"
     match=("$matches")
 
@@ -1985,9 +1986,9 @@ capture() {
 
     readonly name="$1"
 
-    check_progs_installed ffmpeg || return 1
+    check_progs_installed ffmpeg xdpyinfo || return 1
     [[ -z "$name" ]] && { err "need to provide output file as first arg (without an extension)." "$FUNCNAME"; return 1; }
-    [[ "$-" != *i* ]] && echo wut > /tmp/capture_blocked_marker_deleteme && return 1  # don't launch if we're not in interactive shell;
+    [[ "$-" != *i* ]] && return 1  # don't launch if we're not in interactive shell;
 
     readonly regex='^[0-9]+x[0-9]+$'
     readonly screen_dimensions="$(xdpyinfo | awk '/dimensions:/{printf $2}')" || { err "unable to find screen dimensions via xdpyinfo" "$FUNCNAME"; return 1; }
@@ -2042,9 +2043,10 @@ function jj {
 function jm {
     local overwrite target
 
-    [[ "$1" == "-o" ]] && { readonly overwrite=1; shift; }
+    [[ "$1" == "-o" || "$1" == "--overwrite" ]] && { readonly overwrite=1; shift; }
 
     [[ $# -ne 1 || -z "$1" ]] && { err "exactly one arg accepted" "$FUNCNAME"; return 1; }
+    [[ -z "$_MARKPATH" ]] && { err "\$_MARKPATH not set, aborting." "$FUNCNAME"; return 1; }
     mkdir -p "$_MARKPATH"
     readonly target="$_MARKPATH/$1"
     [[ "$overwrite" -eq 1 && -h "$target" ]] && rm "$target" >/dev/null 2>/dev/null
@@ -2077,7 +2079,7 @@ _completemarks() {
     COMPREPLY=($(compgen -W '${wordlist[@]}' -- "$curw"))
     return 0
 }
-complete -F _completemarks jj jum
+complete -F _completemarks jj jum jmo
 
 ################################################
 
