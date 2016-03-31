@@ -134,6 +134,8 @@ alias prog='cd /data/progs'
 alias progs='cd /data/progs'
 alias dev='cd /data/dev'
 alias data='cd /data/'
+alias git-root='is_git && cd $(git rev-parse --show-toplevel) || err "not a git repo."'  # go to project root
+alias grt='git-root'
 #TODO:
 #alias ffind="eval set ffind"
 #alias ffind="ffind"
