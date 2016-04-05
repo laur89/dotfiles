@@ -11,6 +11,7 @@ alias eclipse='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gt
 alias sts='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/eclipse/sts"'
 #alias idea='env GTK2_RC_FILES=/usr/share/themes/Greybird/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/idea/idea-IU-139.1117.1/bin/idea.sh"'
 alias idea='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtkrc-2.0-IDE "/data/progs/idea/idea"'
+alias soapui='( cd /data/progs/soapui && env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtkrc-2.0-IDE "./soapui/bin/soapui.sh" )'
 alias giteye='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtkrc-2.0-IDE "/data/progs/GitEye/GitEye"'
 #alias sts='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/STS"'
 alias eclim='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/eclimd"'
@@ -67,6 +68,8 @@ alias cim='vim'
 alias vin='vim'
 alias bim='vim'
 alias nbim='nvim'
+alias nivm='nvim'
+alias nvmi='nvim'
 alias xs='cd'
 alias vf='cd'
 alias cs='cd'
@@ -92,8 +95,8 @@ alias gitdi='git difftool --dir-diff'                    # diff only unstaged fi
 alias gitdi-all='git difftool --dir-diff HEAD'           # also diff staged files
 alias gitdi-staged-only='git difftool --dir-diff --cached'    # --cached == --staged, as in diff only staged files
 alias gitdi-prev='git difftool --dir-diff HEAD^ HEAD'    # local last commit against current index (as in last commit; shows what was changed with last commit); does NOT include current uncommited changes);
-#alias gitdi-stash='git difftool --dir-diff stash@{0}^!'  # diff stash against its parent;
-alias gitdi-stash='git difftool --dir-diff stash@{0}^ stash@{0}'  # diff stash against its parent;
+#alias gitdi-stashed='git difftool --dir-diff stash@{0}^!'  # diff stash against its parent;
+alias gitdi-stashed='git difftool --dir-diff stash@{0}^ stash@{0}'  # diff stash against its parent;
 
 alias mkdri='mkdir'
 alias mkdr='mkdir'

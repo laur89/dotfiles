@@ -235,7 +235,7 @@ __check_for_change_and_compile_ssh_config() {
     readonly ssh_configdir="$HOME/.ssh/config.d"  # dir holding the ssh config files that will be
                                                   # merged into a single $ssh_config
 
-    if [[ -d "$ssh_configdir" ]] && find "$ssh_configdir" -mindepth 1 -print -quit | grep -q .; then
+    if [[ -d "$ssh_configdir" ]] && ! is_dir_empty "$ssh_configdir"; then
         cd "$ssh_configdir" || return 1  # move to $ssh_configdir, since we execute find relative to curr dir;
         readonly current_md5sum="$(find . -type f -exec md5sum {} \; | sort -k 34 | md5sum)"
 
