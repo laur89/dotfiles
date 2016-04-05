@@ -879,7 +879,9 @@ function setup_config_files() {
     setup_global_prompt
     swap_caps_lock_and_esc
 
-    [[ "$FULL_INSTALL" -ne 1 ]] && post_install_progs_setup
+    # TODO: is it sensible to execute post_install_progs_setup() from here, as that
+    # has grown to represent more than simply config files setup?:
+    [[ "$FULL_INSTALL" -ne 1 ]] && post_install_progs_setup  # since with FULL_INSTALL, it'll get executed from other block
 }
 
 
@@ -944,7 +946,7 @@ function setup() {
 function setup_additional_apt_keys() {
 
     # install keys:
-    # mopidy key:
+    # mopidy key: (from https://docs.mopidy.com/en/latest/installation/debian/):
     execute 'wget -q -O - http://apt.mopidy.com/mopidy.gpg | sudo apt-key add -'
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
@@ -2328,7 +2330,7 @@ function setup_docker() {
 }
 
 
-# configs & settings that can/need to be installed after the related programs have
+# configs & settings that can/need to be installed  AFTER  the related programs have
 # been installed.
 function post_install_progs_setup() {
 
