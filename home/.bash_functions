@@ -1520,18 +1520,18 @@ gito() {
         match=()
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            if [[ "$count" -le 200 ]]; then
-                while read i; do
-                    match+=( "$i" )
-                done < <(echo "$matches")
-
-                select_items --single "${match[@]}"
-                match=("${__SELECTED_ITEMS[@]}")
-            else
+            if [[ "$count" -gt 200 ]]; then
                 report "no way of using dmenu over ssh; these are the found files:\n" "$FUNCNAME"
                 echo -e "$matches"
                 return 0
             fi
+
+            while read i; do
+                match+=( "$i" )
+            done < <(echo "$matches")
+
+            select_items --single "${match[@]}"
+            match=("${__SELECTED_ITEMS[@]}")
         else
             while read i; do
                 match+=( "$i" )
@@ -1701,20 +1701,20 @@ fo() {
         match=()
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            if [[ "$count" -le 200 ]]; then
-                [[ "$special_mode" == --goto ]] && single_selection="--single"
-
-                while read i; do
-                    match+=( "$i" )
-                done < <(echo "$matches")
-
-                select_items $single_selection "${match[@]}"
-                match=("${__SELECTED_ITEMS[@]}")
-            else
+            if [[ "$count" -gt 200 ]]; then
                 report "no way of using dmenu over ssh; these are the found files:\n" "$FUNCNAME"
                 echo -e "$matches"
                 return 0
             fi
+
+            [[ "$special_mode" == --goto ]] && single_selection="--single"
+
+            while read i; do
+                match+=( "$i" )
+            done < <(echo "$matches")
+
+            select_items $single_selection "${match[@]}"
+            match=("${__SELECTED_ITEMS[@]}")
         else
             while read i; do
                 match+=( "$i" )
@@ -1972,18 +1972,18 @@ g() {
         match=()
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            if [[ "$count" -le 200 ]]; then
-                while read i; do
-                    match+=( "$i" )
-                done < <(echo "$matches")
-
-                select_items --single "${match[@]}"
-                match=("${__SELECTED_ITEMS[@]}")
-            else
+            if [[ "$count" -gt 200 ]]; then
                 report "no way of using dmenu over ssh; these are the found dirs:\n" "$FUNCNAME"
                 echo -e "$matches"
                 return 0
             fi
+
+            while read i; do
+                match+=( "$i" )
+            done < <(echo "$matches")
+
+            select_items --single "${match[@]}"
+            match=("${__SELECTED_ITEMS[@]}")
         else
             while read i; do
                 match+=( "$i" )
