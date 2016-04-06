@@ -1730,9 +1730,13 @@ fo() {
         case $special_mode in
             --goto)
                 goto "${match[@]}"  # note that for --goto only one item should be allowed to select
+
+                return
                 ;;
             --openall)
                 "$editor" $matches  # (sic) - don't wrap in quotes + sic @ matches not match
+
+                return
                 ;;
             --newest)
                 check_progs_installed stat head || return 1
@@ -1740,7 +1744,7 @@ fo() {
                 declare -A last_mtime_to_file
 
                 while read i; do
-                    j=$(stat --format=%Y -- "$i")
+                    j=$(stat --format=%Y -- "$i") || { err "problems running \$stat for \"$i\"." "$FUNCNAME"; continue; }
                     last_mtime_to_file[$j]="$i"
                     # bash-based sorting:
                     [[ -z "$match" || "$j" -gt "$match" ]] && match="$j"
@@ -1753,17 +1757,18 @@ fo() {
                 match="${last_mtime_to_file[$match]}"
                 [[ -f "$match" ]] || { err "something went wrong, found newest file \"$match\" is not a valid file."; return 1; }
 
-                report "opening \"${match}\"..." "$FUNCNAME"
-                if [[ "$__REMOTE_SSH" -eq 1 ]]; then
-                    "$editor" -- "$match"
-                else
-                    xdg-open "$match"  # xdg-open doesn't support -- !!!
-                fi
+                #report "opening \"${match}\"..." "$FUNCNAME"
+                #if [[ "$__REMOTE_SSH" -eq 1 ]]; then
+                    #"$editor" -- "$match"
+                #else
+                    #xdg-open "$match"  # xdg-open doesn't support -- !!!
+                #fi
+
+                match=("$match")
+                # fall through, do not return!
                 ;;
             #*) no need, as mode has already been verified
         esac
-
-        return
     fi
 
 
