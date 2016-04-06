@@ -26,7 +26,7 @@ function ffind() {
     local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter skip_msgs
     local quitFlag
 
-    [[ "$1" == --_skip_msgs ]] && { skip_msgs=1; shift; }  # skip showing informative messages, as the result will be directly piped to other processes;
+    [[ "$1" == --_skip_msgs ]] && { skip_msgs=1; shift; }  # skip showing informative messages, as the result will be directly echoed to other processes;
     defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
 
     usage="\n$FUNCNAME: find files/dirs by name. smartcase.
@@ -158,7 +158,7 @@ function ffind() {
             err "nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
             return 1
         fi
-    else # no regex, make sure find metacharacters are not mistaken for regex ones:
+    else  # no regex, make sure find metacharacters are not mistaken for regex ones:
         if [[ "$SRC" == *\.\** ]]; then
             err "only use asterisks (*) for wildcards, not .*; provide -r flag if you want to use regex." "$FUNCNAME"
             return 1
@@ -240,7 +240,7 @@ function ffindproc() {
 
 # find top 5/x biggest or smallest nodes:
 function __find_top_big_small_fun() {
-    local usage opt OPTIND itemsToShow file_type item maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_
+    local usage opt OPTIND itemsToShow file_type maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_
     local bigOrSmall du_include_regular_files duMaxDepthParam filetypeOptionCounter
 
     reverse="$1" # this basically decides whether we're showing top big or small.
@@ -382,7 +382,7 @@ function ffindtopsmall() {
 
 # find smaller/bigger than Xmegas files
 function __find_bigger_smaller_common_fun() {
-    local usage opt OPTIND file_type item maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_ biggerOrSmaller sizeArg
+    local usage opt OPTIND file_type maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_ biggerOrSmaller sizeArg
     local du_include_regular_files duMaxDepthParam plusOrMinus filetypeOptionCounter sizeArgLastChar du_blk_sz find_size_unit
 
     reverse="$1" # sorting order
@@ -542,7 +542,7 @@ function __find_bigger_smaller_common_fun() {
         find $follow_links . -mindepth 1 $maxDepthParam -size ${plusOrMinus}${sizeArg}${find_size_unit} $file_type -exec du -a "$du_blk_sz" '{}' +  2>/dev/null | \
                 sort -n $reverse
 
-    else # directories included, need to use du + awk
+    else  # directories included, need to use du + awk
         # note that different find commands are defined purely because of < vs > in awk command.; could overcome
         # by using eval, but better not.
 
@@ -584,6 +584,8 @@ function ffindsmallerthan() {
 
 function aptsearch() {
     [[ -z "$@" ]] && { err "provide partial package name to search for." "$FUNCNAME"; return 1; }
+    check_progs_installed apt-cache || return 1
+
     apt-cache search -- "$@"
     #aptitude search -- "$@"
 }
@@ -1620,17 +1622,58 @@ fog() {
     gg $@
 }
 
+
+# open newest file (as in with last mtime);
+# if no args provided, then searches for '*';
+# if no depth arg provided, then defaults to current dir only.
+#
+# mnemonic: file open new(est)
+fon() {
+    local opts default_depth args
+
+    opts="$1"
+
+    readonly default_depth="m1"
+
+    if [[ "$opts" == -* ]]; then
+        [[ "$opts" != *f* ]] && opts="-f${opts:1}"
+        [[ "$opts" != *m* ]] && opts+="$default_depth"
+        #echo $opts  # debug
+        shift
+    else
+        opts="-f${default_depth}"
+    fi
+
+    [[ -z "$@" ]] && args='*' || args="$*"
+    fo --newest $opts "$args"
+
+    #local matches file
+
+    #matches="$(find -L . -mindepth 1 -maxdepth 1 -type f -printf "%T+\t%p\n" | sort -r)"
+    #matches=("$matches")
+
+    #[[ -z "${matches[*]}" ]] && return 1
+
+    #file="${matches[0]}"
+    #report "opening ${file}..."
+    #xo "$file"
+}
+
+
 # finds files/dirs using ffind() (find wrapper) and opens them.
-# accepts different 'special modes' to be defined as first arg (modes contained in $special_modes array)
+# accepts different 'special modes' to be defined as first arg (modes defined in $special_modes array).
+#
+# if NOT in special mode, and no args provided, then default to opening regular files in current dir.
 #
 # mnemonic: file open
 fo() {
     local DMENU matches match count filetype dmenurc editor image_viewer video_player file_mngr
-    local pdf_viewer nr_of_dmenu_vertical_lines special_mode special_modes single_selection i
+    local pdf_viewer nr_of_dmenu_vertical_lines special_mode special_modes single_selection i j
+    local last_mtime_to_file
 
     dmenurc="$HOME/.dmenurc"
     nr_of_dmenu_vertical_lines=20
-    readonly special_modes="--goto --openall"  # special mode definitions; mode basically decides how to deal with the found match(es)
+    readonly special_modes="--goto --openall --newest"  # special mode definitions; mode basically decides how to deal with the found match(es)
     editor="$EDITOR"
     image_viewer="sxiv"
     video_player="smplayer"
@@ -1638,7 +1681,8 @@ fo() {
     pdf_viewer="zathura"
 
     list_contains "$1" "$special_modes" && { special_mode="$1"; shift; }
-    [[ -z "$@" ]] && { err "args required. see ffind -h" "$FUNCNAME"; return 1; }
+    [[ -z "$@" && -z "$special_mode" ]] && set -- '-fm1' '*'
+    [[ -z "$@" ]] && { err "args required for ffind. see ffind -h" "$FUNCNAME"; return 1; }
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
     if [[ "$__REMOTE_SSH" -ne 1 && -z "$special_mode" ]]; then  # only check for progs if not ssh-d AND not using in "special mode"
@@ -1651,7 +1695,8 @@ fo() {
     count="$(echo "$matches" | wc -l)"
     match=("$matches")  # define the default match array in case only single node was found;
 
-    if [[ "$count" -gt 1 && "$special_mode" != "--openall" ]]; then
+    # logic to select wanted nodes from multiple matches:
+    if [[ "$count" -gt 1 ]] && ! list_contains "$special_mode" "--openall --newest"; then
         report "found $count items" "$FUNCNAME"
         match=()
 
@@ -1689,6 +1734,32 @@ fo() {
             --openall)
                 "$editor" $matches  # (sic) - don't wrap in quotes + sic @ matches not match
                 ;;
+            --newest)
+                check_progs_installed stat head || return 1
+                match=''
+                declare -A last_mtime_to_file
+
+                while read i; do
+                    j=$(stat --format=%Y -- "$i")
+                    last_mtime_to_file[$j]="$i"
+                    # bash-based sorting:
+                    [[ -z "$match" || "$j" -gt "$match" ]] && match="$j"
+
+                    #match+="${j}\n"  # TODO: we're screwed if filename contains newlines
+                done < <(echo "$matches")
+
+                #match="$(stat --format=%Y -- "${match[@]}" | sort -r | head --lines=1)"
+                #match="$(echo -e "$match" | sort -r | head --lines=1)"  # finds the newest mtime
+                match="${last_mtime_to_file[$match]}"
+                [[ -f "$match" ]] || { err "something went wrong, found newest file \"$match\" is not a valid file."; return 1; }
+
+                report "opening \"${match}\"..." "$FUNCNAME"
+                if [[ "$__REMOTE_SSH" -eq 1 ]]; then
+                    "$editor" -- "$match"
+                else
+                    xdg-open "$match"  # xdg-open doesn't support -- !!!
+                fi
+                ;;
             #*) no need, as mode has already been verified
         esac
 
@@ -1704,32 +1775,32 @@ fo() {
 
     case "$filetype" in
         image/*)
-            "$image_viewer" "${match[@]}"
+            "$image_viewer" -- "${match[@]}"
             ;;
         application/octet-stream*)
             # should be the logs on app servers
-            "$PAGER" "${match[@]}"
+            "$PAGER" -- "${match[@]}"
             ;;
         application/xml*)
             [[ "$count" -gt 1 ]] && { report "won't format multiple xml files! will just open them"; sleep 1.5; }
             if [[ "$(wc -l < "${match[0]}")" -gt 2 || "$count" -gt 1 ]]; then  # note if more than 2 lines we also assume it's already formatted;
                 # assuming it's already formatted:
-                "$editor" "${match[@]}"
+                "$editor" -- "${match[@]}"
             else
                 xmlformat "${match[@]}"
             fi
             ;;
         video/*)
-            "$video_player" "${match[@]}"
+            "$video_player" -- "${match[@]}"
             ;;
         text/*)
-            "$editor" "${match[@]}"
+            "$editor" -- "${match[@]}"
             ;;
         application/pdf*)
-            "$pdf_viewer" "${match[@]}"
+            "$pdf_viewer" -- "${match[@]}"
             ;;
         application/x-elc*) # TODO: what is it exactly?
-            "$editor" "${match[@]}"
+            "$editor" -- "${match[@]}"
             ;;
         'application/x-executable; charset=binary'*)
             [[ "$count" -gt 1 ]] && { report "won't execute multiple files! select one please"; return 1; }
@@ -1739,7 +1810,7 @@ fo() {
             ;;
         'inode/directory;'*)
             [[ "$count" -gt 1 ]] && { report "won't navigate to multiple dirs! select one please"; return 1; }
-            "$file_mngr" "${match[0]}"
+            "$file_mngr" -- "${match[0]}"
             ;;
         *)
             err "dunno what to open this type of file with:\n\t$filetype" "$FUNCNAME"
@@ -1862,17 +1933,18 @@ goto() {
 # cd-s to directory by partial match; if multiple matches, opens input via dmenu. smartcase.
 #  g /data/partialmatch     # searches for partialmatch in /data
 #  g partialmatch           # searches for partialmatch in current dir
+#  g                        # if no input, then searches all directories in current dir
 #
 # see also gg()
 g() {
     local path input file match matches pattern DMENU dmenurc msg_loc INAME_ARG nr_of_dmenu_vertical_lines count i
 
-    input="$@"
+    input="$*"
     dmenurc="$HOME/.dmenurc"
     nr_of_dmenu_vertical_lines=20
 
-    [[ -z "$input" ]] && { err "no input." "$FUNCNAME"; return 1; }
     [[ -d "$input" ]] && { cd -- "$input"; return; }
+    [[ -z "$input" ]] && input='*'
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
     #[[ "$input" == */* ]] && path="${input%%/*}"  # strip everything after last slash(included)
@@ -2055,7 +2127,7 @@ function jm {
     ln -s "$(pwd)" "$target" || return 1
 }
 
-# mnemonic: jm overvrite
+# mnemonic: jm overwrite
 function jmo {
     jm -o "$@"
 }

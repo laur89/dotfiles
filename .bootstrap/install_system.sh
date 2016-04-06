@@ -316,6 +316,7 @@ function clone_or_pull_repo() {
 
         execute "pushd $install_dir/$repo"
         execute "git remote set-url origin git@${hub}:$user/${repo}.git"
+        execute "git remote set-url --push origin git@${hub}:$user/${repo}.git"
         execute "popd"
     elif is_ssh_setup; then
         execute "pushd $install_dir/$repo"

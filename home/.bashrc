@@ -116,7 +116,7 @@ fi
 ##########################################
 # shell opts:
 #override history size:
-export HISTSIZE=10000
+export HISTSIZE=10000  # don't go -1 here: processing massive histfiles can be slow as fkuk
 export HISTFILESIZE=-1
 
 # ignore dups:
