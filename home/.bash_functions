@@ -1629,7 +1629,7 @@ fog() {
 #
 # mnemonic: file open new(est)
 fon() {
-    local opts default_depth args
+    local opts default_depth
 
     opts="$1"
 
@@ -1644,8 +1644,8 @@ fon() {
         opts="-f${default_depth}"
     fi
 
-    [[ -z "$@" ]] && args='*' || args="$*"
-    fo --newest $opts "$args"
+    [[ -z "$@" ]] && set -- '*'
+    fo --newest $opts "$@"
 
     #local matches file
 
