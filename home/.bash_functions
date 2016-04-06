@@ -1796,7 +1796,8 @@ fo() {
             fi
             ;;
         video/*)
-            "$video_player" -- "${match[@]}"
+            #"$video_player" -- "${match[@]}"  # TODO: smplayer doesn't support '--' as per now
+            "$video_player" "${match[@]}"
             ;;
         text/*)
             "$editor" -- "${match[@]}"
@@ -2061,10 +2062,10 @@ shot() {
 capture() {
     local name screen_dimensions regex
 
-    readonly name="$1"
+    name="$1"
 
     check_progs_installed ffmpeg xdpyinfo || return 1
-    [[ -z "$name" ]] && { err "need to provide output file as first arg (without an extension)." "$FUNCNAME"; return 1; }
+    [[ -z "$name" ]] && { err "need to provide output file as first arg (without an extension)." "$FUNCNAME"; return 1; } || name="/tmp/${name}.mkv"
     [[ "$-" != *i* ]] && return 1  # don't launch if we're not in interactive shell;
 
     readonly regex='^[0-9]+x[0-9]+$'
@@ -2073,7 +2074,9 @@ capture() {
 
     #recordmydesktop --display=$DISPLAY --width=1024 height=768 -x=1680 -y=0 --fps=15 --no-sound --delay=10
     #recordmydesktop --display=0 --width=1920 height=1080 --fps=15 --no-sound --delay=10
-    ffmpeg -f alsa -ac 2 -i default -framerate 25 -f x11grab -s "$screen_dimensions" -i "$DISPLAY" -acodec pcm_s16le -vcodec libx264 "${name}.mkv"
+    ffmpeg -f alsa -ac 2 -i default -framerate 25 -f x11grab -s "$screen_dimensions" -i "$DISPLAY" -acodec pcm_s16le -vcodec libx264 "${name}"
+    echo
+    report "screencap saved at $name" "$FUNCNAME"
 
     ## lossless recording (from https://wiki.archlinux.org/index.php/FFmpeg#x264_lossless):
     #ffmpeg -i "$DISPLAY" -c:v libx264 -preset ultrafast -qp 0 -c:a copy "${name}.mkv"
