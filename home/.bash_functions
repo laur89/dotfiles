@@ -1598,8 +1598,8 @@ foa() {
 
 # finds files/dirs using fo() and goes to containing dir (or same dir if found item is already a dir)
 #
-# mnemonic: go go
-gg() {
+# mnemonic: file open go
+fog() {
     local opts default_depth
 
     opts="$1"
@@ -1617,9 +1617,9 @@ gg() {
     fo --goto $opts "$@"
 }
 
-# mnemonic: file open go
-fog() {
-    gg $@
+# mnemonic: go go
+gg() {
+    fog "$@"
 }
 
 
@@ -1734,20 +1734,26 @@ fo() {
                 return
                 ;;
             --openall)
-                "$editor" $matches  # (sic) - don't wrap in quotes + sic @ matches not match
+                match=()
+
+                while read i; do
+                    match+=( "$i" )
+                done < <(echo "$matches")
+
+                "$editor" "${match[@]}"
 
                 return
                 ;;
             --newest)
                 check_progs_installed stat head || return 1
-                match=''
+                match=0
                 declare -A last_mtime_to_file
 
                 while read i; do
                     j=$(stat --format=%Y -- "$i") || { err "problems running \$stat for \"$i\"." "$FUNCNAME"; continue; }
                     last_mtime_to_file[$j]="$i"
                     # bash-based sorting:
-                    [[ -z "$match" || "$j" -gt "$match" ]] && match="$j"
+                    [[ "$j" -gt "$match" ]] && match="$j"
 
                     #match+="${j}\n"  # TODO: we're screwed if filename contains newlines
                 done < <(echo "$matches")
@@ -1795,7 +1801,7 @@ fo() {
                 xmlformat "${match[@]}"
             fi
             ;;
-        video/*)
+        video/* | audio/mp4*)
             #"$video_player" -- "${match[@]}"  # TODO: smplayer doesn't support '--' as per now
             "$video_player" "${match[@]}"
             ;;
@@ -1805,7 +1811,7 @@ fo() {
         application/pdf*)
             "$pdf_viewer" -- "${match[@]}"
             ;;
-        application/x-elc*) # TODO: what is it exactly?
+        application/x-elc*)  # TODO: what exactly is it?
             "$editor" -- "${match[@]}"
             ;;
         'application/x-executable; charset=binary'*)
@@ -1817,6 +1823,9 @@ fo() {
         'inode/directory;'*)
             [[ "$count" -gt 1 ]] && { report "won't navigate to multiple dirs! select one please"; return 1; }
             "$file_mngr" -- "${match[0]}"
+            ;;
+        'inode/x-empty; charset=binary')  # touched file
+            "$editor" -- "${match[@]}"
             ;;
         *)
             err "dunno what to open this type of file with:\n\t$filetype" "$FUNCNAME"

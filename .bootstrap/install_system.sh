@@ -131,8 +131,8 @@ function check_dependencies() {
 
     readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
-    for prog in git wget tar realpath dirname tee; do
-        if ! command -v $prog >/dev/null; then
+    for prog in git wget tar realpath dirname basename tee; do
+        if ! command -v "$prog" >/dev/null; then
             report "$prog not installed yet, installing..."
             install_block "$prog" || { err "unable to install required prog $prog this script depends on. abort."; exit 1; }
             report "...done"
@@ -140,8 +140,8 @@ function check_dependencies() {
     done
 
     # TODO: need to create dev/ already here, since both dotfiles and private-common
-    # either point to it, or point somthing in it; not a good solution.
-    # best finalyse scripts and move them to dotfiles.
+    # either point to it, or point at something in it; not a good solution.
+    # best finalyse scripts and move them to dotfiles repo.
     #
     #
     # verify required dirs are existing and have $perms perms:
@@ -639,8 +639,8 @@ function setup_dirs() {
             $BASE_DATA_DIR/tmp \
             $BASE_DATA_DIR/vbox_vms \
             $BASE_DATA_DIR/progs \
-            $BASE_DATA_DIR/progs/deps \
-            $BASE_DATA_DIR/progs/custom_builds \
+            $BASE_DEPS_LOC \
+            $BASE_BUILDS_DIR \
             $BASE_DATA_DIR/dev \
             $BASE_DATA_DIR/mail \
             $BASE_DATA_DIR/mail/work \
@@ -1302,10 +1302,11 @@ function install_copyq() {
 
 
 function install_skype() {  # https://wiki.debian.org/skype
-    local skypeFile
+    local skypeFile skype_downloads_dir
 
     is_server && { report "we're server, skipping skype installation."; return; }
     readonly skypeFile="$TMPDIR/skype-install.deb"
+    readonly skype_downloads_dir="$BASE_DATA_DIR/Downloads/skype_dl"
 
     report "setting up skype"
 
@@ -1325,6 +1326,10 @@ function install_skype() {  # https://wiki.debian.org/skype
 
     # store the .deb, just in case:
     execute "mv $skypeFile $BASE_BUILDS_DIR"
+
+    # create target dir for skype file transfers;
+    # ! needs to be configured in skype!
+    [[ -d "$skype_downloads_dir" ]] || execute "mkdir '$skype_downloads_dir'"
 }
 
 
