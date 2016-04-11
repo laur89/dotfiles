@@ -20,7 +20,9 @@ readonly NVIM_REPO_LOC="https://github.com/neovim/neovim.git"         # nvim - y
 readonly KEEPASS_REPO_LOC="https://github.com/keepassx/keepassx.git"  # keepassX - open password manager forked from keepass project
 readonly COPYQ_REPO_LOC="https://github.com/hluk/CopyQ.git"           # copyq - awesome clipboard manager
 readonly SYNERGY_REPO_LOC="https://github.com/synergy/synergy.git"    # synergy - share keyboard&mouse between computers on same LAN
-readonly ORACLE_JDK_LOC="http://download.oracle.com/otn-pub/java/jdk/8u73-b02/jdk-8u73-linux-x64.tar.gz"   # http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+readonly ORACLE_JDK_LOC="http://download.oracle.com/otn-pub/java/jdk/8u73-b02/jdk-8u73-linux-x64.tar.gz"   # jdk8: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+                                                                                                           # jdk7: http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
+                                                                                                           # jdk9: https://jdk9.java.net/  /  https://jdk9.java.net/download/
 readonly SKYPE_LOC="http://www.skype.com/go/getskype-linux-deb"       # http://www.skype.com/en/download-skype/skype-for-computer/
 readonly JDK_LINK_LOC="/usr/local/jdk_link"
 readonly JDK_INSTALLATION_DIR="/usr/local/javas"

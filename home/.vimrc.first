@@ -363,6 +363,11 @@
         "nnoremap <S-h> gT
         "nnoremap <S-l> gt
 
+        " copy file name and -path:  TODO, needs refining
+        nnor ,cf :let @*=expand("%:p")<CR>    " Mnemonic: Copy File path
+        nnor ,yf :let @"=expand("%:p")<CR>    " Mnemonic: Yank File path
+        nnor ,fn :let @"=expand("%")<CR>      " Mnemonic: yank File Name
+
     """ }}}
 
     " Maps to resizing a window split (Warn: conflict with indentation)

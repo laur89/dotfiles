@@ -256,3 +256,7 @@ __check_for_change_and_compile_ssh_config() {
 ( __check_for_change_and_compile_ssh_config )  # execute in subshell because of cd-ing
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
+
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="/home/laur/.sdkman"
+[[ -s "/home/laur/.sdkman/bin/sdkman-init.sh" ]] && source "/home/laur/.sdkman/bin/sdkman-init.sh"
