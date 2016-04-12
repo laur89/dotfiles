@@ -1252,7 +1252,7 @@ function switch_jdk_versions() {
     fi
 
     while true; do
-        [[ -n "$active_java" ]] && report "current active java: $active_java"
+        [[ -n "$active_java" ]] && echo && report "current active java: ${active_java}\n"
         report "select java ver to use (select none to skip the change)\n"
         select_items "$avail_javas" 1
 
