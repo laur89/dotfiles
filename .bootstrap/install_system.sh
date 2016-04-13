@@ -2329,9 +2329,11 @@ function increase_inotify_watches_limit() {
 }
 
 
+# (refer to proglist2 if docker complains about memory swappiness not supported.)
+#
 # add our user to docker group so it could be run as non-root:
 function setup_docker() {
-    execute "sudo adduser ${USER} docker"      # add user to docker group
+    execute "sudo adduser $USER docker"      # add user to docker group
     #execute "sudo gpasswd -a ${USER} docker"  # add user to docker group
     execute "sudo service docker restart"
     execute "newgrp docker"

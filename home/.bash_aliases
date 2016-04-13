@@ -19,6 +19,7 @@ alias eclim='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/
 alias fileroller='file-roller'
 alias vscode='/data/progs/VSCode-linux-x64/Code' # MS Visual Code (editor)
 alias pubkey='cat ~/.ssh/id_rsa.pub | xsel --clipboard'
+alias pastebinit='pastebinit -P'
 ##################################
 #alias clean_failed_mvn="$(find ~/.m2 -name *.lastUpdated -delete)"
 #alias amq="/data/progs/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"
@@ -98,6 +99,9 @@ alias gitdi-staged-only='git difftool --dir-diff --cached'    # --cached == --st
 alias gitdi-prev='git difftool --dir-diff HEAD^ HEAD'    # local last commit against current index (as in last commit; shows what was changed with last commit); does NOT include current uncommited changes);
 #alias gitdi-stashed='git difftool --dir-diff stash@{0}^!'  # diff stash against its parent;
 alias gitdi-stashed='git difftool --dir-diff stash@{0}^ stash@{0}'  # diff stash against its parent;
+
+# docker:
+#alias drmi='docker rmi $(docker images --filter "dangling=true" -q --no-trunc)'
 
 alias mkdri='mkdir'
 alias mkdr='mkdir'

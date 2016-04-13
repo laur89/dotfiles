@@ -1750,7 +1750,8 @@ fo() {
                 declare -A last_mtime_to_file
 
                 while read i; do
-                    j=$(stat --format=%Y -- "$i") || { err "problems running \$stat for \"$i\"." "$FUNCNAME"; continue; }
+                    j=$(stat --format=%Y -- "$i") || { err "problems running \$ stat for \"$i\"." "$FUNCNAME"; continue; }
+                    is_digit "$j" || { err "$i stat mtime is not a digit: \"$j\"!"; return 1; }
                     last_mtime_to_file[$j]="$i"
                     # bash-based sorting:
                     [[ "$j" -gt "$match" ]] && match="$j"
@@ -2005,6 +2006,20 @@ g() {
     [[ -d "${match[0]}" ]] || { err "no such dir like \"${match[0]}\" in $msg_loc" "$FUNCNAME"; return 1; }
 
     cd -- "${match[0]}"
+}
+
+
+# dockers
+#############################
+
+# consider also https://github.com/spotify/docker-gc
+#
+# from http://stackoverflow.com/questions/32723111/how-to-remove-old-and-unused-docker-images
+function dcleanup() {
+    check_progs_installed docker || return 1
+
+    docker rm -v $(docker ps --filter status=exited -q 2>/dev/null) 2>/dev/null
+    docker rmi $(docker images --filter dangling=true -q 2>/dev/null) 2>/dev/null
 }
 
 
