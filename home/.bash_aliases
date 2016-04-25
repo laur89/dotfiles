@@ -77,6 +77,8 @@ alias vf='cd'
 alias cs='cd'
 alias ct='cd'
 alias sd='cd'
+alias fin='find'
+alias ffin='ffind'
 
 # git:
 alias gti='git'
@@ -100,7 +102,7 @@ alias gitdi-prev='git difftool --dir-diff HEAD^ HEAD'    # local last commit aga
 #alias gitdi-stashed='git difftool --dir-diff stash@{0}^!'  # diff stash against its parent;
 alias gitdi-stashed='git difftool --dir-diff stash@{0}^ stash@{0}'  # diff stash against its parent;
 
-# docker:
+# docker (better use functions in bash_funtions.sh):
 #alias drmi='docker rmi $(docker images --filter "dangling=true" -q --no-trunc)'
 
 alias mkdri='mkdir'

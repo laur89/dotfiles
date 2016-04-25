@@ -1807,7 +1807,12 @@ fo() {
             "$video_player" "${match[@]}"
             ;;
         text/*)
-            "$editor" -- "${match[@]}"
+            # if we're dealing with a logfile, force open in PAGER
+            if [[ "${match[0]}" =~ \.log(\.[\.a-z]+)*$ ]]; then
+                "$PAGER" -- "${match[@]}"
+            else
+                "$editor" -- "${match[@]}"
+            fi
             ;;
         application/pdf*)
             "$pdf_viewer" -- "${match[@]}"

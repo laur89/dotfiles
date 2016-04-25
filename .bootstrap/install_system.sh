@@ -861,10 +861,14 @@ function setup_global_prompt() {
         return 1
     fi
 
-    if ! sudo grep -q '^PS1=.*# own_def_marker$' $global_bashrc; then
-        # PS1 hasn't been defined yet:
-        execute "echo '$ps1' | sudo tee --append $global_bashrc > /dev/null"
-    fi
+    # just in case delete previous global PS1 def:
+    execute "sudo sed -i '/^PS1=.*# own_def_marker$/d' \"$global_bashrc\""
+    execute "echo '$ps1' | sudo tee --append $global_bashrc > /dev/null"
+
+    #if ! sudo grep -q '^PS1=.*# own_def_marker$' $global_bashrc; then
+        ## PS1 hasn't been defined yet:
+        #execute "echo '$ps1' | sudo tee --append $global_bashrc > /dev/null"
+    #fi
 }
 
 
@@ -1957,6 +1961,9 @@ function install_from_repo() {
         dnsutils
         glances
         htop
+        ntop
+        wireshark
+        iptraf
         tkremind
         remind
         tree
@@ -2329,6 +2336,9 @@ function increase_inotify_watches_limit() {
 }
 
 
+# note: if you don't want to install docker from the debian's own repo (docker.io),
+# follow this instruction:  https://docs.docker.com/engine/installation/linux/debian/
+#
 # (refer to proglist2 if docker complains about memory swappiness not supported.)
 #
 # add our user to docker group so it could be run as non-root:
@@ -2336,8 +2346,17 @@ function setup_docker() {
     execute "sudo adduser $USER docker"      # add user to docker group
     #execute "sudo gpasswd -a ${USER} docker"  # add user to docker group
     execute "sudo service docker restart"
-    execute "newgrp docker"
+    execute "newgrp docker"  # log us into the new group
 }
+
+
+## increase the max nr of open file in system. (for intance node might compline otherwise).
+## see https://github.com/paulmillr/chokidar/issues/45
+## and http://stackoverflow.com/a/21536041/1803648
+#function increase_ulimit() {
+    #readonly ulimit=3000
+    #execute "newgrp docker"  # log us into the new group
+#}
 
 
 # configs & settings that can/need to be installed  AFTER  the related programs have
@@ -2346,11 +2365,15 @@ function post_install_progs_setup() {
 
     install_acpi_events   # has to be after install_progs, so acpid is already insalled and events/ dir present;
     install_SSID_checker  # has to come after install_progs; otherwise NM wrapper dir won't be present
-    execute "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
-    execute "mopidy local scan"  # update mopidy library
-    execute "sudo sensors-detect"  # answer enter for default values
+    execute --ignore-errs "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
+    execute "mopidy local scan"     # update mopidy library
+    execute "sudo sensors-detect"   # answer enter for default values
     increase_inotify_watches_limit  # for intellij IDEA
     setup_docker
+    execute "sudo adduser $USER wireshark"      # add user to wireshark group, so it could be run as non-root;
+                                                # (implies wireshark is installed with allowing non-root users
+                                                # to capture packets);
+    execute "newgrp wireshark"                  # log us into the new group
 }
 
 
@@ -2493,9 +2516,12 @@ function generate_key() {
 }
 
 
+# provide '-i' or '--ignore-errs' as first arg to avoid returning non-zero code or
+# logging ERR to exec logfile on unsuccessful execution.
 function execute() {
-    local cmd exit_sig
+    local cmd exit_sig ignore_errs
 
+    [[ "$1" == -i || "$1" == --ignore-errs ]] && { shift; readonly ignore_errs=1; }
     readonly cmd="$1"
 
     echo -e "--> executing \"$cmd\""
@@ -2503,7 +2529,7 @@ function execute() {
     eval "$cmd"
     readonly exit_sig=$?
 
-    if [[ "$exit_sig" -ne 0 ]]; then
+    if [[ "$exit_sig" -ne 0 && "$ignore_errs" -ne 1 ]]; then
         [[ "$LOGGING_LVL" -ge 1 ]] && echo -e "    ERR CMD: \"$cmd\" (exited with code $exit_sig)" >> "$EXECUTION_LOG"
         return $exit_sig
     fi
