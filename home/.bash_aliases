@@ -83,6 +83,7 @@ alias ffin='ffind'
 # git:
 alias gti='git'
 alias igt='git'
+alias guit='git'
 alias gitst='git st'
 alias gitfe='git fe'
 alias gitco='git co'
