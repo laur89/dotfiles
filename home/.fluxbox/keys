@@ -41,8 +41,8 @@ OnTitlebar Mouse3 :WindowMenu
 # alt-tab & other window navigation:
 Mod1 Tab :NextWindow {groups} (workspace=[current])
 Mod1 Shift Tab :PrevWindow {groups} (workspace=[current])
-Mod4 j :NextWindow {static} (workspace=[current])
-Mod4 k :PrevWindow {static} (workspace=[current])
+Mod4 j :NextWindow {static groups} (workspace=[current])
+Mod4 k :PrevWindow {static groups} (workspace=[current])
 Mod4 Mouse4 :NextWindow {static} (workspace=[current])
 Mod4 Mouse5 :PrevWindow {static} (workspace=[current])
 
