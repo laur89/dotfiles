@@ -980,15 +980,17 @@ function swap_caps_lock_and_esc() {
         return 1
     fi
 
+	# map caps to esc:
     if ! grep -q 'key <ESC>.*Caps_Lock' "$conf_file"; then
         # hasn't been replaced yet
         execute "sudo sed -i 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock        \]   \};/g' $conf_file"
         [[ $? -ne 0 ]] && { err "replacing esc<->caps @ $conf_file failed"; return 2; }
     fi
 
+	# map esc to caps:
     if ! grep -q 'key <CAPS>.*Escape' "$conf_file"; then
         # hasn't been replaced yet
-        execute "sudo sed -i 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS>   \{ \[ Escape     \]   \};/g' $conf_file"
+        execute "sudo sed -i 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS> \{    \[ Escape     \]   \};/g' $conf_file"
         [[ $? -ne 0 ]] && { err "replacing esc<->caps @ $conf_file failed"; return 2; }
     fi
 
