@@ -28,6 +28,7 @@ fi
 # start X; note the ssh-agent:
 if [ -z "$DISPLAY" ] && [ "$(tty)" == "/dev/tty1" ]; then
     echo -e "Enter DE/WM:"
+    echo '============'
     read session
     ssh-agent startx "$HOME/.xinitrc" "$session" # -- -logverbose 6
 fi

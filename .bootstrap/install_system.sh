@@ -605,12 +605,12 @@ function install_deps() {
     _install_tmux_deps
 
     # TODO: these are not deps, are they?:
-    execute "sudo pip install git-playback"  # https://github.com/jianli/git-playback
+    execute "sudo pip install --upgrade git-playback"  # https://github.com/jianli/git-playback
 
     # this needs apt-get install  python-imaging ?:
-    execute "sudo pip install img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
-    execute "sudo pip3 install scdl"         # https://github.com/flyingrub/scdl (soundcloud downloader)
-    execute "sudo pip install rtv"           # https://github.com/michael-lazar/rtv (reddit reader)
+    execute "sudo pip install --upgrade img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
+    execute "sudo pip3 install --upgrade scdl"         # https://github.com/flyingrub/scdl (soundcloud downloader)
+    execute "sudo pip install --upgrade rtv"           # https://github.com/michael-lazar/rtv (reddit reader)
 
 
     # work deps:
@@ -1499,13 +1499,15 @@ function create_deb_install_and_store() {
 
 
 function build_and_install_keepassx() {
-    # building instructions from https://github.com/keepassx/keepassx
+    # building instructions from https://github.com/keepassx/keepassx & www.keepass.org/dev/projects/keepasx/wiki/Install_instructions
     local tmpdir
 
     should_build_if_avail_in_repo keepassx || { report "skipping building of keepassx. remember to install it from the repo after the install!"; return; }
 
     readonly tmpdir="$TMPDIR/keepassx-build-${RANDOM}"
     report "building keepassx..."
+
+	export QT_SELECT=qt5  # without defining this, autotype was not working (even the settings were missing for it)
 
     report "installing keepassx build dependencies..."
     install_block '
@@ -1601,7 +1603,7 @@ function install_neovim() {
     report "setting up nvim..."
 
     # first find whether we have deb packages from other times:
-    if confirm "do you wish to install vim from our previous build .deb package, if available?"; then
+    if confirm "do you wish to install nvim from our previous build .deb package, if available?"; then
         install_from_deb neovim || return 1
     else
         report "building neovim..."
@@ -1616,16 +1618,15 @@ function install_neovim() {
             g\+\+
             pkg-config
             unzip
-            libmsgpack-dev
-            libuv-dev
-            libluajit-5.1-dev
         ' || { err 'failed to install neovim build deps. abort.'; return 1; }
 
         execute "git clone $NVIM_REPO_LOC $tmpdir" || return 1
-        execute "pushd $tmpdir"
+        execute "pushd $tmpdir" || { err; return 1; }
 
-        execute "make" || { err; return 1; }
-        create_deb_install_and_store || { err; return 1; }
+		# TODO: checkinstall fails with neovim (bug in checkinstall afaik):
+        #execute "make" || { err; return 1; }
+        #create_deb_install_and_store || { err; return 1; }
+			execute "sudo make install" || { err; return 1; }  # TODO  remove this once checkinstall issue is resolved;
 
         execute "popd"
         execute "sudo rm -rf -- $tmpdir"
@@ -1638,8 +1639,8 @@ function install_neovim() {
     create_link "$HOME/.vimrc" "$nvim_confdir/init.vim"
 
     # as per https://neovim.io/doc/user/nvim_python.html#nvim-python :
-    execute " sudo pip2 install neovim"
-    execute " sudo pip3 install neovim"
+    execute " sudo pip2 install --upgrade neovim"
+    execute " sudo pip3 install --upgrade neovim"
 
     return 0
 }

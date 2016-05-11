@@ -134,6 +134,7 @@ set nocompatible " Must be the first line
     " development completion engine (integrates with utilsnips and deprecates
     " supertab et al; needs compilation! read the docs!:
     " !!! ühed väidavad, et javaphp,js,html jaoks on neocomplete parem;
+    " for neovim, consider Shougo/deoplete.nvim as alternative;
     Plugin 'Valloric/YouCompleteMe'
 
     " Go-lang/golang/go lang support:
