@@ -34,12 +34,6 @@ deb-src http://ftp.uk.debian.org/debian/ testing-updates main contrib non-free
 
 # 3rd party:
 ####################################################
-## spotify:
-deb http://repository.spotify.com stable non-free
-
-## mopidy:
-deb http://apt.mopidy.com/ stable main contrib non-free
-deb-src http://apt.mopidy.com/ stable main contrib non-free
 
 ## skypetab:
 #deb http://ppa.launchpad.net/keks9n/skypetab/ubuntu lucid main

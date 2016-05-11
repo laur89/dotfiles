@@ -946,18 +946,26 @@ function setup() {
 
     setup_dirs  # has to come after .bash_env_vars sourcing so the env vars are in place
     setup_config_files
-    setup_additional_apt_keys
+    setup_additional_apt_keys_and_sources
 }
 
 
-function setup_additional_apt_keys() {
+function setup_additional_apt_keys_and_sources() {
 
-    # install keys:
+    # mopidy:
     # mopidy key: (from https://docs.mopidy.com/en/latest/installation/debian/):
     execute 'wget -q -O - http://apt.mopidy.com/mopidy.gpg | sudo apt-key add -'
+	# add mopidy source:
+	execute 'sudo wget -q -O /etc/apt/sources.list.d/mopidy.list https://apt.mopidy.com/jessie.list'
+
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
     execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys BBEBDCB318AD50EC6865090613B00F1FD2C19886'
+	execute 'echo deb http://repository.spotify.com stable non-free | sudo tee /etc/apt/sources.list.d/spotify.list > /dev/null'
+
+
+	# update sources (will be done anyway on full install):
+    [[ "$FULL_INSTALL" -ne 1 ]] && execute 'sudo apt-get --yes update'
 }
 
 
@@ -972,13 +980,13 @@ function swap_caps_lock_and_esc() {
         return 1
     fi
 
-    if ! grep -q 'key <ESC>.*Caps_Lock' $conf_file; then
+    if ! grep -q 'key <ESC>.*Caps_Lock' "$conf_file"; then
         # hasn't been replaced yet
         execute "sudo sed -i 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock        \]   \};/g' $conf_file"
         [[ $? -ne 0 ]] && { err "replacing esc<->caps @ $conf_file failed"; return 2; }
     fi
 
-    if ! grep -q 'key <CAPS>.*Escape' $conf_file; then
+    if ! grep -q 'key <CAPS>.*Escape' "$conf_file"; then
         # hasn't been replaced yet
         execute "sudo sed -i 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS>   \{ \[ Escape     \]   \};/g' $conf_file"
         [[ $? -ne 0 ]] && { err "replacing esc<->caps @ $conf_file failed"; return 2; }
