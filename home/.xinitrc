@@ -16,7 +16,7 @@ DEFAULT_SESSION="start_dwm"
 #export GPG_AGENT_INFO SSH_AUTH_SOCK
 
 input="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
-source $HOME/.common_startup
+source "$HOME/.common_startup"
 
 case "$input" in
     dwm)

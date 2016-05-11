@@ -1,0 +1,5 @@
+! The following line will prevent styles from setting the background.
+background: none
+
+menu.title.font: serif-12:regular
+window.font: sans-10:bold

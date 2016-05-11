@@ -608,9 +608,9 @@ function install_deps() {
     execute "sudo pip install --upgrade git-playback"  # https://github.com/jianli/git-playback
 
     # this needs apt-get install  python-imaging ?:
-    execute "sudo pip install --upgrade img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
-    execute "sudo pip3 install --upgrade scdl"         # https://github.com/flyingrub/scdl (soundcloud downloader)
-    execute "sudo pip install --upgrade rtv"           # https://github.com/michael-lazar/rtv (reddit reader)
+    execute "sudo pip  install --upgrade img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
+    execute "sudo pip3 install --upgrade scdl"          # https://github.com/flyingrub/scdl (soundcloud downloader)
+    execute "sudo pip  install --upgrade rtv"           # https://github.com/michael-lazar/rtv (reddit reader)
 
 
     # work deps:
@@ -2106,7 +2106,10 @@ function install_from_repo() {
             smbclient
             ruby-dev
             vagrant
+
             virtualbox
+            virtualbox-dkms
+
             puppet
             docker.io
             nfs-common
