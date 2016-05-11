@@ -316,12 +316,12 @@ function clone_or_pull_repo() {
     if ! [[ -d "$install_dir/$repo" ]]; then
         execute "git clone https://$hub/$user/${repo}.git $install_dir/$repo" || return 1
 
-        execute "pushd $install_dir/$repo"
+        execute "pushd $install_dir/$repo" || return 1
         execute "git remote set-url origin git@${hub}:$user/${repo}.git"
         execute "git remote set-url --push origin git@${hub}:$user/${repo}.git"
         execute "popd"
     elif is_ssh_setup; then
-        execute "pushd $install_dir/$repo"
+        execute "pushd $install_dir/$repo" || return 1
         execute "git pull"
         execute "popd"
     fi
@@ -566,11 +566,11 @@ function install_deps() {
             report "don't forget to install tmux plugins by running <prefix + I> in tmux later on." && sleep 4
         else
             # update all the tmux plugins, including the plugin manager itself:
-            execute "pushd $plugins_dir"
+            execute "pushd $plugins_dir" || return 1
 
             for dir in *; do
                 if [[ -d "$dir" ]] && is_ssh_setup; then
-                    execute "pushd $dir"
+                    execute "pushd $dir" || return 1
                     is_git && execute "git pull"
                     execute "popd"
                 fi
@@ -975,10 +975,7 @@ function swap_caps_lock_and_esc() {
 
     readonly conf_file="/usr/share/X11/xkb/symbols/pc"
 
-    if ! [[ -f "$conf_file" ]]; then
-        err "cannot swap esc<->caps: \"$conf_file\" does not exist; abort;"
-        return 1
-    fi
+    [[ -f "$conf_file" ]] || { err "cannot swap esc<->caps: \"$conf_file\" does not exist; abort;"; return 1; }
 
 	# map caps to esc:
     if ! grep -q 'key <ESC>.*Caps_Lock' "$conf_file"; then
@@ -1056,7 +1053,7 @@ function install_symantec_endpoint_security() {
     [[ -d "$JDK_LINK_LOC" ]] || { err "expected $JDK_LINK_LOC to link to existing jdk installation."; return 1; }
 
     tmpdir="$(mktemp -d "symantec-endpoint-sec-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-    execute "pushd $tmpdir"
+    execute "pushd $tmpdir" || return 1
 
     # fetch & install SEP:
     execute "wget -- $sep_loc" || return 1
@@ -1221,7 +1218,7 @@ function install_oracle_jdk() {
     readonly tmpdir="$(mktemp -d "jdk-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     report "fetcing $ORACLE_JDK_LOC"
-    execute "pushd $tmpdir"
+    execute "pushd $tmpdir" || return 1
 
     wget --no-check-certificate \
         --no-cookies \
@@ -1254,12 +1251,12 @@ function switch_jdk_versions() {
 
     [[ -d "$JDK_INSTALLATION_DIR" ]] || { err "$JDK_INSTALLATION_DIR does not exist. abort."; return 1; }
     readonly avail_javas="$(find $JDK_INSTALLATION_DIR -mindepth 1 -maxdepth 1 -type d)"
-    [[ $? -ne 0 || -z "$avail_javas" ]] && { err "discovered no java installations @ $JDK_INSTALLATION_DIR"; sleep 5; return 1; }
+    [[ $? -ne 0 || -z "$avail_javas" ]] && { err "discovered no java installations @ $JDK_INSTALLATION_DIR"; return 1; }
     if [[ -h "$JDK_LINK_LOC" ]]; then
         active_java="$(realpath $JDK_LINK_LOC)"
         if [[ "$avail_javas" == "$active_java" ]]; then
             report "only one active jdk installation, \"$active_java\" is available, and that is already linked by $JDK_LINK_LOC"
-            return
+            return 0
         fi
 
         readonly active_java="$(basename "$active_java")"
@@ -1447,7 +1444,7 @@ function build_and_install_synergy() {
         execute "git clone $SYNERGY_REPO_LOC $builddir" || return 1
     fi
 
-    execute "pushd $builddir"
+    execute "pushd $builddir" || return 1
     [[ "$do_clone" -eq 0 ]] && is_ssh_setup && execute "git pull"
 
     execute "./hm.sh conf -g1"
@@ -1477,7 +1474,7 @@ function build_and_install_copyq() {
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
     execute "git clone $COPYQ_REPO_LOC $tmpdir" || return 1
-    execute "pushd $tmpdir"
+    execute "pushd $tmpdir" || return 1
 
     execute 'cmake .'
     execute "make"
@@ -1534,7 +1531,7 @@ function build_and_install_keepassx() {
     execute "git clone $KEEPASS_REPO_LOC $tmpdir" || return 1
 
     execute "mkdir $tmpdir/build"
-    execute "pushd $tmpdir/build"
+    execute "pushd $tmpdir/build" || return 1
     execute 'cmake ..'
     execute "make"
 
@@ -1564,7 +1561,7 @@ function install_dwm() {
         libxtst-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "pushd $build_dir"
+    execute "pushd $build_dir" || return 1
     report "installing dwm..."
     execute "sudo make clean install"
     execute "popd"
@@ -1774,7 +1771,7 @@ function build_and_install_vim() {
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
     execute "git clone $VIM_REPO_LOC $tmpdir" || return 1
-    execute "pushd $tmpdir"
+    execute "pushd $tmpdir" || return 1
 
     execute "./configure \
             --with-features=huge \
@@ -1815,7 +1812,7 @@ function install_YCM() {
         readonly tmpdir="$(mktemp -d "ycm-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
         readonly tarball="$(basename "$CLANG_LLVM_LOC")"
 
-        execute "pushd $tmpdir"
+        execute "pushd $tmpdir" || return 1
         report "fetching $CLANG_LLVM_LOC"
         execute "wget $CLANG_LLVM_LOC" || { err "wgetting $CLANG_LLVM_LOC failed."; return 1; }
         extract "$tarball" || { err "extracting $tarball failed."; return 1; }
@@ -1854,7 +1851,7 @@ function install_YCM() {
 
     # build:
     execute "mkdir $ycm_build_root"
-    execute "pushd $ycm_build_root"
+    execute "pushd $ycm_build_root" || return 1
     execute "cmake -G 'Unix Makefiles' \
         -DPATH_TO_LLVM_ROOT=$libclang_root \
         . \
@@ -1866,12 +1863,12 @@ function install_YCM() {
     ############
     # set up support for additional languages:
     # C#:
-    execute "pushd $ycm_third_party_rootdir/OmniSharpServer"
+    execute "pushd $ycm_third_party_rootdir/OmniSharpServer" || return 1
     execute "xbuild"
     execute "popd"
 
     # js:
-    execute "pushd $ycm_third_party_rootdir/tern"
+    execute "pushd $ycm_third_party_rootdir/tern" || return 1
     execute "npm install --production"
     execute "popd"
 
@@ -1904,12 +1901,12 @@ function install_fonts() {
     #execute "xset +fp ~/.fonts"
     #execute "mkfontscale ~/.fonts"
     #execute "mkfontdir ~/.fonts"
-    #execute "pushd ~/.fonts"
+    #execute "pushd ~/.fonts" || return 1
 
     ## also install fonts in sub-dirs:
     #for dir in * ; do
         #if [[ -d "$dir" ]]; then
-            #execute "pushd $dir"
+            #execute "pushd $dir" || return 1
             #execute "xset +fp $PWD"
             #execute "mkfontscale"
             #execute "mkfontdir"
@@ -2021,6 +2018,7 @@ function install_from_repo() {
 
     readonly block3=(
         iceweasel
+		chromium
         icedove
         rxvt-unicode-256color
         guake
