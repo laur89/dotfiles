@@ -1868,7 +1868,7 @@ function install_YCM() {
     execute "popd"
 
     # js:
-    execute "pushd $ycm_third_party_rootdir/tern" || return 1
+    execute "pushd $ycm_third_party_rootdir/tern_runtime" || return 1
     execute "npm install --production"
     execute "popd"
 

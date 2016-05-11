@@ -612,13 +612,15 @@ function aptreset() {
 # !!! deprecated by ag/astr
 # TODO: find whether we could stop using find here and use grep --include & --exclude flags instead.
 function ffstr() {
-    local grepcase OPTIND usage opt MAX_RESULT_LINE_LENGTH caseOptCounter force_case regex
-    local INAME_ARG maxDepth maxDepthParam defMaxDeptWithFollowLinks follow_links
+    local grepcase OPTIND usage opt MAX_RESULT_LINE_LENGTH caseOptCounter force_case regex i
+    local INAME_ARG maxDepth maxDepthParam defMaxDeptWithFollowLinks follow_links result_files result
+    local pattern file_pattern collect_files
 
     caseOptCounter=0
     OPTIND=1
     MAX_RESULT_LINE_LENGTH=300      # max nr of characters per grep result line
     defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
+    result_files=()                 # array containing the files that match searched string
 
     usage="\n$FUNCNAME: find string in files (from current directory recursively). smartcase both for filename and search patterns.
     Usage: $FUNCNAME [opts] \"pattern\" [filename pattern]
@@ -626,12 +628,13 @@ function ffstr() {
         -s  force case sensitivity
         -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;
         -L  follow symlinks
+        -c  collect matching filenames into global array instead of printing to stdout;
         -r  enable regex on filename pattern"
 
 
     command -v ag > /dev/null && report "consider using ag or its wrapper astr (same thing as $FUNCNAME, but using ag instead of find+grep)\n" "$FUNCNAME"
 
-    while getopts "isrm:Lh" opt; do
+    while getopts "isrm:Lch" opt; do
         case "$opt" in
            i) grepcase=" -i "
               INAME_ARG="-iname"
@@ -653,6 +656,9 @@ function ffstr() {
            L) follow_links="-L"
               shift $((OPTIND-1))
                 ;;
+           c) collect_files=1
+              shift $((OPTIND-1))
+                ;;
            h) echo -e "$usage"
               return 0
               ;;
@@ -661,6 +667,9 @@ function ffstr() {
               ;;
         esac
     done
+
+    pattern="$1"
+    file_pattern="$2"
 
     if [[ "$#" -lt 1 ]] || [[ "$#" -gt 2 ]]; then
         err "incorrect nr of arguments." "$FUNCNAME"
@@ -673,37 +682,37 @@ function ffstr() {
     fi
 
     # grep search pattern sanity:
-    if [[ "$1" == *\** && "$1" != *\.\** ]]; then
+    if [[ "$pattern" == *\** && "$pattern" != *\.\** ]]; then
         err "use .* as wildcards, not a single *" "$FUNCNAME"
         return 1
-    elif [[ "$(echo "$1" | tr -dc '.' | wc -m)" -lt "$(echo "$1" | tr -dc '*' | wc -m)" ]]; then
+    elif [[ "$(echo "$pattern" | tr -dc '.' | wc -m)" -lt "$(echo "$pattern" | tr -dc '*' | wc -m)" ]]; then
         err "nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
         return 1
     fi
 
 
     # find metacharacter or regex FILENAME (not search pattern) sanity:
-    if [[ -n "$2" ]]; then
-        if [[ "$2" == */* ]]; then
+    if [[ -n "$file_pattern" ]]; then
+        if [[ "$file_pattern" == */* ]]; then
             err "there are slashes in the filename. note that optional 2nd arg is a filename pattern, not a path." "$FUNCNAME"
             return 1
         fi
 
         if [[ "$regex" -eq 1 ]]; then
-            if [[ "$2" == *\** && "$2" != *\.\** ]]; then
+            if [[ "$file_pattern" == *\** && "$file_pattern" != *\.\** ]]; then
                 err 'err in filename pattern: use .* as wildcards, not a single *; you are misusing regex.' "$FUNCNAME"
                 return 1
-            elif [[ "$(echo "$2" | tr -dc '.' | wc -m)" -lt "$(echo "$2" | tr -dc '*' | wc -m)" ]]; then
+            elif [[ "$(echo "$file_pattern" | tr -dc '.' | wc -m)" -lt "$(echo "$file_pattern" | tr -dc '*' | wc -m)" ]]; then
                 err "err in filename pattern: nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
                 return 1
             fi
         else # no regex, make sure find metacharacters are not mistaken for regex ones:
-            if [[ "$2" == *\.\** ]]; then
+            if [[ "$file_pattern" == *\.\** ]]; then
                 err "err in filename pattern: only use asterisks (*) for wildcards, not .*; provide -r flag if you want to use regex." "$FUNCNAME"
                 return 1
             fi
 
-            if [[ "$2" == *\.* ]]; then
+            if [[ "$file_pattern" == *\.* ]]; then
                 report "note that period (.) in the filename pattern will be used as a literal period, not as a wildcard. provide -r flag to use regex.\n" "$FUNCNAME"
             fi
         fi
@@ -722,12 +731,12 @@ function ffstr() {
     fi
 
     # as find doesn't support smart case, provide it yourself:
-    if [[ "$(tolowercase "$1")" == "$1" ]]; then
+    if [[ "$(tolowercase "$pattern")" == "$pattern" ]]; then
         # provided pattern was lowercase, make it case insensitive:
         grepcase=" -i "
     fi
 
-    if [[ -n "$2" && "$(tolowercase "$2")" == "$2" ]]; then
+    if [[ -n "$file_pattern" && "$(tolowercase "$file_pattern")" == "$file_pattern" ]]; then
         # provided pattern was lowercase, make it case insensitive:
         INAME_ARG="-iname"
     fi
@@ -735,27 +744,47 @@ function ffstr() {
     [[ "$force_case" -eq 1 ]] && unset grepcase INAME_ARG
 
     ## Clean grep-only solution: (in this case the maxdepth option goes out the window)
-    #if [[ -z "$2" ]]; then
+    #if [[ -z "$file_pattern" ]]; then
         #[[ -n "$follow_links" ]] && follow_links=R || follow_links=r
-        #grep -E${follow_links} --color=always -sn ${grepcase} -- "$1"
+        #grep -E${follow_links} --color=always -sn ${grepcase} -- "$pattern"
 
     #elif [[ "$regex" -eq 1 ]]; then
     if [[ "$regex" -eq 1 ]]; then
         # TODO: convert to  'find . -name "$ext" -type f -exec grep "$pattern" /dev/null {} +' perhaps?
-        [[ -z "$2" ]] && { err "with -r flag, filename argument is required." "$FUNCNAME"; return 1; }
+        [[ -z "$file_pattern" ]] && { err "with -r flag, filename argument is required." "$FUNCNAME"; return 1; }
         [[ -n "$INAME_ARG" ]] && INAME_ARG="-regextype posix-extended -iregex" || INAME_ARG="-regextype posix-extended -regex"
 
-        eval find $follow_links . $maxDepthParam -type f $INAME_ARG '.*'"$2"'.*' -print0 2>/dev/null | \
-            xargs -0 grep -E --color=always -sn ${grepcase} -- "$1" | \
-            cut -c 1-$MAX_RESULT_LINE_LENGTH | \
-            more
-            #less
+        if [[ "$collect_files" -eq 1 ]]; then
+            result="$(eval find $follow_links . $maxDepthParam -type f $INAME_ARG '.*'"$file_pattern"'.*' -print0 2>/dev/null | \
+                    xargs -0 grep -El --color=never -sn ${grepcase} -- "$pattern")"
+        else
+            eval find $follow_links . $maxDepthParam -type f $INAME_ARG '.*'"$file_pattern"'.*' -print0 2>/dev/null | \
+                xargs -0 grep -E --color=always -sn ${grepcase} -- "$pattern" | \
+                cut -c 1-$MAX_RESULT_LINE_LENGTH | \
+                more
+                #less
+        fi
     else
-        find $follow_links . $maxDepthParam -type f "${INAME_ARG:--name}" '*'"${2:-*}"'*' -print0 2>/dev/null | \
-            xargs -0 grep -E --color=always -sn ${grepcase} -- "$1" | \
-            cut -c 1-$MAX_RESULT_LINE_LENGTH | \
-            more
-            #less
+        if [[ "$collect_files" -eq 1 ]]; then
+            result="$(find $follow_links . $maxDepthParam -type f "${INAME_ARG:--name}" '*'"${file_pattern:-*}"'*' -print0 2>/dev/null | \
+                    xargs -0 grep -El --color=never -sn ${grepcase} -- "$pattern")"
+        else
+            find $follow_links . $maxDepthParam -type f "${INAME_ARG:--name}" '*'"${file_pattern:-*}"'*' -print0 2>/dev/null | \
+                xargs -0 grep -E --color=always -sn ${grepcase} -- "$pattern" | \
+                cut -c 1-$MAX_RESULT_LINE_LENGTH | \
+                more
+                #less
+        fi
+    fi
+
+    if [[ "$collect_files" -eq 1 ]]; then
+        while read i; do
+            result_files+=( "$i" )
+        done < <(echo "$result")
+
+        report "found ${#result_files[@]} files containing \"$pattern\"; stored in \$_FOUND_FILES global array." "$FUNCNAME"
+        _FOUND_FILES=("${result_files[@]}")
+        [[ "${#_FOUND_FILES[@]}" -gt 0 ]] && return 0 || return 1
     fi
 }
 
@@ -1660,6 +1689,27 @@ fon() {
 }
 
 
+# collect all found files into global array
+foc() {
+    local opts default_depth
+
+    opts="$1"
+
+    readonly default_depth="m10"
+
+    if [[ "$opts" == -* ]]; then
+        [[ "$opts" != *m* ]] && opts+="$default_depth"
+        #echo $opts  # debug
+        shift
+    else
+        opts="-${default_depth}"
+    fi
+
+    [[ -z "$@" ]] && set -- '*'
+    fo --collect $opts "$@"
+}
+
+
 # finds files/dirs using ffind() (find wrapper) and opens them.
 # accepts different 'special modes' to be defined as first arg (modes defined in $special_modes array).
 #
@@ -1673,7 +1723,7 @@ fo() {
 
     dmenurc="$HOME/.dmenurc"
     nr_of_dmenu_vertical_lines=20
-    readonly special_modes="--goto --openall --newest"  # special mode definitions; mode basically decides how to deal with the found match(es)
+    readonly special_modes="--goto --openall --newest --collect"  # special mode definitions; mode basically decides how to deal with the found match(es)
     editor="$EDITOR"
     image_viewer="sxiv"
     video_player="smplayer"
@@ -1696,7 +1746,7 @@ fo() {
     match=("$matches")  # define the default match array in case only single node was found;
 
     # logic to select wanted nodes from multiple matches:
-    if [[ "$count" -gt 1 ]] && ! list_contains "$special_mode" "--openall --newest"; then
+    if [[ "$count" -gt 1 ]] && ! list_contains "$special_mode" "--openall --newest --collect"; then
         report "found $count items" "$FUNCNAME"
         match=()
 
@@ -1741,6 +1791,18 @@ fo() {
                 done < <(echo "$matches")
 
                 "$editor" "${match[@]}"
+
+                return
+                ;;
+            --collect)
+                match=()
+
+                while read i; do
+                    match+=( "$i" )
+                done < <(echo "$matches")
+
+                report "found ${#match[@]} files; stored in \$_FOUND_FILES global array." "$FUNCNAME"
+                _FOUND_FILES=("${match[@]}")
 
                 return
                 ;;
