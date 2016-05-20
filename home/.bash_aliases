@@ -18,7 +18,7 @@ alias eclim='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/
 #alias skype='LD_PRELOAD=/data/progs/custom_builds/skypetab-ng/libskypetab-ng.so   skype'
 alias fileroller='file-roller'
 alias vscode='/data/progs/VSCode-linux-x64/Code' # MS Visual Code (editor)
-alias pubkey='cat ~/.ssh/id_rsa.pub | xsel --clipboard'
+#alias pubkey='cat ~/.ssh/id_rsa.pub | xsel --clipboard'
 alias pastebinit='pastebinit -P'
 ##################################
 #alias clean_failed_mvn="$(find ~/.m2 -name *.lastUpdated -delete)"

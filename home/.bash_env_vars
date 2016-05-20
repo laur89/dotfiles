@@ -2,18 +2,21 @@
 #
 # !! might be used by root as well!
 #
+export BASE_DATA_DIR="/data"
+export DEFAULT_SSH_USER=laur
+
 # load local (ie non-ssh) system's vars:
 if [[ -z "$PEARL_HOME" ]]; then
     # env vars to be loaded in local systems only (ie remote sessions should ignore this)
     # needs to be in same dir as the sourcing env vars file.
 
     export JAVA_HOME=/usr/local/jdk_link
-    export M2_HOME=/data/progs/maven/mvn_link
+    export M2_HOME=$BASE_DATA_DIR/progs/maven/mvn_link
     export M2=$M2_HOME/bin
     export GRADLE_HOME=/usr/share/gradle
 
     # add additional locations to $PATH:
-    export PATH=$JAVA_HOME/bin:$M2:/data/dev/scripts/system:$HOME/bin:$GRADLE_HOME/bin:$PATH
+    export PATH=$JAVA_HOME/bin:$M2:$BASE_DATA_DIR/dev/scripts/system:$HOME/bin:$GRADLE_HOME/bin:$PATH
     # ruby env (rbenv):
     export PATH="$HOME/.rbenv/bin:$PATH"
 
@@ -46,7 +49,7 @@ if [[ -z "$PEARL_HOME" ]]; then
 
     # scripts' settings:
     # ###################
-    export _SCRIPTS_COMMONS="/data/dev/scripts/system/utils.sh"
+    export _SCRIPTS_COMMONS="$BASE_DATA_DIR/dev/scripts/system/utils.sh"
     export _DEF_CON_IF="/tmp/connected_default_if.dat"
     export _CON_IF="/tmp/connected_interfaces.dat"
     export _WIRELESS_IF="/tmp/wireless_interfaces.dat"
@@ -89,12 +92,15 @@ export LESS_TERMCAP_ZW=$(tput rsupm)
 #export LESS_TERMCAP_us=$(printf "\e[1;32m")
 
 
-if [[ -d "/data/tmp" && -w "/data/tmp" ]]; then
-    export _PERSISTED_TMP="/data/tmp"
+if [[ -d "$BASE_DATA_DIR/tmp" && -w "$BASE_DATA_DIR/tmp" ]]; then
+    export _PERSISTED_TMP="$BASE_DATA_DIR/tmp"
 else
-    [[ -z "$PEARL_HOME" ]] && echo -e "bash_env_vars: preferred persisted tempdir at /data/tmp not found; defaulting to /tmp"
+    [[ -z "$PEARL_HOME" ]] && echo -e "bash_env_vars: preferred persisted tempdir at $BASE_DATA_DIR/tmp not found; defaulting to /tmp"
     export _PERSISTED_TMP="/tmp"
 fi
+
+# markpath/jumps dir:
+export _MARKPATH_DIR=.shell_jump_marks
 
 # test whether the shell is interactive; if not, set the display:
 # (as per http://www.tldp.org/LDP/abs/html/intandnonint.html)

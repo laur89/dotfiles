@@ -593,41 +593,48 @@ function aptsearch() {
 function aptsrc() { aptsearch "$@"; } # alias
 
 function aptreset() {
+    local apt_lists_dir
+
+    readonly apt_lists_dir="/var/lib/apt/lists"
 
     report "note that sudo passwd is required" "$FUNCNAME"
 
-    sudo apt-get clean
-    if [[ -d "/var/lib/apt/lists" ]]; then
-        sudo rm -rf /var/lib/apt/lists/*
+    if [[ -d "$apt_lists_dir" ]]; then
+        report "deleting contents of $apt_lists_dir" "$FUNCNAME"
+        sudo rm -rf $apt_lists_dir/*
     else
-        err "/var/lib/apt/lists is not a lib; can't delete the contents" "$FUNCNAME"
+        err "$apt_lists_dir is not a dir; can't delete the contents in it." "$FUNCNAME"
     fi
+
+    report "running apt-get clean..." "$FUNCNAME"
     sudo apt-get clean
     #sudo apt-get update
     #sudo apt-get upgrade
 }
+
+function aptclean() { aptreset; }
 
 #  Find a pattern in a set of files and highlight them:
 #+ (needs a recent version of grep).
 # !!! deprecated by ag/astr
 # TODO: find whether we could stop using find here and use grep --include & --exclude flags instead.
 function ffstr() {
-    local grepcase OPTIND usage opt MAX_RESULT_LINE_LENGTH caseOptCounter force_case regex i
+    local grepcase OPTIND usage opt max_result_line_length caseOptCounter force_case regex i
     local INAME_ARG maxDepth maxDepthParam defMaxDeptWithFollowLinks follow_links result_files result
     local pattern file_pattern collect_files
 
     caseOptCounter=0
     OPTIND=1
-    MAX_RESULT_LINE_LENGTH=300      # max nr of characters per grep result line
-    defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
+    max_result_line_length=300      # max nr of characters per grep result line
+    defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) option selected;
     result_files=()                 # array containing the files that match searched string
 
     usage="\n$FUNCNAME: find string in files (from current directory recursively). smartcase both for filename and search patterns.
     Usage: $FUNCNAME [opts] \"pattern\" [filename pattern]
-        -i  force case insensitive
-        -s  force case sensitivity
+        -i  force case insensitive;
+        -s  force case sensitivity;
         -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;
-        -L  follow symlinks
+        -L  follow symlinks;
         -c  collect matching filenames into global array instead of printing to stdout;
         -r  enable regex on filename pattern"
 
@@ -760,7 +767,7 @@ function ffstr() {
         else
             eval find $follow_links . $maxDepthParam -type f $INAME_ARG '.*'"$file_pattern"'.*' -print0 2>/dev/null | \
                 xargs -0 grep -E --color=always -sn ${grepcase} -- "$pattern" | \
-                cut -c 1-$MAX_RESULT_LINE_LENGTH | \
+                cut -c 1-$max_result_line_length | \
                 more
                 #less
         fi
@@ -771,7 +778,7 @@ function ffstr() {
         else
             find $follow_links . $maxDepthParam -type f "${INAME_ARG:--name}" '*'"${file_pattern:-*}"'*' -print0 2>/dev/null | \
                 xargs -0 grep -E --color=always -sn ${grepcase} -- "$pattern" | \
-                cut -c 1-$MAX_RESULT_LINE_LENGTH | \
+                cut -c 1-$max_result_line_length | \
                 more
                 #less
         fi
@@ -1330,23 +1337,29 @@ function xmlf() { xmlformat "$@"; } # alias for xmlformat;
 
 function createUsbIso() {
     local file device mountpoint cleaned_devicename usage override_dev_partitioncheck OPTIND partition
+    local reverse inf ouf
 
-    readonly usage="${FUNCNAME}: burn images to usb.
+    readonly usage="${FUNCNAME}: write files onto devices and vice versa.
+
     Usage:   $FUNCNAME  [options]  image.file  device
+        -r  reverse the direction - device will be written onto the file.
         -o  allow selecting devices whose name ends with a digit (note that you
             should be selecting a whole device instead of its parition (ie sda vs sda1),
-            but some devices have weird names (eg sd cards)
+            but some devices have weird names (eg sd cards)).
 
     example: $FUNCNAME  file.iso  /dev/sdh"
 
-    check_progs_installed   dd lsblk umount sudo || return 1
+    check_progs_installed   dd lsblk dirname umount sudo || return 1
 
-    while getopts "ho" opt; do
+    while getopts "hor" opt; do
         case "$opt" in
            h) echo -e "$usage";
               return 0
               ;;
            o) override_dev_partitioncheck=1
+              shift $((OPTIND-1))
+              ;;
+           r) reverse=1
               shift $((OPTIND-1))
               ;;
            *) echo -e "$usage";
@@ -1364,27 +1377,35 @@ function createUsbIso() {
         err "either file or device weren't provided" "$FUNCNAME"
         echo -e "$usage"
         return 1;
-    elif [[ ! -f "$file" ]]; then
+    elif [[ ! -f "$file" && "$reverse" -ne 1 ]]; then
         err "$file is not a regular file" "$FUNCNAME"
         echo -e "$usage"
         return 1;
+    elif [[ -f "$file" && "$reverse" -eq 1 ]]; then
+        err "$file already exists. choose another file to write into, or delete it." "$FUNCNAME"
+        echo -e "$usage"
+        return 1;
+    elif [[ "$reverse" -eq 1 && ! -d "$(dirname "$file")" ]]; then
+        err "$file doesn't appear to be defined on a valid path. please check." "$FUNCNAME"
+        echo -e "$usage"
+        return 1;
     elif [[ ! -e "$device" ]]; then
-        err "$device does not exist" "$FUNCNAME"
+        err "[$device] device does not exist" "$FUNCNAME"
         echo -e "$usage"
         return 1;
     elif ! ls /dev | grep -q -- "\b${cleaned_devicename}\b" > /dev/null 2>&1 ;then
-        err "$cleaned_devicename does not exist in /dev" "$FUNCNAME"
+        err "[$cleaned_devicename] does not exist in /dev" "$FUNCNAME"
         echo -e "$usage"
         return 1;
-    elif [[ "$override_dev_partitioncheck" -ne 1 ]] && [[ "$cleaned_devicename" =~ .*[0-9]+$ ]]; then
+    elif [[ "$override_dev_partitioncheck" -ne 1 && "$cleaned_devicename" =~ .*[0-9]+$ ]]; then
         # as per arch wiki
         err "please don't provide partition, but a drive, e.g. /dev/sdh instad of /dev/sdh1" "$FUNCNAME"
         report "note you can override this check with the -o flag." "$FUNCNAME"
         echo -e "$usage"
         return 1
-    elif [[ "$override_dev_partitioncheck" -eq 1 ]] && [[ "$cleaned_devicename" =~ .*[0-9]+$ ]]; then
+    elif [[ "$override_dev_partitioncheck" -eq 1 && "$cleaned_devicename" =~ .*[0-9]+$ ]]; then
         report "you've selected to override partition check (ie making sure you select device, not its partition.)" "$FUNCNAME"
-        confirm "you're sure that $cleaned_devicename is the device you wish to check?" "$FUNCNAME" || return 1
+        confirm "are you sure that [$cleaned_devicename] is the device you wish to select?" "$FUNCNAME" || return 1
     fi
 
     #echo "please provide passwd for running fdisk -l to confirm the selected device is the right one:"
@@ -1397,12 +1418,12 @@ function createUsbIso() {
     #lsblk -o name,size,mountpoint /dev/sda
     report "unmounting $cleaned_devicename partitions... (may ask for sudo password)"
     for partition in ${device}* ; do
-        mountpoint="$(lsblk -o mountpoint -- "$partition")" || { err "some issue occurred running lsblk -o mountpoint $partition" "$FUNCNAME"; return 1; }
+        mountpoint="$(lsblk -o mountpoint -- "$partition")" || { err "some issue occurred running [lsblk -o mountpoint ${partition}]" "$FUNCNAME"; return 1; }
         mountpoint="$(echo "$mountpoint" | sed -n 2p)"
         if [[ -n "$mountpoint" ]]; then
-            report "$partition appears to be mounted at $mountpoint, trying to unmount..." "$FUNCNAME"
+            report "[$partition] appears to be mounted at [$mountpoint], trying to unmount..." "$FUNCNAME"
             if ! sudo umount "$mountpoint"; then
-                err "something went wrong with unmounting ${mountpoint}. please unmount the device and try again." "$FUNCNAME"
+                err "something went wrong with unmounting [${mountpoint}]. please unmount the device and try again." "$FUNCNAME"
                 return 1
             fi
             report "...success." "$FUNCNAME"
@@ -1412,10 +1433,16 @@ function createUsbIso() {
     report "Please provide sudo passwd for running dd:" "$FUNCNAME"
     sudo echo "..."
     clear
-    report "Running dd, this might take a while..." "$FUNCNAME"
-    sudo dd if="$file" of="$device" bs=4M
+    [[ "$reverse" -eq 1 ]] && { inf="$device"; ouf="$file"; } || { inf="$file"; ouf="$device"; }
+    report "Running dd, writing [$inf] onto [$ouf]; this might take a while..." "$FUNCNAME"
+    sudo dd if="$inf" of="$ouf" bs=4M || { err "some error occurred while running dd." "$FUNCNAME"; }
     sync
     #eject $device
+
+    # TODO:
+    # verify integrity:
+    #md5sum mydisk.iso
+    #md5sum /dev/sr0
 }
 
 #######################
@@ -2092,6 +2119,12 @@ function dcleanup() {
 
 # display available APs and their basic info
 function wifi_list() {
+    local wifi_device_file
+
+    readonly wifi_device_file="$_WIRELESS_IF"
+
+    [[ -r "$wifi_device_file" ]] || { err "can't read file \"$wifi_device_file\"; probably you have no wireless devices." "$FUNCNAME"; }
+    [[ -z "$(cat "$wifi_device_file")" ]] && { err "$wifi_device_file is empty." "$FUNCNAME"; }
     nmcli device wifi list
 }
 
@@ -2183,6 +2216,21 @@ ytconvert() {
     ffmpeg -i "$1" -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -c:a copy "$2.mkv"
 }
 
+
+# Copies our public key to clipboard
+#
+# @returns {void}
+function pubkey() {
+    local key contents
+    readonly key="$HOME/.ssh/id_rsa.pub"
+
+    [[ -f "$key" ]] || { err "$key does not exist"; return 1; }
+    readonly contents="$(cat "$key")" || { err "cat-ing [$key] failed."; return 1; }
+
+    copy_to_clipboard "$contents"
+    return $?
+}
+
 ##############################################
 ## Colored Find                             ##
 ## NOTE: Searches current tree recrusively. ##
@@ -2195,21 +2243,24 @@ f() {
 # marks (jumps)                             ##
 # from: http://jeroenjanssens.com/2013/08/16/quickly-navigate-your-filesystem-from-the-command-line.html
 ##############################################
-_MARKPATH_DIR=.shell_jump_marks
-
 unset _MARKPATH  # otherwise we'll use the regular user defined _MARKPATH who changed into su
 if [[ "$EUID" -eq 0 ]]; then
-    _MARKPATH="$(find /home -mindepth 2 -maxdepth 2 -type d -name $_MARKPATH_DIR -print0 -quit)"
+    _MARKPATH="$(find $BASE_DATA_DIR /home -mindepth 2 -maxdepth 2 -type d -name $_MARKPATH_DIR -print0 -quit 2>/dev/null)"
+else
+    # if $BASE_DATA_DIR available, try writing it there so it'd be persisted between OS installs:
+    [[ -d "$BASE_DATA_DIR" ]] && _MARKPATH="$BASE_DATA_DIR/$_MARKPATH_DIR" || _MARKPATH="$HOME/$_MARKPATH_DIR"
 fi
 
-export _MARKPATH="${_MARKPATH:-$HOME/$_MARKPATH_DIR}"
-unset _MARKPATH_DIR
+#export _MARKPATH="${_MARKPATH:-$HOME/$_MARKPATH_DIR}"
+export _MARKPATH
 
+# jump to mark:
 function jj {
-    [[ -d "$_MARKPATH" ]] || { err "no marks saved in $_MARKPATH" "$FUNCNAME"; return 1; }
-    cd -P "$_MARKPATH/$1" 2>/dev/null || err "no such mark: $1" "$FUNCNAME"
+    [[ -d "$_MARKPATH" ]] || { err "no marks saved in ${_MARKPATH} - dir not existing." "$FUNCNAME"; return 1; }
+    cd -P "$_MARKPATH/$1" 2>/dev/null || err "no mark [$1] in [$_MARKPATH]" "$FUNCNAME"
 }
 
+# mark:
 # pass '-o' as first arg to force overwrite existing target link
 function jm {
     local overwrite target
@@ -2226,18 +2277,21 @@ function jm {
     ln -s "$(pwd)" "$target" || return 1
 }
 
+# mark override:
 # mnemonic: jm overwrite
 function jmo {
     jm -o "$@"
 }
 
+# un-mark:
 function jum {
-    [[ -d "$_MARKPATH" ]] || { err "no marks saved in $_MARKPATH" "$FUNCNAME"; return 1; }
+    [[ -d "$_MARKPATH" ]] || { err "no marks saved in ${_MARKPATH} - dir not existing." "$FUNCNAME"; return 1; }
     rm -i "$_MARKPATH/$1"
 }
 
+# list all saved marks:
 function jjj {
-    [[ -d "$_MARKPATH" ]] || { err "no marks saved in $_MARKPATH" "$FUNCNAME"; return 1; }
+    [[ -d "$_MARKPATH" ]] || { err "no marks saved in ${_MARKPATH} - dir not existing." "$FUNCNAME"; return 1; }
     ls -l "$_MARKPATH" | sed 's/  / /g' | cut -d' ' -f9- | sed 's/ -/\t-/g' && echo
 }
 

@@ -43,8 +43,8 @@ Mod1 Tab :NextWindow {groups} (workspace=[current])
 Mod1 Shift Tab :PrevWindow {groups} (workspace=[current])
 Mod4 j :NextWindow {static groups} (workspace=[current])
 Mod4 k :PrevWindow {static groups} (workspace=[current])
-Mod4 Mouse4 :NextWindow {static} (workspace=[current])
-Mod4 Mouse5 :PrevWindow {static} (workspace=[current])
+Mod4 Mouse4 :NextWindow {static groups} (workspace=[current])
+Mod4 Mouse5 :PrevWindow {static groups} (workspace=[current])
 
 # cycle through tabs in the current window
 Mod4 Tab :NextTab
@@ -78,7 +78,10 @@ Mod4 space :Exec dmenu_recent_aliases
 160 :Exec amixer sset Master,0 toggle
 
 # additional volume settings
-Mod4 Plus :Exec amixer set Master 5%+ # TODO
+Mod4 plus :Exec amixer set Master 5%+
+Mod4 KP_Add :Exec amixer set Master 5%+
+Mod4 minus :Exec amixer set Master 5%-
+Mod4 KP_Subtract :Exec amixer set Master 5%-
 
 # current window commands
 Mod1 F4 :Close
@@ -104,6 +107,9 @@ Control Mod1 Delete :Exec xscreensaver-command --lock
 #Control Mod1 Right :NextWorkspace
 Mod4 h :PrevWorkspace
 Mod4 l :NextWorkspace
+
+# show desktop/minimize all windows
+Mod4 Shift d :ShowDesktop
 
 # send the current window to previous/next workspace
 Mod4 Left :SendToPrevWorkspace
@@ -163,8 +169,8 @@ Control Mod4 F12 :TakeToWorkspace 12
 Mod4 Shift comma :SendToPrevHead
 Mod4 Shift period :SendToNextHead
 
-# toggle the sticky state of the current window;
-#Mod4 waddeva :StickWindow
+# toggle the sticky state of the current window:
+Mod4 Shift s :StickWindow
 
 # Resizing:
 # MaximizeHorizontal / MaximizeVertical

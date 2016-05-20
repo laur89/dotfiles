@@ -125,5 +125,4 @@ function ssh_pearl() {
     env TERM=xterm-color ssh -t "${ssh_opts[@]}" -- "$cmd"
 }
 
-
 ssh_pearl "$@"

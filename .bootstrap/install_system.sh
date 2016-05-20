@@ -49,7 +49,7 @@ EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%m-%y--%R).log" \
 #------------------------
 #--- Global Constants ---
 #------------------------
-readonly BASE_DATA_DIR="/data"
+readonly BASE_DATA_DIR="/data"  # try to keep this value in sync with equivalent defined in $SHELL_ENVS;
 readonly BASE_DEPS_LOC="$BASE_DATA_DIR/progs/deps"  # hosting stuff like homeshick, bash-git-prompt...
 readonly BASE_BUILDS_DIR="$BASE_DATA_DIR/progs/custom_builds"  # hosts our built progs and/or their .deb packages;
 readonly BASE_HOMESICK_REPOS_LOC="$BASE_DEPS_LOC/homesick/repos"
@@ -584,7 +584,7 @@ function install_deps() {
     clone_or_pull_repo "magicmonty" "bash-git-prompt" "$BASE_DEPS_LOC"
     create_link "${BASE_DEPS_LOC}/bash-git-prompt" "$HOME/.bash-git-prompt"
 
-    # git-flow-completion:
+    # git-flow-completion:  # https://github.com/bobthecow/git-flow-completion
     clone_or_pull_repo "bobthecow" "git-flow-completion" "$BASE_DEPS_LOC"
     create_link "${BASE_DEPS_LOC}/git-flow-completion" "$HOME/.git-flow-completion"
 

@@ -85,6 +85,16 @@
     ;branch-push-new = push -u origin
     ;push-new-branch = push -u origin
 
+[gitflow "branch"]
+	master = master
+	develop = develop
+[gitflow "prefix"]
+	feature = feature/
+	release = release/
+	hotfix = hotfix/
+	support = support/
+	versiontag =
+
 ;;;;;;;;;;;;;;;;;;;
 ;;;; COMMANDSS ;;;;
 ;;;;;;;;;;;;;;;;;;;
