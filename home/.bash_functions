@@ -2112,8 +2112,10 @@ g() {
 function dcleanup() {
     check_progs_installed docker || return 1
 
-    docker rm -v $(docker ps --filter status=exited -q 2>/dev/null) 2>/dev/null
-    docker rmi $(docker images --filter dangling=true -q 2>/dev/null) 2>/dev/null
+    docker rm -v $(docker ps --filter status=exited -q 2>/dev/null) 2>/dev/null || { err "something went wrong with the first" "$FUNCNAME"; }
+    docker rmi $(docker images --filter dangling=true -q 2>/dev/null) 2>/dev/null || { err "something went wrong with the second" "$FUNCNAME"; }
+    # ...and volumes:
+    docker volume rm $(docker volume ls -qf dangling=true) || { err "something went wrong with the third" "$FUNCNAME"; }
 }
 
 
@@ -2126,6 +2128,7 @@ function wifi_list() {
     [[ -r "$wifi_device_file" ]] || { err "can't read file \"$wifi_device_file\"; probably you have no wireless devices." "$FUNCNAME"; }
     [[ -z "$(cat "$wifi_device_file")" ]] && { err "$wifi_device_file is empty." "$FUNCNAME"; }
     nmcli device wifi list
+    return $?
 }
 
 
@@ -2190,7 +2193,7 @@ capture() {
 
     check_progs_installed ffmpeg xdpyinfo || return 1
     [[ -z "$name" ]] && { err "need to provide output file as first arg (without an extension)." "$FUNCNAME"; return 1; } || name="/tmp/${name}.mkv"
-    [[ "$-" != *i* ]] && return 1  # don't launch if we're not in interactive shell;
+    [[ "$-" != *i* ]] && return 1  # don't launch if we're not in an interactive shell;
 
     readonly regex='^[0-9]+x[0-9]+$'
     readonly screen_dimensions="$(xdpyinfo | awk '/dimensions:/{printf $2}')" || { err "unable to find screen dimensions via xdpyinfo" "$FUNCNAME"; return 1; }

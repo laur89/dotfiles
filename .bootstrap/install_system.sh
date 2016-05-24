@@ -380,18 +380,14 @@ function install_nfs_server() {
 
 
 function install_nfs_client() {
-    local fstab mountpoint server_ip
+    local fstab mountpoint default_mountpoint server_ip
 
     readonly fstab="/etc/fstab"
-    readonly mountpoint="/mnt/nfs"
+    readonly default_mountpoint="/mnt/nfs"
 
     confirm "wish to install & configure nfs client?" || return 1
 
     install_block 'nfs-common' || { err "unable to install nfs-common. aborting nfs client install/config."; return 1; }
-
-    # create mountpoint:
-    [[ -d "$mountpoint" ]] || execute "sudo mkdir $mountpoint" || { err; return 1; }
-    execute "sudo chmod 777 $mountpoint"
 
     [[ -f "$fstab" ]] || { err "$fstab does not exist; cannot add fstab entry!"; return 1; }
 
@@ -401,7 +397,10 @@ function install_nfs_client() {
             read server_ip
             [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: \"$server_ip\""; continue; }
 
-            [[ -d "$mountpoint" ]] || { err "$mountpoint is not a valid dir."; continue; }
+            echo -e "enter local mountpoint to mount nfs share to (leave blank to default to [${default_mountpoint}]):"
+            read mountpoint
+            [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
+            create_mountpoint "$mountpoint" || continue
 
             if ! grep -q "${server_ip}:${NFS_SERVER_SHARE}.*${mountpoint}" "$fstab"; then
                 report "adding ${server_ip}:$NFS_SERVER_SHARE mounting to $mountpoint in $fstab"
@@ -462,13 +461,29 @@ function install_ssh_server() {
 }
 
 
+function create_mountpoint() {
+    local mountpoint
+
+    readonly mountpoint="$1"
+
+    [[ -z "$mountpoint" ]] && { err "cannot pass empty mountpoint arg to $FUNCNAME"; return 1; }
+
+    [[ -d "$mountpoint" ]] || execute "sudo mkdir $mountpoint" || { err "couldn't create \"$mountpoint\""; return 1; }
+    execute "sudo chmod 777 $mountpoint" || { err; return 1; }
+
+    return 0
+}
+
+
 function install_sshfs() {
-    local fuse_conf mountpoint fstab server_ip remote_user ssh_port
+    local fuse_conf mountpoint default_mountpoint fstab server_ip remote_user ssh_port sel_ips_to_user
 
     readonly fuse_conf="/etc/fuse.conf"
-    readonly mountpoint="/mnt/ssh"
+    readonly default_mountpoint="/mnt/ssh"
     readonly fstab="/etc/fstab"
     readonly ssh_port=443
+
+    declare -A sel_ips_to_user
 
     confirm "wish to install and configure sshfs?" || return 1
     install_block 'sshfs' || { err "unable to install sshfs. aborting sshfs install/config."; return 1; }
@@ -490,10 +505,6 @@ function install_sshfs() {
     # add us to the fuse group:
     execute "sudo gpasswd -a $USER fuse"
 
-    # create mountpoint:
-    [[ -d "$mountpoint" ]] || execute "sudo mkdir $mountpoint" || { err; return 1; }
-    execute "sudo chmod 777 $mountpoint"
-
     [[ -f "$fstab" ]] || { err "$fstab does not exist; cannot add fstab entry!"; return 1; }
 
     while true; do
@@ -502,25 +513,35 @@ function install_sshfs() {
             read server_ip
             [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: \"$server_ip\""; continue; }
 
-            echo -e "enter remote user to log in as (leave blank to default to our current user, ${USER}):"
+            echo -e "enter remote user to log in as (leave blank to default to our current user, [${USER}]):"
             read remote_user
             [[ -z "$remote_user" ]] && remote_user="$USER"
 
-            [[ -d "$mountpoint" ]] || { err "$mountpoint is not a valid dir."; continue; }
+            echo -e "enter local mountpoint to mount sshfs share to (leave blank to default to [${default_mountpoint}]):"
+            read mountpoint
+            [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
+            create_mountpoint "$mountpoint" || continue
 
             if ! grep -q "${remote_user}@${server_ip}:${SSH_SERVER_SHARE}.*${mountpoint}" "$fstab"; then
                 report "adding ${server_ip}:$SSH_SERVER_SHARE mounting to $mountpoint in $fstab"
                 execute "echo ${remote_user}@${server_ip}:${SSH_SERVER_SHARE} $mountpoint fuse.sshfs port=${ssh_port},noauto,x-systemd.automount,_netdev,users,idmap=user,IdentityFile=$HOME/.ssh/id_rsa_only_for_server_connect,allow_other,reconnect 0 0 \
                         | sudo tee --append $fstab > /dev/null"
+
+                #list_contains "$server_ip" "${!sel_ips_to_user[*]}" || sel_ips_to_user["$server_ip"]="$remote_user"
+                sel_ips_to_user["$server_ip"]="$remote_user"
             else
                 report "an ssh share entry for ${server_ip}:${SSH_SERVER_SHARE} in $fstab already exists."
             fi
         else
             break
         fi
+    done
 
-        report "ssh-ing to $server_ip so our root would have the remote in the /root/.ssh/known_hosts..."
-        report "select yes to add entry to known hosts"
+    report "ssh-ing to entered IPs [${!sel_ips_to_user[*]}], so our root would have the remote in the /root/.ssh/known_hosts ..."
+    report "select [yes] to add entry to known hosts"
+
+    for server_ip in "${!sel_ips_to_user[@]}"; do
+        remote_user="${sel_ips_to_user[$server_ip]}"
         execute "sudo ssh -p ${ssh_port} -o ConnectTimeout=5 ${remote_user}@$server_ip echo ok"
     done
 
@@ -1941,6 +1962,7 @@ function install_from_repo() {
         gksu
         pm-utils
         ntfs-3g
+        fuseiso
         dosfstools
         checkinstall
         build-essential
@@ -2018,7 +2040,7 @@ function install_from_repo() {
 
     readonly block3=(
         iceweasel
-		chromium
+        chromium
         icedove
         rxvt-unicode-256color
         guake
@@ -2386,6 +2408,8 @@ function post_install_progs_setup() {
                                                 # (implies wireshark is installed with allowing non-root users
                                                 # to capture packets);
     execute "newgrp wireshark"                  # log us into the new group
+    execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
+    execute "newgrp vboxusers"                  # log us into the new group
 }
 
 
@@ -2742,6 +2766,30 @@ function __is_work() {
     [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" || "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]] \
             && return 0 \
             || return 1
+}
+
+
+# Checks whether the element is contained in an array/list.
+#
+# @param {string}        element to check.
+# @param {string list}   string list to check passed element in. NOT a bash array!
+#
+# @returns {bool}  true if array contains the element.
+function list_contains() {
+    local array element i
+
+    readonly element="$1"
+    readonly array=( $2 )
+
+    [[ "$#" -ne 2 ]] && { err "exactly 2 args required" "$FUNCNAME"; return 1; }
+    #[[ -z "$element" ]]    && { err "element to check can't be empty string." "$FUNCNAME"; return 1; }  # it can!
+    [[ -z "${array[@]}" ]] && { err "array/list to check from can't be empty." "$FUNCNAME"; return 1; }
+
+    for i in "${array[@]}"; do
+        [[ "$i" == "$element" ]] && return 0
+    done
+
+    return 1
 }
 
 
