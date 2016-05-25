@@ -1057,15 +1057,15 @@ function sanitize() {
 }
 
 function sanitize_ssh() {
-    local dir="$@"
+    local node="$*"
 
-    [[ -z "$dir" ]] && { err "provide a file/dir name plz. (most likely you want the .ssh dir)" "$FUNCNAME"; return 1; }
-    [[ ! -e "$dir" ]] && { err "\"$dir\" does not exist." "$FUNCNAME"; return 1; }
-    if [[ "$dir" != *ssh*  ]]; then
+    [[ -z "$node" ]] && { err "provide a file/dir name plz. (most likely you want the .ssh dir)" "$FUNCNAME"; return 1; }
+    [[ ! -e "$node" ]] && { err "\"$node\" does not exist." "$FUNCNAME"; return 1; }
+    if [[ "$node" != *ssh*  ]]; then
         confirm  "\nthe node name you're about to $FUNCNAME does not contain string \"ssh\"; still continue? (y/n)" || return 1
     fi
 
-    chmod -R u=rwX,g=,o= -- "$dir";
+    chmod -R u=rwX,g=,o= -- "$node";
 }
 
 function ssh_sanitize() { sanitize_ssh "$@"; } # alias for sanitize_ssh
@@ -1110,7 +1110,7 @@ function my_ip() {  # Get internal & external ip addies:
             #interfaces="$(ls "$if_dir")"
         else
             interfaces="eth0 eth1 eth2 eth3"
-            report "can't read interfaces from $if_dir (not a readable dir); trying these interfaces: \"$interfaces\"" "$FUNCNAME"
+            report "can't read interfaces from $if_dir [not a (readable) dir]; trying these interfaces: \"$interfaces\"" "$FUNCNAME"
         fi
 
         [[ -z "$interfaces" ]] && return 1
@@ -1342,7 +1342,7 @@ function createUsbIso() {
     readonly usage="${FUNCNAME}: write files onto devices and vice versa.
 
     Usage:   $FUNCNAME  [options]  image.file  device
-        -r  reverse the direction - device will be written onto the file.
+        -r  reverse the direction - device will be written into a file.
         -o  allow selecting devices whose name ends with a digit (note that you
             should be selecting a whole device instead of its parition (ie sda vs sda1),
             but some devices have weird names (eg sd cards)).
@@ -1412,7 +1412,7 @@ function createUsbIso() {
     #sudo fdisk -l $device
     lsblk | grep --color=auto -- "$cleaned_devicename\|MOUNTPOINT"
 
-    confirm  "\nis selected device - $device - the correct one (be VERY sure!)? (y/n)" || return 1
+    confirm  "\nis selected device - $device - the correct one (be VERY sure!)? (y/n)" || { report "aborting, nothing written." "$FUNCNAME"; return 1; }
 
     # find if device is mounted:
     #lsblk -o name,size,mountpoint /dev/sda
@@ -1434,7 +1434,7 @@ function createUsbIso() {
     sudo echo "..."
     clear
     [[ "$reverse" -eq 1 ]] && { inf="$device"; ouf="$file"; } || { inf="$file"; ouf="$device"; }
-    report "Running dd, writing [$inf] onto [$ouf]; this might take a while..." "$FUNCNAME"
+    report "Running dd, writing [$inf] into [$ouf]; this might take a while..." "$FUNCNAME"
     sudo dd if="$inf" of="$ouf" bs=4M || { err "some error occurred while running dd." "$FUNCNAME"; }
     sync
     #eject $device
@@ -1985,7 +1985,7 @@ fo() {
     #fi
 }
 
-function sethometime() { setestoniatime; }  # home is where you make it;
+function sethometime() { setspaintime; }  # home is where you make it;
 
 function setromaniatime() {
     __settz Europe/Bucharest
@@ -2187,15 +2187,18 @@ shot() {
 ###################
 # also consider running  vokoscreen  instead.
 capture() {
-    local name screen_dimensions regex
+    local name screen_dimensions regex dest
 
     name="$1"
 
-    check_progs_installed ffmpeg xdpyinfo || return 1
-    [[ -z "$name" ]] && { err "need to provide output file as first arg (without an extension)." "$FUNCNAME"; return 1; } || name="/tmp/${name}.mkv"
-    [[ "$-" != *i* ]] && return 1  # don't launch if we're not in an interactive shell;
-
+    readonly dest='/tmp'  # dir where recorded file will be written into
     readonly regex='^[0-9]+x[0-9]+$'
+
+    check_progs_installed ffmpeg xdpyinfo || return 1
+    [[ "$-" != *i* ]] && return 1  # don't launch if we're not in an interactive shell;
+    [[ "$(dirname "$name")" != '.' ]] && { err "please enter only filename, not path; it will be written to [$dest]" "$FUNCNAME"; return 1; }
+    [[ -z "$name" ]] && { err "need to provide output file as first arg (without an extension)." "$FUNCNAME"; return 1; } || name="$dest/${name}.mkv"
+
     readonly screen_dimensions="$(xdpyinfo | awk '/dimensions:/{printf $2}')" || { err "unable to find screen dimensions via xdpyinfo" "$FUNCNAME"; return 1; }
     [[ "$screen_dimensions" =~ $regex ]] || { err "found screen dimensions \"$screen_dimensions\" do not conform with validation regex \"$regex\"" "$FUNCNAME"; return 1; }
 
@@ -2227,10 +2230,10 @@ function pubkey() {
     local key contents
     readonly key="$HOME/.ssh/id_rsa.pub"
 
-    [[ -f "$key" ]] || { err "$key does not exist"; return 1; }
-    readonly contents="$(cat "$key")" || { err "cat-ing [$key] failed."; return 1; }
+    [[ -f "$key" ]] || { err "$key does not exist" "$FUNCNAME"; return 1; }
+    readonly contents="$(cat "$key")" || { err "cat-ing [$key] failed." "$FUNCNAME"; return 1; }
 
-    copy_to_clipboard "$contents"
+    copy_to_clipboard "$contents" && report "copied pubkey to clipboard" "$FUNCNAME"
     return $?
 }
 
@@ -2272,12 +2275,13 @@ function jm {
 
     [[ $# -ne 1 || -z "$1" ]] && { err "exactly one arg accepted" "$FUNCNAME"; return 1; }
     [[ -z "$_MARKPATH" ]] && { err "\$_MARKPATH not set, aborting." "$FUNCNAME"; return 1; }
-    mkdir -p "$_MARKPATH"
+    mkdir -p "$_MARKPATH" || { err "creating $_MARKPATH failed." "$FUNCNAME"; return 1; }
     readonly target="$_MARKPATH/$1"
     [[ "$overwrite" -eq 1 && -h "$target" ]] && rm "$target" >/dev/null 2>/dev/null
     [[ -h "$target" ]] && { err "$target already exists; use jmo or $FUNCNAME -o to overwrite." "$FUNCNAME"; return 1; }
 
-    ln -s "$(pwd)" "$target" || return 1
+    ln -s "$(pwd)" "$target"
+    return $?
 }
 
 # mark override:

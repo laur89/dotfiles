@@ -243,6 +243,7 @@ __check_for_change_and_compile_ssh_config() {
                 || ! [[ -e "$ssh_config" ]]; then
             [[ -f "$ssh_config" ]] && mv "$ssh_config" "${ssh_config}.bak.$(date -Ins)"
             cat "$ssh_configdir"/* > "$ssh_config"
+            sanitize_ssh "$HOME/.ssh"
             modified=1
         fi
 
