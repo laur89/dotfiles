@@ -126,13 +126,13 @@ function ffind() {
         sleep 2
     fi
 
+    if [[ "$force_case" -eq 1 ]]; then
+        unset INAME_ARG
     # as find doesn't support smart case, provide it yourself:
-    if [[ "$(tolowercase "$SRC")" == "$SRC" ]]; then
+    elif [[ "$(tolowercase "$SRC")" == "$SRC" ]]; then
         # provided pattern was lowercase, make it case insensitive:
         INAME_ARG="-iname"
     fi
-
-    [[ "$force_case" -eq 1 ]] && unset INAME_ARG
 
 
     if [[ "$pathOpt" -eq 1 && "$exact" -eq 1 && "$skip_msgs" -ne 1 ]]; then
@@ -210,7 +210,7 @@ function ffind() {
                 eval find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '.*'"$SRC"'.*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             else
                 report "!!! running with eval, be careful !!!" "$FUNCNAME"
-                sleep 2
+                sleep 2  # give time to bail out
                 eval find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '.*'"$SRC"'.*' -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             fi
         else  # no regex
@@ -335,7 +335,7 @@ function __find_top_big_small_fun() {
                 head -$itemsToShow
 
     else  # covers both dirs only & dirs+files cases:
-        [[ "$file_type" != "-type d" ]] && du_include_regular_files="--all"  # if not dirs only;
+        [[ "$file_type" != "-type d" ]] && readonly du_include_regular_files="--all"  # if not dirs only;
 
         # TODO: here, for top_big_small, consider for i in G M K for the du -h!:
         du $follow_links $du_include_regular_files $du_size_unit $duMaxDepthParam 2>/dev/null | \
@@ -385,10 +385,10 @@ function __find_bigger_smaller_common_fun() {
     local usage opt OPTIND file_type maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_ biggerOrSmaller sizeArg
     local du_include_regular_files duMaxDepthParam plusOrMinus filetypeOptionCounter sizeArgLastChar du_blk_sz find_size_unit
 
-    reverse="$1" # sorting order
-    du_size_unit="$2" # default unit provided by the invoker
-    FUNCNAME_="$3" #invoking function name
-    biggerOrSmaller="$4" #denotes whether larger or smaller than X size units were queried
+    reverse="$1"          # sorting order (param for sort)
+    du_size_unit="$2"     # default unit provided by the invoker
+    FUNCNAME_="$3"        # invoking function name
+    biggerOrSmaller="$4"  # denotes whether larger or smaller than X size units were queried
     shift 4
 
     filetypeOptionCounter=0
@@ -457,6 +457,7 @@ function __find_bigger_smaller_common_fun() {
     fi
 
     if [[ -n "$sizeArg" ]]; then
+        # find out whether block size unit was provided:
         sizeArgLastChar="${sizeArg:$(( ${#sizeArg} - 1)):1}"
 
         if ! is_digit "$sizeArgLastChar"; then
@@ -467,7 +468,7 @@ function __find_bigger_smaller_common_fun() {
 
             # override du_size_unit defined by the invoker:
             du_size_unit="$sizeArgLastChar"
-
+            # clean up the numeric sizeArg:
             sizeArg="${sizeArg:0:$(( ${#sizeArg} - 1))}"
         fi
 
@@ -518,15 +519,15 @@ function __find_bigger_smaller_common_fun() {
 
         find_size_unit="$du_size_unit"
 
-        if ! [[ "$du_size_unit" =~ ^[KMGB]+$ ]]; then
-            err "unsupported block size unit for find: \"$du_size_unit\". refer to man find and search for \"-size\"" "$FUNCNAME_"
+        if ! [[ "$find_size_unit" =~ ^[KMGB]+$ ]]; then
+            err "unsupported block size unit for find: \"$find_size_unit\". refer to man find and search for \"-size\"" "$FUNCNAME_"
             echo -e "$usage"
             return 1
 
         # convert some of the du types to the find equivalents:
-        elif [[ "$du_size_unit" == B ]]; then
+        elif [[ "$find_size_unit" == B ]]; then
             find_size_unit=c  # bytes unit for find
-        elif [[ "$du_size_unit" == K ]]; then
+        elif [[ "$find_size_unit" == K ]]; then
             find_size_unit=k  # kilobytes unit for find
         fi
 
@@ -536,11 +537,14 @@ function __find_bigger_smaller_common_fun() {
         # %s file size in byte   - appears to be the same as du block-size w/o any units
         # %k in 1K blocks
         # %b in 512byte blocks
-        #find $follow_links . -mindepth 1 $maxDepthParam -size ${plusOrMinus}${sizeArg}${du_size_unit} $file_type -printf "%${filesize_print_unit}${orig_size_unit}\t%P\n" 2>/dev/null | \
+        #find $follow_links . -mindepth 1 $maxDepthParam -size ${plusOrMinus}${sizeArg}${find_size_unit} $file_type -printf "%${filesize_print_unit}${orig_size_unit}\t%P\n" 2>/dev/null | \
             #sort -n $reverse
 
-        find $follow_links . -mindepth 1 $maxDepthParam -size ${plusOrMinus}${sizeArg}${find_size_unit} $file_type -exec du -a "$du_blk_sz" '{}' +  2>/dev/null | \
-                sort -n $reverse
+        find $follow_links . -mindepth 1 $maxDepthParam \
+            -size ${plusOrMinus}${sizeArg}${find_size_unit} \
+            $file_type \
+            -exec du -a "$du_blk_sz" '{}' +  2>/dev/null | \
+            sort -n $reverse
 
     else  # directories included, need to use du + awk
         # note that different find commands are defined purely because of < vs > in awk command.; could overcome
@@ -563,7 +567,7 @@ function __find_bigger_smaller_common_fun() {
             unset du_size_unit  # with bytes, --threshold arg doesn't need a unit
         fi
 
-        [[ "$file_type" != "-type d" ]] && du_include_regular_files="--all"  # if not dirs only;
+        [[ "$file_type" != "-type d" ]] && readonly du_include_regular_files="--all"  # if not dirs only;
 
         du $follow_links $du_include_regular_files $du_blk_sz $duMaxDepthParam --threshold=${plusOrMinus}${sizeArg}${du_size_unit} 2>/dev/null | \
                 sort -n $reverse
@@ -1449,11 +1453,18 @@ function createUsbIso() {
 ## Setup github repo ##
 #######################
 function mkgit() {
-    local user repo dir gitname OPTIND opt
-    local usage="usage:   $FUNCNAME  -g|-b  <dirname> [reponame]"
-    local mainOptCounter=0
+    local user passwd repo dir project_name OPTIND opt usage mainOptCounter http_statuscode
+    local newly_created_dir
 
-    while getopts "hgb" opt; do
+    mainOptCounter=0
+    readonly usage="usage:   $FUNCNAME  -g|-b|-w  <dirname> [project_name]
+         -g   create repo in github
+         -b   create repo in bitbucket
+         -w   create repo in work (not supported)
+
+         if  project_name  is not given, then project name will be same as  dirname  "
+
+    while getopts "hgbw" opt; do
         case "$opt" in
            h) echo -e "$usage";
               return 0
@@ -1468,69 +1479,122 @@ function mkgit() {
               let mainOptCounter+=1
               shift $((OPTIND-1))
               ;;
+           w) user="work user"
+              repo="gitlab.work-dev.local"
+              let mainOptCounter+=1
+              shift $((OPTIND-1))
+              ;;
            *) echo -e "$usage";
               return 1
               ;;
         esac
     done
 
-    dir="$1"
-    gitname="$2"
+    readonly dir="$1"
+    readonly project_name="${2:-$dir}"  # default to dir name
 
     if [[ "$mainOptCounter" -gt 1 ]]; then
         err "-g and -b flags are exclusive." "$FUNCNAME"
         echo -e "$usage"
         return 1
     elif [[ "$mainOptCounter" -eq 0 ]]; then
-        err "need to select a repo." "$FUNCNAME"
+        err "need to select a repo to create new project in." "$FUNCNAME"
         echo -e "$usage"
         return 1
     elif [[ "$#" -gt 2 ]]; then
         err "too many arguments" "$FUNCNAME"
         echo -e "$usage"
         return 1
-    elif ! check_progs_installed git; then
+    elif ! check_progs_installed git getnetrc curl; then
+        return 1
+    elif [[ -z "$dir" ]]; then
+        err "need to provide dirname at minimum" "$FUNCNAME"
+        echo -e "$usage"
+        return 1
+    elif [[ -d "$dir/.git" ]]; then
+        err "[$dir] is already a git repo. abort." "$FUNCNAME"
+        return 1
+    elif ! check_connection "$repo"; then
+        err "no connection to [$repo]" "$FUNCNAME"
         return 1
     fi
 
-    # check dir
-    [[ -z "$dir" ]] && {
-       err "$usage" "$FUNCNAME"
+    [[ -d "$dir" ]] || { mkdir -- "$dir"; readonly newly_created_dir=1; }
+
+    if ! [[ -d "$dir" && -w "$dir" ]]; then
+       err "we were unable to create dir [$dir], or it simply doesn't have write permission." "$FUNCNAME"
        return 1
-    }
+    fi
 
-    # use dir name if, no gitname specified
-    [[ -n "$gitname" ]] || gitname="$dir"
-    [[ -d "$dir"     ]] || mkdir -- "$dir"
+    readonly passwd="$(getnetrc "${user}@${repo}")"
+    if [[ "$?" -ne 0 || -z "$passwd" ]]; then
+        err "getting password failed. abort." "$FUNCNAME"
+        [[ "$newly_created_dir" -eq 1 ]] && rm -rf -- "$dir"  # delete the dir we just created
+        return 1
+    fi
 
-    [[ -w "$dir" ]] || {
-       err "we were unable to create dir $dir, or it simply doesn't have write permissions." "$FUNCNAME"
-       return 1
-    }
+    # create remote repo, if not existing:
+    if ! git ls-remote "git@${repo}:${user}/${project_name}" &> /dev/null; then
+        if [[ "$repo" == 'github.com' ]]; then
+            readonly http_statuscode="$(curl -sL \
+                -w '%{http_code}' \
+                -u "$user:$passwd" \
+                https://api.github.com/user/repos \
+                -d "{ \"name\":\"$project_name\", \"private\":\"true\" }" \
+                -o /dev/null)"
+        elif [[ "$repo" == 'bitbucket.org' ]]; then
+            readonly http_statuscode="$(curl -sL -X POST \
+                -w '%{http_code}' \
+                -H "Content-Type: application/json" \
+                -u "$user:$passwd" \
+                "https://api.bitbucket.org/2.0/repositories/$user/$project_name" \
+                -d '{ "scm": "git", "is_private": "true", "fork_policy": "no_public_forks" }' \
+                -o /dev/null)"
+        elif [[ "$repo" == 'gitlab.work-dev.local' ]]; then
+            # https://forum.gitlab.com/t/create-a-new-project-in-a-group-using-api/1552/2
+            #
+            # find namespaces:
+            #curl --header "PRIVATE-TOKEN: $passwd" "https://${repo}/api/v3/namespaces"
+            # create repo:
+            #curl --header "PRIVATE-TOKEN: token" -X POST "https://gitlab.com/api/v3/projects?name=foobartest4&namespace_id=<found_id>&description=This%20is%20a%20description"
+            err "not supported"
+            return 1
+        else
+            err "unexpected repo [$repo]" "$FUNCNAME"
+            [[ "$newly_created_dir" -eq 1 ]] && rm -rf -- "$dir"  # delete the dir we just created
+            return 1
+        fi
 
-    # bail out, if already git repo
-    [[ -d "$dir/.git" ]] && {
-       err "already a git repo: $dir" "$FUNCNAME"
-       return 1
-    }
+        if [[ "$http_statuscode" != 20* || "${#http_statuscode}" -ne 3 ]]; then
+            err "curl request for creating the repo @ [$repo] apparently failed; response code was [$http_statuscode]" "$FUNCNAME"
+            echo
+            err "abort" "$FUNCNAME"
 
-    # TODO: remote repo needs to be first created via REST:
-    #curl --user $username:$password https://api.bitbucket.org/1.0/repositories/ --data name=$reponame --data is_private='true'
-    #git remote add origin git@bitbucket.org:$username/$reponame.git
-    #git push -u origin --all
-    #git push -u origin --tags
+            [[ "$newly_created_dir" -eq 1 ]] && rm -rf -- "$dir"  # delete the dir we just created
+            return 1
+        fi
 
-    cd -- "$dir"
+        report "created new repo @ ${repo}/${user}/${project_name}" "$FUNCNAME"
+        echo
+    fi
+
+    pushd -- "$dir" &> /dev/null || return 1
     git init || { err "bad return from git init" "$FUNCNAME"; return 1; }
-    touch README; git add README
-    git commit -a -m 'inital setup - automated'
-    git remote add origin "git@$repo:$user/${gitname}.git"
-    git push -u origin master
+    git remote add origin "git@${repo}:${user}/${project_name}.git" || { err "adding remote failed. abort." "$FUNCNAME"; return 1; }
+    echo
+
+    if confirm "want to add README.md?"; then
+        report "adding README.md ..." "$FUNCNAME"
+        touch README.md
+        git add README.md
+        git commit -a -m 'inital setup - automated'
+        git push -u origin master
+    fi
 }
 
-######################################
-## Open file inside git tree on vim ##
-######################################
+########################################
+## Open file inside git tree with vim ##
+########################################
 gito() {
     local DMENU match matches git_root count cwd dmenurc editor nr_of_dmenu_vertical_lines i
 
@@ -1602,6 +1666,132 @@ gito() {
 
     $editor -- "$match"
 }
+
+# git untag; git delete tag; git tag delete; delete git tag
+gut() {
+    local tag
+
+    readonly tag="$*"
+
+    [[ -z "$tag" ]] && { err "need to provide tag to delete." "$FUNCNAME"; return 1; }
+    git_tag_exists "$tag" || { err "tag [$tag] does not exist. abort." "$FUNCNAME"; return 1; }
+    git tag -d "$tag" || { err "deleting tag [$tag] locally failed. abort." "$FUNCNAME"; return 1; }
+    git push origin ":refs/tags/$tag"
+    return $?
+}
+
+# copy & print latest tag ver:
+glt() {
+    local last_tag
+
+    readonly last_tag=$(git for-each-ref \
+        --format='%(refname:short)' \
+        --sort=taggerdate refs/tags \
+        | tail -1)
+
+    [[ $? -ne 0 || -z "$last_tag" || "$(echo "$last_tag" | wc -l)" -ne 1 ]] && { err "either no tags found or some issue occurred." "$FUNCNAME"; return 1; }
+    report "latest tag: [$last_tag]" "$FUNCNAME"
+    copy_to_clipboard "$last_tag" || { err "unable to copy tag to clipboard." "$FUNCNAME"; return 1; }
+    return $?
+}
+
+
+# git flow feature start
+gffs() {
+    local branch
+
+    readonly branch="$1"
+
+    if [[ -z "$branch" ]]; then
+        err "need to provide feature branch name to create/start" "$FUNCNAME"
+        return 1
+    elif [[ "$branch" == */* ]]; then
+        err "there are slashes in the branchname. need to provide the child branch name only, not [feature/...]" "$FUNCNAME"
+        return 1
+    elif git_branch_exists "feature/$branch"; then
+        err "branch [feature/$branch] already exists on remote."
+        return 1
+    fi
+
+    git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort." "$FUNCNAME"; return 1; }
+    git flow feature start -F "$branch" || { err "starting git feature failed." "$FUNCNAME"; return 1; }
+    return $?
+}
+
+
+# git flow feature finish
+gfff() {
+    local branch
+
+    branch="$1"  # OPTIONAL
+
+    [[ -z "$branch" ]] && readonly branch="$(get_git_branch --child)"
+
+    if [[ -z "$branch" ]]; then
+        err "need to provide feature branch to finish" "$FUNCNAME"
+        return 1
+    elif [[ "$branch" == */* ]]; then
+        err "there are slashes in the branchname. need to provide the child branch name only, not [feature/...]" "$FUNCNAME"
+        return 1
+    fi
+
+    git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort." "$FUNCNAME"; return 1; }
+    git flow feature finish -F "$branch" || { err "finishing git feature failed." "$FUNCNAME"; return 1; }
+    return $?
+}
+
+
+# git flow release start
+gfrs() {
+    local tag latest_tag
+
+    readonly tag="$1"
+    readonly latest_tag="$(glt)" || { err "unable to find latest tag. not affecting ${FUNCNAME}(), continuing..." "$FUNCNAME"; }
+
+    if [[ -z "$tag" ]]; then
+        err "need to provide release tag to create" "$FUNCNAME"
+        return 1
+    elif [[ "$tag" == */* ]]; then
+        err "there are slashes in the tag. need to provide the child tag ver only, not [release/...]" "$FUNCNAME"
+        return 1
+    elif git_branch_exists "release/$tag"; then
+        err "branch [release/$tag] already exists on remote."
+        return 1
+    elif git_tag_exists "$tag"; then
+        err "tag [$tag] already exists."
+        return 1
+    fi
+
+    report "FYI, latest tag is [$latest_tag]" "$FUNCNAME"
+
+    git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort." "$FUNCNAME"; return 1; }
+    git flow release start -F "$tag"
+    return $?
+}
+
+
+# git flow release finish
+gfrf() {
+    local tag
+
+    tag="$1"  # OPTIONAL
+
+    [[ -z "$tag" ]] && readonly tag="$(get_git_branch --child)"
+
+    if [[ -z "$tag" ]]; then
+        err "need to provide release tag to finish" "$FUNCNAME"
+        return 1
+    elif [[ "$tag" == */* ]]; then
+        err "there are slashes in the tag. need to provide the child tag ver only, not [release/...]" "$FUNCNAME"
+        return 1
+    fi
+
+    git flow release finish -F -p "$tag" || { err "finishing git release failed." "$FUNCNAME"; return 1; }
+    git push --tags || { err "pushing tags failed." "$FUNCNAME"; return 1; }
+
+    return 0
+}
+
 
 # ag looks for whole file path!
 ago() {
@@ -2112,10 +2302,10 @@ g() {
 function dcleanup() {
     check_progs_installed docker || return 1
 
-    docker rm -v $(docker ps --filter status=exited -q 2>/dev/null) 2>/dev/null || { err "something went wrong with the first" "$FUNCNAME"; }
-    docker rmi $(docker images --filter dangling=true -q 2>/dev/null) 2>/dev/null || { err "something went wrong with the second" "$FUNCNAME"; }
+    docker rm -v $(docker ps --filter status=exited -q 2>/dev/null) 2>/dev/null || { err "something went wrong with removing exited containers." "$FUNCNAME"; }
+    docker rmi $(docker images --filter dangling=true -q 2>/dev/null) 2>/dev/null || { err "something went wrong with removing dangling images." "$FUNCNAME"; }
     # ...and volumes:
-    docker volume rm $(docker volume ls -qf dangling=true) || { err "something went wrong with the third" "$FUNCNAME"; }
+    docker volume rm $(docker volume ls -qf dangling=true) || { err "something went wrong with removing dangling volumes." "$FUNCNAME"; }
 }
 
 
@@ -2272,13 +2462,13 @@ function jm {
     local overwrite target
 
     [[ "$1" == "-o" || "$1" == "--overwrite" ]] && { readonly overwrite=1; shift; }
+    readonly target="$_MARKPATH/$1"
 
     [[ $# -ne 1 || -z "$1" ]] && { err "exactly one arg accepted" "$FUNCNAME"; return 1; }
     [[ -z "$_MARKPATH" ]] && { err "\$_MARKPATH not set, aborting." "$FUNCNAME"; return 1; }
-    mkdir -p "$_MARKPATH" || { err "creating $_MARKPATH failed." "$FUNCNAME"; return 1; }
-    readonly target="$_MARKPATH/$1"
+    mkdir -p "$_MARKPATH" || { err "creating [$_MARKPATH] failed." "$FUNCNAME"; return 1; }
     [[ "$overwrite" -eq 1 && -h "$target" ]] && rm "$target" >/dev/null 2>/dev/null
-    [[ -h "$target" ]] && { err "$target already exists; use jmo or $FUNCNAME -o to overwrite." "$FUNCNAME"; return 1; }
+    [[ -h "$target" ]] && { err "[$target] already exists; use jmo or $FUNCNAME -o to overwrite." "$FUNCNAME"; return 1; }
 
     ln -s "$(pwd)" "$target"
     return $?
@@ -2287,7 +2477,7 @@ function jm {
 # mark override:
 # mnemonic: jm overwrite
 function jmo {
-    jm -o "$@"
+    jm --overwrite "$@"
 }
 
 # un-mark:

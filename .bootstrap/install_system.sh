@@ -863,7 +863,7 @@ function setup_netrc_perms() {
     readonly perms=600
 
     if [[ -e "$rc_loc" ]]; then
-        execute "chmod $perms $(realpath "$rc_loc")"  # realpath, since we cannot change perms via symlink
+        execute "chmod $perms $(realpath "$rc_loc")" || err "setting [$rc_loc] perms failed"  # realpath, since we cannot change perms via symlink
     else
         err "expected to find \"$rc_loc\", but it doesn't exist. if you're not using netrc, better remvoe related logic from ${SELF}."
         return 1

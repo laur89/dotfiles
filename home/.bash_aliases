@@ -149,8 +149,12 @@ alias dev='cd /data/dev'
 alias data='cd /data/'
 alias tmp='cd /tmp/'
 alias temp='cd /tmp/'
+
+# git
 alias git-root='is_git && cd $(git rev-parse --show-toplevel) || err "not in a git repo."'  # go to project root
 alias grt='git-root'
+alias gpushall='is_git || err "not in a git repo" && { git push --tags && git checkout master && git push && git checkout develop && git push; }'
+
 
 alias lns='ln -s'
 alias svim='sudo vim'

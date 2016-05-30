@@ -225,7 +225,7 @@ if ! ssh-add -l > /dev/null 2>&1; then
 fi
 ##########################################
 
-#compile .ssh/.config
+# compile .ssh/config
 ##########################################
 __check_for_change_and_compile_ssh_config() {
     local stored_md5sum ssh_config ssh_configdir modified current_md5sum
@@ -255,6 +255,7 @@ __check_for_change_and_compile_ssh_config() {
 }
 
 ( __check_for_change_and_compile_ssh_config )  # execute in subshell because of cd-ing
+##########################################
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
