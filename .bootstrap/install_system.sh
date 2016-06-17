@@ -965,7 +965,7 @@ function setup() {
     verify_ssh_key
     execute "source $SHELL_ENVS"  # so we get our env vars after dotfiles are pulled in
 
-    setup_dirs  # has to come after .bash_env_vars sourcing so the env vars are in place
+    setup_dirs  # has to come after $SHELL_ENVS sourcing so the env vars are in place
     setup_config_files
     setup_additional_apt_keys_and_sources
 }
@@ -2166,7 +2166,7 @@ function install_nvidia() {
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
 function install_block() {
-    local list_to_install extra_apt_params packages_not_found exit_sig exit_sig_tmp packages_not_found pkg result
+    local list_to_install extra_apt_params packages_not_found exit_sig exit_sig_install_failed packages_not_found pkg result
 
     readonly list_to_install=( $1 )
     readonly extra_apt_params="$2"  # optional
@@ -2185,7 +2185,7 @@ function install_block() {
         fi
         if execute "sudo apt-get -qq --dry-run install $extra_apt_params $pkg"; then
             sleep 0.1
-            execute "sudo apt-get --yes install $extra_apt_params $pkg" || exit_sig_tmp=$?
+            execute "sudo apt-get --yes install $extra_apt_params $pkg" || exit_sig_install_failed=$?
         else
             packages_not_found+=( $pkg )
         fi
@@ -2206,10 +2206,10 @@ function install_block() {
 
     #sleep 1  # just in case sleep for a bit
     #execute "sudo apt-get --yes install $extra_apt_params ${list_to_install[*]}"
-    #exit_sig_tmp=$?
+    #exit_sig_install_failed=$?
 
-    #[[ -n "$exit_sig" ]] && return $exit_sig || return $exit_sig_tmp
-    [[ -n "$exit_sig_tmp" ]] && return $exit_sig_tmp || return $exit_sig
+    #[[ -n "$exit_sig" ]] && return $exit_sig || return $exit_sig_install_failed
+    [[ -n "$exit_sig_install_failed" ]] && return $exit_sig_install_failed || return $exit_sig
 }
 
 
@@ -2238,19 +2238,15 @@ function should_build_if_avail_in_repo() {
 function choose_step() {
     report "what do you want to do?"
 
-    while true; do
-        select_items "full-install single-task" 1
-
-        if [[ -n "$__SELECTED_ITEMS" ]]; then
-            break
-        else
-            confirm "no items were selected; exit?" && return || continue
-        fi
-    done
+    select_items "full-install single-task" 1
 
     case "$__SELECTED_ITEMS" in
         "full-install" ) full_install ;;
         "single-task"  ) choose_single_task ;;
+        "") exit 0 ;;
+        *) err "unsupported choice [$__SELECTED_ITEMS]"
+           exit 1
+           ;;
     esac
 }
 
@@ -2394,11 +2390,25 @@ function setup_docker() {
 #}
 
 
+# puts networkManager to manage our network interfaces;
+# alternatively, you can remove your interface name from /etc/network/interfaces
+# (bottom) line; eg from 'iface wlan0 inet dhcp' to 'iface inet dhcp'
+function enable_network_manager() {
+    local net_manager_conf_file
+
+    readonly net_manager_conf_file='/etc/NetworkManager/NetworkManager.conf'
+
+    [[ -f "$net_manager_conf_file" ]] || { err "[$net_manager_conf_file] does not exist; are you using NetworkManager? if not, this config logic should be removed."; return 1; }
+    execute "sudo sed -i 's/^managed=false$/managed=true/' \"$net_manager_conf_file\""
+}
+
+
 # configs & settings that can/need to be installed  AFTER  the related programs have
 # been installed.
 function post_install_progs_setup() {
 
     install_acpi_events   # has to be after install_progs, so acpid is already insalled and events/ dir present;
+	enable_network_manager
     install_SSID_checker  # has to come after install_progs; otherwise NM wrapper dir won't be present
     execute --ignore-errs "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
     execute "mopidy local scan"     # update mopidy library
