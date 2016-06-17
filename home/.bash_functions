@@ -24,7 +24,7 @@ fi
 function ffind() {
     local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter exact binary follow_links
     local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter skip_msgs
-    local quitFlag
+    local quitFlag delete deleteFlag
 
     [[ "$1" == --_skip_msgs ]] && { skip_msgs=1; shift; }  # skip showing informative messages, as the result will be directly echoed to other processes;
     defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
@@ -41,6 +41,7 @@ function ffind() {
         -l  search for symbolic links
         -b  search for executable binaries
         -L  follow symlinks
+        -D  delete found nodes  (won't delete nonempty dirs!)
         -q  provide find the -quit flag (exit on first found item)
         -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;
         -e  search for exact filename, not for a partial (you still can use * wildcards)
@@ -49,7 +50,7 @@ function ffind() {
     filetypeOptionCounter=0
     caseOptCounter=0
 
-    while getopts "m:isrefdlbLqph" opt; do
+    while getopts "m:isrefdlbLqpDh" opt; do
         case "$opt" in
            i) INAME_ARG="-iname"
               caseOptCounter+=1
@@ -89,6 +90,10 @@ function ffind() {
            q) quitFlag="-quit"
               shift $((OPTIND-1))
                 ;;
+           D) readonly delete=1     # for nonempty dirs as well, just run     find . -name "3" -type d -exec rm -rf {} +
+              readonly deleteFlag='-delete'
+              shift $((OPTIND-1))
+                ;;
            *) echo -e "$usage"
               [[ "$skip_msgs" -eq 1 ]] && return 9 || return 1
                 ;;
@@ -96,7 +101,7 @@ function ffind() {
     done
 
     SRC="$1"
-    SRCDIR="$2"
+    SRCDIR="$2"  # optional
 
     if [[ "$#" -lt 1 || "$#" -gt 2 || -z "$SRC" ]]; then
         err "incorrect nr of aguments." "$FUNCNAME"
@@ -116,6 +121,10 @@ function ffind() {
         return 1
     elif [[ "$exact" -eq 1 && "$regex" -eq 1 ]]; then
         err "-r and -e flags are exclusive, since regex always searches the whole path anyways, meaning script will always pad beginning with .*" "$FUNCNAME"
+        echo -e "$usage"
+        return 1
+    elif [[ "$delete" -eq 1 && "$binary" -eq 1 ]]; then
+        err "-D and -b flags are exclusive." "$FUNCNAME"
         echo -e "$usage"
         return 1
     fi
@@ -195,7 +204,7 @@ function ffind() {
         if [[ "$binary" -eq 1 ]]; then
             find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" "$SRC" -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
         else
-            find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" "$SRC" -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
+            find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" "$SRC" -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
         fi
     else # partial filename match, ie add * padding
         if [[ "$regex" -eq 1 ]]; then  # using regex, need to change the * padding around $SRC
@@ -211,13 +220,13 @@ function ffind() {
             else
                 report "!!! running with eval, be careful !!!" "$FUNCNAME"
                 sleep 2  # give time to bail out
-                eval find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '.*'"$SRC"'.*' -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
+                eval find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '.*'"$SRC"'.*' -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             fi
         else  # no regex
             if [[ "$binary" -eq 1 ]]; then
                 find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             else
-                find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
+                find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
             fi
         fi
     fi
@@ -1723,9 +1732,7 @@ gffs() {
 gfff() {
     local branch
 
-    branch="$1"  # OPTIONAL
-
-    [[ -z "$branch" ]] && readonly branch="$(get_git_branch --child)"
+    [[ -n "$1" ]] && readonly branch="$1" || readonly branch="$(get_git_branch --child)"
 
     if [[ -z "$branch" ]]; then
         err "need to provide feature branch to finish" "$FUNCNAME"
@@ -1737,6 +1744,10 @@ gfff() {
 
     git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort." "$FUNCNAME"; return 1; }
     git flow feature finish -F "$branch" || { err "finishing git feature failed." "$FUNCNAME"; return 1; }
+
+    # push the merged develop commit:
+    #if [[ "$(get_git_branch --child)" == develop ]]; then
+    git push || { err "pushing to [$(get_git_branch)] failed." "$FUNCNAME"; return 1; }
     return $?
 }
 
@@ -1774,9 +1785,7 @@ gfrs() {
 gfrf() {
     local tag
 
-    tag="$1"  # OPTIONAL
-
-    [[ -z "$tag" ]] && readonly tag="$(get_git_branch --child)"
+    [[ -n "$1" ]] && readonly tag="$1" || readonly tag="$(get_git_branch --child)"
 
     if [[ -z "$tag" ]]; then
         err "need to provide release tag to finish" "$FUNCNAME"
@@ -1787,7 +1796,8 @@ gfrf() {
     fi
 
     git flow release finish -F -p "$tag" || { err "finishing git release failed." "$FUNCNAME"; return 1; }
-    git push --tags || { err "pushing tags failed." "$FUNCNAME"; return 1; }
+    report "pushing tags..." "$FUNCNAME"
+    git push --tags || { err "...pushing tags failed." "$FUNCNAME"; return 1; }
 
     return 0
 }
@@ -1795,13 +1805,13 @@ gfrf() {
 
 # ag looks for whole file path!
 ago() {
+    local DMENU match dmenurc editor
+
     err "ag is not playing along at the moment. see fo()" "$FUNCNAME"
     return 1
 
-
-    local DMENU match
-    local dmenurc="$HOME/.dmenurc"
-    local editor="$EDITOR"
+    readonly dmenurc="$HOME/.dmenurc"
+    readonly editor="$EDITOR"
 
     check_progs_installed ag "$editor" dmenu || return 1
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "

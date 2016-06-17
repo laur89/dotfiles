@@ -2048,6 +2048,7 @@ function install_from_repo() {
         mopidy-soundcloud
         mopidy-spotify
         mopidy-youtube
+        youtube-dl
         mpc
         ncmpcpp
         ncmpc
