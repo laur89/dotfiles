@@ -22,7 +22,7 @@ fi
 # find files or dirs.
 # TODO: refactor the massive spaghetti.
 function ffind() {
-    local SRC SRCDIR INAME_ARG opt usage OPTIND file_type filetypeOptionCounter exact binary follow_links
+    local src srcdir iname_arg opt usage OPTIND file_type filetypeOptionCounter exact binary follow_links
     local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter skip_msgs
     local quitFlag delete deleteFlag
 
@@ -52,11 +52,11 @@ function ffind() {
 
     while getopts "m:isrefdlbLqpDh" opt; do
         case "$opt" in
-           i) INAME_ARG="-iname"
+           i) iname_arg="-iname"
               caseOptCounter+=1
               shift $((OPTIND-1))
                 ;;
-           s) unset INAME_ARG
+           s) unset iname_arg
               force_case=1
               caseOptCounter+=1
               shift $((OPTIND-1))
@@ -100,10 +100,10 @@ function ffind() {
         esac
     done
 
-    SRC="$1"
-    SRCDIR="$2"  # optional
+    src="$1"
+    srcdir="$2"  # optional
 
-    if [[ "$#" -lt 1 || "$#" -gt 2 || -z "$SRC" ]]; then
+    if [[ "$#" -lt 1 || "$#" -gt 2 || -z "$src" ]]; then
         err "incorrect nr of aguments." "$FUNCNAME"
         echo -e "$usage"
         return 1;
@@ -136,11 +136,11 @@ function ffind() {
     fi
 
     if [[ "$force_case" -eq 1 ]]; then
-        unset INAME_ARG
+        unset iname_arg
     # as find doesn't support smart case, provide it yourself:
-    elif [[ "$(tolowercase "$SRC")" == "$SRC" ]]; then
+    elif [[ "$(tolowercase "$src")" == "$src" ]]; then
         # provided pattern was lowercase, make it case insensitive:
-        INAME_ARG="-iname"
+        iname_arg="-iname"
     fi
 
 
@@ -149,31 +149,31 @@ function ffind() {
         sleep 2
     fi
 
-    if [[ -n "$SRCDIR" ]]; then
-        if [[ ! -d "$SRCDIR" ]]; then
-            err "provided directory to search from (\"$SRCDIR\") is not a directory. abort." "$FUNCNAME"
+    if [[ -n "$srcdir" ]]; then
+        if [[ ! -d "$srcdir" ]]; then
+            err "provided directory to search from (\"$srcdir\") is not a directory. abort." "$FUNCNAME"
             return 1
-        elif [[ "$SRCDIR" != */ ]]; then
-            SRCDIR="${SRCDIR}/"  # add trailing slash if missing; required for gnu find; necessary in case it's a link.
+        elif [[ "$srcdir" != */ ]]; then
+            srcdir="${srcdir}/"  # add trailing slash if missing; required for gnu find; necessary in case it's a link.
         fi
     fi
 
     # find metacharacter or regex sanity:
     if [[ "$regex" -eq 1 ]]; then
-        if [[ "$SRC" == *\** && "$SRC" != *\.\** ]]; then
+        if [[ "$src" == *\** && "$src" != *\.\** ]]; then
             err 'use .* as wildcards, not a single *; you are misusing regex.' "$FUNCNAME"
             return 1
-        elif [[ "$(echo "$SRC" | tr -dc '.' | wc -m)" -lt "$(echo "$SRC" | tr -dc '*' | wc -m)" ]]; then
+        elif [[ "$(echo "$src" | tr -dc '.' | wc -m)" -lt "$(echo "$src" | tr -dc '*' | wc -m)" ]]; then
             err "nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
             return 1
         fi
     else  # no regex, make sure find metacharacters are not mistaken for regex ones:
-        if [[ "$SRC" == *\.\** ]]; then
+        if [[ "$src" == *\.\** ]]; then
             err "only use asterisks (*) for wildcards, not .*; provide -r flag if you want to use regex." "$FUNCNAME"
             return 1
         fi
 
-        if [[ "$SRC" == *\.* && "$skip_msgs" -ne 1 ]]; then
+        if [[ "$src" == *\.* && "$skip_msgs" -ne 1 ]]; then
             report "note that period (.) will be used as a literal period, not as a wildcard. provide -r flag to use regex.\n" "$FUNCNAME"
         fi
     fi
@@ -193,21 +193,21 @@ function ffind() {
     fi
 
     if [[ "$pathOpt" -eq 1 ]]; then
-        [[ -n "$INAME_ARG" ]] && INAME_ARG="-iwholename" || INAME_ARG="-path"  # as per man page, -ipath is deprecated
+        [[ -n "$iname_arg" ]] && iname_arg="-iwholename" || iname_arg="-path"  # as per man page, -ipath is deprecated
     elif [[ "$regex" -eq 1 ]]; then
-        [[ -n "$INAME_ARG" ]] && INAME_ARG="-regextype posix-extended -iregex" || INAME_ARG="-regextype posix-extended -regex"
+        [[ -n "$iname_arg" ]] && iname_arg="-regextype posix-extended -iregex" || iname_arg="-regextype posix-extended -regex"
     fi
 
     # grep is for coloring only:
-    #find "${SRCDIR:-.}" $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' | grep -i --color=auto "$SRC" 2>/dev/null
+    #find "${srcdir:-.}" $file_type "${iname_arg:--name}" '*'"$src"'*' | grep -i --color=auto "$src" 2>/dev/null
     if [[ "$exact" -eq 1 ]]; then # no regex with exact; they are excluded.
         if [[ "$binary" -eq 1 ]]; then
-            find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" "$SRC" -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
+            find $follow_links "${srcdir:-.}" $maxDepthParam -type f "${iname_arg:--name}" "$src" -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
         else
-            find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" "$SRC" -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
+            find $follow_links "${srcdir:-.}" $maxDepthParam $file_type "${iname_arg:--name}" "$src" -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
         fi
     else # partial filename match, ie add * padding
-        if [[ "$regex" -eq 1 ]]; then  # using regex, need to change the * padding around $SRC
+        if [[ "$regex" -eq 1 ]]; then  # using regex, need to change the * padding around $src
             #
             # TODO eval!
             #
@@ -216,17 +216,17 @@ function ffind() {
                 err "executalbe binary file search in regex currently unimplemented" "$FUNCNAME"
                 return 1
                 # this doesn't work atm:
-                eval find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '.*'"$SRC"'.*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
+                eval find $follow_links "${srcdir:-.}" $maxDepthParam -type f "${iname_arg:--name}" '.*'"$src"'.*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
             else
                 report "!!! running with eval, be careful !!!" "$FUNCNAME"
                 sleep 2  # give time to bail out
-                eval find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '.*'"$SRC"'.*' -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
+                eval find $follow_links "${srcdir:-.}" $maxDepthParam $file_type "${iname_arg:--name}" '.*'"$src"'.*' -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
             fi
         else  # no regex
             if [[ "$binary" -eq 1 ]]; then
-                find $follow_links "${SRCDIR:-.}" $maxDepthParam -type f "${INAME_ARG:--name}" '*'"$SRC"'*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
+                find $follow_links "${srcdir:-.}" $maxDepthParam -type f "${iname_arg:--name}" '*'"$src"'*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
             else
-                find $follow_links "${SRCDIR:-.}" $maxDepthParam $file_type "${INAME_ARG:--name}" '*'"$SRC"'*' -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$SRC|$"
+                find $follow_links "${srcdir:-.}" $maxDepthParam $file_type "${iname_arg:--name}" '*'"$src"'*' -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
             fi
         fi
     fi
@@ -633,7 +633,7 @@ function aptclean() { aptreset; }
 # TODO: find whether we could stop using find here and use grep --include & --exclude flags instead.
 function ffstr() {
     local grepcase OPTIND usage opt max_result_line_length caseOptCounter force_case regex i
-    local INAME_ARG maxDepth maxDepthParam defMaxDeptWithFollowLinks follow_links result_files result
+    local iname_arg maxDepth maxDepthParam defMaxDeptWithFollowLinks follow_links result_files result
     local pattern file_pattern collect_files
 
     caseOptCounter=0
@@ -657,12 +657,12 @@ function ffstr() {
     while getopts "isrm:Lch" opt; do
         case "$opt" in
            i) grepcase=" -i "
-              INAME_ARG="-iname"
+              iname_arg="-iname"
               caseOptCounter+=1
               shift $(( $OPTIND - 1 ))
               ;;
            s) unset grepcase
-              unset INAME_ARG
+              unset iname_arg
               force_case=1
               caseOptCounter+=1
               shift $((OPTIND-1))
@@ -758,10 +758,10 @@ function ffstr() {
 
     if [[ -n "$file_pattern" && "$(tolowercase "$file_pattern")" == "$file_pattern" ]]; then
         # provided pattern was lowercase, make it case insensitive:
-        INAME_ARG="-iname"
+        iname_arg="-iname"
     fi
 
-    [[ "$force_case" -eq 1 ]] && unset grepcase INAME_ARG
+    [[ "$force_case" -eq 1 ]] && unset grepcase iname_arg
 
     ## Clean grep-only solution: (in this case the maxdepth option goes out the window)
     #if [[ -z "$file_pattern" ]]; then
@@ -772,13 +772,13 @@ function ffstr() {
     if [[ "$regex" -eq 1 ]]; then
         # TODO: convert to  'find . -name "$ext" -type f -exec grep "$pattern" /dev/null {} +' perhaps?
         [[ -z "$file_pattern" ]] && { err "with -r flag, filename argument is required." "$FUNCNAME"; return 1; }
-        [[ -n "$INAME_ARG" ]] && INAME_ARG="-regextype posix-extended -iregex" || INAME_ARG="-regextype posix-extended -regex"
+        [[ -n "$iname_arg" ]] && iname_arg="-regextype posix-extended -iregex" || iname_arg="-regextype posix-extended -regex"
 
         if [[ "$collect_files" -eq 1 ]]; then
-            result="$(eval find $follow_links . $maxDepthParam -type f $INAME_ARG '.*'"$file_pattern"'.*' -print0 2>/dev/null | \
+            result="$(eval find $follow_links . $maxDepthParam -type f $iname_arg '.*'"$file_pattern"'.*' -print0 2>/dev/null | \
                     xargs -0 grep -El --color=never -sn ${grepcase} -- "$pattern")"
         else
-            eval find $follow_links . $maxDepthParam -type f $INAME_ARG '.*'"$file_pattern"'.*' -print0 2>/dev/null | \
+            eval find $follow_links . $maxDepthParam -type f $iname_arg '.*'"$file_pattern"'.*' -print0 2>/dev/null | \
                 xargs -0 grep -E --color=always -sn ${grepcase} -- "$pattern" | \
                 cut -c 1-$max_result_line_length | \
                 more
@@ -786,10 +786,10 @@ function ffstr() {
         fi
     else
         if [[ "$collect_files" -eq 1 ]]; then
-            result="$(find $follow_links . $maxDepthParam -type f "${INAME_ARG:--name}" '*'"${file_pattern:-*}"'*' -print0 2>/dev/null | \
+            result="$(find $follow_links . $maxDepthParam -type f "${iname_arg:--name}" '*'"${file_pattern:-*}"'*' -print0 2>/dev/null | \
                     xargs -0 grep -El --color=never -sn ${grepcase} -- "$pattern")"
         else
-            find $follow_links . $maxDepthParam -type f "${INAME_ARG:--name}" '*'"${file_pattern:-*}"'*' -print0 2>/dev/null | \
+            find $follow_links . $maxDepthParam -type f "${iname_arg:--name}" '*'"${file_pattern:-*}"'*' -print0 2>/dev/null | \
                 xargs -0 grep -E --color=always -sn ${grepcase} -- "$pattern" | \
                 cut -c 1-$max_result_line_length | \
                 more
@@ -1004,7 +1004,7 @@ function swap() {
 
 # list current directory and search for a file/dir by name:
 function lgrep() {
-    local SRC SRCDIR usage exact OPTIND
+    local src srcdir usage exact OPTIND
 
     usage="$FUNCNAME  [-e]  filename_to_grep  [dir_to_look_from]\n             -e  search for exact filename"
 
@@ -1022,29 +1022,29 @@ function lgrep() {
         esac
     done
 
-    SRC="$1"
-    SRCDIR="$2"
+    src="$1"
+    srcdir="$2"
 
     # sanity:
-    if [[ "$#" -lt 1 || "$#" -gt 2 || -z "$SRC" ]]; then
+    if [[ "$#" -lt 1 || "$#" -gt 2 || -z "$src" ]]; then
         echo -e "$usage"
         return 1;
-    elif [[ -n "$SRCDIR" ]]; then
-        if [[ ! -d "$SRCDIR" ]]; then
+    elif [[ -n "$srcdir" ]]; then
+        if [[ ! -d "$srcdir" ]]; then
             err "provided directory to list and grep from is not a directory. abort." "$FUNCNAME"
             echo -e "\n$usage"
             return 1
-        elif [[ ! -r "$SRCDIR" ]]; then
+        elif [[ ! -r "$srcdir" ]]; then
             err "provided directory to list and grep from is not readable. abort." "$FUNCNAME"
             return 1
         fi
     fi
 
     if [[ "$exact" -eq 1 ]]; then
-        find "${SRCDIR:-.}" -maxdepth 1 -mindepth 1 -name "$SRC" -printf '%f\n' | grep -iE --color=auto "$SRC|$"
+        find "${srcdir:-.}" -maxdepth 1 -mindepth 1 -name "$src" -printf '%f\n' | grep -iE --color=auto "$src|$"
     else
-        ls -lA "${SRCDIR:-.}" | grep --color=auto -i -- "$SRC"
-        #find "${SRCDIR:-.}" -maxdepth 1 -mindepth 1 -iname '*'"$SRC"'*' -printf '%f\n' | grep -iE --color=auto "$SRC|$"
+        ls -lA "${srcdir:-.}" | grep --color=auto -i -- "$src"
+        #find "${srcdir:-.}" -maxdepth 1 -mindepth 1 -iname '*'"$src"'*' -printf '%f\n' | grep -iE --color=auto "$src|$"
     fi
 }
 
@@ -2247,7 +2247,7 @@ goto() {
 #
 # see also gg()
 g() {
-    local path input file match matches pattern DMENU dmenurc msg_loc INAME_ARG nr_of_dmenu_vertical_lines count i
+    local path input file match matches pattern DMENU dmenurc msg_loc iname_arg nr_of_dmenu_vertical_lines count i
 
     input="$*"
     dmenurc="$HOME/.dmenurc"
@@ -2264,9 +2264,9 @@ g() {
     [[ -z "$pattern" ]] && { err "no search pattern provided" "$FUNCNAME"; return 1; }
     [[ "$path" == '.' ]] && msg_loc="here" || msg_loc="$path/"
 
-    [[ "$(tolowercase "$pattern")" == "$pattern" ]] && INAME_ARG="iname"
+    [[ "$(tolowercase "$pattern")" == "$pattern" ]] && iname_arg="iname"
 
-    matches="$(find -L "$path" -maxdepth 1 -mindepth 1 -type d -${INAME_ARG:-name} '*'"$pattern"'*')"
+    matches="$(find -L "$path" -maxdepth 1 -mindepth 1 -type d -${iname_arg:-name} '*'"$pattern"'*')"
     count="$(echo "$matches" | wc -l)"
     match=("$matches")
 
