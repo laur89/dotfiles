@@ -254,8 +254,6 @@ set nocompatible " Must be the first line
     "Plugin 'xenomachina/public/tree/master/vim/plugin'
     " consider targets.vim - adds new text objects
 
-    Plugin 'vim-scripts/Conque-Shell'
-
     " Finish Vundle stuff
     call vundle#end()
 
