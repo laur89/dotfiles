@@ -1,0 +1,10 @@
+--- dmenu.c
++++ dmenu.c
+@@ -33,6 +33,7 @@ struct item {
+ 	char *text;
+ 	struct item *left, *right;
+ 	bool out;
++	int distance;
+ };
+ 
+ static char text[BUFSIZ] = "";
