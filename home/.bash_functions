@@ -161,10 +161,10 @@ function ffind() {
     # find metacharacter or regex sanity:
     if [[ "$regex" -eq 1 ]]; then
         if [[ "$src" == *\** && "$src" != *\.\** ]]; then
-            err 'use .* as wildcards, not a single *; you are misusing regex.' "$FUNCNAME"
+            err 'use .* as wildcards, not a single *; are you misusing regex?' "$FUNCNAME"
             return 1
         elif [[ "$(echo "$src" | tr -dc '.' | wc -m)" -lt "$(echo "$src" | tr -dc '*' | wc -m)" ]]; then
-            err "nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
+            err "nr of periods (.) was less than stars (*); are you misusing regex?" "$FUNCNAME"
             return 1
         fi
     else  # no regex, make sure find metacharacters are not mistaken for regex ones:
@@ -706,7 +706,7 @@ function ffstr() {
         err "use .* as wildcards, not a single *" "$FUNCNAME"
         return 1
     elif [[ "$(echo "$pattern" | tr -dc '.' | wc -m)" -lt "$(echo "$pattern" | tr -dc '*' | wc -m)" ]]; then
-        err "nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
+        err "nr of periods (.) was less than stars (*); are you misusing regex?" "$FUNCNAME"
         return 1
     fi
 
@@ -723,7 +723,7 @@ function ffstr() {
                 err 'err in filename pattern: use .* as wildcards, not a single *; you are misusing regex.' "$FUNCNAME"
                 return 1
             elif [[ "$(echo "$file_pattern" | tr -dc '.' | wc -m)" -lt "$(echo "$file_pattern" | tr -dc '*' | wc -m)" ]]; then
-                err "err in filename pattern: nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
+                err "err in filename pattern: nr of periods (.) was less than stars (*); are you misusing regex?" "$FUNCNAME"
                 return 1
             fi
         else # no regex, make sure find metacharacters are not mistaken for regex ones:
@@ -920,7 +920,7 @@ function astr() {
         err "use .* as wildcards, not a single *" "$FUNCNAME"
         return 1
     elif [[ "$(echo "$@" | tr -dc '.' | wc -m)" -lt "$(echo "$@" | tr -dc '*' | wc -m)" ]]; then
-        err "nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
+        err "nr of periods (.) was less than stars (*); are you misusing regex?" "$FUNCNAME"
         return 1
     fi
 
@@ -1538,7 +1538,7 @@ function mkgit() {
     readonly passwd="$(getnetrc "${user}@${repo}")"
     if [[ "$?" -ne 0 || -z "$passwd" ]]; then
         err "getting password failed. abort." "$FUNCNAME"
-        [[ "$newly_created_dir" -eq 1 ]] && rm -rf -- "$dir"  # delete the dir we just created
+        [[ "$newly_created_dir" -eq 1 ]] && rm -r -- "$dir"  # delete the dir we just created
         return 1
     fi
 
@@ -1570,7 +1570,7 @@ function mkgit() {
             return 1
         else
             err "unexpected repo [$repo]" "$FUNCNAME"
-            [[ "$newly_created_dir" -eq 1 ]] && rm -rf -- "$dir"  # delete the dir we just created
+            [[ "$newly_created_dir" -eq 1 ]] && rm -r -- "$dir"  # delete the dir we just created
             return 1
         fi
 
@@ -1579,7 +1579,7 @@ function mkgit() {
             echo
             err "abort" "$FUNCNAME"
 
-            [[ "$newly_created_dir" -eq 1 ]] && rm -rf -- "$dir"  # delete the dir we just created
+            [[ "$newly_created_dir" -eq 1 ]] && rm -r -- "$dir"  # delete the dir we just created
             return 1
         fi
 
@@ -1592,7 +1592,7 @@ function mkgit() {
     git remote add origin "git@${repo}:${user}/${project_name}.git" || { err "adding remote failed. abort." "$FUNCNAME"; return 1; }
     echo
 
-    if confirm "want to add README.md?"; then
+    if confirm "want to add README.md (recommended)?"; then
         report "adding README.md ..." "$FUNCNAME"
         touch README.md
         git add README.md
@@ -1629,7 +1629,7 @@ gito() {
             [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
             return 1
         elif [[ "$(echo "$@" | tr -dc '.' | wc -m)" -lt "$(echo "$@" | tr -dc '*' | wc -m)" ]]; then
-            err "nr of periods (.) was less than stars (*); you're misusing regex." "$FUNCNAME"
+            err "nr of periods (.) was less than stars (*); are you misusing regex?" "$FUNCNAME"
             [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
             return 1
         fi
@@ -1725,6 +1725,13 @@ gffs() {
     git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort." "$FUNCNAME"; return 1; }
     git flow feature start -F "$branch" || { err "starting git feature failed." "$FUNCNAME"; return 1; }
     return $?
+}
+
+
+# git flow feature publish
+gffp() {
+    [[ "$(get_git_branch)" != feature/* ]] && { err "need to be on a feature branch for this." "$FUNCNAME"; return 1; }
+    git flow feature publish
 }
 
 
