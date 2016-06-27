@@ -13,17 +13,17 @@
 #------------------------
 #---   Configuration  ---
 #------------------------
-readonly TMPDIR="/tmp"
-readonly CLANG_LLVM_LOC="http://llvm.org/releases/3.8.0/clang+llvm-3.8.0-x86_64-linux-gnu-debian8.tar.xz"  # http://llvm.org/releases/download.html
-readonly VIM_REPO_LOC="https://github.com/vim/vim.git"                # vim - yeah.
-readonly NVIM_REPO_LOC="https://github.com/neovim/neovim.git"         # nvim - yeah.
-readonly KEEPASS_REPO_LOC="https://github.com/keepassx/keepassx.git"  # keepassX - open password manager forked from keepass project
-readonly COPYQ_REPO_LOC="https://github.com/hluk/CopyQ.git"           # copyq - awesome clipboard manager
-readonly SYNERGY_REPO_LOC="https://github.com/synergy/synergy.git"    # synergy - share keyboard&mouse between computers on same LAN
-readonly ORACLE_JDK_LOC="http://download.oracle.com/otn-pub/java/jdk/8u73-b02/jdk-8u73-linux-x64.tar.gz"   # jdk8: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+readonly TMPDIR='/tmp'
+readonly CLANG_LLVM_LOC='http://llvm.org/releases/3.8.0/clang+llvm-3.8.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
+readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - yeah.
+readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
+readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX - open password manager forked from keepass project
+readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
+readonly SYNERGY_REPO_LOC='https://github.com/synergy/synergy.git'    # synergy - share keyboard&mouse between computers on same LAN
+readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u91-b14/jdk-8u91-linux-x64.tar.gz'   # jdk8: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
                                                                                                            # jdk7: http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
                                                                                                            # jdk9: https://jdk9.java.net/  /  https://jdk9.java.net/download/
-readonly SKYPE_LOC="http://www.skype.com/go/getskype-linux-deb"       # http://www.skype.com/en/download-skype/skype-for-computer/
+readonly SKYPE_LOC='http://www.skype.com/go/getskype-linux-deb'       # http://www.skype.com/en/download-skype/skype-for-computer/
 readonly JDK_LINK_LOC="/usr/local/jdk_link"
 readonly JDK_INSTALLATION_DIR="/usr/local/javas"
 readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
@@ -227,7 +227,7 @@ function setup_sudoers() {
         execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
         backup_original_and_copy_file "$tmpfile" "$sudoers_dest"
 
-        execute "rm $tmpfile"
+        execute "rm -- '$tmpfile'"
     else
         err "expected configuration file at \"$file\" does not exist; won't install it."
         return 1
@@ -274,12 +274,12 @@ function setup_crontab() {
     fi
 
     if [[ -f "$file" ]]; then
-        execute "cp $file $tmpfile" || return 1
+        execute "cp -- '$file' '$tmpfile'" || return 1
         execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
         #backup_original_and_copy_file "$tmpfile" "$cron_dir"  # don't create backup - dont wanna end up with 2 crontabs
-        execute "sudo cp $tmpfile $cron_dir"
+        execute "sudo cp -- '$tmpfile' '$cron_dir'"
 
-        execute "rm $tmpfile"
+        execute "rm -- '$tmpfile'"
     else
         err "expected configuration file at \"$file\" does not exist; won't install it."
     fi
@@ -296,10 +296,10 @@ function backup_original_and_copy_file() {
 
     # back up the destination file, if it's already existing:
     if [[ -f "$dest/$filename" ]] && ! [[ -e "$dest/${filename}.orig" ]]; then
-        execute "sudo cp $dest/$filename $dest/${filename}.orig"
+        execute "sudo cp -- '$dest/$filename' '$dest/${filename}.orig'"
     fi
 
-    execute "sudo cp $file $dest"
+    execute "sudo cp -- '$file' '$dest'"
 }
 
 
