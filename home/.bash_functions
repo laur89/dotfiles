@@ -22,9 +22,22 @@ fi
 # find files or dirs.
 # TODO: refactor the massive spaghetti.
 function ffind() {
-    local src srcdir iname_arg opt usage OPTIND file_type filetypeOptionCounter exact binary follow_links
+    local src srcdir iname_arg opt usage OPTIND file_type filetypeOptionCounter exact filetype follow_links
     local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter skip_msgs
-    local quitFlag delete deleteFlag
+    local quitFlag type_grep extra_params matches i delete deleteFlag
+
+    function __filter_for_filetype() {
+        local filetype file index
+
+        [[ -z "${matches[*]}" ]] && return 1
+        [[ -z "$type_grep" ]] && { err "[\$type_grep] not defined." "$FUNCNAME"; return 1; }
+        index=0
+
+        while read filetype; do
+            [[ "$filetype" =~ $type_grep ]] && echo "${matches[$index]}" | grep -iE --color=auto -- "$src|$"
+            let index++
+        done < <(file -iLb -- "${matches[@]}")
+    }
 
     [[ "$1" == --_skip_msgs ]] && { skip_msgs=1; shift; }  # skip showing informative messages, as the result will be directly echoed to other processes;
     defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
@@ -33,24 +46,30 @@ function ffind() {
 
     Usage: $FUNCNAME  [options]  \"fileName pattern\" [top_level_dir_to_search_from]
 
-        -r  use regex (so the find specific metacharacters *, ? and [] won't work)
+        -r  use regex (instead of find's own metacharacters *, ? and [])
         -i  force case insensitive
         -s  force case sensitivity
         -f  search for regular files
         -d  search for directories
         -l  search for symbolic links
         -b  search for executable binaries
+        -V  search for video files
+        -P  search for pdf files
+        -I  search for image files
+        -C  search for doc files (word, excel, opendocument...; NO pdf)
         -L  follow symlinks
         -D  delete found nodes  (won't delete nonempty dirs!)
         -q  provide find the -quit flag (exit on first found item)
         -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;
         -e  search for exact filename, not for a partial (you still can use * wildcards)
-        -p  expand the pattern search for path as well (adds the -path option)"
+        -p  expand the pattern search for path as well (adds the -path option);
+            might want to consider regex, that also searches across the whole path."
 
     filetypeOptionCounter=0
     caseOptCounter=0
+    matches=()
 
-    while getopts "m:isrefdlbLqpDh" opt; do
+    while getopts "m:isrefdlbLDqphVPIC" opt; do
         case "$opt" in
            i) iname_arg="-iname"
               caseOptCounter+=1
@@ -71,9 +90,31 @@ function ffind() {
               let filetypeOptionCounter+=1
               shift $((OPTIND-1))
                 ;;
-           b) binary=1
-              let filetypeOptionCounter+=1
+           b) readonly filetype=1
+              extra_params='-executable'
+              readonly type_grep='x-executable; charset=binary'
               shift $((OPTIND-1))
+                ;;
+           V) readonly filetype=1
+              extra_params='-size +100M'  # search for min. x megs files, so mp4 wouldn't return audio files
+              readonly type_grep='video/|audio/mp4'
+              shift $((OPTIND-1))
+                ;;
+           P) readonly filetype=1
+              readonly type_grep='application/pdf; charset=binary'
+              shift $((OPTIND-1))
+                ;;
+           I) readonly filetype=1
+              readonly type_grep='image/\w+; charset=binary'
+              shift $((OPTIND-1))
+                ;;
+           C)  # for doC
+              readonly filetype=1
+              shift $((OPTIND-1))
+
+              # try keeping doc files' definitions in sync with the ones in fo()
+              # no linebreaks in regex!
+              readonly type_grep='application/msword; charset=binary|application/.*opendocument.*; charset=binary|application/vnd.ms-office; charset=binary'
                 ;;
            L) follow_links="-L"
               shift $((OPTIND-1))
@@ -108,7 +149,11 @@ function ffind() {
         echo -e "$usage"
         return 1;
     elif [[ "$filetypeOptionCounter" -gt 1 ]]; then
-        err "-f, -d, -l and -b flags are exclusive." "$FUNCNAME"
+        err "-f, -d, -l flags are exclusive." "$FUNCNAME"
+        echo -e "$usage"
+        return 1
+    elif [[ "$filetypeOptionCounter" -ge 1 && "$filetype" -eq 1 && "$file_type" != "-type f" ]]; then
+        err "-d, -l and filetype (eg -V) flags are exclusive." "$FUNCNAME"
         echo -e "$usage"
         return 1
     elif [[ "$caseOptCounter" -gt 1 ]]; then
@@ -123,10 +168,12 @@ function ffind() {
         err "-r and -e flags are exclusive, since regex always searches the whole path anyways, meaning script will always pad beginning with .*" "$FUNCNAME"
         echo -e "$usage"
         return 1
-    elif [[ "$delete" -eq 1 && "$binary" -eq 1 ]]; then
-        err "-D and -b flags are exclusive." "$FUNCNAME"
+    elif [[ "$delete" -eq 1 && "$filetype" -eq 1 ]]; then
+        err "-D and filetype (eg -V) flags are exclusive." "$FUNCNAME"
         echo -e "$usage"
         return 1
+    elif [[ "$delete" -eq 1 ]] && ! confirm "wish to delete files that match [$src]?"; then
+        return
     fi
 
 
@@ -198,38 +245,54 @@ function ffind() {
         [[ -n "$iname_arg" ]] && iname_arg="-regextype posix-extended -iregex" || iname_arg="-regextype posix-extended -regex"
     fi
 
-    # grep is for coloring only:
-    #find "${srcdir:-.}" $file_type "${iname_arg:--name}" '*'"$src"'*' | grep -i --color=auto "$src" 2>/dev/null
+    # trailing grep is for coloring only:
     if [[ "$exact" -eq 1 ]]; then # no regex with exact; they are excluded.
-        if [[ "$binary" -eq 1 ]]; then
-            find $follow_links "${srcdir:-.}" $maxDepthParam -type f "${iname_arg:--name}" "$src" -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
+        if [[ "$filetype" -eq 1 ]]; then
+            # original, all-in-find-command solution; slower, since file command will be launced per every result:
+            #find $follow_links "${srcdir:-.}" $maxDepthParam -type f ${iname_arg:--name} "$src" $extra_params -exec sh -c "file -iLb -- \"{}\" | grep -Eq -- '$type_grep'" \; -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
+            # optimised version:
+            while read i; do
+                matches+=( "$i" )
+            done < <(find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} "$src" $extra_params -print $quitFlag 2>/dev/null)
+            __filter_for_filetype
         else
-            find $follow_links "${srcdir:-.}" $maxDepthParam $file_type "${iname_arg:--name}" "$src" -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
+            find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} "$src" -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
         fi
-    else # partial filename match, ie add * padding
+    else  # partial filename match, ie add * padding
         if [[ "$regex" -eq 1 ]]; then  # using regex, need to change the * padding around $src
             #
-            # TODO eval!
+            # TODO remove eval!
             #
-            if [[ "$binary" -eq 1 ]]; then
-                # TODO: this doesnt work atm:
-                err "executalbe binary file search in regex currently unimplemented" "$FUNCNAME"
-                return 1
-                # this doesn't work atm:
-                eval find $follow_links "${srcdir:-.}" $maxDepthParam -type f "${iname_arg:--name}" '.*'"$src"'.*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
+            report "!!! running with eval, be careful !!!" "$FUNCNAME"
+            sleep 2  # give time to bail out
+
+            if [[ "$filetype" -eq 1 ]]; then
+                # original, all-in-find-command solution; slower, since file command will be launced per every result:
+                #eval "find $follow_links \"${srcdir:-.}\" $maxDepthParam -type f ${iname_arg:--name} '.*'\"$src\"'.*' $extra_params -exec sh -c \"file -iLb -- \\\"{}\\\" | grep -Eq -- '$type_grep'\" \; -print $quitFlag | grep -iE --color=auto -- \"$src|$\""
+                # optimised version:
+                while read i; do
+                    matches+=( "$i" )
+                done < <(eval find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '.*'"$src"'.*' $extra_params -print $quitFlag 2>/dev/null)
+                __filter_for_filetype
             else
-                report "!!! running with eval, be careful !!!" "$FUNCNAME"
-                sleep 2  # give time to bail out
-                eval find $follow_links "${srcdir:-.}" $maxDepthParam $file_type "${iname_arg:--name}" '.*'"$src"'.*' -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
+                eval find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '.*'"$src"'.*' -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
             fi
         else  # no regex
-            if [[ "$binary" -eq 1 ]]; then
-                find $follow_links "${srcdir:-.}" $maxDepthParam -type f "${iname_arg:--name}" '*'"$src"'*' -executable -exec sh -c "file -ib '{}' | grep -q 'x-executable; charset=binary'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
+            if [[ "$filetype" -eq 1 ]]; then
+                # original, all-in-find-command solution; slower, since file command will be launced per every result:
+                #find $follow_links "${srcdir:-.}" $maxDepthParam -type f ${iname_arg:--name} '*'"$src"'*' $extra_params -exec sh -c "file -iLb -- \"{}\" | grep -Eq -- '$type_grep'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
+                # optimised version:
+                while read i; do
+                    matches+=( "$i" )
+                done < <(find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '*'"$src"'*' $extra_params -print $quitFlag 2>/dev/null)
+                __filter_for_filetype
             else
-                find $follow_links "${srcdir:-.}" $maxDepthParam $file_type "${iname_arg:--name}" '*'"$src"'*' -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
+                find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '*'"$src"'*' -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
             fi
         fi
     fi
+
+    unset __filter_for_filetype
 }
 
 # Find a file with a pattern in name (inside wd);
@@ -436,13 +499,15 @@ function __find_bigger_smaller_common_fun() {
            m) maxDepth="$OPTARG"
               shift $((OPTIND-1))
                 ;;
-           L) follow_links="-L" # common for both find and du
+           L) follow_links="-L"  # common for both find and du
               shift $((OPTIND-1))
                 ;;
            h) echo -e "$usage"
               return 0
                 ;;
-           *) echo -e "$usage"; return 1 ;;
+           *) echo -e "$usage"
+              return 1
+                ;;
         esac
     done
 
@@ -929,11 +994,11 @@ function astr() {
     ag $filePattern $grepcase -- "$1" 2>/dev/null
 }
 
+# Swap 2 files around, if they exist (from Uzi's bashrc):
 function swap() {
-    # Swap 2 files around, if they exist (from Uzi's bashrc):
-    local TMPFILE file_size space_left_on_target i first_file sec_file
+    local tmp file_size space_left_on_target i first_file sec_file
 
-    TMPFILE="/tmp/${FUNCNAME}_function_tmpFile.$RANDOM"
+    tmp="/tmp/${FUNCNAME}_function_tmpFile.$RANDOM"
     first_file="${1%/}" # strip trailing slash
     sec_file="${2%/}" # strip trailing slash
 
@@ -944,7 +1009,7 @@ function swap() {
 
 
     # check write perimssions:
-    for i in "$TMPFILE" "$first_file" "$sec_file"; do
+    for i in "$tmp" "$first_file" "$sec_file"; do
         i="$(dirname -- "$i")"
         if [[ ! -w "$i" ]]; then
             err "$i doesn't have write permission. abort." "$FUNCNAME"
@@ -954,14 +1019,14 @@ function swap() {
 
     # check if $first_file fits into /tmp:
     file_size="$(get_size "$first_file")"
-    space_left_on_target="$(space_left "$TMPFILE")"
+    space_left_on_target="$(space_left "$tmp")"
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
-        err "$first_file size is ${file_size}MB, but $(dirname "$TMPFILE") has only ${space_left_on_target}MB free space left. abort." "$FUNCNAME"
+        err "$first_file size is ${file_size}MB, but $(dirname "$tmp") has only [${space_left_on_target}MB] free space left. abort." "$FUNCNAME"
         return 1
     fi
 
-    if ! mv -- "$first_file" "$TMPFILE"; then
-        err "moving $first_file to $TMPFILE failed. abort." "$FUNCNAME"
+    if ! mv -- "$first_file" "$tmp"; then
+        err "moving $first_file to $tmp failed. abort." "$FUNCNAME"
         return 1
     fi
 
@@ -969,35 +1034,35 @@ function swap() {
     file_size="$(get_size "$sec_file")"
     space_left_on_target="$(space_left "$first_file")"
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
-        err "$sec_file size is ${file_size}MB, but $(dirname "$first_file") has only ${space_left_on_target}MB free space left. abort." "$FUNCNAME"
+        err "$sec_file size is ${file_size}MB, but $(dirname "$first_file") has only [${space_left_on_target}MB] free space left. abort." "$FUNCNAME"
         # undo:
-        mv -- "$TMPFILE" "$first_file"
+        mv -- "$tmp" "$first_file"
         return 1
     fi
 
     if ! mv -- "$sec_file" "$first_file"; then
         err "moving $sec_file to $first_file failed. abort." "$FUNCNAME"
         # undo:
-        mv -- "$TMPFILE" "$first_file"
+        mv -- "$tmp" "$first_file"
         return 1
     fi
 
     # check if $first_file fits into $sec_file:
-    file_size="$(get_size "$TMPFILE")"
+    file_size="$(get_size "$tmp")"
     space_left_on_target="$(space_left "$sec_file")"
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
-        err "$first_file size is ${file_size}MB, but $(dirname "$sec_file") has only ${space_left_on_target}MB free space left. abort." "$FUNCNAME"
+        err "$first_file size is ${file_size}MB, but $(dirname "$sec_file") has only [${space_left_on_target}MB] free space left. abort." "$FUNCNAME"
         # undo:
         mv -- "$first_file" "$sec_file"
-        mv -- "$TMPFILE" "$first_file"
+        mv -- "$tmp" "$first_file"
         return 1
     fi
 
-    if ! mv -- "$TMPFILE" "$sec_file"; then
+    if ! mv -- "$tmp" "$sec_file"; then
         err "moving $first_file to $sec_file failed. abort." "$FUNCNAME"
         # undo:
         mv "$first_file" "$sec_file"
-        mv "$TMPFILE" "$first_file"
+        mv "$tmp" "$first_file"
         return 1
     fi
 }
@@ -1425,7 +1490,7 @@ function createUsbIso() {
     #sudo fdisk -l $device
     lsblk | grep --color=auto -- "$cleaned_devicename\|MOUNTPOINT"
 
-    confirm  "\nis selected device - $device - the correct one (be VERY sure!)? (y/n)" || { report "aborting, nothing written." "$FUNCNAME"; return 1; }
+    confirm  "\nis selected device [$device] the correct one (be VERY sure!)? (y/n)" || { report "aborting, nothing written." "$FUNCNAME"; return 1; }
 
     # find if device is mounted:
     #lsblk -o name,size,mountpoint /dev/sda
@@ -1443,12 +1508,16 @@ function createUsbIso() {
         fi
     done
 
+    [[ "$reverse" -eq 1 ]] && { inf="$device"; ouf="$file"; } || { inf="$file"; ouf="$device"; }
+
+    echo
+    confirm "last confirmation: wish to write [$inf] into [$ouf]?" || { report "aborting." "$FUNCNAME"; return 1; }
     report "Please provide sudo passwd for running dd:" "$FUNCNAME"
     sudo echo "..."
     clear
-    [[ "$reverse" -eq 1 ]] && { inf="$device"; ouf="$file"; } || { inf="$file"; ouf="$device"; }
+
     report "Running dd, writing [$inf] into [$ouf]; this might take a while..." "$FUNCNAME"
-    sudo dd if="$inf" of="$ouf" bs=4M || { err "some error occurred while running dd." "$FUNCNAME"; }
+    sudo dd if="$inf" of="$ouf" bs=4M || { err "some error occurred while running dd (err code [$?])." "$FUNCNAME"; }
     sync
     #eject $device
 
@@ -1859,6 +1928,14 @@ foa() {
 }
 
 
+# finds files/dirs using fo() and DELETES them
+#
+# mnemonic: file open delete
+fod() {
+    fo --delete "$@"
+}
+
+
 # finds files/dirs using fo() and goes to containing dir (or same dir if found item is already a dir)
 #
 # mnemonic: file open go
@@ -1887,12 +1964,15 @@ gg() {
 
 
 # open newest file (as in with last mtime);
+#
+# takes optional last arg (digit) to select 2nd, 3rd...nth newest instead.
+#
 # if no args provided, then searches for '*';
 # if no depth arg provided, then defaults to current dir only.
 #
 # mnemonic: file open new(est)
 fon() {
-    local opts default_depth
+    local opts default_depth n
 
     opts="$1"
 
@@ -1905,6 +1985,17 @@ fon() {
         shift
     else
         opts="-f${default_depth}"
+    fi
+
+    unset __FILE_OPEN_NEWEST_NTH  # so the state wouldn't be contaminated from the last run
+
+    # try to filter out optional last arg defining the nth newest to open (as in open the nth newest file):
+    if [[ "$#" -gt 1 ]]; then
+        readonly n="${@: -1}"  # last arg; alternatively ${@:$#}
+        if is_digit "$n" && [[ "$n" -ge 1 ]] && [[ "$#" -gt 2 || ! -d "$n" ]]; then  # $# -gt 2   means dir is already being passed to ffind(), so no need to check !isDir
+            __FILE_OPEN_NEWEST_NTH="$n"
+            set -- "${@:1:${#}-1}"  # shift the last arg
+        fi
     fi
 
     [[ -z "$@" ]] && set -- '*'
@@ -1952,182 +2043,188 @@ foc() {
 # mnemonic: file open
 fo() {
     local DMENU matches match count filetype dmenurc editor image_viewer video_player file_mngr
-    local pdf_viewer nr_of_dmenu_vertical_lines special_mode special_modes single_selection i j
-    local last_mtime_to_file
+    local pdf_viewer nr_of_dmenu_vertical_lines special_mode special_modes single_selection i
+    local office image_editor matches_concat
 
     dmenurc="$HOME/.dmenurc"
     nr_of_dmenu_vertical_lines=20
-    readonly special_modes="--goto --openall --newest --collect"  # special mode definitions; mode basically decides how to deal with the found match(es)
+    readonly special_modes="--goto --openall --newest --collect --delete"  # special mode definitions; mode basically decides how to deal with the found match(es)
     editor="$EDITOR"
     image_viewer="sxiv"
     video_player="smplayer"
     file_mngr="ranger"
     pdf_viewer="zathura"
+    office="libreoffice"
+    image_editor="gimp"
 
-    list_contains "$1" "$special_modes" && { special_mode="$1"; shift; }
+    list_contains "$1" "$special_modes" && { readonly special_mode="$1"; shift; }
     [[ -z "$@" && -z "$special_mode" ]] && set -- '-fm1' '*'
     [[ -z "$@" ]] && { err "args required for ffind. see ffind -h" "$FUNCNAME"; return 1; }
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
     if [[ "$__REMOTE_SSH" -ne 1 && -z "$special_mode" ]]; then  # only check for progs if not ssh-d AND not using in "special mode"
         check_progs_installed find ffind "$PAGER" "$file_mngr" "$editor" "$image_viewer" \
-                "$video_player" "$pdf_viewer" dmenu file || return 1
+                "$image_editor" "$video_player" "$pdf_viewer" "$office" dmenu file || return 1
     fi
 
     # filesearch begins:
-    matches="$(ffind --_skip_msgs "$@")" || return 1
-    count="$(echo "$matches" | wc -l)"
-    match=("$matches")  # define the default match array in case only single node was found;
+    readonly matches_concat="$(ffind --_skip_msgs "$@")" || return 1
+    matches=()
+    while read i; do
+        matches+=( "$i" )
+    done < <(echo "$matches_concat")
+    [[ -z "${matches[*]}" || ! -e "${matches[0]}" ]] && return 1
+    count="${#matches[@]}"
 
     # logic to select wanted nodes from multiple matches:
-    if [[ "$count" -gt 1 ]] && ! list_contains "$special_mode" "--openall --newest --collect"; then
+    if [[ "$count" -gt 1 ]] && ! list_contains "$special_mode" "--openall --newest --collect --delete"; then
         report "found $count items" "$FUNCNAME"
-        match=()
 
         if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
             if [[ "$count" -gt 200 ]]; then
                 report "no way of using dmenu over ssh; these are the found files:\n" "$FUNCNAME"
-                echo -e "$matches"
+                echo -e "${matches[*]}"
                 return 0
             fi
 
-            [[ "$special_mode" == --goto ]] && single_selection="--single"
+            [[ "$special_mode" == --goto ]] && readonly single_selection="--single"
 
-            while read i; do
-                match+=( "$i" )
-            done < <(echo "$matches")
-
-            select_items $single_selection "${match[@]}"
-            match=("${__SELECTED_ITEMS[@]}")
+            select_items $single_selection "${matches[@]}"
+            matches=("${__SELECTED_ITEMS[@]}")
         else
+            matches=()
             while read i; do
-                match+=( "$i" )
-            done < <(echo "$matches" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)
+                matches+=( "$i" )
+            done < <(echo "$matches_concat" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)
         fi
 
-        [[ -z "${match[*]}" ]] && return 1
-    fi
+        # TODO: if no items selected, pass the original lot through instead?
+        [[ -z "${matches[*]}" ]] && return 1
+    fi  # /select from multiple matches
     # /filesearch
 
     # handle special modes, if any:
     if [[ -n "$special_mode" ]]; then
         case $special_mode in
             --goto)
-                goto "${match[@]}"  # note that for --goto only one item should be allowed to select
+                goto "${matches[@]}"  # note that for --goto only one item should be allowed to select
 
                 return
                 ;;
             --openall)
-                match=()
-
-                while read i; do
-                    match+=( "$i" )
-                done < <(echo "$matches")
-
-                "$editor" "${match[@]}"
+                true  # fall through
+                ;;
+            --collect)
+                report "found ${#matches[@]} files; stored in \$_FOUND_FILES global array." "$FUNCNAME"
+                _FOUND_FILES=("${matches[@]}")
 
                 return
                 ;;
-            --collect)
-                match=()
+            --delete)
+                report "found [${#matches[@]}] nodes:" "$FUNCNAME"
+                for i in "${matches[@]}"; do
+                    echo -e "\t${i}"
+                done
 
-                while read i; do
-                    match+=( "$i" )
-                done < <(echo "$matches")
-
-                report "found ${#match[@]} files; stored in \$_FOUND_FILES global array." "$FUNCNAME"
-                _FOUND_FILES=("${match[@]}")
+                if confirm "wish to DELETE them?"; then
+                    rm -r -- "${matches[@]}" || { err "something went wrong while deleting." "$FUNCNAME"; return 1; }
+                fi
 
                 return
                 ;;
             --newest)
                 check_progs_installed stat head || return 1
-                match=0
-                declare -A last_mtime_to_file
 
-                while read i; do
-                    j=$(stat --format=%Y -- "$i") || { err "problems running \$ stat for \"$i\"." "$FUNCNAME"; continue; }
-                    is_digit "$j" || { err "$i stat mtime is not a digit: \"$j\"!"; return 1; }
-                    last_mtime_to_file[$j]="$i"
-                    # bash-based sorting:
-                    [[ "$j" -gt "$match" ]] && match="$j"
+                [[ -z "$__FILE_OPEN_NEWEST_NTH" ]] && __FILE_OPEN_NEWEST_NTH=1  # by default, open THE newest
+                [[ "$__FILE_OPEN_NEWEST_NTH" -gt "${#matches[@]}" ]] && { err "cannot open [${__FILE_OPEN_NEWEST_NTH}th] newest file, since total nr of found files was [${#matches[@]}]" "$FUNCNAME"; return 1; }
+                matches=(
+                    $(stat --format='%Y %n' -- "${matches[@]}" \
+                        | sort -r -k 1 \
+                        | sed -n ${__FILE_OPEN_NEWEST_NTH}p \
+                        | cut -d ' ' -f 2- \
+                    )
+                )
+                [[ -f "${matches[*]}" ]] || { err "something went wrong, found newest file [${matches[*]}] is not a valid file." "$FUNCNAME"; return 1; }
 
-                    #match+="${j}\n"  # TODO: we're screwed if filename contains newlines
-                done < <(echo "$matches")
-
-                #match="$(stat --format=%Y -- "${match[@]}" | sort -r | head --lines=1)"
-                #match="$(echo -e "$match" | sort -r | head --lines=1)"  # finds the newest mtime
-                match="${last_mtime_to_file[$match]}"
-                [[ -f "$match" ]] || { err "something went wrong, found newest file \"$match\" is not a valid file."; return 1; }
-
-                #report "opening \"${match}\"..." "$FUNCNAME"
-                #if [[ "$__REMOTE_SSH" -eq 1 ]]; then
-                    #"$editor" -- "$match"
-                #else
-                    #xdg-open "$match"  # xdg-open doesn't support -- !!!
-                #fi
-
-                match=("$match")
                 # fall through, do not return!
                 ;;
-            #*) no need, as mode has already been verified
+            *) err "unsupported special mode [$special_mode]" "$FUNCNAME"
+               return 1
+                ;;
         esac
     fi
 
 
-    count="${#match[@]}"
+    count="${#matches[@]}"
     # define filetype only by the first node:
-    filetype="$(file -iLb -- "${match[0]}")" || { err "issues testing \"${match[0]}\" with \$file"; return 1; }
+    filetype="$(file -iLb -- "${matches[0]}")" || { err "issues testing [${matches[0]}] with \$file" "$FUNCNAME"; return 1; }
 
-    report "opening \"${match[*]}\"" "$FUNCNAME"
+    # report
+    if [[ "$count" -eq 1 ]]; then
+        report "opening [${matches[*]}]" "$FUNCNAME"
+    else
+        report "opening:" "$FUNCNAME"
+        for i in "${matches[@]}"; do
+            echo -e "\t${i}"
+        done
+    fi
 
     case "$filetype" in
+        'image/x-xcf; charset=binary')  # xcf is gimp
+            "$image_editor" -- "${matches[@]}"
+            ;;
         image/*)
-            "$image_viewer" -- "${match[@]}"
+            "$image_viewer" -- "${matches[@]}"
             ;;
         application/octet-stream*)
             # should be the logs on app servers
-            "$PAGER" -- "${match[@]}"
+            "$PAGER" -- "${matches[@]}"
             ;;
         application/xml*)
-            [[ "$count" -gt 1 ]] && { report "won't format multiple xml files! will just open them"; sleep 1.5; }
-            if [[ "$(wc -l < "${match[0]}")" -gt 2 || "$count" -gt 1 ]]; then  # note if more than 2 lines we also assume it's already formatted;
+            [[ "$count" -gt 1 ]] && { report "won't format multiple xml files! will just open them" "$FUNCNAME"; sleep 1.5; }
+            if [[ "$(wc -l < "${matches[0]}")" -gt 2 || "$count" -gt 1 ]]; then  # note if more than 2 lines we also assume it's already formatted;
                 # assuming it's already formatted:
-                "$editor" -- "${match[@]}"
+                "$editor" -- "${matches[@]}"
             else
-                xmlformat "${match[@]}"
+                xmlformat "${matches[@]}"
             fi
             ;;
         video/* | audio/mp4*)
-            #"$video_player" -- "${match[@]}"  # TODO: smplayer doesn't support '--' as per now
-            "$video_player" "${match[@]}"
+            #"$video_player" -- "${matches[@]}"  # TODO: smplayer doesn't support '--' as per now
+            "$video_player" "${matches[@]}"
             ;;
         text/*)
             # if we're dealing with a logfile, force open in PAGER
-            if [[ "${match[0]}" =~ \.log(\.[\.a-z]+)*$ ]]; then
-                "$PAGER" -- "${match[@]}"
+            if [[ "${matches[0]}" =~ \.log(\.[\.a-z]+)*$ ]]; then
+                "$PAGER" -- "${matches[@]}"
             else
-                "$editor" -- "${match[@]}"
+                "$editor" -- "${matches[@]}"
             fi
             ;;
         application/pdf*)
-            "$pdf_viewer" -- "${match[@]}"
+            "$pdf_viewer" -- "${matches[@]}"
             ;;
         application/x-elc*)  # TODO: what exactly is it?
-            "$editor" -- "${match[@]}"
+            "$editor" -- "${matches[@]}"
             ;;
         'application/x-executable; charset=binary'*)
-            [[ "$count" -gt 1 ]] && { report "won't execute multiple files! select one please"; return 1; }
-            confirm "${match[*]} is executable. want to launch it from here?" || return
-            report "launching ${match[0]}..." "$FUNCNAME"
-            ${match[0]}
+            [[ "$count" -gt 1 ]] && { report "won't execute multiple files! select one please" "$FUNCNAME"; return 1; }
+            confirm "${matches[*]} is executable. want to launch it from here?" || return
+            report "launching ${matches[0]}..." "$FUNCNAME"
+            ${matches[0]}
             ;;
         'inode/directory;'*)
-            [[ "$count" -gt 1 ]] && { report "won't navigate to multiple dirs! select one please"; return 1; }
-            "$file_mngr" -- "${match[0]}"
+            [[ "$count" -gt 1 ]] && { report "won't navigate to multiple dirs! select one please" "$FUNCNAME"; return 1; }
+            "$file_mngr" -- "${matches[0]}"
             ;;
         'inode/x-empty; charset=binary')  # touched file
-            "$editor" -- "${match[@]}"
+            "$editor" -- "${matches[@]}"
+            ;;
+        # try keeping doc files' definitions in sync with the ones in ffind()
+        'application/msword; charset=binary' \
+                | 'application/'*'opendocument'*'; charset=binary' \
+                | 'application/vnd.ms-office; charset=binary')
+            "$office" "${matches[@]}"  # libreoffice doesn't like option ending marker '--'
             ;;
         *)
             err "dunno what to open this type of file with:\n\t$filetype" "$FUNCNAME"
@@ -2213,7 +2310,7 @@ function setspaintime() {
 function __settz() {
     local tz
 
-    tz="$*"
+    readonly tz="$*"
 
     check_progs_installed timedatectl || return 1
     [[ -z "$tz" ]] && { err "provide a timezone to switch to (e.g. Europe/Madrid)." "$FUNCNAME"; return 1; }
@@ -2319,6 +2416,7 @@ g() {
 function dcleanup() {
     check_progs_installed docker || return 1
 
+    # TODO: don't report err status perhaps? might be ok, which also explains the 2>/dev/nulls;
     docker rm -v $(docker ps --filter status=exited -q 2>/dev/null) 2>/dev/null || { err "something went wrong with removing exited containers." "$FUNCNAME"; }
     docker rmi $(docker images --filter dangling=true -q 2>/dev/null) 2>/dev/null || { err "something went wrong with removing dangling images." "$FUNCNAME"; }
     # ...and volumes:

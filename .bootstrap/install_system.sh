@@ -109,7 +109,7 @@ function validate_and_init() {
     report "private castle defined as \"$PRIVATE_CASTLE\""
 
     # verify we have our key(s) set up and available:
-    if is_ssh_setup; then
+    if is_ssh_key_available; then
         _sanitize_ssh
         IS_SSH_SETUP=1
     else
@@ -320,7 +320,7 @@ function clone_or_pull_repo() {
         execute "git remote set-url origin git@${hub}:$user/${repo}.git"
         execute "git remote set-url --push origin git@${hub}:$user/${repo}.git"
         execute "popd"
-    elif is_ssh_setup; then
+    elif is_ssh_key_available; then
         execute "pushd $install_dir/$repo" || return 1
         execute "git pull"
         execute "popd"
@@ -329,7 +329,7 @@ function clone_or_pull_repo() {
 
 
 function install_nfs_server() {
-    local nfs_conf client_ip mountpoint
+    local nfs_conf client_ip share
 
     readonly nfs_conf="/etc/exports"
 
@@ -346,26 +346,26 @@ function install_nfs_server() {
     fi
 
     while true; do
-        if confirm "$(report "add client IP for the exports list (who will access $NFS_SERVER_SHARE)?")"; then
+        if confirm "$(report "add client IP for the exports list (who will access [$NFS_SERVER_SHARE])?")"; then
             echo -e "enter client ip:"
             read client_ip
 
             [[ "$client_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: \"$client_ip\""; continue; }
 
-            echo -e "enter mountpoint (leave blank to default to \"$NFS_SERVER_SHARE\"):"
-            read mountpoint
+            echo -e "enter share to expose (leave blank to default to \"$NFS_SERVER_SHARE\"):"
+            read share
 
-            mountpoint=${mountpoint:-"$NFS_SERVER_SHARE"}
-            [[ -d "$mountpoint" ]] || { err "$mountpoint is not a valid dir."; continue; }
+            share=${share:-"$NFS_SERVER_SHARE"}
+            [[ -d "$share" ]] || { err "[$share] is not a valid dir."; continue; }
 
             # TODO: automate multi client/range options:
             # entries are basically:         directory machine1(option11,option12) machine2(option21,option22)
             # to set a range of ips, then:   directory 192.168.0.0/255.255.255.0(ro)
-            if ! grep -q "${mountpoint}.*${client_ip}" "$nfs_conf"; then
-                report "adding $mountpoint for $client_ip to $nfs_conf"
-                execute "echo $mountpoint ${client_ip}\(rw,sync,no_subtree_check\) | sudo tee --append $nfs_conf > /dev/null"
+            if ! grep -q "${share}.*${client_ip}" "$nfs_conf"; then
+                report "adding [$share] for $client_ip to $nfs_conf"
+                execute "echo $share ${client_ip}\(rw,sync,no_subtree_check\) | sudo tee --append $nfs_conf > /dev/null"
             else
-                report "an entry for exposing $mountpoint to $client_ip is already present in $nfs_conf"
+                report "an entry for exposing [$share] to $client_ip is already present in $nfs_conf"
             fi
         else
             break
@@ -380,10 +380,14 @@ function install_nfs_server() {
 
 
 function install_nfs_client() {
-    local fstab mountpoint default_mountpoint server_ip
+    local fstab mountpoint nfs_share default_mountpoint server_ip prev_server_ip
+    local mounted_shares used_mountpoints
 
     readonly fstab="/etc/fstab"
     readonly default_mountpoint="/mnt/nfs"
+
+    mounted_shares=()
+    used_mountpoints=()
 
     confirm "wish to install & configure nfs client?" || return 1
 
@@ -392,23 +396,35 @@ function install_nfs_client() {
     [[ -f "$fstab" ]] || { err "$fstab does not exist; cannot add fstab entry!"; return 1; }
 
     while true; do
-        if confirm "$(report "add nfs server entry to fstab?")"; then
-            echo -e "enter server ip:"
+        if confirm "$(report "add ${server_ip:+another} nfs server entry to fstab?")"; then
+            echo -e "enter server ip: ${prev_server_ip:+(leave blank to default to [$prev_server_ip])}"
             read server_ip
-            [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: \"$server_ip\""; continue; }
+            [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
+            [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$server_ip]"; continue; }
 
             echo -e "enter local mountpoint to mount nfs share to (leave blank to default to [${default_mountpoint}]):"
             read mountpoint
             [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
             create_mountpoint "$mountpoint" || continue
+            list_contains "$mountpoint" "${used_mountpoints[*]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
 
-            if ! grep -q "${server_ip}:${NFS_SERVER_SHARE}.*${mountpoint}" "$fstab"; then
-                report "adding ${server_ip}:$NFS_SERVER_SHARE mounting to $mountpoint in $fstab"
-                execute "echo ${server_ip}:${NFS_SERVER_SHARE} ${mountpoint} nfs noauto,x-systemd.automount,x-systemd.device-timeout=10,timeo=14,rsize=8192,wsize=8192 0 0 \
+            echo -e "enter remote share to mount (leave blank to default to [${NFS_SERVER_SHARE}]):"
+            read nfs_share
+            [[ -z "$nfs_share" ]] && nfs_share="$NFS_SERVER_SHARE"
+            [[ "$nfs_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
+            list_contains "${server_ip}${nfs_share}" "${mounted_shares[*]}" && { report "selected [${server_ip}:${nfs_share}] has already been used for previous definition"; continue; }
+
+            if ! grep -q "${server_ip}:${nfs_share}.*${mountpoint}" "$fstab"; then
+                report "adding [${server_ip}:$nfs_share] mounting to [$mountpoint] in $fstab"
+                execute "echo ${server_ip}:${nfs_share} ${mountpoint} nfs noauto,x-systemd.automount,_netdev,x-systemd.device-timeout=10,timeo=14,rsize=8192,wsize=8192 0 0 \
                         | sudo tee --append $fstab > /dev/null"
             else
-                report "an nfs share entry for ${server_ip}:${NFS_SERVER_SHARE} in $fstab already exists."
+                report "an nfs share entry for ${server_ip}:${nfs_share} in $fstab already exists."
             fi
+
+            prev_server_ip="$server_ip"
+            used_mountpoints+=("$mountpoint")
+            mounted_shares+=("${server_ip}${nfs_share}")
         else
             break
         fi
@@ -477,15 +493,20 @@ function create_mountpoint() {
 
 function install_sshfs() {
     local fuse_conf mountpoint default_mountpoint fstab server_ip remote_user ssh_port sel_ips_to_user
+    local prev_server_ip used_mountpoints mounted_shares ssh_share identity_file
 
     readonly fuse_conf="/etc/fuse.conf"
     readonly default_mountpoint="/mnt/ssh"
     readonly fstab="/etc/fstab"
     readonly ssh_port=443
+    readonly identity_file="$HOME/.ssh/id_rsa_only_for_server_connect"
 
     declare -A sel_ips_to_user
 
     confirm "wish to install and configure sshfs?" || return 1
+    if ! [[ -f "$identity_file" ]]; then
+        confirm "[$identity_file] ssh key does not exist; still continue?" || return 1
+    fi
     install_block 'sshfs' || { err "unable to install sshfs. aborting sshfs install/config."; return 1; }
 
     # note that 'user_allow_other' uncommenting makes sense only if our related fstab
@@ -509,11 +530,12 @@ function install_sshfs() {
 
     while true; do
         if confirm "$(report "add ${server_ip:+another} sshfs entry to fstab?")"; then
-            echo -e "enter server ip:"
+            echo -e "enter server ip: ${prev_server_ip:+(leave blank to default to [$prev_server_ip])}"
             read server_ip
-            [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: \"$server_ip\""; continue; }
+            [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
+            [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$server_ip]"; continue; }
 
-            echo -e "enter remote user to log in as (leave blank to default to our current user, [${USER}]):"
+            echo -e "enter remote user to log in as (leave blank to default to your local user, [${USER}]):"
             read remote_user
             [[ -z "$remote_user" ]] && remote_user="$USER"
 
@@ -521,28 +543,39 @@ function install_sshfs() {
             read mountpoint
             [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
             create_mountpoint "$mountpoint" || continue
+            list_contains "$mountpoint" "${used_mountpoints[*]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
 
-            if ! grep -q "${remote_user}@${server_ip}:${SSH_SERVER_SHARE}.*${mountpoint}" "$fstab"; then
-                report "adding ${server_ip}:$SSH_SERVER_SHARE mounting to $mountpoint in $fstab"
-                execute "echo ${remote_user}@${server_ip}:${SSH_SERVER_SHARE} $mountpoint fuse.sshfs port=${ssh_port},noauto,x-systemd.automount,_netdev,users,idmap=user,IdentityFile=$HOME/.ssh/id_rsa_only_for_server_connect,allow_other,reconnect 0 0 \
+            echo -e "enter remote share to mount (leave blank to default to [${SSH_SERVER_SHARE}]):"
+            read ssh_share
+            [[ -z "$ssh_share" ]] && ssh_share="$SSH_SERVER_SHARE"
+            [[ "$ssh_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
+            list_contains "${server_ip}${ssh_share}" "${mounted_shares[*]}" && { report "selected [${server_ip}:${ssh_share}] has already been used for previous definition"; continue; }
+
+            if ! grep -q "${remote_user}@${server_ip}:${ssh_share}.*${mountpoint}" "$fstab"; then
+                report "adding [${server_ip}:$ssh_share] mounting to [$mountpoint] in $fstab"
+                execute "echo ${remote_user}@${server_ip}:${ssh_share} $mountpoint fuse.sshfs port=${ssh_port},noauto,x-systemd.automount,_netdev,users,idmap=user,IdentityFile=${identity_file},allow_other,reconnect 0 0 \
                         | sudo tee --append $fstab > /dev/null"
 
-                #list_contains "$server_ip" "${!sel_ips_to_user[*]}" || sel_ips_to_user["$server_ip"]="$remote_user"
                 sel_ips_to_user["$server_ip"]="$remote_user"
             else
-                report "an ssh share entry for ${server_ip}:${SSH_SERVER_SHARE} in $fstab already exists."
+                report "an ssh share entry for ${server_ip}:${ssh_share} in $fstab already exists."
             fi
+
+            prev_server_ip="$server_ip"
+            used_mountpoints+=("$mountpoint")
+            mounted_shares+=("${server_ip}${ssh_share}")
         else
             break
         fi
     done
 
     report "ssh-ing to entered IPs [${!sel_ips_to_user[*]}], so our root would have the remote in the /root/.ssh/known_hosts ..."
-    report "select [yes] to add entry to known hosts"
+    report "select [yes] if asked whether to add entry to known hosts"
 
     for server_ip in "${!sel_ips_to_user[@]}"; do
         remote_user="${sel_ips_to_user[$server_ip]}"
-        execute "sudo ssh -p ${ssh_port} -o ConnectTimeout=5 ${remote_user}@$server_ip echo ok"
+        report "testing ssh connection to ${remote_user}@${server_ip}..."
+        execute "sudo ssh -p ${ssh_port} -o ConnectTimeout=7 ${remote_user}@$server_ip echo ok"
     done
 
     return 0
@@ -590,7 +623,7 @@ function install_deps() {
             execute "pushd $plugins_dir" || return 1
 
             for dir in *; do
-                if [[ -d "$dir" ]] && is_ssh_setup; then
+                if [[ -d "$dir" ]] && is_ssh_key_available; then
                     execute "pushd $dir" || return 1
                     is_git && execute "git pull"
                     execute "popd"
@@ -714,7 +747,7 @@ function clone_or_link_castle() {
     [[ -e "$homesick_exe" ]] || { err "expected to see homesick script @ $homesick_exe, but didn't. skipping cloning castle $castle"; return 1; }
 
     if [[ -d "$BASE_HOMESICK_REPOS_LOC/$castle" ]]; then
-        if is_ssh_setup; then
+        if is_ssh_key_available; then
             report "$castle already exists; pulling & linking"
             execute "$homesick_exe pull $castle"
         else
@@ -724,7 +757,7 @@ function clone_or_link_castle() {
         execute "$homesick_exe link $castle"
     else
         report "cloning ${castle}..."
-        if is_ssh_setup; then
+        if is_ssh_key_available; then
             execute "$homesick_exe clone git@${hub}:$user/${castle}.git"
         else
             # note we clone via https, not ssh:
@@ -738,7 +771,7 @@ function clone_or_link_castle() {
     fi
 
     # just in case verify whether our ssh keys got cloned in:
-    if [[ "$IS_SSH_SETUP" -eq 0 ]] && is_ssh_setup; then
+    if [[ "$IS_SSH_SETUP" -eq 0 ]] && is_ssh_key_available; then
         _sanitize_ssh
         IS_SSH_SETUP=1
     fi
@@ -792,7 +825,7 @@ function verify_ssh_key() {
         return
     fi
 
-    if is_ssh_setup; then
+    if is_ssh_key_available; then
         IS_SSH_SETUP=1
     else
         err "didn't find the key at $PRIVATE_KEY_LOC after generating keys."
@@ -1466,7 +1499,7 @@ function build_and_install_synergy() {
     fi
 
     execute "pushd $builddir" || return 1
-    [[ "$do_clone" -eq 0 ]] && is_ssh_setup && execute "git pull"
+    [[ "$do_clone" -eq 0 ]] && is_ssh_key_available && execute "git pull"
 
     execute "./hm.sh conf -g1"
     execute "./hm.sh build"
@@ -2526,7 +2559,7 @@ function _sanitize_ssh() {
 }
 
 
-function is_ssh_setup() {
+function is_ssh_key_available() {
     [[ -f "$PRIVATE_KEY_LOC" ]] && return 0 || return 1
 }
 
@@ -2546,7 +2579,7 @@ function check_connection() {
 function generate_key() {
     local mail
 
-    if is_ssh_setup; then
+    if is_ssh_key_available; then
         confirm "key @ $PRIVATE_KEY_LOC already exists; still generate key?" || return 1
     fi
 
