@@ -27,7 +27,7 @@ function ffind() {
     local quitFlag type_grep extra_params matches i delete deleteFlag
 
     function __filter_for_filetype() {
-        local filetype file index
+        local filetype index
 
         [[ -z "${matches[*]}" ]] && return 1
         [[ -z "$type_grep" ]] && { err "[\$type_grep] not defined." "$FUNCNAME"; return 1; }
@@ -1425,7 +1425,7 @@ function xmlf() { xmlformat "$@"; } # alias for xmlformat;
 
 function createUsbIso() {
     local file device mountpoint cleaned_devicename usage override_dev_partitioncheck OPTIND partition
-    local reverse inf ouf
+    local reverse inf ouf full_lsblk_output
 
     readonly usage="${FUNCNAME}: write files onto devices and vice versa.
 
@@ -1498,7 +1498,8 @@ function createUsbIso() {
 
     #echo "please provide passwd for running fdisk -l to confirm the selected device is the right one:"
     #sudo fdisk -l $device
-    lsblk | grep --color=auto -- "$cleaned_devicename\|MOUNTPOINT"
+    readonly full_lsblk_output="$(lsblk)" || { err "issues running lsblk"; return 1; }
+    echo "$full_lsblk_output" | grep --color=auto -- "$cleaned_devicename\|MOUNTPOINT"
 
     confirm  "\nis selected device [$device] the correct one (be VERY sure!)? (y/n)" || { report "aborting, nothing written." "$FUNCNAME"; return 1; }
 
@@ -1506,6 +1507,8 @@ function createUsbIso() {
     #lsblk -o name,size,mountpoint /dev/sda
     report "unmounting $cleaned_devicename partitions... (may ask for sudo password)"
     for partition in ${device}* ; do
+        echo "$full_lsblk_output" | grep -Eq "${partition##*/}\b" || continue  # not all partitions are listed by lsblk; dunno what's with that
+
         mountpoint="$(lsblk -o mountpoint -- "$partition")" || { err "some issue occurred running [lsblk -o mountpoint ${partition}]" "$FUNCNAME"; return 1; }
         mountpoint="$(echo "$mountpoint" | sed -n 2p)"
         if [[ -n "$mountpoint" ]]; then
@@ -2035,6 +2038,43 @@ fon() {
     #file="${matches[0]}"
     #report "opening ${file}..."
     #xo "$file"
+}
+
+
+# open file with specified program
+#
+# program to open file(s) with is to be specified as a last arg
+#
+# mnemonic: file open with
+fow() {
+    local opts default_depth prog
+
+    opts="$1"
+
+    readonly default_depth="m10"
+
+    if [[ "$opts" == -* ]]; then
+        [[ "$opts" != *f* ]] && opts="-f${opts:1}"
+        [[ "$opts" != *m* ]] && opts+="$default_depth"
+        #echo $opts  # debug
+        shift
+    else
+        opts="-f${default_depth}"
+    fi
+
+    [[ "$#" -le 1 ]] && { err "too few args." "$FUNCNAME"; return 1; }
+
+    # filter out prog name
+    readonly prog="${@: -1}"  # last arg; alternatively ${@:$#}
+    if ! command -v -- "$prog" >/dev/null; then
+        err "[$prog] is not installed." "$FUNCNAME"
+        return 1
+    fi
+
+    set -- "${@:1:${#}-1}"  # shift the last arg
+
+    [[ -z "$@" ]] && set -- '*'
+    #fo --with-prog $opts "$@"  # TODO
 }
 
 

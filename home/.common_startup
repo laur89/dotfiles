@@ -1,12 +1,13 @@
 #!/bin/bash
 # handles basic system startup.
 # note that services to be started are handled by different file, imported here.
+#
+# this file is launched/sourced by .xinputrc
 # #####
 
 session_startfile="$HOME/.session-startuplist"
-logdir="$CUSTOM_LOGDIR"
-SELF=".common_startup"
 autostart=()
+SELF=".common_startup"
 ################################################
 
 #### ENTRY ####
@@ -35,7 +36,7 @@ function enableSmart() {
     _disk_list="$(echo "$_disk_list" | cut -d' ' -f1 | uniq | sort)"
 
     if [[ "$_status" -ne 0 ]]; then
-        msg="smartctl --scan returned exit code $_status"
+        msg="smartctl --scan returned exit code [$_status]"
         err_display "$msg" "$SELF"
         #log "$msg" "$error_log"
         #mail_error_report_and_log "$SELF: unable to scan drives with smartctl --scan on $HOSTNAME" "$msg" "$error_log"
@@ -50,36 +51,37 @@ function enableSmart() {
 
     for _disk in $_disk_list; do
         disk_check="$(echo "$_disk" | sed 's/.*\///')"  # strip everything before last slash (included)
-        [[ -z "$disk_check" ]] && { err_display "something went wrong with cleaning cmartctl returned disk." "$SELF"; }
+        [[ -z "$disk_check" ]] && { err_display "something went wrong with cleaning cmartctl returned disk; continuing." "$SELF"; continue; }
 
         # sanity - check whether smartctl found disk is listed in /proc/partitions; if not, send error:
-        if grep -Fq "$disk_check" /proc/partitions; then
+        if grep -Eq "\b${disk_check}\b" /proc/partitions; then
             #	-s on	enables SMART on device (off would disable); should be somewhere in machine startup script, like rc.local;
             #	-S on	enables autosave of device vendor-specific attributes
             #	-o on	turns on offline data collection every 4 hours
-            sudo smartctl -s on -o on -S on "$_disk"
-            _status="$?"
-
-            if [[ "$_status" -ne 0 ]]; then
-                msg="unable to enable SMART on $_disk"
+            sudo smartctl -s on -o on -S on "$_disk" || {
+                msg="unable to enable SMART on [$_disk]"
                 err_display "$msg" "$SELF"
                 #log "$msg" "$error_log"
                 #mail_error_report_and_log "$SELF: unable to enable SMART on $HOSTNAME." "$msg" "$error_log"
                 # do NOT return!
-            fi
+            }
 
             let processed_disks_count+=1
         else  # err
-            msg="The disk \"$_disk\" has been passed to me via
+            msg="The disk [$_disk] has been passed to me via
     \"sudo smartctl --scan\" command, but it cannot be located in
-    /proc/partitions. Unmounted/mismounted volume perhaps?"
+    [/proc/partitions]. Unmounted/mismounted volume perhaps?"
             err_display "$msg" "$SELF"
             #log "$msg" "$error_log"
             #mail_error_report_and_log "invalid drive detected on $HOSTNAME" "$msg" "$error_log"
         fi
     done
 
-    display_message "${SELF}: enabled SMART for ${processed_disks_count} drives." $(( 30 * 1000))
+    display_message "${SELF}: enabled SMART for [${processed_disks_count}] drives." $(( 10 * 1000 ))
+}
+
+set_keyboard_layout() {
+    setxkbmap -option grp:alt_shift_toggle "ee,us" || { err_display "err setting keyboard layout" "$SELF"; return 1; }
 }
 
 ################################################
@@ -96,7 +98,7 @@ xset fp rehash
 #xsetroot -cursor_name left_ptr
 
 # Load the Xresources database:
-[[ -r ~/.Xresources ]] && xrdb -merge ~/.Xresources  # Do not background!
+[[ -r ~/.Xresources ]] && { xrdb -merge ~/.Xresources || err_display "xrdb merge failed" "$SELF"; }  # Do not background!
 
 # disable system beep:
 xset -b &
@@ -155,7 +157,7 @@ done
 if [[ -r "$session_startfile" ]]; then
     source "$session_startfile" &
     # give some time before wm is launched:
-    sleep 3
+    sleep 1.5
 else
     if command -v rxvt-unicode; then
         rxvt-unicode &
@@ -175,11 +177,11 @@ fi
 
 # Check whether logfolder at /var/log and /data/ dir are existing:
 for i in \
-        $logdir \
+        "$CUSTOM_LOGDIR" \
         /data/ \
             ; do
     if [[ ! -w "$i" ]]; then
-        err_display  "$i is not created or no write permissions granted. Do it!" "$SELF" &
+        err_display  "[$i] is not created or no write permissions granted. Do it!" "$SELF" &
     fi
 done &
 
@@ -189,15 +191,23 @@ for i in \
         "$_PERSISTED_TMP" \
             ; do
     if [[ ! -d "$i" ]] && ! mkdir "$i"; then
-        err_display  "Tried to create required directory \"$i\" but mkdir failed." "$SELF" &
+        err_display  "Tried to create required directory [$i] but mkdir failed." "$SELF" &
     fi
 done &
+
+if is_laptop && check_progs_installed synclient; then
+    # enable tapping on synaptics touchpad:
+    synclient TapButton1=1 TapButton2=3 TapButton3=2 || err_display "something went wrong while setting synaptics" "$SELF"
+    synclient PalmDetect=1 || err_display "err setting synclient palmdetect" "$SELF"
+fi
+
 
 #TODO: this stuff needs to be done via logrotate perhaps?
 # Check the filesize in MB of logs dir:
 allowed_size="20"   # Max size in MB
-check_max_allowed_size "$logdir" "$allowed_size"
+check_max_allowed_size "$CUSTOM_LOGDIR" "$allowed_size"
 
 enableSmart &
+set_keyboard_layout &
 
 unset i x

@@ -30,21 +30,22 @@ readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
-readonly NFS_SERVER_SHARE="/data"            # mountpoint to share over NFS
-readonly SSH_SERVER_SHARE="/data"            # mountpoint to share over SSH
+readonly NFS_SERVER_SHARE="/data"            # default mountpoint to share over NFS
+readonly SSH_SERVER_SHARE="/data"            # default mountpoint to share over SSH
 #------------------------
 #--- Global Variables ---
 #------------------------
 IS_SSH_SETUP=0       # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=''  # only select_items() *writes* into this one.
-MODE=
+MODE=''
 FULL_INSTALL=0                  # whether script is performing full install or not. 1 || 0
 PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
+PACKAGES_FAILED_TO_INSTALL=()
 LOGGING_LVL=0                   # execution logging level (full install logs everything);
                                 # don't set log level too soon; don't want to persist bullshit.
                                 # levels are currently 0, 1 and 10, 1 being the lowest (least amount of events logged.)
 EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%m-%y--%R).log" \
-        || EXECUTION_LOG="$HOME/installation-exe.log"
+        || readonly EXECUTION_LOG="$HOME/installation-exe.log"
 
 #------------------------
 #--- Global Constants ---
@@ -55,7 +56,7 @@ readonly BASE_BUILDS_DIR="$BASE_DATA_DIR/progs/custom_builds"  # hosts our built
 readonly BASE_HOMESICK_REPOS_LOC="$BASE_DEPS_LOC/homesick/repos"
 readonly COMMON_DOTFILES="$BASE_HOMESICK_REPOS_LOC/dotfiles"
 readonly COMMON_PRIVATE_DOTFILES="$BASE_HOMESICK_REPOS_LOC/private-common"
-readonly SOME_PACKAGE_IGNORED_EXIT_CODE=37
+readonly SOME_PACKAGE_IGNORED_EXIT_CODE=199
 PRIVATE_CASTLE=''  # installation specific private castle location (eg for 'work' or 'personal')
 
 readonly SELF="${0##*/}"
@@ -1023,7 +1024,10 @@ function setup_additional_apt_keys_and_sources() {
 }
 
 
-# can also exec 'setxkbmap -option' caps:escape or use dconf-editor
+# can also exec 'setxkbmap -option' caps:escape or use dconf-editor;
+# or switch it via XKB options (see https://wiki.archlinux.org/index.php/Keyboard_configuration_in_Xorg)
+#
+# to see current active keyboard setting:    setxkbmap -print -verbose 10
 function swap_caps_lock_and_esc() {
     local conf_file
 
@@ -2151,8 +2155,9 @@ function install_from_repo() {
         execute "sudo apt-get --yes update"
         install_block "$(eval echo "\${$block[@]}")" "${extra_apt_params[$block]}"
         if [[ "$?" -ne 0 && "$?" -ne "$SOME_PACKAGE_IGNORED_EXIT_CODE" ]]; then
-            err "one of the main-block installation failed. fix this before re-running."
-            exit 1
+            err "one of the main-block installation failed. these are the packages that have failed to install so far:"
+            echo -e "[${PACKAGES_FAILED_TO_INSTALL[*]}]"
+            confirm "continue with setup? answering no will exit script" || exit 1
         fi
     done
 
@@ -2200,36 +2205,36 @@ function install_nvidia() {
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
 function install_block() {
-    local list_to_install extra_apt_params packages_not_found exit_sig exit_sig_install_failed packages_not_found pkg result
+    local list_to_install extra_apt_params dry_run_failed exit_sig exit_sig_install_failed pkg
 
     readonly list_to_install=( $1 )
     readonly extra_apt_params="$2"  # optional
-    packages_not_found=()
-    exit_sig=0
+    dry_run_failed=()
+    exit_sig=0  # default
 
     report "installing these packages:\n${list_to_install[*]}\n"
 
     # extract packages, which, for whatever reason, cannot be installed:
     for pkg in ${list_to_install[*]}; do
         # TODO: is there any point for this?:
-        result="$(apt-cache search  --names-only "^$pkg\$")" || { err "apt-cache search failed for \"$pkg\""; packages_not_found+=( $pkg ); continue; }
-        if [[ -z "$result" ]]; then
-            packages_not_found+=( $pkg )
-            continue
-        fi
+        #result="$(apt-cache search  --names-only "^$pkg\$")" || { err "apt-cache search failed for \"$pkg\""; packages_not_found+=( $pkg ); continue; }
+        #if [[ -z "$result" ]]; then
+            #packages_not_found+=( $pkg )
+            #continue
+        #fi
         if execute "sudo apt-get -qq --dry-run install $extra_apt_params $pkg"; then
             sleep 0.1
-            execute "sudo apt-get --yes install $extra_apt_params $pkg" || exit_sig_install_failed=$?
+            execute "sudo apt-get --yes install $extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
         else
-            packages_not_found+=( $pkg )
+            dry_run_failed+=( $pkg )
         fi
     done
 
-    if [[ -n "${packages_not_found[*]}" ]]; then
+    if [[ -n "${dry_run_failed[*]}" ]]; then
         err "either these packages could not be found from the repo, or some other issue occurred; skipping installing these packages. this will be logged:"
-        err "${packages_not_found[*]}"
+        err "${dry_run_failed[*]}"
 
-        PACKAGES_IGNORED_TO_INSTALL+=( ${packages_not_found[*]} )
+        PACKAGES_IGNORED_TO_INSTALL+=( ${dry_run_failed[*]} )
         exit_sig="$SOME_PACKAGE_IGNORED_EXIT_CODE"
     fi
 
@@ -2581,7 +2586,7 @@ function generate_key() {
     local mail
 
     if is_ssh_key_available; then
-        confirm "key @ $PRIVATE_KEY_LOC already exists; still generate key?" || return 1
+        confirm "key @ [$PRIVATE_KEY_LOC] already exists; still generate key?" || return 1
     fi
 
     if ! command -v ssh-keygen >/dev/null; then
@@ -2590,8 +2595,10 @@ function generate_key() {
     fi
 
     report "generating ssh key..."
-    report "enter your mail (eg \"username@server.com\"):"
-    read mail
+    while [[ -z "$mail" ]]; do
+        report "enter your mail (eg [username@server.com]):"
+        read mail
+    done
 
     execute "ssh-keygen -t rsa -b 4096 -C \"$mail\" -f $PRIVATE_KEY_LOC"
 }
@@ -2842,7 +2849,10 @@ function cleanup() {
     [[ "$__CLEANUP_EXECUTED_MARKER" -eq 1 ]] && return  # don't invoke more than once.
 
     if [[ -n "${PACKAGES_IGNORED_TO_INSTALL[*]}" ]]; then
-        echo -e "    ERR INSTALL: ignored installing these packages: \"${PACKAGES_IGNORED_TO_INSTALL[*]}\"" >> "$EXECUTION_LOG"
+        echo -e "    ERR INSTALL: dry run failed for these packages: [${PACKAGES_IGNORED_TO_INSTALL[*]}]" >> "$EXECUTION_LOG"
+    fi
+    if [[ -n "${PACKAGES_FAILED_TO_INSTALL[*]}" ]]; then
+        echo -e "    ERR INSTALL: failed installing these packages: [${PACKAGES_FAILED_TO_INSTALL[*]}]" >> "$EXECUTION_LOG"
     fi
 
     if [[ -e "$EXECUTION_LOG" ]]; then
