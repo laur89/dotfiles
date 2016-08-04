@@ -872,14 +872,14 @@ function ffstr() {
             _FOUND_FILES+=( "$i" )
         done < <(echo "$result")
 
-        report "found ${#_FOUND_FILES[@]} files containing \"$pattern\"; stored in \$_FOUND_FILES global array." "$FUNCNAME"
+        report "found ${#_FOUND_FILES[@]} files containing [$pattern]; stored in \$_FOUND_FILES global array." "$FUNCNAME"
         [[ "${#_FOUND_FILES[@]}" -eq 0 ]] && return 1
     fi
 
     if [[ "$open_files" -eq 1 ]]; then
         # TODO: pass the array to-be-refactored fo()
-        check_progs_installed nvim || return 1
-        nvim "${_FOUND_FILES[@]}"
+        check_progs_installed "$EDITOR" || return 1
+        $EDITOR "${_FOUND_FILES[@]}"
     fi
 }
 
@@ -2502,11 +2502,34 @@ function wifi_list() {
 
 
 function keepsudo() {
+    check_progs_installed sudo || return 1
+
     while true; do
         sudo -n true
         sleep 30
         kill -0 "$$" || exit
     done 2>/dev/null &
+}
+
+
+# transfer.sh alias - file sharing
+# see  https://github.com/dutchcoders/transfer.sh/
+transfer() {
+    local tmpfile file
+
+    readonly file="$1"
+
+    [[ "$#" -ne 1 || -z "$file" ]] && { err "only one argument, file to share, required." "$FUNCNAME"; return 1; }
+    [[ -e "$file" ]] || { err "[$file] does not exist." "$FUNCNAME"; return 1; }
+    check_progs_installed curl || return 1
+
+    # write to output to tmpfile because of progress bar
+    readonly tmpfile=$(mktemp -t transfer_XXX.tmp) || { err; return 1; }
+    curl --progress-bar --upload-file "$file" "https://transfer.sh/$(basename "$file")" >> "$tmpfile" || { err; return 1; }
+    cat "$tmpfile";
+    copy_to_clipboard "$(cat "$tmpfile")" && report "copied link to clipboard" "$FUNCNAME" || { err "copying to clipboard failed" "$FUNCNAME"; }
+
+    rm -f -- "$tmpfile";
 }
 
 
@@ -2535,7 +2558,7 @@ function mkcd() {
 }
 
 
-function mkf() { mkcd "$@"; } # alias to mkcd
+function mkf() { mkcd "$@"; }  # alias to mkcd
 
 #####################################
 ## Take screenshot of main monitor ##
@@ -2566,16 +2589,16 @@ capture() {
     check_progs_installed ffmpeg xdpyinfo || return 1
     [[ "$-" != *i* ]] && return 1  # don't launch if we're not in an interactive shell;
     [[ "$(dirname "$name")" != '.' ]] && { err "please enter only filename, not path; it will be written to [$dest]" "$FUNCNAME"; return 1; }
-    [[ -z "$name" ]] && { err "need to provide output file as first arg (without an extension)." "$FUNCNAME"; return 1; } || name="$dest/${name}.mkv"
+    [[ -n "$name" ]] && readonly name="$dest/${name}.mkv" || { err "need to provide output filename as first arg (without an extension)." "$FUNCNAME"; return 1; }
 
-    readonly screen_dimensions="$(xdpyinfo | awk '/dimensions:/{printf $2}')" || { err "unable to find screen dimensions via xdpyinfo" "$FUNCNAME"; return 1; }
+    readonly screen_dimensions="$(xdpyinfo | awk '/dimensions:/{printf $2}')" || { err "unable to find screen dimensions via xdpyinfo (exit code $?)" "$FUNCNAME"; return 1; }
     [[ "$screen_dimensions" =~ $regex ]] || { err "found screen dimensions \"$screen_dimensions\" do not conform with validation regex \"$regex\"" "$FUNCNAME"; return 1; }
 
     #recordmydesktop --display=$DISPLAY --width=1024 height=768 -x=1680 -y=0 --fps=15 --no-sound --delay=10
     #recordmydesktop --display=0 --width=1920 height=1080 --fps=15 --no-sound --delay=10
-    ffmpeg -f alsa -ac 2 -i default -framerate 25 -f x11grab -s "$screen_dimensions" -i "$DISPLAY" -acodec pcm_s16le -vcodec libx264 "${name}"
+    ffmpeg -f alsa -ac 2 -i default -framerate 25 -f x11grab -s "$screen_dimensions" -i "$DISPLAY" -acodec pcm_s16le -vcodec libx264 -- "${name}"
     echo
-    report "screencap saved at $name" "$FUNCNAME"
+    report "screencap saved at [$name]" "$FUNCNAME"
 
     ## lossless recording (from https://wiki.archlinux.org/index.php/FFmpeg#x264_lossless):
     #ffmpeg -i "$DISPLAY" -c:v libx264 -preset ultrafast -qp 0 -c:a copy "${name}.mkv"
