@@ -940,10 +940,6 @@ function setup_config_files() {
     setup_netrc_perms
     setup_global_prompt
     swap_caps_lock_and_esc
-
-    # TODO: is it sensible to execute post_install_progs_setup() from here, as that
-    # has grown to represent more than simply config files setup?:
-    [[ "$FULL_INSTALL" -ne 1 ]] && post_install_progs_setup  # since with FULL_INSTALL, it'll get executed from other block
 }
 
 
@@ -1002,6 +998,7 @@ function setup() {
     setup_dirs  # has to come after $SHELL_ENVS sourcing so the env vars are in place
     setup_config_files
     setup_additional_apt_keys_and_sources
+    [[ "$FULL_INSTALL" -ne 1 ]] && post_install_progs_setup  # since with FULL_INSTALL=1, it'll get executed from other block
 }
 
 
@@ -1010,16 +1007,16 @@ function setup_additional_apt_keys_and_sources() {
     # mopidy:
     # mopidy key: (from https://docs.mopidy.com/en/latest/installation/debian/):
     execute 'wget -q -O - http://apt.mopidy.com/mopidy.gpg | sudo apt-key add -'
-	# add mopidy source:
-	execute 'sudo wget -q -O /etc/apt/sources.list.d/mopidy.list https://apt.mopidy.com/jessie.list'
+    # add mopidy source:
+    execute 'sudo wget -q -O /etc/apt/sources.list.d/mopidy.list https://apt.mopidy.com/jessie.list'
 
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
     execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys BBEBDCB318AD50EC6865090613B00F1FD2C19886'
-	execute 'echo deb http://repository.spotify.com stable non-free | sudo tee /etc/apt/sources.list.d/spotify.list > /dev/null'
+    execute 'echo deb http://repository.spotify.com stable non-free | sudo tee /etc/apt/sources.list.d/spotify.list > /dev/null'
 
 
-	# update sources (will be done anyway on full install):
+    # update sources (will be done anyway on full install):
     [[ "$FULL_INSTALL" -ne 1 ]] && execute 'sudo apt-get --yes update'
 }
 
@@ -1035,14 +1032,14 @@ function swap_caps_lock_and_esc() {
 
     [[ -f "$conf_file" ]] || { err "cannot swap esc<->caps: \"$conf_file\" does not exist; abort;"; return 1; }
 
-	# map caps to esc:
+    # map caps to esc:
     if ! grep -q 'key <ESC>.*Caps_Lock' "$conf_file"; then
         # hasn't been replaced yet
         execute "sudo sed -i 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock        \]   \};/g' $conf_file"
         [[ $? -ne 0 ]] && { err "replacing esc<->caps @ $conf_file failed"; return 2; }
     fi
 
-	# map esc to caps:
+    # map esc to caps:
     if ! grep -q 'key <CAPS>.*Escape' "$conf_file"; then
         # hasn't been replaced yet
         execute "sudo sed -i 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS> \{    \[ Escape     \]   \};/g' $conf_file"
@@ -1572,7 +1569,7 @@ function build_and_install_keepassx() {
     readonly tmpdir="$TMPDIR/keepassx-build-${RANDOM}"
     report "building keepassx..."
 
-	export QT_SELECT=qt5  # without defining this, autotype was not working (even the settings were missing for it)
+    export QT_SELECT=qt5  # without defining this, autotype was not working (even the settings were missing for it)
 
     report "installing keepassx build dependencies..."
     install_block '
@@ -1688,10 +1685,10 @@ function install_neovim() {
         execute "git clone $NVIM_REPO_LOC $tmpdir" || return 1
         execute "pushd $tmpdir" || { err; return 1; }
 
-		# TODO: checkinstall fails with neovim (bug in checkinstall afaik):
+        # TODO: checkinstall fails with neovim (bug in checkinstall afaik):
         #execute "make" || { err; return 1; }
         #create_deb_install_and_store || { err; return 1; }
-			execute "sudo make install" || { err; return 1; }  # TODO  remove this once checkinstall issue is resolved;
+        execute "sudo make install" || { err; return 1; }  # TODO  remove this once checkinstall issue is resolved;
 
         execute "popd"
         execute "sudo rm -rf -- $tmpdir"
@@ -2380,6 +2377,23 @@ function full_install() {
     install_deps
     install_ssh_server_or_client
     install_nfs_server_or_client
+    remind_manually_installed_progs
+}
+
+
+# programs that cannot be installed automatically should be reminded
+function remind_manually_installed_progs() {
+    local progs i
+
+    readonly progs=(
+        franz
+    )
+
+    for i in "${progs[@]}"; do
+        if ! command -v "$i" >/dev/null; then
+            report "don't forget to install [$i]"
+        fi
+    done
 }
 
 
@@ -2446,8 +2460,8 @@ function enable_network_manager() {
 # been installed.
 function post_install_progs_setup() {
 
-    install_acpi_events   # has to be after install_progs, so acpid is already insalled and events/ dir present;
-	enable_network_manager
+    install_acpi_events   # has to be after install_progs(), so acpid is already insalled and events/ dir present;
+    enable_network_manager
     install_SSID_checker  # has to come after install_progs; otherwise NM wrapper dir won't be present
     execute --ignore-errs "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
     execute "mopidy local scan"     # update mopidy library
