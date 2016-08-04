@@ -172,7 +172,7 @@ function ffind() {
         err "-D and filetype (eg -V) flags are exclusive." "$FUNCNAME"
         echo -e "$usage"
         return 1
-    elif [[ "$delete" -eq 1 ]] && ! confirm "wish to delete files that match [$src]?"; then
+    elif [[ "$delete" -eq 1 ]] && ! confirm "wish to delete nodes that match [$src]?"; then
         return
     fi
 
@@ -698,14 +698,13 @@ function aptclean() { aptreset; }
 # TODO: find whether we could stop using find here and use grep --include & --exclude flags instead.
 function ffstr() {
     local grepcase OPTIND usage opt max_result_line_length caseOptCounter force_case regex i
-    local iname_arg maxDepth maxDepthParam defMaxDeptWithFollowLinks follow_links result_files result
-    local pattern file_pattern collect_files
+    local iname_arg maxDepth maxDepthParam defMaxDeptWithFollowLinks follow_links result
+    local pattern file_pattern collect_files open_files
 
     caseOptCounter=0
     OPTIND=1
     max_result_line_length=300      # max nr of characters per grep result line
     defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) option selected;
-    result_files=()                 # array containing the files that match searched string
 
     usage="\n$FUNCNAME: find string in files (from current directory recursively). smartcase both for filename and search patterns.
     Usage: $FUNCNAME [opts] \"pattern\" [filename pattern]
@@ -714,12 +713,13 @@ function ffstr() {
         -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;
         -L  follow symlinks;
         -c  collect matching filenames into global array instead of printing to stdout;
+        -o  open found files;
         -r  enable regex on filename pattern"
 
 
     command -v ag > /dev/null && report "consider using ag or its wrapper astr (same thing as $FUNCNAME, but using ag instead of find+grep)\n" "$FUNCNAME"
 
-    while getopts "isrm:Lch" opt; do
+    while getopts "isrm:Lcoh" opt; do
         case "$opt" in
            i) grepcase=" -i "
               iname_arg="-iname"
@@ -742,6 +742,10 @@ function ffstr() {
               shift $((OPTIND-1))
                 ;;
            c) collect_files=1
+              shift $((OPTIND-1))
+                ;;
+           o) open_files=1
+              collect_files=1  # so we can use the array
               shift $((OPTIND-1))
                 ;;
            h) echo -e "$usage"
@@ -863,13 +867,19 @@ function ffstr() {
     fi
 
     if [[ "$collect_files" -eq 1 ]]; then
+        _FOUND_FILES=()
         while read i; do
-            result_files+=( "$i" )
+            _FOUND_FILES+=( "$i" )
         done < <(echo "$result")
 
-        report "found ${#result_files[@]} files containing \"$pattern\"; stored in \$_FOUND_FILES global array." "$FUNCNAME"
-        _FOUND_FILES=("${result_files[@]}")
-        [[ "${#_FOUND_FILES[@]}" -gt 0 ]] && return 0 || return 1
+        report "found ${#_FOUND_FILES[@]} files containing \"$pattern\"; stored in \$_FOUND_FILES global array." "$FUNCNAME"
+        [[ "${#_FOUND_FILES[@]}" -eq 0 ]] && return 1
+    fi
+
+    if [[ "$open_files" -eq 1 ]]; then
+        # TODO: pass the array to-be-refactored fo()
+        check_progs_installed nvim || return 1
+        nvim "${_FOUND_FILES[@]}"
     fi
 }
 
@@ -1879,6 +1889,20 @@ gfrf() {
 }
 
 
+# helper scriplet for git housecleaning
+# following git snippets are from   http://railsware.com/blog/2014/08/11/git-housekeeping-tutorial-clean-up-outdated-branches-in-local-and-remote-repositories/
+git-show-merged-branches() {
+    local branch
+
+    #git branch --merged    for local branches
+
+    # --no-merged for branches that haven't been merged to currently checked out branch;
+    for branch in $(git branch -r --merged | grep -v HEAD); do
+        echo -e "$(git show --format="%ci %cr %an" $branch | head -n 1) \\t$branch"
+    done | sort -r
+}
+
+
 # ag looks for whole file path!
 ago() {
     local DMENU match dmenurc editor
@@ -2557,6 +2581,7 @@ f() {
 unset _MARKPATH  # otherwise we'll use the regular user defined _MARKPATH who changed into su
 if [[ "$EUID" -eq 0 ]]; then
     _MARKPATH="$(find $BASE_DATA_DIR /home -mindepth 2 -maxdepth 2 -type d -name $_MARKPATH_DIR -print0 -quit 2>/dev/null)"
+    [[ -z "$_MARKPATH" ]] && _MARKPATH="$HOME/$_MARKPATH_DIR"
 else
     # if $BASE_DATA_DIR available, try writing it there so it'd be persisted between OS installs:
     [[ -d "$BASE_DATA_DIR" ]] && _MARKPATH="$BASE_DATA_DIR/$_MARKPATH_DIR" || _MARKPATH="$HOME/$_MARKPATH_DIR"

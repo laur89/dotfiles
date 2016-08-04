@@ -2049,6 +2049,7 @@ function install_from_repo() {
         gnome-keyring
         gsimplecal
         gnome-disk-utility
+        cups
         system-config-printer
         galculator
         file-roller
