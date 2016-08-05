@@ -2526,7 +2526,7 @@ transfer() {
     readonly tmpfile=$(mktemp -t transfer_XXX.tmp) || { err; return 1; }
     curl --progress-bar --upload-file "$file" "https://transfer.sh/$(basename "$file")" >> "$tmpfile" || { err; return 1; }
     cat -- "$tmpfile"
-    copy_to_clipboard "$(cat "$tmpfile")" && report "copied link to clipboard" "$FUNCNAME" || err "copying to clipboard failed" "$FUNCNAME"
+    copy_to_clipboard "$(cat -- "$tmpfile")" && report "copied link to clipboard" "$FUNCNAME" || err "copying to clipboard failed" "$FUNCNAME"
 
     rm -f -- "$tmpfile"
 }

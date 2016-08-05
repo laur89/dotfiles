@@ -2387,11 +2387,12 @@ function remind_manually_installed_progs() {
 
     readonly progs=(
         franz
+        lazyman2
     )
 
     for i in "${progs[@]}"; do
         if ! command -v "$i" >/dev/null; then
-            report "don't forget to install [$i]"
+            report "    don't forget to install [$i]"
         fi
     done
 }
