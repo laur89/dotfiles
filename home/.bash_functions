@@ -1843,10 +1843,9 @@ gfff() {
 
 # git flow release start
 gfrs() {
-    local tag latest_tag
+    local tag
 
     readonly tag="$1"
-    readonly latest_tag="$(glt)" || { err "unable to find latest tag. not affecting ${FUNCNAME}(), continuing..." "$FUNCNAME"; }
 
     if [[ -z "$tag" ]]; then
         err "need to provide release tag to create" "$FUNCNAME"
@@ -1862,7 +1861,7 @@ gfrs() {
         return 1
     fi
 
-    report "FYI, latest tag is [$latest_tag]" "$FUNCNAME"
+    glt || { err "unable to find latest tag. not affecting ${FUNCNAME}(), continuing..." "$FUNCNAME"; }
 
     git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort." "$FUNCNAME"; return 1; }
     git flow release start -F "$tag"
