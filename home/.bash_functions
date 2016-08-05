@@ -2519,7 +2519,7 @@ transfer() {
 
     readonly file="$1"
 
-    [[ "$#" -ne 1 || -z "$file" ]] && { err "only one argument, file to share, required." "$FUNCNAME"; return 1; }
+    [[ "$#" -ne 1 || -z "$file" ]] && { err "one argument, file to share, required." "$FUNCNAME"; return 1; }
     [[ -e "$file" ]] || { err "[$file] does not exist." "$FUNCNAME"; return 1; }
     check_progs_installed curl || return 1
 

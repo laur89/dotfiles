@@ -18,6 +18,7 @@ alias eclim='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/
 #alias skype='LD_PRELOAD=/data/progs/custom_builds/skypetab-ng/libskypetab-ng.so   skype'
 alias fileroller='file-roller'
 alias vscode='/data/progs/VSCode-linux-x64/Code' # MS Visual Code (editor)
+alias franz='/data/progs/franz/franz'  # client that manages loads of different chat clients (via their web frontends)
 #alias pubkey='cat ~/.ssh/id_rsa.pub | xsel --clipboard'
 alias pastebinit='pastebinit -P'
 ##################################
