@@ -11,9 +11,9 @@ SELF="${0##*/}"
 PROGS=(
     "urxvtd"
     "davmail"
-    "skype"
     "spacefm"
     "keepassx"
+    "franz"
     "copyq"
     "mbsync --all"
     "delay_screensaver"
@@ -35,6 +35,7 @@ PROGS=(
     #"nm-applet"
     #"xfce4-power-manager"
     #"ssh-agent"
+    #"skype"
 
 # alternative to lock automatically when suspending/hibernating: (requires xss-lock)
 # (currently using the shellscript that listens to dbus messages)
