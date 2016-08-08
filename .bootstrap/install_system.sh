@@ -789,11 +789,14 @@ function fetch_castles() {
     clone_or_link_castle private-common layr bitbucket.org
 
     # !! if you change private repos, make sure you update PRIVATE_CASTLE definitions @ validate_and_init()!
-    if [[ "$MODE" == work ]]; then
-        clone_or_link_castle work_dotfiles laur.aliste gitlab.williamhill-dev.local
-    elif [[ "$MODE" == personal ]]; then
-        clone_or_link_castle personal-dotfiles layr bitbucket.org
-    fi
+    case "$MODE" in
+        work)
+            clone_or_link_castle work_dotfiles laur.aliste gitlab.williamhill-dev.local
+            ;;
+        personal)
+            clone_or_link_castle personal-dotfiles layr bitbucket.org
+            ;;
+    esac
 
     while true; do
         if confirm "$(report 'want to clone another castle?')"; then
