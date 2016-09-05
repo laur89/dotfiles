@@ -81,6 +81,7 @@ function enableSmart() {
 }
 
 set_keyboard_layout() {
+    check_progs_installed setxkbmap || return 1
     setxkbmap -option grp:alt_shift_toggle "ee,us" || { err_display "err setting keyboard layout" "$SELF"; return 1; }
 }
 

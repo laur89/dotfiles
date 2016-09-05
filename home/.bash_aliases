@@ -1,5 +1,9 @@
 # bash aliases:
 #
+# !!! please note aliases should be used by humans only, not by scripts.
+# !!! they are subject to constant change.
+# !!! also be careful aliasing builtins such as 'mkdir' to 'mkdir -p'
+#
 ##################################
 #__THEME_LOC="$HOME/.themes/Numix/gtk-2.0/gtkrc"
 #
@@ -17,10 +21,11 @@ alias giteye='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtk
 alias eclim='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/eclimd"'
 #alias skype='LD_PRELOAD=/data/progs/custom_builds/skypetab-ng/libskypetab-ng.so   skype'
 alias fileroller='file-roller'
-alias vscode='/data/progs/VSCode-linux-x64/Code' # MS Visual Code (editor)
+alias vscode='/data/progs/VSCode-linux-x64/Code'  # MS Visual Code (editor)
 alias franz='/data/progs/franz/franz'  # client that manages loads of different chat clients (via their web frontends)
-#alias pubkey='cat ~/.ssh/id_rsa.pub | xsel --clipboard'
 alias pastebinit='pastebinit -P'
+alias xo='xdg-open'
+alias printer-config='system-config-printer'
 ##################################
 #alias clean_failed_mvn="$(find ~/.m2 -name *.lastUpdated -delete)"
 #alias amq="/data/progs/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"
@@ -146,6 +151,7 @@ alias scripts='cd /data/dev/scripts'
 alias proj='cd /data/dev/projects'
 alias prog='cd /data/progs'
 alias progs='cd /data/progs'
+alias deps='cd /data/progs/deps'
 alias dev='cd /data/dev'
 alias data='cd /data/'
 alias tmp='cd /tmp/'
@@ -167,4 +173,3 @@ alias uinstall='sudo apt-get remove'
 alias reinstall='sudo apt-get --reinstall install'
 alias update='sudo apt-get update'
 alias upgrade='sudo apt-get update && sudo apt-get upgrade'
-alias xo='xdg-open'

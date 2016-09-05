@@ -18,20 +18,21 @@ readonly CLANG_LLVM_LOC='http://llvm.org/releases/3.8.0/clang+llvm-3.8.0-x86_64-
 readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - yeah.
 readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
 readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX - open password manager forked from keepass project
+readonly GOFORIT_REPO_LOC='https://github.com/mank319/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
 readonly SYNERGY_REPO_LOC='https://github.com/synergy/synergy.git'    # synergy - share keyboard&mouse between computers on same LAN
 readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u91-b14/jdk-8u91-linux-x64.tar.gz'   # jdk8: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
                                                                                                            # jdk7: http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
                                                                                                            # jdk9: https://jdk9.java.net/  /  https://jdk9.java.net/download/
 readonly SKYPE_LOC='http://www.skype.com/go/getskype-linux-deb'       # http://www.skype.com/en/download-skype/skype-for-computer/
-readonly JDK_LINK_LOC="/usr/local/jdk_link"
-readonly JDK_INSTALLATION_DIR="/usr/local/javas"
+readonly JDK_LINK_LOC="/usr/local/jdk_link"      # symlink linking to currently active java installation
+readonly JDK_INSTALLATION_DIR="/usr/local/javas" # dir containing all the installed java versions
 readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
-readonly NFS_SERVER_SHARE="/data"            # default mountpoint to share over NFS
-readonly SSH_SERVER_SHARE="/data"            # default mountpoint to share over SSH
+readonly NFS_SERVER_SHARE="/data"            # default node to share over NFS
+readonly SSH_SERVER_SHARE="/data"            # default node to share over SSH
 #------------------------
 #--- Global Variables ---
 #------------------------
@@ -41,11 +42,11 @@ MODE=''
 FULL_INSTALL=0                  # whether script is performing full install or not. 1 || 0
 PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
 PACKAGES_FAILED_TO_INSTALL=()
-LOGGING_LVL=0                   # execution logging level (full install logs everything);
+LOGGING_LVL=0                   # execution logging level (full install mode logs everything);
                                 # don't set log level too soon; don't want to persist bullshit.
                                 # levels are currently 0, 1 and 10, 1 being the lowest (least amount of events logged.)
 EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%m-%y--%R).log" \
-        || readonly EXECUTION_LOG="$HOME/installation-exe.log"
+        || readonly EXECUTION_LOG="$HOME/installation-exe.log"  # do not create logfile here! otherwise cleanup() picks it up and reports of its existence;
 
 #------------------------
 #--- Global Constants ---
@@ -107,7 +108,7 @@ function validate_and_init() {
 
     check_connection || { err "no internet connection. abort."; exit 1; }
 
-    report "private castle defined as \"$PRIVATE_CASTLE\""
+    report "private castle defined as [$PRIVATE_CASTLE]"
 
     # verify we have our key(s) set up and available:
     if is_ssh_key_available; then
@@ -144,7 +145,7 @@ function check_dependencies() {
 
     # TODO: need to create dev/ already here, since both dotfiles and private-common
     # either point to it, or point at something in it; not a good solution.
-    # best finalyse scripts and move them to dotfiles repo.
+    # best finalise scripts and move them to the public/common dotfiles repo.
     #
     #
     # verify required dirs are existing and have $perms perms:
@@ -201,7 +202,7 @@ function setup_hosts() {
         execute "sed -i 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' $tmpfile" || { err; return 1; }
 
         backup_original_and_copy_file "$tmpfile" "$hosts_file_dest"
-        execute "rm $tmpfile"
+        execute "rm -- $tmpfile"
     else
         err "expected configuration file at \"$file\" does not exist; won't install it."
         return 1
@@ -458,7 +459,7 @@ function install_ssh_server() {
     if [[ -f "$config" ]]; then
         backup_original_and_copy_file "$config" "$sshd_confdir"
     else
-        err "expected configuration file at \"$config\" does not exist; aborting sshd configuration."
+        err "expected configuration file at [$config] does not exist; aborting sshd configuration."
         return 1
     fi
 
@@ -467,7 +468,7 @@ function install_ssh_server() {
     if [[ -f "$banner" ]]; then
         backup_original_and_copy_file "$banner" "$sshd_confdir"
     else
-        err "expected sshd banner file at \"$banner\" does not exist; won't install it."
+        err "expected sshd banner file at [$banner] does not exist; won't install it."
         #return 1  # don't return, it's just a banner.
     fi
 
@@ -599,7 +600,7 @@ function install_sshfs() {
     #if [[ -f "$ssh_conf" ]]; then
         #backup_original_and_copy_file "$ssh_conf" "$ssh_confdir"
     #else
-        #err "expected ssh configuration file at \"$ssh_conf\" does not exist; aborting ssh (client) configuration."
+        #err "expected ssh configuration file at [$ssh_conf] does not exist; aborting ssh (client) configuration."
         #return 1
     #fi
 
@@ -710,7 +711,7 @@ function setup_dirs() {
             $BASE_DATA_DIR/Documents \
                 ; do
         if ! [[ -d "$dir" ]]; then
-            report "$dir does not exist, creating..."
+            report "[$dir] does not exist, creating..."
             execute "mkdir $dir"
         fi
     done
@@ -719,7 +720,7 @@ function setup_dirs() {
     if ! [[ -d "$CUSTOM_LOGDIR" ]]; then
         [[ -z "$CUSTOM_LOGDIR" ]] && { err "\$CUSTOM_LOGDIR env var was missing. abort."; sleep 5; return 1; }
 
-        report "$CUSTOM_LOGDIR does not exist, creating..."
+        report "[$CUSTOM_LOGDIR] does not exist, creating..."
         execute "sudo mkdir $CUSTOM_LOGDIR"
         execute "sudo chmod 777 $CUSTOM_LOGDIR"
     fi
@@ -735,6 +736,7 @@ function install_homesick() {
 }
 
 
+# homeshick specifics
 function clone_or_link_castle() {
     local castle user hub homesick_exe
 
@@ -749,10 +751,10 @@ function clone_or_link_castle() {
 
     if [[ -d "$BASE_HOMESICK_REPOS_LOC/$castle" ]]; then
         if is_ssh_key_available; then
-            report "$castle already exists; pulling & linking"
+            report "[$castle] already exists; pulling & linking"
             execute "$homesick_exe pull $castle"
         else
-            report "$castle already exists; linking..."
+            report "[$castle] already exists; linking..."
         fi
 
         execute "$homesick_exe link $castle"
@@ -864,7 +866,7 @@ function setup_global_env_vars() {
 
     for file in "${real_file_locations[@]}"; do
         if ! [[ -f "$file" ]]; then
-            err "$file does not exist. can't link it to ${global_env_var_loc}/"
+            err "[$file] does not exist. can't link it to ${global_env_var_loc}/"
             return 1
         fi
 
@@ -876,7 +878,7 @@ function setup_global_env_vars() {
         #err "$(dirname $global_env_var) is not a dir; can't install globally for all the users."
     #else
         #if ! [[ -h "$global_env_var" ]]; then
-            #execute "sudo ln -s $SHELL_ENVS $global_env_var"
+            #execute "sudo ln -s -- $SHELL_ENVS $global_env_var"
         #fi
     #fi
 
@@ -886,7 +888,7 @@ function setup_global_env_vars() {
             #execute "echo source $SHELL_ENVS | sudo tee --append $root_bashrc > /dev/null"
         #fi
     #else
-        #err "$root_bashrc doesn't exist; cannot source \"$SHELL_ENVS\" from it!"
+        #err "[$root_bashrc] doesn't exist; cannot source [$SHELL_ENVS] from it!"
         #return 1
     #fi
 }
@@ -902,7 +904,7 @@ function setup_netrc_perms() {
     if [[ -e "$rc_loc" ]]; then
         execute "chmod $perms $(realpath "$rc_loc")" || err "setting [$rc_loc] perms failed"  # realpath, since we cannot change perms via symlink
     else
-        err "expected to find \"$rc_loc\", but it doesn't exist. if you're not using netrc, better remvoe related logic from ${SELF}."
+        err "expected to find [$rc_loc], but it doesn't exist. if you're not using netrc, better remvoe related logic from ${SELF}."
         return 1
     fi
 }
@@ -915,7 +917,7 @@ function setup_global_prompt() {
     readonly ps1='PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} -eq 0 ]]; then echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033\[\033[0;31m\]\h"; else echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h"; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # own_def_marker'
 
     if ! sudo test -f $global_bashrc; then
-        err "$global_bashrc doesn't exist; cannot add PS1 (prompt) definition to it!"
+        err "[$global_bashrc] doesn't exist; cannot add PS1 (prompt) definition to it!"
         return 1
     fi
 
@@ -953,10 +955,10 @@ function install_acpi_events() {
     readonly src_eventfiles_dir="$COMMON_DOTFILES/backups/acpi_event_triggers"
 
     if ! [[ -d "$system_acpi_eventdir" ]]; then
-        err "$system_acpi_eventdir dir does not exist; acpi event triggers won't be installed"
+        err "[$system_acpi_eventdir] dir does not exist; acpi event triggers won't be installed"
         return 1
     elif ! [[ -d "$src_eventfiles_dir" ]]; then
-        err "$src_eventfiles_dir dir does not exist; acpi event triggers won't be installed (since trigger files cannot be found)"
+        err "[$src_eventfiles_dir] dir does not exist; acpi event triggers won't be installed (since trigger files cannot be found)"
         return 1
     fi
 
@@ -979,10 +981,10 @@ function install_SSID_checker() {
     readonly nm_wrapper_dest="/etc/NetworkManager/dispatcher.d"
 
     if ! [[ -f "$nm_wrapper_loc" ]]; then
-        err "$nm_wrapper_loc does not exist; SSID checker won't be installed"
+        err "[$nm_wrapper_loc] does not exist; SSID checker won't be installed"
         return 1
     elif ! [[ -d "$nm_wrapper_dest" ]]; then
-        err "$nm_wrapper_dest dir does not exist; SSID checker won't be installed"
+        err "[$nm_wrapper_dest] dir does not exist; SSID checker won't be installed"
         return 1
     fi
 
@@ -1033,20 +1035,20 @@ function swap_caps_lock_and_esc() {
 
     readonly conf_file="/usr/share/X11/xkb/symbols/pc"
 
-    [[ -f "$conf_file" ]] || { err "cannot swap esc<->caps: \"$conf_file\" does not exist; abort;"; return 1; }
+    [[ -f "$conf_file" ]] || { err "cannot swap esc<->caps: [$conf_file] does not exist; abort;"; return 1; }
 
     # map caps to esc:
     if ! grep -q 'key <ESC>.*Caps_Lock' "$conf_file"; then
         # hasn't been replaced yet
         execute "sudo sed -i 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock        \]   \};/g' $conf_file"
-        [[ $? -ne 0 ]] && { err "replacing esc<->caps @ $conf_file failed"; return 2; }
+        [[ $? -ne 0 ]] && { err "replacing esc<->caps @ [$conf_file] failed"; return 2; }
     fi
 
     # map esc to caps:
     if ! grep -q 'key <CAPS>.*Escape' "$conf_file"; then
         # hasn't been replaced yet
         execute "sudo sed -i 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS> \{    \[ Escape     \]   \};/g' $conf_file"
-        [[ $? -ne 0 ]] && { err "replacing esc<->caps @ $conf_file failed"; return 2; }
+        [[ $? -ne 0 ]] && { err "replacing esc<->caps @ [$conf_file] failed"; return 2; }
     fi
 
     return 0
@@ -1092,7 +1094,7 @@ function install_altiris() {
     execute "sudo ./aex-configure -configure" || return 1
 
     execute "sudo mkdir -p /etc/rc.d/init.d" || return 1
-    execute "sudo ln -s /lib/lsb/init-functions /etc/rc.d/init.d/functions" || return 1
+    execute "sudo ln -s -- /lib/lsb/init-functions /etc/rc.d/init.d/functions" || return 1
 
     execute "sudo /etc/init.d/altiris start" || return 1
     # refresh policies:
@@ -1107,16 +1109,16 @@ function install_symantec_endpoint_security() {
     sep_loc='https://williamhillorg-my.sharepoint.com/personal/leighhall_williamhill_co_uk/_layouts/15/guestaccess.aspx?guestaccesstoken=B5plVjedQluwT7BgUH50bG3rs99cJaCg6lckbkGdS6I%3d&docid=2_15a1ca98041134ad8b2e4d93286806892'
     jce_loc='http://download.oracle.com/otn-pub/java/jce/8/jce_policy-8.zip'
 
-    [[ "$MODE" != work ]] && { err "won't install it in $MODE mode; only in work mode."; return 1; }
-    [[ -d "$JDK_LINK_LOC" ]] || { err "expected $JDK_LINK_LOC to link to existing jdk installation."; return 1; }
+    [[ "$MODE" != work ]] && { err "won't install it in [$MODE] mode; only in work mode."; return 1; }
+    [[ -d "$JDK_LINK_LOC" ]] || { err "expected [$JDK_LINK_LOC] to link to existing jdk installation."; return 1; }
 
-    tmpdir="$(mktemp -d "symantec-endpoint-sec-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    tmpdir="$(mktemp -d "symantec-endpoint-sec-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$ mktemp"; return 1; }
     execute "pushd $tmpdir" || return 1
 
     # fetch & install SEP:
     execute "wget -- $sep_loc" || return 1
     tarball="$(ls)"
-    extract "$tarball" || { err "extracting $tarball failed."; return 1; }
+    extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
     dir="$(find -mindepth 1 -maxdepth 1 -type d)"
     [[ -d "$dir" ]] || { err "couldn't find unpacked SEP directory"; return 1; }
 
@@ -1132,10 +1134,10 @@ function install_symantec_endpoint_security() {
         -- $jce_loc" || { err "unable to wget $jce_loc."; return 1; }
 
     tarball="$(basename $jce_loc)"
-    extract "$tarball" || { err "extracting $tarball failed."; return 1; }
+    extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
     dir="$(find -mindepth 1 -maxdepth 1 -type d)"
     [[ -d "$dir" ]] || { err "couldn't find unpacked jce directory"; return 1; }
-    jars="$(find "$dir" -mindepth 1 -type f -name '*.jar')" || { err "looks like we didn't find any .jar files under $dir"; return 1; }
+    jars="$(find "$dir" -mindepth 1 -type f -name '*.jar')" || { err "looks like we didn't find any .jar files under [$dir]"; return 1; }
     execute "sudo cp $jars $JDK_LINK_LOC/jre/lib/security" || return 1
 
     # cleanup:
@@ -1263,6 +1265,7 @@ function install_own_builds() {
     install_vim
     install_neovim
     install_keepassx
+    install_goforit
     install_copyq
     install_synergy
     install_dwm
@@ -1311,9 +1314,9 @@ function switch_jdk_versions() {
     readonly avail_javas="$(find $JDK_INSTALLATION_DIR -mindepth 1 -maxdepth 1 -type d)"
     [[ $? -ne 0 || -z "$avail_javas" ]] && { err "discovered no java installations @ $JDK_INSTALLATION_DIR"; return 1; }
     if [[ -h "$JDK_LINK_LOC" ]]; then
-        active_java="$(realpath $JDK_LINK_LOC)"
+        active_java="$(realpath "$JDK_LINK_LOC")"
         if [[ "$avail_javas" == "$active_java" ]]; then
-            report "only one active jdk installation, \"$active_java\" is available, and that is already linked by $JDK_LINK_LOC"
+            report "only one active jdk installation, [$active_java] is available, and that is already linked by $JDK_LINK_LOC"
             return 0
         fi
 
@@ -1476,6 +1479,24 @@ function install_keepassx() {
 }
 
 
+# TO-DO list manager
+# https://github.com/mank319/Go-For-It
+function install_goforit() {
+    is_server && { report "we're server, skipping goforit installation."; return; }
+    should_build_if_avail_in_repo go-for-it || { report "skipping building of go-for-it; remember to install it from the repo after the install!"; return; }
+
+    report "setting up goforit..."
+
+    # first find whether we have deb packages from other times:
+    if confirm "do you wish to install goforit from our previous build .deb package, if available?"; then
+        install_from_deb goforit && return 0
+    fi
+
+    build_and_install_goforit
+    return $?
+}
+
+
 function build_and_install_synergy() {
     # building instructions from https://github.com/synergy/synergy/wiki/Compiling
     local builddir do_clone
@@ -1545,6 +1566,8 @@ function build_and_install_copyq() {
 }
 
 
+# runs checkinstall in current working dir, and copies the created
+# .deb file to $BASE_BUILDS_DIR/
 function create_deb_install_and_store() {
     local deb_file
 
@@ -1553,13 +1576,37 @@ function create_deb_install_and_store() {
 
     readonly deb_file="$(find . -type f -name '*.deb')"
     if [[ -f "$deb_file" ]]; then
-        report "moving built package \"$deb_file\" to $BASE_BUILDS_DIR"
-        execute "mv $deb_file $BASE_BUILDS_DIR/"
+        report "moving built package [$deb_file] to [$BASE_BUILDS_DIR]"
+        execute "mv -- $deb_file $BASE_BUILDS_DIR/"
         return $?
     else
-        err "couldn't find built package (find cmd found \"$deb_file\")"
+        err "couldn't find built package (find cmd found [$deb_file])"
         return 1
     fi
+}
+
+
+# building instructions from https://github.com/mank319/Go-For-It
+function build_and_install_goforit() {
+    local tmpdir
+
+    should_build_if_avail_in_repo goforit || { report "skipping building of goforit. remember to install it from the repo after the install!"; return; }
+
+    readonly tmpdir="$TMPDIR/goforit-build-${RANDOM}"
+    report "building goforit..."
+
+    execute "git clone $GOFORIT_REPO_LOC $tmpdir" || return 1
+
+    execute "mkdir $tmpdir/build"
+    execute "pushd $tmpdir/build" || return 1
+    execute 'cmake ..' || { err; popd; return 1; }
+    execute "make" || { err; popd; return 1; }
+
+    create_deb_install_and_store
+
+    execute "popd"
+    execute "sudo rm -rf -- '$tmpdir'"
+    return 0
 }
 
 
@@ -1596,7 +1643,7 @@ function build_and_install_keepassx() {
     create_deb_install_and_store
 
     execute "popd"
-    execute "sudo rm -rf -- $tmpdir"
+    execute "sudo rm -rf -- '$tmpdir'"
     return 0
 }
 
@@ -1607,7 +1654,7 @@ function install_dwm() {
     readonly build_dir="$HOME/.dwm/w0ngBuild/source6.0"
 
     clone_or_link_castle dwm-setup laur89 github.com
-    [[ -d "$build_dir" ]] || { err "\"$build_dir\" is not a dir. skipping dwm installation."; return 1; }
+    [[ -d "$build_dir" ]] || { err "[$build_dir] is not a dir. skipping dwm installation."; return 1; }
 
     report "installing dwm build dependencies..."
     install_block '
@@ -1779,7 +1826,7 @@ function vim_post_install_configuration() {
         i="$HOME/$i"
 
         if [[ ! -f "$i" && ! -d "$i" ]]; then
-            err "$i does not exist - can't link to /root/"
+            err "[$i] does not exist - can't link to /root/"
             continue
         else
             create_link --sudo "$i" "/root/"
@@ -2108,7 +2155,7 @@ function install_from_repo() {
         exuberant-ctags
         shellcheck
         ranger
-        spacefm
+        spacefm-gtk3
         screenfetch
         scrot
         ffmpeg
@@ -2261,7 +2308,7 @@ function should_build_if_avail_in_repo() {
 
     readonly packages="$(apt-cache search --names-only "$package_name")" || { err; return 1; }
     if [[ -n "$packages" ]]; then
-        report "FYI, these packages with \"$package_name\" in them are available in repo:\n"
+        report "FYI, these packages with [$package_name] in them are available in repo:\n"
         echo -e "$packages"
 
         if ! confirm "\tdo you still wish to build yourself?\n\t(answering 'no' will skip the build. you need to manually install it from the repo yourself.)"; then
@@ -2301,7 +2348,7 @@ function choose_single_task() {
     if [[ -f "$SHELL_ENVS" ]]; then
         execute "source $SHELL_ENVS"
     else
-        err "expected \"$SHELL_ENVS\" to exist; note that some configuration might be missing."
+        err "expected [$SHELL_ENVS] to exist; note that some configuration might be missing."
     fi
 
     readonly choices=(
@@ -2346,6 +2393,8 @@ function __choose_prog_to_build() {
         install_neovim
         install_YCM
         install_keepassx
+        install_goforit
+        install_gtk_theme
         install_copyq
         install_synergy
         install_dwm
@@ -2460,6 +2509,35 @@ function enable_network_manager() {
 }
 
 
+# https://github.com/numixproject/numix-gtk-theme
+#
+# consider also numix-gtk-theme & numix-icon-theme straight from the repo
+#
+# another themes to consider: flatabolous (https://github.com/anmoljagetia/Flatabulous)  (hosts also flat icons);
+#                             ultra-flat (https://www.gnome-look.org/content/show.php/Ultra-Flat?content=167473)
+function install_gtk_theme() {
+    local theme_repo tmpdir
+
+    readonly theme_repo='https://github.com/numixproject/numix-gtk-theme.git'
+    readonly tmpdir="$TMPDIR/numix-theme-build-${RANDOM}"
+
+    check_progs_installed  glib-compile-schemas  gdk-pixbuf-pixdata || { err "those need to be on path for numix build to succeed."; return 1; }
+    report "installing numix build dependencies..."
+    execute "sudo gem install sass" || return 1
+
+    execute "git clone $theme_repo $tmpdir" || return 1
+    execute "pushd $tmpdir" || return 1
+
+    execute "make"
+
+    create_deb_install_and_store
+
+    execute "popd"
+    execute "sudo rm -rf -- '$tmpdir'"
+    return 0
+}
+
+
 # configs & settings that can/need to be installed  AFTER  the related programs have
 # been installed.
 function post_install_progs_setup() {
@@ -2478,6 +2556,7 @@ function post_install_progs_setup() {
     execute "newgrp wireshark"                  # log us into the new group
     execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
     execute "newgrp vboxusers"                  # log us into the new group
+    install_gtk_theme
 }
 
 
@@ -2553,7 +2632,7 @@ function err() {
     local msg caller_name
 
     readonly msg="$1"
-    readonly caller_name="$2" # OPTIONAL
+    readonly caller_name="$2"  # OPTIONAL
 
     [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "    ERR LOG: $msg" >> "$EXECUTION_LOG"
     echo -e "${COLORS[RED]}${caller_name:-"error"}:${COLORS[OFF]} ${msg:-"Abort"}" 1>&2
@@ -2564,7 +2643,7 @@ function report() {
     local msg caller_name
 
     readonly msg="$1"
-    readonly caller_name="$2" # OPTIONAL
+    readonly caller_name="$2"  # OPTIONAL
 
     [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "OK LOG: $msg" >> "$EXECUTION_LOG"
     echo -e "${COLORS[YELLOW]}${caller_name:-"INFO"}:${COLORS[OFF]} ${msg:-"--info lvl message placeholder--"}"
@@ -2601,7 +2680,9 @@ function check_connection() {
 
 
 function generate_key() {
-    local mail
+    local mail valid_mail_regex
+
+    readonly valid_mail_regex='^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+$'
 
     if is_ssh_key_available; then
         confirm "key @ [$PRIVATE_KEY_LOC] already exists; still generate key?" || return 1
@@ -2613,8 +2694,8 @@ function generate_key() {
     fi
 
     report "generating ssh key..."
-    while [[ -z "$mail" ]]; do
-        report "enter your mail (eg [username@server.com]):"
+    while ! [[ "$mail" =~ $valid_mail_regex ]]; do
+        report "enter your (valid) mail (eg [username@server.com]):"
         read mail
     done
 
@@ -2622,6 +2703,8 @@ function generate_key() {
 }
 
 
+# required for common point of logging and exception catching.
+#
 # provide '-i' or '--ignore-errs' as first arg to avoid returning non-zero code or
 # logging ERR to exec logfile on unsuccessful execution.
 function execute() {
@@ -2630,13 +2713,14 @@ function execute() {
     [[ "$1" == -i || "$1" == --ignore-errs ]] && { shift; readonly ignore_errs=1; }
     readonly cmd="$1"
 
-    echo -e "--> executing \"$cmd\""
-    # TODO: collect and log stderr?
+    echo -e "--> executing [$cmd]"
+    # TODO: collect and log command execution stderr?
+    # TODO: eval?! seriously, were i drunk?
     eval "$cmd"
     readonly exit_sig=$?
 
     if [[ "$exit_sig" -ne 0 && "$ignore_errs" -ne 1 ]]; then
-        [[ "$LOGGING_LVL" -ge 1 ]] && echo -e "    ERR CMD: \"$cmd\" (exited with code $exit_sig)" >> "$EXECUTION_LOG"
+        [[ "$LOGGING_LVL" -ge 1 ]] && echo -e "    ERR CMD: [$cmd] (exited with code [$exit_sig])" >> "$EXECUTION_LOG"
         return $exit_sig
     fi
 
@@ -2735,7 +2819,7 @@ function extract() {
         err "gimme file to extract plz." "$FUNCNAME"
         return 1
     elif [[ ! -f "$file" || ! -r "$file" ]]; then
-        err "'$file' is not a regular file or read rights not granted." "$FUNCNAME"
+        err "[$file] is not a regular file or read rights not granted." "$FUNCNAME"
         return 1
     fi
 
@@ -2826,7 +2910,7 @@ function create_link() {
     fi
 
     $sudo test -h "$target" && execute "$sudo rm $target"
-    execute "$sudo ln -s $src $target"
+    execute "$sudo ln -s -- \"$src\" \"$target\""
 
     return 0
 }
@@ -2863,6 +2947,24 @@ function list_contains() {
 }
 
 
+# Copies given text to system clipboard.
+#
+# @param {string}  input   text to put to the clipboard.
+#
+# @returns {bool}  true, if copying to clipboard succeeded.
+function copy_to_clipboard() {
+    local input
+
+    readonly input="$1"
+
+    { command -v xsel >/dev/null 2>/dev/null && echo -n "$input" | xsel --clipboard; } \
+        || { command -v xclip >/dev/null 2>/dev/null && echo -n "$input" | xclip -selection clipboard; } \
+        || return 1
+
+    return 0
+}
+
+
 function cleanup() {
     [[ "$__CLEANUP_EXECUTED_MARKER" -eq 1 ]] && return  # don't invoke more than once.
 
@@ -2877,10 +2979,9 @@ function cleanup() {
         sed -i '/^\s*$/d' "$EXECUTION_LOG"  # strip empty lines
 
         echo -e "\n\n___________________________________________"
-        echo -e "\tscript execution log can be found at \"$EXECUTION_LOG\""
-        if grep -q '    ERR' "$EXECUTION_LOG"; then
-            echo -e "${COLORS[RED]}    NOTE: log contains errors.${COLORS[OFF]}"
-        fi
+        echo -e "\tscript execution log can be found at [$EXECUTION_LOG]"
+        grep -q '    ERR' "$EXECUTION_LOG" && echo -e "${COLORS[RED]}    NOTE: log contains errors.${COLORS[OFF]}"
+        copy_to_clipboard "$EXECUTION_LOG" && echo -e '(logfile location has been copied to clipboard)'
         echo -e "___________________________________________"
     fi
 

@@ -96,7 +96,7 @@ function ffind() {
               shift $((OPTIND-1))
                 ;;
            V) readonly filetype=1
-              extra_params='-size +100M'  # search for min. x megs files, so mp4 wouldn't return audio files
+              extra_params='-size +100M'  # search for min. x megs files, so mp4 wouldn't (likely) return audio files
               readonly type_grep='video/|audio/mp4'
               shift $((OPTIND-1))
                 ;;
@@ -2190,7 +2190,7 @@ fo() {
                 done
 
                 if confirm "wish to DELETE them?"; then
-                    rm -r -- "${matches[@]}" || { err "something went wrong while deleting." "$FUNCNAME"; return 1; }
+                    rm -r -- "${matches[@]}" || { _FOUND_FILES=("${matches[@]}"); err "something went wrong while deleting. (stored the files in \$_FOUND_FILES array)" "$FUNCNAME"; return 1; }
                 fi
 
                 return
@@ -2220,7 +2220,7 @@ fo() {
 
     count="${#matches[@]}"
     # define filetype only by the first node:
-    filetype="$(file -iLb -- "${matches[0]}")" || { err "issues testing [${matches[0]}] with \$file" "$FUNCNAME"; return 1; }
+    filetype="$(file -iLb -- "${matches[0]}")" || { err "issues testing [${matches[0]}] with \$ file cmd" "$FUNCNAME"; return 1; }
 
     # report
     if [[ "$count" -eq 1 ]]; then
