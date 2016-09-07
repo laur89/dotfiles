@@ -1555,8 +1555,8 @@ function build_and_install_copyq() {
     execute "git clone $COPYQ_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
 
-    execute 'cmake .'
-    execute "make"
+    execute 'cmake .' || { err; popd; return 1; }
+    execute "make" || { err; popd; return 1; }
 
     create_deb_install_and_store
 
@@ -1571,8 +1571,9 @@ function build_and_install_copyq() {
 function create_deb_install_and_store() {
     local deb_file
 
+    check_progs_installed checkinstall || return 1
     report "creating .deb and installing with checkinstall..."
-    execute "sudo checkinstall" || { err "checkinstall failed. is it installed? abort."; return 1; }
+    execute "sudo checkinstall" || { err "checkinstall run failed. abort."; return 1; }
 
     readonly deb_file="$(find . -type f -name '*.deb')"
     if [[ -f "$deb_file" ]]; then
@@ -1637,8 +1638,8 @@ function build_and_install_keepassx() {
 
     execute "mkdir $tmpdir/build"
     execute "pushd $tmpdir/build" || return 1
-    execute 'cmake ..'
-    execute "make"
+    execute 'cmake ..' || { err; popd; return 1; }
+    execute "make" || { err; popd; return 1; }
 
     create_deb_install_and_store
 
@@ -2528,7 +2529,7 @@ function install_gtk_theme() {
     execute "git clone $theme_repo $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
 
-    execute "make"
+    execute "make" || { err; popd; return 1; }
 
     create_deb_install_and_store
 
