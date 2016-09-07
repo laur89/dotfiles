@@ -45,7 +45,7 @@ PACKAGES_FAILED_TO_INSTALL=()
 LOGGING_LVL=0                   # execution logging level (full install mode logs everything);
                                 # don't set log level too soon; don't want to persist bullshit.
                                 # levels are currently 0, 1 and 10, 1 being the lowest (least amount of events logged.)
-EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%m-%y--%R).log" \
+EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%b-%y--%R).log" \
         || readonly EXECUTION_LOG="$HOME/installation-exe.log"  # do not create logfile here! otherwise cleanup() picks it up and reports of its existence;
 
 #------------------------
