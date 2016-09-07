@@ -2947,6 +2947,35 @@ function list_contains() {
 }
 
 
+# Checks whether the passed programs are installed on the system.
+#
+# @param {string...}   list of programs whose existence to check. NOT a bash array!
+#
+# @returns {bool}  true if ALL the passed programs are installed.
+function check_progs_installed() {
+    local msg msg_beginning i progs_missing
+
+    progs_missing=()
+
+    # Check whether required programs are installed:
+    for i in "$@"; do
+        if ! command -v -- "$i" >/dev/null; then
+            progs_missing+=( "$i" )
+        fi
+    done
+
+    if [[ "${#progs_missing[@]}" -gt 0 ]]; then
+        [[ "${#progs_missing[@]}" -eq 1 ]] && readonly msg_beginning="[1] required program appears" || readonly msg_beginning="[${#progs_missing[@]}] required programs appear"
+        readonly msg="$msg_beginning not to be installed on the system:\n\t$(build_comma_separated_list ${progs_missing[*]})\n\nAbort.\n"
+        err "$msg"
+
+        return 1
+    fi
+
+    return 0
+}
+
+
 # Copies given text to system clipboard.
 #
 # @param {string}  input   text to put to the clipboard.
