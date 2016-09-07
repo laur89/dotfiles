@@ -657,8 +657,8 @@ function install_deps() {
     create_link "${BASE_DEPS_LOC}/fzf" "$HOME/.fzf"
     execute "$HOME/.fzf/install" || err "could not install fzf"
 
-    # fasd - shell navigator similar to autojump:  https://github.com/clvv/fasd
-    clone_or_pull_repo "clvv" "fasd" "$BASE_DEPS_LOC"
+    # fasd - shell navigator similar to autojump:
+    clone_or_pull_repo "clvv" "fasd" "$BASE_DEPS_LOC"  # https://github.com/clvv/fasd.git
     create_link "${BASE_DEPS_LOC}/fasd/fasd" "$HOME/bin/fasd"
 
     # tmux plugin manager:
