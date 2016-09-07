@@ -2258,7 +2258,7 @@ fo() {
             ;;
         text/*)
             # if we're dealing with a logfile, force open in PAGER
-            if [[ "${matches[0]}" =~ \.log(\.[\.a-z]+)*$ ]]; then
+            if [[ "${matches[0]}" =~ \.log(\.[\.a-z0-9]+)*$ ]]; then
                 "$PAGER" -- "${matches[@]}"
             else
                 "$editor" -- "${matches[@]}"
