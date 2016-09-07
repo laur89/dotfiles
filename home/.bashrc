@@ -256,6 +256,15 @@ __check_for_change_and_compile_ssh_config() {
 
 ( __check_for_change_and_compile_ssh_config )  # execute in subshell because of cd-ing
 ##########################################
+# fasd init caching and loading:  (https://github.com/clvv/fasd)
+fasd_cache="$HOME/.fasd-init-bash.cache"
+if [[ "$(command -v fasd)" -nt "$fasd_cache" || ! -s "$fasd_cache" ]]; then
+    fasd --init posix-alias bash-hook bash-ccomp bash-ccomp-install >| "$fasd_cache"
+fi
+
+[[ -f "$fasd_cache" ]] && source "$fasd_cache"
+unset fasd_cache
+##########################################
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 

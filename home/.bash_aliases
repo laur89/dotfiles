@@ -4,6 +4,16 @@
 # !!! they are subject to constant change.
 # !!! also be careful aliasing builtins such as 'mkdir' to 'mkdir -p'
 #
+#
+# note that fasd generates its own aliases (check from its init cache somewhere in homedir), eg
+    #alias a='fasd -a'
+    #alias s='fasd -si'
+    #alias sd='fasd -sid'
+    #alias sf='fasd -sif'
+    #alias d='fasd -d'
+    #alias f='fasd -f'
+    #alias z='fasd_cd -d'
+    #alias zz='fasd_cd -d -i'
 ##################################
 #__THEME_LOC="$HOME/.themes/Numix/gtk-2.0/gtkrc"
 #
@@ -123,6 +133,7 @@ alias drpbox='dropbox'
 alias dropvox='dropbox'
 alias dorpbox='dropbox'
 alias suod='sudo'
+alias su='su --login'  # so env vars would be cleared
 
 # Directory navigation aliases:
 alias ..='cd ..'

@@ -657,11 +657,15 @@ function install_deps() {
     create_link "${BASE_DEPS_LOC}/fzf" "$HOME/.fzf"
     execute "$HOME/.fzf/install" || err "could not install fzf"
 
+    # fasd - shell navigator similar to autojump:  https://github.com/clvv/fasd
+    clone_or_pull_repo "clvv" "fasd" "$BASE_DEPS_LOC"
+    create_link "${BASE_DEPS_LOC}/fasd/fasd" "$HOME/bin/fasd"
+
     # tmux plugin manager:
     _install_tmux_deps
 
     # TODO: these are not deps, are they?:
-    execute "sudo pip install --upgrade git-playback"  # https://github.com/jianli/git-playback
+    execute "sudo pip install --upgrade git-playback"   # https://github.com/jianli/git-playback
 
     # this needs apt-get install  python-imaging ?:
     execute "sudo pip  install --upgrade img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
