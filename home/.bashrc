@@ -239,10 +239,10 @@ __check_for_change_and_compile_ssh_config() {
         cd "$ssh_configdir" || return 1  # move to $ssh_configdir, since we execute find relative to curr dir;
         readonly current_md5sum="$(find -L . -type f -exec md5sum {} \; | sort -k 34 | md5sum)" || { err "running find failed" "$FUNCNAME"; return 1; }
 
-        if [[ -e "$stored_md5sum" && "$(cat "$stored_md5sum")" != "$current_md5sum" ]] \
+        if [[ -e "$stored_md5sum" && "$(cat -- "$stored_md5sum")" != "$current_md5sum" ]] \
                 || ! [[ -e "$ssh_config" ]]; then
-            [[ -f "$ssh_config" ]] && mv "$ssh_config" "${ssh_config}.bak.$(date -Ins)"
-            cat "$ssh_configdir"/* > "$ssh_config"
+            [[ -f "$ssh_config" ]] && mv -- "$ssh_config" "${ssh_config}.bak.$(date -Ins)"
+            cat -- "$ssh_configdir"/* > "$ssh_config"
             sanitize_ssh "$HOME/.ssh"
             modified=1
         fi
