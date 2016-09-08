@@ -1,8 +1,8 @@
 # sample file:
 # http://www.gnu.org/software/bash/manual/html_node/Sample-Init-File.html#Sample-Init-File
 #################################
-# vi mode:
-set editing-mode vi
+# vi mode:  # can't set vi-mode here, as it fucks up fzf; set it in .bashrc instead
+#set editing-mode vi
 
 # Keymaps for when we're in command mode (e.g., after hitting ESC)
 set keymap vi-command

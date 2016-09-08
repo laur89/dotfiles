@@ -262,12 +262,13 @@ if [[ "$(command -v fasd)" -nt "$fasd_cache" || ! -s "$fasd_cache" ]]; then
     fasd --init posix-alias bash-hook bash-ccomp bash-ccomp-install >| "$fasd_cache"
 fi
 
-[[ -f "$fasd_cache" ]] && source "$fasd_cache"
+[[ -s "$fasd_cache" ]] && source "$fasd_cache"
 unset fasd_cache
 ##########################################
 
+set -o vi  # needs to be added *before* fzf is sourced, otherwise fzf is screwed.
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="/home/laur/.sdkman"
-[[ -s "/home/laur/.sdkman/bin/sdkman-init.sh" ]] && source "/home/laur/.sdkman/bin/sdkman-init.sh"
+[[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
