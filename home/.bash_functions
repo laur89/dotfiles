@@ -2831,6 +2831,8 @@ fcs() {
 fstash() {
     local out q k sha
 
+    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+
     while out=$(
         git stash list --pretty="%C(yellow)%h %>(14)%Cgreen%cr %C(blue)%gs" |
             fzf --ansi --no-sort --query="$q" --print-query \
