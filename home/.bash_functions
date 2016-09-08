@@ -1140,7 +1140,7 @@ function histgrep() {
 # (sane as in rw for owner, r for group, none for others)
 function sanitize() {
     [[ -z "$@" ]] && { err "provide a file/dir name plz." "$FUNCNAME"; return 1; }
-    [[ ! -e "$@" ]] && { err "\"$*\" does not exist." "$FUNCNAME"; return 1; }
+    [[ ! -e "$@" ]] && { err "[$*] does not exist." "$FUNCNAME"; return 1; }
     chmod -R u=rwX,g=rX,o= -- "$@";
 }
 
@@ -1148,9 +1148,9 @@ function sanitize_ssh() {
     local node="$*"
 
     [[ -z "$node" ]] && { err "provide a file/dir name plz. (most likely you want the .ssh dir)" "$FUNCNAME"; return 1; }
-    [[ ! -e "$node" ]] && { err "\"$node\" does not exist." "$FUNCNAME"; return 1; }
+    [[ ! -e "$node" ]] && { err "[$node] does not exist." "$FUNCNAME"; return 1; }
     if [[ "$node" != *ssh*  ]]; then
-        confirm  "\nthe node name you're about to $FUNCNAME does not contain string \"ssh\"; still continue? (y/n)" || return 1
+        confirm  "\nthe node name you're about to $FUNCNAME does not contain string [ssh]; still continue? (y/n)" || return 1
     fi
 
     chmod -R u=rwX,g=,o= -- "$node";
@@ -1168,7 +1168,10 @@ function my_ip() {  # Get internal & external ip addies:
 
         interface="$1"
 
-        ip="$(/sbin/ifconfig "$interface" | awk '/inet / { print $2 } ' | sed -e s/addr://)"
+        ip="$(ip addr show "$interface" | awk '/ inet /{print $2}')" || return 1
+        ip="${ip%%/*}"  # strip the subnet
+
+        #ip="$(/sbin/ifconfig "$interface" | awk '/inet / {print $2}' | sed -e s/addr://)"  # deprecated
         [[ -z "$ip" && "$__REMOTE_SSH" -eq 1 ]] && return  # probaby the interface was not found
         echo -e "${ip:-"Not connected"}\t@ $interface"
     }
@@ -1178,8 +1181,8 @@ function my_ip() {  # Get internal & external ip addies:
         echo -e "external:\t${external_ip:-"Not connected to the internet."}"
     }
 
-    command -v /sbin/ifconfig > /dev/null 2>&1 || {  # don't use check_progs_installed because of its verbosity
-        err "can't check internal ip as /sbin/ifconfig appears not to be installed." "$FUNCNAME"
+    command -v ip > /dev/null 2>&1 || {  # don't use check_progs_installed because of its verbosity
+        err "can't check internal ip as ip appears not to be installed." "$FUNCNAME"
         return 1
     }
 
@@ -1198,7 +1201,7 @@ function my_ip() {  # Get internal & external ip addies:
             #interfaces="$(ls "$if_dir")"
         else
             interfaces="eth0 eth1 eth2 eth3"
-            report "can't read interfaces from $if_dir [not a (readable) dir]; trying these interfaces: \"$interfaces\"" "$FUNCNAME"
+            report "can't read interfaces from $if_dir [not a (readable) dir]; trying these interfaces: [$interfaces]" "$FUNCNAME"
         fi
 
         [[ -z "$interfaces" ]] && return 1
@@ -2660,60 +2663,80 @@ function pubkey() {
 
 # fd - cd to selected directory
 fd() {
-    local dir
-    dir=$(find "${1:-.}" -path '*/\.*' -prune \
-                    -o -type d -print 2> /dev/null | fzf +m) &&
-    cd "$dir"
+    local dir src
+
+    readonly src="$1"
+    [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be source dir." "$FUNCNAME"; return 1; }
+    dir=$(find "${src:-.}" -path '*/\.*' -prune \
+                    -o -type d -print 2> /dev/null | fzf +m) && cd -- "$dir"
 }
+
 
 # fda - including hidden directories
 fda() {
-    local dir
-    dir=$(find "${1:-.}" -type d 2> /dev/null | fzf +m) && cd "$dir"
+    local dir src
+
+    readonly src="$1"
+    [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be source dir." "$FUNCNAME"; return 1; }
+    dir=$(find "${src:-.}" -type d 2> /dev/null | fzf +m) && cd -- "$dir"
 }
 
-# fdr - cd to selected parent directory
-fdr() {
-    local dirs=()
-    get_parent_dirs() {
+
+# fdu - cd to selected parent directory
+fdu() {
+    local dirs dir src
+
+    readonly src="$1"
+    [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be source dir." "$FUNCNAME"; return 1; }
+
+    dirs=()
+    _get_parent_dirs() {
         if [[ -d "${1}" ]]; then dirs+=("$1"); else return; fi
         if [[ "${1}" == '/' ]]; then
             for _dir in "${dirs[@]}"; do echo $_dir; done
         else
-            get_parent_dirs $(dirname "$1")
+            _get_parent_dirs $(dirname "$1")
         fi
     }
-    local DIR=$(get_parent_dirs $(realpath "${1:-$(pwd)}") | fzf-tmux --tac)
-    cd "$DIR"
+
+    dir=$(_get_parent_dirs $(realpath "${src:-$(pwd)}") | fzf-tmux --tac)
+    cd -- "$dir"
+
+    unset _get_parent_dirs
 }
+
 
 # cdf - cd into the directory of the selected file
 # (same as our fog())
 cdf() {
-    local file
-    local dir
-    file=$(fzf +m -q "$1") && dir=$(dirname "$file") && cd "$dir"
+    local file dir pattern
+
+    readonly pattern="$1"
+    [[ -d "$pattern" ]] && report "fyi, input argument is a search pattern, not source dir" "$FUNCNAME"
+
+    file=$(fzf +m -q "$pattern") && dir=$(dirname -- "$file") && cd -- "$dir"
 }
+
 
 # utility function used to write the command in the shell
 __writecmd() {
     perl -e '$TIOCSTI = 0x5412; $l = <STDIN>; $lc = $ARGV[0] eq "-run" ? "\n" : ""; $l =~ s/\s*$/$lc/; map { ioctl STDOUT, $TIOCSTI, $_; } split "", $l;' -- $1
 }
 
+
 # fh - repeat history
+# note: no reason to use when ctrl+r mapping works;
+# only differing characteristic is that this one executes selected history immediately,
+# whereas ctrl+r lets you edit in command line;
 fh() {
+    [[ "$#" -ne 0 ]] && err "$FUNCNAME does not expect any input" "$FUNCNAME"
     ([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac | sed -re 's/^\s*[0-9]+\s*//' | __writecmd -run
 }
 
-## fh - repeat history
-#fh() {
-    #eval $( ([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac | sed 's/ *[0-9]* *//')
-#}
-
 # fhe - repeat history edit
-fhe() {
-    ([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac | sed -re 's/^\s*[0-9]+\s*//' | __writecmd
-}
+#fhe() {
+    #([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac | sed -re 's/^\s*[0-9]+\s*//' | __writecmd
+#}
 
 # fbr - checkout git branch
 #fbr() {
@@ -2723,18 +2746,28 @@ fhe() {
     #git checkout $(echo "$branch" | awk '{print $1}' | sed "s/.* //")
 #}
 
+
 # fbr - checkout git branch (including remote branches)
 fbr() {
     local branches branch
+
+    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+    [[ "$#" -ne 0 ]] && err "$FUNCNAME does not expect any input" "$FUNCNAME"
+
     branches=$(git branch --all | grep -v HEAD) &&
-    branch=$(echo "$branches" |
-            fzf-tmux -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
-    git checkout $(echo "$branch" | sed "s/.* //" | sed "s#remotes/[^/]*/##")
+            branch=$(echo "$branches" |
+                    fzf-tmux -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
+            git checkout $(echo "$branch" | sed "s/.* //" | sed "s#remotes/[^/]*/##")
 }
+
 
 # fco - checkout git branch/tag
 fco() {
     local tags branches target
+
+    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+    [[ "$#" -ne 0 ]] && err "$FUNCNAME does not expect any input" "$FUNCNAME"
+
     tags=$(
         git tag | awk '{print "\x1b[31;1mtag\x1b[m\t" $1}') || return
     branches=$(
@@ -2747,24 +2780,76 @@ fco() {
     git checkout $(echo "$target" | awk '{print $2}')
 }
 
-# fcoc - checkout git commit
+
+# fcoc - checkout git commit (as in commit hash, not branch et al)
 fcoc() {
     local commits commit
+
+    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+    [[ "$#" -ne 0 ]] && err "$FUNCNAME does not expect any input" "$FUNCNAME"
+
     commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&
-    commit=$(echo "$commits" | fzf --tac +s +m -e) &&
-    git checkout $(echo "$commit" | sed "s/ .*//")
+        commit=$(echo "$commits" | fzf --tac +s +m -e) &&
+        git checkout $(echo "$commit" | sed "s/ .*//")
 }
 
-# fshow - git commit browser
+
+# fshow - git commit diff browser
 fshow() {
+    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+
     git log --graph --color=always \
         --format="%C(auto)%h%d %s %C(black)%C(bold)%cr" "$@" |
     fzf --ansi --no-sort --reverse --tiebreak=index --bind=ctrl-s:toggle-sort \
         --bind "ctrl-m:execute:
                 (grep -o '[a-f0-9]\{7\}' | head -1 |
-                xargs -I % sh -c 'git show --color=always % | less -R') << 'FZF-EOF'
+                xargs -I % sh -c 'git difftool --dir-diff %') << 'FZF-EOF'
                 {}
 FZF-EOF"
+}
+
+# fcs - get git commit sha
+# example usage: git rebase -i `fcs`
+fcs() {
+    local commits commit
+
+    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+
+    commits=$(git log --color=always --pretty=oneline --abbrev-commit --reverse) &&
+    commit=$(echo "$commits" | fzf --tac +s +m -e --ansi --reverse) &&
+    commit="${commit%% *}" &&
+    copy_to_clipboard "$commit" &&
+    echo "copied commit sha [$commit] to clipboard" "$FUNCNAME"
+}
+
+
+# fstash - easier way to deal with stashes
+# type fstash to get a list of your stashes
+# enter shows you the contents of the stash
+# ctrl-d shows a diff of the stash against your current HEAD
+# ctrl-b checks the stash out as a branch, for easier merging
+fstash() {
+    local out q k sha
+
+    while out=$(
+        git stash list --pretty="%C(yellow)%h %>(14)%Cgreen%cr %C(blue)%gs" |
+            fzf --ansi --no-sort --query="$q" --print-query \
+                --expect=ctrl-d,ctrl-b); do
+        mapfile -t out <<< "$out"
+        q="${out[0]}"
+        k="${out[1]}"
+        sha="${out[-1]}"
+        sha="${sha%% *}"
+        [[ -z "$sha" ]] && continue
+        if [[ "$k" == 'ctrl-d' ]]; then
+            git diff $sha
+        elif [[ "$k" == 'ctrl-b' ]]; then
+            git stash branch "stash-$sha" $sha
+            break;
+        else
+            git stash show -p $sha
+        fi
+    done
 }
 ##############################################
 ## Colored Find                             ##

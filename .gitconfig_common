@@ -49,6 +49,7 @@
     rvrt = revert
     di = diff
     dif = diff
+    showtool = "!showci () { rev=${1:-HEAD}; git difftool --dir-diff $rev~1 $rev; }; showci $1"
     stash-unapply = !git stash show -p | git apply -R
     co = checkout
     cp = cherry-pick
