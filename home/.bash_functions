@@ -1158,7 +1158,7 @@ function sanitize_ssh() {
 
 function ssh_sanitize() { sanitize_ssh "$@"; } # alias for sanitize_ssh
 
-function my_ip() {  # Get internal & external ip addies:
+function myip() {  # Get internal & external ip addies:
     local connected_interface interfaces if_dir interface external_ip
 
     if_dir="/sys/class/net"
@@ -1218,8 +1218,7 @@ function my_ip() {  # Get internal & external ip addies:
     unset __get_internal_ip_for_if
 }
 
-function myip() { my_ip; } # alias for my_ip
-function whatsmyip() { my_ip; } # alias for my_ip
+function whatsmyip() { myip; }  # alias for myip
 
 # !! lrzip might offer best compression when it comes to text: http://unix.stackexchange.com/questions/78262/which-file-compression-software-for-linux-offers-the-highest-size-reduction
 function compress() {
@@ -2591,7 +2590,7 @@ mkgif() {
     readonly output='/tmp/output.gif'
     readonly optimized='/tmp/output_optimized.gif'
 
-    [[ -z "$input_file" ]] || { err "video file to convert to gif required as a param." "$FUNCNAME"; return 1; }
+    [[ -z "$input_file" ]] && { err "video file to convert to gif required as a param." "$FUNCNAME"; return 1; }
     [[ -f "$input_file" ]] || { err "[$input_file] is not a file" "$FUNCNAME"; return 1; }
     check_progs_installed ffmpeg
 
@@ -2844,22 +2843,26 @@ fstash() {
         sha="${sha%% *}"
         [[ -z "$sha" ]] && continue
         if [[ "$k" == 'ctrl-d' ]]; then
-            git diff $sha
+            #git diff "$sha"
+            git difftool --dir-diff $sha
         elif [[ "$k" == 'ctrl-b' ]]; then
-            git stash branch "stash-$sha" $sha
+            report "not using c-b one atm" && return
+            git stash branch "stash-$sha" "$sha"
             break;
         else
-            git stash show -p $sha
+            #git stash show -p "$sha"
+            git difftool --dir-diff "$sha"^ "$sha"
         fi
     done
 }
+
 ##############################################
 ## Colored Find                             ##
 ## NOTE: Searches current tree recrusively. ##
 ##############################################
-f() {
-    find . -iregex ".*$*.*" -printf '%P\0' | xargs -r0 ls --color=auto -1d
-}
+#f() {
+    #find . -iregex ".*$*.*" -printf '%P\0' | xargs -r0 ls --color=auto -1d
+#}
 
 ##############################################
 # marks (jumps)                             ##

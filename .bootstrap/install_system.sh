@@ -89,14 +89,14 @@ function validate_and_init() {
     case $MODE in
         work)
             if [[ "$__ENV_VARS_LOADED_MARKER_VAR" == loaded ]] && ! __is_work; then
-                confirm "you selected work mode on non-work machine; sure you want to continue?" || exit
+                confirm "you selected [$MODE] mode on non-work machine; sure you want to continue?" || exit
             fi
 
             PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/work_dotfiles"
             ;;
         personal)
             if [[ "$__ENV_VARS_LOADED_MARKER_VAR" == loaded ]] && __is_work; then
-                confirm "you selected personal mode on work machine; sure you want to continue?" || exit
+                confirm "you selected [$MODE] mode on work machine; sure you want to continue?" || exit
             fi
 
             PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/personal-dotfiles"
