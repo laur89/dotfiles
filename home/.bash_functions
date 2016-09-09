@@ -2767,8 +2767,7 @@ fco() {
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
     [[ "$#" -ne 0 ]] && err "$FUNCNAME does not expect any input" "$FUNCNAME"
 
-    tags=$(
-        git tag | awk '{print "\x1b[31;1mtag\x1b[m\t" $1}') || return
+    tags=$(git tag | awk '{print "\x1b[31;1mtag\x1b[m\t" $1}') || return
     branches=$(
         git branch --all | grep -v HEAD             |
         sed "s/.* //"    | sed "s#remotes/[^/]*/##" |
