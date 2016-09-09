@@ -132,6 +132,7 @@ shopt -s dotglob        # include dotfiles in path expansion
 shopt -s hostcomplete   # try to autocomplete hostnames
 shopt -s huponexit      # send SIGHUP on when interactive login shell exits
 shopt -s globstar       # ** in pathname expansion will match all files and zero or more directories and subdirs
+set -o vi               # needs to be added *before* fzf is sourced, otherwise fzf is screwed.
 
 unset MAILCHECK
 ##########################################
@@ -266,7 +267,6 @@ fi
 unset fasd_cache
 ##########################################
 
-set -o vi  # needs to be added *before* fzf is sourced, otherwise fzf is screwed.
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
