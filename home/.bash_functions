@@ -2648,8 +2648,8 @@ function pubkey() {
     local key contents
     readonly key="$HOME/.ssh/id_rsa.pub"
 
-    [[ -f "$key" ]] || { err "$key does not exist" "$FUNCNAME"; return 1; }
-    readonly contents="$(cat "$key")" || { err "cat-ing [$key] failed." "$FUNCNAME"; return 1; }
+    [[ -f "$key" ]] || { err "[$key] does not exist" "$FUNCNAME"; return 1; }
+    readonly contents="$(cat -- "$key")" || { err "cat-ing [$key] failed." "$FUNCNAME"; return 1; }
 
     copy_to_clipboard "$contents" && report "copied pubkey to clipboard" "$FUNCNAME"
     return $?
@@ -2807,6 +2807,7 @@ fshow() {
                 {}
 FZF-EOF"
 }
+
 
 # fcs - get git commit sha
 # example usage: git rebase -i `fcs`
