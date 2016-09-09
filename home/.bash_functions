@@ -2756,7 +2756,7 @@ fbr() {
     branches=$(git branch --all | grep -v HEAD) &&
             branch=$(echo "$branches" |
                     fzf-tmux -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
-            git checkout $(echo "$branch" | sed "s/.* //" | sed "s#remotes/[^/]*/##")
+            git checkout $(echo "$branch" | sed 's/.* //' | sed 's#remotes/[^/]*/##')
 }
 
 
@@ -2788,7 +2788,7 @@ fcoc() {
 
     commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&
         commit=$(echo "$commits" | fzf --tac +s +m -e) &&
-        git checkout $(echo "$commit" | sed "s/ .*//")
+        git checkout $(echo "$commit" | sed 's/ .*//')
 }
 
 
