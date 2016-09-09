@@ -2717,7 +2717,7 @@ cdf() {
 }
 
 
-# utility function used to write the command in the shell
+# utility function used to write the command in the shell (used by fzf wrappers)
 __writecmd() {
     perl -e '$TIOCSTI = 0x5412; $l = <STDIN>; $lc = $ARGV[0] eq "-run" ? "\n" : ""; $l =~ s/\s*$/$lc/; map { ioctl STDOUT, $TIOCSTI, $_; } split "", $l;' -- $1
 }
@@ -2780,7 +2780,7 @@ fco() {
 }
 
 
-# fcoc - checkout git commit (as in commit hash, not branch et al)
+# fcoc - checkout git commit (as in commit hash, not branch or tag)
 fcoc() {
     local commits commit
 
@@ -2803,7 +2803,7 @@ fshow() {
     fzf --ansi --no-sort --reverse --tiebreak=index --bind=ctrl-s:toggle-sort \
         --bind "ctrl-m:execute:
                 (grep -o '[a-f0-9]\{7\}' | head -1 |
-                xargs -I % sh -c 'git difftool --dir-diff %') << 'FZF-EOF'
+                xargs -I % sh -c 'git difftool --dir-diff %^ %') << 'FZF-EOF'
                 {}
 FZF-EOF"
 }
@@ -2897,9 +2897,9 @@ function jm {
 
     [[ $# -ne 1 || -z "$1" ]] && { err "exactly one arg accepted" "$FUNCNAME"; return 1; }
     [[ -z "$_MARKPATH" ]] && { err "\$_MARKPATH not set, aborting." "$FUNCNAME"; return 1; }
-    mkdir -p "$_MARKPATH" || { err "creating [$_MARKPATH] failed." "$FUNCNAME"; return 1; }
-    [[ "$overwrite" -eq 1 && -h "$target" ]] && rm "$target" >/dev/null 2>/dev/null
-    [[ -h "$target" ]] && { err "[$target] already exists; use jmo or $FUNCNAME -o to overwrite." "$FUNCNAME"; return 1; }
+    mkdir -p -- "$_MARKPATH" || { err "creating [$_MARKPATH] failed." "$FUNCNAME"; return 1; }
+    [[ "$overwrite" -eq 1 && -h "$target" ]] && rm -- "$target" >/dev/null 2>/dev/null
+    [[ -h "$target" ]] && { err "[$target] already exists; use jmo() or $FUNCNAME -o to overwrite." "$FUNCNAME"; return 1; }
 
     ln -s "$(pwd)" "$target"
     return $?
@@ -2914,13 +2914,13 @@ function jmo {
 # un-mark:
 function jum {
     [[ -d "$_MARKPATH" ]] || { err "no marks saved in ${_MARKPATH} - dir not existing." "$FUNCNAME"; return 1; }
-    rm -i "$_MARKPATH/$1"
+    rm -i -- "$_MARKPATH/$1"
 }
 
 # list all saved marks:
 function jjj {
     [[ -d "$_MARKPATH" ]] || { err "no marks saved in ${_MARKPATH} - dir not existing." "$FUNCNAME"; return 1; }
-    ls -l "$_MARKPATH" | sed 's/  / /g' | cut -d' ' -f9- | sed 's/ -/\t-/g' && echo
+    ls -l -- "$_MARKPATH" | sed 's/  / /g' | cut -d' ' -f9- | sed 's/ -/\t-/g' && echo
 }
 
 # marks/jumps completion:
