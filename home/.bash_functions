@@ -21,7 +21,7 @@ fi
 # gnu find wrapper.
 # find files or dirs.
 # TODO: refactor the massive spaghetti.
-function ffind() {
+ffind() {
     local src srcdir iname_arg opt usage OPTIND file_type filetypeOptionCounter exact filetype follow_links
     local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter skip_msgs
     local quitFlag type_grep extra_params matches i delete deleteFlag
@@ -301,7 +301,7 @@ function ffind() {
     #find . -type f -iname '*'"$*"'*'  -ls
 #}
 
-function ffindproc() {
+ffindproc() {
     [[ -z "$1" ]] && { err "process name required" "$FUNCNAME"; return 1; }
     # last grep for re-coloring:
     ps -ef | grep -v '\bgrep\b' | grep -i --color=auto -- "$1"
@@ -311,7 +311,7 @@ function ffindproc() {
 }
 
 # find top 5/x biggest or smallest nodes:
-function __find_top_big_small_fun() {
+__find_top_big_small_fun() {
     local usage opt OPTIND itemsToShow file_type maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_
     local bigOrSmall du_include_regular_files duMaxDepthParam filetypeOptionCounter
 
@@ -443,17 +443,17 @@ function __find_top_big_small_fun() {
     fi
 }
 
-function ffindtopbig() {
+ffindtopbig() {
     __find_top_big_small_fun "-r" "M" "$FUNCNAME" "large" "$@"
 }
 
-function ffindtopsmall() {
+ffindtopsmall() {
     #find . -type f -exec ls -s --block-size=K {} \; | sort -n | head -$itemsToShow 2>/dev/null
     __find_top_big_small_fun "" "K" "$FUNCNAME" "small" "$@"
 }
 
 # find smaller/bigger than Xmegas files
-function __find_bigger_smaller_common_fun() {
+__find_bigger_smaller_common_fun() {
     local usage opt OPTIND file_type maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_ biggerOrSmaller sizeArg
     local du_include_regular_files duMaxDepthParam plusOrMinus filetypeOptionCounter sizeArgLastChar du_blk_sz find_size_unit
 
@@ -649,18 +649,18 @@ function __find_bigger_smaller_common_fun() {
 }
 
 # find  nodes bigger than x mb:
-function ffindbiggerthan() {
+ffindbiggerthan() {
     #find . -size +${size}M -exec ls -s --block-size=M {} \; | sort -nr 2>/dev/null
     __find_bigger_smaller_common_fun "-r" "M" "$FUNCNAME" "bigger" "$@"
 }
 
 # find  nodes smaller than x mb:
-function ffindsmallerthan() {
+ffindsmallerthan() {
     #find . -size -${size}M -exec ls -s --block-size=M {} \; | sort -n 2>/dev/null
     __find_bigger_smaller_common_fun "" "M" "$FUNCNAME" "smaller" "$@"
 }
 
-function aptsearch() {
+aptsearch() {
     [[ -z "$@" ]] && { err "provide partial package name to search for." "$FUNCNAME"; return 1; }
     check_progs_installed apt-cache || return 1
 
@@ -668,9 +668,9 @@ function aptsearch() {
     #aptitude search -- "$@"
 }
 
-function aptsrc() { aptsearch "$@"; } # alias
+aptsrc() { aptsearch "$@"; } # alias
 
-function aptreset() {
+aptreset() {
     local apt_lists_dir
 
     readonly apt_lists_dir="/var/lib/apt/lists"
@@ -690,13 +690,13 @@ function aptreset() {
     #sudo apt-get upgrade
 }
 
-function aptclean() { aptreset; }
+aptclean() { aptreset; }
 
 #  Find a pattern in a set of files and highlight them:
 #+ (needs a recent version of grep).
 # !!! deprecated by ag/astr
 # TODO: find whether we could stop using find here and use grep --include & --exclude flags instead.
-function ffstr() {
+ffstr() {
     local grepcase OPTIND usage opt max_result_line_length caseOptCounter force_case regex i
     local iname_arg maxDepth maxDepthParam defMaxDeptWithFollowLinks follow_links result
     local pattern file_pattern collect_files open_files
@@ -883,7 +883,7 @@ function ffstr() {
     fi
 }
 
-function memmost(){
+memmost(){
     # $1: number of process to view (default 10).
     local num
 
@@ -895,7 +895,7 @@ function memmost(){
 }
 
 
-function cpumost(){
+cpumost(){
     # $1: number of process to view (default 10).
 
     local num=$1
@@ -906,7 +906,7 @@ function cpumost(){
     echo "$ps_out" | sort -nr -k 3 | head -n $num
 }
 
-function cpugt(){
+cpugt(){
     # $1: percentage of cpu. Default 90%
 
     local perc=$1
@@ -917,7 +917,7 @@ function cpugt(){
     echo "$ps_out" | sort -nr -k 3 | awk -v "q=$perc" '($3>=q){print $0}'
 }
 
-function memgt(){
+memgt(){
     # $1: percentage of memory. Default 90%
 
     local perc=$1
@@ -929,24 +929,24 @@ function memgt(){
 }
 
 
-function touser(){
+touser(){
     # $1: name of the user
     ps -U $1 -u $1 u
 }
 
-function frompid(){
+frompid(){
     # $1: PID of the process
     ps -p $1 -o comm=
 }
 
 
-function topid(){
+topid(){
     # $1: name of the process
     ps -C $1 -o pid=
 }
 
 
-function astr() {
+astr() {
     local grepcase OPTIND usage opt filePattern fileCase caseOptCounter
 
     OPTIND=1
@@ -1005,7 +1005,7 @@ function astr() {
 }
 
 # Swap 2 files around, if they exist (from Uzi's bashrc):
-function swap() {
+swap() {
     local tmp file_size space_left_on_target i first_file sec_file
 
     tmp="/tmp/${FUNCNAME}_function_tmpFile.$RANDOM"
@@ -1078,7 +1078,7 @@ function swap() {
 }
 
 # list current directory and search for a file/dir by name:
-function lgrep() {
+lgrep() {
     local src srcdir usage exact OPTIND
 
     usage="$FUNCNAME  [-e]  filename_to_grep  [dir_to_look_from]\n             -e  search for exact filename"
@@ -1124,7 +1124,7 @@ function lgrep() {
 }
 
 
-function histgrep() {
+histgrep() {
     local input
 
     readonly input="$*"
@@ -1138,13 +1138,13 @@ function histgrep() {
 
 # Make your directories and files access rights sane.
 # (sane as in rw for owner, r for group, none for others)
-function sanitize() {
+sanitize() {
     [[ -z "$@" ]] && { err "provide a file/dir name plz." "$FUNCNAME"; return 1; }
     [[ ! -e "$@" ]] && { err "[$*] does not exist." "$FUNCNAME"; return 1; }
     chmod -R u=rwX,g=rX,o= -- "$@";
 }
 
-function sanitize_ssh() {
+sanitize_ssh() {
     local node="$*"
 
     [[ -z "$node" ]] && { err "provide a file/dir name plz. (most likely you want the .ssh dir)" "$FUNCNAME"; return 1; }
@@ -1156,9 +1156,9 @@ function sanitize_ssh() {
     chmod -R u=rwX,g=,o= -- "$node";
 }
 
-function ssh_sanitize() { sanitize_ssh "$@"; } # alias for sanitize_ssh
+ssh_sanitize() { sanitize_ssh "$@"; } # alias for sanitize_ssh
 
-function myip() {  # Get internal & external ip addies:
+myip() {  # Get internal & external ip addies:
     local connected_interface interfaces if_dir interface external_ip
 
     if_dir="/sys/class/net"
@@ -1218,10 +1218,10 @@ function myip() {  # Get internal & external ip addies:
     unset __get_internal_ip_for_if
 }
 
-function whatsmyip() { myip; }  # alias for myip
+whatsmyip() { myip; }  # alias for myip
 
 # !! lrzip might offer best compression when it comes to text: http://unix.stackexchange.com/questions/78262/which-file-compression-software-for-linux-offers-the-highest-size-reduction
-function compress() {
+compress() {
     local usage file type opt OPTIND
     file="$1"
     type="$2"
@@ -1261,25 +1261,25 @@ function compress() {
 }
 
 # alias for compress
-function pack() { compress $@; }
+pack() { compress $@; }
 
 # Creates an archive (*.tar.gz) from given directory.
-function maketar() { tar cvzf "${1%%/}.tar.gz" -- "${1%%/}/"; }
+maketar() { tar cvzf "${1%%/}.tar.gz" -- "${1%%/}/"; }
 
 # Creates an archive (*.tar.bz2) from given directory.
 # j - use bzip2 compression rather than z option  (heavier compression)
-function maketar2() { tar cvjf "${1%%/}.tar.bz2" -- "${1%%/}/"; }
+maketar2() { tar cvjf "${1%%/}.tar.bz2" -- "${1%%/}/"; }
 
 # Create a rar archive.
 # -m# - compresson lvl, 5 being max level, 0 just storage;
-function makerar() {
+makerar() {
     check_progs_installed rar || return 1
 
     rar a -r -rr10 -m4 -- "${1%%/}.rar"  "${1%%/}/"
 }
 
 # Create a ZIP archive of a file or folder.
-function makezip() {
+makezip() {
     check_progs_installed zip || return 1
 
     zip -r "${1%%/}.zip" -- "$1"
@@ -1287,20 +1287,20 @@ function makezip() {
 
 # Create a 7z archive of a file or folder.
 # -mx=# - compression lvl, 9 being highest (ultra)
-function make7z() {
+make7z() {
     check_progs_installed 7z || return 1
 
     7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on -- "${1%%/}.7z" "$1"
 }
 
 # alias for extract
-function unpack() { extract "$@"; }
+unpack() { extract "$@"; }
 
 # helper wrapper for uncompressing archives. it uncompresses into new directory, which
 # name is the same as the archive's, minus the file extension. this avoids the situations
 # where gazillion files are being extracted into workin dir. note that if the dir
 # already exists, then unpacking fails (since mkdir fails).
-function extract() {
+extract() {
     local file="$*"
     local file_without_extension="${file%.*}"
     #file_extension="${file##*.}"
@@ -1423,9 +1423,9 @@ xmlformat() {
     xmllint --format "$@" | "$EDITOR"  "+set foldlevel=99" -;
 }
 
-function xmlf() { xmlformat "$@"; } # alias for xmlformat;
+xmlf() { xmlformat "$@"; } # alias for xmlformat;
 
-function createUsbIso() {
+createUsbIso() {
     local file device mountpoint cleaned_devicename usage override_dev_partitioncheck OPTIND partition
     local reverse inf ouf full_lsblk_output
 
@@ -1545,7 +1545,7 @@ function createUsbIso() {
 #######################
 ## Setup github repo ##
 #######################
-function mkgit() {
+mkgit() {
     local user passwd repo dir project_name OPTIND opt usage mainOptCounter http_statuscode
     local newly_created_dir
 
@@ -2354,25 +2354,25 @@ fo() {
     #fi
 }
 
-function sethometime() { setspaintime; }  # home is where you make it;
+sethometime() { setspaintime; }  # home is where you make it;
 
-function setromaniatime() {
+setromaniatime() {
     __settz Europe/Bucharest
 }
 
-function setestoniatime() {
+setestoniatime() {
     __settz Europe/Tallinn
 }
 
-function setgibtime() {
+setgibtime() {
     __settz Europe/Gibraltar
 }
 
-function setspaintime() {
+setspaintime() {
     __settz Europe/Madrid
 }
 
-function __settz() {
+__settz() {
     local tz
 
     readonly tz="$*"
@@ -2385,7 +2385,7 @@ function __settz() {
     return $?
 }
 
-function killmenao() {
+killmenao() {
     confirm "you sure?" || return
     clear
     report 'you ded.' "$FUNCNAME"
@@ -2478,7 +2478,7 @@ g() {
 # consider also https://github.com/spotify/docker-gc
 #
 # from http://stackoverflow.com/questions/32723111/how-to-remove-old-and-unused-docker-images
-function dcleanup() {
+dcleanup() {
     check_progs_installed docker || return 1
 
     # TODO: don't report err status perhaps? might be ok, which also explains the 2>/dev/nulls;
@@ -2490,7 +2490,7 @@ function dcleanup() {
 
 
 # display available APs and their basic info
-function wifi_list() {
+wifi_list() {
     local wifi_device_file
 
     readonly wifi_device_file="$_WIRELESS_IF"
@@ -2502,7 +2502,7 @@ function wifi_list() {
 }
 
 
-function keepsudo() {
+keepsudo() {
     check_progs_installed sudo || return 1
 
     while true; do
@@ -2553,13 +2553,13 @@ mvf() {
 ########################
 ## Make dir && Follow ##
 ########################
-function mkcd() {
+mkcd() {
     [[ -z "$@" ]] && { err "name of a directory to be created required." "$FUNCNAME"; return 1; }
     mkdir -p -- "$@" && cd -- "$@"
 }
 
 
-function mkf() { mkcd "$@"; }  # alias to mkcd
+mkf() { mkcd "$@"; }  # alias to mkcd
 
 #####################################
 ## Take screenshot of main monitor ##
@@ -2644,7 +2644,7 @@ ytconvert() {
 # Copies our public key to clipboard
 #
 # @returns {void}
-function pubkey() {
+pubkey() {
     local key contents
     readonly key="$HOME/.ssh/id_rsa.pub"
 
@@ -2656,7 +2656,9 @@ function pubkey() {
 }
 
 
-# FZF based functions
+##############################################
+# FZF based functions                       ##
+##############################################
 # see  https://github.com/junegunn/fzf/wiki/Examples
 
 
@@ -2869,14 +2871,24 @@ fstash() {
 }
 
 
-# select recent file from fasd database and open for editing
+# select recent file with fasd and open for editing
 v() {
     local file editor
 
-    command -v nvim >/dev/null && editor=nvim || editor="$EDITOR"
-    check_progs_installed "$editor" || return 1
+    check_progs_installed "$EDITOR" || return 1
 
-    file="$(fasd -Rfl "$1" | fzf -1 -0 --no-sort +m)" && $editor "${file}" || return 1
+    file="$(fasd -Rfl "$1" | fzf -1 -0 --no-sort +m)" && $EDITOR "${file}" || return 1
+}
+
+
+# select recent dir with fasd and cd into
+d() {
+    local dir
+
+    #command -v ranger >/dev/null && fm=ranger
+    #check_progs_installed "$fm" || return 1
+
+    dir="$(fasd -Rdl "$1" | fzf -1 -0 --no-sort +m)" && cd -- "${dir}" || return 1
 }
 
 
