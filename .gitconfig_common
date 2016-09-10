@@ -81,10 +81,6 @@
     delete-branch-remote = push origin --delete
     delete-remote-branch = push origin --delete
     branch-delete-remote = push origin --delete
-    ;  TODO: remove origin? otherwise you won't get autocompletion on brances:
-    ;  or depregate these and remember simply the -u flag?
-    ;branch-push-new = push -u origin
-    ;push-new-branch = push -u origin
 
 [gitflow "branch"]
 	master = master

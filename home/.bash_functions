@@ -379,6 +379,9 @@ __find_top_big_small_fun() {
             err "number of top big items to display has to be... y'know, a digit" "$FUNCNAME_"
             echo -e "$usage"
             return 1
+        elif [[ "$itemsToShow" -eq 0 ]]; then
+            err "something larger than 0 would make sense." "$FUNCNAME_"
+            return 1
         fi
     else
         itemsToShow=10  # default
@@ -2481,6 +2484,9 @@ g() {
 dcleanup() {
     check_progs_installed docker || return 1
 
+    report "!!! make sure the containers you want to keep are running; otherwise you'll prolly lose them !!!" "$FUNCNAME"
+    confirm "\ncontinue?" || return
+
     # TODO: don't report err status perhaps? might be ok, which also explains the 2>/dev/nulls;
     docker rm -v $(docker ps --filter status=exited -q 2>/dev/null) 2>/dev/null || { err "something went wrong with removing exited containers." "$FUNCNAME"; }
     docker rmi $(docker images --filter dangling=true -q 2>/dev/null) 2>/dev/null || { err "something went wrong with removing dangling images." "$FUNCNAME"; }
@@ -2490,13 +2496,15 @@ dcleanup() {
 
 
 # display available APs and their basic info
-wifi_list() {
+wifilist() {
     local wifi_device_file
 
     readonly wifi_device_file="$_WIRELESS_IF"
 
-    [[ -r "$wifi_device_file" ]] || { err "can't read file \"$wifi_device_file\"; probably you have no wireless devices." "$FUNCNAME"; }
-    [[ -z "$(cat "$wifi_device_file")" ]] && { err "$wifi_device_file is empty." "$FUNCNAME"; }
+    check_progs_installed nmcli || return 1
+
+    [[ -r "$wifi_device_file" ]] || { err "can't read file [$wifi_device_file]; probably you have no wireless devices." "$FUNCNAME"; }
+    [[ -z "$(cat -- "$wifi_device_file")" ]] && { err "$wifi_device_file is empty." "$FUNCNAME"; }
     nmcli device wifi list
     return $?
 }
