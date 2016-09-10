@@ -1551,11 +1551,11 @@ function mkgit() {
 
     mainOptCounter=0
     readonly usage="usage:   $FUNCNAME  -g|-b|-w  <dirname> [project_name]
-         -g   create repo in github
-         -b   create repo in bitbucket
-         -w   create repo in work (not supported)
+           -g   create repo in github
+           -b   create repo in bitbucket
+           -w   create repo in work (not supported as of now)
 
-         if  project_name  is not given, then project name will be same as  dirname  "
+     if  [project_name]  is not given, then project name will be same as  [dirname]"
 
     while getopts "hgbw" opt; do
         case "$opt" in
@@ -1672,7 +1672,7 @@ function mkgit() {
     fi
 
     pushd -- "$dir" &> /dev/null || return 1
-    git init || { err "bad return from git init" "$FUNCNAME"; return 1; }
+    git init || { err "bad return from git init - code [$?]" "$FUNCNAME"; return 1; }
     git remote add origin "git@${repo}:${user}/${project_name}.git" || { err "adding remote failed. abort." "$FUNCNAME"; return 1; }
     echo
 
@@ -1680,7 +1680,7 @@ function mkgit() {
         report "adding README.md ..." "$FUNCNAME"
         touch README.md
         git add README.md
-        git commit -a -m 'inital setup - automated'
+        git commit -a -m 'inital setup, adding readme - automated'
         git push -u origin master
     fi
 }
@@ -1755,7 +1755,7 @@ gito() {
     #[[ $(echo "$match" | wc -l) -gt 1 ]] && match="$(echo "$match" | bemenu -i -l 20 -p "$editor")"
     [[ -z "${match[*]}" ]] && return 1
     match="$git_root/${match[0]}"  # convert to absolute
-    [[ -f "$match" ]] || { err "\"$match\" is not a regular file." "$FUNCNAME"; return 1; }
+    [[ -f "$match" ]] || { err "[$match] is not a regular file." "$FUNCNAME"; return 1; }
 
     $editor -- "$match"
 }
@@ -1863,7 +1863,7 @@ gfrs() {
         return 1
     fi
 
-    glt || { err "unable to find latest tag. not affecting ${FUNCNAME}(), continuing..." "$FUNCNAME"; }
+    glt || err "unable to find latest tag. not affecting ${FUNCNAME}(), continuing..." "$FUNCNAME"
 
     git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort." "$FUNCNAME"; return 1; }
     git flow release start -F "$tag"
@@ -2665,18 +2665,19 @@ fd() {
     local dir src
 
     readonly src="$1"
-    [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be source dir." "$FUNCNAME"; return 1; }
+    [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir." "$FUNCNAME"; return 1; }
     dir=$(find "${src:-.}" -path '*/\.*' -prune \
                     -o -type d -print 2> /dev/null | fzf +m) && cd -- "$dir"
 }
 
 
 # fda - including hidden directories
+# kinda same as `cd **<Tab>`
 fda() {
     local dir src
 
     readonly src="$1"
-    [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be source dir." "$FUNCNAME"; return 1; }
+    [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir." "$FUNCNAME"; return 1; }
     dir=$(find "${src:-.}" -type d 2> /dev/null | fzf +m) && cd -- "$dir"
 }
 
@@ -2686,19 +2687,19 @@ fdu() {
     local dirs dir src
 
     readonly src="$1"
-    [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be source dir." "$FUNCNAME"; return 1; }
+    [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir." "$FUNCNAME"; return 1; }
 
     dirs=()
     _get_parent_dirs() {
         if [[ -d "${1}" ]]; then dirs+=("$1"); else return; fi
         if [[ "${1}" == '/' ]]; then
-            for _dir in "${dirs[@]}"; do echo $_dir; done
+            for _dir in "${dirs[@]}"; do echo "$_dir"; done
         else
-            _get_parent_dirs $(dirname "$1")
+            _get_parent_dirs $(dirname -- "$1")
         fi
     }
 
-    dir=$(_get_parent_dirs $(realpath "${src:-$(pwd)}") | fzf-tmux --tac)
+    dir=$(_get_parent_dirs $(realpath -- "${src:-$(pwd)}") | fzf-tmux --tac)
     cd -- "$dir"
 
     unset _get_parent_dirs
@@ -2711,7 +2712,7 @@ cdf() {
     local file dir pattern
 
     readonly pattern="$1"
-    [[ -d "$pattern" ]] && report "fyi, input argument is a search pattern, not source dir" "$FUNCNAME"
+    [[ -d "$pattern" ]] && report "fyi, input argument has to be a search pattern, not starting dir." "$FUNCNAME"
 
     file=$(fzf +m -q "$pattern") && dir=$(dirname -- "$file") && cd -- "$dir"
 }
@@ -2823,39 +2824,61 @@ fcs() {
 }
 
 
-# fstash - easier way to deal with stashes
-# type fstash to get a list of your stashes
-# enter shows you the contents of the stash
-# ctrl-d shows a diff of the stash against your current HEAD
-# ctrl-b checks the stash out as a branch, for easier merging
+# fstash - easier way to deal with stashes; type fstash to get a list of your stashes.
+# - enter shows you the contents of the stash
+# - ctrl-d asks to drop the selected stash
+# - ctrl-b checks the stash out as a branch, for easier merging (TODO: not using)
 fstash() {
-    local out q k sha
+    local out q k stsh stash_name_regex stash_name
+
+    readonly stash_name_regex='\s*\S+\s\S+\s\S+\s\S+\s\S+\s\S+\s\S+\s\K(.*)'
 
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
     while out=$(
-        git stash list --pretty="%C(yellow)%h %>(14)%Cgreen%cr %C(blue)%gs" |
+        git stash list --pretty="%C(red)%gd %C(yellow)%h %>(14)%Cgreen%cr %C(blue)%gs" |
             fzf --ansi --no-sort --query="$q" --print-query \
                 --expect=ctrl-d,ctrl-b); do
         mapfile -t out <<< "$out"
         q="${out[0]}"
         k="${out[1]}"
-        sha="${out[-1]}"
-        sha="${sha%% *}"
-        [[ -z "$sha" ]] && continue
+        stsh="${out[-1]}"
+        stsh="${stsh%% *}"
+        [[ -z "$stsh" ]] && continue
         if [[ "$k" == 'ctrl-d' ]]; then
-            #git diff "$sha"
-            git difftool --dir-diff $sha
+            #git diff "$stsh"
+            #git difftool --dir-diff $stsh
+            stash_name="$(echo "${out[2]}" | grep -Po "$stash_name_regex")"
+
+            confirm " -> sure you want to drop stash $stsh ($stash_name)?" || continue
+            git stash drop "$stsh" || { err "something went wrong (code $?)" "$FUNCNAME"; return 1; }
         elif [[ "$k" == 'ctrl-b' ]]; then
-            report "not using c-b one atm" && return
+            report "not using c-b binding atm" && return
             git stash branch "stash-$sha" "$sha"
             break;
-        else
+        else  # default, ie diff view mode
             #git stash show -p "$sha"
-            git difftool --dir-diff "$sha"^ "$sha"
+            git difftool --dir-diff "$stsh"^ "$stsh"
         fi
     done
+
+    # copy last viewed stash id to clipboard:
+    [[ -z "$k" && -n "$stsh" ]] \
+        && copy_to_clipboard "$stsh" \
+        && echo && report " -> copied [$stsh] to clipboard" "$FUNCNAME"
 }
+
+
+# select recent file from fasd database and open for editing
+v() {
+    local file editor
+
+    command -v nvim >/dev/null && editor=nvim || editor="$EDITOR"
+    check_progs_installed "$editor" || return 1
+
+    file="$(fasd -Rfl "$1" | fzf -1 -0 --no-sort +m)" && $editor "${file}" || return 1
+}
+
 
 ##############################################
 ## Colored Find                             ##
