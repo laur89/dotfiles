@@ -313,28 +313,34 @@ ffindproc() {
 # find top 5/x biggest or smallest nodes:
 __find_top_big_small_fun() {
     local usage opt OPTIND itemsToShow file_type maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_
-    local bigOrSmall du_include_regular_files duMaxDepthParam filetypeOptionCounter
+    local bigOrSmall du_include_regular_files duMaxDepthParam filetypeOptionCounter i
 
-    reverse="$1" # this basically decides whether we're showing top big or small.
-    du_size_unit="$2" # default unit provided by the invoker
+    reverse="$1"       # this basically decides whether we're showing top big or small.
+    du_size_unit="$2"  # default unit provided by the invoker
     FUNCNAME_="$3"
     bigOrSmall="$4"
-    shift 4
+    itemsToShow="$5"   # default top number of tiems displayed
+    shift 5
 
     filetypeOptionCounter=0
 
-    if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ && "${#du_size_unit}" -eq 1 ]]; then
-        err "unsupported du block size unit: [$du_size_unit]" "$FUNCNAME_"
-        echo -e "$usage"
-        return 1
-    fi
-
     usage="\n$FUNCNAME_: find top $bigOrSmall nodes from current dir.\nif node type not specified, defaults to searching for everything.\n
-    Usage: $FUNCNAME_  [-f] [-d] [-L] [-m depth]  [nr_of_top_items_to_show]
+    Usage: $FUNCNAME_  [-f] [-d] [-L] [-m depth]  [nr_of_top_items_to_show]  [block_size_unit]
         -f  search only for regular files
         -d  search only for directories
         -L  follow/dereference symlinks
-        -m<digit>   max depth to descend; unlimited by default."
+        -m<digit>   max depth to descend; unlimited by default.
+
+        note that optional  args [nr_of_top_items_to_show]  and  [block_size_unit]  can be
+        given in either order.
+
+        examples:
+            $FUNCNAME_ 20       - seek top 20 $bigOrSmall files and dirs;
+            $FUNCNAME_ -f 15 G  - seek top 15 $bigOrSmall files and present their sizes in gigas;
+            $FUNCNAME_ -f G 15  - same as previous;
+            $FUNCNAME_ -dm3 K   - seek top $bigOrSmall dirs and present their sizes
+                                   in kilos; descend up to 3 levels from current dir.
+"
 
     while getopts "m:fdLh" opt; do
         case "$opt" in
@@ -355,10 +361,25 @@ __find_top_big_small_fun() {
         esac
     done
 
-    itemsToShow="$1"
 
-    if [[ "$#" -gt 1 ]]; then
-        err "maximum of one arg allowed" "$FUNCNAME_"
+    if [[ "$#" -gt 2 ]]; then
+        err "maximum of 2 args are allowed" "$FUNCNAME_"
+        echo -e "$usage"
+        return 1
+    fi
+
+    # parse optional args:
+    for i in "$@"; do
+        if is_digit "$i"; then
+            [[ "$i" -eq 0 ]] && { err "something larger than 0 would make sense." "$FUNCNAME_"; return 1; }
+            itemsToShow="$i"
+        else
+            du_size_unit="$i"
+        fi
+    done
+
+    if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ && "${#du_size_unit}" -eq 1 ]]; then
+        err "unsupported du block size unit: [$du_size_unit]" "$FUNCNAME_"
         echo -e "$usage"
         return 1
     fi
@@ -372,19 +393,6 @@ __find_top_big_small_fun() {
 
         maxDepthParam="-maxdepth $maxDepth"
         duMaxDepthParam="--max-depth=$maxDepth"
-    fi
-
-    if [[ -n "$itemsToShow" ]]; then
-        if ! is_digit "$itemsToShow"; then
-            err "number of top big items to display has to be... y'know, a digit" "$FUNCNAME_"
-            echo -e "$usage"
-            return 1
-        elif [[ "$itemsToShow" -eq 0 ]]; then
-            err "something larger than 0 would make sense." "$FUNCNAME_"
-            return 1
-        fi
-    else
-        itemsToShow=10  # default
     fi
 
     if [[ "$filetypeOptionCounter" -gt 1 ]]; then
@@ -447,12 +455,12 @@ __find_top_big_small_fun() {
 }
 
 ffindtopbig() {
-    __find_top_big_small_fun "-r" "M" "$FUNCNAME" "large" "$@"
+    __find_top_big_small_fun "-r" "M" "$FUNCNAME" "large" 10 "$@"
 }
 
 ffindtopsmall() {
     #find . -type f -exec ls -s --block-size=K {} \; | sort -n | head -$itemsToShow 2>/dev/null
-    __find_top_big_small_fun "" "K" "$FUNCNAME" "small" "$@"
+    __find_top_big_small_fun "" "K" "$FUNCNAME" "small" 10 "$@"
 }
 
 # find smaller/bigger than Xmegas files
