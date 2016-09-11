@@ -324,7 +324,7 @@ __find_top_big_small_fun() {
     filetypeOptionCounter=0
 
     if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ && "${#du_size_unit}" -eq 1 ]]; then
-        err "unsupported du block size unit: \"$du_size_unit\"" "$FUNCNAME_"
+        err "unsupported du block size unit: [$du_size_unit]" "$FUNCNAME_"
         echo -e "$usage"
         return 1
     fi
@@ -469,15 +469,15 @@ __find_bigger_smaller_common_fun() {
     filetypeOptionCounter=0
 
     if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ && "${#du_size_unit}" -eq 1 ]]; then
-        err "unsupported du block size unit: \"$du_size_unit\"" "$FUNCNAME_"
+        err "unsupported du block size unit: [$du_size_unit]" "$FUNCNAME_"
         echo -e "$usage"
         return 1
     fi
 
     usage="\n$FUNCNAME_: find nodes $biggerOrSmaller than X $du_size_unit from current dir.\nif node type not specified, defaults to searching for everything.\n
-    Usage: $FUNCNAME_  [-f] [-d] [-L] [-m depth]  base_size_in_<du_size_unit>
+    Usage: $FUNCNAME_  [-f] [-d] [-L] [-m depth]  base_size_in_[du_size_unit]
 
-        the <du_size_unit> can be any of [KMGTPEZYB]; if not provided, defaults to $du_size_unit.
+        the [du_size_unit] can be any of [KMGTPEZYB]; if not provided, defaults to $du_size_unit.
         ('B' is for bytes; KB, MB etc for base 1000 not supported)
 
         -f  search only for regular files
@@ -539,7 +539,7 @@ __find_bigger_smaller_common_fun() {
 
         if ! is_digit "$sizeArgLastChar"; then
             if ! [[ "$sizeArgLastChar" =~ ^[KMGTPEZYB]+$ ]]; then
-                err "unsupported du block size unit provided: \"$sizeArgLastChar\"" "$FUNCNAME_"
+                err "unsupported du block size unit provided: [$sizeArgLastChar]" "$FUNCNAME_"
                 return 1
             fi
 
@@ -554,7 +554,7 @@ __find_bigger_smaller_common_fun() {
             echo -e "$usage"
             return 1
         elif ! is_digit "$sizeArg"; then
-            err "base size has to be a positive digit, but was \"$sizeArg\"." "$FUNCNAME_"
+            err "base size has to be a positive digit, but was [$sizeArg]." "$FUNCNAME_"
             echo -e "$usage"
             return 1
         fi
@@ -597,7 +597,7 @@ __find_bigger_smaller_common_fun() {
         find_size_unit="$du_size_unit"
 
         if ! [[ "$find_size_unit" =~ ^[KMGB]+$ ]]; then
-            err "unsupported block size unit for find: \"$find_size_unit\". refer to man find and search for \"-size\"" "$FUNCNAME_"
+            err "unsupported block size unit for find: [$find_size_unit]. refer to man find and search for [-size]" "$FUNCNAME_"
             echo -e "$usage"
             return 1
 
@@ -646,7 +646,8 @@ __find_bigger_smaller_common_fun() {
 
         [[ "$file_type" != "-type d" ]] && readonly du_include_regular_files="--all"  # if not dirs only;
 
-        du $follow_links $du_include_regular_files $du_blk_sz $duMaxDepthParam --threshold=${plusOrMinus}${sizeArg}${du_size_unit} 2>/dev/null | \
+        du $follow_links $du_include_regular_files $du_blk_sz $duMaxDepthParam \
+                --threshold=${plusOrMinus}${sizeArg}${du_size_unit} 2>/dev/null | \
                 sort -n $reverse
     fi
 }
@@ -684,7 +685,7 @@ aptreset() {
         report "deleting contents of $apt_lists_dir" "$FUNCNAME"
         sudo rm -rf $apt_lists_dir/*
     else
-        err "$apt_lists_dir is not a dir; can't delete the contents in it." "$FUNCNAME"
+        err "[$apt_lists_dir] is not a dir; can't delete the contents in it." "$FUNCNAME"
     fi
 
     report "running apt-get clean..." "$FUNCNAME"
@@ -2478,13 +2479,13 @@ g() {
 # dockers
 #############################
 
-# consider also https://github.com/spotify/docker-gc
-#
 # from http://stackoverflow.com/questions/32723111/how-to-remove-old-and-unused-docker-images
+#
+# consider also https://github.com/spotify/docker-gc
 dcleanup() {
     check_progs_installed docker || return 1
 
-    report "!!! make sure the containers you want to keep are running; otherwise you'll prolly lose them !!!" "$FUNCNAME"
+    report "¡¡¡ make sure the containers you want to keep are running; otherwise you'll lose them !!!" "$FUNCNAME"
     confirm "\ncontinue?" || return
 
     # TODO: don't report err status perhaps? might be ok, which also explains the 2>/dev/nulls;
@@ -2880,23 +2881,23 @@ fstash() {
 
 
 # select recent file with fasd and open for editing
-v() {
+e() {  # mnemonic: edit
     local file editor
 
     check_progs_installed "$EDITOR" || return 1
 
-    file="$(fasd -Rfl "$1" | fzf -1 -0 --no-sort +m)" && $EDITOR "${file}" || return 1
+    file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m)" && $EDITOR "${file}" || return 1
 }
 
 
 # select recent dir with fasd and cd into
-d() {
+d() {  # mnemonic: dir
     local dir
 
     #command -v ranger >/dev/null && fm=ranger
     #check_progs_installed "$fm" || return 1
 
-    dir="$(fasd -Rdl "$1" | fzf -1 -0 --no-sort +m)" && cd -- "${dir}" || return 1
+    dir="$(fasd -Rdl "$@" | fzf -1 -0 --no-sort +m)" && cd -- "${dir}" || return 1
 }
 
 
@@ -2926,8 +2927,8 @@ export _MARKPATH
 
 # jump to mark:
 function jj {
-    [[ -d "$_MARKPATH" ]] || { err "no marks saved in ${_MARKPATH} - dir not existing." "$FUNCNAME"; return 1; }
-    cd -P "$_MARKPATH/$1" 2>/dev/null || err "no mark [$1] in [$_MARKPATH]" "$FUNCNAME"
+    [[ -d "$_MARKPATH" ]] || { err "no marks saved in ${_MARKPATH} - dir does not exist." "$FUNCNAME"; return 1; }
+    cd -P -- "$_MARKPATH/$1" 2>/dev/null || err "no mark [$1] in [$_MARKPATH]" "$FUNCNAME"
 }
 
 # mark:
@@ -2944,7 +2945,7 @@ function jm {
     [[ "$overwrite" -eq 1 && -h "$target" ]] && rm -- "$target" >/dev/null 2>/dev/null
     [[ -h "$target" ]] && { err "[$target] already exists; use jmo() or $FUNCNAME -o to overwrite." "$FUNCNAME"; return 1; }
 
-    ln -s "$(pwd)" "$target"
+    ln -s -- "$(pwd)" "$target"
     return $?
 }
 
@@ -2956,13 +2957,13 @@ function jmo {
 
 # un-mark:
 function jum {
-    [[ -d "$_MARKPATH" ]] || { err "no marks saved in ${_MARKPATH} - dir not existing." "$FUNCNAME"; return 1; }
+    [[ -d "$_MARKPATH" ]] || { err "no marks saved in [$_MARKPATH] - dir does not exist." "$FUNCNAME"; return 1; }
     rm -i -- "$_MARKPATH/$1"
 }
 
 # list all saved marks:
 function jjj {
-    [[ -d "$_MARKPATH" ]] || { err "no marks saved in ${_MARKPATH} - dir not existing." "$FUNCNAME"; return 1; }
+    [[ -d "$_MARKPATH" ]] || { err "no marks saved in [$_MARKPATH] - dir does not exist." "$FUNCNAME"; return 1; }
     ls -l -- "$_MARKPATH" | sed 's/  / /g' | cut -d' ' -f9- | sed 's/ -/\t-/g' && echo
 }
 
