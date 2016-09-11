@@ -11,7 +11,7 @@ if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
     if [[ -r "$_SCRIPTS_COMMONS" ]]; then
         source "$_SCRIPTS_COMMONS"
     else
-        echo -e "\nError: common file \"$_SCRIPTS_COMMONS\" not found!! Many functions will be unusable!!!"
+        echo -e "\nError: common file [$_SCRIPTS_COMMONS] not found!! Many functions will be unusable!!!"
         # !do not exit, or you won't be able to open shell without the commons file being
         # present!
     fi
@@ -19,7 +19,7 @@ fi
 # =====================================================================
 
 # gnu find wrapper.
-# find files or dirs.
+# find files or dirs based on name or type
 # TODO: refactor the massive spaghetti.
 ffind() {
     local src srcdir iname_arg opt usage OPTIND file_type filetypeOptionCounter exact filetype follow_links
@@ -61,7 +61,7 @@ ffind() {
         -D  delete found nodes  (won't delete nonempty dirs!)
         -q  provide find the -quit flag (exit on first found item)
         -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;
-        -e  search for exact filename, not for a partial (you still can use * wildcards)
+        -e  search for exact filename, not for a partial (you still can use wildcards)
         -p  expand the pattern search for path as well (adds the -path option);
             might want to consider regex, that also searches across the whole path."
 
@@ -246,7 +246,7 @@ ffind() {
     fi
 
     # trailing grep is for coloring only:
-    if [[ "$exact" -eq 1 ]]; then # no regex with exact; they are excluded.
+    if [[ "$exact" -eq 1 ]]; then  # no regex with exact; they are excluded.
         if [[ "$filetype" -eq 1 ]]; then
             # original, all-in-find-command solution; slower, since file command will be launced per every result:
             #find $follow_links "${srcdir:-.}" $maxDepthParam -type f ${iname_arg:--name} "$src" $extra_params -exec sh -c "file -iLb -- \"{}\" | grep -Eq -- '$type_grep'" \; -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
@@ -351,7 +351,7 @@ __find_top_big_small_fun() {
            m) maxDepth="$OPTARG"
               shift $((OPTIND-1))
                 ;;
-           L) follow_links="-L" # common for both find and du
+           L) follow_links="-L"  # common for both find and du
               shift $((OPTIND-1))
                 ;;
            h) echo -e "$usage"
@@ -636,7 +636,7 @@ __find_bigger_smaller_common_fun() {
         # by using eval, but better not.
 
         # old, find+du combo; slow as fkuk:
-        #if [[ "$biggerOrSmaller" == "smaller" ]]; then # meaning that ffindsmallerthan function was invoker
+        #if [[ "$biggerOrSmaller" == "smaller" ]]; then  # meaning that ffindsmallerthan function was invoker
             ##TODO: why doesn't this work? (note the sizeArg in awk):
             ##find . $follow_links -mindepth 1 $maxDepthParam \( $compiledFileTypeArgs \)  -exec du -s --block-size=${du_size_unit} {} \; 2>/dev/null | awk '{var=substr($1, 0, length($1))+0; if (var < "'"$sizeArg"'") printf("%s\t%s\n", $1, $2)}' | sort -n $reverse 2>/dev/null
             #find . $follow_links -mindepth 1 $maxDepthParam \( $compiledFileTypeArgs \)  -exec du -s --block-size=${du_size_unit} {} \; 2>/dev/null | \
@@ -680,7 +680,7 @@ aptsearch() {
     #aptitude search -- "$@"
 }
 
-aptsrc() { aptsearch "$@"; } # alias
+aptsrc() { aptsearch "$@"; }  # alias
 
 aptreset() {
     local apt_lists_dir
@@ -807,7 +807,7 @@ ffstr() {
                 err "err in filename pattern: nr of periods (.) was less than stars (*); are you misusing regex?" "$FUNCNAME"
                 return 1
             fi
-        else # no regex, make sure find metacharacters are not mistaken for regex ones:
+        else  # no regex, make sure find metacharacters are not mistaken for regex ones:
             if [[ "$file_pattern" == *\.\** ]]; then
                 err "err in filename pattern: only use asterisks (*) for wildcards, not .*; provide -r flag if you want to use regex." "$FUNCNAME"
                 return 1
@@ -1021,8 +1021,8 @@ swap() {
     local tmp file_size space_left_on_target i first_file sec_file
 
     tmp="/tmp/${FUNCNAME}_function_tmpFile.$RANDOM"
-    first_file="${1%/}" # strip trailing slash
-    sec_file="${2%/}" # strip trailing slash
+    first_file="${1%/}"  # strip trailing slash
+    sec_file="${2%/}"    # strip trailing slash
 
     count_params 2 $# equal || return 1
     [[ ! -e "$first_file" ]] && err "$first_file does not exist" "$FUNCNAME" && return 1
@@ -1168,7 +1168,7 @@ sanitize_ssh() {
     chmod -R u=rwX,g=,o= -- "$node";
 }
 
-ssh_sanitize() { sanitize_ssh "$@"; } # alias for sanitize_ssh
+ssh_sanitize() { sanitize_ssh "$@"; }  # alias for sanitize_ssh
 
 myip() {  # Get internal & external ip addies:
     local connected_interface interfaces if_dir interface external_ip
@@ -1234,7 +1234,8 @@ whatsmyip() { myip; }  # alias for myip
 
 # !! lrzip might offer best compression when it comes to text: http://unix.stackexchange.com/questions/78262/which-file-compression-software-for-linux-offers-the-highest-size-reduction
 compress() {
-    local usage file type opt OPTIND
+    local usage file type opt
+
     file="$1"
     type="$2"
     usage="$FUNCNAME  fileOrDir  [zip|tar|rar|7z]\n\tif optional second arg not provided, compression type defaults to tar (tar.bz2) "
@@ -1252,7 +1253,7 @@ compress() {
 
     [[ $# -eq 1 || $# -eq 2 ]] || { err "gimme file/dir to compress plox.\n" "$FUNCNAME"; echo -e "$usage"; return 1; }
     [[ -e "$file" ]] || { err "$file doesn't exist." "$FUNCNAME"; echo -e "\n\n$usage"; return 1; }
-    [[ -z "$type" ]] && { report "no compression type selected, defaulting to tar.bz2\n" "$FUNCNAME"; type="tar"; } # default to tar
+    [[ -z "$type" ]] && { report "no compression type selected, defaulting to tar.bz2\n" "$FUNCNAME"; type="tar"; }  # default to tar
 
     case "$type" in
         zip) makezip "$file"
@@ -1272,8 +1273,7 @@ compress() {
     esac
 }
 
-# alias for compress
-pack() { compress $@; }
+pack() { compress "$@"; }  # alias for compress
 
 # Creates an archive (*.tar.gz) from given directory.
 maketar() { tar cvzf "${1%%/}.tar.gz" -- "${1%%/}/"; }
@@ -1326,13 +1326,13 @@ extract() {
     fi
 
     case "$file" in
-        *.tar.bz2)   file_without_extension="${file_without_extension%.*}" # because two extensions
+        *.tar.bz2)   file_without_extension="${file_without_extension%.*}"  # because two extensions
                         mkdir -- "$file_without_extension" && tar xjf "$file" -C "$file_without_extension"
                         ;;
-        *.tar.gz)    file_without_extension="${file_without_extension%.*}" # because two extensions
+        *.tar.gz)    file_without_extension="${file_without_extension%.*}"  # because two extensions
                         mkdir -- "$file_without_extension" && tar xzf "$file" -C "$file_without_extension"
                         ;;
-        *.tar.xz)    file_without_extension="${file_without_extension%.*}" # because two extensions
+        *.tar.xz)    file_without_extension="${file_without_extension%.*}"  # because two extensions
                         mkdir -- "$file_without_extension" && tar xpvf "$file" -C "$file_without_extension"
                         ;;
         *.bz2)       check_progs_installed bunzip2 || return 1
@@ -1417,7 +1417,7 @@ clock() {
     while true; do
         clear
         echo "=========="
-        echo " $(date +"%R:%S") " # echo for padding
+        echo " $(date +"%R:%S") "  # echo for padding
         echo "=========="
         sleep 1
     done
@@ -1435,7 +1435,7 @@ xmlformat() {
     xmllint --format "$@" | "$EDITOR"  "+set foldlevel=99" -;
 }
 
-xmlf() { xmlformat "$@"; } # alias for xmlformat;
+xmlf() { xmlformat "$@"; }  # alias for xmlformat;
 
 createUsbIso() {
     local file device mountpoint cleaned_devicename usage override_dev_partitioncheck OPTIND partition
@@ -1471,7 +1471,7 @@ createUsbIso() {
     done
 
     readonly file="$1"
-    readonly device="${2%/}" # strip trailing slash
+    readonly device="${2%/}"  # strip trailing slash
 
     readonly cleaned_devicename="${device##*/}"  # strip everything before last slash (slash included)
 
@@ -1567,7 +1567,7 @@ mkgit() {
            -b   create repo in bitbucket
            -w   create repo in work (not supported as of now)
 
-     if  [project_name]  is not given, then project name will be same as  [dirname]"
+     if  [project_name]  is not given, then project name will be same as  <dirname>"
 
     while getopts "hgbw" opt; do
         case "$opt" in
@@ -1640,35 +1640,40 @@ mkgit() {
 
     # create remote repo, if not existing:
     if ! git ls-remote "git@${repo}:${user}/${project_name}" &> /dev/null; then
-        if [[ "$repo" == 'github.com' ]]; then
-            readonly http_statuscode="$(curl -sL \
-                -w '%{http_code}' \
-                -u "$user:$passwd" \
-                https://api.github.com/user/repos \
-                -d "{ \"name\":\"$project_name\", \"private\":\"true\" }" \
-                -o /dev/null)"
-        elif [[ "$repo" == 'bitbucket.org' ]]; then
-            readonly http_statuscode="$(curl -sL -X POST \
-                -w '%{http_code}' \
-                -H "Content-Type: application/json" \
-                -u "$user:$passwd" \
-                "https://api.bitbucket.org/2.0/repositories/$user/$project_name" \
-                -d '{ "scm": "git", "is_private": "true", "fork_policy": "no_public_forks" }' \
-                -o /dev/null)"
-        elif [[ "$repo" == 'gitlab.work-dev.local' ]]; then
-            # https://forum.gitlab.com/t/create-a-new-project-in-a-group-using-api/1552/2
-            #
-            # find namespaces:
-            #curl --header "PRIVATE-TOKEN: $passwd" "https://${repo}/api/v3/namespaces"
-            # create repo:
-            #curl --header "PRIVATE-TOKEN: token" -X POST "https://gitlab.com/api/v3/projects?name=foobartest4&namespace_id=<found_id>&description=This%20is%20a%20description"
-            err "not supported"
-            return 1
-        else
-            err "unexpected repo [$repo]" "$FUNCNAME"
-            [[ "$newly_created_dir" -eq 1 ]] && rm -r -- "$dir"  # delete the dir we just created
-            return 1
-        fi
+        case "$repo" in
+            'github.com')
+                readonly http_statuscode="$(curl -sL \
+                    -w '%{http_code}' \
+                    -u "$user:$passwd" \
+                    https://api.github.com/user/repos \
+                    -d "{ \"name\":\"$project_name\", \"private\":\"true\" }" \
+                    -o /dev/null)"
+                ;;
+            'bitbucket.org')
+                readonly http_statuscode="$(curl -sL -X POST \
+                    -w '%{http_code}' \
+                    -H "Content-Type: application/json" \
+                    -u "$user:$passwd" \
+                    "https://api.bitbucket.org/2.0/repositories/$user/$project_name" \
+                    -d '{ "scm": "git", "is_private": "true", "fork_policy": "no_public_forks" }' \
+                    -o /dev/null)"
+                ;;
+            'gitlab.work-dev.local')
+                # https://forum.gitlab.com/t/create-a-new-project-in-a-group-using-api/1552/2
+                #
+                # find namespaces:
+                #curl --header "PRIVATE-TOKEN: $passwd" "https://${repo}/api/v3/namespaces"
+                # create repo:
+                #curl --header "PRIVATE-TOKEN: token" -X POST "https://gitlab.com/api/v3/projects?name=foobartest4&namespace_id=<found_id>&description=This%20is%20a%20description"
+                err "not supported"
+                return 1
+                ;;
+            *)
+                err "unexpected repo [$repo]" "$FUNCNAME"
+                [[ "$newly_created_dir" -eq 1 ]] && rm -r -- "$dir"  # delete the dir we just created
+                return 1
+                ;;
+        esac
 
         if [[ "$http_statuscode" != 20* || "${#http_statuscode}" -ne 3 ]]; then
             err "curl request for creating the repo @ [$repo] apparently failed; response code was [$http_statuscode]" "$FUNCNAME"
@@ -1998,9 +2003,7 @@ fog() {
 }
 
 # mnemonic: go go
-gg() {
-    fog "$@"
-}
+gg() { fog "$@"; }
 
 
 # open newest file (as in with last mtime);
@@ -2009,6 +2012,9 @@ gg() {
 #
 # if no args provided, then searches for '*';
 # if no depth arg provided, then defaults to current dir only.
+#
+# TODO: the nth result selection only works, if name arg was provided, meaning `fon 2`
+# won't give expeted result.
 #
 # mnemonic: file open new(est)
 fon() {
@@ -2233,7 +2239,7 @@ fo() {
 
 
     count="${#matches[@]}"
-    # define filetype only by the first node:
+    # define filetype only by the first node:  # TODO: perhaps verify all nodes are of same type?
     filetype="$(file -iLb -- "${matches[0]}")" || { err "issues testing [${matches[0]}] with \$ file cmd" "$FUNCNAME"; return 1; }
 
     # report
@@ -2294,7 +2300,7 @@ fo() {
             [[ "$count" -gt 1 ]] && { report "won't navigate to multiple dirs! select one please" "$FUNCNAME"; return 1; }
             "$file_mngr" -- "${matches[0]}"
             ;;
-        'inode/x-empty; charset=binary')  # touched file
+        'inode/x-empty; charset=binary')
             "$editor" -- "${matches[@]}"
             ;;
         # try keeping doc files' definitions in sync with the ones in ffind()
@@ -2343,7 +2349,7 @@ fo() {
             #application/pdf*)
                 #"$pdf_viewer" "$match"
                 #;;
-            #application/x-elc*) # TODO: what is it exactly?
+            #application/x-elc*)  # TODO: what is it exactly?
                 #"$editor" "$match"
                 #;;
             #'application/x-executable; charset=binary'*)
@@ -2391,10 +2397,9 @@ __settz() {
 
     check_progs_installed timedatectl || return 1
     [[ -z "$tz" ]] && { err "provide a timezone to switch to (e.g. Europe/Madrid)." "$FUNCNAME"; return 1; }
-    [[ "$tz" != */* ]] && { err "invalid timezone format; has to be in a format like \"Europe/Madrid\"." "$FUNCNAME"; return 1; }
+    [[ "$tz" =~ [a-zA-Z]+/[a-zA-Z]+ ]] || { err "invalid timezone format; has to be in a format like [Europe/Madrid]." "$FUNCNAME"; return 1; }
 
-    timedatectl set-timezone "$tz"
-    return $?
+    timedatectl set-timezone "$tz" || { err "setting tz to [$tz] failed (code $?)" "$FUNCNAME"; return 1; }
 }
 
 killmenao() {
@@ -2440,7 +2445,7 @@ g() {
 
     #[[ "$input" == */* ]] && path="${input%%/*}"  # strip everything after last slash(included)
     path="$(dirname -- "$input")"
-    [[ -d "$path" ]] || { err "something went wrong - dirname result \"$path\" is not a dir." "$FUNCNAME"; return 1; }
+    [[ -d "$path" ]] || { err "something went wrong - dirname result [$path] is not a dir." "$FUNCNAME"; return 1; }
     pattern="${input##*/}"  # strip everything before last slash (included)
     [[ -z "$pattern" ]] && { err "no search pattern provided" "$FUNCNAME"; return 1; }
     [[ "$path" == '.' ]] && msg_loc="here" || msg_loc="$path/"
@@ -2452,7 +2457,7 @@ g() {
     match=("$matches")
 
     if [[ -z "$matches" ]]; then
-        err "no dirs in $msg_loc matching \"$pattern\"" "$FUNCNAME"
+        err "no dirs in $msg_loc matching [$pattern]" "$FUNCNAME"
         return 1
     elif [[ "$count" -gt 1 ]]; then
         match=()
@@ -2478,7 +2483,7 @@ g() {
     fi
 
     [[ -z "${match[*]}" ]] && return 1
-    [[ -d "${match[0]}" ]] || { err "no such dir like \"${match[0]}\" in $msg_loc" "$FUNCNAME"; return 1; }
+    [[ -d "${match[0]}" ]] || { err "no such dir like [${match[0]}] in $msg_loc" "$FUNCNAME"; return 1; }
 
     cd -- "${match[0]}"
 }
@@ -2635,7 +2640,7 @@ capture() {
     [[ -n "$name" ]] && readonly name="$dest/${name}.mkv" || { err "need to provide output filename as first arg (without an extension)." "$FUNCNAME"; return 1; }
 
     readonly screen_dimensions="$(xdpyinfo | awk '/dimensions:/{printf $2}')" || { err "unable to find screen dimensions via xdpyinfo (exit code $?)" "$FUNCNAME"; return 1; }
-    [[ "$screen_dimensions" =~ $regex ]] || { err "found screen dimensions \"$screen_dimensions\" do not conform with validation regex \"$regex\"" "$FUNCNAME"; return 1; }
+    [[ "$screen_dimensions" =~ $regex ]] || { err "found screen dimensions [$screen_dimensions] do not conform with validation regex [$regex]" "$FUNCNAME"; return 1; }
 
     #recordmydesktop --display=$DISPLAY --width=1024 height=768 -x=1680 -y=0 --fps=15 --no-sound --delay=10
     #recordmydesktop --display=0 --width=1920 height=1080 --fps=15 --no-sound --delay=10
@@ -2813,18 +2818,36 @@ fcoc() {
 
 
 # fshow - git commit diff browser
+# - enter shows the changes of the commit
+# - ctrl-s lets you squash commits
 fshow() {
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
+    q="$*"
+
     #git log -i --all --graph --source --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative |
-    git log --graph --color=always \
-        --format="%C(auto)%h%d %s %C(black)%C(bold)(%cr) %C(bold blue)<%an>%Creset" "$@" |
-    fzf --ansi --no-sort --reverse --tiebreak=index --bind=ctrl-s:toggle-sort \
-        --bind "ctrl-m:execute:
-                (grep -o '[a-f0-9]\{7\}' | head -1 |
-                xargs -I % sh -c 'git difftool --dir-diff %^ %') << 'FZF-EOF'
-                {}
-FZF-EOF"
+    while out=$(
+            git log --graph --color=always \
+                --format="%C(auto)%h%d %s %C(black)%C(bold)(%cr) %C(bold blue)<%an>%Creset" |
+                fzf --ansi --no-sort --reverse --tiebreak=index --bind=ctrl-z:toggle-sort --query="$q" --print-query \
+                    --expect=ctrl-s); do
+        mapfile -t out <<< "$out"
+        q="${out[0]}"
+        k="${out[1]}"
+        sha="$(echo "${out[-1]}" | grep -Po '\s*\*\s*\K\S+(?=.*)')"
+        [[ "$sha" =~ [a-z0-9]{7} ]] || { err "commit sha was [$sha]" "$FUNCNAME"; return 1; }
+        if [[ "$k" == 'ctrl-s' ]]; then
+            if [[ -n "$q" ]]; then
+                confirm "\nyou've filtered commits by query [$q]; stil continue with rebase?" || continue
+            fi
+
+            git rebase -i "$sha"~
+            continue
+        else
+            git difftool --dir-diff "$sha"^ "$sha"
+        fi
+    done
+
 }
 
 
@@ -2855,9 +2878,9 @@ fstash() {
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
     while out=$(
-        git stash list --pretty="%C(red)%gd %C(yellow)%h %>(14)%Cgreen%cr %C(blue)%gs" |
-            fzf --ansi --no-sort --query="$q" --print-query \
-                --expect=ctrl-d,ctrl-b); do
+            git stash list --pretty="%C(red)%gd %C(yellow)%h %>(14)%Cgreen%cr %C(blue)%gs" |
+                fzf --ansi --no-sort --query="$q" --print-query \
+                    --expect=ctrl-d,ctrl-b); do
         mapfile -t out <<< "$out"
         q="${out[0]}"
         k="${out[1]}"
@@ -2867,7 +2890,7 @@ fstash() {
         if [[ "$k" == 'ctrl-d' ]]; then
             #git diff "$stsh"
             #git difftool --dir-diff $stsh
-            stash_name="$(echo "${out[2]}" | grep -Po "$stash_name_regex")"
+            stash_name="$(echo "${out[-1]}" | grep -Po "$stash_name_regex")"
 
             confirm " -> sure you want to drop stash $stsh ($stash_name)?" || continue
             git stash drop "$stsh" || { err "something went wrong (code $?)" "$FUNCNAME"; return 1; }
@@ -2899,6 +2922,7 @@ e() {  # mnemonic: edit
 
 
 # select recent dir with fasd and cd into
+# note: d clashes with fasd alias; make sure you remove that one
 d() {  # mnemonic: dir
     local dir
 
