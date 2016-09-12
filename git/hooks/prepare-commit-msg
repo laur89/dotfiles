@@ -35,7 +35,8 @@ fi
 if is_work; then
     branch="$(get_git_branch --child)"
     # prepend the commit message with "MAV-<nr>: "
-    [[ "$branch" == MAV-* ]] && sed -i "1i${branch}: " "$1"
-    exit $?
+    #[[ "$branch" == MAV-* ]] && sed -i "1i${branch}: " "$1"
+    [[ "$branch" =~ ^[A-Z]{3}-[0-9]+$ ]] && sed -i "1i${branch}: " "$1"
 fi
 
+exit 0
