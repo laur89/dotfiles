@@ -1,0 +1,48 @@
+#!/bin/bash
+#
+# Post-commit git hook script.
+#######################
+# env vars import has to be the first thing:
+if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
+    SHELL_ENVS=/etc/.bash_env_vars
+
+    if [[ -r "$SHELL_ENVS" ]]; then
+        source "$SHELL_ENVS"
+    else
+        echo -e "\nError: env vars file [$SHELL_ENVS] not found! Abort."
+        exit 1
+    fi
+fi
+
+# import common:
+if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
+    if [[ -r "$_SCRIPTS_COMMONS" ]]; then
+        source "$_SCRIPTS_COMMONS"
+    else
+        echo -e "\nError: common file [$_SCRIPTS_COMMONS] not found! Abort."
+        exit 1
+    fi
+fi
+# =========================
+
+if is_work; then
+    branch="$(get_git_branch)"
+    [[ "$branch" != feature/* ]] && exit 0
+
+    #git remote show origin -n | grep "Fetch URL:" | sed -E 's#^.*/(.*)$#\1#' | sed 's#.git$##'
+    remote_url="$(git remote show origin -n | grep -oP 'Fetch URL:\s*git@\K.*(?=\.git$)')" || exit 0
+    domain="$(echo "$remote_url" | cut -d: -f1)"
+    project="$(echo "$remote_url" | cut -d: -f2)"
+
+    short_sha="$(git log -n 1 --pretty=format:%h HEAD)"
+    long_sha="$(git log -n 1 --pretty=format:%H HEAD)"
+    commit_url="http://${domain}/${project}/commit/${long_sha}"
+
+    comment="${project}: [$short_sha|$commit_url] @ $branch
+
+    $(git log -n 1 --pretty=format:%B HEAD)"
+
+    copy_to_clipboard "$comment" \
+        && report "jira comment on clipboard" && exit 0
+fi
+
