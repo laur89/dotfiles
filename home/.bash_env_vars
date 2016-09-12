@@ -2,13 +2,15 @@
 #
 # !! might be used by root as well!
 #
-export BASE_DATA_DIR="/data"
 export DEFAULT_SSH_USER=laur
 
 # load local (ie non-ssh) system's vars:
 if [[ -z "$PEARL_HOME" ]]; then
     # env vars to be loaded in local systems only (ie remote sessions should ignore this)
     # needs to be in same dir as the sourcing env vars file.
+
+    export BASE_DATA_DIR="/data"
+    export COMMON_CASTLE="/data/progs/deps/homesick/repos/dotfiles"
 
     export JAVA_HOME=/usr/local/jdk_link
     export M2_HOME=$BASE_DATA_DIR/progs/maven/mvn_link

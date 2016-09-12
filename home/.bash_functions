@@ -2695,7 +2695,7 @@ fd() {
 }
 
 
-# fda - including hidden directories
+# fda - same as fd(), but includes hidden directories;
 # kinda same as `cd **<Tab>`
 fda() {
     local dir src
@@ -2708,22 +2708,25 @@ fda() {
 
 # fdu - cd to selected parent directory
 fdu() {
-    local dirs dir src
+    local dirs dir src pwd
 
     readonly src="$1"
+    readonly pwd="$(realpath -- "$PWD")"
+
     [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir." "$FUNCNAME"; return 1; }
 
     dirs=()
     _get_parent_dirs() {
-        if [[ -d "${1}" ]]; then dirs+=("$1"); else return; fi
+        [[ -d "${1}" ]] || return
+        [[ "$1" != "$pwd" ]] && dirs+=("$1")
         if [[ "${1}" == '/' ]]; then
             for _dir in "${dirs[@]}"; do echo "$_dir"; done
         else
-            _get_parent_dirs $(dirname -- "$1")
+            _get_parent_dirs "$(dirname -- "$1")"
         fi
     }
 
-    dir=$(_get_parent_dirs $(realpath -- "${src:-$(pwd)}") | fzf-tmux --tac)
+    dir=$(_get_parent_dirs "$(realpath -- "${src:-$pwd}")" | fzf-tmux --tac)
     cd -- "$dir"
 
     unset _get_parent_dirs
@@ -2834,7 +2837,7 @@ fshow() {
         mapfile -t out <<< "$out"
         q="${out[0]}"
         k="${out[1]}"
-        sha="$(echo "${out[-1]}" | grep -Po '\s*\*\s*\K\S+(?=.*)')"
+        sha="$(echo "${out[-1]}" | grep -Po '\s*\*\s*\K\S+(?=.*)')" || { err; return 1; }
         [[ "$sha" =~ [a-z0-9]{7} ]] || { err "commit sha was [$sha]" "$FUNCNAME"; return 1; }
         if [[ "$k" == 'ctrl-s' ]]; then
             if [[ -n "$q" ]]; then

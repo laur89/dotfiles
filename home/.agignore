@@ -1,0 +1,6 @@
+build/
+logs/
+node_modules/
+src/main/modules/template-mapper/compiled-templates.js
+index-dist.js/.project
+index-dist.js
