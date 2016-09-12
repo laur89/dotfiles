@@ -2841,7 +2841,7 @@ fshow() {
         [[ "$sha" =~ [a-z0-9]{7} ]] || { err "commit sha was [$sha]" "$FUNCNAME"; return 1; }
         if [[ "$k" == 'ctrl-s' ]]; then
             if [[ "$sha" == "$(git log -n 1 --pretty=format:%h HEAD)" ]]; then
-                report "won't rebase on HEAD lol" "$FUNCNAME" && continue
+                report "won't rebase on HEAD lol" "$FUNCNAME" && sleep 1.5 && continue
             elif [[ -n "$q" ]]; then
                 confirm "\nyou've filtered commits by query [$q]; still continue with rebase?" || continue
             fi
