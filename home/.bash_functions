@@ -2846,8 +2846,7 @@ fshow() {
                 confirm "\nyou've filtered commits by query [$q]; still continue with rebase?" || continue
             fi
 
-            git rebase -i "$sha"~
-            continue
+            git rebase -i "$sha"~ && continue || return 1
         else
             git difftool --dir-diff "$sha"^ "$sha"
         fi

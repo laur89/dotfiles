@@ -31,8 +31,7 @@ if is_work; then
 
     #git remote show origin -n | grep "Fetch URL:" | sed -E 's#^.*/(.*)$#\1#' | sed 's#.git$##'
     remote_url="$(git remote show origin -n | grep -oP 'Fetch URL:\s*git@\K.*(?=\.git$)')" || { err "unable to parse remote"; exit 0; }
-    domain="$(echo "$remote_url" | cut -d: -f1)"
-    project="$(echo "$remote_url" | cut -d: -f2)"
+    IFS=':' read -r domain project <<< "$remote_url"
 
     short_sha="$(git log -n 1 --pretty=format:%h HEAD)"
     long_sha="$(git log -n 1 --pretty=format:%H HEAD)"
