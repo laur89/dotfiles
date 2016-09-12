@@ -27,7 +27,7 @@ fi
 
 if is_work; then
     branch="$(get_git_branch)"
-    [[ "$branch" != feature/* ]] && exit 0
+    #[[ "$branch" != feature/* ]] && exit 0
 
     #git remote show origin -n | grep "Fetch URL:" | sed -E 's#^.*/(.*)$#\1#' | sed 's#.git$##'
     remote_url="$(git remote show origin -n | grep -oP 'Fetch URL:\s*git@\K.*(?=\.git$)')" || exit 0
@@ -38,11 +38,12 @@ if is_work; then
     long_sha="$(git log -n 1 --pretty=format:%H HEAD)"
     commit_url="http://${domain}/${project}/commit/${long_sha}"
 
-    comment="${project}: [$short_sha|$commit_url] @ $branch
+    comment="${project##*/}: [$short_sha|$commit_url] @ $branch
 
-    $(git log -n 1 --pretty=format:%B HEAD)"
+$(git log -n 1 --pretty=format:%B HEAD)"
 
     copy_to_clipboard "$comment" \
-        && report "jira comment on clipboard" && exit 0
+        && { report "jira comment on clipboard"; exit 0; } \
+        || err "unable to copy jira comment to clipboard. here it is:\n$comment"
 fi
 
