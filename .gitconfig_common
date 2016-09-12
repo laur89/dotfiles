@@ -50,6 +50,7 @@
     di = diff
     dif = diff
     showtool = "!showci () { rev=${1:-HEAD}; git difftool --dir-diff $rev~1 $rev; }; showci $1"
+    squash = "!sqash () { rev=$1; [ -n "$rev" -a "$rev" -gt 1 -a "$rev" -lt 10 ] || return 1; git rebase -i HEAD~$rev; }; sqash $1"
     stash-unapply = !git stash show -p | git apply -R
     co = checkout
     cp = cherry-pick
