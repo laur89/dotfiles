@@ -2841,7 +2841,7 @@ fshow() {
         [[ "$sha" =~ [a-z0-9]{7} ]] || { err "commit sha was [$sha]" "$FUNCNAME"; return 1; }
         if [[ "$k" == 'ctrl-s' ]]; then
             if [[ -n "$q" ]]; then
-                confirm "\nyou've filtered commits by query [$q]; stil continue with rebase?" || continue
+                confirm "\nyou've filtered commits by query [$q]; still continue with rebase?" || continue
             fi
 
             git rebase -i "$sha"~
