@@ -8,14 +8,14 @@ if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
     if [[ -r "$_SCRIPTS_COMMONS" ]]; then
         source "$_SCRIPTS_COMMONS"
     else
-        echo -e "\nError: common file \"$_SCRIPTS_COMMONS\" not found! Abort."
+        echo -e "\nError: common file [$_SCRIPTS_COMMONS] not found! Abort."
         exit 1
     fi
 fi
 # ==============================
 
 # skip, if dwm is already running:
-if [[ "$(ps -e | grep "\bdwm\b")" ]]; then
+if pgrep "\bdwm\b" >/dev/null; then
     echo "dwm appears to be already running. abort."
     exit 1
 fi
@@ -43,11 +43,14 @@ wmname LG3D &
 
 # loop, so exiting dwm actually restarts it without exiting clients;
 # (pointless if using restart patch):
+dwm_logfile="$CUSTOM_LOGDIR/dwm.log"
+[[ -f "$dwm_logfile" ]] && mv -- "$dwm_logfile" "${dwm_logfile}.$(date +%d-%b-%y-%R)"
+
 #while true; do
     # Log stderror to a file:
-    dwm 2>  $CUSTOM_LOGDIR/dwm.log
+    dwm 2> "$dwm_logfile"
     #kill_pids "$__bar_pid"
-    killall dwm_statusbar && sleep 3 && killall -KILL dwm_statusbar
+    killall dwm_statusbar && sleep 1 && killall -KILL dwm_statusbar
     # No error logging:
     #dwm >/dev/null 2>&1
 #done

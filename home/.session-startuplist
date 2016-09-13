@@ -41,17 +41,17 @@ PROGS=(
 # (currently using the shellscript that listens to dbus messages)
 # xss-lock -- xscreensaver-command -lock &
 #
-#---------------------------------------------------
+# ---------------------------------------------------
 # import common:
 if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
     if [[ -r "$_SCRIPTS_COMMONS" ]]; then
         source "$_SCRIPTS_COMMONS"
     else
-        echo -e "\nError: common file \"$_SCRIPTS_COMMONS\" not found!"
+        echo -e "\nError: common file [$_SCRIPTS_COMMONS] not found!"
         #exit 1   # prolly not a good idea to exit here
     fi
 fi
-#---------------------------------------------------
+# ---------------------------------------------------
 
 
 # TODO: delete this?:
