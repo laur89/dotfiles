@@ -1495,7 +1495,7 @@ createUsbIso() {
         err "[$device] device does not exist" "$FUNCNAME"
         echo -e "$usage"
         return 1;
-    elif ! ls /dev | grep -q -- "\b${cleaned_devicename}\b" > /dev/null 2>&1 ;then
+    elif ! find /dev -name "$cleaned_devicename" -print -quit 2> /dev/null | grep -q .; then
         err "[$cleaned_devicename] does not exist in /dev" "$FUNCNAME"
         echo -e "$usage"
         return 1;
@@ -1515,7 +1515,7 @@ createUsbIso() {
     readonly full_lsblk_output="$(lsblk)" || { err "issues running lsblk"; return 1; }
     echo "$full_lsblk_output" | grep --color=auto -- "$cleaned_devicename\|MOUNTPOINT"
 
-    confirm  "\nis selected device [$device] the correct one (be VERY sure!)? (y/n)" || { report "aborting, nothing written." "$FUNCNAME"; return 1; }
+    confirm  "\nis selected device [$device] the correct one? (y/n)" || { report "aborting, nothing written." "$FUNCNAME"; return 1; }
 
     # find if device is mounted:
     #lsblk -o name,size,mountpoint /dev/sda
@@ -1540,7 +1540,7 @@ createUsbIso() {
     echo
     confirm "last confirmation: wish to write [$inf] into [$ouf]?" || { report "aborting." "$FUNCNAME"; return 1; }
     report "Please provide sudo passwd for running dd:" "$FUNCNAME"
-    sudo echo "..."
+    sudo echo
     clear
 
     report "Running dd, writing [$inf] into [$ouf]; this might take a while..." "$FUNCNAME"
