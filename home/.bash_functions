@@ -2700,7 +2700,7 @@ fda() {
 }
 
 
-# fdu - cd to selected parent directory
+# fdu - cd to selected *parent* directory
 fdu() {
     local dirs dir src pwd
 
@@ -2711,9 +2711,9 @@ fdu() {
 
     dirs=()
     _get_parent_dirs() {
-        [[ -d "${1}" ]] || return
+        [[ -d "$1" ]] || return
         [[ "$1" != "$pwd" ]] && dirs+=("$1")
-        if [[ "${1}" == '/' ]]; then
+        if [[ "$1" == '/' ]]; then
             for _dir in "${dirs[@]}"; do echo "$_dir"; done
         else
             _get_parent_dirs "$(dirname -- "$1")"
@@ -2852,7 +2852,7 @@ fcoc() {
 
 # fshow - git commit diff browser
 # - enter shows the changes of the commit
-# - ctrl-s lets you squash commits
+# - ctrl-s lets you squash commits - select the *last* commit that should be squashed.
 fshow() {
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
@@ -2947,7 +2947,7 @@ fstash() {
 
 # select recent file with fasd and open for editing
 e() {  # mnemonic: edit
-    local file editor
+    local file
 
     check_progs_installed "$EDITOR" || return 1
 
