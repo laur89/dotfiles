@@ -1528,7 +1528,7 @@ createUsbIso() {
         if [[ -n "$mountpoint" ]]; then
             report "[$partition] appears to be mounted at [$mountpoint], trying to unmount..." "$FUNCNAME"
             if ! sudo umount "$mountpoint"; then
-                err "something went wrong with unmounting [${mountpoint}]. please unmount the device and try again." "$FUNCNAME"
+                err "something went wrong while unmounting [$mountpoint]. please unmount the device and try again." "$FUNCNAME"
                 return 1
             fi
             report "...success." "$FUNCNAME"
