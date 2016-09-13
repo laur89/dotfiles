@@ -1136,15 +1136,9 @@ lgrep() {
 }
 
 
+# search for shell command history
 histgrep() {
-    local input
-
-    readonly input="$*"
-
-    [[ -z "$input" ]] && { err "command to look up from history required." "$FUNCNAME"; return 1; }
-    history \
-        | grep -v " $FUNCNAME " \
-        | grep -iE --color=auto -- "$input"
+    err "deprecated; use fh()"; return 1;
 }
 
 
@@ -2542,7 +2536,7 @@ transfer() {
 
     readonly file="$1"
 
-    [[ "$#" -ne 1 || -z "$file" ]] && { err "one argument, file to share, required." "$FUNCNAME"; return 1; }
+    [[ "$#" -ne 1 || -z "$file" ]] && { err "file to upload required." "$FUNCNAME"; return 1; }
     [[ -e "$file" ]] || { err "[$file] does not exist." "$FUNCNAME"; return 1; }
     check_progs_installed curl || return 1
 
@@ -2746,6 +2740,7 @@ cdf() {
 
 
 # utility function used to write the command in the shell (used by fzf wrappers)
+# pass '-run' as first argument to run the passed command
 __writecmd() {
     perl -e '$TIOCSTI = 0x5412; $l = <STDIN>; $lc = $ARGV[0] eq "-run" ? "\n" : ""; $l =~ s/\s*$/$lc/; map { ioctl STDOUT, $TIOCSTI, $_; } split "", $l;' -- $1
 }
@@ -2753,11 +2748,46 @@ __writecmd() {
 
 # fh - repeat history
 # note: no reason to use when ctrl+r mapping works;
-# only differing characteristic is that this one executes selected history immediately,
-# whereas ctrl+r lets you edit in command line;
+# ctrl-e instead of enter lets you edit the command, just like with ctrl+r binding.
 fh() {
-    [[ "$#" -ne 0 ]] && err "$FUNCNAME does not expect any input" "$FUNCNAME"
-    ([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac | sed -re 's/^\s*[0-9]+\s*//' | __writecmd -run
+    local input regex cmd out ifs_old k
+
+    readonly input="$*"
+
+    readonly regex='^\s*\d+\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\K.*$'
+    #[[ "$#" -ne 0 ]] && err "$FUNCNAME does not expect any input" "$FUNCNAME"
+    #([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac | sed -re 's/^\s*[0-9]+\s*//' | __writecmd -run
+    if command -v fzf > /dev/null 2>&1; then
+        out="$(history \
+                | grep -vE -- "\s+$FUNCNAME\b" \
+                | fzf --no-sort --tac --print-query --query="$input" --expect=ctrl-e +m -e)"
+        mapfile -t out <<< "$out"
+        readonly k="${out[1]}"
+        readonly cmd="$(echo "${out[-1]}" | grep -oP -- "$regex")"
+        if [[ "$k" == 'ctrl-e' ]]; then
+            echo "$cmd" | __writecmd
+        else
+            echo "$cmd" | __writecmd -run
+        fi
+        # oneliner without the binding:
+        #([ -n "$ZSH_NAME" ] && fc -l 1 || history) \
+            #| grep -vE -- "\s+$FUNCNAME\b" \
+            #| fzf --no-sort --tac --query="$input" +m -e \
+            #| grep -oP -- "$regex" \
+            #| __writecmd -run
+    else
+        readonly ifs_old="$IFS"
+        IFS=$'\n'
+        readonly cmd=( $(history \
+                | grep -vE -- "\s+$FUNCNAME\b" \
+                | grep -iE --color=auto -- "$input" \
+                | grep -oP -- "$regex") )
+
+        [[ -z "${cmd[*]}" ]] && { err "no matching entries found" "$FUNCNAME"; return 1; }
+        select_items --single "${cmd[@]}"
+        #echo "woo: ${__SELECTED_ITEMS[@]}"
+        IFS="$ifs_old"
+    fi
 }
 
 # fhe - repeat history edit
