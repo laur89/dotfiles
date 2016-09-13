@@ -25,7 +25,9 @@ if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
 fi
 # =========================
 
-if is_work; then
+generate_and_copy_jira_comment() {
+    local branch remote_url domain project short_sha long_sha commit_url comment
+
     branch="$(get_git_branch)"
     #[[ "$branch" != feature/* ]] && exit 0
 
@@ -44,5 +46,10 @@ $(git log -n 1 --pretty=format:%B HEAD)"
     copy_to_clipboard "$comment" \
         && { report "jira comment on clipboard"; exit 0; } \
         || err "unable to copy jira comment to clipboard. here it is:\n$comment"
+}
+
+
+if is_work; then
+    generate_and_copy_jira_comment
 fi
 
