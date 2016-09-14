@@ -24,7 +24,7 @@ fi
 ffind() {
     local src srcdir iname_arg opt usage OPTIND file_type filetypeOptionCounter exact filetype follow_links
     local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter skip_msgs
-    local quitFlag type_grep extra_params matches i delete deleteFlag
+    local quitFlag type_grep extra_params matches i delete deleteFlag printFlag
 
     function __filter_for_filetype() {
         local filetype index
@@ -33,13 +33,20 @@ ffind() {
         [[ -z "$type_grep" ]] && { err "[\$type_grep] not defined." "$FUNCNAME"; return 1; }
         index=0
 
-        while IFS= read -r -d $'\0' filetype; do
-            [[ "$filetype" =~ $type_grep ]] && echo "${matches[$index]}" | grep -iE --color=auto -- "$src|$"
+        while IFS= read -r filetype; do
+            if [[ "$filetype" =~ $type_grep ]]; then
+                if [[ "$skip_msgs" -eq 1 ]]; then
+                    printf '%s\0' "${matches[$index]}"
+                else
+                    echo "${matches[$index]}" | grep -iE --color=auto -- "$src|$"
+                fi
+            fi
             let index++
         done < <(file -iLb --print0 -- "${matches[@]}")
     }
 
-    [[ "$1" == --_skip_msgs ]] && { skip_msgs=1; shift; }  # skip showing informative messages, as the result will be directly echoed to other processes;
+    [[ "$1" == --_skip_msgs ]] && { skip_msgs=1; shift; printFlag='-print0'; } || printFlag='-print'  # skip showing informative messages, as the result will be directly echoed to other processes;
+                                                                                                      # also denotes that caller is a script not a human, and results should be null-separated;
     defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
 
     usage="\n$FUNCNAME: find files/dirs by name. smartcase.
@@ -245,54 +252,29 @@ ffind() {
         [[ -n "$iname_arg" ]] && iname_arg="-regextype posix-extended -iregex" || iname_arg="-regextype posix-extended -regex"
     fi
 
-    # trailing grep is for coloring only:
-    if [[ "$exact" -eq 1 ]]; then  # no regex with exact; they are excluded.
-        if [[ "$filetype" -eq 1 ]]; then
-            # original, all-in-find-command solution; slower, since file command will be launced per every result:
-            #find $follow_links "${srcdir:-.}" $maxDepthParam -type f ${iname_arg:--name} "$src" $extra_params -exec sh -c "file -iLb -- \"{}\" | grep -Eq -- '$type_grep'" \; -print0 $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
-            # optimised version:
-            while IFS= read -r -d $'\0' i; do
-                matches+=( "$i" )
-            done < <(find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} "$src" $extra_params -print0 $quitFlag 2>/dev/null)
-            __filter_for_filetype
-        else
-            find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} "$src" -print0 $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
-        fi
-    else  # partial filename match, ie add * padding
-        if [[ "$regex" -eq 1 ]]; then  # using regex, need to change the * padding around $src
-            #
-            # TODO remove eval!
-            #
-            report "!!! running with eval, be careful !!!" "$FUNCNAME"
-            sleep 2  # give time to bail out
+    __find_fun() {
+        local wildcard
 
-            if [[ "$filetype" -eq 1 ]]; then
-                # original, all-in-find-command solution; slower, since file command will be launced per every result:
-                #eval "find $follow_links \"${srcdir:-.}\" $maxDepthParam -type f ${iname_arg:--name} '.*'\"$src\"'.*' $extra_params -exec sh -c \"file -iLb -- \\\"{}\\\" | grep -Eq -- '$type_grep'\" \; -print0 $quitFlag | grep -iE --color=auto -- \"$src|$\""
-                # optimised version:
-                while IFS= read -r -d $'\0' i; do
-                    matches+=( "$i" )
-                done < <(eval find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '.*'"$src"'.*' $extra_params -print0 $quitFlag 2>/dev/null)
-                __filter_for_filetype
-            else
-                eval find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '.*'"$src"'.*' -print0 $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
-            fi
-        else  # no regex
-            if [[ "$filetype" -eq 1 ]]; then
-                # original, all-in-find-command solution; slower, since file command will be launced per every result:
-                #find $follow_links "${srcdir:-.}" $maxDepthParam -type f ${iname_arg:--name} '*'"$src"'*' $extra_params -exec sh -c "file -iLb -- \"{}\" | grep -Eq -- '$type_grep'" \; -print0 $quitFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
-                # optimised version:
-                while IFS= read -r -d $'\0' i; do
-                    matches+=( "$i" )
-                done < <(find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '*'"$src"'*' $extra_params -print0 $quitFlag 2>/dev/null)
-                __filter_for_filetype
-            else
-                find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '*'"$src"'*' -print0 $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
-            fi
-        fi
+        # note exact and regex are mutually exclusive
+        [[ "$exact" -eq 1 ]] || wildcard='*'
+        [[ "$regex" -eq 1 ]] && wildcard='.*'
+        find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} "$wildcard$src$wildcard" $extra_params $printFlag $quitFlag $deleteFlag 2>/dev/null
+    }
+
+    if [[ "$filetype" -eq 1 ]]; then
+        printFlag='-print0'
+        while IFS= read -r -d $'\0' i; do
+            matches+=( "$i" )
+        done < <(__find_fun)
+        __filter_for_filetype
+    elif [[ "$skip_msgs" -eq 1 ]]; then
+        __find_fun
+    else
+        # trailing grep is for coloring only:
+        __find_fun | grep -iE --color=auto -- "$src|$"
     fi
 
-    unset __filter_for_filetype
+    unset __filter_for_filetype __find_fun
 }
 
 # Find a file with a pattern in name (inside wd);
@@ -2147,9 +2129,10 @@ fo() {
     # filesearch begins:
     readonly matches_concat="$(ffind --_skip_msgs "$@")" || return 1
     matches=()
-    while read -r i; do
-        matches+=( "$i" )
+    while IFS= read -r -d $'\0' i; do
+        matches+=("$i")
     done < <(echo "$matches_concat")
+
     [[ -z "${matches[*]}" || ! -e "${matches[0]}" ]] && return 1
     count="${#matches[@]}"
 
