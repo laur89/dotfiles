@@ -33,10 +33,10 @@ ffind() {
         [[ -z "$type_grep" ]] && { err "[\$type_grep] not defined." "$FUNCNAME"; return 1; }
         index=0
 
-        while read filetype; do
+        while IFS= read -r -d $'\0' filetype; do
             [[ "$filetype" =~ $type_grep ]] && echo "${matches[$index]}" | grep -iE --color=auto -- "$src|$"
             let index++
-        done < <(file -iLb -- "${matches[@]}")
+        done < <(file -iLb --print0 -- "${matches[@]}")
     }
 
     [[ "$1" == --_skip_msgs ]] && { skip_msgs=1; shift; }  # skip showing informative messages, as the result will be directly echoed to other processes;
@@ -249,14 +249,14 @@ ffind() {
     if [[ "$exact" -eq 1 ]]; then  # no regex with exact; they are excluded.
         if [[ "$filetype" -eq 1 ]]; then
             # original, all-in-find-command solution; slower, since file command will be launced per every result:
-            #find $follow_links "${srcdir:-.}" $maxDepthParam -type f ${iname_arg:--name} "$src" $extra_params -exec sh -c "file -iLb -- \"{}\" | grep -Eq -- '$type_grep'" \; -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
+            #find $follow_links "${srcdir:-.}" $maxDepthParam -type f ${iname_arg:--name} "$src" $extra_params -exec sh -c "file -iLb -- \"{}\" | grep -Eq -- '$type_grep'" \; -print0 $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
             # optimised version:
-            while read i; do
+            while IFS= read -r -d $'\0' i; do
                 matches+=( "$i" )
-            done < <(find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} "$src" $extra_params -print $quitFlag 2>/dev/null)
+            done < <(find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} "$src" $extra_params -print0 $quitFlag 2>/dev/null)
             __filter_for_filetype
         else
-            find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} "$src" -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
+            find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} "$src" -print0 $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
         fi
     else  # partial filename match, ie add * padding
         if [[ "$regex" -eq 1 ]]; then  # using regex, need to change the * padding around $src
@@ -268,26 +268,26 @@ ffind() {
 
             if [[ "$filetype" -eq 1 ]]; then
                 # original, all-in-find-command solution; slower, since file command will be launced per every result:
-                #eval "find $follow_links \"${srcdir:-.}\" $maxDepthParam -type f ${iname_arg:--name} '.*'\"$src\"'.*' $extra_params -exec sh -c \"file -iLb -- \\\"{}\\\" | grep -Eq -- '$type_grep'\" \; -print $quitFlag | grep -iE --color=auto -- \"$src|$\""
+                #eval "find $follow_links \"${srcdir:-.}\" $maxDepthParam -type f ${iname_arg:--name} '.*'\"$src\"'.*' $extra_params -exec sh -c \"file -iLb -- \\\"{}\\\" | grep -Eq -- '$type_grep'\" \; -print0 $quitFlag | grep -iE --color=auto -- \"$src|$\""
                 # optimised version:
-                while read i; do
+                while IFS= read -r -d $'\0' i; do
                     matches+=( "$i" )
-                done < <(eval find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '.*'"$src"'.*' $extra_params -print $quitFlag 2>/dev/null)
+                done < <(eval find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '.*'"$src"'.*' $extra_params -print0 $quitFlag 2>/dev/null)
                 __filter_for_filetype
             else
-                eval find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '.*'"$src"'.*' -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
+                eval find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '.*'"$src"'.*' -print0 $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
             fi
         else  # no regex
             if [[ "$filetype" -eq 1 ]]; then
                 # original, all-in-find-command solution; slower, since file command will be launced per every result:
-                #find $follow_links "${srcdir:-.}" $maxDepthParam -type f ${iname_arg:--name} '*'"$src"'*' $extra_params -exec sh -c "file -iLb -- \"{}\" | grep -Eq -- '$type_grep'" \; -print $quitFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
+                #find $follow_links "${srcdir:-.}" $maxDepthParam -type f ${iname_arg:--name} '*'"$src"'*' $extra_params -exec sh -c "file -iLb -- \"{}\" | grep -Eq -- '$type_grep'" \; -print0 $quitFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
                 # optimised version:
-                while read i; do
+                while IFS= read -r -d $'\0' i; do
                     matches+=( "$i" )
-                done < <(find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '*'"$src"'*' $extra_params -print $quitFlag 2>/dev/null)
+                done < <(find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '*'"$src"'*' $extra_params -print0 $quitFlag 2>/dev/null)
                 __filter_for_filetype
             else
-                find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '*'"$src"'*' -print $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
+                find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} '*'"$src"'*' -print0 $quitFlag $deleteFlag 2>/dev/null | grep -iE --color=auto -- "$src|$"
             fi
         fi
     fi
@@ -880,7 +880,7 @@ ffstr() {
 
     if [[ "$collect_files" -eq 1 ]]; then
         _FOUND_FILES=()
-        while read i; do
+        while read -r i; do
             _FOUND_FILES+=( "$i" )
         done < <(echo "$result")
 
@@ -1198,10 +1198,10 @@ myip() {  # Get internal & external ip addies:
         return 0
     elif [[ "$__REMOTE_SSH" -eq 1 ]]; then
         if [[ -d "$if_dir" && -r "$if_dir" ]]; then
-            while read interface; do
+            while IFS= read -r -d $'\0' interface; do
                 # filter out blacklisted interfaces:
                 list_contains "$interface" "lo loopback" || interfaces+=" $interface "
-            done < <(find "$if_dir" -maxdepth 1 -mindepth 1 -printf '%f\n')
+            done < <(find "$if_dir" -maxdepth 1 -mindepth 1 -print0)
 
             # old solution:
             #interfaces="$(ls "$if_dir")"
@@ -1489,7 +1489,7 @@ createUsbIso() {
         err "[$device] device does not exist" "$FUNCNAME"
         echo -e "$usage"
         return 1;
-    elif ! find /dev -name "$cleaned_devicename" -print -quit 2> /dev/null | grep -q .; then
+    elif ! find /dev -name "$cleaned_devicename" -print0 -quit 2> /dev/null | grep -q .; then
         err "[$cleaned_devicename] does not exist in /dev" "$FUNCNAME"
         echo -e "$usage"
         return 1;
@@ -1750,14 +1750,14 @@ gito() {
                 return 0
             fi
 
-            while read i; do
+            while read -r i; do
                 match+=( "$i" )
             done < <(echo "$matches")
 
             select_items --single "${match[@]}"
             match=("${__SELECTED_ITEMS[@]}")
         else
-            while read i; do
+            while read -r i; do
                 match+=( "$i" )
             done < <(echo "$matches" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)
         fi
@@ -2147,7 +2147,7 @@ fo() {
     # filesearch begins:
     readonly matches_concat="$(ffind --_skip_msgs "$@")" || return 1
     matches=()
-    while read i; do
+    while read -r i; do
         matches+=( "$i" )
     done < <(echo "$matches_concat")
     [[ -z "${matches[*]}" || ! -e "${matches[0]}" ]] && return 1
@@ -2170,7 +2170,7 @@ fo() {
             matches=("${__SELECTED_ITEMS[@]}")
         else
             matches=()
-            while read i; do
+            while read -r i; do
                 matches+=( "$i" )
             done < <(echo "$matches_concat" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)
         fi
@@ -2463,14 +2463,14 @@ g() {
                 return 0
             fi
 
-            while read i; do
+            while read -r i; do
                 match+=( "$i" )
             done < <(echo "$matches")
 
             select_items --single "${match[@]}"
             match=("${__SELECTED_ITEMS[@]}")
         else
-            while read i; do
+            while read -r i; do
                 match+=( "$i" )
             done < <(echo "$matches" | $DMENU -l $nr_of_dmenu_vertical_lines -p cd)
         fi
