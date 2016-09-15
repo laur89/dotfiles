@@ -20,13 +20,12 @@ fi
 
 # gnu find wrapper.
 # find files or dirs based on name or type
-# TODO: refactor the massive spaghetti.
 ffind() {
     local src srcdir iname_arg opt usage OPTIND file_type filetypeOptionCounter exact filetype follow_links
     local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter skip_msgs
     local quitFlag type_grep extra_params matches i delete deleteFlag printFlag
 
-    function __filter_for_filetype() {
+    __filter_for_filetype() {
         local filetype index
 
         [[ -z "${matches[*]}" ]] && return 1
@@ -38,18 +37,29 @@ ffind() {
                 if [[ "$skip_msgs" -eq 1 ]]; then
                     printf '%s\0' "${matches[$index]}"
                 else
+                    # trailing grep is for coloring only:
                     echo "${matches[$index]}" | grep -iE --color=auto -- "$src|$"
                 fi
             fi
+
             let index++
         done < <(file -iLb --print0 -- "${matches[@]}")
     }
 
+    __find_fun() {
+        local wildcard
+
+        # note exact and regex are mutually exclusive
+        [[ "$exact" -eq 1 ]] || wildcard='*'
+        [[ "$regex" -eq 1 ]] && wildcard='.*'
+        find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} "$wildcard$src$wildcard" $extra_params $printFlag $quitFlag $deleteFlag 2>/dev/null
+    }
+
     [[ "$1" == --_skip_msgs ]] && { skip_msgs=1; shift; printFlag='-print0'; } || printFlag='-print'  # skip showing informative messages, as the result will be directly echoed to other processes;
                                                                                                       # also denotes that caller is a script not a human, and results should be null-separated;
-    defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
+    readonly defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
 
-    usage="\n$FUNCNAME: find files/dirs by name. smartcase.
+    readonly usage="\n$FUNCNAME: find files/dirs by name. smartcase.
 
     Usage: $FUNCNAME  [options]  \"fileName pattern\" [top_level_dir_to_search_from]
 
@@ -70,13 +80,14 @@ ffind() {
         -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;
         -e  search for exact filename, not for a partial (you still can use wildcards)
         -p  expand the pattern search for path as well (adds the -path option);
-            might want to consider regex, that also searches across the whole path."
+            might want to consider regex, that also searches across the whole path;
+        -0  null-terminated output."
 
     filetypeOptionCounter=0
     caseOptCounter=0
     matches=()
 
-    while getopts "m:isrefdlbLDqphVPIC" opt; do
+    while getopts "m:isrefdlbLDqphVPIC0" opt; do
         case "$opt" in
            i) iname_arg="-iname"
               caseOptCounter+=1
@@ -142,6 +153,9 @@ ffind() {
               readonly deleteFlag='-delete'
               shift $((OPTIND-1))
                 ;;
+           0) printFlag='-print0'
+              shift $((OPTIND-1))
+                ;;
            *) echo -e "$usage"
               [[ "$skip_msgs" -eq 1 ]] && return 9 || return 1
                 ;;
@@ -205,10 +219,10 @@ ffind() {
 
     if [[ -n "$srcdir" ]]; then
         if [[ ! -d "$srcdir" ]]; then
-            err "provided directory to search from (\"$srcdir\") is not a directory. abort." "$FUNCNAME"
+            err "provided directory to search from [$srcdir] is not a directory. abort." "$FUNCNAME"
             return 1
         elif [[ "$srcdir" != */ ]]; then
-            srcdir="${srcdir}/"  # add trailing slash if missing; required for gnu find; necessary in case it's a link.
+            srcdir="${srcdir}/"  # add trailing slash if missing; required for gnu find; necessary in case it's a link and -L was not defined.
         fi
     fi
 
@@ -234,8 +248,8 @@ ffind() {
 
 
     if [[ -n "$maxDepth" ]]; then
-        if ! is_digit "$maxDepth"; then
-            err "maxdepth (the -m flag) arg value has to be a positive digit, but was \"$maxDepth\"" "$FUNCNAME"
+        if ! is_digit "$maxDepth" || [[ "$maxDepth" -le 0 ]]; then
+            err "maxdepth (the -m flag) arg value has to be a positive digit, but was [$maxDepth]" "$FUNCNAME"
             echo -e "$usage"
             return 1
         fi
@@ -252,20 +266,12 @@ ffind() {
         [[ -n "$iname_arg" ]] && iname_arg="-regextype posix-extended -iregex" || iname_arg="-regextype posix-extended -regex"
     fi
 
-    __find_fun() {
-        local wildcard
-
-        # note exact and regex are mutually exclusive
-        [[ "$exact" -eq 1 ]] || wildcard='*'
-        [[ "$regex" -eq 1 ]] && wildcard='.*'
-        find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} "$wildcard$src$wildcard" $extra_params $printFlag $quitFlag $deleteFlag 2>/dev/null
-    }
-
     if [[ "$filetype" -eq 1 ]]; then
         printFlag='-print0'
         while IFS= read -r -d $'\0' i; do
             matches+=( "$i" )
         done < <(__find_fun)
+
         __filter_for_filetype
     elif [[ "$skip_msgs" -eq 1 ]]; then
         __find_fun
@@ -692,16 +698,16 @@ aptclean() { aptreset; }
 # TODO: find whether we could stop using find here and use grep --include & --exclude flags instead.
 ffstr() {
     local grepcase OPTIND usage opt max_result_line_length caseOptCounter force_case regex i
-    local iname_arg maxDepth maxDepthParam defMaxDeptWithFollowLinks follow_links result
-    local pattern file_pattern collect_files open_files
+    local iname_arg maxDepth maxDepthParam defMaxDeptWithFollowLinks follow_links
+    local pattern file_pattern collect_files open_files dir
 
     caseOptCounter=0
     OPTIND=1
     max_result_line_length=300      # max nr of characters per grep result line
     defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) option selected;
 
-    usage="\n$FUNCNAME: find string in files (from current directory recursively). smartcase both for filename and search patterns.
-    Usage: $FUNCNAME [opts] \"pattern\" [filename pattern]
+    readonly usage="\n$FUNCNAME: find string in files (from current directory recursively). smartcase both for filename and search patterns.
+    Usage: $FUNCNAME  [opts]  \"pattern\"  [filename pattern]  [starting dir]
         -i  force case insensitive;
         -s  force case sensitivity;
         -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;
@@ -739,22 +745,35 @@ ffstr() {
               shift $((OPTIND-1))
                 ;;
            o) open_files=1
-              collect_files=1  # so we can use the array
+              collect_files=1  # so we can use the collected array
               shift $((OPTIND-1))
                 ;;
            h) echo -e "$usage"
               return 0
               ;;
-           *) echo -e "$usage";
+           *) echo -e "$usage"
               return 1
               ;;
         esac
     done
 
+    if [[ "$#" -eq 3 && ! -d "${@: -1}" ]]; then
+        err "last arg can only be starting dir" "$FUNCNAME"
+        return 1
+    elif [[ "$#" -gt 1 ]]; then
+        i="${@: -1}"  # last arg; alternatively ${@:$#}
+        if [[ -d "$i" ]]; then
+            [[ "$#" -lt 3 ]] && report "assuming starting path [$i] was given" "$FUNCNAME"  # if less than 3 args, we need to assume
+            dir="$i"
+            set -- "${@:1:${#}-1}"  # shift the last arg
+        fi
+        unset i
+    fi
+
     pattern="$1"
     file_pattern="$2"
 
-    if [[ "$#" -lt 1 ]] || [[ "$#" -gt 2 ]]; then
+    if [[ "$#" -lt 1 || "$#" -gt 2 ]]; then
         err "incorrect nr of arguments." "$FUNCNAME"
         echo -e "$usage"
         return 1;
@@ -777,7 +796,7 @@ ffstr() {
     # find metacharacter or regex FILENAME (not search pattern) sanity:
     if [[ -n "$file_pattern" ]]; then
         if [[ "$file_pattern" == */* ]]; then
-            err "there are slashes in the filename. note that optional 2nd arg is a filename pattern, not a path." "$FUNCNAME"
+            err "there are slashes in the filename." "$FUNCNAME"
             return 1
         fi
 
@@ -799,11 +818,14 @@ ffstr() {
                 report "note that period (.) in the filename pattern will be used as a literal period, not as a wildcard. provide -r flag to use regex.\n" "$FUNCNAME"
             fi
         fi
+    elif [[ "$regex" -eq 1 ]]; then  # -z $file_pattern
+        err "with -r flag, filename pattern is required." "$FUNCNAME"
+        return 1
     fi
 
     if [[ -n "$maxDepth" ]]; then
-        if ! is_digit "$maxDepth"; then
-            err "maxdepth (the -m flag) arg value has to be a positive digit, but was \"$maxDepth\"" "$FUNCNAME"
+        if ! is_digit "$maxDepth" || [[ "$maxDepth" -le 0 ]]; then
+            err "maxdepth (the -m flag) arg value has to be a positive digit, but was [$maxDepth]" "$FUNCNAME"
             echo -e "$usage"
             return 1
         fi
@@ -831,50 +853,42 @@ ffstr() {
         #[[ -n "$follow_links" ]] && follow_links=R || follow_links=r
         #grep -E${follow_links} --color=always -sn ${grepcase} -- "$pattern"
 
-    #elif [[ "$regex" -eq 1 ]]; then
-    if [[ "$regex" -eq 1 ]]; then
-        # TODO: convert to  'find . -name "$ext" -type f -exec grep "$pattern" /dev/null {} +' perhaps?
-        [[ -z "$file_pattern" ]] && { err "with -r flag, filename argument is required." "$FUNCNAME"; return 1; }
-        [[ -n "$iname_arg" ]] && iname_arg="-regextype posix-extended -iregex" || iname_arg="-regextype posix-extended -regex"
+    __find_fun() {
+        local wildcard
 
-        if [[ "$collect_files" -eq 1 ]]; then
-            result="$(eval find $follow_links . $maxDepthParam -type f $iname_arg '.*'"$file_pattern"'.*' -print0 2>/dev/null | \
-                    xargs -0 grep -El --color=never -sn ${grepcase} -- "$pattern")"
-        else
-            eval find $follow_links . $maxDepthParam -type f $iname_arg '.*'"$file_pattern"'.*' -print0 2>/dev/null | \
-                xargs -0 grep -E --color=always -sn ${grepcase} -- "$pattern" | \
-                cut -c 1-$max_result_line_length | \
-                more
-                #less
+        wildcard='*'
+
+        # note exact and regex are mutually exclusive
+        if [[ "$regex" -eq 1 ]]; then
+            wildcard='.*'
+            [[ -n "$iname_arg" ]] && iname_arg="-regextype posix-extended -iregex" || iname_arg="-regextype posix-extended -regex"
         fi
-    else
-        if [[ "$collect_files" -eq 1 ]]; then
-            result="$(find $follow_links . $maxDepthParam -type f "${iname_arg:--name}" '*'"${file_pattern:-*}"'*' -print0 2>/dev/null | \
-                    xargs -0 grep -El --color=never -sn ${grepcase} -- "$pattern")"
-        else
-            find $follow_links . $maxDepthParam -type f "${iname_arg:--name}" '*'"${file_pattern:-*}"'*' -print0 2>/dev/null | \
-                xargs -0 grep -E --color=always -sn ${grepcase} -- "$pattern" | \
-                cut -c 1-$max_result_line_length | \
-                more
-                #less
-        fi
-    fi
+
+        find $follow_links ${dir:-.} $maxDepthParam -type f "${iname_arg:--name}" "$wildcard${file_pattern:-*}$wildcard" -print0 2>/dev/null
+        # TODO: convert to  'find . -name "$ext" -type f -exec grep "$pattern" /dev/null {} +' perhaps?
+    }
 
     if [[ "$collect_files" -eq 1 ]]; then
         _FOUND_FILES=()
-        while read -r i; do
-            _FOUND_FILES+=( "$i" )
-        done < <(echo "$result")
+        while IFS= read -r -d $'\0' i; do
+            _FOUND_FILES+=("$i")
+        done < <(__find_fun | xargs -0 grep -El --null --color=never -sn ${grepcase} -- "$pattern")
 
         report "found ${#_FOUND_FILES[@]} files containing [$pattern]; stored in \$_FOUND_FILES global array." "$FUNCNAME"
         [[ "${#_FOUND_FILES[@]}" -eq 0 ]] && return 1
+
+        if [[ "$open_files" -eq 1 ]]; then
+            __fo "${_FOUND_FILES[@]}"
+        fi
+    else
+        __find_fun | \
+            xargs -0 grep -E --color=always -sn ${grepcase} -- "$pattern" | \
+            cut -c 1-$max_result_line_length | \
+            more
+            #less
     fi
 
-    if [[ "$open_files" -eq 1 ]]; then
-        # TODO: pass the array to-be-refactored fo()
-        check_progs_installed "$EDITOR" || return 1
-        $EDITOR "${_FOUND_FILES[@]}"
-    fi
+    unset __find_fun
 }
 
 memmost(){
@@ -941,28 +955,36 @@ topid(){
 
 
 astr() {
-    local grepcase OPTIND usage opt filePattern fileCase caseOptCounter
+    local grepcase OPTIND usage opt filePattern caseOptCounter maxDepth follow_links
+    local pattern defMaxDeptWithFollowLinks dir i
 
+    readonly defMaxDeptWithFollowLinks=25
     OPTIND=1
     caseOptCounter=0
-    usage="\n$FUNCNAME: find string in files using ag (from current directory recursively). smartcase by default.
-    Usage: $FUNCNAME [-i] [-s] \"pattern\" [filename pattern]
+    readonly usage="\n$FUNCNAME: find string in files using ag (from current directory recursively). smartcase by default.
+    Usage: $FUNCNAME [options]  \"pattern\"  [filename pattern]  [starting dir]
         -i  force case insensitive
-        -s  force case sensitivity"
+        -s  force case sensitivity
+        -L  follow symlinks
+        -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;"
 
     check_progs_installed ag
-    report "consider using ag directly; it has really sane syntax (compared to find + grep)\nfor instance, with this wrapper you can't use the filetype & path options." "$FUNCNAME"
+    report "consider using ag directly; it has really sane syntax (compared to find + grep)\nfor instance, with this wrapper you can't use the filetype & path options.\n" "$FUNCNAME"
 
-    while getopts "ish" opt; do
+    while getopts "isLhm:" opt; do
         case "$opt" in
            i) grepcase=" -i "
-              fileCase="i"
               caseOptCounter+=1
               shift $(( $OPTIND - 1 ))
               ;;
            s) grepcase=" -s "
-              fileCase="s"
               caseOptCounter+=1
+              shift $((OPTIND-1))
+                ;;
+           m) maxDepth="$OPTARG"
+              shift $((OPTIND-1))
+                ;;
+           L) follow_links="--follow"
               shift $((OPTIND-1))
                 ;;
            h) echo -e "$usage"
@@ -974,7 +996,23 @@ astr() {
         esac
     done
 
-    if [[ "$#" -lt 1 ]] || [[ "$#" -gt 2 ]]; then
+    if [[ "$#" -eq 3 && ! -d "${@: -1}" ]]; then
+        err "last arg can only be starting dir" "$FUNCNAME"
+        return 1
+    elif [[ "$#" -gt 1 ]]; then
+        i="${@: -1}"  # last arg; alternatively ${@:$#}
+        if [[ -d "$i" ]]; then
+            [[ "$#" -lt 3 ]] && report "assuming starting path [$i] was given" "$FUNCNAME"  # if less than 3 args, we need to assume
+            dir="$i"
+            set -- "${@:1:${#}-1}"  # shift the last arg
+        fi
+        unset i
+    fi
+
+    pattern="$1"
+    filePattern="$2"
+
+    if [[ "$#" -lt 1 || "$#" -gt 2 ]]; then
         err "incorrect nr of arguments." "$FUNCNAME"
         echo -e "$usage"
         return 1;
@@ -982,6 +1020,18 @@ astr() {
         err "-i and -s flags are exclusive." "$FUNCNAME"
         echo -e "$usage"
         return 1
+    fi
+
+    if [[ -n "$maxDepth" ]]; then
+        if ! is_digit "$maxDepth" || [[ "$maxDepth" -le 0 ]]; then
+            err "maxdepth (the -m flag) arg value has to be a positive digit, but was [$maxDepth]" "$FUNCNAME"
+            echo -e "$usage"
+            return 1
+        fi
+
+        maxDepthParam="--depth $maxDepth"
+    elif [[ -n "$follow_links" ]]; then
+        maxDepthParam="--depth $defMaxDeptWithFollowLinks"
     fi
 
     # regex sanity:
@@ -993,22 +1043,29 @@ astr() {
         return 1
     fi
 
-    [[ -n "$2" ]] && filePattern="-${fileCase}G $2"
+    if [[ -n "$filePattern" ]]; then
+        if [[ "$file_pattern" == */* ]]; then
+            err "there are slashes in the filename." "$FUNCNAME"
+            return 1
+        fi
+        filePattern=(-G "$filePattern")
+    fi
 
-    ag $filePattern $grepcase -- "$1" 2>/dev/null
+    ag $follow_links $maxDepthParam "${filePattern[@]}" $grepcase -- "$pattern" $dir 2>/dev/null
 }
+
 
 # Swap 2 files around, if they exist (from Uzi's bashrc):
 swap() {
-    local tmp file_size space_left_on_target i first_file sec_file
+    local tmp file_size space_left_on_target first_file sec_file i
 
     tmp="/tmp/${FUNCNAME}_function_tmpFile.$RANDOM"
     first_file="${1%/}"  # strip trailing slash
     sec_file="${2%/}"    # strip trailing slash
 
-    count_params 2 $# equal || return 1
-    [[ ! -e "$first_file" ]] && err "$first_file does not exist" "$FUNCNAME" && return 1
-    [[ ! -e "$sec_file" ]] && err "$sec_file does not exist" "$FUNCNAME" && return 1
+    [[ "$#" -ne 2 ]] && { err "2 args required" "$FUNCNAME"; return 1; }
+    [[ ! -e "$first_file" ]] && err "[$first_file] does not exist" "$FUNCNAME" && return 1
+    [[ ! -e "$sec_file" ]] && err "[$sec_file] does not exist" "$FUNCNAME" && return 1
     [[ "$first_file" == "$sec_file" ]] && err "source and destination cannot be the same" "$FUNCNAME" && return 1
 
 
@@ -1065,8 +1122,8 @@ swap() {
     if ! mv -- "$tmp" "$sec_file"; then
         err "moving $first_file to $sec_file failed. abort." "$FUNCNAME"
         # undo:
-        mv "$first_file" "$sec_file"
-        mv "$tmp" "$first_file"
+        mv -- "$first_file" "$sec_file"
+        mv -- "$tmp" "$first_file"
         return 1
     fi
 }
@@ -1151,7 +1208,7 @@ myip() {  # Get internal & external ip addies:
 
     if_dir="/sys/class/net"
 
-    function __get_internal_ip_for_if() {
+    __get_internal_ip_for_if() {
         local interface ip
 
         interface="$1"
@@ -1214,7 +1271,7 @@ compress() {
 
     file="$1"
     type="$2"
-    usage="$FUNCNAME  fileOrDir  [zip|tar|rar|7z]\n\tif optional second arg not provided, compression type defaults to tar (tar.bz2) "
+    readonly usage="$FUNCNAME  fileOrDir  [zip|tar|rar|7z]\n\tif optional second arg not provided, compression type defaults to tar (tar.bz2) "
 
     while getopts "h" opt; do
         case "$opt" in
@@ -1297,7 +1354,7 @@ extract() {
         err "gimme file to extract plz." "$FUNCNAME"
         return 1
     elif [[ ! -f "$file" || ! -r "$file" ]]; then
-        err "'$file' is not a regular file or read rights not granted." "$FUNCNAME"
+        err "[$file] is not a regular file or read rights not granted." "$FUNCNAME"
         return 1
     fi
 
@@ -1335,7 +1392,7 @@ extract() {
                         # TODO .Z is unverified how and where they'd unpack:
         *.Z)         check_progs_installed uncompress || return 1
                         uncompress -- "$file"  ;;
-        *)           err "'$file' cannot be extracted; this filetype is not supported." "$FUNCNAME"
+        *)           err "[$file] cannot be extracted; this filetype is not supported." "$FUNCNAME"
                         return 1
                         ;;
     esac
@@ -1375,17 +1432,16 @@ resetfont() { fontreset; }
 
 # TODO: rewrite this one, looks stupid:
 up() {
-  local i d limit
+    local i d limit
 
-  d=""
-  limit=$1
-  for ((i=1 ; i <= limit ; i++)); do
-      d="$d/.."
-  done
-  d="$(echo "$d" | sed 's/^\///')"
-  [[ -z "$d" ]] && d=".."
+    d=""
+    is_digit "$1" && limit=$1 || limit=1
+    for ((i=1; i <= limit; i++)); do
+        d="$d/.."
+    done
+    d="$(echo "$d" | sed 's/^\///')"
 
-  cd -- "$d"
+    cd -- "$d"
 }
 
 # clock - A bash clock that can run in your terminal window:
@@ -1404,7 +1460,7 @@ xmlformat() {
 
     [[ -z "$@" ]] && { echo -e "usage:   $FUNCNAME  <filename>"; return 1; }
     for file in "$@"; do
-        [[ -f "$file" && -r "$file" ]] || { err "provided file \"$file\" is not a regular file or is not readable. abort." "$FUNCNAME"; return 1; }
+        [[ -f "$file" && -r "$file" ]] || { err "provided file [$file] is not a regular file or is not readable. abort." "$FUNCNAME"; return 1; }
     done
 
     check_progs_installed xmllint "$EDITOR" || return 1;
@@ -1925,15 +1981,17 @@ ago() {
     $editor "$match"
 }
 
+
 # same as fo(), but opens all the found results; forces regular filetype search.
 #
 # mnemonic: file open all
 foa() {
-    local opts default_depth
+    local opts default_depth matches i
 
     opts="$1"
 
     readonly default_depth="m10"
+    matches=()
 
     if [[ "$opts" == -* ]]; then
         [[ "$opts" != *f* ]] && opts="-f${opts:1}"
@@ -1945,7 +2003,12 @@ foa() {
         opts="-f${default_depth}"
     fi
 
-    fo --openall $opts "$@"
+    while IFS= read -r -d $'\0' i; do
+        matches+=("$i")
+    done < <(ffind --_skip_msgs "$opts" "$@")
+
+    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
+    __fo "${matches[@]}"
 }
 
 
@@ -1953,7 +2016,24 @@ foa() {
 #
 # mnemonic: file open delete
 fod() {
-    fo --delete "$@"
+    local matches i
+
+    matches=()
+
+    while IFS= read -r -d $'\0' i; do
+        matches+=("$i")
+    done < <(ffind --_skip_msgs "$@")
+
+    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
+
+    report "found [${#matches[@]}] nodes:" "$FUNCNAME"
+    for i in "${matches[@]}"; do
+        echo -e "\t${i}"
+    done
+
+    if confirm "wish to DELETE them?"; then
+        rm -r -- "${matches[@]}" || { _FOUND_FILES=("${matches[@]}"); err "something went wrong while deleting. (stored the files in \$_FOUND_FILES array)" "$FUNCNAME"; return 1; }
+    fi
 }
 
 
@@ -1961,11 +2041,12 @@ fod() {
 #
 # mnemonic: file open go
 fog() {
-    local opts default_depth
+    local opts default_depth matches i
 
     opts="$1"
 
     readonly default_depth="m10"
+    matches=()
 
     if [[ "$opts" == -* ]]; then
         [[ "$opts" != *m* ]] && opts+="$default_depth"
@@ -1975,7 +2056,22 @@ fog() {
         opts="-$default_depth"
     fi
 
-    fo --goto $opts "$@"
+    if ! command -v fzf > /dev/null 2>&1; then
+        while IFS= read -r -d $'\0' i; do
+            matches+=("$i")
+        done < <(ffind --_skip_msgs "$opts" "$@")
+
+        select_items --single "${matches[@]}" || return 1
+        matches=("${__SELECTED_ITEMS[@]}")
+    else
+        while read -r i; do
+            matches+=("$i")
+        done < <(ffind --_skip_msgs "$opts" "$@" | fzf --select-1 --read0)
+    fi
+
+    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
+
+    goto "${matches[@]}"
 }
 
 # mnemonic: go go
@@ -1990,15 +2086,16 @@ gg() { fog "$@"; }
 # if no depth arg provided, then defaults to current dir only.
 #
 # TODO: the nth result selection only works, if name arg was provided, meaning `fon 2`
-# won't give expeted result.
+# won't give expeted result. edit: imho it's reasonable; we can't limit searching for files bi digits.
 #
 # mnemonic: file open new(est)
 fon() {
-    local opts default_depth n
+    local opts default_depth matches newest n i
 
     opts="$1"
 
     readonly default_depth="m1"
+    matches=()
 
     if [[ "$opts" == -* ]]; then
         [[ "$opts" != *f* ]] && opts="-f${opts:1}"
@@ -2009,30 +2106,36 @@ fon() {
         opts="-f${default_depth}"
     fi
 
-    unset __FILE_OPEN_NEWEST_NTH  # so the state wouldn't be contaminated from the last run
+    check_progs_installed stat head || return 1
+
+    if [[ "$#" -eq 1 ]] && is_digit "$1"; then
+        report "note that when you want the nth newest, then filename pattern needs to be provided as first arg" "$FUNCNAME"
 
     # try to filter out optional last arg defining the nth newest to open (as in open the nth newest file):
-    if [[ "$#" -gt 1 ]]; then
+    elif [[ "$#" -gt 1 ]]; then
         readonly n="${@: -1}"  # last arg; alternatively ${@:$#}
         if is_digit "$n" && [[ "$n" -ge 1 ]] && [[ "$#" -gt 2 || ! -d "$n" ]]; then  # $# -gt 2   means dir is already being passed to ffind(), so no need to check !isDir
-            __FILE_OPEN_NEWEST_NTH="$n"
             set -- "${@:1:${#}-1}"  # shift the last arg
         fi
     fi
 
+    [[ -z "$n" ]] && readonly n=1
     [[ -z "$@" ]] && set -- '*'
-    fo --newest $opts "$@"
 
-    #local matches file
+    while IFS= read -r -d $'\0' i; do
+        matches+=("$i")
+    done < <(ffind --_skip_msgs "$opts" "$@")
+    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
 
-    #matches="$(find -L . -mindepth 1 -maxdepth 1 -type f -printf "%T+\t%p\n" | sort -r)"
-    #matches=("$matches")
+    [[ "$n" -gt "${#matches[@]}" ]] && { err "cannot open [${n}th] newest file, since total nr of found files was [${#matches[@]}]" "$FUNCNAME"; return 1; }
 
-    #[[ -z "${matches[*]}" ]] && return 1
+    readonly newest="$(stat --format='%Y %n' -- "${matches[@]}" \
+            | sort -r -k 1 \
+            | sed -n ${n}p \
+            | cut -d ' ' -f 2-)"
 
-    #file="${matches[0]}"
-    #report "opening ${file}..."
-    #xo "$file"
+    [[ -f "$newest" ]] || { err "something went wrong, found newest file [$newest] is not a valid file." "$FUNCNAME"; return 1; }
+    __fo "$newest"
 }
 
 
@@ -2042,11 +2145,12 @@ fon() {
 #
 # mnemonic: file open with
 fow() {
-    local opts default_depth prog
+    local opts default_depth prog matches i
 
     opts="$1"
 
     readonly default_depth="m10"
+    matches=()
 
     if [[ "$opts" == -* ]]; then
         [[ "$opts" != *f* ]] && opts="-f${opts:1}"
@@ -2061,25 +2165,42 @@ fow() {
 
     # filter out prog name
     readonly prog="${@: -1}"  # last arg; alternatively ${@:$#}
+    [[ -d "$prog" ]] && report "last arg needs to be the program to open with, not dir arg for ffind" "$FUNCNAME"
     if ! command -v -- "$prog" >/dev/null; then
         err "[$prog] is not installed." "$FUNCNAME"
         return 1
     fi
 
     set -- "${@:1:${#}-1}"  # shift the last arg
-
     [[ -z "$@" ]] && set -- '*'
-    #fo --with-prog $opts "$@"  # TODO
+
+    if ! command -v fzf > /dev/null 2>&1; then
+        while IFS= read -r -d $'\0' i; do
+            matches+=("$i")
+        done < <(ffind --_skip_msgs "$opts" "$@")
+
+        select_items "${matches[@]}" || return 1
+        matches=("${__SELECTED_ITEMS[@]}")
+    else
+        while read -r i; do
+            matches+=("$i")
+        done < <(ffind --_skip_msgs "$opts" "$@" | fzf --select-1 --multi --read0)
+    fi
+
+    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
+    report "opening [${matches[*]}] with [$prog]" "$FUNCNAME"
+    $prog -- "${matches[@]}"
 }
 
 
 # collect all found files into global array
 foc() {
-    local opts default_depth
+    local opts default_depth matches i
 
     opts="$1"
 
     readonly default_depth="m10"
+    matches=()
 
     if [[ "$opts" == -* ]]; then
         [[ "$opts" != *m* ]] && opts+="$default_depth"
@@ -2090,24 +2211,49 @@ foc() {
     fi
 
     [[ -z "$@" ]] && set -- '*'
-    fo --collect $opts "$@"
+
+    while IFS= read -r -d $'\0' i; do
+        matches+=("$i")
+    done < <(ffind --_skip_msgs "$opts" "$@")
+
+    report "found ${#matches[@]} files; stored in \$_FOUND_FILES global array." "$FUNCNAME"
+    _FOUND_FILES=("${matches[@]}")
+
+    return
 }
 
 
 # finds files/dirs using ffind() (find wrapper) and opens them.
 # accepts different 'special modes' to be defined as first arg (modes defined in $special_modes array).
 #
-# if NOT in special mode, and no args provided, then default to opening regular files in current dir.
+# if no args provided, then default to opening regular files in current dir.
 #
 # mnemonic: file open
 fo() {
-    local DMENU matches match count filetype dmenurc editor image_viewer video_player file_mngr
-    local pdf_viewer nr_of_dmenu_vertical_lines special_mode special_modes single_selection i
-    local office image_editor matches_concat
+    local matches
 
-    dmenurc="$HOME/.dmenurc"
-    nr_of_dmenu_vertical_lines=20
-    readonly special_modes="--goto --openall --newest --collect --delete"  # special mode definitions; mode basically decides how to deal with the found match(es)
+    [[ -z "$@" ]] && set -- '-fm1' '*'
+
+    if ! command -v fzf > /dev/null 2>&1; then
+        while IFS= read -r -d $'\0' i; do
+            matches+=("$i")
+        done < <(ffind --_skip_msgs "$@")
+
+        select_items "${matches[@]}" || return 1
+        __fo "${__SELECTED_ITEMS[@]}"
+    else
+        #while IFS= read -r -d $'\0' i; do
+            #matches+=("$i")
+        #done < <(ffind --_skip_msgs "$@" | fzf --select-1 --multi --read0 | __fo)
+        ffind --_skip_msgs "$@" | fzf --select-1 --multi --read0 | __fo  # add --print0 to fzf once implemented; also update __fo
+    fi
+}
+
+
+__fo() {
+    local files count filetype editor image_viewer video_player file_mngr
+    local pdf_viewer office image_editor i
+
     editor="$EDITOR"
     image_viewer="sxiv"
     video_player="smplayer"
@@ -2116,237 +2262,99 @@ fo() {
     office="libreoffice"
     image_editor="gimp"
 
-    list_contains "$1" "$special_modes" && { readonly special_mode="$1"; shift; }
-    [[ -z "$@" && -z "$special_mode" ]] && set -- '-fm1' '*'
-    [[ -z "$@" ]] && { err "args required for ffind. see ffind -h" "$FUNCNAME"; return 1; }
-    [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
+    files=()
 
-    if [[ "$__REMOTE_SSH" -ne 1 && -z "$special_mode" ]]; then  # only check for progs if not ssh-d AND not using in "special mode"
-        check_progs_installed find ffind "$PAGER" "$file_mngr" "$editor" "$image_viewer" \
-                "$image_editor" "$video_player" "$pdf_viewer" "$office" dmenu file || return 1
+    if [[ "$__REMOTE_SSH" -ne 1 ]]; then  # only check for progs if not ssh-d
+        check_progs_installed "$PAGER" "$file_mngr" "$editor" "$image_viewer" \
+                "$image_editor" "$video_player" "$pdf_viewer" "$office" file || return 1
     fi
 
-    # filesearch begins:
-    readonly matches_concat="$(ffind --_skip_msgs "$@")" || return 1
-    matches=()
-    while IFS= read -r -d $'\0' i; do
-        matches+=("$i")
-    done < <(echo "$matches_concat")
-
-    [[ -z "${matches[*]}" || ! -e "${matches[0]}" ]] && return 1
-    count="${#matches[@]}"
-
-    # logic to select wanted nodes from multiple matches:
-    if [[ "$count" -gt 1 ]] && ! list_contains "$special_mode" "--openall --newest --collect --delete"; then
-        report "found $count items" "$FUNCNAME"
-
-        if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            if [[ "$count" -gt 200 ]]; then
-                report "no way of using dmenu over ssh; these are the found files:\n" "$FUNCNAME"
-                echo -e "${matches[*]}"
-                return 0
-            fi
-
-            [[ "$special_mode" == --goto ]] && readonly single_selection="--single"
-
-            select_items $single_selection "${matches[@]}"
-            matches=("${__SELECTED_ITEMS[@]}")
-        else
-            matches=()
-            while read -r i; do
-                matches+=( "$i" )
-            done < <(echo "$matches_concat" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)
-        fi
-
-        # TODO: if no items selected, pass the original lot through instead?
-        [[ -z "${matches[*]}" ]] && return 1
-    fi  # /select from multiple matches
-    # /filesearch
-
-    # handle special modes, if any:
-    if [[ -n "$special_mode" ]]; then
-        case $special_mode in
-            --goto)
-                goto "${matches[@]}"  # note that for --goto only one item should be allowed to select
-
-                return
-                ;;
-            --openall)
-                true  # fall through
-                ;;
-            --collect)
-                report "found ${#matches[@]} files; stored in \$_FOUND_FILES global array." "$FUNCNAME"
-                _FOUND_FILES=("${matches[@]}")
-
-                return
-                ;;
-            --delete)
-                report "found [${#matches[@]}] nodes:" "$FUNCNAME"
-                for i in "${matches[@]}"; do
-                    echo -e "\t${i}"
-                done
-
-                if confirm "wish to DELETE them?"; then
-                    rm -r -- "${matches[@]}" || { _FOUND_FILES=("${matches[@]}"); err "something went wrong while deleting. (stored the files in \$_FOUND_FILES array)" "$FUNCNAME"; return 1; }
-                fi
-
-                return
-                ;;
-            --newest)
-                check_progs_installed stat head || return 1
-
-                [[ -z "$__FILE_OPEN_NEWEST_NTH" ]] && __FILE_OPEN_NEWEST_NTH=1  # by default, open THE newest
-                [[ "$__FILE_OPEN_NEWEST_NTH" -gt "${#matches[@]}" ]] && { err "cannot open [${__FILE_OPEN_NEWEST_NTH}th] newest file, since total nr of found files was [${#matches[@]}]" "$FUNCNAME"; return 1; }
-                matches=(
-                    $(stat --format='%Y %n' -- "${matches[@]}" \
-                        | sort -r -k 1 \
-                        | sed -n ${__FILE_OPEN_NEWEST_NTH}p \
-                        | cut -d ' ' -f 2- \
-                    )
-                )
-                [[ -f "${matches[*]}" ]] || { err "something went wrong, found newest file [${matches[*]}] is not a valid file." "$FUNCNAME"; return 1; }
-
-                # fall through, do not return!
-                ;;
-            *) err "unsupported special mode [$special_mode]" "$FUNCNAME"
-               return 1
-                ;;
-        esac
+    if [[ -z "$@" ]]; then  # no params provided, meaning expect input via stdin
+        #while IFS= read -r -d $'\0' i; do  # TODO enable once fzf gets the --print0 option
+        while read -r i; do
+            files+=("$i")
+        done
+    else  # $FUNCNAME was invoked with arguments, not feeding files via stdin;
+        readonly files=("$@")
     fi
 
-
-    count="${#matches[@]}"
+    [[ "${#files[@]}" -eq 0 ]] && return  # quit silently
+    readonly count="${#files[@]}"
     # define filetype only by the first node:  # TODO: perhaps verify all nodes are of same type?
-    filetype="$(file -iLb -- "${matches[0]}")" || { err "issues testing [${matches[0]}] with \$ file cmd" "$FUNCNAME"; return 1; }
+    readonly filetype="$(file -iLb -- "${files[0]}")" || { err "issues testing [${files[0]}] with \$ file cmd" "$FUNCNAME"; return 1; }
 
     # report
     if [[ "$count" -eq 1 ]]; then
-        report "opening [${matches[*]}]" "$FUNCNAME"
+        report "opening [${files[*]}]" "$FUNCNAME"
     else
         report "opening:" "$FUNCNAME"
-        for i in "${matches[@]}"; do
+        for i in "${files[@]}"; do
             echo -e "\t${i}"
         done
     fi
 
     case "$filetype" in
         'image/x-xcf; charset=binary')  # xcf is gimp
-            "$image_editor" -- "${matches[@]}"
+            "$image_editor" -- "${files[@]}"
             ;;
         image/*)
-            "$image_viewer" -- "${matches[@]}"
+            "$image_viewer" -- "${files[@]}"
             ;;
         application/octet-stream*)
             # should be the logs on app servers
-            "$PAGER" -- "${matches[@]}"
+            "$PAGER" -- "${files[@]}"
             ;;
         application/xml*)
             [[ "$count" -gt 1 ]] && { report "won't format multiple xml files! will just open them" "$FUNCNAME"; sleep 1.5; }
-            if [[ "$(wc -l < "${matches[0]}")" -gt 2 || "$count" -gt 1 ]]; then  # note if more than 2 lines we also assume it's already formatted;
+            if [[ "$(wc -l < "${files[0]}")" -gt 2 || "$count" -gt 1 ]]; then  # note if more than 2 lines we also assume it's already formatted;
                 # assuming it's already formatted:
-                "$editor" -- "${matches[@]}"
+                "$editor" -- "${files[@]}"
             else
-                xmlformat "${matches[@]}"
+                xmlformat "${files[@]}"
             fi
             ;;
         video/* | audio/mp4*)
-            #"$video_player" -- "${matches[@]}"  # TODO: smplayer doesn't support '--' as per now
-            "$video_player" "${matches[@]}"
+            #"$video_player" -- "${files[@]}"  # TODO: smplayer doesn't support '--' as per now
+            "$video_player" "${files[@]}"
             ;;
         text/*)
             # if we're dealing with a logfile, force open in PAGER
-            if [[ "${matches[0]}" =~ \.log(\.[\.a-z0-9]+)*$ ]]; then
-                "$PAGER" -- "${matches[@]}"
+            if [[ "${files[0]}" =~ \.log(\.[\.a-z0-9]+)*$ ]]; then
+                "$PAGER" -- "${files[@]}"
             else
-                "$editor" -- "${matches[@]}"
+                "$editor" -- "${files[@]}"
             fi
             ;;
         application/pdf*)
-            "$pdf_viewer" -- "${matches[@]}"
+            "$pdf_viewer" -- "${files[@]}"
             ;;
         application/x-elc*)  # TODO: what exactly is it?
-            "$editor" -- "${matches[@]}"
+            "$editor" -- "${files[@]}"
             ;;
         'application/x-executable; charset=binary'*)
             [[ "$count" -gt 1 ]] && { report "won't execute multiple files! select one please" "$FUNCNAME"; return 1; }
-            confirm "${matches[*]} is executable. want to launch it from here?" || return
-            report "launching ${matches[0]}..." "$FUNCNAME"
-            ${matches[0]}
+            confirm "${files[*]} is executable. want to launch it from here?" || return
+            report "launching ${files[0]}..." "$FUNCNAME"
+            ${files[0]}
             ;;
         'inode/directory;'*)
             [[ "$count" -gt 1 ]] && { report "won't navigate to multiple dirs! select one please" "$FUNCNAME"; return 1; }
-            "$file_mngr" -- "${matches[0]}"
+            "$file_mngr" -- "${files[0]}"
             ;;
         'inode/x-empty; charset=binary')
-            "$editor" -- "${matches[@]}"
+            "$editor" -- "${files[@]}"
             ;;
         # try keeping doc files' definitions in sync with the ones in ffind()
         'application/msword; charset=binary' \
                 | 'application/'*'opendocument'*'; charset=binary' \
                 | 'application/vnd.ms-office; charset=binary')
-            "$office" "${matches[@]}"  # libreoffice doesn't like option ending marker '--'
+            "$office" "${files[@]}"  # libreoffice doesn't like option ending marker '--'
             ;;
         *)
             err "dunno what to open this type of file with:\n\t$filetype" "$FUNCNAME"
             return 1
             ;;
     esac
-
-
-
-    ## TODO: old, safer verions where only one file was opened at a time:
-    ##
-    ## note that test will resolve links to files and dirs as well;
-    ## TODO: instead of file, use xdg-open?
-    #if [[ -f "$match" ]]; then
-        #filetype="$(file -iLb -- "$match")" || { err "issues testing \"$match\" with \$file"; return 1; }
-
-        #case "$filetype" in
-            #image/*)
-                #"$image_viewer" "$match"
-                #;;
-            #application/octet-stream*)
-                ## should be the logs on server
-                #"$PAGER" "$match"
-                #;;
-            #application/xml*)
-                #if [[ "$(wc -l < "$match")" -gt 2 ]]; then
-                    ## assuming it's already formatted:
-                    #"$editor" "$match"
-                #else
-                    #xmlformat "$match"
-                #fi
-                #;;
-            #video/*)
-                #"$video_player" "$match"
-                #;;
-            #text/*)
-                #"$editor" "$match"
-                #;;
-            #application/pdf*)
-                #"$pdf_viewer" "$match"
-                #;;
-            #application/x-elc*)  # TODO: what is it exactly?
-                #"$editor" "$match"
-                #;;
-            #'application/x-executable; charset=binary'*)
-                #confirm "$match is executable. want to launch it from here?" || return
-                #report "launching ${match}..." "$FUNCNAME"
-                #"$match"
-                #;;
-            ##'inode/directory;'*)
-                ##"$file_mngr" "$match"
-            #*)
-                #err "dunno what to open this type of file with:\n\t$filetype" "$FUNCNAME"
-                #return 1
-                #;;
-        #esac
-    #elif [[ -d "$match" ]]; then
-        #"$file_mngr" "$match"
-    #else
-        #err "\"$match\" isn't either regular file nor a dir." "$FUNCNAME"
-        #return 1
-    #fi
 }
 
 sethometime() { setspaintime; }  # home is where you make it;
