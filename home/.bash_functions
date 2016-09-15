@@ -519,7 +519,7 @@ __find_bigger_smaller_common_fun() {
     fi
 
     if [[ -n "$maxDepth" ]]; then
-        if ! is_digit "$maxDepth"; then
+        if ! is_digit "$maxDepth" || [[ "$maxDepth" -le 0 ]]; then
             err "maxdepth arg value has to be... y'know, a digit" "$FUNCNAME_"
             echo -e "$usage"
             return 1
@@ -706,7 +706,7 @@ ffstr() {
     max_result_line_length=300      # max nr of characters per grep result line
     defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) option selected;
 
-    readonly usage="\n$FUNCNAME: find string in files (from current directory recursively). smartcase both for filename and search patterns.
+    readonly usage="\n$FUNCNAME: find string in files. smartcase both for filename and search patterns.
     Usage: $FUNCNAME  [opts]  \"pattern\"  [filename pattern]  [starting dir]
         -i  force case insensitive;
         -s  force case sensitivity;
@@ -961,7 +961,7 @@ astr() {
     readonly defMaxDeptWithFollowLinks=25
     OPTIND=1
     caseOptCounter=0
-    readonly usage="\n$FUNCNAME: find string in files using ag (from current directory recursively). smartcase by default.
+    readonly usage="\n$FUNCNAME: find string in files using ag. smartcase by default.
     Usage: $FUNCNAME [options]  \"pattern\"  [filename pattern]  [starting dir]
         -i  force case insensitive
         -s  force case sensitivity
@@ -969,7 +969,8 @@ astr() {
         -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;"
 
     check_progs_installed ag
-    report "consider using ag directly; it has really sane syntax (compared to find + grep)\nfor instance, with this wrapper you can't use the filetype & path options.\n" "$FUNCNAME"
+    report "consider using ag directly; it has really sane syntax (compared to find + grep)
+      for instance, with this wrapper you can't use the filetype & path options.\n" "$FUNCNAME"
 
     while getopts "isLhm:" opt; do
         case "$opt" in
