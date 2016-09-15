@@ -1739,75 +1739,58 @@ mkgit() {
 ## Open file inside git tree with vim ##
 ########################################
 gito() {
-    local DMENU match matches git_root count cwd dmenurc editor nr_of_dmenu_vertical_lines i
+    local src matches git_root cwd i
 
-    cwd="$PWD"
-    dmenurc="$HOME/.dmenurc"
-    editor="$EDITOR"
-    nr_of_dmenu_vertical_lines=20
+    readonly cwd="$PWD"
 
     if [[ "$__REMOTE_SSH" -ne 1 ]]; then
-        check_progs_installed git "$editor" dmenu || return 1
+        check_progs_installed git fzf || return 1
     fi
 
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
-    [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
-
-    git_root="$(git rev-parse --show-toplevel)"
+    readonly src="$*"
+    readonly git_root="$(git rev-parse --show-toplevel)"
     [[ "$cwd" != "$git_root" ]] && pushd "$git_root" &> /dev/null  # git root
 
-    if [[ -n "$@" ]]; then
-        if [[ "$@" == *\** && "$@" != *\.\** ]]; then
+    if [[ -n "$src" ]]; then
+        if [[ "$src" == *\** && "$src" != *\.\** ]]; then
             err 'use .* as wildcards, not a single *' "$FUNCNAME"
             [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
             return 1
-        elif [[ "$(echo "$@" | tr -dc '.' | wc -m)" -lt "$(echo "$@" | tr -dc '*' | wc -m)" ]]; then
+        elif [[ "$(echo "$src" | tr -dc '.' | wc -m)" -lt "$(echo "$src" | tr -dc '*' | wc -m)" ]]; then
             err "nr of periods (.) was less than stars (*); are you misusing regex?" "$FUNCNAME"
             [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
             return 1
         fi
+    fi
 
-        matches="$(git ls-files | grep -Ei -- "$@")"
+    __git_ls_fun() {
+        git ls-files | grep -Ei -- "${src:-$}"
+    }
+
+    if ! command -v fzf > /dev/null 2>&1; then
+        while read -r i; do
+            matches+=("$i")
+        done < <(__git_ls_fun)
+
+        select_items "${matches[@]}"  # don't return here as we need to change wd to starting location;
+        matches=("${__SELECTED_ITEMS[@]}")
     else
-        matches="$(git ls-files)"
+        while read -r i; do
+            matches+=("$i")
+        done < <(__git_ls_fun | fzf --select-1 --multi --exit-0)
     fi
 
-    [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
+    unset __git_ls_fun
+    [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back to starting dir
+    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
 
-    count="$(echo "$matches" | wc -l)"
-    match=("$matches")
+    for ((i=0; i <= (( ${#matches[@]} - 1 )); i++)); do
+        matches[$i]="$git_root/${matches[$i]}"  # convert to absolute
+    done
 
-    if [[ "$count" -gt 1 ]]; then
-        report "found $count items" "$FUNCNAME"
-        match=()
-
-        if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            if [[ "$count" -gt 200 ]]; then
-                report "no way of using dmenu over ssh; these are the found files:\n" "$FUNCNAME"
-                echo -e "$matches"
-                return 0
-            fi
-
-            while read -r i; do
-                match+=( "$i" )
-            done < <(echo "$matches")
-
-            select_items --single "${match[@]}"
-            match=("${__SELECTED_ITEMS[@]}")
-        else
-            while read -r i; do
-                match+=( "$i" )
-            done < <(echo "$matches" | $DMENU -l $nr_of_dmenu_vertical_lines -p open)
-        fi
-    fi
-
-    #[[ $(echo "$match" | wc -l) -gt 1 ]] && match="$(echo "$match" | bemenu -i -l 20 -p "$editor")"
-    [[ -z "${match[*]}" ]] && return 1
-    match="$git_root/${match[0]}"  # convert to absolute
-    [[ -f "$match" ]] || { err "[$match] is not a regular file." "$FUNCNAME"; return 1; }
-
-    $editor -- "$match"
+    __fo "${matches[@]}"
 }
 
 # git untag; git delete tag; git tag delete; delete git tag
@@ -2013,7 +1996,7 @@ foa() {
 }
 
 
-# finds files/dirs using fo() and DELETES them
+# finds files/dirs and DELETES them
 #
 # mnemonic: file open delete
 fod() {
@@ -2038,7 +2021,7 @@ fod() {
 }
 
 
-# finds files/dirs using fo() and goes to containing dir (or same dir if found item is already a dir)
+# finds files/dirs and goes to containing dir (or same dir if found item is already a dir)
 #
 # mnemonic: file open go
 fog() {
@@ -2067,7 +2050,7 @@ fog() {
     else
         while read -r i; do
             matches+=("$i")
-        done < <(ffind --_skip_msgs "$opts" "$@" | fzf --select-1 --read0)
+        done < <(ffind --_skip_msgs "$opts" "$@" | fzf --select-1 --read0 --exit-0)
     fi
 
     [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
@@ -2110,7 +2093,7 @@ fon() {
     check_progs_installed stat head || return 1
 
     if [[ "$#" -eq 1 ]] && is_digit "$1"; then
-        report "note that when you want the nth newest, then filename pattern needs to be provided as first arg" "$FUNCNAME"
+        report "note that when you want the nth newest, then filename pattern has to be provided as first arg\n" "$FUNCNAME"
 
     # try to filter out optional last arg defining the nth newest to open (as in open the nth newest file):
     elif [[ "$#" -gt 1 ]]; then
@@ -2185,7 +2168,7 @@ fow() {
     else
         while read -r i; do
             matches+=("$i")
-        done < <(ffind --_skip_msgs "$opts" "$@" | fzf --select-1 --multi --read0)
+        done < <(ffind --_skip_msgs "$opts" "$@" | fzf --select-1 --multi --read0 --exit-0)
     fi
 
     [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
@@ -2246,7 +2229,7 @@ fo() {
         #while IFS= read -r -d $'\0' i; do
             #matches+=("$i")
         #done < <(ffind --_skip_msgs "$@" | fzf --select-1 --multi --read0 | __fo)
-        ffind --_skip_msgs "$@" | fzf --select-1 --multi --read0 | __fo  # add --print0 to fzf once implemented; also update __fo
+        ffind --_skip_msgs "$@" | fzf --select-1 --multi --read0 --exit-0 | __fo  # add --print0 to fzf once implemented; also update __fo
     fi
 }
 
@@ -2419,15 +2402,12 @@ goto() {
 #
 # see also gg()
 g() {
-    local path input file match matches pattern DMENU dmenurc msg_loc iname_arg nr_of_dmenu_vertical_lines count i
+    local path input matches pattern msg_loc iname_arg i
 
     input="$*"
-    dmenurc="$HOME/.dmenurc"
-    nr_of_dmenu_vertical_lines=20
 
     [[ -d "$input" ]] && { cd -- "$input"; return; }
     [[ -z "$input" ]] && input='*'
-    [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
     #[[ "$input" == */* ]] && path="${input%%/*}"  # strip everything after last slash(included)
     path="$(dirname -- "$input")"
@@ -2438,40 +2418,27 @@ g() {
 
     [[ "$(tolowercase "$pattern")" == "$pattern" ]] && iname_arg="iname"
 
-    matches="$(find -L "$path" -maxdepth 1 -mindepth 1 -type d -${iname_arg:-name} '*'"$pattern"'*')"
-    count="$(echo "$matches" | wc -l)"
-    match=("$matches")
+    __find_fun() {
+        find -L "$path" -maxdepth 1 -mindepth 1 -type d -${iname_arg:-name} '*'"$pattern"'*' -print0
+    }
 
-    if [[ -z "$matches" ]]; then
-        err "no dirs in $msg_loc matching [$pattern]" "$FUNCNAME"
-        return 1
-    elif [[ "$count" -gt 1 ]]; then
-        match=()
+    if ! command -v fzf > /dev/null 2>&1; then
+        while IFS= read -r -d $'\0' i; do
+            matches+=("$i")
+        done < <(__find_fun)
 
-        if [[ "$__REMOTE_SSH" -eq 1 ]]; then  # TODO: check for $DISPLAY as well perhaps?
-            if [[ "$count" -gt 200 ]]; then
-                report "no way of using dmenu over ssh; these are the found dirs:\n" "$FUNCNAME"
-                echo -e "$matches"
-                return 0
-            fi
-
-            while read -r i; do
-                match+=( "$i" )
-            done < <(echo "$matches")
-
-            select_items --single "${match[@]}"
-            match=("${__SELECTED_ITEMS[@]}")
-        else
-            while read -r i; do
-                match+=( "$i" )
-            done < <(echo "$matches" | $DMENU -l $nr_of_dmenu_vertical_lines -p cd)
-        fi
+        select_items --single "${matches[@]}" || return 1
+        matches=("${__SELECTED_ITEMS[@]}")
+    else
+        while read -r i; do
+            matches+=("$i")
+        done < <(__find_fun | fzf --select-1 --read0 --exit-0)
     fi
 
-    [[ -z "${match[*]}" ]] && return 1
-    [[ -d "${match[0]}" ]] || { err "no such dir like [${match[0]}] in $msg_loc" "$FUNCNAME"; return 1; }
-
-    cd -- "${match[0]}"
+    unset __find_fun
+    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
+    [[ -d "${matches[0]}" ]] || { err "no such dir like [${matches[0]}] in $msg_loc" "$FUNCNAME"; return 1; }
+    cd -- "${matches[0]}"
 }
 
 
@@ -2752,7 +2719,7 @@ fh() {
     if command -v fzf > /dev/null 2>&1; then
         out="$(history \
                 | grep -vE -- "\s+$FUNCNAME\b" \
-                | fzf --no-sort --tac --print-query --query="$input" --expect=ctrl-e +m -e)"
+                | fzf --no-sort --tac --print-query --query="$input" --expect=ctrl-e +m -e --exit-0)"
         mapfile -t out <<< "$out"
         readonly k="${out[1]}"
         readonly cmd="$(echo "${out[-1]}" | grep -oP -- "$regex")"
@@ -2837,7 +2804,7 @@ fcoc() {
     [[ "$#" -ne 0 ]] && err "$FUNCNAME does not expect any input" "$FUNCNAME"
 
     commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&
-        commit=$(echo "$commits" | fzf --tac +s +m -e) &&
+        commit=$(echo "$commits" | fzf --tac +s +m -e --exit-0) &&
         git checkout $(echo "$commit" | sed 's/ .*//')
 }
 
@@ -2855,7 +2822,7 @@ fshow() {
             git log --graph --color=always \
                 --format="%C(auto)%h%d %s %C(black)%C(bold)(%cr) %C(bold blue)<%an>%Creset" |
                 fzf --ansi --no-sort --reverse --tiebreak=index --bind=ctrl-z:toggle-sort --query="$q" --print-query \
-                    --expect=ctrl-s); do
+                    --expect=ctrl-s --exit-0); do
         mapfile -t out <<< "$out"
         q="${out[0]}"
         k="${out[1]}"
@@ -2885,7 +2852,7 @@ fcs() {
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
     commits=$(git log --color=always --pretty=oneline --abbrev-commit --reverse) &&
-    commit=$(echo "$commits" | fzf --tac +s +m -e --ansi --reverse) &&
+    commit=$(echo "$commits" | fzf --tac +s +m -e --ansi --reverse --exit-0) &&
     commit="${commit%% *}" &&
     copy_to_clipboard "$commit" &&
     echo "copied commit sha [$commit] to clipboard" "$FUNCNAME"
@@ -2906,7 +2873,7 @@ fstash() {
     while out=$(
             git stash list --pretty="%C(red)%gd %C(yellow)%h %>(14)%Cgreen%cr %C(blue)%gs" |
                 fzf --ansi --no-sort --query="$q" --print-query \
-                    --expect=ctrl-d,ctrl-b); do
+                    --expect=ctrl-d,ctrl-b --exit-0); do
         mapfile -t out <<< "$out"
         q="${out[0]}"
         k="${out[1]}"
@@ -2943,7 +2910,7 @@ e() {  # mnemonic: edit
 
     check_progs_installed "$EDITOR" || return 1
 
-    file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m)" && $EDITOR "${file}" || return 1
+    file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)" && $EDITOR "${file}" || return 1
 }
 
 
@@ -2955,7 +2922,7 @@ d() {  # mnemonic: dir
     #command -v ranger >/dev/null && fm=ranger
     #check_progs_installed "$fm" || return 1
 
-    dir="$(fasd -Rdl "$@" | fzf -1 -0 --no-sort +m)" && cd -- "${dir}" || return 1
+    dir="$(fasd -Rdl "$@" | fzf -1 -0 --no-sort +m --exit-0)" && cd -- "${dir}" || return 1
 }
 
 
