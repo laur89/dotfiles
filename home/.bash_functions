@@ -2812,21 +2812,23 @@ fcoc() {
 # fshow - git commit diff browser
 # - enter shows the changes of the commit
 # - ctrl-s lets you squash commits - select the *last* commit that should be squashed.
+# - ctrl-c generates the jira commit message.
 fshow() {
-    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+    local q k out sha
 
     q="$*"
 
+    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
     #git log -i --all --graph --source --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative |
     while out=$(
             git log --graph --color=always \
                 --format="%C(auto)%h%d %s %C(black)%C(bold)(%cr) %C(bold blue)<%an>%Creset" |
                 fzf --ansi --no-sort --reverse --tiebreak=index --bind=ctrl-z:toggle-sort --query="$q" --print-query \
-                    --expect=ctrl-s --exit-0); do
+                    --expect=ctrl-s,ctrl-c --exit-0); do
         mapfile -t out <<< "$out"
         q="${out[0]}"
         k="${out[1]}"
-        sha="$(echo "${out[-1]}" | grep -Po '\s*\*\s*\K\S+(?=.*)')" || { err; return 1; }
+        sha="$(echo "${out[-1]}" | grep -Po '\s*[\ /\\*]+\s\K\S+(?=.*$)')" || { err "unable to parse out commit sha" "$FUNCNAME"; return 1; }
         [[ "$sha" =~ [a-z0-9]{7} ]] || { err "commit sha was [$sha]" "$FUNCNAME"; return 1; }
         if [[ "$k" == 'ctrl-s' ]]; then
             if [[ "$sha" == "$(git log -n 1 --pretty=format:%h HEAD)" ]]; then
@@ -2836,11 +2838,13 @@ fshow() {
             fi
 
             git rebase -i "$sha"~ && continue || return 1
+        elif [[ "$k" == 'ctrl-c' ]]; then
+            is_function generate_jira_commit_comment || { err "can't generate commit msg as dependency is missing" "$FUNCNAME"; return 1; }
+            generate_jira_commit_comment "$sha"
         else
             git difftool --dir-diff "$sha"^ "$sha"
         fi
     done
-
 }
 
 
