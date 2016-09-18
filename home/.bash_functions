@@ -2812,7 +2812,8 @@ fcoc() {
 # fshow - git commit diff browser
 # - enter shows the changes of the commit
 # - ctrl-s lets you squash commits - select the *last* commit that should be squashed.
-# - ctrl-c generates the jira commit message.
+# - ctrl-m generates the jira commit message.
+# - ctrl-c check the selected commit out.
 fshow() {
     local q k out sha
 
@@ -2824,33 +2825,44 @@ fshow() {
             git log --graph --color=always \
                 --format="%C(auto)%h%d %s %C(black)%C(bold)(%cr) %C(bold blue)<%an>%Creset" |
                 fzf --ansi --no-sort --reverse --tiebreak=index --bind=ctrl-z:toggle-sort --query="$q" --print-query \
-                    --expect=ctrl-s,ctrl-c --exit-0); do
+                    --expect=ctrl-s,ctrl-c,ctrl-m --exit-0); do
         mapfile -t out <<< "$out"
         q="${out[0]}"
         k="${out[1]}"
-        sha="$(echo "${out[-1]}" | grep -Po '\s*[\ /\\*]+\s\K\S+(?=.*$)')" || { err "unable to parse out commit sha" "$FUNCNAME"; return 1; }
+        # note we also need to include git log's graph slashes, pipes and stars to the regex:
+        sha="$(echo "${out[-1]}" | grep -Po '^[|\ /\\*]+\s*\K[a-z0-9]+(?=.*$)')" || { err "unable to parse out commit sha" "$FUNCNAME"; return 1; }
         [[ "$sha" =~ [a-z0-9]{7} ]] || { err "commit sha was [$sha]" "$FUNCNAME"; return 1; }
-        if [[ "$k" == 'ctrl-s' ]]; then
-            if [[ "$sha" == "$(git log -n 1 --pretty=format:%h HEAD)" ]]; then
-                report "won't rebase on HEAD lol" "$FUNCNAME" && sleep 1.5 && continue
-            elif [[ -n "$q" ]]; then
-                confirm "\nyou've filtered commits by query [$q]; still continue with rebase?" || continue
-            fi
 
-            git rebase -i "$sha"~ && continue || return 1
-        elif [[ "$k" == 'ctrl-c' ]]; then
-            is_function generate_jira_commit_comment || { err "can't generate commit msg as dependency is missing" "$FUNCNAME"; return 1; }
-            generate_jira_commit_comment "$sha"
-        else
-            git difftool --dir-diff "$sha"^ "$sha"
-        fi
+        case "$k" in
+            'ctrl-s')
+                if [[ "$sha" == "$(git log -n 1 --pretty=format:%h HEAD)" ]]; then
+                    report "won't rebase on HEAD lol" "$FUNCNAME" && sleep 1.5 && continue
+                elif [[ -n "$q" ]]; then
+                    confirm "\nyou've filtered commits by query [$q]; still continue with rebase?" || continue
+                fi
+
+                git rebase -i "$sha"~ && continue || return 1
+                ;;
+            'ctrl-m')
+                is_function generate_jira_commit_comment || { err "can't generate commit msg as dependency is missing" "$FUNCNAME"; return 1; }
+                generate_jira_commit_comment "$sha"
+                break
+                ;;
+            'ctrl-c')
+                git checkout "$sha"
+                break
+                ;;
+            *)
+                git difftool --dir-diff "$sha"^ "$sha"
+                ;;
+        esac
     done
 }
 
 
-# fcs - get git commit sha
-# example usage: git rebase -i `fcs`
-fcs() {
+# fsha - get git commit sha
+# example usage: git rebase -i `fsha`
+fsha() {
     local commits commit
 
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
@@ -2859,7 +2871,7 @@ fcs() {
     commit=$(echo "$commits" | fzf --tac +s +m -e --ansi --reverse --exit-0) &&
     commit="${commit%% *}" &&
     copy_to_clipboard "$commit" &&
-    echo "copied commit sha [$commit] to clipboard" "$FUNCNAME"
+    report "copied commit sha [$commit] to clipboard" "$FUNCNAME"
 }
 
 
