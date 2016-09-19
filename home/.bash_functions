@@ -2998,6 +2998,7 @@ function jmo {
 
 # un-mark:
 function jum {
+    [[ $# -ne 1 || -z "$1" ]] && { err "exactly one arg accepted" "$FUNCNAME"; return 1; }
     [[ -d "$_MARKPATH" ]] || { err "no marks saved in [$_MARKPATH] - dir does not exist." "$FUNCNAME"; return 1; }
     rm -i -- "$_MARKPATH/$1"
 }

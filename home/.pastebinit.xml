@@ -1,5 +1,6 @@
 <pastebinit>
   <pastebin>http://pastebin.com</pastebin>
+  <!--<pastebin>paste.debian.net</pastebin>-->
   <author>laur</author>
   <!--<jabberid>no.jabber@jabber.id</jabberid>-->
   <format>text</format>
