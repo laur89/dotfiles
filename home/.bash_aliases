@@ -168,7 +168,7 @@ alias tmp='cd /tmp/'
 alias temp='cd /tmp/'
 
 # git
-alias git-root='is_git && cd $(git rev-parse --show-toplevel) || err "not in a git repo."'  # go to project root
+alias git-root='is_git && __grt="$(git rev-parse --show-toplevel)" && [[ -n "$__grt" ]] && cd -- "$__grt" && unset __grt || { err "are you in a git repo?"; unset __grt; }'  # go to project root
 alias grt='git-root'
 alias gpushall='is_git || err "not in a git repo" && { git push --tags && git checkout master && git push && git checkout develop && git push; }'
 
