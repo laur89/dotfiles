@@ -14,14 +14,14 @@
 #---   Configuration  ---
 #------------------------
 readonly TMPDIR='/tmp'
-readonly CLANG_LLVM_LOC='http://llvm.org/releases/3.8.0/clang+llvm-3.8.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
+readonly CLANG_LLVM_LOC='http://llvm.org/releases/3.9.0/clang+llvm-3.9.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
 readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - yeah.
 readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
 readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX - open password manager forked from keepass project
 readonly GOFORIT_REPO_LOC='https://github.com/mank319/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
 readonly SYNERGY_REPO_LOC='https://github.com/synergy/synergy.git'    # synergy - share keyboard&mouse between computers on same LAN
-readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u91-b14/jdk-8u91-linux-x64.tar.gz'   # jdk8: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u112-b15/jdk-8u112-linux-x64.tar.gz' # jdk8: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
                                                                                                            # jdk7: http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
                                                                                                            # jdk9: https://jdk9.java.net/  /  https://jdk9.java.net/download/
 readonly SKYPE_LOC='http://www.skype.com/go/getskype-linux-deb'       # http://www.skype.com/en/download-skype/skype-for-computer/
@@ -137,8 +137,8 @@ function check_dependencies() {
 
     for prog in git wget tar realpath dirname basename tee; do
         if ! command -v "$prog" >/dev/null; then
-            report "$prog not installed yet, installing..."
-            install_block "$prog" || { err "unable to install required prog $prog this script depends on. abort."; exit 1; }
+            report "[$prog] not installed yet, installing..."
+            install_block "$prog" || { err "unable to install required prog [$prog] this script depends on. abort."; exit 1; }
             report "...done"
         fi
     done
@@ -154,16 +154,16 @@ function check_dependencies() {
             $BASE_DATA_DIR/dev \
                 ; do
         if ! [[ -d "$dir" ]]; then
-            if confirm "$dir mountpoint/dir does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
-                execute "sudo mkdir $dir" || { err "unable to create $dir directory. abort."; exit 1; }
+            if confirm "[$dir] mountpoint/dir does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
+                execute "sudo mkdir $dir" || { err "unable to create [$dir] directory. abort."; exit 1; }
             else
-                err "expected \"$dir\" to be already-existing dir. abort"
+                err "expected [$dir] to be already-existing dir. abort"
                 exit 1
             fi
         fi
 
-        execute "sudo chown $USER:$USER $dir" || { err "unable to change $dir ownership to $USER:$USER. abort."; exit 1; }
-        execute "sudo chmod $perms $dir" || { err "unable to change $dir permissions to $perms. abort."; exit 1; }
+        execute "sudo chown $USER:$USER $dir" || { err "unable to change [$dir] ownership to [$USER:$USER]. abort."; exit 1; }
+        execute "sudo chmod $perms $dir" || { err "unable to change [$dir] permissions to [$perms]. abort."; exit 1; }
     done
 }
 
@@ -182,7 +182,7 @@ function setup_hosts() {
         #current="$(grep '\(127\.0\.1\.1\)\s\+\(.*\)\s\+\(\w\+\)' $file)"
         readonly current="$(grep "$HOSTNAME" "$file")"
         if [[ -z "$current" || "$(echo "$current" | wc -l)" -ne 1 ]]; then
-            err "$file contained either more or less than 1 line(s) containing our hostname. check manually."
+            err "[$file] contained either more or less than 1 line(s) containing our hostname. check manually."
             return 1
         fi
 
@@ -191,20 +191,20 @@ function setup_hosts() {
     }
 
     if ! [[ -d "$hosts_file_dest" ]]; then
-        err "$hosts_file_dest is not a dir; skipping hosts file installation."
+        err "[$hosts_file_dest] is not a dir; skipping hosts file installation."
         return 1
     fi
 
     if [[ -f "$file" ]]; then
         [[ -f "$hosts_file_dest/hosts" ]] || { err "system hosts file is missing!"; return 1; }
         readonly current_hostline="$(_extract_current_hostname_line $hosts_file_dest/hosts)" || return 1
-        execute "cp $file $tmpfile" || { err; return 1; }
+        execute "cp -- $file $tmpfile" || { err; return 1; }
         execute "sed -i 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' $tmpfile" || { err; return 1; }
 
         backup_original_and_copy_file "$tmpfile" "$hosts_file_dest"
         execute "rm -- $tmpfile"
     else
-        err "expected configuration file at \"$file\" does not exist; won't install it."
+        err "expected configuration file at [$file] does not exist; won't install it."
         return 1
     fi
 
@@ -220,18 +220,18 @@ function setup_sudoers() {
     readonly file="$COMMON_DOTFILES/backups/sudoers"
 
     if ! [[ -d "$sudoers_dest" ]]; then
-        err "$sudoers_dest is not a dir; skipping sudoers file installation."
+        err "[$sudoers_dest] is not a dir; skipping sudoers file installation."
         return 1
     fi
 
     if [[ -f "$file" ]]; then
-        execute "cp $file $tmpfile" || return 1
+        execute "cp -- $file $tmpfile" || return 1
         execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
         backup_original_and_copy_file "$tmpfile" "$sudoers_dest"
 
         execute "rm -- '$tmpfile'"
     else
-        err "expected configuration file at \"$file\" does not exist; won't install it."
+        err "expected configuration file at [$file] does not exist; won't install it."
         return 1
     fi
 }
@@ -243,7 +243,7 @@ function setup_apt() {
     readonly apt_dir="/etc/apt"
 
     if ! [[ -d "$apt_dir" ]]; then
-        err "$apt_dir is not a dir; skipping apt conf installation."
+        err "[$apt_dir] is not a dir; skipping apt conf installation."
         return 1
     fi
 
@@ -257,7 +257,7 @@ function setup_apt() {
         if [[ -f "$file" ]]; then
             backup_original_and_copy_file "$file" "$apt_dir"
         else
-            err "expected configuration file at \"$file\" does not exist; won't install it."
+            err "expected configuration file at [$file] does not exist; won't install it."
         fi
     done
 }
@@ -271,7 +271,7 @@ function setup_crontab() {
     readonly file="$PRIVATE_CASTLE/backups/crontab"
 
     if ! [[ -d "$cron_dir" ]]; then
-        err "$cron_dir is not a dir; skipping crontab installation."
+        err "[$cron_dir] is not a dir; skipping crontab installation."
         return 1
     fi
 
@@ -283,7 +283,7 @@ function setup_crontab() {
 
         execute "rm -- '$tmpfile'"
     else
-        err "expected configuration file at \"$file\" does not exist; won't install it."
+        err "expected configuration file at [$file] does not exist; won't install it."
     fi
 }
 
@@ -343,19 +343,19 @@ function install_nfs_server() {
     install_block 'nfs-kernel-server' || { err "unable to install nfs-kernel-server. aborting nfs server install/config."; return 1; }
 
     if ! [[ -f "$nfs_conf" ]]; then
-        err "$nfs_conf is not a file; skipping nfs server installation."
+        err "[$nfs_conf] is not a file; skipping nfs server installation."
         return 1
     fi
 
     while true; do
         if confirm "$(report "add client IP for the exports list (who will access [$NFS_SERVER_SHARE])?")"; then
             echo -e "enter client ip:"
-            read client_ip
+            read -r client_ip
 
-            [[ "$client_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: \"$client_ip\""; continue; }
+            [[ "$client_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$client_ip]"; continue; }
 
-            echo -e "enter share to expose (leave blank to default to \"$NFS_SERVER_SHARE\"):"
-            read share
+            echo -e "enter share to expose (leave blank to default to [$NFS_SERVER_SHARE]):"
+            read -r share
 
             share=${share:-"$NFS_SERVER_SHARE"}
             [[ -d "$share" ]] || { err "[$share] is not a valid dir."; continue; }
@@ -395,23 +395,23 @@ function install_nfs_client() {
 
     install_block 'nfs-common' || { err "unable to install nfs-common. aborting nfs client install/config."; return 1; }
 
-    [[ -f "$fstab" ]] || { err "$fstab does not exist; cannot add fstab entry!"; return 1; }
+    [[ -f "$fstab" ]] || { err "[$fstab] does not exist; cannot add fstab entry!"; return 1; }
 
     while true; do
         if confirm "$(report "add ${server_ip:+another} nfs server entry to fstab?")"; then
             echo -e "enter server ip: ${prev_server_ip:+(leave blank to default to [$prev_server_ip])}"
-            read server_ip
+            read -r server_ip
             [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
             [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$server_ip]"; continue; }
 
             echo -e "enter local mountpoint to mount nfs share to (leave blank to default to [${default_mountpoint}]):"
-            read mountpoint
+            read -r mountpoint
             [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
             create_mountpoint "$mountpoint" || continue
             list_contains "$mountpoint" "${used_mountpoints[*]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
 
             echo -e "enter remote share to mount (leave blank to default to [${NFS_SERVER_SHARE}]):"
-            read nfs_share
+            read -r nfs_share
             [[ -z "$nfs_share" ]] && nfs_share="$NFS_SERVER_SHARE"
             [[ "$nfs_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
             list_contains "${server_ip}${nfs_share}" "${mounted_shares[*]}" && { report "selected [${server_ip}:${nfs_share}] has already been used for previous definition"; continue; }
@@ -421,7 +421,7 @@ function install_nfs_client() {
                 execute "echo ${server_ip}:${nfs_share} ${mountpoint} nfs noauto,x-systemd.automount,_netdev,x-systemd.device-timeout=10,timeo=14,rsize=8192,wsize=8192 0 0 \
                         | sudo tee --append $fstab > /dev/null"
             else
-                report "an nfs share entry for ${server_ip}:${nfs_share} in $fstab already exists."
+                report "an nfs share entry for [${server_ip}:${nfs_share}] in $fstab already exists."
             fi
 
             prev_server_ip="$server_ip"
@@ -451,7 +451,7 @@ function install_ssh_server() {
     install_block 'openssh-server' || { err "unable to install openssh-server. aborting sshd install/config."; return 1; }
 
     if ! [[ -d "$sshd_confdir" ]]; then
-        err "$sshd_confdir is not a dir; skipping sshd conf installation."
+        err "[$sshd_confdir] is not a dir; skipping sshd conf installation."
         return 1
     fi
 
@@ -486,7 +486,7 @@ function create_mountpoint() {
 
     [[ -z "$mountpoint" ]] && { err "cannot pass empty mountpoint arg to $FUNCNAME"; return 1; }
 
-    [[ -d "$mountpoint" ]] || execute "sudo mkdir $mountpoint" || { err "couldn't create \"$mountpoint\""; return 1; }
+    [[ -d "$mountpoint" ]] || execute "sudo mkdir -- $mountpoint" || { err "couldn't create [$mountpoint]"; return 1; }
     execute "sudo chmod 777 $mountpoint" || { err; return 1; }
 
     return 0
@@ -514,7 +514,7 @@ function install_sshfs() {
     # note that 'user_allow_other' uncommenting makes sense only if our related fstab
     # entry has the 'allow_other' opt:
     if ! [[ -r "$fuse_conf" && -f "$fuse_conf" ]]; then
-        err "$fuse_conf is not readable; cannot uncomment \"\#user_allow_other\" prop in it."
+        err "[$fuse_conf] is not readable; cannot uncomment \"\#user_allow_other\" prop in it."
     elif grep -q '#user_allow_other' "$fuse_conf"; then
         # hasn't been uncommented yet
         execute "sudo sed -i 's/#user_allow_other/user_allow_other/g' $fuse_conf"
@@ -522,33 +522,33 @@ function install_sshfs() {
     elif grep -q 'user_allow_other' "$fuse_conf"; then
         true  # do nothing; already uncommented, all good;
     else
-        err "$fuse_conf appears not to contain config value \"user_allow_other\"; check manually."
+        err "[$fuse_conf] appears not to contain config value \"user_allow_other\"; check manually."
     fi
 
     # add us to the fuse group:
     execute "sudo gpasswd -a $USER fuse"
 
-    [[ -f "$fstab" ]] || { err "$fstab does not exist; cannot add fstab entry!"; return 1; }
+    [[ -f "$fstab" ]] || { err "[$fstab] does not exist; cannot add fstab entry!"; return 1; }
 
     while true; do
         if confirm "$(report "add ${server_ip:+another} sshfs entry to fstab?")"; then
             echo -e "enter server ip: ${prev_server_ip:+(leave blank to default to [$prev_server_ip])}"
-            read server_ip
+            read -r server_ip
             [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
             [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$server_ip]"; continue; }
 
-            echo -e "enter remote user to log in as (leave blank to default to your local user, [${USER}]):"
-            read remote_user
+            echo -e "enter remote user to log in as (leave blank to default to your local user, [$USER]):"
+            read -r remote_user
             [[ -z "$remote_user" ]] && remote_user="$USER"
 
-            echo -e "enter local mountpoint to mount sshfs share to (leave blank to default to [${default_mountpoint}]):"
-            read mountpoint
+            echo -e "enter local mountpoint to mount sshfs share to (leave blank to default to [$default_mountpoint]):"
+            read -r mountpoint
             [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
             create_mountpoint "$mountpoint" || continue
             list_contains "$mountpoint" "${used_mountpoints[*]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
 
             echo -e "enter remote share to mount (leave blank to default to [${SSH_SERVER_SHARE}]):"
-            read ssh_share
+            read -r ssh_share
             [[ -z "$ssh_share" ]] && ssh_share="$SSH_SERVER_SHARE"
             [[ "$ssh_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
             list_contains "${server_ip}${ssh_share}" "${mounted_shares[*]}" && { report "selected [${server_ip}:${ssh_share}] has already been used for previous definition"; continue; }
@@ -560,7 +560,7 @@ function install_sshfs() {
 
                 sel_ips_to_user["$server_ip"]="$remote_user"
             else
-                report "an ssh share entry for ${server_ip}:${ssh_share} in $fstab already exists."
+                report "an ssh share entry for [${server_ip}:${ssh_share}] in $fstab already exists."
             fi
 
             prev_server_ip="$server_ip"
@@ -797,7 +797,7 @@ function fetch_castles() {
     # !! if you change private repos, make sure you update PRIVATE_CASTLE definitions @ validate_and_init()!
     case "$MODE" in
         work)
-            clone_or_link_castle work_dotfiles laur.aliste gitlab.williamhill-dev.local
+            clone_or_link_castle work_dotfiles laliste git.nonprod.williamhill.plc
             ;;
         personal)
             clone_or_link_castle personal-dotfiles layr bitbucket.org
@@ -908,7 +908,7 @@ function setup_netrc_perms() {
     if [[ -e "$rc_loc" ]]; then
         execute "chmod $perms $(realpath "$rc_loc")" || err "setting [$rc_loc] perms failed"  # realpath, since we cannot change perms via symlink
     else
-        err "expected to find [$rc_loc], but it doesn't exist. if you're not using netrc, better remvoe related logic from ${SELF}."
+        err "expected to find [$rc_loc], but it doesn't exist. if you're not using netrc, better remove related logic from ${SELF}."
         return 1
     fi
 }
@@ -938,6 +938,8 @@ function setup_global_prompt() {
 
 # setup system config files (the ones not living under $HOME, ie not managed by homesick)
 # has to be invoked AFTER homeschick castles are cloned/pulled!
+#
+# note that this block overlaps logically a bit with post_install_progs_setup()
 function setup_config_files() {
 
     setup_apt
@@ -1129,7 +1131,7 @@ function install_symantec_endpoint_security() {
     execute "sudo $dir/install.sh" || return 1
 
     execute "rm -- $tarball"
-    execute "sudo rm -rf $dir" || return 1
+    execute "sudo rm -rf -- $dir" || return 1
 
     # fetch & install the jdk crypto extensions (JCE):
     execute "wget --no-check-certificate \
@@ -1189,7 +1191,7 @@ function install_progs() {
     install_own_builds
 
     install_oracle_jdk
-    install_skype
+    #install_skype
     install_nvidia
 
     # TODO; delete?:
@@ -1306,7 +1308,7 @@ function install_oracle_jdk() {
     create_link --sudo "$JDK_INSTALLATION_DIR/$(basename "$dir")" "$JDK_LINK_LOC"
 
     execute "popd"
-    execute "sudo rm -rf $tmpdir"
+    execute "sudo rm -rf -- $tmpdir"
     return 0
 }
 
@@ -1523,7 +1525,7 @@ function build_and_install_synergy() {
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
     if [[ "$do_clone" -ne 0 ]]; then
-        [[ -d "$builddir" ]] && execute "sudo rm -rf $builddir"
+        [[ -d "$builddir" ]] && execute "sudo rm -rf -- $builddir"
         execute "git clone $SYNERGY_REPO_LOC $builddir" || return 1
     fi
 
@@ -1842,7 +1844,7 @@ function vim_post_install_configuration() {
     # note we don't want sessions in homesick, as they're likely to be machine-dependent.
     if [[ -d "$stored_vim_sessions" ]]; then
         if ! [[ -h "$vim_sessiondir" ]]; then
-            [[ -d "$vim_sessiondir" ]] && execute "sudo rm -rf $vim_sessiondir"
+            [[ -d "$vim_sessiondir" ]] && execute "sudo rm -rf -- $vim_sessiondir"
             create_link "$stored_vim_sessions" "$vim_sessiondir"
         fi
     else  # $stored_vim_sessions does not exist; init it anyways
@@ -1932,7 +1934,7 @@ function install_YCM() {
         execute "mv $dir $libclang_root"
 
         execute "popd"
-        execute "sudo rm -rf $tmpdir"
+        execute "sudo rm -rf -- $tmpdir"
 
         return 0
     }
@@ -2087,7 +2089,7 @@ function install_from_repo() {
         remind
         tree
         flashplugin-nonfree
-        htpdate
+        ntp
         gdebi
         synaptic
         apt-show-versions
@@ -2543,6 +2545,25 @@ function install_gtk_theme() {
 }
 
 
+# add additional ntp servers
+function configure_ntp_for_work() {
+    local servers conf i
+
+    readonly servers=('server gibntp01.prod.williamhill.plc' 'server gibntp02.prod.williamhill.plc')
+    readonly conf='/etc/ntp.conf'
+
+    [[ "$MODE" == work ]] || return
+    [[ -f "$conf" ]] || { err "[$conf] is not a valid file. is ntp installed?"; return 1; }
+
+    for i in "${servers[@]}"; do
+        if ! grep -q "^$i\$" "$conf"; then
+            report "adding [$i] to $conf"
+            execute "echo $i | sudo tee --append $conf > /dev/null"
+        fi
+    done
+}
+
+
 # configs & settings that can/need to be installed  AFTER  the related programs have
 # been installed.
 function post_install_progs_setup() {
@@ -2562,6 +2583,7 @@ function post_install_progs_setup() {
     execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
     execute "newgrp vboxusers"                  # log us into the new group
     install_gtk_theme
+    configure_ntp_for_work
 }
 
 
@@ -2679,7 +2701,8 @@ function check_connection() {
     readonly ip="google.com"
 
     # Check whether the client is connected to the internet:
-    wget -q --spider --timeout=$timeout -- "$ip" > /dev/null 2>&1  # works in networks where ping is not allowed
+    # TODO: keep '--no-check-certificate' by default?
+    wget --no-check-certificate -q --spider --timeout=$timeout -- "$ip" > /dev/null 2>&1  # works in networks where ping is not allowed
     return $?
 }
 
@@ -2869,18 +2892,14 @@ function is_server() {
 #
 # @returns {bool}   true if system is a laptop.
 function is_laptop() {
-    local file pwr_supply_dir
-
+    local pwr_supply_dir
     readonly pwr_supply_dir="/sys/class/power_supply"
 
     # sanity:
     [[ -d "$pwr_supply_dir" ]] || { err "$pwr_supply_dir is not a valid dir! cannot decide if we're a laptop; assuming we're not. abort." "$FUNCNAME"; sleep 5; return 1; }
 
-    while IFS= read -r -d '' file; do
-        [[ "$file" == "${pwr_supply_dir}/BAT"* ]] && return 0
-    done <   <(find "$pwr_supply_dir" -maxdepth 1 -mindepth 1 -print0)
-
-    return 1
+    find "$pwr_supply_dir" -mindepth 1 -maxdepth 1 -name 'BAT*' -print -quit | grep -q .
+    return $?
 }
 
 
@@ -2914,7 +2933,7 @@ function create_link() {
         target="${target}$filename"
     fi
 
-    $sudo test -h "$target" && execute "$sudo rm $target"
+    $sudo test -h "$target" && execute "$sudo rm -- $target"
     execute "$sudo ln -s -- \"$src\" \"$target\""
 
     return 0

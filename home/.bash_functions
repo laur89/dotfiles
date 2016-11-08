@@ -130,7 +130,7 @@ ffind() {
               readonly filetype=1
               shift $((OPTIND-1))
 
-              # try keeping doc files' definitions in sync with the ones in fo()
+              # try keeping doc files' definitions in sync with the ones in __fo()
               # no linebreaks in regex!
               readonly type_grep='application/msword; charset=binary|application/.*opendocument.*; charset=binary|application/vnd.ms-office; charset=binary'
                 ;;
@@ -263,7 +263,8 @@ ffind() {
     if [[ "$pathOpt" -eq 1 ]]; then
         [[ -n "$iname_arg" ]] && iname_arg="-iwholename" || iname_arg="-path"  # as per man page, -ipath is deprecated
     elif [[ "$regex" -eq 1 ]]; then
-        [[ -n "$iname_arg" ]] && iname_arg="-regextype posix-extended -iregex" || iname_arg="-regextype posix-extended -regex"
+        iname_arg="-regextype posix-extended"
+        [[ -n "$iname_arg" ]] && iname_arg+=" -iregex" || iname_arg+=" -regex"
     fi
 
     if [[ "$filetype" -eq 1 ]]; then
@@ -300,20 +301,18 @@ ffindproc() {
 
 # find top 5/x biggest or smallest nodes:
 __find_top_big_small_fun() {
-    local usage opt OPTIND itemsToShow file_type maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_
+    local usage opt OPTIND itemsToShow file_type maxDepthParam maxDepth follow_links reverse du_size_unit
     local bigOrSmall du_include_regular_files duMaxDepthParam filetypeOptionCounter i
 
-    reverse="$1"       # this basically decides whether we're showing top big or small.
-    du_size_unit="$2"  # default unit provided by the invoker
-    FUNCNAME_="$3"
-    bigOrSmall="$4"
-    itemsToShow="$5"   # default top number of tiems displayed
-    shift 5
+    du_size_unit="$1"  # default unit provided by the invoker (can be overridden)
+    bigOrSmall="$2"
+    itemsToShow="$3"   # default top number of items displayed
+    shift 3
 
     filetypeOptionCounter=0
 
-    usage="\n$FUNCNAME_: find top $bigOrSmall nodes from current dir.\nif node type not specified, defaults to searching for everything.\n
-    Usage: $FUNCNAME_  [-f] [-d] [-L] [-m depth]  [nr_of_top_items_to_show]  [block_size_unit]
+    usage="\n${FUNCNAME[1]}: find top $bigOrSmall nodes from current dir.\nif node type not specified, defaults to searching for everything.\n
+    Usage: ${FUNCNAME[1]}  [-f] [-d] [-L] [-m depth]  [nr_of_top_items_to_show]  [block_size_unit]
         -f  search only for regular files
         -d  search only for directories
         -L  follow/dereference symlinks
@@ -323,10 +322,10 @@ __find_top_big_small_fun() {
         given in either order.
 
         examples:
-            $FUNCNAME_ 20       - seek top 20 $bigOrSmall files and dirs;
-            $FUNCNAME_ -f 15 G  - seek top 15 $bigOrSmall files and present their sizes in gigas;
-            $FUNCNAME_ -f G 15  - same as previous;
-            $FUNCNAME_ -dm3 K   - seek top $bigOrSmall dirs and present their sizes
+            ${FUNCNAME[1]} 20       - seek top 20 $bigOrSmall files and dirs;
+            ${FUNCNAME[1]} -f 15 G  - seek top 15 $bigOrSmall files and present their sizes in gigas;
+            ${FUNCNAME[1]} -f G 15  - same as previous;
+            ${FUNCNAME[1]} -dm3 K   - seek top $bigOrSmall dirs and present their sizes
                                    in kilos; descend up to 3 levels from current dir.
 "
 
@@ -351,7 +350,7 @@ __find_top_big_small_fun() {
 
 
     if [[ "$#" -gt 2 ]]; then
-        err "maximum of 2 args are allowed" "$FUNCNAME_"
+        err "maximum of 2 args are allowed" "${FUNCNAME[1]}"
         echo -e "$usage"
         return 1
     fi
@@ -359,22 +358,22 @@ __find_top_big_small_fun() {
     # parse optional args:
     for i in "$@"; do
         if is_digit "$i"; then
-            [[ "$i" -eq 0 ]] && { err "something larger than 0 would make sense." "$FUNCNAME_"; return 1; }
+            [[ "$i" -le 0 ]] && { err "something larger than 0 would make sense." "${FUNCNAME[1]}"; return 1; }
             itemsToShow="$i"
         else
             du_size_unit="$i"
         fi
     done
 
-    if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ && "${#du_size_unit}" -eq 1 ]]; then
-        err "unsupported du block size unit: [$du_size_unit]" "$FUNCNAME_"
+    if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]$ ]]; then
+        err "unsupported du block size unit: [$du_size_unit]" "${FUNCNAME[1]}"
         echo -e "$usage"
         return 1
     fi
 
     if [[ -n "$maxDepth" ]]; then
         if ! is_digit "$maxDepth"; then
-            err "maxdepth arg value has to be... y'know, a digit" "$FUNCNAME_"
+            err "maxdepth arg value has to be... y'know, a digit" "${FUNCNAME[1]}"
             echo -e "$usage"
             return 1
         fi
@@ -384,12 +383,26 @@ __find_top_big_small_fun() {
     fi
 
     if [[ "$filetypeOptionCounter" -gt 1 ]]; then
-        err "-f and -d flags are exclusive." "$FUNCNAME_"
+        err "-f and -d flags are exclusive." "${FUNCNAME[1]}"
         echo -e "$usage"
         return 1
     fi
 
-    report "seeking for top $itemsToShow $bigOrSmall files (in $du_size_unit units)...\n" "$FUNCNAME_"
+    # invoker sanity: (and define whether sort output should be reversed)
+    case "$bigOrSmall" in
+        small)
+            true
+            ;;
+        large)
+            reverse='-r'
+            ;;
+        *)
+            err "could not detect whether we should look for top big or small files" "$FUNCNAME"
+            return 1
+            ;;
+    esac
+
+    report "seeking for top $itemsToShow $bigOrSmall files (in $du_size_unit units)...\n" "${FUNCNAME[1]}"
 
     if [[ "$du_size_unit" == B ]]; then
         du_size_unit="--bytes"
@@ -443,35 +456,33 @@ __find_top_big_small_fun() {
 }
 
 ffindtopbig() {
-    __find_top_big_small_fun "-r" "M" "$FUNCNAME" "large" 10 "$@"
+    __find_top_big_small_fun "M" "large" 10 "$@"
 }
 
 ffindtopsmall() {
     #find . -type f -exec ls -s --block-size=K {} \; | sort -n | head -$itemsToShow 2>/dev/null
-    __find_top_big_small_fun "" "K" "$FUNCNAME" "small" 10 "$@"
+    __find_top_big_small_fun "K" "small" 10 "$@"
 }
 
 # find smaller/bigger than Xmegas files
 __find_bigger_smaller_common_fun() {
-    local usage opt OPTIND file_type maxDepthParam maxDepth follow_links reverse du_size_unit FUNCNAME_ biggerOrSmaller sizeArg
+    local usage opt OPTIND file_type maxDepthParam maxDepth follow_links reverse du_size_unit biggerOrSmaller sizeArg
     local du_include_regular_files duMaxDepthParam plusOrMinus filetypeOptionCounter sizeArgLastChar du_blk_sz find_size_unit
 
-    reverse="$1"          # sorting order (param for sort)
-    du_size_unit="$2"     # default unit provided by the invoker
-    FUNCNAME_="$3"        # invoking function name
-    biggerOrSmaller="$4"  # denotes whether larger or smaller than X size units were queried
-    shift 4
+    du_size_unit="$1"     # default unit provided by the invoker
+    biggerOrSmaller="$2"  # denotes whether larger or smaller than X size units were queried
+    shift 2
 
     filetypeOptionCounter=0
 
-    if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]+$ && "${#du_size_unit}" -eq 1 ]]; then
-        err "unsupported du block size unit: [$du_size_unit]" "$FUNCNAME_"
+    if ! [[ "$du_size_unit" =~ ^[KMGTPEZYB]$ ]]; then
+        err "unsupported du block size unit: [$du_size_unit]" "${FUNCNAME[1]}"
         echo -e "$usage"
         return 1
     fi
 
-    usage="\n$FUNCNAME_: find nodes $biggerOrSmaller than X $du_size_unit from current dir.\nif node type not specified, defaults to searching for everything.\n
-    Usage: $FUNCNAME_  [-f] [-d] [-L] [-m depth]  base_size_in_[du_size_unit]
+    usage="\n${FUNCNAME[1]}: find nodes $biggerOrSmaller than X $du_size_unit from current dir.\nif node type not specified, defaults to searching for everything.\n
+    Usage: ${FUNCNAME[1]}  [-f] [-d] [-L] [-m depth]  base_size_in_[du_size_unit]
 
         the [du_size_unit] can be any of [KMGTPEZYB]; if not provided, defaults to $du_size_unit.
         ('B' is for bytes; KB, MB etc for base 1000 not supported)
@@ -482,10 +493,10 @@ __find_bigger_smaller_common_fun() {
         -m<digit>   max depth to descend; unlimited by default.
 
         examples:
-            $FUNCNAME_ 300       - seek files and dirs $biggerOrSmaller than 300 default
+            ${FUNCNAME[1]} 300       - seek files and dirs $biggerOrSmaller than 300 default
                                         du_size_units, which is $du_size_unit;
-            $FUNCNAME_ -f 12G    - seek files $biggerOrSmaller than 12 gigs;
-            $FUNCNAME_ -dm3 12K  - seek dirs $biggerOrSmaller than 12 kilobytes;
+            ${FUNCNAME[1]} -f 12G    - seek files $biggerOrSmaller than 12 gigs;
+            ${FUNCNAME[1]} -dm3 12K  - seek dirs $biggerOrSmaller than 12 kilobytes;
                                         descend up to 3 levels from current dir.
 "
 
@@ -513,14 +524,14 @@ __find_bigger_smaller_common_fun() {
     sizeArg="$1"
 
     if [[ "$#" -ne 1 ]]; then
-        err "exactly one arg required" "$FUNCNAME_"
+        err "exactly one arg required" "${FUNCNAME[1]}"
         echo -e "$usage"
         return 1
     fi
 
     if [[ -n "$maxDepth" ]]; then
         if ! is_digit "$maxDepth" || [[ "$maxDepth" -le 0 ]]; then
-            err "maxdepth arg value has to be... y'know, a digit" "$FUNCNAME_"
+            err "maxdepth arg value has to be... y'know, a digit" "${FUNCNAME[1]}"
             echo -e "$usage"
             return 1
         fi
@@ -534,8 +545,8 @@ __find_bigger_smaller_common_fun() {
         sizeArgLastChar="${sizeArg:$(( ${#sizeArg} - 1)):1}"
 
         if ! is_digit "$sizeArgLastChar"; then
-            if ! [[ "$sizeArgLastChar" =~ ^[KMGTPEZYB]+$ ]]; then
-                err "unsupported du block size unit provided: [$sizeArgLastChar]" "$FUNCNAME_"
+            if ! [[ "$sizeArgLastChar" =~ ^[KMGTPEZYB]$ ]]; then
+                err "unsupported du block size unit provided: [$sizeArgLastChar]" "${FUNCNAME[1]}"
                 return 1
             fi
 
@@ -546,39 +557,44 @@ __find_bigger_smaller_common_fun() {
         fi
 
         if [[ -z "$sizeArg" ]]; then
-            err "base size has to be provided as well, not only the unit." "$FUNCNAME_"
+            err "base size has to be provided as well, not only the unit." "${FUNCNAME[1]}"
             echo -e "$usage"
             return 1
         elif ! is_digit "$sizeArg"; then
-            err "base size has to be a positive digit, but was [$sizeArg]." "$FUNCNAME_"
+            err "base size has to be a positive digit, but was [$sizeArg]." "${FUNCNAME[1]}"
             echo -e "$usage"
             return 1
         fi
     else
         #sizeArg=5
-        err "need to provide base size in $du_size_unit" "$FUNCNAME_"
+        err "need to provide base size in $du_size_unit" "${FUNCNAME[1]}"
         echo -e "$usage"
         return 1
     fi
 
     if [[ "$filetypeOptionCounter" -gt 1 ]]; then
-        err "-f and -d flags are exclusive." "$FUNCNAME_"
+        err "-f and -d flags are exclusive." "${FUNCNAME[1]}"
         echo -e "$usage"
         return 1
     fi
 
 
     # invoker sanity: (and +/- definition for find -size and du --threshold args)
-    if [[ "$biggerOrSmaller" == "smaller" ]]; then
-        plusOrMinus='-'
-    elif [[ "$biggerOrSmaller" == "bigger" ]]; then
-        plusOrMinus='+'
-    else
-        err "could not detect whether we should look for smaller or larger than ${sizeArg}$du_size_unit files" "$FUNCNAME"
-        return 1
-    fi
+    case "$biggerOrSmaller" in
+        smaller)
+            plusOrMinus='-'
+            ;;
+        bigger)
+            plusOrMinus='+'
+            reverse='-r'
+            ;;
+        *)
+            err "could not detect whether we should look for smaller or larger than ${sizeArg}$du_size_unit files" "$FUNCNAME"
+            return 1
+            ;;
+    esac
 
-    report "seeking for files $biggerOrSmaller than ${sizeArg}${du_size_unit}...\n" "$FUNCNAME_"
+    report "seeking for files $biggerOrSmaller than ${sizeArg}${du_size_unit}...\n" "${FUNCNAME[1]}"
 
     if [[ "$du_size_unit" == B ]]; then
         du_blk_sz="--bytes"
@@ -593,7 +609,7 @@ __find_bigger_smaller_common_fun() {
         find_size_unit="$du_size_unit"
 
         if ! [[ "$find_size_unit" =~ ^[KMGB]+$ ]]; then
-            err "unsupported block size unit for find: [$find_size_unit]. refer to man find and search for [-size]" "$FUNCNAME_"
+            err "unsupported block size unit for find: [$find_size_unit]. refer to man find and search for [-size]" "${FUNCNAME[1]}"
             echo -e "$usage"
             return 1
 
@@ -651,13 +667,13 @@ __find_bigger_smaller_common_fun() {
 # find  nodes bigger than x mb:
 ffindbiggerthan() {
     #find . -size +${size}M -exec ls -s --block-size=M {} \; | sort -nr 2>/dev/null
-    __find_bigger_smaller_common_fun "-r" "M" "$FUNCNAME" "bigger" "$@"
+    __find_bigger_smaller_common_fun "M" "bigger" "$@"
 }
 
 # find  nodes smaller than x mb:
 ffindsmallerthan() {
     #find . -size -${size}M -exec ls -s --block-size=M {} \; | sort -n 2>/dev/null
-    __find_bigger_smaller_common_fun "" "M" "$FUNCNAME" "smaller" "$@"
+    __find_bigger_smaller_common_fun "M" "smaller" "$@"
 }
 
 aptsearch() {
@@ -861,7 +877,8 @@ ffstr() {
         # note exact and regex are mutually exclusive
         if [[ "$regex" -eq 1 ]]; then
             wildcard='.*'
-            [[ -n "$iname_arg" ]] && iname_arg="-regextype posix-extended -iregex" || iname_arg="-regextype posix-extended -regex"
+            iname_arg="-regextype posix-extended"
+            [[ -n "$iname_arg" ]] && iname_arg+=" -iregex" || iname_arg+=" -regex"
         fi
 
         find $follow_links ${dir:-.} $maxDepthParam -type f "${iname_arg:--name}" "$wildcard${file_pattern:-*}$wildcard" -print0 2>/dev/null
@@ -955,7 +972,7 @@ topid(){
 
 
 astr() {
-    local grepcase OPTIND usage opt filePattern caseOptCounter maxDepth follow_links
+    local grepcase OPTIND usage opt file_pattern caseOptCounter maxDepth follow_links
     local pattern defMaxDeptWithFollowLinks dir i
 
     readonly defMaxDeptWithFollowLinks=25
@@ -1011,7 +1028,7 @@ astr() {
     fi
 
     pattern="$1"
-    filePattern="$2"
+    file_pattern="$2"
 
     if [[ "$#" -lt 1 || "$#" -gt 2 ]]; then
         err "incorrect nr of arguments." "$FUNCNAME"
@@ -1044,15 +1061,18 @@ astr() {
         return 1
     fi
 
-    if [[ -n "$filePattern" ]]; then
+    if [[ -n "$file_pattern" ]]; then
         if [[ "$file_pattern" == */* ]]; then
             err "there are slashes in the filename." "$FUNCNAME"
             return 1
+        elif [[ "$file_pattern" == *\ * ]]; then
+            err "there is whitespace in the filename." "$FUNCNAME"
+            return 1
         fi
-        filePattern=(-G "$filePattern")
+        file_pattern="-G $file_pattern"
     fi
 
-    ag $follow_links $maxDepthParam "${filePattern[@]}" $grepcase -- "$pattern" $dir 2>/dev/null
+    ag $follow_links $maxDepthParam $file_pattern $grepcase -- "$pattern" $dir 2>/dev/null
 }
 
 
@@ -1168,6 +1188,7 @@ lgrep() {
     fi
 
     if [[ "$exact" -eq 1 ]]; then
+        [[ "$src" == *\.\** ]] && { err "only use asterisks (*) for wildcards, not .*" "$FUNCNAME"; return 1; }
         find "${srcdir:-.}" -maxdepth 1 -mindepth 1 -name "$src" -printf '%f\n' | grep -iE --color=auto "$src|$"
     else
         ls -lA "${srcdir:-.}" | grep --color=auto -i -- "$src"
@@ -1247,7 +1268,7 @@ myip() {  # Get internal & external ip addies:
             #interfaces="$(ls "$if_dir")"
         else
             interfaces="eth0 eth1 eth2 eth3"
-            report "can't read interfaces from $if_dir [not a (readable) dir]; trying these interfaces: [$interfaces]" "$FUNCNAME"
+            report "can't read interfaces from [$if_dir] [not a (readable) dir]; trying these interfaces: [$interfaces]" "$FUNCNAME"
         fi
 
         [[ -z "$interfaces" ]] && return 1
@@ -1456,15 +1477,29 @@ clock() {
     done
 }
 
+# format xml into readable shape:
+#    xmlformat file1 [file2...]
+#    xmlformat '<xml> unformatted </xml>'
 xmlformat() {
-    local file
+    local file regex result
 
-    [[ -z "$@" ]] && { echo -e "usage:   $FUNCNAME  <filename>"; return 1; }
+    readonly regex='^\s*<'
+    [[ -z "$@" ]] && { echo -e "usage:   $FUNCNAME  <filename>  OR  $FUNCNAME  'raw xml string'"; return 1; }
+    check_progs_installed xmllint "$EDITOR" || return 1;
+
+    if [[ "$#" -eq 1 && ! -f "$*" && "$*" =~ $regex ]]; then
+        result="$(echo "$*" | xmllint --format -)" || { err "formatting input xml failed" "$FUNCNAME"; return 1; }
+        echo
+        echo "$result"
+        echo
+        copy_to_clipboard "$result" && report "formatted xml is on clipboard" "$FUNCNAME"
+        return 0
+    fi
+
     for file in "$@"; do
         [[ -f "$file" && -r "$file" ]] || { err "provided file [$file] is not a regular file or is not readable. abort." "$FUNCNAME"; return 1; }
     done
 
-    check_progs_installed xmllint "$EDITOR" || return 1;
     xmllint --format "$@" | "$EDITOR"  "+set foldlevel=99" -;
 }
 
@@ -1592,7 +1627,7 @@ createUsbIso() {
 #######################
 mkgit() {
     local user passwd repo dir project_name OPTIND opt usage mainOptCounter http_statuscode
-    local newly_created_dir
+    local newly_created_dir curl_output namespace_id
 
     mainOptCounter=0
     readonly usage="usage:   $FUNCNAME  -g|-b|-w  <dirname> [project_name]
@@ -1617,8 +1652,8 @@ mkgit() {
               let mainOptCounter+=1
               shift $((OPTIND-1))
               ;;
-           w) user="work user"
-              repo="gitlab.work-dev.local"
+           w) user="laliste"
+              repo="$(getnetrc "${user}@git.url.workplace")"
               let mainOptCounter+=1
               shift $((OPTIND-1))
               ;;
@@ -1628,8 +1663,10 @@ mkgit() {
         esac
     done
 
-    readonly dir="$1"
+    readonly dir="${1%/}"  # strip trailing slash
     readonly project_name="${2:-$dir}"  # default to dir name
+
+    readonly curl_output="/tmp/curl_create_repo_output_${RANDOM}.out"
 
     if [[ "$mainOptCounter" -gt 1 ]]; then
         err "-g and -b flags are exclusive." "$FUNCNAME"
@@ -1643,7 +1680,7 @@ mkgit() {
         err "too many arguments" "$FUNCNAME"
         echo -e "$usage"
         return 1
-    elif ! check_progs_installed git getnetrc curl; then
+    elif ! check_progs_installed git getnetrc curl jq; then
         return 1
     elif [[ -z "$dir" ]]; then
         err "need to provide dirname at minimum" "$FUNCNAME"
@@ -1651,6 +1688,12 @@ mkgit() {
         return 1
     elif [[ -d "$dir/.git" ]]; then
         err "[$dir] is already a git repo. abort." "$FUNCNAME"
+        return 1
+    elif is_git; then
+        err "you're already in a git project; don't nest them." "$FUNCNAME"
+        return 1
+    elif [[ "$project_name" == */* ]]; then
+        err "project name [$project_name] contains slashes." "$FUNCNAME"
         return 1
     elif ! check_connection "$repo"; then
         err "no connection to [$repo]" "$FUNCNAME"
@@ -1671,6 +1714,42 @@ mkgit() {
         return 1
     fi
 
+    # offers user to choose the namespace/group to create project in, and returns
+    # its numeric id (NOT the namespace name).
+    __select_namespace() {
+        local gitlab_namespaces_json namespace_to_id namespace is_id_field
+        local i j fzf_selection
+
+        # https://forum.gitlab.com/t/create-a-new-project-in-a-group-using-api/1552/2
+        #
+        # find our namespaces:
+        readonly gitlab_namespaces_json="$(curl -sL --insecure \
+            --header "PRIVATE-TOKEN: $passwd" \
+            "https://${repo}/api/v3/namespaces")"
+
+        [[ "$gitlab_namespaces_json" == '[{"'* ]] || { err "found namespaces curl reply isn't expected json array" "$FUNCNAME"; return 1; }
+
+        is_id_field=0
+        declare -A namespace_to_id
+        while read -r i; do
+            [[ "$is_id_field" -eq 0 ]] && { j="$i"; is_id_field=1; continue; }
+
+            [[ -n "$j" ]] || { err "found namespace name was empty string; gitlab namespaces json response: $gitlab_namespaces_json" "$FUNCNAME"; return 1; }
+            is_digit "$i" || { err "found namespace id [$i] was not a digit; gitlab namespaces json response: $gitlab_namespaces_json" "$FUNCNAME"; return 1; }
+            namespace_to_id[$j]="$i"
+            fzf_selection+="${j}\n"
+            is_id_field=0
+        done <  <(echo "$gitlab_namespaces_json" | jq -r '.[] | .path,.id')
+
+        readonly fzf_selection="${fzf_selection:0:$(( ${#fzf_selection} - 2 ))}"  # strip the trailing newline
+        readonly namespace="$(echo -e "$fzf_selection" | fzf --exit-0)" || return 1
+        i="${namespace_to_id[$namespace]}"
+        is_digit "$i" || { err "unable to find namespace id from name [$namespace]" "$FUNCNAME"; return 1; }
+
+        echo "$i"
+        return 0
+    }
+
     # create remote repo, if not existing:
     if ! git ls-remote "git@${repo}:${user}/${project_name}" &> /dev/null; then
         case "$repo" in
@@ -1680,7 +1759,7 @@ mkgit() {
                     -u "$user:$passwd" \
                     https://api.github.com/user/repos \
                     -d "{ \"name\":\"$project_name\", \"private\":\"true\" }" \
-                    -o /dev/null)"
+                    -o "$curl_output")"
                 ;;
             'bitbucket.org')
                 readonly http_statuscode="$(curl -sL -X POST \
@@ -1689,17 +1768,16 @@ mkgit() {
                     -u "$user:$passwd" \
                     "https://api.bitbucket.org/2.0/repositories/$user/$project_name" \
                     -d '{ "scm": "git", "is_private": "true", "fork_policy": "no_public_forks" }' \
-                    -o /dev/null)"
+                    -o "$curl_output")"
                 ;;
-            'gitlab.work-dev.local')
-                # https://forum.gitlab.com/t/create-a-new-project-in-a-group-using-api/1552/2
-                #
-                # find namespaces:
-                #curl --header "PRIVATE-TOKEN: $passwd" "https://${repo}/api/v3/namespaces"
-                # create repo:
-                #curl --header "PRIVATE-TOKEN: token" -X POST "https://gitlab.com/api/v3/projects?name=foobartest4&namespace_id=<found_id>&description=This%20is%20a%20description"
-                err "not supported"
-                return 1
+            "$(getnetrc "${user}@git.url.workplace")")
+                namespace_id="$(__select_namespace)" || { [[ "$newly_created_dir" -eq 1 ]] && rm -r -- "$dir"; return 1; }  # delete the dir we just created
+                unset __select_namespace
+                readonly http_statuscode="$(curl -sL --insecure \
+                    -w '%{http_code}' \
+                    --header "PRIVATE-TOKEN: $passwd" \
+                    -X POST "https://${repo}/api/v3/projects?name=${project_name}&namespace_id=${namespace_id}&visibility_level=0" \
+                    -o "$curl_output")"
                 ;;
             *)
                 err "unexpected repo [$repo]" "$FUNCNAME"
@@ -1710,6 +1788,10 @@ mkgit() {
 
         if [[ "$http_statuscode" != 20* || "${#http_statuscode}" -ne 3 ]]; then
             err "curl request for creating the repo @ [$repo] apparently failed; response code was [$http_statuscode]" "$FUNCNAME"
+            if [[ -f "$curl_output" ]]; then
+                err "curl output can be found in [$curl_output]. contents are:\n\n" "$FUNCNAME"
+                jq . < "$curl_output"
+            fi
             echo
             err "abort" "$FUNCNAME"
 
@@ -1733,6 +1815,8 @@ mkgit() {
         git commit -a -m 'inital setup, adding readme - automated'
         git push -u origin master
     fi
+
+    unset __select_namespace
 }
 
 ########################################
@@ -2040,6 +2124,8 @@ fog() {
         opts="-$default_depth"
     fi
 
+    [[ "$#" -eq 0 ]] && { err "too few args." "$FUNCNAME"; return 1; }
+
     if ! command -v fzf > /dev/null 2>&1; then
         while IFS= read -r -d $'\0' i; do
             matches+=("$i")
@@ -2070,7 +2156,7 @@ gg() { fog "$@"; }
 # if no depth arg provided, then defaults to current dir only.
 #
 # TODO: the nth result selection only works, if name arg was provided, meaning `fon 2`
-# won't give expeted result. edit: imho it's reasonable; we can't limit searching for files bi digits.
+# won't give expeted result. edit: imho it's reasonable; we can't limit searching for files by digits.
 #
 # mnemonic: file open new(est)
 fon() {
@@ -2090,7 +2176,7 @@ fon() {
         opts="-f${default_depth}"
     fi
 
-    check_progs_installed stat head || return 1
+    check_progs_installed stat sort || return 1
 
     if [[ "$#" -eq 1 ]] && is_digit "$1"; then
         report "note that when you want the nth newest, then filename pattern has to be provided as first arg\n" "$FUNCNAME"
@@ -2265,13 +2351,13 @@ __fo() {
     [[ "${#files[@]}" -eq 0 ]] && return  # quit silently
     readonly count="${#files[@]}"
     # define filetype only by the first node:  # TODO: perhaps verify all nodes are of same type?
-    readonly filetype="$(file -iLb -- "${files[0]}")" || { err "issues testing [${files[0]}] with \$ file cmd" "$FUNCNAME"; return 1; }
+    readonly filetype="$(file -iLb -- "${files[0]}")" || { err "issues testing [${files[0]}] with \$ file cmd" "${FUNCNAME[1]}"; return 1; }
 
     # report
     if [[ "$count" -eq 1 ]]; then
-        report "opening [${files[*]}]" "$FUNCNAME"
+        report "opening [${files[*]}]" "${FUNCNAME[1]}"
     else
-        report "opening:" "$FUNCNAME"
+        report "opening:" "${FUNCNAME[1]}"
         for i in "${files[@]}"; do
             echo -e "\t${i}"
         done
@@ -2289,7 +2375,7 @@ __fo() {
             "$PAGER" -- "${files[@]}"
             ;;
         application/xml*)
-            [[ "$count" -gt 1 ]] && { report "won't format multiple xml files! will just open them" "$FUNCNAME"; sleep 1.5; }
+            [[ "$count" -gt 1 ]] && { report "won't format multiple xml files! will just open them" "${FUNCNAME[1]}"; sleep 1.5; }
             if [[ "$(wc -l < "${files[0]}")" -gt 2 || "$count" -gt 1 ]]; then  # note if more than 2 lines we also assume it's already formatted;
                 # assuming it's already formatted:
                 "$editor" -- "${files[@]}"
@@ -2302,8 +2388,8 @@ __fo() {
             "$video_player" "${files[@]}"
             ;;
         text/*)
-            # if we're dealing with a logfile, force open in PAGER
-            if [[ "${files[0]}" =~ \.log(\.[\.a-z0-9]+)*$ ]]; then
+            # if we're dealing with a logfile (including *.out), force open in PAGER
+            if [[ "${files[0]}" =~ \.(log|out)(\.[\.a-z0-9]+)*$ ]]; then
                 "$PAGER" -- "${files[@]}"
             else
                 "$editor" -- "${files[@]}"
@@ -2316,13 +2402,13 @@ __fo() {
             "$editor" -- "${files[@]}"
             ;;
         'application/x-executable; charset=binary'*)
-            [[ "$count" -gt 1 ]] && { report "won't execute multiple files! select one please" "$FUNCNAME"; return 1; }
+            [[ "$count" -gt 1 ]] && { report "won't execute multiple files! select one please" "${FUNCNAME[1]}"; return 1; }
             confirm "${files[*]} is executable. want to launch it from here?" || return
-            report "launching ${files[0]}..." "$FUNCNAME"
+            report "launching ${files[0]}..." "${FUNCNAME[1]}"
             ${files[0]}
             ;;
         'inode/directory;'*)
-            [[ "$count" -gt 1 ]] && { report "won't navigate to multiple dirs! select one please" "$FUNCNAME"; return 1; }
+            [[ "$count" -gt 1 ]] && { report "won't navigate to multiple dirs! select one please" "${FUNCNAME[1]}"; return 1; }
             "$file_mngr" -- "${files[0]}"
             ;;
         'inode/x-empty; charset=binary')
@@ -2335,7 +2421,7 @@ __fo() {
             "$office" "${files[@]}"  # libreoffice doesn't like option ending marker '--'
             ;;
         *)
-            err "dunno what to open this type of file with:\n\t$filetype" "$FUNCNAME"
+            err "dunno what to open this type of file with:\n\t$filetype" "${FUNCNAME[1]}"
             return 1
             ;;
     esac
@@ -2365,10 +2451,10 @@ __settz() {
     readonly tz="$*"
 
     check_progs_installed timedatectl || return 1
-    [[ -z "$tz" ]] && { err "provide a timezone to switch to (e.g. Europe/Madrid)." "$FUNCNAME"; return 1; }
-    [[ "$tz" =~ [a-zA-Z]+/[a-zA-Z]+ ]] || { err "invalid timezone format; has to be in a format like [Europe/Madrid]." "$FUNCNAME"; return 1; }
+    [[ -z "$tz" ]] && { err "provide a timezone to switch to (e.g. Europe/Madrid)." "${FUNCNAME[1]}"; return 1; }
+    [[ "$tz" =~ [a-zA-Z]+/[a-zA-Z]+ ]] || { err "invalid timezone format; has to be in a format like [Europe/Madrid]." "${FUNCNAME[1]}"; return 1; }
 
-    timedatectl set-timezone "$tz" || { err "setting tz to [$tz] failed (code $?)" "$FUNCNAME"; return 1; }
+    timedatectl set-timezone "$tz" || { err "setting tz to [$tz] failed (code $?)" "${FUNCNAME[1]}"; return 1; }
 }
 
 killmenao() {
@@ -2382,6 +2468,8 @@ killmenao() {
 ## Print window class ##
 ########################
 xclass() {
+    check_progs_installed xprop || return 1
+
     xprop | awk '
     /^WM_CLASS/{sub(/.* =/, "instance:"); sub(/,/, "\nclass:"); print}
     /^WM_NAME/{sub(/.* =/, "title:"); print}'
@@ -2406,7 +2494,7 @@ g() {
 
     input="$*"
 
-    [[ -d "$input" ]] && { cd -- "$input"; return; }
+    [[ -d "$input" && ! "$input" =~ ^\.+$ ]] && { cd -- "$input"; return; }
     [[ -z "$input" ]] && input='*'
 
     #[[ "$input" == */* ]] && path="${input%%/*}"  # strip everything after last slash(included)
@@ -2437,6 +2525,7 @@ g() {
 
     unset __find_fun
     [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
+    [[ "${#matches[@]}" -gt 1 ]] && { err "[${#matches[@]}] matches were found; max 1 allowed. fix ${FUNCNAME}()" "$FUNCNAME"; return 1; }
     [[ -d "${matches[0]}" ]] || { err "no such dir like [${matches[0]}] in $msg_loc" "$FUNCNAME"; return 1; }
     cd -- "${matches[0]}"
 }
@@ -2812,10 +2901,11 @@ fcoc() {
 # fshow - git commit diff browser
 # - enter shows the changes of the commit
 # - ctrl-s lets you squash commits - select the *last* commit that should be squashed.
-# - ctrl-m generates the jira commit message.
-# - ctrl-c check the selected commit out.
+# - ctrl-c generates the jira commit message.
+# - ctrl-u generates gitlab commit url.
+# - ctrl-b check the selected commit out.
 fshow() {
-    local q k out sha
+    local q k out sha url
 
     q="$*"
 
@@ -2825,7 +2915,7 @@ fshow() {
             git log --graph --color=always \
                 --format="%C(auto)%h%d %s %C(black)%C(bold)(%cr) %C(bold blue)<%an>%Creset" |
                 fzf --ansi --no-sort --reverse --tiebreak=index --bind=ctrl-z:toggle-sort --query="$q" --print-query \
-                    --expect=ctrl-s,ctrl-c,ctrl-m --exit-0); do
+                    --expect=ctrl-s,ctrl-c,ctrl-u,ctrl-b --exit-0); do
         mapfile -t out <<< "$out"
         q="${out[0]}"
         k="${out[1]}"
@@ -2843,12 +2933,20 @@ fshow() {
 
                 git rebase -i "$sha"~ && continue || return 1
                 ;;
-            'ctrl-m')
+            'ctrl-c')
                 is_function generate_jira_commit_comment || { err "can't generate commit msg as dependency is missing" "$FUNCNAME"; return 1; }
                 generate_jira_commit_comment "$sha"
                 break
                 ;;
-            'ctrl-c')
+            'ctrl-u')
+                is_function generate_git_commit_url || { err "can't generate git commit url as dependency is missing" "$FUNCNAME"; return 1; }
+                url="$(generate_git_commit_url "$sha")" || { err "creating commit url failed" "$FUNCNAME"; return 1; }
+                copy_to_clipboard "$url" \
+                    && { report "git commitcommit url on clipboard"; return 0; } \
+                    || err "unable to copy git commit url to clipboard. here it is:\n$url"
+                break
+                ;;
+            'ctrl-b')
                 git checkout "$sha"
                 break
                 ;;
@@ -2968,6 +3066,7 @@ export _MARKPATH
 
 # jump to mark:
 function jj {
+    [[ "$#" -ne 1 ]] && { err "provide a mark to jump to" "$FUNCNAME"; return 1; }
     [[ -d "$_MARKPATH" ]] || { err "no marks saved in ${_MARKPATH} - dir does not exist." "$FUNCNAME"; return 1; }
     cd -P -- "$_MARKPATH/$1" 2>/dev/null || err "no mark [$1] in [$_MARKPATH]" "$FUNCNAME"
 }
