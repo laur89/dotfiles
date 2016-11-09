@@ -132,7 +132,7 @@ ffind() {
 
               # try keeping doc files' definitions in sync with the ones in __fo()
               # no linebreaks in regex!
-              readonly type_grep='application/msword; charset=binary|application/.*opendocument.*; charset=binary|application/vnd.ms-office; charset=binary'
+              readonly type_grep='application/msword; charset=binary|application/.*opendocument.*; charset=binary|application/.*ms-office; charset=binary|application/.*ms-excel; charset=binary'
                 ;;
            L) follow_links="-L"
               shift $((OPTIND-1))
@@ -2417,7 +2417,8 @@ __fo() {
         # try keeping doc files' definitions in sync with the ones in ffind()
         'application/msword; charset=binary' \
                 | 'application/'*'opendocument'*'; charset=binary' \
-                | 'application/vnd.ms-office; charset=binary')
+                | 'application/'*'ms-office; charset=binary' \
+                | 'application/'*'ms-excel; charset=binary')
             "$office" "${files[@]}"  # libreoffice doesn't like option ending marker '--'
             ;;
         *)
