@@ -263,8 +263,7 @@ ffind() {
     if [[ "$pathOpt" -eq 1 ]]; then
         [[ -n "$iname_arg" ]] && iname_arg="-iwholename" || iname_arg="-path"  # as per man page, -ipath is deprecated
     elif [[ "$regex" -eq 1 ]]; then
-        iname_arg="-regextype posix-extended"
-        [[ -n "$iname_arg" ]] && iname_arg+=" -iregex" || iname_arg+=" -regex"
+        iname_arg="-regextype posix-extended -${iname_arg:+i}regex"
     fi
 
     if [[ "$filetype" -eq 1 ]]; then
@@ -779,7 +778,7 @@ ffstr() {
     elif [[ "$#" -gt 1 ]]; then
         i="${@: -1}"  # last arg; alternatively ${@:$#}
         if [[ -d "$i" ]]; then
-            [[ "$#" -lt 3 ]] && report "assuming starting path [$i] was given" "$FUNCNAME"  # if less than 3 args, we need to assume
+            [[ "$#" -lt 3 ]] && report "assuming starting path [$i] was given\n" "$FUNCNAME" && sleep 1.5  # if less than 3 args, we need to assume
             dir="$i"
             set -- "${@:1:${#}-1}"  # shift the last arg
         fi
@@ -877,8 +876,7 @@ ffstr() {
         # note exact and regex are mutually exclusive
         if [[ "$regex" -eq 1 ]]; then
             wildcard='.*'
-            iname_arg="-regextype posix-extended"
-            [[ -n "$iname_arg" ]] && iname_arg+=" -iregex" || iname_arg+=" -regex"
+            iname_arg="-regextype posix-extended -${iname_arg:+i}regex"
         fi
 
         find $follow_links ${dir:-.} $maxDepthParam -type f "${iname_arg:--name}" "$wildcard${file_pattern:-*}$wildcard" -print0 2>/dev/null
@@ -889,21 +887,23 @@ ffstr() {
         _FOUND_FILES=()
         while IFS= read -r -d $'\0' i; do
             _FOUND_FILES+=("$i")
-        done < <(__find_fun | xargs -0 grep -El --null --color=never -sn ${grepcase} -- "$pattern")
+        done < <(__find_fun | xargs -0 grep -Esl --null --color=never ${grepcase} -- "$pattern")
 
         report "found ${#_FOUND_FILES[@]} files containing [$pattern]; stored in \$_FOUND_FILES global array." "$FUNCNAME"
         [[ "${#_FOUND_FILES[@]}" -eq 0 ]] && return 1
 
-        if [[ "$open_files" -eq 1 ]]; then
-            __fo "${_FOUND_FILES[@]}"
-        fi
+        [[ "$open_files" -eq 1 ]] && __fo "${_FOUND_FILES[@]}"
     else
         __find_fun | \
-            xargs -0 grep -E --color=always -sn ${grepcase} -- "$pattern" | \
+            xargs -0 grep -Esn --color=always --with-filename -m 1 ${grepcase} -- "$pattern" | \
             cut -c 1-$max_result_line_length | \
             more
             #less
-    fi
+        #__find_fun | \
+            #xargs -P10 -n20 -0 grep --line-buffered -Esn --color=always --with-filename -m 1 $grepcase -- "$pattern" | \
+            #cut -c 1-$max_result_line_length | \
+            #more
+     fi
 
     unset __find_fun
 }
