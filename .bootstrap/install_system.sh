@@ -289,19 +289,20 @@ function setup_crontab() {
 
 
 function backup_original_and_copy_file() {
-    local file dest filename
+    local file dest_dir filename
 
-    readonly file="$1"  # full path of the file to be copied
-    readonly dest="$2"  # full path of the destination directory to copy to
+    readonly file="$1"          # full path of the file to be copied
+    readonly dest_dir="${2%/}"  # full path of the destination directory to copy to
 
     readonly filename="$(basename -- "$file")"
 
+    [[ -d "$dest_dir" ]] || { err "second arg [$dest_dir] was not a dir" "$FUNCNAME"; return 1; }
     # back up the destination file, if it's already existing:
-    if [[ -f "$dest/$filename" ]] && ! [[ -e "$dest/${filename}.orig" ]]; then
-        execute "sudo cp -- '$dest/$filename' '$dest/${filename}.orig'"
+    if [[ -f "$dest_dir/$filename" && ! -e "$dest_dir/${filename}.orig" ]]; then
+        execute "sudo cp -- '$dest_dir/$filename' '$dest_dir/${filename}.orig'"
     fi
 
-    execute "sudo cp -- '$file' '$dest'"
+    execute "sudo cp -- '$file' '$dest_dir'"
 }
 
 
@@ -1281,7 +1282,7 @@ function install_oracle_jdk() {
     readonly tmpdir="$(mktemp -d "jdk-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     report "fetcing $ORACLE_JDK_LOC"
-    execute "pushd $tmpdir" || return 1
+    execute "pushd -- $tmpdir" || return 1
 
     wget --no-check-certificate \
         --no-cookies \
@@ -1289,13 +1290,13 @@ function install_oracle_jdk() {
         -- $ORACLE_JDK_LOC
 
     readonly tarball="$(basename -- $ORACLE_JDK_LOC)"
-    extract "$tarball" || { err "extracting $tarball failed."; return 1; }
+    extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
     dir="$(find -mindepth 1 -maxdepth 1 -type d)"
     [[ -d "$dir" ]] || { err "couldn't find unpacked jdk directory"; return 1; }
 
-    [[ -d "$JDK_INSTALLATION_DIR" ]] || execute "sudo mkdir $JDK_INSTALLATION_DIR"
-    report "installing fetched JDK to $JDK_INSTALLATION_DIR"
-    execute "sudo mv $dir $JDK_INSTALLATION_DIR/" || { err "could not move extracted jdk dir ($dir) to $JDK_INSTALLATION_DIR"; return 1; }
+    [[ -d "$JDK_INSTALLATION_DIR" ]] || execute "sudo mkdir -- $JDK_INSTALLATION_DIR"
+    report "installing fetched JDK to [$JDK_INSTALLATION_DIR]"
+    execute "sudo mv -- $dir $JDK_INSTALLATION_DIR/" || { err "could not move extracted jdk dir [$dir] to [$JDK_INSTALLATION_DIR]"; return 1; }
 
     # change ownership to root:
     execute "sudo chown -R root:root $JDK_INSTALLATION_DIR/$(basename -- "$dir")"
@@ -1312,13 +1313,13 @@ function install_oracle_jdk() {
 function switch_jdk_versions() {
     local avail_javas active_java
 
-    [[ -d "$JDK_INSTALLATION_DIR" ]] || { err "$JDK_INSTALLATION_DIR does not exist. abort."; return 1; }
-    readonly avail_javas="$(find $JDK_INSTALLATION_DIR -mindepth 1 -maxdepth 1 -type d)"
-    [[ $? -ne 0 || -z "$avail_javas" ]] && { err "discovered no java installations @ $JDK_INSTALLATION_DIR"; return 1; }
+    [[ -d "$JDK_INSTALLATION_DIR" ]] || { err "[$JDK_INSTALLATION_DIR] does not exist. abort."; return 1; }
+    readonly avail_javas="$(find "$JDK_INSTALLATION_DIR" -mindepth 1 -maxdepth 1 -type d)"
+    [[ $? -ne 0 || -z "$avail_javas" ]] && { err "discovered no java installations @ [$JDK_INSTALLATION_DIR]"; return 1; }
     if [[ -h "$JDK_LINK_LOC" ]]; then
         active_java="$(realpath -- "$JDK_LINK_LOC")"
         if [[ "$avail_javas" == "$active_java" ]]; then
-            report "only one active jdk installation, [$active_java] is available, and that is already linked by $JDK_LINK_LOC"
+            report "only one active jdk installation, [$active_java] is available, and that is already linked by [$JDK_LINK_LOC]"
             return 0
         fi
 
@@ -1326,13 +1327,13 @@ function switch_jdk_versions() {
     fi
 
     while true; do
-        [[ -n "$active_java" ]] && echo && report "current active java: ${active_java}\n"
+        [[ -n "$active_java" ]] && echo && report "current active java: [$active_java]\n"
         report "select java ver to use (select none to skip the change)\n"
         select_items "$avail_javas" 1
 
         if [[ -n "$__SELECTED_ITEMS" ]]; then
-            [[ -d "$__SELECTED_ITEMS" ]] || { err "$__SELECTED_ITEMS is not a valid dir; try again."; continue; }
-            report "selecting ${__SELECTED_ITEMS}..."
+            [[ -d "$__SELECTED_ITEMS" ]] || { err "[$__SELECTED_ITEMS] is not a valid dir; try again."; continue; }
+            report "selecting [$__SELECTED_ITEMS]..."
             create_link --sudo "$__SELECTED_ITEMS" "$JDK_LINK_LOC"
             break
         else
@@ -1416,7 +1417,7 @@ function install_webdev() {
         ruby
         nodejs
         npm
-    ' || { err; return 1; }
+    ' || { err "first install_block failed" "$FUNCNAME"; return 1; }
 
     # create link for node (there's a different package called 'node' for debian,
     # that's why the 'node' executable is very likely to be missing from the $PATH:
@@ -1499,8 +1500,8 @@ function install_goforit() {
 }
 
 
+# building instructions from https://github.com/synergy/synergy/wiki/Compiling
 function build_and_install_synergy() {
-    # building instructions from https://github.com/synergy/synergy/wiki/Compiling
     local builddir do_clone
 
     readonly do_clone="$1"  # set to '0' if synergy repo should NOT be re-cloned
@@ -1537,8 +1538,8 @@ function build_and_install_synergy() {
 }
 
 
+# building instructions from https://github.com/hluk/CopyQ/blob/master/INSTALL
 function build_and_install_copyq() {
-    # building instructions from https://github.com/hluk/CopyQ/blob/master/INSTALL
     local tmpdir
 
     readonly tmpdir="$TMPDIR/copyq-build-${RANDOM}"
@@ -1613,8 +1614,8 @@ function build_and_install_goforit() {
 }
 
 
+# building instructions from https://github.com/keepassx/keepassx & www.keepass.org/dev/projects/keepasx/wiki/Install_instructions
 function build_and_install_keepassx() {
-    # building instructions from https://github.com/keepassx/keepassx & www.keepass.org/dev/projects/keepasx/wiki/Install_instructions
     local tmpdir
 
     should_build_if_avail_in_repo keepassx || { report "skipping building of keepassx. remember to install it from the repo after the install!"; return; }
@@ -1855,8 +1856,8 @@ function vim_post_install_configuration() {
 }
 
 
+# building instructions from https://github.com/Valloric/YouCompleteMe/wiki/Building-Vim-from-source
 function build_and_install_vim() {
-    # building instructions from https://github.com/Valloric/YouCompleteMe/wiki/Building-Vim-from-source
     local tmpdir
 
     readonly tmpdir="$TMPDIR/vim-build-${RANDOM}"
@@ -2658,7 +2659,7 @@ function err() {
     readonly msg="$1"
     readonly caller_name="$2"  # OPTIONAL
 
-    [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "    ERR LOG: $msg" >> "$EXECUTION_LOG"
+    [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "    ERR LOG: ${caller_name:+[$caller_name]: }$msg" >> "$EXECUTION_LOG"
     echo -e "${COLORS[RED]}${caller_name:-"error"}:${COLORS[OFF]} ${msg:-"Abort"}" 1>&2
 }
 
@@ -2669,7 +2670,7 @@ function report() {
     readonly msg="$1"
     readonly caller_name="$2"  # OPTIONAL
 
-    [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "OK LOG: $msg" >> "$EXECUTION_LOG"
+    [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "OK LOG: ${caller_name:+[$caller_name]: }$msg" >> "$EXECUTION_LOG"
     echo -e "${COLORS[YELLOW]}${caller_name:-"INFO"}:${COLORS[OFF]} ${msg:-"--info lvl message placeholder--"}"
 }
 
@@ -2918,10 +2919,14 @@ function is_git() {
 
 
 # pass '-s' or '--sudo' as first arg to execute as sudo
+#
+# second arg, the target, should end with a slash if a containing dir is meant to be
+# passed, not a literal path to the to-be-created link.
 function create_link() {
     local src target filename sudo
 
     [[ "$1" == -s || "$1" == --sudo ]] && { shift; readonly sudo=sudo; }
+
     readonly src="$1"
     target="$2"
 

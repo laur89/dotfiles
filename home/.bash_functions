@@ -2988,6 +2988,7 @@ fsha() {
 # fstash - easier way to deal with stashes; type fstash to get a list of your stashes.
 # - enter shows you the contents of the stash
 # - ctrl-d asks to drop the selected stash
+# - ctrl-a asks to apply the selected stash
 # - ctrl-b checks the stash out as a branch, for easier merging (TODO: not using)
 fstash() {
     local out q k stsh stash_name_regex stash_name
@@ -2999,22 +3000,26 @@ fstash() {
     while out=$(
             git stash list --pretty="%C(red)%gd %C(yellow)%h %>(14)%Cgreen%cr %C(blue)%gs" |
                 fzf --ansi --no-sort --query="$q" --print-query \
-                    --expect=ctrl-d,ctrl-b --exit-0); do
+                    --expect=ctrl-d,ctrl-b,ctrl-a --exit-0); do
         mapfile -t out <<< "$out"
         q="${out[0]}"
         k="${out[1]}"
         stsh="${out[-1]}"
         stsh="${stsh%% *}"
         [[ -z "$stsh" ]] && continue
-        if [[ "$k" == 'ctrl-d' ]]; then
-            #git diff "$stsh"
-            #git difftool --dir-diff $stsh
-            stash_name="$(echo "${out[-1]}" | grep -Po "$stash_name_regex")"
 
+        stash_name="$(echo "${out[-1]}" | grep -Po "$stash_name_regex")"  # name/description of the stash
+
+        if [[ "$k" == 'ctrl-d' ]]; then
             confirm " -> sure you want to drop stash $stsh ($stash_name)?" || continue
             git stash drop "$stsh" || { err "something went wrong (code $?)" "$FUNCNAME"; return 1; }
+            unset stsh  # so it wouldn't get copied to clipboard
+        elif [[ "$k" == 'ctrl-a' ]]; then
+            confirm " -> sure you want to apply (pop) stash $stsh ($stash_name)?" || continue
+            git stash pop "$stsh" || { err "something went wrong (code $?)" "$FUNCNAME"; return 1; }
+            unset stsh  # so it wouldn't get copied to clipboard
         elif [[ "$k" == 'ctrl-b' ]]; then
-            report "not using c-b binding atm" && return
+            report "not using c-b binding atm" "$FUNCNAME" && return
             git stash branch "stash-$sha" "$sha"
             break;
         else  # default, ie diff view mode
