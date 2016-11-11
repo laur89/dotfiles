@@ -163,7 +163,7 @@ function check_dependencies() {
         fi
 
         execute "sudo chown $USER:$USER $dir" || { err "unable to change [$dir] ownership to [$USER:$USER]. abort."; exit 1; }
-        execute "sudo chmod $perms $dir" || { err "unable to change [$dir] permissions to [$perms]. abort."; exit 1; }
+        execute "sudo chmod $perms -- $dir" || { err "unable to change [$dir] permissions to [$perms]. abort."; exit 1; }
     done
 }
 
@@ -294,7 +294,7 @@ function backup_original_and_copy_file() {
     readonly file="$1"  # full path of the file to be copied
     readonly dest="$2"  # full path of the destination directory to copy to
 
-    readonly filename="$(basename "$file")"
+    readonly filename="$(basename -- "$file")"
 
     # back up the destination file, if it's already existing:
     if [[ -f "$dest/$filename" ]] && ! [[ -e "$dest/${filename}.orig" ]]; then
@@ -336,9 +336,7 @@ function install_nfs_server() {
     readonly nfs_conf="/etc/exports"
 
     confirm "wish to install & configure nfs server?" || return 1
-    if is_laptop; then
-        confirm "you're on laptop; sure you wish to install nfs server?" || return 1
-    fi
+    is_laptop && ! confirm "you're on laptop; sure you wish to install nfs server?" && return 1
 
     install_block 'nfs-kernel-server' || { err "unable to install nfs-kernel-server. aborting nfs server install/config."; return 1; }
 
@@ -444,9 +442,7 @@ function install_ssh_server() {
     readonly banner="$COMMON_PRIVATE_DOTFILES/backups/ssh_banner"
 
     confirm "wish to install & configure ssh server?" || return 1
-    if is_laptop; then
-        confirm "you're on laptop; sure you wish to install ssh server?" || return 1
-    fi
+    is_laptop && ! confirm "you're on laptop; sure you wish to install ssh server?" && return 1
 
     install_block 'openssh-server' || { err "unable to install openssh-server. aborting sshd install/config."; return 1; }
 
@@ -487,7 +483,7 @@ function create_mountpoint() {
     [[ -z "$mountpoint" ]] && { err "cannot pass empty mountpoint arg to $FUNCNAME"; return 1; }
 
     [[ -d "$mountpoint" ]] || execute "sudo mkdir -- $mountpoint" || { err "couldn't create [$mountpoint]"; return 1; }
-    execute "sudo chmod 777 $mountpoint" || { err; return 1; }
+    execute "sudo chmod 777 -- $mountpoint" || { err; return 1; }
 
     return 0
 }
@@ -725,8 +721,8 @@ function setup_dirs() {
         [[ -z "$CUSTOM_LOGDIR" ]] && { err "\$CUSTOM_LOGDIR env var was missing. abort."; sleep 5; return 1; }
 
         report "[$CUSTOM_LOGDIR] does not exist, creating..."
-        execute "sudo mkdir $CUSTOM_LOGDIR"
-        execute "sudo chmod 777 $CUSTOM_LOGDIR"
+        execute "sudo mkdir -- $CUSTOM_LOGDIR"
+        execute "sudo chmod 777 -- $CUSTOM_LOGDIR"
     fi
 }
 
@@ -878,8 +874,8 @@ function setup_global_env_vars() {
     done
 
     # don't create; otherwise gobal_env_var will prevent loading env_var_overrides in our .bashrc!
-    #if ! [[ -d "$(dirname $global_env_var)" ]]; then
-        #err "$(dirname $global_env_var) is not a dir; can't install globally for all the users."
+    #if ! [[ -d "$(dirname -- $global_env_var)" ]]; then
+        #err "$(dirname -- $global_env_var) is not a dir; can't install globally for all the users."
     #else
         #if ! [[ -h "$global_env_var" ]]; then
             #execute "sudo ln -s -- $SHELL_ENVS $global_env_var"
@@ -906,7 +902,7 @@ function setup_netrc_perms() {
     readonly perms=600
 
     if [[ -e "$rc_loc" ]]; then
-        execute "chmod $perms $(realpath "$rc_loc")" || err "setting [$rc_loc] perms failed"  # realpath, since we cannot change perms via symlink
+        execute "chmod $perms -- $(realpath -- "$rc_loc")" || err "setting [$rc_loc] perms failed"  # realpath, since we cannot change perms via symlink
     else
         err "expected to find [$rc_loc], but it doesn't exist. if you're not using netrc, better remove related logic from ${SELF}."
         return 1
@@ -970,7 +966,7 @@ function install_acpi_events() {
 
     for event_file in $src_eventfiles_dir/* ; do
         if [[ -f "$event_file" ]]; then
-            execute "sudo cp $event_file $system_acpi_eventdir"
+            execute "sudo cp -- $event_file $system_acpi_eventdir"
         fi
     done
 
@@ -995,7 +991,7 @@ function install_SSID_checker() {
     fi
 
     # do not create .orig backup!
-    execute "sudo cp $nm_wrapper_loc $nm_wrapper_dest/"
+    execute "sudo cp -- $nm_wrapper_loc $nm_wrapper_dest/"
     return $?
 }
 
@@ -1076,7 +1072,7 @@ function install_altiris() {
 
         echo -e '#!/bin/sh\n/usr/bin/rpm.orig --nodeps --force-debian $@' | sudo tee $rpm_loc > /dev/null \
             || return 1
-        execute "sudo chmod +x $rpm_loc"
+        execute "sudo chmod +x -- $rpm_loc"
     fi
 
     # download and execute altiris script:
@@ -1089,7 +1085,7 @@ function install_altiris() {
             -- $altiris_loc \
     " || { err "couldn't find altiris script; read wiki."; return 1; }
 
-    execute "chmod +x $TMPDIR/altiris_install.sh"
+    execute "chmod +x -- $TMPDIR/altiris_install.sh"
     execute "sudo $TMPDIR/altiris_install.sh" || {
         err "something's wrong; if it failed at rollout.sh, then you probably need to install libc6:i386"
         err "(as per https://williamhill.jira.com/wiki/display/TRAD/Altiris+on+Ubuntu)"
@@ -1139,7 +1135,7 @@ function install_symantec_endpoint_security() {
         --header 'Cookie: oraclelicense=accept-securebackup-cookie' \
         -- $jce_loc" || { err "unable to wget $jce_loc."; return 1; }
 
-    tarball="$(basename $jce_loc)"
+    tarball="$(basename -- $jce_loc)"
     extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
     dir="$(find -mindepth 1 -maxdepth 1 -type d)"
     [[ -d "$dir" ]] || { err "couldn't find unpacked jce directory"; return 1; }
@@ -1292,7 +1288,7 @@ function install_oracle_jdk() {
         --header 'Cookie: oraclelicense=accept-securebackup-cookie' \
         -- $ORACLE_JDK_LOC
 
-    readonly tarball="$(basename $ORACLE_JDK_LOC)"
+    readonly tarball="$(basename -- $ORACLE_JDK_LOC)"
     extract "$tarball" || { err "extracting $tarball failed."; return 1; }
     dir="$(find -mindepth 1 -maxdepth 1 -type d)"
     [[ -d "$dir" ]] || { err "couldn't find unpacked jdk directory"; return 1; }
@@ -1302,10 +1298,10 @@ function install_oracle_jdk() {
     execute "sudo mv $dir $JDK_INSTALLATION_DIR/" || { err "could not move extracted jdk dir ($dir) to $JDK_INSTALLATION_DIR"; return 1; }
 
     # change ownership to root:
-    execute "sudo chown -R root:root $JDK_INSTALLATION_DIR/$(basename "$dir")"
+    execute "sudo chown -R root:root $JDK_INSTALLATION_DIR/$(basename -- "$dir")"
 
     # create link:
-    create_link --sudo "$JDK_INSTALLATION_DIR/$(basename "$dir")" "$JDK_LINK_LOC"
+    create_link --sudo "$JDK_INSTALLATION_DIR/$(basename -- "$dir")" "$JDK_LINK_LOC"
 
     execute "popd"
     execute "sudo rm -rf -- $tmpdir"
@@ -1320,13 +1316,13 @@ function switch_jdk_versions() {
     readonly avail_javas="$(find $JDK_INSTALLATION_DIR -mindepth 1 -maxdepth 1 -type d)"
     [[ $? -ne 0 || -z "$avail_javas" ]] && { err "discovered no java installations @ $JDK_INSTALLATION_DIR"; return 1; }
     if [[ -h "$JDK_LINK_LOC" ]]; then
-        active_java="$(realpath "$JDK_LINK_LOC")"
+        active_java="$(realpath -- "$JDK_LINK_LOC")"
         if [[ "$avail_javas" == "$active_java" ]]; then
             report "only one active jdk installation, [$active_java] is available, and that is already linked by $JDK_LINK_LOC"
             return 0
         fi
 
-        readonly active_java="$(basename "$active_java")"
+        readonly active_java="$(basename -- "$active_java")"
     fi
 
     while true; do
@@ -1909,8 +1905,9 @@ function build_and_install_vim() {
 }
 
 
+# note: instructions & info here: https://github.com/Valloric/YouCompleteMe
+# note2: available in deb repo as 'ycmd'
 function install_YCM() {
-    # note: instructions & info here: https://github.com/Valloric/YouCompleteMe
     local ycm_root  ycm_build_root  libclang_root  ycm_third_party_rootdir
 
     readonly ycm_root="$BASE_BUILDS_DIR/YCM"
@@ -1922,16 +1919,16 @@ function install_YCM() {
         local tmpdir tarball dir
 
         readonly tmpdir="$(mktemp -d "ycm-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-        readonly tarball="$(basename "$CLANG_LLVM_LOC")"
+        readonly tarball="$(basename -- "$CLANG_LLVM_LOC")"
 
-        execute "pushd $tmpdir" || return 1
+        execute "pushd -- $tmpdir" || return 1
         report "fetching $CLANG_LLVM_LOC"
-        execute "wget $CLANG_LLVM_LOC" || { err "wgetting $CLANG_LLVM_LOC failed."; return 1; }
-        extract "$tarball" || { err "extracting $tarball failed."; return 1; }
+        execute "wget $CLANG_LLVM_LOC" || { err "wgetting [$CLANG_LLVM_LOC] failed."; return 1; }
+        extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
         dir="$(find -mindepth 1 -maxdepth 1 -type d)"
         [[ -d "$dir" ]] || { err "couldn't find unpacked clang directory"; return 1; }
         [[ -d "$libclang_root" ]] && execute "sudo rm -rf -- $libclang_root"
-        execute "mv $dir $libclang_root"
+        execute "mv -- $dir $libclang_root"
 
         execute "popd"
         execute "sudo rm -rf -- $tmpdir"
@@ -1947,7 +1944,7 @@ function install_YCM() {
         return 1
     fi
 
-    [[ -d "$ycm_root" ]] || execute "mkdir $ycm_root"
+    [[ -d "$ycm_root" ]] || execute "mkdir -- $ycm_root"
 
     # first make sure we have libclang:
     if [[ -d "$libclang_root" ]]; then
@@ -1962,8 +1959,8 @@ function install_YCM() {
     [[ -d "$ycm_build_root" ]] && execute "sudo rm -rf -- $ycm_build_root"
 
     # build:
-    execute "mkdir $ycm_build_root"
-    execute "pushd $ycm_build_root" || return 1
+    execute "mkdir -- $ycm_build_root"
+    execute "pushd -- $ycm_build_root" || return 1
     execute "cmake -G 'Unix Makefiles' \
         -DPATH_TO_LLVM_ROOT=$libclang_root \
         . \
@@ -2929,7 +2926,7 @@ function create_link() {
     target="$2"
 
     if [[ "$target" == */ ]] && $sudo test -d "$target"; then
-        readonly filename="$(basename "$src")"
+        readonly filename="$(basename -- "$src")"
         target="${target}$filename"
     fi
 

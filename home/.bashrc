@@ -259,7 +259,7 @@ __check_for_change_and_compile_ssh_config() {
 ##########################################
 # fasd init caching and loading:  (https://github.com/clvv/fasd)
 fasd_cache="$HOME/.fasd-init-bash.cache"
-if [[ "$(command -v fasd)" -nt "$fasd_cache" || ! -s "$fasd_cache" ]]; then
+if command -v fasd > /dev/null && [[ "$(command -v fasd)" -nt "$fasd_cache" || ! -s "$fasd_cache" ]]; then
     fasd --init posix-alias bash-hook bash-ccomp bash-ccomp-install >| "$fasd_cache"
 fi
 

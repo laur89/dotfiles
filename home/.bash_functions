@@ -52,7 +52,13 @@ ffind() {
         # note exact and regex are mutually exclusive
         [[ "$exact" -eq 1 ]] || wildcard='*'
         [[ "$regex" -eq 1 ]] && wildcard='.*'
-        find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} "$wildcard$src$wildcard" $extra_params $printFlag $quitFlag $deleteFlag 2>/dev/null
+        [[ "$src" == '*' || "$src" == '.*' ]] && unset src
+
+        if [[ -n "$src" ]]; then
+            find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} "$wildcard$src$wildcard" $extra_params $printFlag $quitFlag $deleteFlag 2>/dev/null
+        else
+            find $follow_links "${srcdir:-.}" $maxDepthParam $file_type $extra_params $printFlag $quitFlag $deleteFlag 2>/dev/null
+        fi
     }
 
     [[ "$1" == --_skip_msgs ]] && { skip_msgs=1; shift; printFlag='-print0'; } || printFlag='-print'  # skip showing informative messages, as the result will be directly echoed to other processes;
@@ -61,7 +67,7 @@ ffind() {
 
     readonly usage="\n$FUNCNAME: find files/dirs by name. smartcase.
 
-    Usage: $FUNCNAME  [options]  \"fileName pattern\" [top_level_dir_to_search_from]
+    Usage: $FUNCNAME  [options]  [fileName pattern]  [top_level_dir_to_search_from]
 
         -r  use regex (instead of find's own metacharacters *, ? and [])
         -i  force case insensitive
@@ -162,11 +168,16 @@ ffind() {
         esac
     done
 
-    src="$1"
-    srcdir="$2"  # optional
+    if [[ "$#" -eq 1 && -d "$1" && "$1" == */* ]]; then
+        srcdir="$1"
+        [[ "$skip_msgs" -ne 1 ]] && { report "assuming starting dir [$srcdir] was given"; sleep 2; }
+    else
+        src="$1"
+        srcdir="$2"  # optional
+    fi
 
-    if [[ "$#" -lt 1 || "$#" -gt 2 || -z "$src" ]]; then
-        err "incorrect nr of aguments." "$FUNCNAME"
+    if [[ "$#" -gt 2 ]]; then
+        err "incorrect nr of aguments; max 2 allowed." "$FUNCNAME"
         echo -e "$usage"
         return 1;
     elif [[ "$filetypeOptionCounter" -gt 1 ]]; then
@@ -189,10 +200,8 @@ ffind() {
         err "-r and -e flags are exclusive, since regex always searches the whole path anyways, meaning script will always pad beginning with .*" "$FUNCNAME"
         echo -e "$usage"
         return 1
-    elif [[ "$delete" -eq 1 && "$filetype" -eq 1 ]]; then
-        err "-D and filetype (eg -V) flags are exclusive." "$FUNCNAME"
-        echo -e "$usage"
-        return 1
+    elif [[ "$delete" -eq 1 && -z "$src" ]] && ! confirm "wish to delete ALL nodes? note you haven't defined filename pattern to search, so everything gets returned."; then
+        return
     elif [[ "$delete" -eq 1 ]] && ! confirm "wish to delete nodes that match [$src]?"; then
         return
     fi
@@ -878,8 +887,13 @@ ffstr() {
             wildcard='.*'
             iname_arg="-regextype posix-extended -${iname_arg:+i}regex"
         fi
+        [[ "$file_pattern" == '*' || "$file_pattern" == '.*' ]] && unset file_pattern
 
-        find $follow_links ${dir:-.} $maxDepthParam -type f "${iname_arg:--name}" "$wildcard${file_pattern:-*}$wildcard" -print0 2>/dev/null
+        if [[ -n "$file_pattern" ]]; then
+            find $follow_links ${dir:-.} $maxDepthParam -type f "${iname_arg:--name}" "${wildcard}${file_pattern}${wildcard}" -print0 2>/dev/null
+        else
+            find $follow_links ${dir:-.} $maxDepthParam -type f -print0 2>/dev/null
+        fi
         # TODO: convert to  'find . -name "$ext" -type f -exec grep "$pattern" /dev/null {} +' perhaps?
     }
 
@@ -1211,6 +1225,7 @@ sanitize() {
     chmod -R u=rwX,g=rX,o= -- "$@";
 }
 
+# TODO: stop accepting args and hardcode to ~/.ssh?
 sanitize_ssh() {
     local node="$*"
 
@@ -2190,7 +2205,6 @@ fon() {
     fi
 
     [[ -z "$n" ]] && readonly n=1
-    [[ -z "$@" ]] && set -- '*'
 
     while IFS= read -r -d $'\0' i; do
         matches+=("$i")
@@ -2242,7 +2256,6 @@ fow() {
     fi
 
     set -- "${@:1:${#}-1}"  # shift the last arg
-    [[ -z "$@" ]] && set -- '*'
 
     if ! command -v fzf > /dev/null 2>&1; then
         while IFS= read -r -d $'\0' i; do
@@ -2280,8 +2293,6 @@ foc() {
         opts="-${default_depth}"
     fi
 
-    [[ -z "$@" ]] && set -- '*'
-
     while IFS= read -r -d $'\0' i; do
         matches+=("$i")
     done < <(ffind --_skip_msgs "$opts" "$@")
@@ -2302,7 +2313,7 @@ foc() {
 fo() {
     local matches
 
-    [[ -z "$@" ]] && set -- '-fm1' '*'
+    [[ -z "$@" ]] && set -- '-fm1'
 
     if ! command -v fzf > /dev/null 2>&1; then
         while IFS= read -r -d $'\0' i; do
@@ -2590,8 +2601,8 @@ transfer() {
     check_progs_installed curl || return 1
 
     # write to output to tmpfile because of progress bar
-    readonly tmpfile=$(mktemp -t transfer_XXX.tmp) || { err; return 1; }
-    curl --progress-bar --upload-file "$file" "https://transfer.sh/$(basename "$file")" >> "$tmpfile" || { err; return 1; }
+    readonly tmpfile=$(mktemp -t transfer_XXX.tmp) || { err "unable to create temp with mktemp" "$FUNCNAME"; return 1; }
+    curl --progress-bar --upload-file -- "$file" "https://transfer.sh/$(basename -- "$file")" >> "$tmpfile" || { err; return 1; }
     cat -- "$tmpfile"
     copy_to_clipboard "$(cat -- "$tmpfile")" && report "copied link to clipboard" "$FUNCNAME" || err "copying to clipboard failed" "$FUNCNAME"
 
