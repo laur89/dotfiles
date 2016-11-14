@@ -43,7 +43,7 @@ ffind() {
             fi
 
             let index++
-        done < <(file -iLb --print0 -- "${matches[@]}")
+        done < <(file -iLb --print0 -- "${matches[@]}" || { err_display "file cmd returned [$?] @ $FUNCNAME" "${FUNCNAME[1]}"; return 1; })
     }
 
     __find_fun() {
