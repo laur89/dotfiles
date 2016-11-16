@@ -44,7 +44,7 @@ set nocompatible " Must be the first line
     "Plugin 'chrisbra/SudoEdit.vim'
 
     " Fuzzy finder (files, mru, etc)
-    "Plugin 'kien/ctrlp.vim'  " kien/ repo (the original one) seems dead.
+    "Plugin 'kien/ctrlp.vim'  " kien/ repo (the original one) is not maintained.
     Plugin 'ctrlpvim/ctrlp.vim'
 
     " A pretty statusline, bufferline integration:

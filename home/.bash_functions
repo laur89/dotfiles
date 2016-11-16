@@ -23,17 +23,17 @@ fi
 ffind() {
     local src srcdir iname_arg opt usage OPTIND file_type filetypeOptionCounter exact filetype follow_links
     local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter skip_msgs
-    local quitFlag type_grep extra_params matches i delete deleteFlag printFlag
+    local quitFlag filetype_regex extra_params matches i delete deleteFlag printFlag
 
     __filter_for_filetype() {
         local filetype index
 
         [[ -z "${matches[*]}" ]] && return 1
-        [[ -z "$type_grep" ]] && { err "[\$type_grep] not defined." "$FUNCNAME"; return 1; }
+        [[ -z "$filetype_regex" ]] && { err "[\$filetype_regex] not defined." "$FUNCNAME"; return 1; }
         index=0
 
         while IFS= read -r filetype; do
-            if [[ "$filetype" =~ $type_grep ]]; then
+            if [[ "$filetype" =~ $filetype_regex ]]; then
                 if [[ "$skip_msgs" -eq 1 ]]; then
                     printf '%s\0' "${matches[$index]}"
                 else
@@ -116,20 +116,20 @@ ffind() {
                 ;;
            b) readonly filetype=1
               extra_params='-executable'
-              readonly type_grep='x-executable; charset=binary'
+              readonly filetype_regex='x-executable; charset=binary'
               shift $((OPTIND-1))
                 ;;
            V) readonly filetype=1
               extra_params='-size +100M'  # search for min. x megs files, so mp4 wouldn't (likely) return audio files
-              readonly type_grep='video/|audio/mp4'
+              readonly filetype_regex='video/|audio/mp4'
               shift $((OPTIND-1))
                 ;;
            P) readonly filetype=1
-              readonly type_grep='application/pdf; charset=binary'
+              readonly filetype_regex='application/pdf; charset=binary'
               shift $((OPTIND-1))
                 ;;
            I) readonly filetype=1
-              readonly type_grep='image/\w+; charset=binary'
+              readonly filetype_regex='image/\w+; charset=binary'
               shift $((OPTIND-1))
                 ;;
            C)  # for doC
@@ -138,7 +138,7 @@ ffind() {
 
               # try keeping doc files' definitions in sync with the ones in __fo()
               # no linebreaks in regex!
-              readonly type_grep='application/msword; charset=binary|application/.*opendocument.*; charset=binary|application/.*ms-office; charset=binary|application/.*ms-excel; charset=binary'
+              readonly filetype_regex='application/msword; charset=binary|application/.*opendocument.*; charset=binary|application/.*ms-office; charset=binary|application/.*ms-excel; charset=binary'
                 ;;
            L) follow_links="-L"
               shift $((OPTIND-1))
@@ -1886,7 +1886,7 @@ gito() {
     [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
 
     for ((i=0; i <= (( ${#matches[@]} - 1 )); i++)); do
-        matches[$i]="$git_root/${matches[$i]}"  # convert to absolute
+        matches[i]="$git_root/${matches[i]}"  # convert to absolute
     done
 
     __fo "${matches[@]}"
