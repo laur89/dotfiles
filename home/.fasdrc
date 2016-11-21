@@ -1,0 +1,2 @@
+# path to the fasd data file; defaults to ~/.fasd
+_FASD_DATA="$BASE_DATA_DIR/.fasd_database"

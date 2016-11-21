@@ -1,3 +1,4 @@
+;[name]  ! name block doesn't belong in common gitconfig !
 [merge]
     ;tool = meld
     ;tool = vimdiff

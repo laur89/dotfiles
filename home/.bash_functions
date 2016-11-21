@@ -11,9 +11,9 @@ if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
     if [[ -r "$_SCRIPTS_COMMONS" ]]; then
         source "$_SCRIPTS_COMMONS"
     else
-        echo -e "\nError: common file [$_SCRIPTS_COMMONS] not found!! Many functions will be unusable!!!"
-        # !do not exit, or you won't be able to open shell without the commons file being
-        # present!
+        echo -e "\n    ERROR: common file [$_SCRIPTS_COMMONS] not found!! Many functions will be unusable!!!"
+        # !do not exit, or you won't be able to open shell
+        # without the commons file being present!
     fi
 fi
 # =====================================================================
@@ -35,10 +35,10 @@ ffind() {
         while IFS= read -r filetype; do
             if [[ "$filetype" =~ $filetype_regex ]]; then
                 if [[ "$skip_msgs" -eq 1 ]]; then
-                    printf '%s\0' "${matches[$index]}"
+                    printf '%s\0' "${matches[index]}"
                 else
                     # trailing grep is for coloring only:
-                    echo "${matches[$index]}" | grep -iE --color=auto -- "$src|$"
+                    echo "${matches[index]}" | grep -iE --color=auto -- "$src|$"
                 fi
             fi
 
@@ -63,7 +63,7 @@ ffind() {
 
     [[ "$1" == --_skip_msgs ]] && { skip_msgs=1; shift; printFlag='-print0'; } || printFlag='-print'  # skip showing informative messages, as the result will be directly echoed to other processes;
                                                                                                       # also denotes that caller is a script not a human, and results should be null-separated;
-    readonly defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is provided;
+    readonly defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) is selected;
 
     readonly usage="\n$FUNCNAME: find files/dirs by name. smartcase.
 
@@ -155,7 +155,7 @@ ffind() {
            q) quitFlag="-quit"
               shift $((OPTIND-1))
                 ;;
-           D) readonly delete=1     # for nonempty dirs as well, just run     find . -name "3" -type d -exec rm -rf {} +
+           D) readonly delete=1     # to include nonempty dirs as well, run     find . -name "3" -type d -exec rm -rf {} +
               readonly deleteFlag='-delete'
               shift $((OPTIND-1))
                 ;;
@@ -170,7 +170,7 @@ ffind() {
 
     if [[ "$#" -eq 1 && -d "$1" && "$1" == */* ]]; then
         srcdir="$1"
-        [[ "$skip_msgs" -ne 1 ]] && { report "assuming starting dir [$srcdir] was given"; sleep 2; }
+        [[ "$skip_msgs" -ne 1 ]] && { report "assuming starting dir [$srcdir] was given" "$FUNCNAME"; sleep 2; }
     else
         src="$1"
         srcdir="$2"  # optional
@@ -200,9 +200,13 @@ ffind() {
         err "-r and -e flags are exclusive, since regex always searches the whole path anyways, meaning script will always pad beginning with .*" "$FUNCNAME"
         echo -e "$usage"
         return 1
+    elif [[ "$delete" -eq 1 && "$filetype" -eq 1 ]]; then
+        err "-D and filetype (eg -V) flags are exclusive." "$FUNCNAME"  # because find executes before filetype filter
+        echo -e "$usage"
+        return 1
     elif [[ "$delete" -eq 1 && -z "$src" ]] && ! confirm "wish to delete ALL nodes? note you haven't defined filename pattern to search, so everything gets returned."; then
         return
-    elif [[ "$delete" -eq 1 ]] && ! confirm "wish to delete nodes that match [$src]?"; then
+    elif [[ "$delete" -eq 1 && -n "$src" ]] && ! confirm "wish to delete nodes that match [$src]?"; then
         return
     fi
 
@@ -1485,9 +1489,7 @@ up() {
 clock() {
     while true; do
         clear
-        echo "=========="
-        echo " $(date +"%R:%S") "  # echo for padding
-        echo "=========="
+        printf "==========\n %s\n==========" "$(date +'%R:%S')"
         sleep 1
     done
 }
@@ -1563,15 +1565,15 @@ createUsbIso() {
         echo -e "$usage"
         return 1;
     elif [[ ! -f "$file" && "$reverse" -ne 1 ]]; then
-        err "$file is not a regular file" "$FUNCNAME"
+        err "[$file] is not a regular file" "$FUNCNAME"
         echo -e "$usage"
         return 1;
     elif [[ -f "$file" && "$reverse" -eq 1 ]]; then
-        err "$file already exists. choose another file to write into, or delete it." "$FUNCNAME"
+        err "[$file] already exists. choose another file to write into, or delete it." "$FUNCNAME"
         echo -e "$usage"
         return 1;
     elif [[ "$reverse" -eq 1 && ! -d "$(dirname "$file")" ]]; then
-        err "$file doesn't appear to be defined on a valid path. please check." "$FUNCNAME"
+        err "[$file] doesn't appear to be defined on a valid path. please check." "$FUNCNAME"
         echo -e "$usage"
         return 1;
     elif [[ ! -e "$device" ]]; then
@@ -1602,7 +1604,7 @@ createUsbIso() {
 
     # find if device is mounted:
     #lsblk -o name,size,mountpoint /dev/sda
-    report "unmounting $cleaned_devicename partitions... (may ask for sudo password)"
+    report "unmounting [$cleaned_devicename] partitions... (may ask for sudo password)"
     for partition in ${device}* ; do
         echo "$full_lsblk_output" | grep -Eq "${partition##*/}\b" || continue  # not all partitions are listed by lsblk; dunno what's with that
 
@@ -2993,7 +2995,7 @@ fsha() {
 fstash() {
     local out q k stsh stash_name_regex stash_name
 
-    readonly stash_name_regex='\s*\S+\s\S+\s\S+\s\S+\s\S+\s\S+\s\S+\s\K(.*)'
+    readonly stash_name_regex='^\s*\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\K(.*)'
 
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
@@ -3010,22 +3012,27 @@ fstash() {
 
         stash_name="$(echo "${out[-1]}" | grep -Po "$stash_name_regex")"  # name/description of the stash
 
-        if [[ "$k" == 'ctrl-d' ]]; then
-            confirm " -> sure you want to drop stash $stsh ($stash_name)?" || continue
-            git stash drop "$stsh" || { err "something went wrong (code $?)" "$FUNCNAME"; return 1; }
-            unset stsh  # so it wouldn't get copied to clipboard
-        elif [[ "$k" == 'ctrl-a' ]]; then
-            confirm " -> sure you want to apply (pop) stash $stsh ($stash_name)?" || continue
-            git stash pop "$stsh" || { err "something went wrong (code $?)" "$FUNCNAME"; return 1; }
-            unset stsh  # so it wouldn't get copied to clipboard
-        elif [[ "$k" == 'ctrl-b' ]]; then
-            report "not using c-b binding atm" "$FUNCNAME" && return
-            git stash branch "stash-$sha" "$sha"
-            break;
-        else  # default, ie diff view mode
-            #git stash show -p "$sha"
-            git difftool --dir-diff "$stsh"^ "$stsh"
-        fi
+        case "$k" in
+            'ctrl-d')
+                confirm " -> drop stash $stsh ($stash_name)?" || continue
+                git stash drop "$stsh" || { err "something went wrong (code $?)" "$FUNCNAME"; return 1; }
+                unset stsh  # so it wouldn't get copied to clipboard
+                ;;
+            'ctrl-a')
+                confirm " -> apply (pop) stash $stsh ($stash_name)?" || continue
+                git stash pop "$stsh" || { err "something went wrong (code $?)" "$FUNCNAME"; return 1; }
+                unset stsh  # so it wouldn't get copied to clipboard
+                ;;
+            'ctrl-b')
+                report "not using c-b binding atm" "$FUNCNAME" && return
+                git stash branch "stash-$sha" "$sha"
+                break;
+                ;;
+            *)  # default, ie diff view mode
+                #git stash show -p "$sha"
+                git difftool --dir-diff "$stsh"^ "$stsh"
+                ;;
+        esac
     done
 
     # copy last viewed stash id to clipboard:
@@ -3039,21 +3046,22 @@ fstash() {
 e() {  # mnemonic: edit
     local file
 
-    check_progs_installed "$EDITOR" || return 1
+    check_progs_installed fasd fzf "$EDITOR" || return 1
 
-    file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)" && $EDITOR "${file}" || return 1
+    file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)" && $EDITOR "$file" || return 1
 }
 
 
 # select recent dir with fasd and cd into
-# note: d clashes with fasd alias; make sure you remove that one
+# note: d clashes with fasd alias; make sure you remove that one (in generated cache)
 d() {  # mnemonic: dir
     local dir
 
     #command -v ranger >/dev/null && fm=ranger
     #check_progs_installed "$fm" || return 1
 
-    dir="$(fasd -Rdl "$@" | fzf -1 -0 --no-sort +m --exit-0)" && cd -- "${dir}" || return 1
+    check_progs_installed fasd fzf || return 1
+    dir="$(fasd -Rdl "$@" | fzf -1 -0 --no-sort +m --exit-0)" && cd -- "$dir" || return 1
 }
 
 
