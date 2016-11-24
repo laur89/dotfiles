@@ -29,7 +29,7 @@ function enableSmart() {
     local _disk_list _disk _status msg disk_check processed_disks_count
 
     processed_disks_count=0
-    check_progs_installed /usr/sbin/smartctl || return 1
+    check_progs_installed /usr/sbin/smartctl uniq sort || return 1
 
     _disk_list="$(sudo smartctl --scan)"
     _status="$?"
@@ -80,6 +80,11 @@ function enableSmart() {
     display_message "${SELF}: enabled SMART for [$processed_disks_count] drives." $(( 10 * 1000 ))
 }
 
+set_perms() {
+    [[ -f "$HOME/.netrc" ]] && chmod 600 -- "$(realpath -- "$HOME/.netrc")"
+    [[ -d "$HOME/.ssh" ]] && chmod -R u=rwX,g=,o= -- "$HOME/.ssh"
+}
+
 set_keyboard_layout() {
     check_progs_installed setxkbmap || return 1
     setxkbmap -option grp:alt_shift_toggle "ee,us" || { err_display "err setting keyboard layout" "$SELF"; return 1; }
@@ -99,7 +104,7 @@ xset fp rehash
 #xsetroot -cursor_name left_ptr
 
 # Load the Xresources database:
-[[ -r ~/.Xresources ]] && { xrdb -merge ~/.Xresources || err_display "xrdb merge failed" "$SELF"; }  # Do not background!
+[[ -r ~/.Xresources ]] && { xrdb -merge ~/.Xresources || err_display "xrdb merge failed" "$SELF"; }  # do not background!
 
 # disable system beep:
 xset -b &
@@ -214,6 +219,7 @@ allowed_size="20"   # Max size in MB
 check_max_allowed_size "$CUSTOM_LOGDIR" "$allowed_size"
 
 enableSmart &
+set_perms &
 set_keyboard_layout &
 
 unset i x

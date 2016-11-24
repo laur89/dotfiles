@@ -69,6 +69,7 @@ fi
 #ResultActive=yes
 
 /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
+#/usr/lib/polkit-gnome-authentication-agent-1  # TODO 24.11.16: new location of polkit?
 is_proc_running gnome-keyring-daemon || /usr/bin/gnome-keyring-daemon --start --components=secrets,ssh &
 
 
