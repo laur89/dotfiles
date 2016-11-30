@@ -2200,9 +2200,11 @@ fon() {
 
     # try to filter out optional last arg defining the nth newest to open (as in open the nth newest file):
     elif [[ "$#" -gt 1 ]]; then
-        readonly n="${@: -1}"  # last arg; alternatively ${@:$#}
+        n="${@: -1}"  # last arg; alternatively ${@:$#}
         if is_digit "$n" && [[ "$n" -ge 1 ]] && [[ "$#" -gt 2 || ! -d "$n" ]]; then  # $# -gt 2   means dir is already being passed to ffind(), so no need to check !isDir
             set -- "${@:1:${#}-1}"  # shift the last arg
+        else
+            unset n
         fi
     fi
 
@@ -2817,8 +2819,8 @@ fh() {
     readonly input="$*"
 
     readonly regex='^\s*\d+\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\K.*$'
-    #[[ "$#" -ne 0 ]] && err "$FUNCNAME does not expect any input" "$FUNCNAME"
     #([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac | sed -re 's/^\s*[0-9]+\s*//' | __writecmd -run
+
     if command -v fzf > /dev/null 2>&1; then
         out="$(history \
                 | grep -vE -- "\s+$FUNCNAME\b" \
@@ -2868,24 +2870,24 @@ fh() {
 
 # fbr - checkout git branch (including remote branches)
 fbr() {
-    local branches branch
+    local branches branch q
 
+    q="$*"
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
-    [[ "$#" -ne 0 ]] && err "$FUNCNAME does not expect any input" "$FUNCNAME"
 
     branches=$(git branch --all | grep -v HEAD) &&
             branch=$(echo "$branches" |
-                    fzf-tmux -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
-            git checkout $(echo "$branch" | sed 's/.* //' | sed 's#remotes/[^/]*/##')
+                    fzf-tmux --query="$q" -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
+            git checkout "$(echo "$branch" | sed 's/.* //' | sed 's#remotes/[^/]*/##')"
 }
 
 
 # fco - checkout git branch/tag
 fco() {
-    local tags branches target
+    local tags branches target q
 
+    q="$*"
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
-    [[ "$#" -ne 0 ]] && err "$FUNCNAME does not expect any input" "$FUNCNAME"
 
     tags=$(git tag | awk '{print "\x1b[31;1mtag\x1b[m\t" $1}') || return
     branches=$(
@@ -2894,21 +2896,21 @@ fco() {
         sort -u          | awk '{print "\x1b[34;1mbranch\x1b[m\t" $1}') || return
     target=$(
         (echo "$tags"; echo "$branches") |
-        fzf-tmux -l30 -- --no-hscroll --ansi +m -d "\t" -n 2) || return
-    git checkout $(echo "$target" | awk '{print $2}')
+        fzf-tmux --query="$q" -l30 -- --no-hscroll --ansi +m -d "\t" -n 2) || return
+    git checkout "$(echo "$target" | awk '{print $2}')"
 }
 
 
 # fcoc - checkout git commit (as in commit hash, not branch or tag)
 fcoc() {
-    local commits commit
+    local commits commit q
 
+    q="$*"
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
-    [[ "$#" -ne 0 ]] && err "$FUNCNAME does not expect any input" "$FUNCNAME"
 
     commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&
-        commit=$(echo "$commits" | fzf --tac +s +m -e --exit-0) &&
-        git checkout $(echo "$commit" | sed 's/ .*//')
+        commit=$(echo "$commits" | fzf --query="$q" --tac +s +m -e --exit-0) &&
+        git checkout "$(echo "$commit" | sed 's/ .*//')"
 }
 
 
