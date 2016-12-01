@@ -2499,51 +2499,77 @@ goto() {
     [[ -d "$@" ]] && { cd -- "$@"; } || cd -- "$(dirname -- "$@")";
 }
 
-# cd-s to directory by partial match; if multiple matches, opens input via dmenu. smartcase.
-#  g /data/partialmatch     # searches for partialmatch in /data
-#  g partialmatch           # searches for partialmatch in current dir
-#  g                        # if no input, then searches all directories in current dir
+# cd-s to directory by partial match; if multiple matches, opens input via fzf. smartcase.
+#
+#
+#  g /data/partialmatch               # searches for partialmatch in /data.
+#  g /  da  part                      # same as previous; note that partialmatches can
+#                                     # be separated by whitespace instead of slashes.
+#  g /partialmatch_1/partialmatch     # searches for partialmatch in directory resolved
+#                                     # from partialmatch_1 in /.
+#  g partialmatch_1  partialmatch     # searches for partialmatch in directory resolved
+#                                     # from partialmatch_1 in our current dir.
+#  g partialmatch                     # searches for partialmatch in current dir.
+#  g                                  # if no input, then searches all directories in current dir.
 #
 # see also gg()
 g() {
-    local path input matches pattern msg_loc iname_arg i
-
-    input="$*"
-
-    [[ -d "$input" && ! "$input" =~ ^\.+$ ]] && { cd -- "$input"; return; }
-    [[ -z "$input" ]] && input='*'
-
-    #[[ "$input" == */* ]] && path="${input%%/*}"  # strip everything after last slash(included)
-    path="$(dirname -- "$input")"
-    [[ -d "$path" ]] || { err "something went wrong - dirname result [$path] is not a dir." "$FUNCNAME"; return 1; }
-    pattern="${input##*/}"  # strip everything before last slash (included)
-    [[ -z "$pattern" ]] && { err "no search pattern provided" "$FUNCNAME"; return 1; }
-    [[ "$path" == '.' ]] && msg_loc="here" || msg_loc="$path/"
-
-    [[ "$(tolowercase "$pattern")" == "$pattern" ]] && iname_arg="iname"
+    local paths input iname_arg i dir is_backing
 
     __find_fun() {
-        find -L "$path" -maxdepth 1 -mindepth 1 -type d -${iname_arg:-name} '*'"$pattern"'*' -print0
+        local pattern dir
+        readonly pattern="$1"
+        readonly dir="${2:-.}"
+
+        find -L "$dir" -maxdepth 1 -mindepth 1 -type d -${iname_arg:-name} '*'"$pattern"'*' -print0
     }
 
-    if ! command -v fzf > /dev/null 2>&1; then
-        while IFS= read -r -d $'\0' i; do
-            matches+=("$i")
-        done < <(__find_fun)
+    __select_dir() {
+        local pattern start_dir _dir matches
+        readonly pattern="$1"
+        readonly start_dir="${2:-.}"
 
-        select_items --single "${matches[@]}" || return 1
-        matches=("${__SELECTED_ITEMS[@]}")
-    else
-        while read -r i; do
-            matches+=("$i")
-        done < <(__find_fun | fzf --select-1 --read0 --exit-0)
-    fi
+        # debug:
+        #report "patt: '$pattern'; dir: '$start_dir'" "${FUNCNAME[1]}"
 
-    unset __find_fun
-    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
-    [[ "${#matches[@]}" -gt 1 ]] && { err "[${#matches[@]}] matches were found; max 1 allowed. fix ${FUNCNAME}()" "$FUNCNAME"; return 1; }
-    [[ -d "${matches[0]}" ]] || { err "no such dir like [${matches[0]}] in $msg_loc" "$FUNCNAME"; return 1; }
-    cd -- "${matches[0]}"
+        [[ "$start_dir" == '/' ]] || _dir="$start_dir"
+        [[ "$pattern" != '..' ]] && is_backing=0
+        ! [[ "$is_backing" -eq 0 && "$pattern" == '..' ]] && [[ "$pattern" != '.' && -d "$_dir/$pattern" ]] && { echo woo; dir="$_dir/$pattern"; return 0; }
+
+        if ! command -v fzf > /dev/null 2>&1; then
+            matches=()
+            while IFS= read -r -d $'\0' i; do
+                matches+=("$i")
+            done < <(__find_fun "$pattern" "$start_dir")
+
+            select_items --single "${matches[@]}" || return 1
+            dir="${__SELECTED_ITEMS[*]}"
+        else
+            dir="$(__find_fun "$pattern" "$start_dir" | fzf --select-1 --read0 --exit-0)" || return 1
+        fi
+
+        [[ -z "$dir" ]] && { err "no matches found" "${FUNCNAME[1]}"; return 1; }
+        [[ -d "$dir" ]] || { err "no such dir like [$dir] in $dir" "${FUNCNAME[1]}"; return 1; }
+    }
+
+    for i in "$@"; do
+        input+="$i"
+        [[ "$i" != */ ]] && input+='/'
+    done
+
+    #[[ -d "$input" && ! "$input" =~ ^.*/\.+/$ ]] && { cd -- "$input"; return; }
+    [[ -z "$input" ]] && input='*'
+    [[ "$input" == /* ]] && { input="${input:1}"; dir="/"; }
+    [[ "$(tolowercase "$input")" == "$input" ]] && iname_arg="iname"
+    is_backing=1
+
+    IFS='/' read -ra paths <<< "$input"
+    for i in "${paths[@]}"; do
+        __select_dir "$i" "$dir" || return 1
+    done
+
+    unset __find_fun __select_dir
+    cd -- "$dir"
 }
 
 
