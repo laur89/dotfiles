@@ -2875,10 +2875,13 @@ fbr() {
     q="$*"
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
-    branches=$(git branch --all | grep -v HEAD) &&
-            branch=$(echo "$branches" |
-                    fzf-tmux --query="$q" -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
-            git checkout "$(echo "$branch" | sed 's/.* //' | sed 's#remotes/[^/]*/##')"
+    branches=$(
+        git branch --all | grep -v HEAD             |
+        sed "s/.* //"    | sed "s#remotes/[^/]*/##" |
+        sort -u) || return
+    branch=$(echo "$branches" |
+            fzf-tmux --select-1 --exit-0 --query="$q" -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
+            git checkout "$branch"
 }
 
 
@@ -2896,7 +2899,7 @@ fco() {
         sort -u          | awk '{print "\x1b[34;1mbranch\x1b[m\t" $1}') || return
     target=$(
         (echo "$tags"; echo "$branches") |
-        fzf-tmux --query="$q" -l30 -- --no-hscroll --ansi +m -d "\t" -n 2) || return
+        fzf-tmux --exit-0 --select-1 --query="$q" -l30 -- --no-hscroll --ansi +m -d "\t" -n 2) || return
     git checkout "$(echo "$target" | awk '{print $2}')"
 }
 
@@ -2909,7 +2912,7 @@ fcoc() {
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
     commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&
-        commit=$(echo "$commits" | fzf --query="$q" --tac +s +m -e --exit-0) &&
+        commit=$(echo "$commits" | fzf --select-1 --query="$q" --tac +s +m -e --exit-0) &&
         git checkout "$(echo "$commit" | sed 's/ .*//')"
 }
 

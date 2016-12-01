@@ -804,13 +804,13 @@ function fetch_castles() {
     while true; do
         if confirm "$(report 'want to clone another castle?')"; then
             echo -e "enter git repo domain (eg \"github.com\", \"bitbucket.org\"):"
-            read hub
+            read -r hub
 
             echo -e "enter username:"
-            read user
+            read -r user
 
             echo -e "enter castle name (repo name, eg \"dotfiles\"):"
-            read castle
+            read -r castle
 
             execute "clone_or_link_castle $castle $user $hub"
         else
@@ -1200,18 +1200,25 @@ function install_progs() {
 
 
 # system deps, which depend on npm & nodejs
+# TODO: kind of depends in install_deps()?
 function install_npm_modules() {
-
 
     if ! command -v nodejs >/dev/null || ! command -v npm >/dev/null; then
         report "need to install npm & nodejs first..."
         install_block '
             nodejs
             npm
-        ' || { err; return 1; }
+        ' || { err "err installing npm and/or nodejs"; return 1; }
     fi
 
-    execute "sudo -H npm install -g ungit"  # https://github.com/FredrikNoren/ungit  (note the required -H for ungit)
+    # https://github.com/FredrikNoren/ungit
+    # https://github.com/dominictarr/JSON.sh
+    #
+    # (note the required -H for ungit)
+    execute "sudo -H npm install -g \
+        ungit \
+        JSON.sh \
+    "
 }
 
 
@@ -2371,6 +2378,7 @@ function choose_single_task() {
         upgrade_kernel
         install_nvidia
         install_webdev
+        install_npm_modules
         install_from_repo
         install_laptop_deps
         install_ssh_server_or_client
@@ -2635,7 +2643,7 @@ function confirm() {
 
     while true; do
         [[ -n "$msg" ]] && echo -e "$msg"
-        read yno
+        read -r yno
         case "$(echo "$yno" | tr '[:lower:]' '[:upper:]')" in
             Y | YES )
                 report "Ok, continuing..." "->";
@@ -2722,7 +2730,7 @@ function generate_key() {
     report "generating ssh key..."
     while ! [[ "$mail" =~ $valid_mail_regex ]]; do
         report "enter your (valid) mail (eg [username@server.com]):"
-        read mail
+        read -r mail
     done
 
     execute "ssh-keygen -t rsa -b 4096 -C \"$mail\" -f $PRIVATE_KEY_LOC"
