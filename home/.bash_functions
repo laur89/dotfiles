@@ -926,27 +926,72 @@ ffstr() {
     unset __find_fun
 }
 
-memmost(){
-    # $1: number of process to view (default 10).
-    local num
+__mem_cpu_most_common_fun(){
+    local num ps_out first_hdr second_hdr first_ps_col second_ps_col
 
-    readonly num=${1:-10}
+    readonly first_hdr="$1"
+    readonly second_hdr="$2"
+    readonly first_ps_col="$3"
+    readonly second_ps_col="$4"
 
-    local ps_out=$(ps -auxf)
-    echo "$ps_out" | head -n 1
-    echo "$ps_out" | sort -nr -k 4 | head -n $num
+    [[ "$#" -lt 4 ]] && { err "minimum of 4 args required" "$FUNCNAME"; return 1; }
+    [[ "$#" -gt 5 ]] && { err "max 5 args supported" "$FUNCNAME"; return 1; }
+    [[ "$#" -eq 5 ]] && num="${@: -1}"  # last arg; alternatively ${@:$#}
+
+    [[ -z "$num" ]] && num=10
+
+    is_digit "$num" && [[ "$num" -gt 0 ]] || { err "nr of processes to view needs to be a positive digit, but was [$num]" "${FUNCNAME[1]}"; return 1; }
+    ps_out="$(ps -ax --no-headers -o $first_ps_col,$second_ps_col,args --sort -${first_ps_col},-${second_ps_col})" || { err "ps command failed" "$FUNCNAME"; return 1; }
+    ps_out="$(echo "$ps_out" | head -n $num)" || return 1
+
+    # formats the default full ps output (some versions of ps don't offer --sort option)
+    #
+    #__print_lines() {
+        #local line cpu mem proc max_proc_len
+
+        #readonly max_proc_len=200
+
+        #while read -r line; do
+            #proc="$(echo "$line" | grep -Po '^\s*(\S+\s+){10}[\\_|\s]*\K.*' | cut -c 1-$max_proc_len)"
+            #cpu="$(echo "$line" | grep -Po '^\s*(\S+\s+){2}\K\S+(?=.*$)')"
+            #mem="$(echo "$line" | grep -Po '^\s*(\S+\s+){3}\K\S+(?=.*$)')"
+            #printf '\t%s\t%s\t%s\n' "${COLORS[RED]}${mem}${COLORS[OFF]}" "$cpu" "$proc"
+        #done
+    #}
+    __print_lines() {
+        local max_proc_len line primary_col secondary_col proc
+
+        readonly max_proc_len=200
+
+        while read -r line; do
+            primary_col="$(echo "$line" | grep -Po '^\s*\K\S+(?=.*$)')"
+            secondary_col="$(echo "$line" | grep -Po '^\s*\S+\s*\K\S+(?=.*$)')"
+            proc="$(echo "$line" | grep -Po '^\s*(\S+\s*){2}\K.*' | cut -c 1-$max_proc_len)"
+            printf '\t%s\t%s\t%s\n' "${COLORS[RED]}${primary_col}${COLORS[OFF]}" "$secondary_col" "$proc"
+        done
+    }
+
+    printf '\t%s\t%s\t%s\n' "${COLORS[RED]}${first_hdr}${COLORS[OFF]}" "$second_hdr" 'PROC'
+    printf '\t%s\t%s\t%s\n' '---' '---' '----------------'
+    #echo "$ps_out" | sort -nr -k 4 | head -n $num | __print_lines  # legacy format for full ps output (ie no format nor sorting)
+    echo "$ps_out" | __print_lines
+    unset __print_lines
 }
 
+memmost() {
+    if [[ "$#" -ne 0 ]]; then
+        [[ "$#" -gt 1 ]] && { err "only one arg, number of top mem consuming processes to display, allowed" "$FUNCNAME"; return 1; }
+    fi
 
-cpumost(){
-    # $1: number of process to view (default 10).
+    __mem_cpu_most_common_fun MEM CPU pmem pcpu "$@"
+}
 
-    local num=$1
-    [ "$num" == "" ] && num="10"
+cpumost() {
+    if [[ "$#" -ne 0 ]]; then
+        [[ "$#" -gt 1 ]] && { err "only one arg, number of top cpu consuming processes to display, allowed" "$FUNCNAME"; return 1; }
+    fi
 
-    local ps_out=$(ps -auxf)
-    echo "$ps_out" | head -n 1
-    echo "$ps_out" | sort -nr -k 3 | head -n $num
+    __mem_cpu_most_common_fun CPU MEM pcpu pmem "$@"
 }
 
 cpugt(){
@@ -955,7 +1000,7 @@ cpugt(){
     local perc=$1
     [ "$perc" == "" ] && perc="90"
 
-    local ps_out=$(ps -auxf)
+    local ps_out=$(ps -auxf) || return 1
     echo "$ps_out" | head -n 1
     echo "$ps_out" | sort -nr -k 3 | awk -v "q=$perc" '($3>=q){print $0}'
 }
@@ -966,7 +1011,7 @@ memgt(){
     local perc=$1
     [ "$perc" == "" ] && perc="90"
 
-    local ps_out=$(ps -auxf)
+    local ps_out=$(ps -auxf) || return 1
     echo "$ps_out" | head -n 1
     echo "$ps_out" | sort -nr -k 4 | awk -v "q=$perc" '($4>=q){print $0}'
 }
@@ -2309,20 +2354,31 @@ foc() {
 
 
 # finds files/dirs using ffind() (find wrapper) and opens them.
-# accepts different 'special modes' to be defined as first arg (modes defined in $special_modes array).
 #
-# if no args provided, then default to opening regular files in current dir.
+# if no args provided, then defaults to opening regular files in current dir.
 #
 # mnemonic: file open
 fo() {
-    local matches
+    local matches opts default_depth
 
-    [[ -z "$@" ]] && set -- '-fm1'
+    opts="$1"
+    readonly default_depth=m7
+
+    if [[ "$opts" == -* ]]; then
+        [[ "$opts" =~ [fdl] ]] || opts="-f${opts:1}"
+        [[ "$opts" != *m* ]] && opts+="$default_depth"
+        #echo $opts  # debug
+        shift
+    else
+        opts="-f${default_depth}"
+    fi
+
+    [[ -z "$*" ]] && opts='-fm1'
 
     if ! command -v fzf > /dev/null 2>&1; then
         while IFS= read -r -d $'\0' i; do
             matches+=("$i")
-        done < <(ffind --_skip_msgs "$@")
+        done < <(ffind --_skip_msgs "$opts" "$@")
 
         select_items "${matches[@]}" || return 1
         __fo "${__SELECTED_ITEMS[@]}"
@@ -2330,7 +2386,7 @@ fo() {
         #while IFS= read -r -d $'\0' i; do
             #matches+=("$i")
         #done < <(ffind --_skip_msgs "$@" | fzf --select-1 --multi --read0 | __fo)
-        ffind --_skip_msgs "$@" | fzf --select-1 --multi --read0 --exit-0 | __fo  # add --print0 to fzf once implemented; also update __fo
+        ffind --_skip_msgs "$opts" "$@" | fzf --select-1 --multi --read0 --exit-0 | __fo  # add --print0 to fzf once implemented; also update __fo
     fi
 }
 
@@ -2509,8 +2565,8 @@ goto() {
 #                                     # from partialmatch_1 in /.
 #  g partialmatch_1  partialmatch     # searches for partialmatch in directory resolved
 #                                     # from partialmatch_1 in our current dir.
-#  g ....../partialmach               # searches for partialmatch in directory that's
-#                                     # 5 levels up.
+#  g ...../partialmach                # searches for partialmatch in directory that's
+#                                     # 4 levels up.
 #  g partialmatch                     # searches for partialmatch in current dir.
 #  g                                  # if no input, then searches all directories in current dir.
 #
@@ -2536,8 +2592,7 @@ g() {
         # debug:
         #report "patt: '$pattern'; dir: '$start_dir'" "${FUNCNAME[1]}"
 
-        [[ "$start_dir" != '/' ]] && _dir="$start_dir"
-        [[ "$pattern" != '..' ]] && is_backing=0
+        [[ "$start_dir" != '/' ]] && _dir="$start_dir"  # avoid building double slashes
         ! [[ "$is_backing" -eq 0 && "$pattern" == '..' ]] && [[ "$pattern" != '.' && -d "$_dir/$pattern" ]] && { dir="$_dir/$pattern"; return 0; }
 
         if [[ "$has_fzf" -eq 0 ]]; then
@@ -2571,7 +2626,7 @@ g() {
     done
 
     #[[ -d "$input" && ! "$input" =~ ^.*/\.+/$ ]] && { cd -- "$input"; return; }
-    is_backing=1
+    is_backing=1  # default to assume first directory navigations are going up the tree;
     [[ -z "$input" ]] && input='*'
     [[ "$input" == /* ]] && { input="${input:1}"; is_backing=0; dir="/"; }
     command -v fzf > /dev/null 2>&1 && readonly has_fzf=1 || readonly has_fzf=0
@@ -2579,6 +2634,7 @@ g() {
     IFS='/' read -ra paths <<< "$input"
     for i in "${paths[@]}"; do
         [[ -z "$dir" && "$i" =~ ^\.{3,}$ ]] && __go_up "$i" && continue
+        [[ "$i" != '..' ]] && is_backing=0
         __select_dir "$i" "$dir" || { unset __find_fun __select_dir __go_up; return 1; }
     done
 
@@ -2867,7 +2923,7 @@ fh() {
                 | fzf --no-sort --tac --print-query --query="$input" --expect=ctrl-e +m -e --exit-0)"
         mapfile -t out <<< "$out"
         readonly k="${out[1]}"
-        readonly cmd="$(echo "${out[-1]}" | grep -oP -- "$regex")"
+        readonly cmd="$(echo "${out[-1]}" | grep -Po -- "$regex")"
         if [[ "$k" == 'ctrl-e' ]]; then
             echo "$cmd" | __writecmd
         else
@@ -2877,7 +2933,7 @@ fh() {
         #([ -n "$ZSH_NAME" ] && fc -l 1 || history) \
             #| grep -vE -- "\s+$FUNCNAME\b" \
             #| fzf --no-sort --tac --query="$input" +m -e \
-            #| grep -oP -- "$regex" \
+            #| grep -Po -- "$regex" \
             #| __writecmd -run
     else
         readonly ifs_old="$IFS"
@@ -2885,7 +2941,7 @@ fh() {
         readonly cmd=( $(history \
                 | grep -vE -- "\s+$FUNCNAME\b" \
                 | grep -iE --color=auto -- "$input" \
-                | grep -oP -- "$regex") )
+                | grep -Po -- "$regex") )
 
         [[ -z "${cmd[*]}" ]] && { err "no matching entries found" "$FUNCNAME"; IFS="$ifs_old"; return 1; }
         select_items --single "${cmd[@]}"
@@ -3040,7 +3096,7 @@ fsha() {
 fstash() {
     local out q k stsh stash_name_regex stash_name
 
-    readonly stash_name_regex='^\s*\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\K(.*)'
+    readonly stash_name_regex='^\s*(\S+\s+){7}\K(.*)'
 
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
