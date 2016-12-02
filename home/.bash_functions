@@ -2509,17 +2509,21 @@ goto() {
 #                                     # from partialmatch_1 in /.
 #  g partialmatch_1  partialmatch     # searches for partialmatch in directory resolved
 #                                     # from partialmatch_1 in our current dir.
+#  g ....../partialmach               # searches for partialmatch in directory that's
+#                                     # 5 levels up.
 #  g partialmatch                     # searches for partialmatch in current dir.
 #  g                                  # if no input, then searches all directories in current dir.
 #
 # see also gg()
 g() {
-    local paths input iname_arg i dir is_backing
+    local paths input i dir is_backing has_fzf
 
     __find_fun() {
-        local pattern dir
+        local pattern dir iname_arg
         readonly pattern="$1"
         readonly dir="${2:-.}"
+
+        [[ "$(tolowercase "$pattern")" == "$pattern" ]] && iname_arg="iname"
 
         find -L "$dir" -maxdepth 1 -mindepth 1 -type d -${iname_arg:-name} '*'"$pattern"'*' -print0
     }
@@ -2532,11 +2536,11 @@ g() {
         # debug:
         #report "patt: '$pattern'; dir: '$start_dir'" "${FUNCNAME[1]}"
 
-        [[ "$start_dir" == '/' ]] || _dir="$start_dir"
+        [[ "$start_dir" != '/' ]] && _dir="$start_dir"
         [[ "$pattern" != '..' ]] && is_backing=0
-        ! [[ "$is_backing" -eq 0 && "$pattern" == '..' ]] && [[ "$pattern" != '.' && -d "$_dir/$pattern" ]] && { echo woo; dir="$_dir/$pattern"; return 0; }
+        ! [[ "$is_backing" -eq 0 && "$pattern" == '..' ]] && [[ "$pattern" != '.' && -d "$_dir/$pattern" ]] && { dir="$_dir/$pattern"; return 0; }
 
-        if ! command -v fzf > /dev/null 2>&1; then
+        if [[ "$has_fzf" -eq 0 ]]; then
             matches=()
             while IFS= read -r -d $'\0' i; do
                 matches+=("$i")
@@ -2549,7 +2553,16 @@ g() {
         fi
 
         [[ -z "$dir" ]] && { err "no matches found" "${FUNCNAME[1]}"; return 1; }
-        [[ -d "$dir" ]] || { err "no such dir like [$dir] in $dir" "${FUNCNAME[1]}"; return 1; }
+        [[ -d "$dir" ]] || { err "no such dir like [$dir] in $start_dir" "${FUNCNAME[1]}"; return 1; }
+    }
+
+    __go_up() {
+        local pattern i
+        readonly pattern="$1"
+
+        for ((i=0; i <= (( ${#pattern} - 2 )) ; i++)); do
+            dir+='../'
+        done
     }
 
     for i in "$@"; do
@@ -2558,17 +2571,18 @@ g() {
     done
 
     #[[ -d "$input" && ! "$input" =~ ^.*/\.+/$ ]] && { cd -- "$input"; return; }
-    [[ -z "$input" ]] && input='*'
-    [[ "$input" == /* ]] && { input="${input:1}"; dir="/"; }
-    [[ "$(tolowercase "$input")" == "$input" ]] && iname_arg="iname"
     is_backing=1
+    [[ -z "$input" ]] && input='*'
+    [[ "$input" == /* ]] && { input="${input:1}"; is_backing=0; dir="/"; }
+    command -v fzf > /dev/null 2>&1 && readonly has_fzf=1 || readonly has_fzf=0
 
     IFS='/' read -ra paths <<< "$input"
     for i in "${paths[@]}"; do
-        __select_dir "$i" "$dir" || return 1
+        [[ -z "$dir" && "$i" =~ ^\.{3,}$ ]] && __go_up "$i" && continue
+        __select_dir "$i" "$dir" || { unset __find_fun __select_dir __go_up; return 1; }
     done
 
-    unset __find_fun __select_dir
+    unset __find_fun __select_dir __go_up
     cd -- "$dir"
 }
 
@@ -2873,7 +2887,7 @@ fh() {
                 | grep -iE --color=auto -- "$input" \
                 | grep -oP -- "$regex") )
 
-        [[ -z "${cmd[*]}" ]] && { err "no matching entries found" "$FUNCNAME"; return 1; }
+        [[ -z "${cmd[*]}" ]] && { err "no matching entries found" "$FUNCNAME"; IFS="$ifs_old"; return 1; }
         select_items --single "${cmd[@]}"
         #echo "woo: ${__SELECTED_ITEMS[@]}"
         IFS="$ifs_old"
@@ -3021,8 +3035,8 @@ fsha() {
 # fstash - easier way to deal with stashes; type fstash to get a list of your stashes.
 # - enter shows you the contents of the stash
 # - ctrl-d asks to drop the selected stash
-# - ctrl-a asks to apply the selected stash
-# - ctrl-b checks the stash out as a branch, for easier merging (TODO: not using)
+# - ctrl-a asks to apply (pop) the selected stash
+# - ctrl-b checks the stash out as a branch, for easier merging (TODO: not avail atm)
 fstash() {
     local out q k stsh stash_name_regex stash_name
 
@@ -3079,7 +3093,7 @@ e() {  # mnemonic: edit
 
     check_progs_installed fasd fzf "$EDITOR" || return 1
 
-    file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)" && $EDITOR "$file" || return 1
+    file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)" && $EDITOR -- "$file" || return 1
 }
 
 
