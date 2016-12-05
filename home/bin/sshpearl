@@ -26,8 +26,8 @@ readonly SELF="$(basename -- "$0")"
 function ssh_pearl() {
     local self rcScript inputrcScript vimrcScript ssh_opts opt commands arg commands_opt cmd
 
-    commands=()
-    ssh_opts=()
+    declare -a commands=()
+    declare -a ssh_opts=()
 
 
     # strips empty lines & comments

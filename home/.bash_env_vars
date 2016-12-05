@@ -57,7 +57,7 @@ if [[ -z "$PEARL_HOME" ]]; then
     export _WIRELESS_IF="/tmp/wireless_interfaces.dat"
     export _TRUSTED_CON_MARKER="/tmp/connected_trusted_NW.dat"
 
-    export _MAX_STARTING_VOL_FOR_EARPHONES=90
+    export _MAX_STARTING_VOL_FOR_EARPHONES=70
     export _PROJECTS_DIR="$HOME/dev/projects"
 fi
 

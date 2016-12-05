@@ -2568,7 +2568,7 @@ function enable_network_manager() {
 # Entryponit for gtk themes; comment out that should not be installed.
 function install_gtk_theme() {
     #install_gtk_numix
-    execute 'arc-theme'
+    install_block 'arc-theme'
 }
 
 
@@ -2636,7 +2636,7 @@ function post_install_progs_setup() {
     setup_docker
     execute "sudo adduser $USER wireshark"      # add user to wireshark group, so it could be run as non-root;
                                                 # (implies wireshark is installed with allowing non-root users
-                                                # to capture packets);
+                                                # to capture packets - it asks this during installation);
     execute "newgrp wireshark"                  # log us into the new group
     execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
     execute "newgrp vboxusers"                  # log us into the new group
