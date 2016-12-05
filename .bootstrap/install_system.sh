@@ -40,8 +40,8 @@ IS_SSH_SETUP=0       # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=''  # only select_items() *writes* into this one.
 MODE=''
 FULL_INSTALL=0                  # whether script is performing full install or not. 1 || 0
-PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
-PACKAGES_FAILED_TO_INSTALL=()
+declare -a PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
+declare -a PACKAGES_FAILED_TO_INSTALL=()
 LOGGING_LVL=0                   # execution logging level (full install mode logs everything);
                                 # don't set log level too soon; don't want to persist bullshit.
                                 # levels are currently 0, 1 and 10, 1 being the lowest (least amount of events logged.)
@@ -63,7 +63,7 @@ PRIVATE_CASTLE=''  # installation specific private castle location (eg for 'work
 readonly SELF="${0##*/}"
 
 declare -A COLORS
-readonly COLORS=(
+COLORS=(
     [RED]="\033[0;31m"
     [YELLOW]="\033[0;33m"
     [OFF]="\033[0m"
@@ -387,8 +387,8 @@ function install_nfs_client() {
     readonly fstab="/etc/fstab"
     readonly default_mountpoint="/mnt/nfs"
 
-    mounted_shares=()
-    used_mountpoints=()
+    declare -a mounted_shares=()
+    declare -a used_mountpoints=()
 
     confirm "wish to install & configure nfs client?" || return 1
 
@@ -499,6 +499,8 @@ function install_sshfs() {
     readonly fstab="/etc/fstab"
     readonly ssh_port=443
     readonly identity_file="$HOME/.ssh/id_rsa_only_for_server_connect"
+    declare -a mounted_shares=()
+    declare -a used_mountpoints=()
 
     declare -A sel_ips_to_user
 
@@ -859,7 +861,7 @@ function setup_homesick() {
 function setup_global_env_vars() {
     local global_env_var_loc real_file_locations file
 
-    readonly real_file_locations=(
+    declare -ar real_file_locations=(
         "$SHELL_ENVS"
     )
     readonly global_env_var_loc='/etc'  # so our env vars would have user-agnostic location as well;
@@ -1230,7 +1232,7 @@ function install_npm_modules() {
 function upgrade_kernel() {
     local package_line kernels_list amd64_arch
 
-    kernels_list=()
+    declare -a kernels_list=()
     is_64_bit && readonly amd64_arch="amd64"
 
     # install kernel meta-packages:
@@ -2047,11 +2049,11 @@ function install_from_repo() {
     local block block1 block2 block3 block4 extra_apt_params
 
     declare -A extra_apt_params
-    readonly extra_apt_params=(
+    extra_apt_params=(
        [block2]="--no-install-recommends"
     )
 
-    readonly block1=(
+    declare -ar block1=(
         xorg
         sudo
         alsa-base
@@ -2087,7 +2089,7 @@ function install_from_repo() {
         ufw
     )
 
-    readonly block2=(
+    declare -ar block2=(
         jq
         dnsutils
         glances
@@ -2140,7 +2142,7 @@ function install_from_repo() {
         #- !! gksu no moar recommended; pkexec advised; to use pkexec, you need to define its
         #     action in /usr/share/polkit-1/actions.
 
-    readonly block3=(
+    declare -ar block3=(
         iceweasel
         chromium
         icedove
@@ -2193,7 +2195,7 @@ function install_from_repo() {
         transmission-remote-gtk
     )
 
-    readonly block4=(
+    declare -ar block4=(
         mutt-patched
         notmuch-mutt
         notmuch
@@ -2256,9 +2258,9 @@ function install_from_repo() {
             local conf conf_lines i
 
             readonly conf='/etc/pulse/default.pa'
-            readonly conf_lines=('load-module module-equalizer-sink'
-                                 'load-module module-dbus-protocol'
-                                )
+            declare -ar conf_lines=('load-module module-equalizer-sink'
+                                    'load-module module-dbus-protocol'
+                                   )
 
             [[ -f "$conf" ]] || { err "[$conf] is not a valid file."; return 1; }
 
@@ -2306,9 +2308,9 @@ function install_nvidia() {
 function install_block() {
     local list_to_install extra_apt_params dry_run_failed exit_sig exit_sig_install_failed pkg
 
-    readonly list_to_install=( $1 )
+    declare -ar list_to_install=( $1 )
     readonly extra_apt_params="$2"  # optional
-    dry_run_failed=()
+    declare -a dry_run_failed=()
     exit_sig=0  # default
 
     report "installing these packages:\n${list_to_install[*]}\n"
@@ -2403,7 +2405,7 @@ function choose_single_task() {
         err "expected [$SHELL_ENVS] to exist; note that some configuration might be missing."
     fi
 
-    readonly choices=(
+    declare -ar choices=(
         setup
         setup_homesick
         setup_dirs
@@ -2441,7 +2443,7 @@ function choose_single_task() {
 function __choose_prog_to_build() {
     local choices
 
-    readonly choices=(
+    declare -ar choices=(
         install_vim
         install_neovim
         install_YCM
@@ -2490,7 +2492,7 @@ function full_install() {
 function remind_manually_installed_progs() {
     local progs i
 
-    readonly progs=(
+    declare -ar progs=(
         franz
         lazyman2
     )
@@ -2603,9 +2605,9 @@ function configure_ntp_for_work() {
     local servers conf i
 
     readonly conf='/etc/ntp.conf'
-    readonly servers=('server gibntp01.prod.williamhill.plc'
-                      'server gibntp02.prod.williamhill.plc'
-                     )
+    declare -ar servers=('server gibntp01.prod.williamhill.plc'
+                         'server gibntp02.prod.williamhill.plc'
+                        )
 
     [[ "$MODE" == work ]] || return
     [[ -f "$conf" ]] || { err "[$conf] is not a valid file. is ntp installed?"; return 1; }
@@ -2816,12 +2818,12 @@ function select_items() {
     local DMENU nr_of_dmenu_vertical_lines dmenurc options options_dmenu i prompt msg choices num is_single_selection selections
 
     # original version stolen from http://serverfault.com/a/298312
-    readonly options=( $1 )
+    declare -ar options=( $1 )
     readonly is_single_selection="$2"
 
     readonly dmenurc="$HOME/.dmenurc"
     readonly nr_of_dmenu_vertical_lines=40
-    selections=()
+    declare -a selections=()
 
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
@@ -2880,8 +2882,8 @@ function remove_items_from_list() {
 
     [[ "$#" -ne 2 ]] && { err "exactly 2 args required" "$FUNCNAME"; return 1; }
 
-    orig_list=( $1 )
-    readonly elements_to_remove=( $2 )
+    declare -a orig_list=( $1 )
+    declare -ar elements_to_remove=( $2 )
 
     for i in "${!orig_list[@]}"; do
         for j in "${elements_to_remove[@]}"; do
@@ -3016,7 +3018,7 @@ function list_contains() {
     local array element i
 
     readonly element="$1"
-    readonly array=( $2 )
+    declare -ar array=( $2 )
 
     [[ "$#" -ne 2 ]] && { err "exactly 2 args required" "$FUNCNAME"; return 1; }
     #[[ -z "$element" ]]    && { err "element to check can't be empty string." "$FUNCNAME"; return 1; }  # it can!
@@ -3038,7 +3040,7 @@ function list_contains() {
 function check_progs_installed() {
     local msg msg_beginning i progs_missing
 
-    progs_missing=()
+    declare -a progs_missing=()
 
     # Check whether required programs are installed:
     for i in "$@"; do

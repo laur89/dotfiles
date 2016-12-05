@@ -6,7 +6,7 @@
 # #####
 
 session_startfile="$HOME/.session-startuplist"
-autostart=()
+declare -a autostart=()
 SELF=".common_startup"
 ################################################
 
@@ -222,4 +222,4 @@ enableSmart &
 set_perms &
 set_keyboard_layout &
 
-unset i x
+unset i x f m n autostart session_startfile

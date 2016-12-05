@@ -8,7 +8,7 @@
 #---------------------------------------------------
 SELF="${0##*/}"
 
-PROGS=(
+declare -a PROGS=(
     "urxvtd"
     "davmail"
     "keepassx"
