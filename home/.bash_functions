@@ -91,7 +91,7 @@ ffind() {
 
     filetypeOptionCounter=0
     caseOptCounter=0
-    matches=()
+    declare -a matches=()
 
     while getopts "m:isrefdlbLDqphVPIC0" opt; do
         case "$opt" in
@@ -2154,7 +2154,7 @@ foa() {
     opts="$1"
 
     readonly default_depth="m10"
-    matches=()
+    declare -a matches=()
 
     if [[ "$opts" == -* ]]; then
         [[ "$opts" != *f* ]] && opts="-f${opts:1}"
@@ -2181,7 +2181,7 @@ foa() {
 fod() {
     local matches i
 
-    matches=()
+    declare -a matches=()
 
     while IFS= read -r -d $'\0' i; do
         matches+=("$i")
@@ -2209,7 +2209,7 @@ fog() {
     opts="$1"
 
     readonly default_depth="m10"
-    matches=()
+    declare -a matches=()
 
     if [[ "$opts" == -* ]]; then
         [[ "$opts" != *m* ]] && opts+="$default_depth"
@@ -2260,7 +2260,7 @@ fon() {
     opts="$1"
 
     readonly default_depth="m1"
-    matches=()
+    declare -a matches=()
 
     if [[ "$opts" == -* ]]; then
         [[ "$opts" != *f* ]] && opts="-f${opts:1}"
@@ -2316,7 +2316,7 @@ fow() {
     opts="$1"
 
     readonly default_depth="m10"
-    matches=()
+    declare -a matches=()
 
     if [[ "$opts" == -* ]]; then
         [[ "$opts" != *f* ]] && opts="-f${opts:1}"
@@ -2365,7 +2365,7 @@ foc() {
     opts="$1"
 
     readonly default_depth="m10"
-    matches=()
+    declare -a matches=()
 
     if [[ "$opts" == -* ]]; then
         [[ "$opts" != *m* ]] && opts+="$default_depth"
@@ -2396,6 +2396,7 @@ fo() {
 
     opts="$1"
     readonly default_depth=m7
+    declare -a matches=()
 
     if [[ -z "$*" ]]; then
         opts='-fm1'
@@ -2436,7 +2437,7 @@ __fo() {
     office="libreoffice"
     image_editor="gimp"
 
-    files=()
+    declare -a files=()
 
     if [[ "$__REMOTE_SSH" -ne 1 ]]; then  # only check for progs if not ssh-d
         check_progs_installed "$PAGER" "$file_mngr" "$editor" "$image_viewer" \
@@ -2629,7 +2630,7 @@ g() {
         ! [[ "$is_backing" -eq 0 && "$pattern" == '..' ]] && [[ "$pattern" != '.' && -d "$_dir/$pattern" ]] && { dir="$_dir/$pattern"; return 0; }
 
         if [[ "$has_fzf" -eq 0 ]]; then
-            matches=()
+            declare -a matches=()
             while IFS= read -r -d $'\0' i; do
                 matches+=("$i")
             done < <(__find_fun "$pattern" "$start_dir")
@@ -2903,7 +2904,7 @@ fdu() {
 
     [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir." "$FUNCNAME"; return 1; }
 
-    dirs=()
+    declare -a dirs=()
     _get_parent_dirs() {
         [[ -d "$1" ]] || return
         [[ "$1" != "$pwd" ]] && dirs+=("$1")
@@ -2972,7 +2973,7 @@ fh() {
     else
         readonly ifs_old="$IFS"
         IFS=$'\n'
-        readonly cmd=( $(history \
+        declare -ar cmd=( $(history \
                 | grep -vE -- "\s+$FUNCNAME\b" \
                 | grep -iE --color=auto -- "$input" \
                 | grep -Po -- "$regex") )
