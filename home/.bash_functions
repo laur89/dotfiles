@@ -95,13 +95,15 @@ ffind() {
 
     while getopts "m:isrefdlbLDqphVPIC0" opt; do
         case "$opt" in
-           i) iname_arg="-iname"
-              caseOptCounter+=1
+           i)
+              [[ "$iname_arg" != '-iname' ]] && caseOptCounter+=1
+              iname_arg="-iname"
               shift $((OPTIND-1))
                 ;;
-           s) unset iname_arg
+           s)
+              [[ "$force_case" -ne 1 ]] && caseOptCounter+=1
+              unset iname_arg
               force_case=1
-              caseOptCounter+=1
               shift $((OPTIND-1))
                 ;;
            r) regex=1
@@ -110,8 +112,9 @@ ffind() {
            e) exact=1
               shift $((OPTIND-1))
                 ;;
-           f | d | l) file_type="-type $opt"
-              let filetypeOptionCounter+=1
+           f | d | l)
+              [[ "$file_type" != "-type $opt" ]] && let filetypeOptionCounter+=1
+              file_type="-type $opt"
               shift $((OPTIND-1))
                 ;;
            b) readonly filetype=1
@@ -343,8 +346,9 @@ __find_top_big_small_fun() {
 
     while getopts "m:fdLh" opt; do
         case "$opt" in
-           f | d) file_type="-type $opt"
-              let filetypeOptionCounter+=1
+           f | d)
+              [[ "$file_type" != "-type $opt" ]] && let filetypeOptionCounter+=1
+              file_type="-type $opt"
               shift $((OPTIND-1))
                 ;;
            m) maxDepth="$OPTARG"
@@ -514,8 +518,9 @@ __find_bigger_smaller_common_fun() {
 
     while getopts "m:fdLh" opt; do
         case "$opt" in
-           f | d) file_type="-type $opt"
-              let filetypeOptionCounter+=1
+           f | d)
+              [[ "$file_type" != "-type $opt" ]] && let filetypeOptionCounter+=1
+              file_type="-type $opt"
               shift $((OPTIND-1))
                 ;;
            m) maxDepth="$OPTARG"
@@ -714,6 +719,7 @@ aptreset() {
 
     report "running apt-get clean..." "$FUNCNAME"
     sudo apt-get clean
+    sudo apt-get autoremove
     #sudo apt-get update
     #sudo apt-get upgrade
 }
@@ -749,15 +755,16 @@ ffstr() {
 
     while getopts "isrm:Lcoh" opt; do
         case "$opt" in
-           i) grepcase=" -i "
+           i)
+              [[ "$iname_arg" != '-iname' ]] && caseOptCounter+=1
               iname_arg="-iname"
-              caseOptCounter+=1
-              shift $(( $OPTIND - 1 ))
-              ;;
-           s) unset grepcase
-              unset iname_arg
+              grepcase=" -i "
+              shift $((OPTIND-1))
+                ;;
+           s)
+              [[ "$force_case" -ne 1 ]] && caseOptCounter+=1
+              unset iname_arg grepcase
               force_case=1
-              caseOptCounter+=1
               shift $((OPTIND-1))
                 ;;
            r) regex=1
@@ -1054,12 +1061,14 @@ astr() {
 
     while getopts "isLhm:" opt; do
         case "$opt" in
-           i) grepcase=" -i "
-              caseOptCounter+=1
-              shift $(( $OPTIND - 1 ))
-              ;;
-           s) grepcase=" -s "
-              caseOptCounter+=1
+           i)
+              [[ "$grepcase" != ' -i ' ]] && caseOptCounter+=1
+              grepcase=' -i '
+              shift $((OPTIND-1))
+                ;;
+           s)
+              [[ "$grepcase" != ' -s ' ]] && caseOptCounter+=1
+              grepcase=' -s '
               shift $((OPTIND-1))
                 ;;
            m) maxDepth="$OPTARG"
@@ -1166,7 +1175,7 @@ swap() {
     file_size="$(get_size "$first_file")"
     space_left_on_target="$(space_left "$tmp")"
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
-        err "$first_file size is ${file_size}MB, but $(dirname "$tmp") has only [${space_left_on_target}MB] free space left. abort." "$FUNCNAME"
+        err "$first_file size is ${file_size}MB, but $(dirname -- "$tmp") has only [${space_left_on_target}MB] free space left. abort." "$FUNCNAME"
         return 1
     fi
 
@@ -1179,7 +1188,7 @@ swap() {
     file_size="$(get_size "$sec_file")"
     space_left_on_target="$(space_left "$first_file")"
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
-        err "$sec_file size is ${file_size}MB, but $(dirname "$first_file") has only [${space_left_on_target}MB] free space left. abort." "$FUNCNAME"
+        err "$sec_file size is ${file_size}MB, but $(dirname -- "$first_file") has only [${space_left_on_target}MB] free space left. abort." "$FUNCNAME"
         # undo:
         mv -- "$tmp" "$first_file"
         return 1
@@ -1196,7 +1205,7 @@ swap() {
     file_size="$(get_size "$tmp")"
     space_left_on_target="$(space_left "$sec_file")"
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
-        err "$first_file size is ${file_size}MB, but $(dirname "$sec_file") has only [${space_left_on_target}MB] free space left. abort." "$FUNCNAME"
+        err "$first_file size is ${file_size}MB, but $(dirname -- "$sec_file") has only [${space_left_on_target}MB] free space left. abort." "$FUNCNAME"
         # undo:
         mv -- "$first_file" "$sec_file"
         mv -- "$tmp" "$first_file"
@@ -1212,11 +1221,14 @@ swap() {
     fi
 }
 
-# list current directory and search for a file/dir by name:
+# search for a file/dir by name from a dir.
 lgrep() {
     local src srcdir usage exact OPTIND
 
-    usage="$FUNCNAME  [-e]  filename_to_grep  [dir_to_look_from]\n             -e  search for exact filename"
+    usage="\n$FUNCNAME  [-e]  filename_to_grep  [dir_to_look_from]
+  or:
+$FUNCNAME  [-e]  /dir_to_look_from/filename_to_grep
+             -e  search for exact filename"
 
     while getopts "he" opt; do
         case "$opt" in
@@ -1234,6 +1246,14 @@ lgrep() {
 
     src="$1"
     srcdir="$2"
+
+    # provide syntax for   $FUNCNAME  /valid/path/to/grep/in/<filename_pattern>:
+    if [[ "$src" == */* ]]; then
+        [[ "$#" -ne 1 ]] && { err "if the path & greppable string is provided in single arg, then additional dir arg is not accepted" "$FUNCNAME"; return 1; }
+        [[ "$src" == */ ]] && { err "can't provide only directory" "$FUNCNAME"; return 1; }
+        srcdir="$(dirname -- "$src")"
+        src="${src##*/}"  # strip everything before last slash (slash included)
+    fi
 
     # sanity:
     if [[ "$#" -lt 1 || "$#" -gt 2 || -z "$src" ]]; then
@@ -1254,7 +1274,7 @@ lgrep() {
         [[ "$src" == *\.\** ]] && { err "only use asterisks (*) for wildcards, not .*" "$FUNCNAME"; return 1; }
         find "${srcdir:-.}" -maxdepth 1 -mindepth 1 -name "$src" -printf '%f\n' | grep -iE --color=auto "$src|$"
     else
-        ls -lA "${srcdir:-.}" | grep --color=auto -i -- "$src"
+        ls -lhA "${srcdir:-.}" | grep --color=auto -i -- "$src"
         #find "${srcdir:-.}" -maxdepth 1 -mindepth 1 -iname '*'"$src"'*' -printf '%f\n' | grep -iE --color=auto "$src|$"
     fi
 }
@@ -1300,7 +1320,7 @@ myip() {  # Get internal & external ip addies:
         interface="$1"
 
         ip="$(ip addr show "$interface" | awk '/ inet /{print $2}')" || return 1
-        ip="${ip%%/*}"  # strip the subnet
+        ip="${ip%%/*}"  # strip the subnet (eg /24)
 
         #ip="$(/sbin/ifconfig "$interface" | awk '/inet / {print $2}' | sed -e s/addr://)"  # deprecated
         [[ -z "$ip" && "$__REMOTE_SSH" -eq 1 ]] && return  # probaby the interface was not found
@@ -1428,12 +1448,14 @@ make7z() {
 unpack() { extract "$@"; }
 
 # helper wrapper for uncompressing archives. it uncompresses into new directory, which
-# name is the same as the archive's, minus the file extension. this avoids the situations
-# where gazillion files are being extracted into workin dir. note that if the dir
+# name is the same as the archive's, sans the file extension. this avoids situations
+# where gazillion files are being extracted into working dir. note that if the dir
 # already exists, then unpacking fails (since mkdir fails).
 extract() {
-    local file="$*"
-    local file_without_extension="${file%.*}"
+    local file file_without_extension
+
+    file="$*"
+    file_without_extension="${file%.*}"
     #file_extension="${file##*.}"
 
     if [[ -z "$file" ]]; then
@@ -1444,47 +1466,58 @@ extract() {
         return 1
     fi
 
+    __create_target_dir() {
+        local dir
+
+        readonly dir="$1"
+        [[ -d "$dir" ]] && { err "[$dir] already exists" "${FUNCNAME[1]}"; return 1; }
+        mkdir -- "$dir" || return 1
+        [[ -d "$dir" ]] || { err "mkdir failed to create [$dir]" "${FUNCNAME[1]}"; return 1; }
+        return 0
+    }
+
     case "$file" in
         *.tar.bz2)   file_without_extension="${file_without_extension%.*}"  # because two extensions
-                        mkdir -- "$file_without_extension" && tar xjf "$file" -C "$file_without_extension"
+                        __create_target_dir "$file_without_extension" && tar xjf "$file" -C "$file_without_extension" || return 1
                         ;;
         *.tar.gz)    file_without_extension="${file_without_extension%.*}"  # because two extensions
-                        mkdir -- "$file_without_extension" && tar xzf "$file" -C "$file_without_extension"
+                        __create_target_dir "$file_without_extension" && tar xzf "$file" -C "$file_without_extension" || return 1
                         ;;
         *.tar.xz)    file_without_extension="${file_without_extension%.*}"  # because two extensions
-                        mkdir -- "$file_without_extension" && tar xpvf "$file" -C "$file_without_extension"
+                        __create_target_dir "$file_without_extension" && tar xpvf "$file" -C "$file_without_extension" || return 1
                         ;;
         *.bz2)       check_progs_installed bunzip2 || return 1
-                        bunzip2 -k -- "$file"
+                        bunzip2 -k -- "$file" || return 1
                         ;;
         *.rar)       check_progs_installed unrar || return 1
-                        mkdir -- "$file_without_extension" && unrar x "$file" "${file_without_extension}"/
+                        __create_target_dir "$file_without_extension" && unrar x "$file" "${file_without_extension}"/ || return 1
                         ;;
         *.gz)        check_progs_installed gunzip || return 1
-                        gunzip -kd -- "$file"
+                        gunzip -kd -- "$file" || return 1
                         ;;
-        *.tar)       mkdir -- "$file_without_extension" && tar xf "$file" -C "$file_without_extension"
+        *.tar)       __create_target_dir "$file_without_extension" && tar xf "$file" -C "$file_without_extension" || return 1
                         ;;
-        *.tbz2)      mkdir -- "$file_without_extension" && tar xjf "$file" -C "$file_without_extension"
+        *.tbz2)      __create_target_dir "$file_without_extension" && tar xjf "$file" -C "$file_without_extension" || return 1
                         ;;
-        *.tgz)       mkdir -- "$file_without_extension" && tar xzf "$file" -C "$file_without_extension"
+        *.tgz)       __create_target_dir "$file_without_extension" && tar xzf "$file" -C "$file_without_extension" || return 1
                         ;;
         *.zip)       check_progs_installed unzip || return 1
-                        mkdir -- "$file_without_extension" && unzip -- "$file" -d "$file_without_extension"
+                        __create_target_dir "$file_without_extension" && unzip -- "$file" -d "$file_without_extension" || return 1
                         ;;
         *.7z)        check_progs_installed 7z || return 1
-                        mkdir -- "$file_without_extension" && 7z x "-o$file_without_extension" -- "$file"
+                        __create_target_dir "$file_without_extension" && 7z x "-o$file_without_extension" -- "$file" || return 1
                         ;;
                         # TODO .Z is unverified how and where they'd unpack:
         *.Z)         check_progs_installed uncompress || return 1
-                        uncompress -- "$file"  ;;
+                        uncompress -- "$file"  || return 1
+                        ;;
         *)           err "[$file] cannot be extracted; this filetype is not supported." "$FUNCNAME"
                         return 1
                         ;;
     esac
 
-    # at the moment this reporting could be erroneous if mkdir fails:
-    #echo -e "extracted $file contents into $file_without_extension"
+    report "extracted [$file] contents into [$file_without_extension]" "$FUNCNAME"
+    unset __create_target_dir
 }
 
 # to check included fonts: xlsfonts | grep fontname
@@ -1617,7 +1650,7 @@ createUsbIso() {
         err "[$file] already exists. choose another file to write into, or delete it." "$FUNCNAME"
         echo -e "$usage"
         return 1;
-    elif [[ "$reverse" -eq 1 && ! -d "$(dirname "$file")" ]]; then
+    elif [[ "$reverse" -eq 1 && ! -d "$(dirname -- "$file")" ]]; then
         err "[$file] doesn't appear to be defined on a valid path. please check." "$FUNCNAME"
         echo -e "$usage"
         return 1;
@@ -2364,7 +2397,9 @@ fo() {
     opts="$1"
     readonly default_depth=m7
 
-    if [[ "$opts" == -* ]]; then
+    if [[ -z "$*" ]]; then
+        opts='-fm1'
+    elif [[ "$opts" == -* ]]; then
         [[ "$opts" =~ [fdl] ]] || opts="-f${opts:1}"
         [[ "$opts" != *m* ]] && opts+="$default_depth"
         #echo $opts  # debug
@@ -2372,8 +2407,6 @@ fo() {
     else
         opts="-f${default_depth}"
     fi
-
-    [[ -z "$*" ]] && opts='-fm1'
 
     if ! command -v fzf > /dev/null 2>&1; then
         while IFS= read -r -d $'\0' i; do
@@ -2412,7 +2445,7 @@ __fo() {
 
     if [[ -z "$@" ]]; then  # no params provided, meaning expect input via stdin
         #while IFS= read -r -d $'\0' i; do  # TODO enable once fzf gets the --print0 option
-        while read -r i; do
+        while read -r i; do  # TODO: add -t <sec>  for timeout in read?
             files+=("$i")
         done
     else  # $FUNCNAME was invoked with arguments, not feeding files via stdin;
@@ -2788,12 +2821,13 @@ capture() {
     readonly dest='/tmp'  # dir where recorded file will be written into
     readonly regex='^[0-9]+x[0-9]+$'
 
-    check_progs_installed ffmpeg xdpyinfo || return 1
-    [[ "$-" != *i* ]] && return 1  # don't launch if we're not in an interactive shell;
-    [[ "$(dirname "$name")" != '.' ]] && { err "please enter only filename, not path; it will be written to [$dest]" "$FUNCNAME"; return 1; }
+    check_progs_installed ffmpeg || return 1
+    [[ "$#" -ne 1 ]] && { err "exactly one arg (filename without extension) required" "$FUNCNAME"; return 1; }
+    [[ "$name" == */* || "$(dirname -- "$name")" != '.' ]] && { err "please enter only filename, not path; it will be written to [$dest]" "$FUNCNAME"; return 1; }
     [[ -n "$name" ]] && readonly name="$dest/${name}.mkv" || { err "need to provide output filename as first arg (without an extension)." "$FUNCNAME"; return 1; }
+    [[ "$-" != *i* ]] && return 1  # don't launch if we're not in an interactive shell;
 
-    readonly screen_dimensions="$(xdpyinfo | awk '/dimensions:/{printf $2}')" || { err "unable to find screen dimensions via xdpyinfo (exit code $?)" "$FUNCNAME"; return 1; }
+    readonly screen_dimensions="$(get_screen_dimensions)" || { err "unable to find screen dimensions" "$FUNCNAME"; return 1; }
     [[ "$screen_dimensions" =~ $regex ]] || { err "found screen dimensions [$screen_dimensions] do not conform with validation regex [$regex]" "$FUNCNAME"; return 1; }
 
     #recordmydesktop --display=$DISPLAY --width=1024 height=768 -x=1680 -y=0 --fps=15 --no-sound --delay=10

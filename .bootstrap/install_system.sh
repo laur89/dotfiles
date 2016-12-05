@@ -1211,6 +1211,9 @@ function install_npm_modules() {
         ' || { err "err installing npm and/or nodejs"; return 1; }
     fi
 
+    # first thing update npm:
+    execute "sudo npm install npm -g" && sleep 0.5
+
     # https://github.com/FredrikNoren/ungit
     # https://github.com/dominictarr/JSON.sh
     #
@@ -1222,6 +1225,8 @@ function install_npm_modules() {
 }
 
 
+# to force ver: apt-get install linux-image-amd64:version
+# check avail vers: apt-cache showpkg linux-image-amd64
 function upgrade_kernel() {
     local package_line kernels_list amd64_arch
 
@@ -2240,10 +2245,45 @@ function install_from_repo() {
         # note that both nfs-common & nfs-kernel-server at this point are required
         # for the work's vagrant setup.
     fi
+
+    if confirm 'wish to install pulseaudio?'; then
+
+        # configure pulseaudio/equalizer
+        #
+        # see https://wiki.debian.org/PulseAudio#Dynamically_enable.2Fdisable
+        # to dynamically enable/disable pulseaudio;
+        function configure_pulseaudio() {
+            local conf conf_lines i
+
+            readonly conf='/etc/pulse/default.pa'
+            readonly conf_lines=('load-module module-equalizer-sink'
+                                 'load-module module-dbus-protocol'
+                                )
+
+            [[ -f "$conf" ]] || { err "[$conf] is not a valid file."; return 1; }
+
+            for i in "${conf_lines[@]}"; do
+                if ! grep -q "^$i\$" "$conf"; then
+                    report "adding [$i] to $conf"
+                    execute "echo $i | sudo tee --append $conf > /dev/null"
+                fi
+            done
+        }
+
+        install_block '
+            pulseaudio
+            pulseaudio-equalizer
+            pasystray
+        '
+        configure_pulseaudio
+    fi
 }
 
 
-# offers to install nvidia drivers, if NVIDIA card is detected
+# offers to install nvidia drivers, if NVIDIA card is detected.
+#
+# in order to reinstall the dkms part, purge both nvidia-driver &
+# nvidia-xconfig, and then reinstall.
 function install_nvidia() {
     # https://wiki.debian.org/NvidiaGraphicsDrivers
 
@@ -2522,13 +2562,20 @@ function enable_network_manager() {
 }
 
 
+# Entryponit for gtk themes; comment out that should not be installed.
+function install_gtk_theme() {
+    #install_gtk_numix
+    execute 'arc-theme'
+}
+
+
 # https://github.com/numixproject/numix-gtk-theme
 #
 # consider also numix-gtk-theme & numix-icon-theme straight from the repo
 #
 # another themes to consider: flatabolous (https://github.com/anmoljagetia/Flatabulous)  (hosts also flat icons);
 #                             ultra-flat (https://www.gnome-look.org/content/show.php/Ultra-Flat?content=167473)
-function install_gtk_theme() {
+function install_gtk_numix() {
     local theme_repo tmpdir
 
     readonly theme_repo='https://github.com/numixproject/numix-gtk-theme.git'
@@ -2555,8 +2602,10 @@ function install_gtk_theme() {
 function configure_ntp_for_work() {
     local servers conf i
 
-    readonly servers=('server gibntp01.prod.williamhill.plc' 'server gibntp02.prod.williamhill.plc')
     readonly conf='/etc/ntp.conf'
+    readonly servers=('server gibntp01.prod.williamhill.plc'
+                      'server gibntp02.prod.williamhill.plc'
+                     )
 
     [[ "$MODE" == work ]] || return
     [[ -f "$conf" ]] || { err "[$conf] is not a valid file. is ntp installed?"; return 1; }
@@ -2782,14 +2831,14 @@ function select_items() {
         echo -e "\n---------------------"
         echo "Available options:"
         for i in "${!options[@]}"; do
-            printf "%3d%s) %s\n" $((i+1)) "${choices[i]:- }" "${options[i]}"
+            printf '%3d%s) %s\n' "$((i+1))" "${choices[i]:- }" "${options[i]}"
         done
         [[ "$msg" ]] && echo "$msg"; :
     }
 
     if [[ "$is_single_selection" -eq 1 ]]; then
         if xset q &>/dev/null && [[ -n "$DISPLAY" ]] && command -v dmenu > /dev/null 2>&1; then
-            for i in ${options[*]}; do
+            for i in "${options[@]}"; do
                 options_dmenu+="$i\n"
             done
             __SELECTED_ITEMS="$(echo -e "$options_dmenu" | $DMENU -l $nr_of_dmenu_vertical_lines -p 'select item')"
@@ -2809,11 +2858,11 @@ function select_items() {
         if [[ "$is_single_selection" -eq 1 ]]; then
             # un-select others to enforce single item only:
             for i in "${!choices[@]}"; do
-                [[ "$i" -ne "$num" ]] && choices[$i]=""
+                [[ "$i" -ne "$num" ]] && choices[$i]=''
             done
         fi
 
-        [[ "${choices[num]}" ]] && choices[num]="" || choices[num]="+"
+        [[ "${choices[num]}" ]] && choices[num]='' || choices[num]='+'
     done
 
     for i in "${!options[@]}"; do

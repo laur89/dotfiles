@@ -36,6 +36,7 @@ alias franz='/data/progs/franz/franz'  # client that manages loads of different 
 alias pastebinit='pastebinit -P'
 alias xo='xdg-open'
 alias printer-config='system-config-printer'
+alias equalizer='qpaeq'  # qpaeq = pulseaudio-equalizer
 ##################################
 #alias clean_failed_mvn="$(find ~/.m2 -name *.lastUpdated -delete)"
 #alias amq="/data/progs/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"
@@ -95,6 +96,7 @@ alias ct='cd'
 alias sd='cd'
 alias fin='find'
 alias ffin='ffind'
+alias sduo='sudo'
 
 # git:
 alias gti='git'
