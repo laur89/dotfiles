@@ -710,17 +710,17 @@ aptreset() {
 
     report "note that sudo passwd is required" "$FUNCNAME"
 
+    sudo apt-get clean
+    sudo apt-get autoremove
+
     if [[ -d "$apt_lists_dir" ]]; then
-        report "deleting contents of $apt_lists_dir" "$FUNCNAME"
-        sudo rm -rf $apt_lists_dir/*
+        report "deleting contents of [$apt_lists_dir]" "$FUNCNAME"
+        sudo rm -rf "$apt_lists_dir"/*
     else
         err "[$apt_lists_dir] is not a dir; can't delete the contents in it." "$FUNCNAME"
     fi
 
-    report "running apt-get clean..." "$FUNCNAME"
-    sudo apt-get clean
-    sudo apt-get autoremove
-    #sudo apt-get update
+    sudo apt-get update
     #sudo apt-get upgrade
 }
 
@@ -2564,7 +2564,7 @@ __settz() {
 }
 
 killmenao() {
-    confirm "you sure?" || return
+    confirm 'you sure?' || return
     clear
     report 'you ded.' "$FUNCNAME"
     :(){ :|:& };:
@@ -2705,8 +2705,12 @@ wifilist() {
 
     check_progs_installed nmcli || return 1
 
-    [[ -r "$wifi_device_file" ]] || { err "can't read file [$wifi_device_file]; probably you have no wireless devices." "$FUNCNAME"; }
-    [[ -z "$(cat -- "$wifi_device_file")" ]] && { err "$wifi_device_file is empty." "$FUNCNAME"; }
+    if [[ -r "$wifi_device_file" ]]; then
+        [[ -z "$(cat -- "$wifi_device_file")" ]] && { err "[$wifi_device_file] is empty." "$FUNCNAME"; }
+    else
+        err "can't read file [$wifi_device_file]; probably you have no wireless devices." "$FUNCNAME"
+    fi
+
     nmcli device wifi list
     return $?
 }
@@ -2833,7 +2837,7 @@ capture() {
 
     #recordmydesktop --display=$DISPLAY --width=1024 height=768 -x=1680 -y=0 --fps=15 --no-sound --delay=10
     #recordmydesktop --display=0 --width=1920 height=1080 --fps=15 --no-sound --delay=10
-    ffmpeg -f alsa -ac 2 -i default -framerate 25 -f x11grab -s "$screen_dimensions" -i "$DISPLAY" -acodec pcm_s16le -vcodec libx264 -- "${name}"
+    ffmpeg -f alsa -ac 2 -i default -framerate 25 -f x11grab -s "$screen_dimensions" -i "$DISPLAY" -acodec pcm_s16le -vcodec libx264 -- "$name"
     echo
     report "screencap saved at [$name]" "$FUNCNAME"
 
@@ -2848,7 +2852,7 @@ capture() {
 ytconvert() {
     [[ "$#" -ne 2 ]] && { err "exactly 2 args required - input file to convert, and output filename (without extension)." "$FUNCNAME"; return 1; }
     [[ -f "$1" ]] || { err "need to provide an input file as first argument." "$FUNCNAME"; return 1; }
-    ffmpeg -i "$1" -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -c:a copy "$2.mkv"
+    ffmpeg -i "$1" -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -c:a copy "${2}.mkv"
 }
 
 
@@ -2862,7 +2866,7 @@ pubkey() {
     [[ -f "$key" ]] || { err "[$key] does not exist" "$FUNCNAME"; return 1; }
     readonly contents="$(cat -- "$key")" || { err "cat-ing [$key] failed." "$FUNCNAME"; return 1; }
 
-    copy_to_clipboard "$contents" && report "copied pubkey to clipboard" "$FUNCNAME"
+    copy_to_clipboard "$contents" && report "copied pubkey to clipboard" "$FUNCNAME" || err "copying pubkey failed; here it is:\n$contents" "$FUNCNAME"
     return $?
 }
 

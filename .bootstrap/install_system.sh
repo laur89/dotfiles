@@ -62,11 +62,11 @@ PRIVATE_CASTLE=''  # installation specific private castle location (eg for 'work
 
 readonly SELF="${0##*/}"
 
-declare -A COLORS
-COLORS=(
-    [RED]="\033[0;31m"
-    [YELLOW]="\033[0;33m"
-    [OFF]="\033[0m"
+declare -Ar COLORS=(
+    [RED]=$'\033[0;31m'
+    [YELLOW]=$'\033[0;33m'
+    [OFF]=$'\033[0m'
+    [BOLD]=$'\033[1m'
 )
 #-----------------------
 #---    Functions    ---
@@ -84,19 +84,19 @@ function print_usage() {
 function validate_and_init() {
 
     # need to define PRIVATE_CASTLE here, as otherwis 'single-step' mode of this
-    # script might fail. be sure the values are in sync with the repos actually
+    # script might fail. be sure the repo names are in sync with the repos actually
     # pulled in fetch_castles().
     case $MODE in
         work)
             if [[ "$__ENV_VARS_LOADED_MARKER_VAR" == loaded ]] && ! __is_work; then
-                confirm "you selected [$MODE] mode on non-work machine; sure you want to continue?" || exit
+                confirm "you selected [${COLORS[RED]}${COLORS[BOLD]}$MODE${COLORS[OFF]}] mode on non-work machine; sure you want to continue?" || exit
             fi
 
             PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/work_dotfiles"
             ;;
         personal)
             if [[ "$__ENV_VARS_LOADED_MARKER_VAR" == loaded ]] && __is_work; then
-                confirm "you selected [$MODE] mode on work machine; sure you want to continue?" || exit
+                confirm "you selected [${COLORS[RED]}${COLORS[BOLD]}$MODE${COLORS[OFF]}] mode on work machine; sure you want to continue?" || exit
             fi
 
             PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/personal-dotfiles"
@@ -796,10 +796,10 @@ function fetch_castles() {
     # !! if you change private repos, make sure you update PRIVATE_CASTLE definitions @ validate_and_init()!
     case "$MODE" in
         work)
-            clone_or_link_castle work_dotfiles laliste git.nonprod.williamhill.plc
+            clone_or_link_castle "$(basename -- "$PRIVATE_CASTLE")" laliste git.nonprod.williamhill.plc
             ;;
         personal)
-            clone_or_link_castle personal-dotfiles layr bitbucket.org
+            clone_or_link_castle "$(basename -- "$PRIVATE_CASTLE")" layr bitbucket.org
             ;;
     esac
 
@@ -2248,7 +2248,7 @@ function install_from_repo() {
         # for the work's vagrant setup.
     fi
 
-    if confirm 'wish to install pulseaudio?'; then
+    if confirm "wish to install ${COLORS[YELLOW]}${COLORS[BOLD]}pulseaudio${COLORS[OFF]}?"; then
 
         # configure pulseaudio/equalizer
         #
@@ -2272,6 +2272,7 @@ function install_from_repo() {
             done
         }
 
+        # pasystray for easier config access; to meant to be ran continuously.
         install_block '
             pulseaudio
             pulseaudio-equalizer
@@ -2860,7 +2861,7 @@ function select_items() {
         if [[ "$is_single_selection" -eq 1 ]]; then
             # un-select others to enforce single item only:
             for i in "${!choices[@]}"; do
-                [[ "$i" -ne "$num" ]] && choices[$i]=''
+                [[ "$i" -ne "$num" ]] && choices[i]=''
             done
         fi
 
@@ -2887,7 +2888,7 @@ function remove_items_from_list() {
 
     for i in "${!orig_list[@]}"; do
         for j in "${elements_to_remove[@]}"; do
-            [[ "$j" == "${orig_list[$i]}" ]] && unset orig_list[$i]
+            [[ "$j" == "${orig_list[i]}" ]] && unset orig_list[i]
         done
     done
 
