@@ -123,19 +123,23 @@ ffind() {
               shift $((OPTIND-1))
                 ;;
            V) readonly filetype=1
+              file_type="-type f"
               extra_params='-size +100M'  # search for min. x megs files, so mp4 wouldn't (likely) return audio files
               readonly filetype_regex='video/|audio/mp4'
               shift $((OPTIND-1))
                 ;;
            P) readonly filetype=1
+              file_type="-type f"
               readonly filetype_regex='application/pdf; charset=binary'
               shift $((OPTIND-1))
                 ;;
            I) readonly filetype=1
+              file_type="-type f"
               readonly filetype_regex='image/\w+; charset=binary'
               shift $((OPTIND-1))
                 ;;
            C)  # for doC
+              file_type="-type f"
               readonly filetype=1
               shift $((OPTIND-1))
 
