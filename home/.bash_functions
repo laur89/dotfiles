@@ -1222,13 +1222,20 @@ swap() {
 }
 
 # search for a file/dir by name from a dir.
+#
 lgrep() {
     local src srcdir usage exact OPTIND
 
     usage="\n$FUNCNAME  [-e]  filename_to_grep  [dir_to_look_from]
   or:
 $FUNCNAME  [-e]  /dir_to_look_from/filename_to_grep
-             -e  search for exact filename"
+             -e  search for exact filename
+
+        Examples:
+            lgrep pattern         searches for pattern in current dir
+            lgrep pattern /tmp    searches for pattern in /tmp
+            lgrep /tmp/pattern    searches for pattern in /tmp
+"
 
     while getopts "he" opt; do
         case "$opt" in
@@ -2450,7 +2457,7 @@ __fo() {
             files+=("$i")
         done
     else  # $FUNCNAME was invoked with arguments, not feeding files via stdin;
-        readonly files=("$@")
+        files=("$@")
     fi
 
     [[ "${#files[@]}" -eq 0 ]] && return  # quit silently

@@ -654,7 +654,7 @@ function install_deps() {
     # fuzzy file finder/command completer etc:
     clone_or_pull_repo "junegunn" "fzf" "$BASE_DEPS_LOC"  # https://github.com/junegunn/fzf
     create_link "${BASE_DEPS_LOC}/fzf" "$HOME/.fzf"
-    execute "$HOME/.fzf/install" || err "could not install fzf"
+    execute "$HOME/.fzf/install --all" || err "could not install fzf"
 
     # fasd - shell navigator similar to autojump:
     clone_or_pull_repo "clvv" "fasd" "$BASE_DEPS_LOC"  # https://github.com/clvv/fasd.git
@@ -1295,15 +1295,15 @@ function install_oracle_jdk() {
 
     readonly tmpdir="$(mktemp -d "jdk-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
-    report "fetcing $ORACLE_JDK_LOC"
+    report "fetcing [$ORACLE_JDK_LOC]"
     execute "pushd -- $tmpdir" || return 1
 
-    wget --no-check-certificate \
+    execute "wget --no-check-certificate \
         --no-cookies \
         --header 'Cookie: oraclelicense=accept-securebackup-cookie' \
-        -- $ORACLE_JDK_LOC
+        -- '$ORACLE_JDK_LOC'" || { err "wgetting [$ORACLE_JDK_LOC] failed."; return 1; }
 
-    readonly tarball="$(basename -- $ORACLE_JDK_LOC)"
+    readonly tarball="$(basename -- "$ORACLE_JDK_LOC")"
     extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
     dir="$(find -mindepth 1 -maxdepth 1 -type d)"
     [[ -d "$dir" ]] || { err "couldn't find unpacked jdk directory"; return 1; }
@@ -1937,16 +1937,16 @@ function install_YCM() {
         readonly tarball="$(basename -- "$CLANG_LLVM_LOC")"
 
         execute "pushd -- $tmpdir" || return 1
-        report "fetching $CLANG_LLVM_LOC"
-        execute "wget $CLANG_LLVM_LOC" || { err "wgetting [$CLANG_LLVM_LOC] failed."; return 1; }
+        report "fetching [$CLANG_LLVM_LOC]"
+        execute "wget '$CLANG_LLVM_LOC'" || { err "wgetting [$CLANG_LLVM_LOC] failed."; return 1; }
         extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
         dir="$(find -mindepth 1 -maxdepth 1 -type d)"
         [[ -d "$dir" ]] || { err "couldn't find unpacked clang directory"; return 1; }
-        [[ -d "$libclang_root" ]] && execute "sudo rm -rf -- $libclang_root"
-        execute "mv -- $dir $libclang_root"
+        [[ -d "$libclang_root" ]] && execute "sudo rm -rf -- '$libclang_root'"
+        execute "mv -- '$dir' '$libclang_root'"
 
         execute "popd"
-        execute "sudo rm -rf -- $tmpdir"
+        execute "sudo rm -rf -- '$tmpdir'"
 
         return 0
     }
@@ -1959,11 +1959,11 @@ function install_YCM() {
         return 1
     fi
 
-    [[ -d "$ycm_root" ]] || execute "mkdir -- $ycm_root"
+    [[ -d "$ycm_root" ]] || execute "mkdir -- '$ycm_root'"
 
     # first make sure we have libclang:
     if [[ -d "$libclang_root" ]]; then
-        if ! confirm "found existing libclang at ${libclang_root}; use this one? (answering 'no' will fetch new version)"; then
+        if ! confirm "found existing libclang at [$libclang_root]; use this one? (answering 'no' will fetch new version)"; then
             __fetch_libclang || { err "fetching libclang failed; aborting YCM installation."; return 1; }
         fi
     else
@@ -1971,11 +1971,11 @@ function install_YCM() {
     fi
 
     # clean previous builddir, if existing:
-    [[ -d "$ycm_build_root" ]] && execute "sudo rm -rf -- $ycm_build_root"
+    [[ -d "$ycm_build_root" ]] && execute "sudo rm -rf -- '$ycm_build_root'"
 
     # build:
-    execute "mkdir -- $ycm_build_root"
-    execute "pushd -- $ycm_build_root" || return 1
+    execute "mkdir -- '$ycm_build_root'"
+    execute "pushd -- '$ycm_build_root'" || return 1
     execute "cmake -G 'Unix Makefiles' \
         -DPATH_TO_LLVM_ROOT=$libclang_root \
         . \
@@ -2630,9 +2630,9 @@ function post_install_progs_setup() {
     enable_network_manager
     install_SSID_checker  # has to come after install_progs; otherwise NM wrapper dir won't be present
     execute --ignore-errs "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
-    execute "mopidy local scan"     # update mopidy library
-    execute "sudo sensors-detect"   # answer enter for default values
-    increase_inotify_watches_limit  # for intellij IDEA
+    execute "mopidy local scan"            # update mopidy library
+    execute "sudo sensors-detect --auto"   # answer enter for default values (this is lm-sensors config)
+    increase_inotify_watches_limit         # for intellij IDEA
     setup_docker
     execute "sudo adduser $USER wireshark"      # add user to wireshark group, so it could be run as non-root;
                                                 # (implies wireshark is installed with allowing non-root users
