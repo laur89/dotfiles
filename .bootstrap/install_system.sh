@@ -1156,9 +1156,10 @@ function install_laptop_deps() {
 
     is_laptop || return
 
-    # xserver-xorg-input-synaptics  gives syndaemon
+    # xinput is for configuration; see  https://wiki.archlinux.org/index.php/Libinput
     install_block '
-        xserver-xorg-input-synaptics
+        libinput-tools
+        xinput
         blueman
         xfce4-power-manager
     '

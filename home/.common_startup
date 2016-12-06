@@ -206,11 +206,20 @@ for i in \
     fi
 done &
 
-if is_laptop && check_progs_installed synclient; then
-    # enable tapping on synaptics touchpad:
-    synclient TapButton1=1 TapButton2=3 TapButton3=2 || err_display "something went wrong while setting synaptics" "$SELF"
-    synclient PalmDetect=1 || err_display "err setting synclient palmdetect" "$SELF"
-fi
+# NOTE: after synaptic got phased out by libinput, this does not seem to be required
+# anomore. YMMV.
+#
+# synaptics/touchpad:
+# list devices:  libinput-list-devices
+# list device props: xinput list-props 'SynPS/2 Synaptics TouchPad'  <-- latter arg is the device name
+# set prop: 'xinput set-prop device-number option-number setting' eg xinput set-prop 'SynPS/2 Synaptics TouchPad' 297 1
+#if is_laptop && check_progs_installed xinput; then
+    ## OLD, synaptic-based config (pre libinput):
+    ## enable tapping on synaptics touchpad:
+    ##synclient TapButton1=1 TapButton2=3 TapButton3=2 || err_display "something went wrong while setting synaptics" "$SELF"
+    ##synclient PalmDetect=1 || err_display "err setting synclient palmdetect" "$SELF"
+    #true  # TODO add xinput config
+#fi
 
 
 #TODO: this stuff needs to be done via logrotate perhaps?
@@ -222,4 +231,4 @@ enableSmart &
 set_perms &
 set_keyboard_layout &
 
-unset i x f m n autostart session_startfile
+unset i x f m n session_startfile autostart SELF
