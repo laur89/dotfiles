@@ -23,7 +23,7 @@ fi
 ffind() {
     local src srcdir iname_arg opt usage OPTIND file_type filetypeOptionCounter exact filetype follow_links
     local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter skip_msgs
-    local quitFlag filetype_regex extra_params matches i delete deleteFlag printFlag
+    local quitFlag filetype_regex extra_params matches i delete deleteFlag printFlag filetypeCounter
 
     __filter_for_filetype() {
         local filetype index
@@ -91,6 +91,7 @@ ffind() {
 
     filetypeOptionCounter=0
     caseOptCounter=0
+    filetypeCounter=0
     declare -a matches=()
 
     while getopts "m:isrefdlbLDqphVPIC0" opt; do
@@ -118,34 +119,45 @@ ffind() {
               shift $((OPTIND-1))
                 ;;
            b) readonly filetype=1
+              i='x-executable; charset=binary'
+              [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
+              file_type="-type f"
               extra_params='-executable'
-              readonly filetype_regex='x-executable; charset=binary'
+              readonly filetype_regex="$i"
               shift $((OPTIND-1))
                 ;;
            V) readonly filetype=1
+              i='video/|audio/mp4'
+              [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
               file_type="-type f"
               extra_params='-size +100M'  # search for min. x megs files, so mp4 wouldn't (likely) return audio files
-              readonly filetype_regex='video/|audio/mp4'
+              readonly filetype_regex="$i"
               shift $((OPTIND-1))
                 ;;
            P) readonly filetype=1
+              i='application/pdf; charset=binary'
+              [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
               file_type="-type f"
-              readonly filetype_regex='application/pdf; charset=binary'
+              readonly filetype_regex="$i"
               shift $((OPTIND-1))
                 ;;
            I) readonly filetype=1
+              i='image/\w+; charset=binary'
+              [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
               file_type="-type f"
-              readonly filetype_regex='image/\w+; charset=binary'
+              readonly filetype_regex="$i"
               shift $((OPTIND-1))
                 ;;
            C)  # for doC
+              i='application/msword; charset=binary|application/.*opendocument.*; charset=binary|application/.*ms-office; charset=binary|application/.*ms-excel; charset=binary'
+              [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
               file_type="-type f"
               readonly filetype=1
               shift $((OPTIND-1))
 
               # try keeping doc files' definitions in sync with the ones in __fo()
               # no linebreaks in regex!
-              readonly filetype_regex='application/msword; charset=binary|application/.*opendocument.*; charset=binary|application/.*ms-office; charset=binary|application/.*ms-excel; charset=binary'
+              readonly filetype_regex="$i"
                 ;;
            L) follow_links="-L"
               shift $((OPTIND-1))
@@ -189,6 +201,10 @@ ffind() {
         return 1;
     elif [[ "$filetypeOptionCounter" -gt 1 ]]; then
         err "-f, -d, -l flags are exclusive." "$FUNCNAME"
+        echo -e "$usage"
+        return 1
+    elif [[ "$filetypeCounter" -gt 1 ]]; then
+        err "searching for multiple different filetypes not supported." "$FUNCNAME"
         echo -e "$usage"
         return 1
     elif [[ "$filetypeOptionCounter" -ge 1 && "$filetype" -eq 1 && "$file_type" != "-type f" ]]; then
