@@ -2026,6 +2026,36 @@ glt() {
 }
 
 
+increment_version() {
+    local ver postfix part i vers
+
+    readonly ver="$(grep -Eo '^[0-9\.]+' <<< "$1")" || { err; return 1; }
+    readonly postfix="$(grep -Po '^[0-9\.]+\K.*' <<< "$1")" || { err; return 1; }
+
+    declare -a part=( ${ver//\./ } )
+
+    declare -a vers=( $(sort -u < <(
+        __increment_version_build "${part[@]}";
+        __increment_version_up_to_point_10 "${part[@]}";
+        __increment_version_next_major_or_minor 0 "${part[@]}";
+        __increment_version_next_major_or_minor 1 "${part[@]}";
+        echo custom)
+    ) ) || { err; return 1; }
+    unset __increment_version_build __increment_version_up_to_point_10 __increment_version_next_major_or_minor
+
+    select_items --single "${vers[@]}"
+
+    if [[ "$__SELECTED_ITEMS" == custom ]]; then
+        read -rp 'enter version: ' i
+    else
+        i="$__SELECTED_ITEMS"
+    fi
+
+    [[ "$i" =~ [0-9\.]+ ]] || { err "version [$i] is in an unacceptable format." "$FUNCNAME"; return 1; }
+    echo -e "${i}${postfix}"
+}
+
+
 # git flow feature start
 gffs() {
     local branch
@@ -2084,10 +2114,16 @@ gfff() {
 
 # git flow release start
 gfrs() {
-    local tag last_tag
+    local tag tag_wo_postfix last_tag last_tag_ver postfix parts expected_tags
 
     readonly tag="$1"
+
+    readonly tag_wo_postfix="$(grep -Eo '^[0-9\.]+' <<< "$tag")" || { err; return 1; }
+    readonly postfix="$(grep -Po '^[0-9\.]+\K.*' <<< "$tag")" || { err; return 1; }
+
     readonly last_tag="$(get_git_last_tag)" || { err "unable to find latest tag. make sure provided tag [$tag] is ok!" "$FUNCNAME"; return 1; }
+    readonly last_tag_ver="$(grep -Eo '^[0-9\.]+' <<< "$last_tag")" || { err; return 1; }
+    #readonly postfix="$(grep -Po '^[0-9\.]+\K.*' <<< "$last_tag")" || { err; return 1; }
 
     if [[ -z "$tag" ]]; then
         err "need to provide release tag to create" "$FUNCNAME"
@@ -2103,6 +2139,29 @@ gfrs() {
         return 1
     fi
     # TODO: verify $tag is one of predicted $last_tag+increment
+
+
+    declare -a parts=( ${last_tag_ver//\./ } )
+
+    declare -a expected_tags=( $(sort -u < <(
+        __increment_version_build "${parts[@]}";
+        __increment_version_up_to_point_10 "${parts[@]}";
+        __increment_version_next_major_or_minor 0 "${parts[@]}";
+        __increment_version_next_major_or_minor 1 "${parts[@]}";
+        )
+    ) ) || { err "something blew up" "$FUNCNAME"; return 1; }
+
+    if ! list_contains "$tag_wo_postfix" "${expected_tags[*]}"; then
+        confirm "tag [${COLORS[RED]}${COLORS[BOLD]}${tag}${COLORS[OFF]}] is not of expected increment (expected one of ${expected_tags[*]}); continue anyways?" "$FUNCNAME" || return
+    fi
+
+    # get ver from pom:
+    #grep  -Pom 1 '<version>\K.*(?=</version>)' pom.xml
+
+    # replace
+    #sed -i '0,/<version>.*</s//<version>kek</' pom.xml
+
+
 
     glt || err "unable to find latest tag. not affecting ${FUNCNAME}(), continuing..." "$FUNCNAME"
 
@@ -2302,8 +2361,8 @@ fon() {
 
     check_progs_installed stat sort || return 1
 
-    if [[ "$#" -eq 1 ]] && is_digit "$1"; then
-        report "note that when you want the nth newest, then filename pattern has to be provided as first arg\n" "$FUNCNAME"
+    if [[ "$#" -eq 1 ]] && is_digit "$1" && [[ "$1" -gt 0 ]]; then
+        report "note that when you want the ${1}. newest, then filename pattern has to be provided as first arg\n" "$FUNCNAME"
 
     # try to filter out optional last arg defining the nth newest to open (as in open the nth newest file):
     elif [[ "$#" -gt 1 ]]; then

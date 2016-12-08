@@ -113,12 +113,12 @@ alias gitcom='git com'
 alias gita='git a'
 alias gitaa='git aa'
 alias gitb='git b'
-alias gitdi='git-root && git difftool --dir-diff'                    # diff only unstaged files
-alias gitdi-all='git-root && git difftool --dir-diff HEAD'           # also diff staged files
-alias gitdi-staged-only='git-root && git difftool --dir-diff --cached'    # --cached == --staged, as in diff only staged files
-alias gitdi-prev='git-root && git difftool --dir-diff HEAD^ HEAD'    # local last commit against current index (as in last commit; shows what was changed with last commit); does NOT include current uncommited changes);
+alias gitdi='git-root && git difftool --dir-diff && cd - > /dev/null 2>&1'                    # diff only unstaged files
+alias gitdi-all='git-root && git difftool --dir-diff HEAD && cd - > /dev/null 2>&1'           # also diff staged files
+alias gitdi-staged-only='git-root && git difftool --dir-diff --cached && cd - > /dev/null 2>&1'    # --cached == --staged, as in diff only staged files
+alias gitdi-prev='git-root && git difftool --dir-diff HEAD^ HEAD && cd - > /dev/null 2>&1'    # local last commit against current index (as in last commit; shows what was changed with last commit); does NOT include current uncommited changes);
 #alias gitdi-stashed='git difftool --dir-diff stash@{0}^!'  # diff stash against its parent;
-alias gitdi-stashed='git-root && git difftool --dir-diff stash@{0}^ stash@{0}'  # diff stash against its parent;
+alias gitdi-stashed='git-root && git difftool --dir-diff stash@{0}^ stash@{0} && cd - > /dev/null 2>&1'  # diff stash against its parent;
 
 # docker (better use functions in bash_funtions.sh):
 #alias drmi='docker rmi $(docker images --filter "dangling=true" -q --no-trunc)'
