@@ -1947,7 +1947,10 @@ mkgit() {
 gito() {
     local src matches git_root cwd i
 
+    readonly src="$*"
+
     readonly cwd="$PWD"
+    declare -a matches
 
     if [[ "$__REMOTE_SSH" -ne 1 ]]; then
         check_progs_installed git fzf || return 1
@@ -1955,8 +1958,7 @@ gito() {
 
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
-    readonly src="$*"
-    readonly git_root="$(git rev-parse --show-toplevel)"
+    readonly git_root="$(git rev-parse --show-toplevel)" || { err "unable to find project root" "$FUNCNAME"; return 1; }
     [[ "$cwd" != "$git_root" ]] && pushd "$git_root" &> /dev/null  # git root
 
     if [[ -n "$src" ]]; then
@@ -2016,12 +2018,8 @@ gut() {
 glt() {
     local last_tag
 
-    readonly last_tag=$(git for-each-ref \
-        --format='%(refname:short)' \
-        --sort=taggerdate refs/tags \
-        | tail -1)
+    readonly last_tag="$(get_git_last_tag)" || return 1
 
-    [[ $? -ne 0 || -z "$last_tag" || "$(echo "$last_tag" | wc -l)" -ne 1 ]] && { err "either no tags found or some issue occurred." "$FUNCNAME"; return 1; }
     report "latest tag: [$last_tag]" "$FUNCNAME"
     copy_to_clipboard "$last_tag" || { err "unable to copy tag to clipboard." "$FUNCNAME"; return 1; }
     return $?
@@ -2043,6 +2041,8 @@ gffs() {
     elif git_branch_exists "feature/$branch"; then
         err "branch [feature/$branch] already exists on remote."
         return 1
+    elif [[ "$(get_git_branch)" != develop ]]; then
+        confirm "you're not on develop; note that ${FUNCNAME}() creates new feature branches off of develop. continue?" || return
     fi
 
     git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort." "$FUNCNAME"; return 1; }
@@ -2084,9 +2084,10 @@ gfff() {
 
 # git flow release start
 gfrs() {
-    local tag
+    local tag last_tag
 
     readonly tag="$1"
+    readonly last_tag="$(get_git_last_tag)" || { err "unable to find latest tag. make sure provided tag [$tag] is ok!" "$FUNCNAME"; return 1; }
 
     if [[ -z "$tag" ]]; then
         err "need to provide release tag to create" "$FUNCNAME"
@@ -2101,6 +2102,7 @@ gfrs() {
         err "tag [$tag] already exists."
         return 1
     fi
+    # TODO: verify $tag is one of predicted $last_tag+increment
 
     glt || err "unable to find latest tag. not affecting ${FUNCNAME}(), continuing..." "$FUNCNAME"
 
@@ -2823,6 +2825,14 @@ shot() {
 # TODO:
 # video to gif:
 # from  http://superuser.com/a/436109
+#
+# another ver from http://unix.stackexchange.com/questions/113695/gif-screencasting-the-unix-way:
+#!/bin/bash
+#TMP_AVI=$(mktemp /tmp/outXXXXXXXXXX.avi)
+#ffcast -s % ffmpeg -y -f x11grab -show_region 1 -framerate 15 \
+    #-video_size %s -i %D+%c -codec:v huffyuv                  \
+    #-vf crop="iw-mod(iw\\,2):ih-mod(ih\\,2)" $TMP_AVI         \
+#&& convert -set delay 10 -layers Optimize $TMP_AVI out.gif
 mkgif() {
     local input_file output optimized
 
