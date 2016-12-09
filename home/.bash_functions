@@ -1697,7 +1697,7 @@ createUsbIso() {
         return 1
     elif [[ "$override_dev_partitioncheck" -eq 1 && "$cleaned_devicename" =~ .*[0-9]+$ ]]; then
         report "you've selected to override partition check (ie making sure you select device, not its partition.)" "$FUNCNAME"
-        confirm "are you sure that [$cleaned_devicename] is the device you wish to select?" "$FUNCNAME" || return 1
+        confirm "are you sure that [$cleaned_devicename] is the device you wish to select?" || return 1
     fi
 
     #echo "please provide passwd for running fdisk -l to confirm the selected device is the right one:"
@@ -2018,8 +2018,9 @@ gut() {
 glt() {
     local last_tag
 
-    readonly last_tag="$(get_git_last_tag)" || return 1
+    last_tag="$(get_git_last_tag)" || return 1
 
+    [[ -z "$last_tag" ]] && { report "no tags found"; return 1; }
     report "latest tag: [$last_tag]" "$FUNCNAME"
     copy_to_clipboard "$last_tag" || { err "unable to copy tag to clipboard." "$FUNCNAME"; return 1; }
     return $?
@@ -2069,7 +2070,7 @@ gffs() {
         err "there are slashes in the branchname. need to provide the child branch name only, not [feature/...]" "$FUNCNAME"
         return 1
     elif git_branch_exists "feature/$branch"; then
-        err "branch [feature/$branch] already exists on remote."
+        err "branch [feature/$branch] already exists on remote." "$FUNCNAME"
         return 1
     elif [[ "$(get_git_branch)" != develop ]]; then
         confirm "you're not on develop; note that ${FUNCNAME}() creates new feature branches off of develop. continue?" || return
@@ -2111,59 +2112,77 @@ gfff() {
     return $?
 }
 
-
 # git flow release start
 gfrs() {
-    local tag tag_wo_postfix last_tag last_tag_ver postfix parts expected_tags
+    local tag last_tag last_tag_ver last_tag_postfix parts expected_tags pom_ver pom i
 
-    readonly tag="$1"
+    tag="$1"
+    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
-    readonly tag_wo_postfix="$(grep -Eo '^[0-9\.]+' <<< "$tag")" || { err; return 1; }
-    readonly postfix="$(grep -Po '^[0-9\.]+\K.*' <<< "$tag")" || { err; return 1; }
+    __ask_ver() {
+        local pom_wo_postfix ver
 
-    readonly last_tag="$(get_git_last_tag)" || { err "unable to find latest tag. make sure provided tag [$tag] is ok!" "$FUNCNAME"; return 1; }
-    readonly last_tag_ver="$(grep -Eo '^[0-9\.]+' <<< "$last_tag")" || { err; return 1; }
-    #readonly postfix="$(grep -Po '^[0-9\.]+\K.*' <<< "$last_tag")" || { err; return 1; }
+        if [[ -n "$pom_ver" ]]; then
+            pom_wo_postfix="$(grep -Eo '^[0-9\.]+' <<< "$pom_ver")" || { err; return 1; }
+            confirm "tag as ver [${COLORS[GREEN]}${pom_wo_postfix}${COLORS[OFF]}]? (derived from current pom ver [$pom_ver])" && { echo "$pom_wo_postfix"; return 0; }
+        fi
+
+        read -rp 'enter tag ver to create: ' ver
+        [[ -n "$ver" ]] && { echo "$ver"; return 0; } || return 1
+    }
+
+    declare -a expected_tags
+
+    pom="$(git rev-parse --show-toplevel)/pom.xml" || { err "unable to find git root" "$FUNCNAME"; return 1; }
+    pom_ver="$(grep -Po -m 1 '<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
 
     if [[ -z "$tag" ]]; then
-        err "need to provide release tag to create" "$FUNCNAME"
-        return 1
+        tag="$(__ask_ver)" || { err "need to provide release tag to create" "$FUNCNAME"; unset __ask_ver; return 1; }
+        unset __ask_ver
+    fi
+
+    if [[ -z "$tag" ]]; then
+        err; return 1
     elif [[ "$tag" == */* ]]; then
         err "there are slashes in the tag. need to provide the child tag ver only, not [release/...]" "$FUNCNAME"
         return 1
     elif git_branch_exists "release/$tag"; then
-        err "branch [release/$tag] already exists on remote."
+        err "branch [release/$tag] already exists on remote." "$FUNCNAME"
         return 1
     elif git_tag_exists "$tag"; then
-        err "tag [$tag] already exists."
+        err "tag [$tag] already exists." "$FUNCNAME"
         return 1
     fi
-    # TODO: verify $tag is one of predicted $last_tag+increment
 
+    # try to predict logical tag names based on latest tag and, if available, pom file.
+    # if provided tag is not one of them, ask for confirmation.
+    last_tag="$(get_git_last_tag)" || { err "problems finding latest tag. this was found as latest tag: [$last_tag]" "$FUNCNAME"; unset last_tag; }
+    if [[ -n "$last_tag" ]]; then  # tag exists
+        last_tag_ver="$(grep -Eo '^[0-9\.]+' <<< "$last_tag")" || { err; return 1; }
+        last_tag_postfix="$(grep -Po '^[0-9\.]+\K.*' <<< "$last_tag")" || { err; return 1; }
+        declare -ar parts=( ${last_tag_ver//\./ } )
+        expected_tags=( $(sort -u < <(
+            __increment_version_build "${parts[@]}";
+            __increment_version_up_to_point_10 "${parts[@]}";
+            __increment_version_next_major_or_minor 0 "${parts[@]}";
+            __increment_version_next_major_or_minor 1 "${parts[@]}";
+            echo "$pom_ver";
+            )
+        ) ) || { err "something blew up" "$FUNCNAME"; return 1; }
 
-    declare -a parts=( ${last_tag_ver//\./ } )
-
-    declare -a expected_tags=( $(sort -u < <(
-        __increment_version_build "${parts[@]}";
-        __increment_version_up_to_point_10 "${parts[@]}";
-        __increment_version_next_major_or_minor 0 "${parts[@]}";
-        __increment_version_next_major_or_minor 1 "${parts[@]}";
-        )
-    ) ) || { err "something blew up" "$FUNCNAME"; return 1; }
-
-    if ! list_contains "$tag_wo_postfix" "${expected_tags[*]}"; then
-        confirm "tag [${COLORS[RED]}${COLORS[BOLD]}${tag}${COLORS[OFF]}] is not of expected increment (expected one of ${expected_tags[*]}); continue anyways?" "$FUNCNAME" || return
+        # append postfix (exclude the last, ie pom!)
+        if [[ -n "$last_tag_postfix" ]]; then
+            for (( i=0; i<${#expected_tags[@]}-1; i+=1 )); do
+                expected_tags[i]="${expected_tags[i]}$last_tag_postfix"
+            done
+        fi
+    else
+        expected_tags=("$pom_ver")
     fi
 
-    # get ver from pom:
-    #grep  -Pom 1 '<version>\K.*(?=</version>)' pom.xml
-
-    # replace
-    #sed -i '0,/<version>.*</s//<version>kek</' pom.xml
-
-
-
-    glt || err "unable to find latest tag. not affecting ${FUNCNAME}(), continuing..." "$FUNCNAME"
+    if [[ -n "${expected_tags[*]}" ]] && ! list_contains "$tag" "${expected_tags[*]}"; then
+        confirm "tag [${COLORS[GREEN]}${COLORS[BOLD]}${tag}${COLORS[OFF]}] is not of expected increment\n   (expected one of  $(build_comma_separated_list "${expected_tags[@]}"))\n\ncontinue anyways?" || return
+    fi
 
     git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort." "$FUNCNAME"; return 1; }
     git flow release start -F "$tag"
@@ -2173,8 +2192,9 @@ gfrs() {
 
 # git flow release finish
 gfrf() {
-    local tag
+    local tag pom pom_ver
 
+    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
     [[ -n "$1" ]] && readonly tag="$1" || readonly tag="$(get_git_branch --child)"
 
     if [[ -z "$tag" ]]; then
@@ -2185,9 +2205,26 @@ gfrf() {
         return 1
     fi
 
+    pom="$(git rev-parse --show-toplevel)/pom.xml" || { err "unable to find git root" "$FUNCNAME"; return 1; }
+    pom_ver="$(grep -Po -m 1 '<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
+
+    if [[ -n "$pom_ver" ]]; then  # we're dealing with a maven project
+        [[ "$pom_ver" =~ [0-9\.]+ ]] || { err "maven/pom ver [$pom_ver] is in an unexpected format." "$FUNCNAME"; return 1; }
+        # replace pom ver:
+        sed -i "0,/<version>.*</s//<version>${tag}</" "$pom" || { err "switching versions with sed failed" "$FUNCNAME"; return 1; }
+        sed -i "0,/<scm>HEAD</s//<scm>${tag}</" "$pom" || { err "switching scm versions with sed failed" "$FUNCNAME"; return 1; }
+    fi
+
     git flow release finish -F -p "$tag" || { err "finishing git release failed." "$FUNCNAME"; return 1; }
     report "pushing tags..." "$FUNCNAME"
     git push --tags || { err "...pushing tags failed." "$FUNCNAME"; return 1; }
+
+    if [[ -n "$pom_ver" ]]; then  # we're dealing with a maven project
+        # TODO: ask for incremented version
+        # replace pom ver:
+        sed -i "0,/<version>.*</s//<version>${tag}</" "$pom" || { err "switching versions with sed failed" "$FUNCNAME"; return 1; }
+        sed -i "0,/<scm>HEAD</s//<scm>${tag}</" "$pom" || { err "switching scm versions with sed failed" "$FUNCNAME"; return 1; }
+    fi
 
     return 0
 }
