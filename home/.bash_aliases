@@ -97,6 +97,7 @@ alias sd='cd'
 alias fin='find'
 alias ffin='ffind'
 alias sduo='sudo'
+alias gir='git'
 
 # git:
 alias gti='git'

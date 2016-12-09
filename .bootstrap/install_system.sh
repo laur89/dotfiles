@@ -3053,12 +3053,26 @@ function check_progs_installed() {
 
     if [[ "${#progs_missing[@]}" -gt 0 ]]; then
         [[ "${#progs_missing[@]}" -eq 1 ]] && readonly msg_beginning="[1] required program appears" || readonly msg_beginning="[${#progs_missing[@]}] required programs appear"
-        readonly msg="$msg_beginning not to be installed on the system:\n\t$(build_comma_separated_list ${progs_missing[*]})\n\nAbort.\n"
+        readonly msg="$msg_beginning not to be installed on the system:\n\t$(build_comma_separated_list "${progs_missing[@]}")\n\nAbort.\n"
         err "$msg"
 
         return 1
     fi
 
+    return 0
+}
+
+
+# Builds comma separated list.
+#
+# @param {string...}   list of elements to build string from.
+#
+# @returns {string}  comma separated list, eg "a, b, c"
+function build_comma_separated_list() {
+    local list
+
+    list="$*"
+    echo "${list// /, }"
     return 0
 }
 

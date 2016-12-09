@@ -2052,7 +2052,7 @@ increment_version() {
         i="$__SELECTED_ITEMS"
     fi
 
-    [[ "$i" =~ [0-9\.]+ ]] || { err "version [$i] is in an unacceptable format." "$FUNCNAME"; return 1; }
+    [[ "$i" =~ ^[0-9\.]+$ ]] || { err "version [$i] is in an unacceptable format." "$FUNCNAME"; return 1; }
     echo -e "${i}${postfix}"
 }
 
@@ -2095,7 +2095,10 @@ gfff() {
 
     [[ -n "$1" ]] && readonly branch="$1" || readonly branch="$(get_git_branch --child)"
 
-    if [[ -z "$branch" ]]; then
+    if [[ "$(get_git_branch)" != feature/* ]]; then
+        err "should be on a feature branch" "$FUNCNAME"
+        return 1
+    elif [[ -z "$branch" ]]; then
         err "need to provide feature branch to finish" "$FUNCNAME"
         return 1
     elif [[ "$branch" == */* ]]; then
@@ -2124,6 +2127,7 @@ gfrs() {
 
         if [[ -n "$pom_ver" ]]; then
             pom_wo_postfix="$(grep -Eo '^[0-9\.]+' <<< "$pom_ver")" || { err; return 1; }
+            [[ "$pom_wo_postfix" =~ ^[0-9\.]+$ ]] || { err "maven/pom ver [$pom_wo_postfix] is in an unexpected format." "$FUNCNAME"; return 1; }
             confirm "tag as ver [${COLORS[GREEN]}${pom_wo_postfix}${COLORS[OFF]}]? (derived from current pom ver [$pom_ver])" && { echo "$pom_wo_postfix"; return 0; }
         fi
 
@@ -2134,15 +2138,15 @@ gfrs() {
     declare -a expected_tags
 
     pom="$(git rev-parse --show-toplevel)/pom.xml" || { err "unable to find git root" "$FUNCNAME"; return 1; }
-    pom_ver="$(grep -Po -m 1 '<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
+    pom_ver="$(grep -Po -m 1 '^\s+<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
 
     if [[ -z "$tag" ]]; then
         tag="$(__ask_ver)" || { err "need to provide release tag to create" "$FUNCNAME"; unset __ask_ver; return 1; }
-        unset __ask_ver
     fi
+    unset __ask_ver
 
     if [[ -z "$tag" ]]; then
-        err; return 1
+        err "no tag version specified" "$FUNCNAME"; return 1
     elif [[ "$tag" == */* ]]; then
         err "there are slashes in the tag. need to provide the child tag ver only, not [release/...]" "$FUNCNAME"
         return 1
@@ -2192,12 +2196,15 @@ gfrs() {
 
 # git flow release finish
 gfrf() {
-    local tag pom pom_ver
+    local tag pom pom_ver next_dev
 
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
     [[ -n "$1" ]] && readonly tag="$1" || readonly tag="$(get_git_branch --child)"
 
-    if [[ -z "$tag" ]]; then
+    if [[ "$(get_git_branch)" != release/* ]]; then
+        err "should be on a release branch" "$FUNCNAME"
+        return 1
+    elif [[ -z "$tag" ]]; then
         err "need to provide release tag to finish" "$FUNCNAME"
         return 1
     elif [[ "$tag" == */* ]]; then
@@ -2205,25 +2212,50 @@ gfrf() {
         return 1
     fi
 
+    function __verify_pom_changes_and_push() {
+        local ver
+
+        ver="$1"
+        echo
+        git diff
+        confirm "\nverify pom changes look ok. continue?" || return 1
+        git add "$pom" || return 1
+        git commit -m "Bump version to $ver" || return 1
+        git push
+        return $?
+    }
+
     pom="$(git rev-parse --show-toplevel)/pom.xml" || { err "unable to find git root" "$FUNCNAME"; return 1; }
-    pom_ver="$(grep -Po -m 1 '<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
+    pom_ver="$(grep -Po -m 1 '^\s+<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
 
     if [[ -n "$pom_ver" ]]; then  # we're dealing with a maven project
-        [[ "$pom_ver" =~ [0-9\.]+ ]] || { err "maven/pom ver [$pom_ver] is in an unexpected format." "$FUNCNAME"; return 1; }
+        [[ "$pom_ver" =~ ^[0-9\.]+(-SNAPSHOT)*$ ]] || { err "maven/pom ver [$pom_ver] is in an unexpected format." "$FUNCNAME"; return 1; }
         # replace pom ver:
         sed -i "0,/<version>.*</s//<version>${tag}</" "$pom" || { err "switching versions with sed failed" "$FUNCNAME"; return 1; }
-        sed -i "0,/<scm>HEAD</s//<scm>${tag}</" "$pom" || { err "switching scm versions with sed failed" "$FUNCNAME"; return 1; }
+        [[ "$(grep -c '<tag>HEAD</t' "$pom")" -ne 1 ]] && { err "unexpected number of <tag>HEAD</tag> tags in pom"; return 1; }
+        sed -i "0,/<tag>HEAD</s//<tag>${tag}</" "$pom" || { err "switching scm tag versions with sed failed" "$FUNCNAME"; return 1; }
+        __verify_pom_changes_and_push "$tag" || return 1
     fi
 
     git flow release finish -F -p "$tag" || { err "finishing git release failed." "$FUNCNAME"; return 1; }
     report "pushing tags..." "$FUNCNAME"
     git push --tags || { err "...pushing tags failed." "$FUNCNAME"; return 1; }
+    # now you should be on develop
 
     if [[ -n "$pom_ver" ]]; then  # we're dealing with a maven project
+        report "select next development version" "$FUNCNAME"
+        next_dev="$(increment_version "${tag}-SNAPSHOT")" || { err; return 1; }
+
         # TODO: ask for incremented version
         # replace pom ver:
-        sed -i "0,/<version>.*</s//<version>${tag}</" "$pom" || { err "switching versions with sed failed" "$FUNCNAME"; return 1; }
-        sed -i "0,/<scm>HEAD</s//<scm>${tag}</" "$pom" || { err "switching scm versions with sed failed" "$FUNCNAME"; return 1; }
+        sed -i "0,/<version>${tag}</s//<version>${next_dev}</" "$pom" || { err "switching versions with sed failed" "$FUNCNAME"; return 1; }
+        sed -i "0,/<tag>${tag}</s//<tag>HEAD</" "$pom" || { err "switching scm tag version with sed failed" "$FUNCNAME"; return 1; }
+        __verify_pom_changes_and_push "$next_dev" || return 1
+
+        report "deploying to nexus..." "$FUNCNAME"
+        git checkout "$tag" || { err "unable to check out [$tag]" "$FUNCNAME"; return 1; }
+        mvn clean deploy || { err "mvn depolyment failed"; return 1; }
+        git checkout develop || { err "unable to check out [develop]" "$FUNCNAME"; return 1; }
     fi
 
     return 0
@@ -3016,6 +3048,7 @@ fd() {
 
     readonly src="$1"
     [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir." "$FUNCNAME"; return 1; }
+    check_progs_installed fzf || return 1
     dir=$(find "${src:-.}" -path '*/\.*' -prune \
                     -o -type d -print 2> /dev/null | fzf +m) && cd -- "$dir"
 }
@@ -3028,6 +3061,7 @@ fda() {
 
     readonly src="$1"
     [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir." "$FUNCNAME"; return 1; }
+    check_progs_installed fzf || return 1
     dir=$(find "${src:-.}" -type d 2> /dev/null | fzf +m) && cd -- "$dir"
 }
 
@@ -3040,6 +3074,7 @@ fdu() {
     readonly pwd="$(realpath -- "$PWD")"
 
     [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir." "$FUNCNAME"; return 1; }
+    check_progs_installed fzf || return 1
 
     declare -a dirs=()
     _get_parent_dirs() {
@@ -3066,6 +3101,7 @@ cdf() {
 
     readonly pattern="$1"
     [[ -d "$pattern" ]] && report "fyi, input argument has to be a search pattern, not starting dir." "$FUNCNAME"
+    check_progs_installed fzf || return 1
 
     file=$(fzf +m -q "$pattern") && dir=$(dirname -- "$file") && cd -- "$dir"
 }
@@ -3082,20 +3118,24 @@ __writecmd() {
 # note: no reason to use when ctrl+r mapping works;
 # ctrl-e instead of enter lets you edit the command, just like with ctrl+r binding.
 fh() {
-    local input regex cmd out ifs_old k
+    local input cleanup_regex cmd out ifs_old k
 
-    readonly input="$*"
+    input="$*"
 
-    readonly regex='^\s*\d+\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\K.*$'
+    readonly cleanup_regex='^\s*\d+\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\K.*$'  # depends on your history format (HISTTIMEFORMAT) set in .bashrc
     #([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac | sed -re 's/^\s*[0-9]+\s*//' | __writecmd -run
+    check_progs_installed fzf history || return 1
 
     if command -v fzf > /dev/null 2>&1; then
         out="$(history \
-                | grep -vE -- "\s+$FUNCNAME\b" \
+                | grep -Po -- "$cleanup_regex" \
+                | grep -vE -- "^\s*$FUNCNAME\b" \
+                | sort -u \
                 | fzf --no-sort --tac --print-query --query="$input" --expect=ctrl-e +m -e --exit-0)"
         mapfile -t out <<< "$out"
         readonly k="${out[1]}"
-        readonly cmd="$(echo "${out[-1]}" | grep -Po -- "$regex")"
+        readonly cmd="${out[-1]}"
+        [[ -z "$cmd" ]] && return 1
         if [[ "$k" == 'ctrl-e' ]]; then
             echo "$cmd" | __writecmd
         else
@@ -3105,20 +3145,24 @@ fh() {
         #([ -n "$ZSH_NAME" ] && fc -l 1 || history) \
             #| grep -vE -- "\s+$FUNCNAME\b" \
             #| fzf --no-sort --tac --query="$input" +m -e \
-            #| grep -Po -- "$regex" \
+            #| grep -Po -- "$cleanup_regex" \
             #| __writecmd -run
     else
+        input="${input// /.*}"  # build regex for grep
         readonly ifs_old="$IFS"
         IFS=$'\n'
         declare -ar cmd=( $(history \
-                | grep -vE -- "\s+$FUNCNAME\b" \
+                | grep -Po -- "$cleanup_regex" \
+                | grep -vE -- "^\s*$FUNCNAME\b" \
                 | grep -iE --color=auto -- "$input" \
-                | grep -Po -- "$regex") )
-
-        [[ -z "${cmd[*]}" ]] && { err "no matching entries found" "$FUNCNAME"; IFS="$ifs_old"; return 1; }
-        select_items --single "${cmd[@]}"
-        #echo "woo: ${__SELECTED_ITEMS[@]}"
+                | sort -u
+        ) )
         IFS="$ifs_old"
+
+        [[ -z "${cmd[*]}" ]] && { err "no matching entries found" "$FUNCNAME"; return 1; }
+        select_items --single "${cmd[@]}"
+        [[ -n "${__SELECTED_ITEMS[*]}" ]] && ${__SELECTED_ITEMS[@]}
+        #echo "woo: ${__SELECTED_ITEMS[@]}"
     fi
 }
 
@@ -3141,6 +3185,7 @@ fbr() {
     local branches branch q
 
     q="$*"
+    check_progs_installed fzf git || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
     branches=$(
@@ -3158,6 +3203,7 @@ fco() {
     local tags branches target q
 
     q="$*"
+    check_progs_installed fzf git || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
     tags=$(git tag | awk '{print "\x1b[31;1mtag\x1b[m\t" $1}') || return
@@ -3177,6 +3223,7 @@ fcoc() {
     local commits commit q
 
     q="$*"
+    check_progs_installed fzf git || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
     commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&
@@ -3196,6 +3243,7 @@ fshow() {
 
     q="$*"
 
+    check_progs_installed fzf git || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
     #git log -i --all --graph --source --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative |
     while out=$(
@@ -3250,6 +3298,7 @@ fshow() {
 fsha() {
     local commits commit
 
+    check_progs_installed fzf git || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
     commits=$(git log --color=always --pretty=oneline --abbrev-commit --reverse) &&
@@ -3270,6 +3319,7 @@ fstash() {
 
     readonly stash_name_regex='^\s*(\S+\s+){7}\K(.*)'
 
+    check_progs_installed fzf git || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
     while out=$(
