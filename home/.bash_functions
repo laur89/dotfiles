@@ -2027,33 +2027,35 @@ glt() {
 }
 
 
+# Prepares list of logical version increments (from provided version) and prompts
+# the user to choose one.
+#
+# @param {string}  ver   version to increment. may contain postfix.
+#
+# @returns {string}  incremented version.
 increment_version() {
-    local ver postfix part i vers
+    local ver vers
 
-    readonly ver="$(grep -Eo '^[0-9\.]+' <<< "$1")" || { err; return 1; }
-    readonly postfix="$(grep -Po '^[0-9\.]+\K.*' <<< "$1")" || { err; return 1; }
-
-    declare -a part=( ${ver//\./ } )
+    ver="$1"
 
     declare -a vers=( $(sort -u < <(
-        __increment_version_build "${part[@]}";
-        __increment_version_up_to_point_10 "${part[@]}";
-        __increment_version_next_major_or_minor 0 "${part[@]}";
-        __increment_version_next_major_or_minor 1 "${part[@]}";
+        __increment_version_build "$ver";
+        __increment_version_up_to_point_10 "$ver";
+        __increment_version_next_major_or_minor "$ver" 0;
+        __increment_version_next_major_or_minor "$ver" 1;
         echo custom)
     ) ) || { err; return 1; }
-    unset __increment_version_build __increment_version_up_to_point_10 __increment_version_next_major_or_minor
 
     select_items --single "${vers[@]}"
 
     if [[ "$__SELECTED_ITEMS" == custom ]]; then
-        read -rp 'enter version: ' i
+        read -rp 'enter version: ' ver
     else
-        i="$__SELECTED_ITEMS"
+        ver="$__SELECTED_ITEMS"
     fi
 
-    [[ "$i" =~ ^[0-9\.]+$ ]] || { err "version [$i] is in an unacceptable format." "$FUNCNAME"; return 1; }
-    echo -e "${i}${postfix}"
+    [[ -z "$ver" ]] && { err "no version selected" "$FUNCNAME"; return 1; }
+    echo -e "${ver}"
 }
 
 
@@ -2115,18 +2117,35 @@ gfff() {
     return $?
 }
 
+
+# helper function for gfrs & gfrf
+__verify_files_changes_and_push_version_bump() {
+    local ver files
+
+    ver="$1"; shift
+    declare -a files=("$@")
+
+    echo
+    git diff
+    confirm "\nverify changes look ok. continue?" || return 1
+    git add "${files[@]}" || return 1
+    git commit -m "Bump version to $ver" || return 1
+    git push
+    return $?
+}
+
+
 # git flow release start
 gfrs() {
-    local tag last_tag last_tag_ver last_tag_postfix parts expected_tags pom_ver pom i
+    local tag last_tag expected_tags pom_ver pom pom_wo_postfix i
 
     tag="$1"
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
     __ask_ver() {
-        local pom_wo_postfix ver
+        local ver
 
         if [[ -n "$pom_ver" ]]; then
-            pom_wo_postfix="$(grep -Eo '^[0-9\.]+' <<< "$pom_ver")" || { err; return 1; }
             [[ "$pom_wo_postfix" =~ ^[0-9\.]+$ ]] || { err "maven/pom ver [$pom_wo_postfix] is in an unexpected format." "$FUNCNAME"; return 1; }
             confirm "tag as ver [${COLORS[GREEN]}${pom_wo_postfix}${COLORS[OFF]}]? (derived from current pom ver [$pom_ver])" && { echo "$pom_wo_postfix"; return 0; }
         fi
@@ -2138,7 +2157,8 @@ gfrs() {
     declare -a expected_tags
 
     pom="$(git rev-parse --show-toplevel)/pom.xml" || { err "unable to find git root" "$FUNCNAME"; return 1; }
-    pom_ver="$(grep -Po -m 1 '^\s+<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
+    pom_ver="$(grep -Pos -m 1 '^\s+<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
+    pom_wo_postfix="$(grep -Eos '^[0-9\.]+' <<< "$pom_ver" 2>/dev/null)"
 
     if [[ -z "$tag" ]]; then
         tag="$(__ask_ver)" || { err "need to provide release tag to create" "$FUNCNAME"; unset __ask_ver; return 1; }
@@ -2162,26 +2182,16 @@ gfrs() {
     # if provided tag is not one of them, ask for confirmation.
     last_tag="$(get_git_last_tag)" || { err "problems finding latest tag. this was found as latest tag: [$last_tag]" "$FUNCNAME"; unset last_tag; }
     if [[ -n "$last_tag" ]]; then  # tag exists
-        last_tag_ver="$(grep -Eo '^[0-9\.]+' <<< "$last_tag")" || { err; return 1; }
-        last_tag_postfix="$(grep -Po '^[0-9\.]+\K.*' <<< "$last_tag")" || { err; return 1; }
-        declare -ar parts=( ${last_tag_ver//\./ } )
         expected_tags=( $(sort -u < <(
-            __increment_version_build "${parts[@]}";
-            __increment_version_up_to_point_10 "${parts[@]}";
-            __increment_version_next_major_or_minor 0 "${parts[@]}";
-            __increment_version_next_major_or_minor 1 "${parts[@]}";
-            echo "$pom_ver";
+            __increment_version_build "$last_tag";
+            __increment_version_up_to_point_10 "$last_tag";
+            __increment_version_next_major_or_minor "$last_tag" 0;
+            __increment_version_next_major_or_minor "$last_tag" 1;
+            echo "$pom_wo_postfix";
             )
         ) ) || { err "something blew up" "$FUNCNAME"; return 1; }
-
-        # append postfix (exclude the last, ie pom!)
-        if [[ -n "$last_tag_postfix" ]]; then
-            for (( i=0; i<${#expected_tags[@]}-1; i+=1 )); do
-                expected_tags[i]="${expected_tags[i]}$last_tag_postfix"
-            done
-        fi
     else
-        expected_tags=("$pom_ver")
+        expected_tags=("$pom_wo_postfix")
     fi
 
     if [[ -n "${expected_tags[*]}" ]] && ! list_contains "$tag" "${expected_tags[*]}"; then
@@ -2189,8 +2199,16 @@ gfrs() {
     fi
 
     git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort." "$FUNCNAME"; return 1; }
-    git flow release start -F "$tag"
-    return $?
+    git flow release start -F "$tag" || { err "git flow relstart failed" "$FUNCNAME"; return 1; }
+
+    if [[ -n "$pom_ver" ]]; then  # we're dealing with a maven project
+        [[ "$pom_ver" =~ ^[0-9\.]+(-SNAPSHOT)?$ ]] || { err "fyi: current maven/pom ver [$pom_ver] is in an unexpected format.\n" "$FUNCNAME"; sleep 3; }
+        # replace pom ver:
+        sed -i "0,/<version>.*</s//<version>${tag}</" "$pom" || { err "switching versions with sed failed" "$FUNCNAME"; return 1; }
+        [[ "$(grep -c '<tag>HEAD</t' "$pom")" -ne 1 ]] && { err "unexpected number of <tag>HEAD</tag> tags in pom"; return 1; }
+        sed -i "0,/<tag>HEAD</s//<tag>${tag}</" "$pom" || { err "switching scm tag versions with sed failed" "$FUNCNAME"; return 1; }
+        __verify_files_changes_and_push_version_bump "$tag" "$pom" || return 1
+    fi
 }
 
 
@@ -2212,30 +2230,8 @@ gfrf() {
         return 1
     fi
 
-    function __verify_pom_changes_and_push() {
-        local ver
-
-        ver="$1"
-        echo
-        git diff
-        confirm "\nverify pom changes look ok. continue?" || return 1
-        git add "$pom" || return 1
-        git commit -m "Bump version to $ver" || return 1
-        git push
-        return $?
-    }
-
     pom="$(git rev-parse --show-toplevel)/pom.xml" || { err "unable to find git root" "$FUNCNAME"; return 1; }
-    pom_ver="$(grep -Po -m 1 '^\s+<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
-
-    if [[ -n "$pom_ver" ]]; then  # we're dealing with a maven project
-        [[ "$pom_ver" =~ ^[0-9\.]+(-SNAPSHOT)*$ ]] || { err "maven/pom ver [$pom_ver] is in an unexpected format." "$FUNCNAME"; return 1; }
-        # replace pom ver:
-        sed -i "0,/<version>.*</s//<version>${tag}</" "$pom" || { err "switching versions with sed failed" "$FUNCNAME"; return 1; }
-        [[ "$(grep -c '<tag>HEAD</t' "$pom")" -ne 1 ]] && { err "unexpected number of <tag>HEAD</tag> tags in pom"; return 1; }
-        sed -i "0,/<tag>HEAD</s//<tag>${tag}</" "$pom" || { err "switching scm tag versions with sed failed" "$FUNCNAME"; return 1; }
-        __verify_pom_changes_and_push "$tag" || return 1
-    fi
+    pom_ver="$(grep -Pos -m 1 '^\s+<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
 
     git flow release finish -F -p "$tag" || { err "finishing git release failed." "$FUNCNAME"; return 1; }
     report "pushing tags..." "$FUNCNAME"
@@ -2246,15 +2242,14 @@ gfrf() {
         report "select next development version" "$FUNCNAME"
         next_dev="$(increment_version "${tag}-SNAPSHOT")" || { err; return 1; }
 
-        # TODO: ask for incremented version
         # replace pom ver:
         sed -i "0,/<version>${tag}</s//<version>${next_dev}</" "$pom" || { err "switching versions with sed failed" "$FUNCNAME"; return 1; }
         sed -i "0,/<tag>${tag}</s//<tag>HEAD</" "$pom" || { err "switching scm tag version with sed failed" "$FUNCNAME"; return 1; }
-        __verify_pom_changes_and_push "$next_dev" || return 1
+        __verify_files_changes_and_push_version_bump "$next_dev" "$pom" || return 1
 
         report "deploying to nexus..." "$FUNCNAME"
         git checkout "$tag" || { err "unable to check out [$tag]" "$FUNCNAME"; return 1; }
-        mvn clean deploy || { err "mvn depolyment failed"; return 1; }
+        mvn clean deploy || { err "mvn depolyment failed" "$FUNCNAME"; return 1; }
         git checkout develop || { err "unable to check out [develop]" "$FUNCNAME"; return 1; }
     fi
 
@@ -3115,8 +3110,13 @@ __writecmd() {
 
 
 # fh - repeat history
-# note: no reason to use when ctrl+r mapping works;
+# note: no reason to use when fzf's ctrl+r mapping works;
+#
 # ctrl-e instead of enter lets you edit the command, just like with ctrl+r binding.
+#
+# Examples:
+#    fh  ssh user server
+#    fh  curl part-of-url
 fh() {
     local input cleanup_regex cmd out ifs_old k
 
