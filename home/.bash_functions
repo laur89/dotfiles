@@ -2583,7 +2583,7 @@ __fo() {
 
     editor="$EDITOR"
     image_viewer="sxiv"
-    video_player="smplayer"
+    video_player="mplayer"
     file_mngr="ranger"
     pdf_viewer="zathura"
     office="libreoffice"
@@ -2641,8 +2641,7 @@ __fo() {
             fi
             ;;
         video/* | audio/mp4*)
-            #"$video_player" -- "${files[@]}"  # TODO: smplayer doesn't support '--' as per now
-            "$video_player" "${files[@]}"
+            "$video_player" -- "${files[@]}"
             ;;
         text/*)
             # if we're dealing with a logfile (including *.out), force open in PAGER

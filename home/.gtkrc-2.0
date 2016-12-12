@@ -2,7 +2,7 @@
 # Any customization should be done in ~/.gtkrc-2.0.mine instead.
 
 include "/home/laur/.gtkrc-2.0.mine"
-gtk-theme-name="Numix"
+gtk-theme-name="Arc-Dark"
 gtk-icon-theme-name="ultra-flat-icons"
 gtk-font-name="Sans 10"
 gtk-cursor-theme-name="Adwaita"

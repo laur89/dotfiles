@@ -2163,7 +2163,6 @@ function install_from_repo() {
         calibre
         zathura
         mplayer2
-        smplayer
         gimp
         feh
         sxiv
