@@ -2309,13 +2309,14 @@ foa() {
     declare -a matches=()
 
     if [[ "$opts" == -* ]]; then
+        opts="-L${opts:1}"
         [[ "$opts" != *f* ]] && opts="-f${opts:1}"
         [[ "$opts" != *m* ]] && opts+="$default_depth"  # depth opt has to come last
         #echo $opts  # debug
 
         shift
     else
-        opts="-f${default_depth}"
+        opts="-fL${default_depth}"
     fi
 
     while IFS= read -r -d $'\0' i; do
@@ -2328,6 +2329,7 @@ foa() {
 
 
 # finds files/dirs and DELETES them
+# Note: does not dereference links by default.
 #
 # mnemonic: file open delete
 fod() {
@@ -2364,11 +2366,12 @@ fog() {
     declare -a matches=()
 
     if [[ "$opts" == -* ]]; then
+        opts="-L${opts:1}"
         [[ "$opts" != *m* ]] && opts+="$default_depth"
         #echo $opts  # debug
         shift
     else
-        opts="-$default_depth"
+        opts="-L${default_depth}"
     fi
 
     [[ "$#" -eq 0 ]] && { err "too few args." "$FUNCNAME"; return 1; }
@@ -2415,12 +2418,13 @@ fon() {
     declare -a matches=()
 
     if [[ "$opts" == -* ]]; then
+        opts="-L${opts:1}"
         [[ "$opts" != *f* ]] && opts="-f${opts:1}"
         [[ "$opts" != *m* ]] && opts+="$default_depth"
         #echo $opts  # debug
         shift
     else
-        opts="-f${default_depth}"
+        opts="-fL${default_depth}"
     fi
 
     check_progs_installed stat sort || return 1
@@ -2471,12 +2475,13 @@ fow() {
     declare -a matches=()
 
     if [[ "$opts" == -* ]]; then
+        opts="-L${opts:1}"
         [[ "$opts" != *f* ]] && opts="-f${opts:1}"
         [[ "$opts" != *m* ]] && opts+="$default_depth"
         #echo $opts  # debug
         shift
     else
-        opts="-f${default_depth}"
+        opts="-fL${default_depth}"
     fi
 
     [[ "$#" -le 1 ]] && { err "too few args." "$FUNCNAME"; return 1; }
@@ -2520,11 +2525,12 @@ foc() {
     declare -a matches=()
 
     if [[ "$opts" == -* ]]; then
+        opts="-L${opts:1}"
         [[ "$opts" != *m* ]] && opts+="$default_depth"
         #echo $opts  # debug
         shift
     else
-        opts="-${default_depth}"
+        opts="-L${default_depth}"
     fi
 
     while IFS= read -r -d $'\0' i; do
@@ -2551,14 +2557,15 @@ fo() {
     declare -a matches=()
 
     if [[ -z "$*" ]]; then
-        opts='-fm1'
+        opts='-fLm1'
     elif [[ "$opts" == -* ]]; then
+        opts="-L${opts:1}"
         [[ "$opts" =~ [fdl] ]] || opts="-f${opts:1}"
         [[ "$opts" != *m* ]] && opts+="$default_depth"
         #echo $opts  # debug
         shift
     else
-        opts="-f${default_depth}"
+        opts="-fL${default_depth}"
     fi
 
     if ! command -v fzf > /dev/null 2>&1; then
