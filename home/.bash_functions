@@ -2553,7 +2553,7 @@ fo() {
     local matches opts default_depth
 
     opts="$1"
-    readonly default_depth=m7
+    readonly default_depth=m5
     declare -a matches=()
 
     if [[ -z "$*" ]]; then
