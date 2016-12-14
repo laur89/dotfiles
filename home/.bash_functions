@@ -2032,7 +2032,8 @@ glt() {
 #
 # @param {string}  ver   version to increment. may contain postfix.
 #
-# @returns {string}  incremented version.
+# @returns {void}  doesn't return a value (because involvement of select_items()),
+#                  but sets the selected version increment at global $__SELECTED_ITEMS
 increment_version() {
     local ver vers
 
@@ -2050,12 +2051,10 @@ increment_version() {
 
     if [[ "$__SELECTED_ITEMS" == custom ]]; then
         read -rp 'enter version: ' ver
-    else
-        ver="$__SELECTED_ITEMS"
+        __SELECTED_ITEMS=("$ver")
     fi
 
-    [[ -z "$ver" ]] && { err "no version selected" "$FUNCNAME"; return 1; }
-    echo -e "${ver}"
+    [[ -z "${__SELECTED_ITEMS[*]}" ]] && { err "no version selected" "$FUNCNAME"; return 1; }
 }
 
 
@@ -2240,7 +2239,8 @@ gfrf() {
 
     if [[ -n "$pom_ver" ]]; then  # we're dealing with a maven project
         report "select next development version" "$FUNCNAME"
-        next_dev="$(increment_version "${tag}-SNAPSHOT")" || { err; return 1; }
+        increment_version "${tag}-SNAPSHOT" || { err "increment_version() failed." "$FUNCNAME"; return 1; }
+        next_dev="$__SELECTED_ITEMS"
 
         # replace pom ver:
         sed -i "0,/<version>${tag}</s//<version>${next_dev}</" "$pom" || { err "switching versions with sed failed" "$FUNCNAME"; return 1; }
@@ -2557,7 +2557,7 @@ fo() {
     declare -a matches=()
 
     if [[ -z "$*" ]]; then
-        opts='-fLm1'
+        opts='-fLm1'  # note defaulting to -m1
     elif [[ "$opts" == -* ]]; then
         opts="-L${opts:1}"
         [[ "$opts" =~ [fdl] ]] || opts="-f${opts:1}"
