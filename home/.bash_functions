@@ -954,12 +954,14 @@ ffstr() {
 }
 
 __mem_cpu_most_common_fun(){
-    local num ps_out first_hdr second_hdr first_ps_col second_ps_col
+    local num ps_out first_hdr second_hdr first_ps_col second_ps_col format
 
     readonly first_hdr="$1"
     readonly second_hdr="$2"
     readonly first_ps_col="$3"
     readonly second_ps_col="$4"
+
+    readonly format='\t%s\t%s\t%s\n'
 
     [[ "$#" -lt 4 ]] && { err "minimum of 4 args required" "$FUNCNAME"; return 1; }
     [[ "$#" -gt 5 ]] && { err "max 5 args supported" "$FUNCNAME"; return 1; }
@@ -967,7 +969,7 @@ __mem_cpu_most_common_fun(){
 
     [[ -z "$num" ]] && num=10
 
-    is_digit "$num" && [[ "$num" -gt 0 ]] || { err "nr of processes to view needs to be a positive digit, but was [$num]" "${FUNCNAME[1]}"; return 1; }
+    is_digit "$num" && [[ "$num" -gt 0 ]] || { err "nr of processes to show needs to be a positive digit, but was [$num]" "${FUNCNAME[1]}"; return 1; }
     ps_out="$(ps -ax --no-headers -o $first_ps_col,$second_ps_col,args --sort -${first_ps_col},-${second_ps_col})" || { err "ps command failed" "$FUNCNAME"; return 1; }
     ps_out="$(echo "$ps_out" | head -n $num)" || return 1
 
@@ -982,7 +984,7 @@ __mem_cpu_most_common_fun(){
             #proc="$(echo "$line" | grep -Po '^\s*(\S+\s+){10}[\\_|\s]*\K.*' | cut -c 1-$max_proc_len)"
             #cpu="$(echo "$line" | grep -Po '^\s*(\S+\s+){2}\K\S+(?=.*$)')"
             #mem="$(echo "$line" | grep -Po '^\s*(\S+\s+){3}\K\S+(?=.*$)')"
-            #printf '\t%s\t%s\t%s\n' "${COLORS[RED]}${mem}${COLORS[OFF]}" "$cpu" "$proc"
+            #printf "$format" "${COLORS[RED]}${mem}${COLORS[OFF]}" "$cpu" "$proc"
         #done
     #}
     __print_lines() {
@@ -994,29 +996,25 @@ __mem_cpu_most_common_fun(){
             primary_col="$(echo "$line" | grep -Po '^\s*\K\S+(?=.*$)')"
             secondary_col="$(echo "$line" | grep -Po '^\s*\S+\s*\K\S+(?=.*$)')"
             proc="$(echo "$line" | grep -Po '^\s*(\S+\s*){2}\K.*' | cut -c 1-$max_proc_len)"
-            printf '\t%s\t%s\t%s\n' "${COLORS[RED]}${primary_col}${COLORS[OFF]}" "$secondary_col" "$proc"
+            printf "$format" "${COLORS[RED]}${primary_col}${COLORS[OFF]}" "$secondary_col" "$proc"
         done
     }
 
-    printf '\t%s\t%s\t%s\n' "${COLORS[RED]}${first_hdr}${COLORS[OFF]}" "$second_hdr" 'PROC'
-    printf '\t%s\t%s\t%s\n' '---' '---' '----------------'
+    printf "$format" "${COLORS[RED]}${first_hdr}${COLORS[OFF]}" "$second_hdr" 'PROC'
+    printf "$format" '---' '---' '----------------'
     #echo "$ps_out" | sort -nr -k 4 | head -n $num | __print_lines_old  # legacy format for full ps output (ie no format nor sorting)
     echo "$ps_out" | __print_lines
     unset __print_lines
 }
 
 memmost() {
-    if [[ "$#" -ne 0 ]]; then
-        [[ "$#" -gt 1 ]] && { err "only one arg, number of top mem consuming processes to display, allowed" "$FUNCNAME"; return 1; }
-    fi
+    [[ "$#" -gt 1 ]] && { err "only one arg, number of top mem consuming processes to display, allowed" "$FUNCNAME"; return 1; }
 
     __mem_cpu_most_common_fun MEM CPU pmem pcpu "$@"
 }
 
 cpumost() {
-    if [[ "$#" -ne 0 ]]; then
-        [[ "$#" -gt 1 ]] && { err "only one arg, number of top cpu consuming processes to display, allowed" "$FUNCNAME"; return 1; }
-    fi
+    [[ "$#" -gt 1 ]] && { err "only one arg, number of top cpu consuming processes to display, allowed" "$FUNCNAME"; return 1; }
 
     __mem_cpu_most_common_fun CPU MEM pcpu pmem "$@"
 }
@@ -3118,7 +3116,8 @@ __writecmd() {
 # fh - repeat history
 # note: no reason to use when fzf's ctrl+r mapping works;
 #
-# ctrl-e instead of enter lets you edit the command, just like with ctrl+r binding.
+# ctrl-e  instead of enter lets you edit the command, just like with fzf's ctrl+r binding.
+# ctrl-d  deletes selected command from shell history (note it feeds the command to fhd()).
 #
 # Examples:
 #    fh  ssh user server

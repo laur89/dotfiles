@@ -20,7 +20,7 @@ readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - y
 readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX - open password manager forked from keepass project
 readonly GOFORIT_REPO_LOC='https://github.com/mank319/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
-readonly SYNERGY_REPO_LOC='https://github.com/synergy/synergy.git'    # synergy - share keyboard&mouse between computers on same LAN
+readonly SYNERGY_REPO_LOC='https://github.com/symless/synergy.git'    # synergy - share keyboard&mouse between computers on same LAN
 readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u112-b15/jdk-8u112-linux-x64.tar.gz' # jdk8: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
                                                                                                            # jdk7: http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
                                                                                                            # jdk9: https://jdk9.java.net/  /  https://jdk9.java.net/download/
@@ -1515,7 +1515,7 @@ function install_goforit() {
 }
 
 
-# building instructions from https://github.com/synergy/synergy/wiki/Compiling
+# building instructions from https://github.com/symless/synergy/wiki/Compiling
 function build_and_install_synergy() {
     local builddir do_clone
 
@@ -1531,6 +1531,7 @@ function build_and_install_synergy() {
         libavahi-compat-libdnssd-dev
         libcurl4-openssl-dev
         libssl-dev
+        lintian
         python
         qt4-dev-tools
         xorg-dev
