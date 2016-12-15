@@ -3130,20 +3130,22 @@ fh() {
 
     readonly cleanup_regex='^\s*\d+\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\K.*$'  # depends on your history format (HISTTIMEFORMAT) set in .bashrc
     #([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac | sed -re 's/^\s*[0-9]+\s*//' | __writecmd -run
-    check_progs_installed fzf history || return 1
+    check_progs_installed history || return 1
 
     if command -v fzf > /dev/null 2>&1; then
         out="$(history \
                 | grep -Po -- "$cleanup_regex" \
                 | grep -vE -- "^\s*$FUNCNAME\b" \
                 | sort -u \
-                | fzf --no-sort --tac --print-query --query="$input" --expect=ctrl-e +m -e --exit-0)"
+                | fzf --no-sort --tac --query="$input" --expect=ctrl-e,ctrl-d +m -e --exit-0)"
         mapfile -t out <<< "$out"
-        readonly k="${out[1]}"
+        readonly k="${out[0]}"
         readonly cmd="${out[-1]}"
         [[ -z "$cmd" ]] && return 1
         if [[ "$k" == 'ctrl-e' ]]; then
             echo "$cmd" | __writecmd
+        elif [[ "$k" == 'ctrl-d' ]]; then
+            fhd "$cmd"
         else
             echo "$cmd" | __writecmd -run
         fi
@@ -3171,6 +3173,54 @@ fh() {
         #echo "woo: ${__SELECTED_ITEMS[@]}"
     fi
 }
+
+
+# fhd - history delete
+# search shell history commands and delete the selected ones.
+#
+# Examples:
+#    fhd  ssh user server
+#    fhd  curl part-of-url
+fhd() {
+    local input offset_regex cmd ifs_old i
+
+    input="$*"
+
+    readonly offset_regex='^\s*\K\d+(?=.*$)'
+    check_progs_installed history || return 1
+
+    __delete_cmd() {
+        local line offset
+
+        line="$1"
+        offset="$(grep -Po "$offset_regex" <<< "$line")"
+        history -d "$offset" || err "unable to delete history offset [$offset] for entry [$line]" "${FUNCNAME[1]}"
+    }
+
+    if command -v fzf > /dev/null 2>&1; then
+        while read -r i; do
+            __delete_cmd "$i"
+        done < <(history | fzf --no-sort --tac --query="$input" --multi -e --exit-0 --select-1)
+    else
+        input="${input// /.*}"  # build regex for grep
+        readonly ifs_old="$IFS"
+        IFS=$'\n'
+        declare -ar cmd=( $(history | grep -iE --color=auto -- "$input") )
+        IFS="$ifs_old"
+
+        [[ -z "${cmd[*]}" ]] && { err "no matching entries found" "$FUNCNAME"; return 1; }
+        select_items "${cmd[@]}"
+        [[ -z "${__SELECTED_ITEMS[*]}" ]] && { err "no entries selected" "$FUNCNAME"; return 1; }
+        #echo "woo: ${__SELECTED_ITEMS[@]}"
+
+        for i in "${__SELECTED_ITEMS[@]}"; do
+            __delete_cmd "$i"
+        done
+    fi
+
+    unset __delete_cmd
+}
+
 
 # fhe - repeat history edit
 #fhe() {
