@@ -973,7 +973,7 @@ __mem_cpu_most_common_fun(){
 
     # formats the default full ps output (some versions of ps don't offer --sort option)
     #
-    #__print_lines() {
+    #__print_lines_old() {
         #local line cpu mem proc max_proc_len
 
         #readonly max_proc_len=200
@@ -988,7 +988,7 @@ __mem_cpu_most_common_fun(){
     __print_lines() {
         local max_proc_len line primary_col secondary_col proc
 
-        readonly max_proc_len=200
+        readonly max_proc_len=150
 
         while read -r line; do
             primary_col="$(echo "$line" | grep -Po '^\s*\K\S+(?=.*$)')"
@@ -1000,7 +1000,7 @@ __mem_cpu_most_common_fun(){
 
     printf '\t%s\t%s\t%s\n' "${COLORS[RED]}${first_hdr}${COLORS[OFF]}" "$second_hdr" 'PROC'
     printf '\t%s\t%s\t%s\n' '---' '---' '----------------'
-    #echo "$ps_out" | sort -nr -k 4 | head -n $num | __print_lines  # legacy format for full ps output (ie no format nor sorting)
+    #echo "$ps_out" | sort -nr -k 4 | head -n $num | __print_lines_old  # legacy format for full ps output (ie no format nor sorting)
     echo "$ps_out" | __print_lines
     unset __print_lines
 }
@@ -3288,6 +3288,21 @@ fcoc() {
 }
 
 
+# helper function for navigating to repo root
+# prior to opening difftool; navigates back afterwards.
+__open_git_difftool_at_git_root() {
+    local cwd git_root commit
+    readonly commit="$1"
+
+    readonly cwd="$PWD"
+    readonly git_root="$(git rev-parse --show-toplevel)" || { err "unable to find project root" "${FUNCNAME[1]}"; return 1; }
+
+    [[ "$cwd" != "$git_root" ]] && pushd -- "$git_root" &> /dev/null  # git root
+    git difftool --dir-diff "$commit"^ "$commit"
+    [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back to starting dir
+}
+
+
 # fshow - git commit diff browser
 # - enter shows the changes of the commit
 # - ctrl-s lets you squash commits - select the *last* commit that should be squashed.
@@ -3342,7 +3357,7 @@ fshow() {
                 break
                 ;;
             *)
-                git difftool --dir-diff "$sha"^ "$sha"
+                __open_git_difftool_at_git_root "$sha"
                 ;;
         esac
     done
@@ -3409,7 +3424,7 @@ fstash() {
                 ;;
             *)  # default, ie diff view mode
                 #git stash show -p "$sha"
-                git difftool --dir-diff "$stsh"^ "$stsh"
+                __open_git_difftool_at_git_root "$stsh"
                 ;;
         esac
     done
