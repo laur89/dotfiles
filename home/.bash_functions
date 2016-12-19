@@ -2840,16 +2840,57 @@ g() {
 #
 # consider also https://github.com/spotify/docker-gc
 dcleanup() {
+    local usage opt containers images volumes
+
     check_progs_installed docker || return 1
 
-    report "¡¡¡ make sure the containers you want to keep are running; otherwise you'll lose them !!!" "$FUNCNAME"
-    confirm "\ncontinue?" || return
+    readonly usage="\n$FUNCNAME: clean up docker containers, volumes, images
+
+    Usage: $FUNCNAME  [-acivh]
+
+        -a  full cleanup; same as -civ
+        -c  remove exited containers
+        -i  remove dangling images
+        -v  remove dangling volumes
+        -h  display this usage info"
+
+    while getopts "acivh" opt; do
+        case "$opt" in
+           a) containers=1
+              images=1
+              volumes=1
+              shift $((OPTIND-1))
+                ;;
+           c) containers=1
+              shift $((OPTIND-1))
+                ;;
+           i) images=1
+              shift $((OPTIND-1))
+                ;;
+           v) volumes=1
+              shift $((OPTIND-1))
+                ;;
+           h) echo -e "$usage"
+              return 0
+                ;;
+           *) echo -e "$usage"; return 1 ;;
+        esac
+    done
 
     # TODO: don't report err status perhaps? might be ok, which also explains the 2>/dev/nulls;
-    docker rm -v $(docker ps --filter status=exited -q 2>/dev/null) 2>/dev/null || { err "something went wrong with removing exited containers." "$FUNCNAME"; }
-    docker rmi $(docker images --filter dangling=true -q 2>/dev/null) 2>/dev/null || { err "something went wrong with removing dangling images." "$FUNCNAME"; }
+    if [[ "$containers" -eq 1 ]]; then
+        report "¡¡¡ make sure the containers you want to keep are running; otherwise you'll lose them !!!" "$FUNCNAME"
+        confirm "\ncontinue?" || return
+
+        docker rm -v $(docker ps --filter status=exited -q 2>/dev/null) 2>/dev/null || { err "something went wrong with removing exited containers." "$FUNCNAME"; }
+    fi
+    if [[ "$images" -eq 1 ]]; then
+        docker rmi $(docker images --filter dangling=true -q 2>/dev/null) 2>/dev/null || { err "something went wrong with removing dangling images." "$FUNCNAME"; }
+    fi
     # ...and volumes:
-    docker volume rm $(docker volume ls -qf dangling=true) || { err "something went wrong with removing dangling volumes." "$FUNCNAME"; }
+    if [[ "$volumes" -eq 1 ]]; then
+        docker volume rm $(docker volume ls -qf dangling=true) || { err "something went wrong with removing dangling volumes." "$FUNCNAME"; }
+    fi
 }
 
 
