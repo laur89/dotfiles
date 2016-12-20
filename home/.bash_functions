@@ -149,14 +149,14 @@ ffind() {
               shift $((OPTIND-1))
                 ;;
            C)  # for doC
+              # try keeping doc files' definitions in sync with the ones in __fo()
+              # no linebreaks in regex!
               i='application/msword; charset=binary|application/.*opendocument.*; charset=binary|application/.*ms-office; charset=binary|application/.*ms-excel; charset=binary'
               [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
               file_type="-type f"
               readonly filetype=1
               shift $((OPTIND-1))
 
-              # try keeping doc files' definitions in sync with the ones in __fo()
-              # no linebreaks in regex!
               readonly filetype_regex="$i"
                 ;;
            L) follow_links="-L"
@@ -2842,8 +2842,6 @@ g() {
 dcleanup() {
     local usage opt containers images volumes
 
-    check_progs_installed docker || return 1
-
     readonly usage="\n$FUNCNAME: clean up docker containers, volumes, images
 
     Usage: $FUNCNAME  [-acivh]
@@ -2853,6 +2851,9 @@ dcleanup() {
         -i  remove dangling images
         -v  remove dangling volumes
         -h  display this usage info"
+
+    check_progs_installed docker || return 1
+    [[ -z "$*" ]] && { echo -e "$usage"; return 1; }
 
     while getopts "acivh" opt; do
         case "$opt" in
@@ -2884,10 +2885,12 @@ dcleanup() {
 
         docker rm -v $(docker ps --filter status=exited -q 2>/dev/null) 2>/dev/null || { err "something went wrong with removing exited containers." "$FUNCNAME"; }
     fi
+
     if [[ "$images" -eq 1 ]]; then
         docker rmi $(docker images --filter dangling=true -q 2>/dev/null) 2>/dev/null || { err "something went wrong with removing dangling images." "$FUNCNAME"; }
     fi
-    # ...and volumes:
+
+    # ...and volumes (note docker volume api was introduced by ver 1.9)
     if [[ "$volumes" -eq 1 ]]; then
         docker volume rm $(docker volume ls -qf dangling=true) || { err "something went wrong with removing dangling volumes." "$FUNCNAME"; }
     fi
