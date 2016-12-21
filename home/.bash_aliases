@@ -50,33 +50,43 @@ alias egrep='egrep --color=auto'
 alias c="clear"
 alias cp="cp -rp"
 #alias less="less -IRKFX" # handled by the $LESS env var
-alias ls="ls --color=auto"
-alias ll='ls -hl'
-alias lr='ls -hlr'
-alias lsr='ls -hlr'
-alias ltr='ls -hltr'
-alias lrt='ls -hltr'
-alias lstr='ls -hltr'
-alias lsrt='ls -hltr'
-alias lt='ls -hlt'
-alias lst='ls -hlt'
-alias la='ls -hlA'
-alias lar='ls -hlAr'
-alias lra='ls -hlAr'
-alias lat='ls -hlAt'
-alias lta='ls -hlAt'
-alias ltar='ls -hlAtr'
-alias lrta='ls -hlAtr'
-alias lrat='ls -hlAtr'
-alias ltra='ls -hlAtr'
-alias latr='ls -hlAtr'
-alias lart='ls -hlAtr'
+alias ls="ls -h --color=auto --group-directories-first"
+alias ll='ls -l'
+alias lr='ls -lr'
+alias lsr='ls -lr'
+alias ltr='ls -ltr'
+alias lrt='ls -ltr'
+alias lstr='ls -ltr'
+alias lsrt='ls -ltr'
+alias lt='ls -lt'
+alias lst='ls -lt'
+alias la='ls -lA'
+alias lar='ls -lAr'
+alias lra='ls -lAr'
+alias lat='ls -lAt'
+alias lta='ls -lAt'
+alias ltar='ls -lAtr'
+alias lrta='ls -lAtr'
+alias lrat='ls -lAtr'
+alias ltra='ls -lAtr'
+alias latr='ls -lAtr'
+alias lart='ls -lAtr'
 #alias l='ls -CF'
 alias vdiff="vimdiff"
 alias mkdir='mkdir -p'
 alias rmrf='rm -rf'
 alias psef='ps -ef'
 alias gosu='sudo -E su'
+alias su='su --login'  # so env vars would be cleared
+alias lns='ln -s'
+alias svim='sudo vim'
+alias root='sudo su'
+
+alias t1='tree -L 1'
+alias t2='tree -L 2'
+alias t3='tree -L 3'
+alias t4='tree -L 4'
+alias t5='tree -L 5'
 
 #
 # hate the typos:
@@ -98,11 +108,22 @@ alias fin='find'
 alias ffin='ffind'
 alias sduo='sudo'
 alias gir='git'
-
-# git:
 alias gti='git'
 alias igt='git'
 alias guit='git'
+alias suod='sudo'
+alias mkdri='mkdir'
+alias mkdr='mkdir'
+alias mkdi='mkdir'
+alias mkd='mkdir'
+alias mkcs='mkcd'
+alias cd-='cd -'
+alias dopbox='dropbox'
+alias drpbox='dropbox'
+alias dropvox='dropbox'
+alias dorpbox='dropbox'
+
+# git:
 alias gitst='git st'
 alias gitfe='git fe'
 alias gitco='git co'
@@ -120,22 +141,13 @@ alias gitdi-staged-only='git-root && git difftool --dir-diff --cached && cd - > 
 alias gitdi-prev='git-root && git difftool --dir-diff HEAD^ HEAD && cd - > /dev/null 2>&1'    # local last commit against current index (as in last commit; shows what was changed with last commit); does NOT include current uncommited changes);
 #alias gitdi-stashed='git difftool --dir-diff stash@{0}^!'  # diff stash against its parent;
 alias gitdi-stashed='git-root && git difftool --dir-diff stash@{0}^ stash@{0} && cd - > /dev/null 2>&1'  # diff stash against its parent;
+alias git-root='is_git && __grt="$(git rev-parse --show-toplevel)" && [[ -n "$__grt" ]] && cd -- "$__grt" && unset __grt || { err "are you in a git repo?"; unset __grt; }'  # go to project root
+alias grt='git-root'
+alias gpushall='is_git || err "not in a git repo" && { git push --tags && git checkout master && git push && git checkout develop && git push; }'
 
 # docker (better use functions in bash_funtions.sh):
 #alias drmi='docker rmi $(docker images --filter "dangling=true" -q --no-trunc)'
 
-alias mkdri='mkdir'
-alias mkdr='mkdir'
-alias mkdi='mkdir'
-alias mkd='mkdir'
-alias mkcs='mkcd'
-alias cd-='cd -'
-alias dopbox='dropbox'
-alias drpbox='dropbox'
-alias dropvox='dropbox'
-alias dorpbox='dropbox'
-alias suod='sudo'
-alias su='su --login'  # so env vars would be cleared
 
 # Directory navigation aliases:
 alias ..='cd ..'
@@ -169,15 +181,6 @@ alias data='cd /data/'
 alias tmp='cd /tmp/'
 alias temp='cd /tmp/'
 
-# git
-alias git-root='is_git && __grt="$(git rev-parse --show-toplevel)" && [[ -n "$__grt" ]] && cd -- "$__grt" && unset __grt || { err "are you in a git repo?"; unset __grt; }'  # go to project root
-alias grt='git-root'
-alias gpushall='is_git || err "not in a git repo" && { git push --tags && git checkout master && git push && git checkout develop && git push; }'
-
-
-alias lns='ln -s'
-alias svim='sudo vim'
-alias root='sudo su'
 
 alias install='sudo apt-get install'
 alias uninstall='sudo apt-get remove'

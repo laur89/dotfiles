@@ -1430,7 +1430,7 @@ compress() {
              ;;
         7z)  make7z "$file"
              ;;
-        *)   err "compression type not supported\n" "$FUNCNAME"
+        *)   err "compression type [$type] not supported\n" "$FUNCNAME"
              echo -e "$usage";
              return 1;
              ;;
@@ -2755,7 +2755,7 @@ goto() {
 #                                     # from partialmatch_1 in /.
 #  g partialmatch_1  partialmatch     # searches for partialmatch in directory resolved
 #                                     # from partialmatch_1 in our current dir.
-#  g ...../partialmach                # searches for partialmatch in directory that's
+#  g ...../partialmatch               # searches for partialmatch in directory that's
 #                                     # 4 levels up.
 #  g partialmatch                     # searches for partialmatch in current dir.
 #  g                                  # if no input, then searches all directories in current dir.
@@ -2774,6 +2774,7 @@ g() {
         find -L "$dir" -maxdepth 1 -mindepth 1 -type d -${iname_arg:-name} '*'"$pattern"'*' -print0
     }
 
+    # note this function sets the parent function's dir variable.
     __select_dir() {
         local pattern start_dir _dir matches
         readonly pattern="$1"
@@ -2801,9 +2802,10 @@ g() {
         [[ -d "$dir" ]] || { err "no such dir like [$dir] in $start_dir" "${FUNCNAME[1]}"; return 1; }
     }
 
+    # note this function sets the parent function's dir variable.
     __go_up() {
         local pattern i
-        readonly pattern="$1"
+        readonly pattern="$1"  # dots only; will be minimum of 3 dots.
 
         for ((i=0; i <= (( ${#pattern} - 2 )) ; i++)); do
             dir+='../'
@@ -2818,12 +2820,12 @@ g() {
     #[[ -d "$input" && ! "$input" =~ ^.*/\.+/$ ]] && { cd -- "$input"; return; }
     is_backing=1  # default to assume first directory navigations are going up the tree;
     [[ -z "$input" ]] && input='*'
-    [[ "$input" == /* ]] && { input="${input:1}"; is_backing=0; dir="/"; }
+    [[ "$input" == /* ]] && { input="${input:1}"; is_backing=0; dir='/'; }
     command -v fzf > /dev/null 2>&1 && readonly has_fzf=1 || readonly has_fzf=0
 
     IFS='/' read -ra paths <<< "$input"
     for i in "${paths[@]}"; do
-        [[ -z "$dir" && "$i" =~ ^\.{3,}$ ]] && __go_up "$i" && continue
+        [[ -z "$dir" && "$i" =~ ^\.{3,}$ ]] && { __go_up "$i"; is_backing=0; continue; }
         [[ "$i" != '..' ]] && is_backing=0
         __select_dir "$i" "$dir" || { unset __find_fun __select_dir __go_up; return 1; }
     done

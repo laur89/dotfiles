@@ -2145,7 +2145,7 @@ function install_from_repo() {
         #     action in /usr/share/polkit-1/actions.
 
     declare -ar block3=(
-        iceweasel
+        firefox
         chromium
         icedove
         rxvt-unicode-256color
@@ -2183,6 +2183,8 @@ function install_from_repo() {
         screenkey
         mediainfo
         lynx
+        links2
+        w3m
         tmux
         powerline
         libxml2-utils
@@ -2333,11 +2335,11 @@ function install_block() {
         fi
     done
 
-    if [[ -n "${dry_run_failed[*]}" ]]; then
+    if [[ "${#dry_run_failed[@]}" -ne 0 ]]; then
         err "either these packages could not be found from the repo, or some other issue occurred; skipping installing these packages. this will be logged:"
         err "${dry_run_failed[*]}"
 
-        PACKAGES_IGNORED_TO_INSTALL+=( ${dry_run_failed[*]} )
+        PACKAGES_IGNORED_TO_INSTALL+=( "${dry_run_failed[@]}" )
         exit_sig="$SOME_PACKAGE_IGNORED_EXIT_CODE"
     fi
 
