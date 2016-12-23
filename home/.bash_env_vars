@@ -64,7 +64,7 @@ fi
 command -v nvim > /dev/null 2>&1 && export EDITOR=nvim || export EDITOR=vim
 export VISUAL=geany  # gvim doesn't play well with some stuff, eg crontab -e
 export PAGER=less
-export BROWSER=/usr/bin/iceweasel
+export BROWSER=/usr/bin/firefox
 export DEITY=
 
 # Colorize less (from http://unix.stackexchange.com/questions/119/colors-in-man-pages)

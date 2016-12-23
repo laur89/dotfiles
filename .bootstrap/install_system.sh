@@ -14,7 +14,7 @@
 #---   Configuration  ---
 #------------------------
 readonly TMPDIR='/tmp'
-readonly CLANG_LLVM_LOC='http://llvm.org/releases/3.9.0/clang+llvm-3.9.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
+readonly CLANG_LLVM_LOC='http://releases.llvm.org/3.9.1/clang+llvm-3.9.1-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
 readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - yeah.
 readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
 readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX - open password manager forked from keepass project
@@ -44,7 +44,7 @@ declare -a PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to
 declare -a PACKAGES_FAILED_TO_INSTALL=()
 LOGGING_LVL=0                   # execution logging level (full install mode logs everything);
                                 # don't set log level too soon; don't want to persist bullshit.
-                                # levels are currently 0, 1 and 10, 1 being the lowest (least amount of events logged.)
+                                # levels are currently 0, 1 and 10, 1 being the lowest (from lvl 1 to 9 only errors are logged)
 EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%b-%y--%R).log" \
         || readonly EXECUTION_LOG="$HOME/installation-exe.log"  # do not create logfile here! otherwise cleanup() picks it up and reports of its existence;
 
@@ -642,7 +642,7 @@ function install_deps() {
 
             for dir in *; do
                 if [[ -d "$dir" ]] && is_ssh_key_available; then
-                    execute "pushd $dir" || return 1
+                    execute "pushd $dir" || continue
                     is_git && execute "git pull"
                     execute "popd"
                 fi
@@ -679,6 +679,7 @@ function install_deps() {
 
     # tmux plugin manager:
     _install_tmux_deps
+    unset _install_tmux_deps
 
     # TODO: these are not deps, are they?:
     execute "sudo pip install --upgrade git-playback"   # https://github.com/jianli/git-playback
@@ -703,8 +704,6 @@ function install_deps() {
         clone_or_pull_repo "Goles" "Battery" "$BASE_DEPS_LOC"  # https://github.com/Goles/Battery
         create_link "${BASE_DEPS_LOC}/Battery/battery" "$HOME/bin/battery"
     fi
-
-    unset _install_tmux_deps
 }
 
 
@@ -2429,8 +2428,6 @@ function choose_single_task() {
     declare -ar choices=(
         setup
         setup_homesick
-        setup_dirs
-        setup_config_files
 
         generate_key
         switch_jdk_versions
@@ -2644,6 +2641,8 @@ function configure_ntp_for_work() {
 
 # configs & settings that can/need to be installed  AFTER  the related programs have
 # been installed.
+#
+# note that this block overlaps logically a bit with setup_config_files()
 function post_install_progs_setup() {
 
     install_acpi_events   # has to be after install_progs(), so acpid is already insalled and events/ dir present;
@@ -2660,7 +2659,7 @@ function post_install_progs_setup() {
     execute "newgrp wireshark"                  # log us into the new group
     execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
     execute "newgrp vboxusers"                  # log us into the new group
-    install_gtk_theme
+    install_gtk_theme  # TODO: does this really belong here? why? was it because numix required some weird dependency that was only later on available?
     configure_ntp_for_work
 }
 
