@@ -62,8 +62,13 @@ PRIVATE_CASTLE=''  # installation specific private castle location (eg for 'work
 
 readonly SELF="${0##*/}"
 
-declare -Ar COLORS=(
+declare -A COLORS=(
     [RED]=$'\033[0;31m'
+    [GREEN]=$'\033[0;32m'
+    [BLUE]=$'\033[0;34m'
+    [PURPLE]=$'\033[0;35m'
+    [CYAN]=$'\033[0;36m'
+    [WHITE]=$'\033[0;37m'
     [YELLOW]=$'\033[0;33m'
     [OFF]=$'\033[0m'
     [BOLD]=$'\033[1m'
@@ -145,7 +150,7 @@ function check_dependencies() {
 
     # TODO: need to create dev/ already here, since both dotfiles and private-common
     # either point to it, or point at something in it; not a good solution.
-    # best finalise scripts and move them to the public/common dotfiles repo.
+    # better finalise scripts and move them to the public/common dotfiles repo.
     #
     #
     # verify required dirs are existing and have $perms perms:
@@ -201,8 +206,8 @@ function setup_hosts() {
         execute "cp -- $file $tmpfile" || { err; return 1; }
         execute "sed -i 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' $tmpfile" || { err; return 1; }
 
-        backup_original_and_copy_file "$tmpfile" "$hosts_file_dest"
-        execute "rm -- $tmpfile"
+        backup_original_and_copy_file --sudo "$tmpfile" "$hosts_file_dest"
+        execute "rm -- '$tmpfile'"
     else
         err "expected configuration file at [$file] does not exist; won't install it."
         return 1
@@ -225,9 +230,9 @@ function setup_sudoers() {
     fi
 
     if [[ -f "$file" ]]; then
-        execute "cp -- $file $tmpfile" || return 1
+        execute "cp -- '$file' '$tmpfile'" || return 1
         execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-        backup_original_and_copy_file "$tmpfile" "$sudoers_dest"
+        backup_original_and_copy_file --sudo "$tmpfile" "$sudoers_dest"
 
         execute "rm -- '$tmpfile'"
     else
@@ -255,7 +260,7 @@ function setup_apt() {
         file="$COMMON_DOTFILES/backups/$file"
 
         if [[ -f "$file" ]]; then
-            backup_original_and_copy_file "$file" "$apt_dir"
+            backup_original_and_copy_file --sudo "$file" "$apt_dir"
         else
             err "expected configuration file at [$file] does not exist; won't install it."
         fi
@@ -278,7 +283,7 @@ function setup_crontab() {
     if [[ -f "$file" ]]; then
         execute "cp -- '$file' '$tmpfile'" || return 1
         execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-        #backup_original_and_copy_file "$tmpfile" "$cron_dir"  # don't create backup - dont wanna end up with 2 crontabs
+        #backup_original_and_copy_file --sudo "$tmpfile" "$cron_dir"  # don't create backup - dont wanna end up with 2 crontabs
         execute "sudo cp -- '$tmpfile' '$cron_dir'"
 
         execute "rm -- '$tmpfile'"
@@ -288,21 +293,36 @@ function setup_crontab() {
 }
 
 
+# pass '-s' or '--sudo' as first arg to execute as sudo
+#
 function backup_original_and_copy_file() {
-    local file dest_dir filename
+    local sudo file dest_dir filename i orig_suffixes
 
+    [[ "$1" == -s || "$1" == --sudo ]] && { shift; readonly sudo=sudo; }
     readonly file="$1"          # full path of the file to be copied
     readonly dest_dir="${2%/}"  # full path of the destination directory to copy to
 
     readonly filename="$(basename -- "$file")"
 
-    [[ -d "$dest_dir" ]] || { err "second arg [$dest_dir] was not a dir" "$FUNCNAME"; return 1; }
-    # back up the destination file, if it's already existing:
-    if [[ -f "$dest_dir/$filename" && ! -e "$dest_dir/${filename}.orig" ]]; then
-        execute "sudo cp -- '$dest_dir/$filename' '$dest_dir/${filename}.orig'"
+    $sudo test -d "$dest_dir" || { err "second arg [$dest_dir] was not a dir" "$FUNCNAME"; return 1; }
+
+    # back up the destination file, if it already exists and differs from new content:
+    if $sudo test -f "$dest_dir/$filename" && ! $sudo cmp -s "$file" "$dest_dir/$filename"; then
+        # collect older .orig files' suffixes and increment latest value for the new file:
+        while IFS= read -r -d $'\0' i; do
+            orig_suffixes+=("${i##*.}")
+        done < <(find -L "$dest_dir/" -maxdepth 1 -mindepth 1 -type f -name "${filename}.orig.*" -print0)
+        if [[ "${#orig_suffixes[@]}" -eq 0 ]]; then
+            i=0
+        else
+            i="$(printf '%s\n' "${orig_suffixes[@]}" | sort -rn | head -n1)"  # latest/largest suffix value
+            let i++
+        fi
+
+        execute "$sudo cp -- '$dest_dir/$filename' '$dest_dir/${filename}.orig.$i'"
     fi
 
-    execute "sudo cp -- '$file' '$dest_dir'"
+    execute "$sudo cp -- '$file' '$dest_dir'"
 }
 
 
@@ -312,7 +332,7 @@ function clone_or_pull_repo() {
     readonly user="$1"
     readonly repo="$2"
     readonly install_dir="$3"
-    readonly hub=${4:-"github.com"}  # OPTIONAL; if not provided, defaults to github.com;
+    readonly hub=${4:-'github.com'}  # OPTIONAL; if not provided, defaults to github.com;
 
     [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
 
@@ -357,6 +377,7 @@ function install_nfs_server() {
             read -r share
 
             share=${share:-"$NFS_SERVER_SHARE"}
+            [[ "$share" != /* ]] && { err "share needs to be defined as full path."; continue; }
             [[ -d "$share" ]] || { err "[$share] is not a valid dir."; continue; }
 
             # TODO: automate multi client/range options:
@@ -403,17 +424,17 @@ function install_nfs_client() {
             [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
             [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$server_ip]"; continue; }
 
-            echo -e "enter local mountpoint to mount nfs share to (leave blank to default to [${default_mountpoint}]):"
+            echo -e "enter local mountpoint to mount nfs share to (leave blank to default to [$default_mountpoint]):"
             read -r mountpoint
             [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
-            create_mountpoint "$mountpoint" || continue
             list_contains "$mountpoint" "${used_mountpoints[*]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
+            create_mountpoint "$mountpoint" || continue
 
-            echo -e "enter remote share to mount (leave blank to default to [${NFS_SERVER_SHARE}]):"
+            echo -e "enter remote share to mount (leave blank to default to [$NFS_SERVER_SHARE]):"
             read -r nfs_share
             [[ -z "$nfs_share" ]] && nfs_share="$NFS_SERVER_SHARE"
-            [[ "$nfs_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
             list_contains "${server_ip}${nfs_share}" "${mounted_shares[*]}" && { report "selected [${server_ip}:${nfs_share}] has already been used for previous definition"; continue; }
+            [[ "$nfs_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
 
             if ! grep -q "${server_ip}:${nfs_share}.*${mountpoint}" "$fstab"; then
                 report "adding [${server_ip}:$nfs_share] mounting to [$mountpoint] in $fstab"
@@ -447,23 +468,19 @@ function install_ssh_server() {
 
     install_block 'openssh-server' || { err "unable to install openssh-server. aborting sshd install/config."; return 1; }
 
-    if ! [[ -d "$sshd_confdir" ]]; then
-        err "[$sshd_confdir] is not a dir; skipping sshd conf installation."
-        return 1
-    fi
+    [[ -d "$sshd_confdir" ]] || { err "[$sshd_confdir] is not a dir; skipping sshd conf installation."; return 1; }
 
     # install sshd config:
     if [[ -f "$config" ]]; then
-        backup_original_and_copy_file "$config" "$sshd_confdir"
+        backup_original_and_copy_file --sudo "$config" "$sshd_confdir"
     else
         err "expected configuration file at [$config] does not exist; aborting sshd configuration."
         return 1
     fi
 
-
     # install ssh banner:
     if [[ -f "$banner" ]]; then
-        backup_original_and_copy_file "$banner" "$sshd_confdir"
+        backup_original_and_copy_file --sudo "$banner" "$sshd_confdir"
     else
         err "expected sshd banner file at [$banner] does not exist; won't install it."
         #return 1  # don't return, it's just a banner.
@@ -484,6 +501,7 @@ function create_mountpoint() {
     [[ -z "$mountpoint" ]] && { err "cannot pass empty mountpoint arg to $FUNCNAME"; return 1; }
 
     [[ -d "$mountpoint" ]] || execute "sudo mkdir -- $mountpoint" || { err "couldn't create [$mountpoint]"; return 1; }
+    [[ -d "$mountpoint" ]] || { err "mountpoint [$mountpoint] is not a dir"; return 1; }
     execute "sudo chmod 777 -- $mountpoint" || { err; return 1; }
 
     return 0
@@ -505,6 +523,7 @@ function install_sshfs() {
     declare -A sel_ips_to_user
 
     confirm "wish to install and configure sshfs?" || return 1
+    [[ -f "$fstab" ]] || { err "[$fstab] does not exist; cannot add fstab entry!"; return 1; }
     if ! [[ -f "$identity_file" ]]; then
         confirm "[$identity_file] ssh key does not exist; still continue?" || return 1
     fi
@@ -527,8 +546,6 @@ function install_sshfs() {
     # add us to the fuse group:
     execute "sudo gpasswd -a $USER fuse"
 
-    [[ -f "$fstab" ]] || { err "[$fstab] does not exist; cannot add fstab entry!"; return 1; }
-
     while true; do
         if confirm "$(report "add ${server_ip:+another} sshfs entry to fstab?")"; then
             echo -e "enter server ip: ${prev_server_ip:+(leave blank to default to [$prev_server_ip])}"
@@ -543,14 +560,14 @@ function install_sshfs() {
             echo -e "enter local mountpoint to mount sshfs share to (leave blank to default to [$default_mountpoint]):"
             read -r mountpoint
             [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
-            create_mountpoint "$mountpoint" || continue
             list_contains "$mountpoint" "${used_mountpoints[*]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
+            create_mountpoint "$mountpoint" || continue
 
-            echo -e "enter remote share to mount (leave blank to default to [${SSH_SERVER_SHARE}]):"
+            echo -e "enter remote share to mount (leave blank to default to [$SSH_SERVER_SHARE]):"
             read -r ssh_share
             [[ -z "$ssh_share" ]] && ssh_share="$SSH_SERVER_SHARE"
-            [[ "$ssh_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
             list_contains "${server_ip}${ssh_share}" "${mounted_shares[*]}" && { report "selected [${server_ip}:${ssh_share}] has already been used for previous definition"; continue; }
+            [[ "$ssh_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
 
             if ! grep -q "${remote_user}@${server_ip}:${ssh_share}.*${mountpoint}" "$fstab"; then
                 report "adding [${server_ip}:$ssh_share] mounting to [$mountpoint] in $fstab"
@@ -570,13 +587,13 @@ function install_sshfs() {
         fi
     done
 
-    report "ssh-ing to entered IPs [${!sel_ips_to_user[*]}], so our root would have the remote in the /root/.ssh/known_hosts ..."
+    report "sudo ssh-ing to entered IPs [${!sel_ips_to_user[*]}], so our root would have the remote in the /root/.ssh/known_hosts ..."
     report "select [yes] if asked whether to add entry to known hosts"
 
     for server_ip in "${!sel_ips_to_user[@]}"; do
         remote_user="${sel_ips_to_user[$server_ip]}"
         report "testing ssh connection to ${remote_user}@${server_ip}..."
-        execute "sudo ssh -p ${ssh_port} -o ConnectTimeout=7 ${remote_user}@$server_ip echo ok"
+        execute "sudo ssh -p ${ssh_port} -o ConnectTimeout=7 ${remote_user}@${server_ip} echo ok"
     done
 
     return 0
@@ -597,7 +614,7 @@ function install_sshfs() {
     #fi
 
     #if [[ -f "$ssh_conf" ]]; then
-        #backup_original_and_copy_file "$ssh_conf" "$ssh_confdir"
+        #backup_original_and_copy_file --sudo "$ssh_conf" "$ssh_confdir"
     #else
         #err "expected ssh configuration file at [$ssh_conf] does not exist; aborting ssh (client) configuration."
         #return 1
@@ -2799,7 +2816,7 @@ function generate_key() {
 function execute() {
     local cmd exit_sig ignore_errs
 
-    [[ "$1" == -i || "$1" == --ignore-errs ]] && { shift; readonly ignore_errs=1; }
+    [[ "$1" == -i || "$1" == --ignore-errs ]] && { shift; readonly ignore_errs=1; } || readonly ignore_errs=0
     readonly cmd="$1"
 
     echo -e "--> executing [$cmd]"
@@ -2984,7 +3001,7 @@ function is_git() {
 # pass '-s' or '--sudo' as first arg to execute as sudo
 #
 # second arg, the target, should end with a slash if a containing dir is meant to be
-# passed, not a literal path to the to-be-created link.
+# passed, not a literal path to the link to-be-created.
 function create_link() {
     local src target filename sudo
 
