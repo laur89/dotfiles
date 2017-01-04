@@ -155,10 +155,14 @@ fi
 ###############################
 # modify configs:
 if is_laptop; then
-    ( sed \
-		--follow-symlinks \
-		-i '/^lockTimeout:/s/^lockTimeout:.*/lockTimeout:\t0:00:05/g' ~/.xscreensaver || \
-			err_display "unable to edit ~/.xscreensaver with sed" "$SELF"; ) &
+    if [[ -e ~/.xscreensaver ]]; then
+        ( sed \
+            --follow-symlinks \
+            -i '/^lockTimeout:/s/^lockTimeout:.*/lockTimeout:\t0:00:05/g' ~/.xscreensaver || \
+                err_display "unable to edit ~/.xscreensaver with sed" "$SELF"; ) &
+    else
+        err_display "xscreensaver conf does not exist; if not using it anymore, remove logic from [$SELF]"
+    fi
 fi
 
 

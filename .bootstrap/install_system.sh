@@ -1014,7 +1014,7 @@ function install_SSID_checker() {
     fi
 
     # do not create .orig backup!
-    execute "sudo cp -- $nm_wrapper_loc $nm_wrapper_dest/"
+    execute "sudo cp -- $nm_wrapper_loc $nm_wrapper_dest/NW_SSID_checker_wrapper.sh"
     return $?
 }
 
@@ -2109,6 +2109,7 @@ function install_from_repo() {
         hardinfo
         macchanger
         ufw
+        fail2ban
     )
 
     declare -ar block2=(
@@ -2116,6 +2117,8 @@ function install_from_repo() {
         dnsutils
         glances
         htop
+        ncdu
+        pydf
         ntop
         wireshark
         iptraf
@@ -2281,8 +2284,8 @@ function install_from_repo() {
             local conf conf_lines i
 
             readonly conf='/etc/pulse/default.pa'
-            declare -ar conf_lines=('load-module module-equalizer-sink'
-                                    'load-module module-dbus-protocol'
+            declare -ar conf_lines=(load-module module-equalizer-sink
+                                    load-module module-dbus-protocol
                                    )
 
             [[ -f "$conf" ]] || { err "[$conf] is not a valid file."; return 1; }
@@ -2293,14 +2296,24 @@ function install_from_repo() {
                     execute "echo $i | sudo tee --append $conf > /dev/null"
                 fi
             done
+
+            # make bluetooth (headset) device connection possible:
+            # http://askubuntu.com/questions/801404/bluetooth-connection-failed-blueman-bluez-errors-dbusfailederror-protocol-no
+            # https://zach-adams.com/2014/07/bluetooth-audio-sink-stream-setup-failed/
+            if is_laptop; then
+                execute 'pactl load-module module-bluetooth-discover' || err
+            fi
         }
 
-        # pasystray for easier config access; to meant to be ran continuously.
+        # pasystray for easier config access; not meant to be ran continuously.
+        # fyi, PA settings exec is 'pavucontrol'
         install_block '
             pulseaudio
             pulseaudio-equalizer
             pasystray
         '
+
+        is_laptop && install_block pulseaudio-module-bluetooth
         configure_pulseaudio
     fi
 }

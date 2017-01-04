@@ -146,8 +146,63 @@ alias git-root='is_git && __grt="$(git rev-parse --show-toplevel)" && [[ -n "$__
 alias grt='git-root'
 alias gpushall='is_git || err "not in a git repo" && { git push --tags && git checkout master && git push && git checkout develop && git push; }'
 
+# ------------------------------------
+# Docker alias and function
+# from https://github.com/tcnksm/docker-alias/blob/master/zshrc
+# ------------------------------------
+
+# Get latest created container ID
+alias dl="docker ps -l -q"
+
+# Get container processes
+alias dps="docker ps"
+
+# Get processes included stop container
+alias dpa="docker ps -a"
+alias dpsa='dpa'
+
+# Get images
+alias di="docker images"
+
+# Get container IP
+alias dip="docker inspect --format '{{ .NetworkSettings.IPAddress }}'"
+
+# Run deamonized container, e.g., $dkd base_image /bin/echo hello
+alias dkd="docker run -d -P"
+
+# Run interactive container, e.g., $dki base_image /bin/bash
+alias dki="docker run -i -t -P"
+
+# Execute interactive container, e.g., $dex base /bin/bash
+# note: docker exec  runs command in an (already) RUNNING container
+alias dex="docker exec -i -t"
+
+# Stop all containers
+dstop() { docker stop $(docker ps -a -q); }
+
+# Remove all containers
+drm() { docker rm $(docker ps -a -q); }
+# TODO: rename drm() to drma(), and use drm() to delete specific containers only?
+
+# Stop & remove all containers
+alias drmf='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)'
+
+# Remove all images
+dri() { docker rmi $(docker images -q); }
+alias drmi='dri'
+
+# Dockerfile build, e.g., $dbu tcnksm/test
+dbu() { docker build -t=$1 .; }
+
+# Show all alias related docker
+dalias() { alias | grep 'docker' | sed "s/^\([^=]*\)=\(.*\)/\1 => \2/"| sed "s/['|\']//g" | sort; }
+
+# Bash into running container
+dbash() { docker exec -it $(docker ps -aqf "name=$1") bash; }
+
 # docker (better use functions in bash_funtions.sh):
 #alias drmi='docker rmi $(docker images --filter "dangling=true" -q --no-trunc)'
+# ------------------------------------
 
 
 # Directory navigation aliases:
@@ -157,6 +212,7 @@ alias ....='cd ../../..'
 alias .....='cd ../../../..'
 alias ......='cd ../../../../..'
 alias .......='cd ../../../../../..'
+alias ........='cd ../../../../../../..'
 alias downloads='cd /home/laur/Downloads'
 alias dl='cd /home/laur/Downloads'
 alias dls='cd /home/laur/Downloads'
