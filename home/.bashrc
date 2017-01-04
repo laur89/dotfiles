@@ -217,8 +217,12 @@ GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274
 command -v rbenv >/dev/null 2>/dev/null && eval "$(rbenv init -)"
 
 ##########################################
-# git-flow-competion;....
+# git-flow-competion:
 [[ -e "$HOME/.git-flow-completion" ]] && source "$HOME/.git-flow-completion/git-flow-completion.bash"
+
+##########################################
+# maven-bash-completion:
+[[ -e "$HOME/.maven-bash-completion/bash_completion.bash" ]] && source "$HOME/.maven-bash-completion/bash_completion.bash"
 
 ##########################################
 if ! ssh-add -l > /dev/null 2>&1; then

@@ -57,6 +57,7 @@
     pul = pull
     desc = describe
     lg = log -i --all --graph --source --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset'\n --abbrev-commit --date=relative
+	pushf = push --force-with-lease
 
     commit-undo = reset --soft HEAD~1
     undo-commit = reset --soft HEAD~1

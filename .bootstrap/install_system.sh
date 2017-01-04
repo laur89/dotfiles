@@ -677,6 +677,10 @@ function install_deps() {
     clone_or_pull_repo "clvv" "fasd" "$BASE_DEPS_LOC"  # https://github.com/clvv/fasd.git
     create_link "${BASE_DEPS_LOC}/fasd/fasd" "$HOME/bin/fasd"
 
+    # maven bash completion
+    clone_or_pull_repo "juven" "maven-bash-completion" "$BASE_DEPS_LOC"  # https://github.com/juven/maven-bash-completion
+    create_link "${BASE_DEPS_LOC}/maven-bash-completion" "$HOME/.maven-bash-completion"
+
     # tmux plugin manager:
     _install_tmux_deps
     unset _install_tmux_deps
@@ -3000,7 +3004,7 @@ function is_git() {
 # pass '-s' or '--sudo' as first arg to execute as sudo
 #
 # second arg, the target, should end with a slash if a containing dir is meant to be
-# passed, not a literal path to the link to-be-created.
+# passed, not a literal path to the link-to-be-created.
 function create_link() {
     local src target filename sudo
 

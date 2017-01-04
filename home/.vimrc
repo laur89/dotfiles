@@ -590,6 +590,10 @@ set nocompatible " Must be the first line
     let g:EasyGrepRecursive=1
     let g:EasyGrepMode=2 "search for files that are of a similar type to the current file
 
+    " nerdtree
+    " close vim if the only window left open is nerdtree:
+    autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+
 """ }}}
 
 """ Local ending config, will overwrite anything above. Generally use this. {{{{
