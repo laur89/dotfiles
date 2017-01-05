@@ -703,11 +703,42 @@ function install_deps() {
     fi
 
     # laptop deps:
-    if is_laptop; then
-        # batt output (requires spark):
-        clone_or_pull_repo "Goles" "Battery" "$BASE_DEPS_LOC"  # https://github.com/Goles/Battery
-        create_link "${BASE_DEPS_LOC}/Battery/battery" "$HOME/bin/battery"
-    fi
+    is_laptop && install_laptop_deps
+}
+
+
+function install_laptop_deps() {
+    is_laptop || return
+
+	__install_wifi_driver() {
+		local wifi_info
+
+		# consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
+		readonly wifi_info="$(sudo lshw | grep -iA 5 'Wireless interface')"
+
+		if echo "$wifi_info" | grep -iq 'vendor.*Intel'; then
+			report "we have intel wifi; installing intel drivers..."
+			install_block "firmware-iwlwifi"
+		elif echo "$wifi_info" | grep -iq 'vendor.*Realtek' && \
+				confirm "we seem to have realtek wifi; want to install firmware-realtek?"; then
+			report "we have realtek wifi; installing realtek drivers..."
+			install_block "firmware-realtek"
+		fi
+	}
+
+    # xinput is for configuration; see  https://wiki.archlinux.org/index.php/Libinput
+    install_block '
+        libinput-tools
+        xinput
+        blueman
+        xfce4-power-manager
+    '
+
+	__install_wifi_driver; unset __install_wifi_driver
+
+	# batt output (requires spark):
+	clone_or_pull_repo "Goles" "Battery" "$BASE_DEPS_LOC"  # https://github.com/Goles/Battery
+	create_link "${BASE_DEPS_LOC}/Battery/battery" "$HOME/bin/battery"
 }
 
 
@@ -1171,33 +1202,6 @@ function install_symantec_endpoint_security() {
 }
 
 
-function install_laptop_deps() {
-    local wifi_info
-
-    is_laptop || return
-
-    # xinput is for configuration; see  https://wiki.archlinux.org/index.php/Libinput
-    install_block '
-        libinput-tools
-        xinput
-        blueman
-        xfce4-power-manager
-    '
-
-    # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
-    readonly wifi_info="$(sudo lshw | grep -iA 5 'Wireless interface')"
-
-    if echo "$wifi_info" | grep -iq 'vendor.*Intel'; then
-        report "we have intel wifi; installing intel drivers..."
-        install_block "firmware-iwlwifi"
-    elif echo "$wifi_info" | grep -iq 'vendor.*Realtek' && \
-            confirm "we seem to have realtek wifi; want to install firmware-realtek?"; then
-        report "we have realtek wifi; installing realtek drivers..."
-        install_block "firmware-realtek"
-    fi
-}
-
-
 function install_progs() {
 
     execute "sudo apt-get --yes update"
@@ -1207,7 +1211,6 @@ function install_progs() {
     install_npm_modules
 
     install_from_repo
-    install_laptop_deps
     install_own_builds
 
     install_oracle_jdk
@@ -2457,7 +2460,6 @@ function choose_single_task() {
         install_webdev
         install_npm_modules
         install_from_repo
-        install_laptop_deps
         install_ssh_server_or_client
         install_nfs_server_or_client
         __choose_prog_to_build
