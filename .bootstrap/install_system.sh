@@ -2206,6 +2206,7 @@ function install_from_repo() {
         scrot
         ffmpeg
         vokoscreen
+        kazam
         screenkey
         mediainfo
         lynx
@@ -2235,6 +2236,7 @@ function install_from_repo() {
         urlview
         silversearcher-ag
         cowsay
+        cowsay-off
         toilet
         lolcat
         figlet
