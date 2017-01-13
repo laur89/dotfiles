@@ -254,7 +254,9 @@ set nocompatible " Must be the first line
     "Plugin 'xenomachina/public/tree/master/vim/plugin'
     " consider targets.vim - adds new text objects
 
-    Plugin 'vim-scripts/Conque-Shell'
+    " open terminal OR file manager at the directory of current location
+    Plugin 'justinmk/vim-gtfo'
+
 
     " Finish Vundle stuff
     call vundle#end()
@@ -593,6 +595,10 @@ set nocompatible " Must be the first line
     " nerdtree
     " close vim if the only window left open is nerdtree:
     autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+
+    " vim-gtfo
+    " set shell to open with 'got' keykombo:
+    let g:gtfo#terminals = { 'unix' : 'urxvt -cd' }
 
 """ }}}
 

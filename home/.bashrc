@@ -132,6 +132,7 @@ shopt -s dotglob        # include dotfiles in path expansion
 shopt -s hostcomplete   # try to autocomplete hostnames
 shopt -s huponexit      # send SIGHUP on when interactive login shell exits
 shopt -s globstar       # ** in pathname expansion will match all files and zero or more directories and subdirs
+shopt -s autocd         # if you type dir name, it's interpreted as an argument to cd
 set -o vi               # needs to be added *before* fzf is sourced, otherwise fzf is screwed.
 
 unset MAILCHECK

@@ -4,8 +4,8 @@
 #
 export DEFAULT_SSH_USER=laur
 
-# load local (ie non-ssh) system's vars:
-if [[ -z "$PEARL_HOME" ]]; then
+# load local (ie non-ssh'ed) system's vars:
+if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # env vars to be loaded in local systems only (ie remote sessions should ignore this)
     # needs to be in same dir as the sourcing env vars file.
 
@@ -97,8 +97,8 @@ export LESS_TERMCAP_ZW=$(tput rsupm)
 if [[ -d "$BASE_DATA_DIR/tmp" && -w "$BASE_DATA_DIR/tmp" ]]; then
     export _PERSISTED_TMP="$BASE_DATA_DIR/tmp"
 else
-    [[ -z "$PEARL_HOME" ]] && echo -e "bash_env_vars: preferred persisted tempdir at $BASE_DATA_DIR/tmp not found; defaulting to /tmp"
-    export _PERSISTED_TMP="/tmp"
+    [[ -z "$PEARL_HOME" ]] && echo -e "bash_env_vars: preferred persisted tempdir at [$BASE_DATA_DIR/tmp] not found; defaulting to [/tmp]"
+    export _PERSISTED_TMP='/tmp'
 fi
 
 # markpath/jumps dir:
@@ -118,9 +118,9 @@ if [[ "$-" != *i* ]]; then
 #if ! shopt -q login_shell; then
 #if [[ "$(tty)" != "/dev/tty1" ]] && [[ \"\$(who | cut -d' ' -f1 | sort | uniq)\" == \"\$usr\" ]]; do
 
-    export DISPLAY=":0"
+    export DISPLAY=':0'
 fi
 
 # marker var used to detect whether env vars have been loaded:
-export __ENV_VARS_LOADED_MARKER_VAR="loaded"
+export __ENV_VARS_LOADED_MARKER_VAR=loaded
 

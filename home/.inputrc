@@ -10,7 +10,7 @@ set keymap vi-command
 # Keymaps for when we're in insert (i.e., typing stuff in) mode
 set keymap vi-insert
 
-# Ignore case
+# Ignore case on tab auto-completion
 set completion-ignore-case on
 
 # use a visible bell if one is available

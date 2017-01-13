@@ -1601,14 +1601,15 @@ clock() {
 #    xmlformat file1 [file2...]
 #    xmlformat '<xml> unformatted </xml>'
 xmlformat() {
-    local file regex result
+    local file regex result content
 
     readonly regex='^\s*<'
     [[ -z "$@" ]] && { echo -e "usage:   $FUNCNAME  <filename>  OR  $FUNCNAME  'raw xml string'"; return 1; }
     check_progs_installed xmllint "$EDITOR" || return 1;
 
     if [[ "$#" -eq 1 && ! -f "$*" && "$*" =~ $regex ]]; then
-        result="$(echo "$*" | xmllint --format -)" || { err "formatting input xml failed" "$FUNCNAME"; return 1; }
+        content="$(sed '/^\s*$/d;s/^[[:space:]]*//;s/[[:space:]]*$//' <<< "$*")"  # strip empty lines + leading&trailing whitespace
+        result="$(xmllint --format - <<< "$content")" || { err "formatting input xml failed" "$FUNCNAME"; return 1; }
         echo
         echo "$result"
         echo
@@ -1747,7 +1748,7 @@ createUsbIso() {
 #######################
 mkgit() {
     local user passwd repo dir project_name OPTIND opt usage mainOptCounter http_statuscode
-    local newly_created_dir curl_output namespace_id
+    local newly_created_dir curl_output namespace_id namespace
 
     mainOptCounter=0
     readonly usage="usage:   $FUNCNAME  -g|-b|-w  <dirname> [project_name]
@@ -1763,11 +1764,13 @@ mkgit() {
               return 0
               ;;
            g) user="laur89"
+              namespace="$user"
               repo="github.com"
               let mainOptCounter+=1
               shift $((OPTIND-1))
               ;;
            b) user="layr"
+              namespace="$user"
               repo="bitbucket.org"
               let mainOptCounter+=1
               shift $((OPTIND-1))
@@ -1834,11 +1837,10 @@ mkgit() {
         return 1
     fi
 
-    # offers user to choose the namespace/group to create project in, and returns
-    # its numeric id (NOT the namespace name).
+    # offers user to choose the namespace/group to create project in.
+    # doesn't return, but defines fun-global vars 'namespace' & 'namespace_id'
     __select_namespace() {
-        local gitlab_namespaces_json namespace_to_id namespace is_id_field
-        local i j fzf_selection
+        local gitlab_namespaces_json namespace_to_id is_id_field i j fzf_selection
 
         # https://forum.gitlab.com/t/create-a-new-project-in-a-group-using-api/1552/2
         #
@@ -1862,15 +1864,14 @@ mkgit() {
         done <  <(echo "$gitlab_namespaces_json" | jq -r '.[] | .path,.id')
 
         readonly fzf_selection="${fzf_selection:0:$(( ${#fzf_selection} - 2 ))}"  # strip the trailing newline
-        readonly namespace="$(echo -e "$fzf_selection" | fzf --exit-0)" || return 1
-        i="${namespace_to_id[$namespace]}"
-        is_digit "$i" || { err "unable to find namespace id from name [$namespace]" "$FUNCNAME"; return 1; }
+        namespace="$(echo -e "$fzf_selection" | fzf --exit-0)" || return 1
+        namespace_id="${namespace_to_id[$namespace]}"
+        is_digit "$namespace_id" || { err "unable to find namespace id from name [$namespace]" "$FUNCNAME"; return 1; }
 
-        echo "$i"
         return 0
     }
 
-    # create remote repo, if not existing:
+    # create remote repo, if not existing (note: repo existence check doesn't work for gitlab, as $user is really the group/namespace):
     if ! git ls-remote "git@${repo}:${user}/${project_name}" &> /dev/null; then
         case "$repo" in
             'github.com')
@@ -1891,7 +1892,7 @@ mkgit() {
                     -o "$curl_output")"
                 ;;
             "$(getnetrc "${user}@git.url.workplace")")
-                namespace_id="$(__select_namespace)" || { [[ "$newly_created_dir" -eq 1 ]] && rm -r -- "$dir"; return 1; }  # delete the dir we just created
+                __select_namespace || { [[ "$newly_created_dir" -eq 1 ]] && rm -r -- "$dir"; unset __select_namespace; return 1; }  # delete the dir we just created
                 unset __select_namespace
                 readonly http_statuscode="$(curl -sL --insecure \
                     -w '%{http_code}' \
@@ -1919,20 +1920,20 @@ mkgit() {
             return 1
         fi
 
-        report "created new repo @ ${repo}/${user}/${project_name}" "$FUNCNAME"
+        report "created new repo @ [${repo}/${namespace}/${project_name}]" "$FUNCNAME"
         echo
     fi
 
     pushd -- "$dir" &> /dev/null || return 1
     git init || { err "bad return from git init - code [$?]" "$FUNCNAME"; return 1; }
-    git remote add origin "git@${repo}:${user}/${project_name}.git" || { err "adding remote failed. abort." "$FUNCNAME"; return 1; }
+    git remote add origin "git@${repo}:${namespace}/${project_name}.git" || { err "adding remote failed. abort." "$FUNCNAME"; return 1; }
     echo
 
-    if confirm "want to add README.md (recommended)?"; then
+    if confirm "add README.md? (recommended)"; then
         report "adding README.md ..." "$FUNCNAME"
         touch README.md
         git add README.md
-        git commit -a -m 'inital setup, adding readme - automated'
+        git commit -a -m 'inital commit, adding readme - automated'
         git push -u origin master
     fi
 
@@ -1956,17 +1957,21 @@ gito() {
 
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
+	__go_back() {
+		[[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
+	}
+
     readonly git_root="$(git rev-parse --show-toplevel)" || { err "unable to find project root" "$FUNCNAME"; return 1; }
     [[ "$cwd" != "$git_root" ]] && pushd "$git_root" &> /dev/null  # git root
 
     if [[ -n "$src" ]]; then
         if [[ "$src" == *\** && "$src" != *\.\** ]]; then
             err 'use .* as wildcards, not a single *' "$FUNCNAME"
-            [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
+			__go_back
             return 1
         elif [[ "$(echo "$src" | tr -dc '.' | wc -m)" -lt "$(echo "$src" | tr -dc '*' | wc -m)" ]]; then
             err "nr of periods (.) was less than stars (*); are you misusing regex?" "$FUNCNAME"
-            [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
+            __go_back
             return 1
         fi
     fi
@@ -1988,8 +1993,8 @@ gito() {
         done < <(__git_ls_fun | fzf --select-1 --multi --exit-0)
     fi
 
-    unset __git_ls_fun
-    [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back to starting dir
+    __go_back
+    unset __git_ls_fun __go_back
     [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
 
     for ((i=0; i <= (( ${#matches[@]} - 1 )); i++)); do
