@@ -2142,8 +2142,10 @@ function install_from_repo() {
         msmtp
         rsync
         gparted
+        openvpn
         network-manager
         network-manager-gnome
+        network-manager-openvpn-gnome
         gnome-keyring
         gsimplecal
         gnome-disk-utility

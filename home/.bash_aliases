@@ -152,7 +152,7 @@ alias gpushall='is_git || err "not in a git repo" && { git push --tags && git ch
 # ------------------------------------
 
 # Get latest created container ID
-alias dl="docker ps -l -q"
+alias dl="docker ps -lq"
 
 # Get container processes
 alias dps="docker ps"
@@ -175,17 +175,18 @@ alias dki="docker run -i -t -P"
 
 # Execute interactive container, e.g., $dex base /bin/bash
 # note: docker exec  runs command in an (already) RUNNING container
-alias dex="docker exec -i -t"
+#alias dex="docker exec -i -t"
+dex() { docker exec -it $(docker ps -qf "name=$1") "${@:2}"; }
 
 # Stop all containers
-dstop() { docker stop $(docker ps -a -q); }
+dstop() { docker stop $(docker ps -aq); }
 
 # Remove all containers
-drm() { docker rm $(docker ps -a -q); }
+drm() { docker rm $(docker ps -aq); }
 # TODO: rename drm() to drma(), and use drm() to delete specific containers only?
 
 # Stop & remove all containers
-alias drmf='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)'
+alias drmf='docker stop $(docker ps -aq) && docker rm $(docker ps -aq)'
 
 # Remove all images
 dri() { docker rmi $(docker images -q); }
@@ -198,7 +199,7 @@ dbu() { docker build -t=$1 .; }
 dalias() { alias | grep 'docker' | sed "s/^\([^=]*\)=\(.*\)/\1 => \2/"| sed "s/['|\']//g" | sort; }
 
 # Bash into running container
-dbash() { docker exec -it $(docker ps -aqf "name=$1") bash; }
+dbash() { docker exec -it $(docker ps -qf "name=$1") bash; }
 
 # docker (better use functions in bash_funtions.sh):
 #alias drmi='docker rmi $(docker images --filter "dangling=true" -q --no-trunc)'
