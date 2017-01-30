@@ -2145,15 +2145,13 @@ gfrs() {
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
     __ask_ver() {
-        local ver
-
         if [[ -n "$pom_ver" ]]; then
-            [[ "$pom_wo_postfix" =~ ^[0-9\.]+$ ]] || { err "maven/pom ver [$pom_wo_postfix] is in an unexpected format." "$FUNCNAME"; return 1; }
-            confirm "tag as ver [${COLORS[GREEN]}${pom_wo_postfix}${COLORS[OFF]}]? (derived from current pom ver [$pom_ver])" && { echo "$pom_wo_postfix"; return 0; }
+            [[ "$pom_wo_postfix" =~ ^[0-9\.]+$ ]] || { err "maven/pom ver [$pom_wo_postfix] is in an unexpected format." "${FUNCNAME[1]}"; return 1; }
+            confirm "tag as ver [${COLORS[GREEN]}${pom_wo_postfix}${COLORS[OFF]}]? (derived from current pom ver [$pom_ver])" && { tag="$pom_wo_postfix"; return 0; }
         fi
 
-        read -rp 'enter tag ver to create: ' ver
-        [[ -n "$ver" ]] && { echo "$ver"; return 0; } || return 1
+        read -rp 'enter tag ver to create: ' tag
+        [[ -z "$tag" ]] && { err "need to provide release tag to create" "${FUNCNAME[1]}"; return 1; }
     }
 
     declare -a expected_tags
@@ -2163,7 +2161,7 @@ gfrs() {
     pom_wo_postfix="$(grep -Eos '^[0-9\.]+' <<< "$pom_ver" 2>/dev/null)"
 
     if [[ -z "$tag" ]]; then
-        tag="$(__ask_ver)" || { err "need to provide release tag to create" "$FUNCNAME"; unset __ask_ver; return 1; }
+        __ask_ver || { unset __ask_ver; return 1; }
     fi
     unset __ask_ver
 
@@ -2193,7 +2191,7 @@ gfrs() {
             )
         ) ) || { err "something blew up" "$FUNCNAME"; return 1; }
     else
-        expected_tags=("$pom_wo_postfix")
+        expected_tags=("$pom_wo_postfix")  # no biggie if pom_wo_postfix is null
     fi
 
     if [[ -n "${expected_tags[*]}" ]] && ! list_contains "$tag" "${expected_tags[*]}"; then

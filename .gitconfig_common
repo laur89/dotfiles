@@ -37,6 +37,7 @@
 [push]
     default = simple
 [alias]
+	commt = commit
     st = status
     com = commit
     au = add -u
