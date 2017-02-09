@@ -660,6 +660,10 @@ function install_deps() {
     clone_or_pull_repo "bobthecow" "git-flow-completion" "$BASE_DEPS_LOC"
     create_link "${BASE_DEPS_LOC}/git-flow-completion" "$HOME/.git-flow-completion"
 
+    # git-playback:   # https://github.com/mmozuras/git-playback
+    clone_or_pull_repo "mmozuras" "git-playback" "$BASE_DEPS_LOC"
+    create_link "${BASE_DEPS_LOC}/git-playback/git-playback.sh" "$HOME/bin/git-playback-sh"
+
     # bars (as in bar-charts) in shell:
     clone_or_pull_repo "holman" "spark" "$BASE_DEPS_LOC"  # https://github.com/holman/spark
     create_link "${BASE_DEPS_LOC}/spark/spark" "$HOME/bin/spark"

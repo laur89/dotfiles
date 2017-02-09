@@ -140,6 +140,7 @@ alias gitdi='git-root && git difftool --dir-diff && cd - > /dev/null 2>&1'      
 alias gitdi-all='git-root && git difftool --dir-diff HEAD && cd - > /dev/null 2>&1'           # also diff staged files
 alias gitdi-staged-only='git-root && git difftool --dir-diff --cached && cd - > /dev/null 2>&1'    # --cached == --staged, as in diff only staged files
 alias gitdi-prev='git-root && git difftool --dir-diff HEAD^ HEAD && cd - > /dev/null 2>&1'    # local last commit against current index (as in last commit; shows what was changed with last commit); does NOT include current uncommited changes);
+alias gitdi-commit='git showtool'  # diff specific commit, or HEAD, if no arg was given
 #alias gitdi-stashed='git difftool --dir-diff stash@{0}^!'  # diff stash against its parent;
 alias gitdi-stashed='git-root && git difftool --dir-diff stash@{0}^ stash@{0} && cd - > /dev/null 2>&1'  # diff stash against its parent;
 alias git-root='is_git && __grt="$(git rev-parse --show-toplevel)" && [[ -n "$__grt" ]] && cd -- "$__grt" && unset __grt || { err "are you in a git repo?"; unset __grt; }'  # go to project root
