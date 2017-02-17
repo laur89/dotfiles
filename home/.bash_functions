@@ -2058,6 +2058,7 @@ increment_version() {
     fi
 
     [[ -z "${__SELECTED_ITEMS[*]}" ]] && { err "no version selected" "$FUNCNAME"; return 1; }
+    return 0
 }
 
 
@@ -2152,6 +2153,7 @@ gfrs() {
 
         read -rp 'enter tag ver to create: ' tag
         [[ -z "$tag" ]] && { err "need to provide release tag to create" "${FUNCNAME[1]}"; return 1; }
+        return 0
     }
 
     declare -a expected_tags
