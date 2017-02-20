@@ -2433,7 +2433,7 @@ fon() {
     check_progs_installed stat sort || return 1
 
     if [[ "$#" -eq 1 ]] && is_digit "$1" && [[ "$1" -gt 0 ]]; then
-        report "note that when you want the ${1}. newest, then filename pattern has to be provided as first arg\n" "$FUNCNAME"
+        report "note if you really wanted the ${1}. newest, then filename pattern should be provided as first arg\n" "$FUNCNAME"
 
     # try to filter out optional last arg defining the nth newest to open (as in open the nth newest file):
     elif [[ "$#" -gt 1 ]]; then
