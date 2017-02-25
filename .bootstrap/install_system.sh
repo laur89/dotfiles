@@ -245,19 +245,16 @@ function setup_sudoers() {
 function setup_apt() {
     local apt_dir file
 
-    readonly apt_dir="/etc/apt"
+    readonly apt_dir='/etc/apt'
 
-    if ! [[ -d "$apt_dir" ]]; then
-        err "[$apt_dir] is not a dir; skipping apt conf installation."
-        return 1
-    fi
+    [[ -d "$apt_dir" ]] || { err "[$apt_dir] is not a dir; skipping apt conf installation."; return 1; }
 
     for file in \
             sources.list \
             preferences \
             apt.conf \
                 ; do
-        file="$COMMON_DOTFILES/backups/$file"
+        file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
         if [[ -f "$file" ]]; then
             backup_original_and_copy_file --sudo "$file" "$apt_dir"
