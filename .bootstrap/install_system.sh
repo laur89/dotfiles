@@ -46,7 +46,9 @@ LOGGING_LVL=0                   # execution logging level (full install mode log
                                 # don't set log level too soon; don't want to persist bullshit.
                                 # levels are currently 0, 1 and 10, 1 being the lowest (from lvl 1 to 9 only errors are logged)
 EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%b-%y--%R).log" \
-        || readonly EXECUTION_LOG="$HOME/installation-exe.log"  # do not create logfile here! otherwise cleanup() picks it up and reports of its existence;
+        || readonly EXECUTION_LOG="$HOME/installation-exe.log"  # do not create logfile here! otherwise cleanup()
+                                                                # picks it up and reports of its existence, opening
+                                                                # up for false positives.
 
 #------------------------
 #--- Global Constants ---
@@ -711,21 +713,21 @@ function install_deps() {
 function install_laptop_deps() {
     is_laptop || return
 
-	__install_wifi_driver() {
-		local wifi_info
+    __install_wifi_driver() {
+        local wifi_info
 
-		# consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
-		readonly wifi_info="$(sudo lshw | grep -iA 5 'Wireless interface')"
+        # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
+        readonly wifi_info="$(sudo lshw | grep -iA 5 'Wireless interface')"
 
-		if echo "$wifi_info" | grep -iq 'vendor.*Intel'; then
-			report "we have intel wifi; installing intel drivers..."
-			install_block "firmware-iwlwifi"
-		elif echo "$wifi_info" | grep -iq 'vendor.*Realtek' && \
-				confirm "we seem to have realtek wifi; want to install firmware-realtek?"; then
-			report "we have realtek wifi; installing realtek drivers..."
-			install_block "firmware-realtek"
-		fi
-	}
+        if echo "$wifi_info" | grep -iq 'vendor.*Intel'; then
+            report "we have intel wifi; installing intel drivers..."
+            install_block "firmware-iwlwifi"
+        elif echo "$wifi_info" | grep -iq 'vendor.*Realtek' && \
+                confirm "we seem to have realtek wifi; want to install firmware-realtek?"; then
+            report "we have realtek wifi; installing realtek drivers..."
+            install_block "firmware-realtek"
+        fi
+    }
 
     # xinput is for configuration; see  https://wiki.archlinux.org/index.php/Libinput
     install_block '
@@ -735,11 +737,11 @@ function install_laptop_deps() {
         xfce4-power-manager
     '
 
-	__install_wifi_driver; unset __install_wifi_driver
+    __install_wifi_driver; unset __install_wifi_driver
 
-	# batt output (requires spark):
-	clone_or_pull_repo "Goles" "Battery" "$BASE_DEPS_LOC"  # https://github.com/Goles/Battery
-	create_link "${BASE_DEPS_LOC}/Battery/battery" "$HOME/bin/battery"
+    # batt output (requires spark):
+    clone_or_pull_repo "Goles" "Battery" "$BASE_DEPS_LOC"  # https://github.com/Goles/Battery
+    create_link "${BASE_DEPS_LOC}/Battery/battery" "$HOME/bin/battery"
 }
 
 
