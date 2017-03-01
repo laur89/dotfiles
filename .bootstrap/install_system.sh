@@ -1079,6 +1079,9 @@ function setup_additional_apt_keys_and_sources() {
     execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys BBEBDCB318AD50EC6865090613B00F1FD2C19886'
     execute 'echo deb http://repository.spotify.com stable non-free | sudo tee /etc/apt/sources.list.d/spotify.list > /dev/null'
 
+    # seafile: (from https://github.com/haiwen/seafile-user-manual/blob/master/en/desktop/install-on-linux.md#wiki-debian):
+    execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 8756C4F765C9AC3CB6B85D62379CE192D401AB61'
+    execute 'echo deb http://dl.bintray.com/seafile-org/deb jessie main | sudo tee /etc/apt/sources.list.d/seafile.list > /dev/null'
 
     # update sources (will be done anyway on full install):
     [[ "$FULL_INSTALL" -ne 1 ]] && execute 'sudo apt-get --yes update'
@@ -2180,6 +2183,8 @@ function install_from_repo() {
         chromium
         icedove
         rxvt-unicode-256color
+        seafile-gui
+        seafile-cli
         guake
         mopidy
         mopidy-soundcloud

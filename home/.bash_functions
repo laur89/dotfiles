@@ -1305,12 +1305,6 @@ $FUNCNAME  [-e]  /dir_to_look_from/filename_to_grep
 }
 
 
-# search for shell command history
-histgrep() {
-    err "deprecated; use fh()"; return 1;
-}
-
-
 # Make your directories and files access rights sane.
 # (sane as in rw for owner, r for group, none for others)
 sanitize() {

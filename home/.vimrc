@@ -257,6 +257,8 @@ set nocompatible " Must be the first line
     " open terminal OR file manager at the directory of current location
     Plugin 'justinmk/vim-gtfo'
 
+    " ctrl+w o   to zoom into a window and back:
+    Plugin 'drn/zoomwin-vim'
 
     " Finish Vundle stuff
     call vundle#end()
