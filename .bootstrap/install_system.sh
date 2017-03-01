@@ -759,7 +759,6 @@ function setup_dirs() {
             $BASE_DATA_DIR/dev \
             $BASE_DATA_DIR/mail \
             $BASE_DATA_DIR/mail/work \
-            $BASE_DATA_DIR/Dropbox \
             $BASE_DATA_DIR/Downloads \
             $BASE_DATA_DIR/Downloads/Transmission \
             $BASE_DATA_DIR/Downloads/Transmission/incomplete \

@@ -576,7 +576,7 @@ set nocompatible " Must be the first line
     augroup END
 
     " vim-notes
-    let g:notes_directories = ['/data/Dropbox/notes']
+    let g:notes_directories = ['/data/Seafile/main/notes']
     let g:notes_suffix = '.note'
 
     " Ag (silver-searcher)
