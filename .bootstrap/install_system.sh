@@ -1784,7 +1784,9 @@ function install_neovim() {
         execute "pushd $tmpdir" || { err; return 1; }
 
         # TODO: checkinstall fails with neovim (bug in checkinstall afaik):
-        #execute "make" || { err; return 1; }
+        #execute --ignore-errs "rm -r build"
+        #execute "make clean" || { err; return 1; }
+        #execute "make CMAKE_BUILD_TYPE=Release" || { err; return 1; }
         #create_deb_install_and_store || { err; return 1; }
         execute "sudo make install" || { err; return 1; }  # TODO  remove this once checkinstall issue is resolved;
 
@@ -1902,9 +1904,10 @@ function vim_post_install_configuration() {
 
 # building instructions from https://github.com/Valloric/YouCompleteMe/wiki/Building-Vim-from-source
 function build_and_install_vim() {
-    local tmpdir
+    local tmpdir expected_runtimedir
 
     readonly tmpdir="$TMPDIR/vim-build-${RANDOM}"
+    readonly expected_runtimedir='/usr/share/vim/vim80'
     report "building vim..."
 
     report "installing vim build dependencies..."
@@ -1939,12 +1942,17 @@ function build_and_install_vim() {
             --prefix=/usr \
     " || { err 'vim configure build phase failed.'; return 1; }
 
-    execute "make VIMRUNTIMEDIR=/usr/share/vim/vim74" || { err 'vim make failed'; return 1; }
+    execute "make VIMRUNTIMEDIR=$expected_runtimedir" || { err 'vim make failed'; return 1; }
     #!(make sure rutimedir is correct; at this moment 74 was)
     create_deb_install_and_store || { err; return 1; }
 
     execute "popd"
     execute "sudo rm -rf -- $tmpdir"
+    if ! [[ -d "$expected_runtimedir" ]]; then
+        err "[$expected_runtimedir] is not a dir]; these match 'vim' under [$(dirname -- "$expected_runtimedir")]:"
+        find "$(dirname -- "$expected_runtimedir")" -maxdepth 1 -mindepth 1 -type d -name 'vim*' -print
+        return 1
+    fi
 
     return 0
 }
