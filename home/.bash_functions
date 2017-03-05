@@ -1951,9 +1951,9 @@ gito() {
 
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
-	__go_back() {
-		[[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
-	}
+    __go_back() {
+        [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
+    }
 
     readonly git_root="$(git rev-parse --show-toplevel)" || { err "unable to find project root" "$FUNCNAME"; return 1; }
     [[ "$cwd" != "$git_root" ]] && pushd "$git_root" &> /dev/null  # git root
@@ -1961,7 +1961,7 @@ gito() {
     if [[ -n "$src" ]]; then
         if [[ "$src" == *\** && "$src" != *\.\** ]]; then
             err 'use .* as wildcards, not a single *' "$FUNCNAME"
-			__go_back
+            __go_back
             return 1
         elif [[ "$(echo "$src" | tr -dc '.' | wc -m)" -lt "$(echo "$src" | tr -dc '*' | wc -m)" ]]; then
             err "nr of periods (.) was less than stars (*); are you misusing regex?" "$FUNCNAME"
