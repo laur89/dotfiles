@@ -1,6 +1,7 @@
 
 " We use Vim settings
 " TODO: check this out: https://github.com/skwp/dotfiles
+" TODO: check out junegunn's vimrc
 " quite sure this was the base config:  https://github.com/timss/vimconf/blob/master/.vimrc
 "
 "
@@ -258,11 +259,11 @@ set nocompatible " Must be the first line
     "Plugin 'xenomachina/public/tree/master/vim/plugin'
     " consider targets.vim - adds new text objects
 
-    " open terminal OR file manager at the directory of current location
+    " open terminal OR file manager at the directory of current location (got, goT, fog, goF)
     Plugin 'justinmk/vim-gtfo'
 
     " ctrl+w o   to zoom into a window and back:
-    Plugin 'drn/zoomwin-vim'
+    "Plugin 'drn/zoomwin-vim'  " TODO: atm only works with vim (not nvim; better use :tab split?)
     set rtp+=~/.fzf  "https://github.com/junegunn/fzf TODO: start using junegunn's Plug instead of Vundle
 
 
