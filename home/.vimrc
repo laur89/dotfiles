@@ -114,7 +114,11 @@ set nocompatible " Must be the first line
     Plugin 'xolox/vim-misc'
     Plugin 'xolox/vim-easytags' " alternative shoud be taginator?
     Plugin 'xolox/vim-session'
-    Plugin 'xolox/vim-notes'  " alternative: http://orgmode.org/
+    "Plugin 'xolox/vim-notes'  " alternative: http://orgmode.org/
+    Plugin 'vim-pandoc/vim-pandoc'
+    Plugin 'vim-pandoc/vim-pandoc-syntax'
+    Plugin 'jceb/vim-orgmode'  " text outlining (to use with note-taking plugins?)
+    Plugin 'fmoralesc/vim-pad'   " alt to vim-notes
 
     " Selfexplanatory...
     Plugin 'jlanzarotta/bufexplorer'
@@ -234,7 +238,7 @@ set nocompatible " Must be the first line
     " vim sugar for unix shell commands:
     Plugin 'tpope/vim-eunuch'
 
-    " asyn jobs
+    " async jobs
     Plugin 'tpope/vim-dispatch'
 
     " add :CopyPath and :CopyFileName commands
@@ -259,6 +263,8 @@ set nocompatible " Must be the first line
 
     " ctrl+w o   to zoom into a window and back:
     Plugin 'drn/zoomwin-vim'
+    set rtp+=~/.fzf  "https://github.com/junegunn/fzf TODO: start using junegunn's Plug instead of Vundle
+
 
     " Finish Vundle stuff
     call vundle#end()
@@ -578,6 +584,18 @@ set nocompatible " Must be the first line
     " vim-notes
     let g:notes_directories = ['/data/Seafile/main/notes']
     let g:notes_suffix = '.note'
+    let g:notes_indexfile = '/data/Seafile/main/notes/.search_index'  " optional search index for :SearchNotes for accelerated searching
+    let g:notes_tagsindex = '/data/Seafile/main/notes/.tags_index'
+    let g:notes_conceal_url = 0  " don't conceal URL protocols
+
+    " vim-pad
+    let g:pad#dir = '/data/Seafile/main/vim-pad'
+    let g:pad#open_in_split = 0  " when set to 0, then opens note in full window, not in split
+    let g:pad#window_height = 20  " the bottom split window height
+    let g:pad#default_format = "pandoc"  " default format is markdown; this overrides it
+    "let g:pad#exclude_dirnames = "img,assets"
+    let g:pad#search_backend = 'ag'
+    "let g:pad#local_dir = '.notes'  " local dir for separate (eg project-specific) set of notes
 
     " Ag (silver-searcher)
     " by default, start search from project root:

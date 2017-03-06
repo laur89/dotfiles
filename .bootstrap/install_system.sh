@@ -1785,10 +1785,10 @@ function install_neovim() {
 
         # TODO: checkinstall fails with neovim (bug in checkinstall afaik):
         #execute --ignore-errs "rm -r build"
-        #execute "make clean" || { err; return 1; }
+        execute "make clean" || { err; return 1; }
         #execute "make CMAKE_BUILD_TYPE=Release" || { err; return 1; }
         #create_deb_install_and_store || { err; return 1; }
-        execute "sudo make install" || { err; return 1; }  # TODO  remove this once checkinstall issue is resolved;
+        execute "sudo make CMAKE_BUILD_TYPE=Release install" || { err; return 1; }  # TODO  remove this once checkinstall issue is resolved;
 
         execute "popd"
         execute "sudo rm -rf -- $tmpdir"
@@ -2658,7 +2658,7 @@ function install_gtk_numix() {
 
 # add additional ntp servers
 function configure_ntp_for_work() {
-    local servers conf i
+    local conf servers i
 
     readonly conf='/etc/ntp.conf'
     declare -ar servers=('server gibntp01.prod.williamhill.plc'
@@ -2677,10 +2677,22 @@ function configure_ntp_for_work() {
 }
 
 
+function setup_seafile_cli() {
+    local confdir datadir
+
+    readonly confdir="$HOME/.config/ccnet"
+    readonly datadir='/data/Seafile'
+
+    [[ -d "$datadir" ]] || { err "[$datadir] is not a valid dir; please set up via gui first"; return 1; }
+}
+
+
 # configs & settings that can/need to be installed  AFTER  the related programs have
 # been installed.
 #
-# note that this block overlaps logically a bit with setup_config_files()
+# note that this block overlaps logically a bit with setup_config_files() (though
+# that function should contain configuration that doesn't depend on some programs
+# being installed beforehand)
 function post_install_progs_setup() {
 
     install_acpi_events   # has to be after install_progs(), so acpid is already insalled and events/ dir present;
@@ -2699,6 +2711,7 @@ function post_install_progs_setup() {
     execute "newgrp vboxusers"                  # log us into the new group
     install_gtk_theme  # TODO: does this really belong here? why? was it because numix required some weird dependency that was only later on available?
     configure_ntp_for_work
+    #setup_seafile_cli  # TODO https://github.com/haiwen/seafile/issues/1855 & https://github.com/haiwen/seafile/issues/1854
 }
 
 

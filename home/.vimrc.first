@@ -56,8 +56,8 @@
 
     """ Interface general interface {{{
         " !!! cursorline & -column & relativelinenr can make vim super-laggy, especially if using huge tags file
-        set cursorline                              " hilight cursor line
-        set cursorcolumn                            " hilight cursor col
+        set cursorline                              " highlight cursor line
+        "set cursorcolumn                            " highlight cursor col
         set more                                    " ---more--- like less
         set number                                  " line numbers
         set relativenumber                          " linenumbers are relative
@@ -293,7 +293,7 @@
         "inoremap <right> <nop>
 
         " move in insert mode:
-        " (disabled now, co c-j/k could be used in YCM list)
+        " (disabled now, so c-j/k could be used in YCM list)
         "imap <C-h> <C-o>h
         "imap <C-j> <C-o>j
         "imap <C-k> <C-o>k
@@ -301,6 +301,9 @@
 
         " avoid typos:
         nnoremap ; :
+
+        " only write file when something changed.
+        map :w :up
 
         " Go to the middle of the line:
         map gm :call cursor(0, virtcol('$')/2)<CR>
