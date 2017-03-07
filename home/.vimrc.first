@@ -303,7 +303,12 @@
         nnoremap ; :
 
         " only write file when something changed.
-        map :w :up
+        "map :w :up
+
+        " Use CTRL-S for saving, also in Insert mode
+        noremap <C-S>       :update<CR>
+        vnoremap <C-S>      <C-C>:update<CR>
+        inoremap <C-S>      <C-O>:update<CR>
 
         " Go to the middle of the line:
         map gm :call cursor(0, virtcol('$')/2)<CR>

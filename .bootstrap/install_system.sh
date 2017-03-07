@@ -1904,11 +1904,18 @@ function vim_post_install_configuration() {
 
 # building instructions from https://github.com/Valloric/YouCompleteMe/wiki/Building-Vim-from-source
 function build_and_install_vim() {
-    local tmpdir expected_runtimedir
+    local tmpdir expected_runtimedir python_confdir python3_confdir i
 
     readonly tmpdir="$TMPDIR/vim-build-${RANDOM}"
     readonly expected_runtimedir='/usr/share/vim/vim80'
+    readonly python_confdir='/usr/lib/python2.7/config-x86_64-linux-gnu'
+    readonly python3_confdir='/usr/lib/python3.5/config-3.5m-x86_64-linux-gnu'
+
     report "building vim..."
+
+    for i in "$python_confdir" "$python3_confdir"; do
+        [[ -d "$i" ]] || err "[$i] is not a valid dir; will install vim, but you'll need to recompile"
+    done
 
     report "installing vim build dependencies..."
     install_block '
@@ -1923,20 +1930,26 @@ function build_and_install_vim() {
         libxpm-dev
         libxt-dev
         python-dev
+        python3-dev
         ruby-dev
+        lua5.1
+        lua5.1-dev
+        libperl-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
     execute "git clone $VIM_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
 
+            #--enable-pythoninterp=yes \
+            #--with-python-config-dir=$python_confdir \
     execute "./configure \
             --with-features=huge \
             --enable-multibyte \
-            --enable-rubyinterp \
-            --enable-pythoninterp \
-            --with-python-config-dir=/usr/lib/python2.7/config \
-            --enable-perlinterp \
-            --enable-luainterp \
+            --enable-rubyinterp=yes \
+            --enable-python3interp=yes \
+            --with-python3-config-dir=$python3_confdir \
+            --enable-perlinterp=yes \
+            --enable-luainterp=yes \
             --enable-gui=gtk2 \
             --enable-cscope \
             --prefix=/usr \

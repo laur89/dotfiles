@@ -591,12 +591,14 @@ set nocompatible " Must be the first line
 
     " vim-pad
     let g:pad#dir = '/data/Seafile/main/vim-pad'
+    "let g:pad#dir = '/tmp/vim-pad'
     let g:pad#open_in_split = 0  " when set to 0, then opens note in full window, not in split
     let g:pad#window_height = 20  " the bottom split window height
     let g:pad#default_format = "pandoc"  " default format is markdown; this overrides it
     "let g:pad#exclude_dirnames = "img,assets"
     let g:pad#search_backend = 'ag'
     "let g:pad#local_dir = '.notes'  " local dir for separate (eg project-specific) set of notes
+    let g:pad#default_file_extension = '.note'
 
     " Ag (silver-searcher)
     " by default, start search from project root:
