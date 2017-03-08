@@ -1940,14 +1940,14 @@ function build_and_install_vim() {
     execute "git clone $VIM_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
 
-            #--enable-pythoninterp=yes \
-            #--with-python-config-dir=$python_confdir \
+            #--enable-python3interp=yes \
+            #--with-python3-config-dir=$python3_confdir \
     execute "./configure \
             --with-features=huge \
             --enable-multibyte \
             --enable-rubyinterp=yes \
-            --enable-python3interp=yes \
-            --with-python3-config-dir=$python3_confdir \
+			--enable-pythoninterp=yes \
+			--with-python-config-dir=$python_confdir \
             --enable-perlinterp=yes \
             --enable-luainterp=yes \
             --enable-gui=gtk2 \

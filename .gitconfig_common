@@ -55,7 +55,7 @@
     co = checkout
     cp = cherry-pick
     rb = rebase
-    fe = fetch -p
+    fe = fetch --prune --tags
     pul = pull
     desc = describe
     lg = log -i --all --graph --source --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset'\n --abbrev-commit --date=relative
