@@ -1946,8 +1946,8 @@ function build_and_install_vim() {
             --with-features=huge \
             --enable-multibyte \
             --enable-rubyinterp=yes \
-			--enable-pythoninterp=yes \
-			--with-python-config-dir=$python_confdir \
+            --enable-pythoninterp=yes \
+            --with-python-config-dir=$python_confdir \
             --enable-perlinterp=yes \
             --enable-luainterp=yes \
             --enable-gui=gtk2 \

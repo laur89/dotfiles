@@ -52,7 +52,7 @@ set nocompatible " Must be the first line
     "Plugin 'itchyny/lightline.vim' "liiga minimalist mu jaoks
     " !! use either vim-airline OR powerline !!
     "   also, pwrline needs to be installed EITHER with vundle OR by pip, never /w both
-    Plugin 'bling/vim-airline'
+    Plugin 'vim-airline/vim-airline'
     Plugin 'bling/vim-bufferline'
 
     " Easy... motions... yeah.
@@ -116,10 +116,10 @@ set nocompatible " Must be the first line
     Plugin 'xolox/vim-easytags' " alternative shoud be taginator?
     Plugin 'xolox/vim-session'
     "Plugin 'xolox/vim-notes'  " alternative: http://orgmode.org/
-    Plugin 'vim-pandoc/vim-pandoc'
-    Plugin 'vim-pandoc/vim-pandoc-syntax'
-    Plugin 'jceb/vim-orgmode'  " text outlining (to use with note-taking plugins?)
     Plugin 'fmoralesc/vim-pad'   " alt to vim-notes
+    Plugin 'vim-pandoc/vim-pandoc'  " this and pandoc-syntax for vim-pad
+    Plugin 'vim-pandoc/vim-pandoc-syntax'
+    "Plugin 'jceb/vim-orgmode'  " text outlining (to use with note-taking plugins?)
 
     " Selfexplanatory...
     Plugin 'jlanzarotta/bufexplorer'
