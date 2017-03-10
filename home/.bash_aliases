@@ -34,6 +34,7 @@ alias fileroller='file-roller'
 alias vscode='/data/progs/VSCode-linux-x64/Code'  # MS Visual Code (editor)
 alias franz='/data/progs/franz/franz'  # client that manages loads of different chat clients (via their web frontends)
 alias mattermost='/data/progs/mattermost/mattermost'
+alias charles='/data/progs/charles/charles'
 alias pastebinit='pastebinit -P'
 alias uptime='uptime --pretty'
 alias xo='xdg-open'

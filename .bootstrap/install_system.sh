@@ -680,9 +680,18 @@ function install_deps() {
     clone_or_pull_repo "clvv" "fasd" "$BASE_DEPS_LOC"  # https://github.com/clvv/fasd.git
     create_link "${BASE_DEPS_LOC}/fasd/fasd" "$HOME/bin/fasd"
 
-    # maven bash completion
+    # maven bash completion:
     clone_or_pull_repo "juven" "maven-bash-completion" "$BASE_DEPS_LOC"  # https://github.com/juven/maven-bash-completion
     create_link "${BASE_DEPS_LOC}/maven-bash-completion" "$HOME/.maven-bash-completion"
+
+    # dynamic colors loader:
+    #clone_or_pull_repo "sos4nt" "dynamic-colors" "$BASE_DEPS_LOC"  # https://github.com/sos4nt/dynamic-colors
+    #create_link "${BASE_DEPS_LOC}/dynamic-colors" "$HOME/.dynamic-colors"
+    #create_link "${BASE_DEPS_LOC}/dynamic-colors/bin/dynamic-colors" "$HOME/bin/dynamic-colors"
+
+    # base16 shell colors:
+    clone_or_pull_repo "chriskempson" "base16-shell" "$BASE_DEPS_LOC"  # https://github.com/chriskempson/base16-shell
+    create_link "${BASE_DEPS_LOC}/base16-shell" "$HOME/.config/base16-shell"
 
     # tmux plugin manager:
     _install_tmux_deps

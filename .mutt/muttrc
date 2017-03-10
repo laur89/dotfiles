@@ -107,7 +107,9 @@ hdr_order from: to: cc: date: subject:
 #subscribe arch-announce arch-dev-public arch-haskell aur-general \
           #rubyparley vim web-devel xmonad yesod
 
-source ~/.mutt/colors/colors_first
+#source ~/.mutt/colors/colors_first
+#source ~/.mutt/colors/base16-solarized
+source ~/.mutt/colors/base16-solarized-dark
 #source ~/.mutt/mailboxes.all # watch these mailboxes for new mail
 source '~/.mutt/detectMailboxes.sh|' # watch these mailboxes for new mail
 source ~/.mutt/bindings
