@@ -690,8 +690,8 @@ function install_deps() {
     #create_link "${BASE_DEPS_LOC}/dynamic-colors/bin/dynamic-colors" "$HOME/bin/dynamic-colors"
 
     # base16 shell colors:
-    clone_or_pull_repo "chriskempson" "base16-shell" "$BASE_DEPS_LOC"  # https://github.com/chriskempson/base16-shell
-    create_link "${BASE_DEPS_LOC}/base16-shell" "$HOME/.config/base16-shell"
+    #clone_or_pull_repo "chriskempson" "base16-shell" "$BASE_DEPS_LOC"  # https://github.com/chriskempson/base16-shell
+    #create_link "${BASE_DEPS_LOC}/base16-shell" "$HOME/.config/base16-shell"
 
     # tmux plugin manager:
     _install_tmux_deps

@@ -230,9 +230,9 @@ command -v rbenv >/dev/null 2>/dev/null && eval "$(rbenv init -)"
 #source "$HOME/.dynamic-colors/completions/dynamic-colors.bash"
 
 ##########################################
-# base16-shell:  (to run, use  $ base16 (tab competion)  # https://github.com/chriskempson/base16-shell
-BASE16_SHELL=$HOME/.config/base16-shell/
-[ -n "$PS1" ] && [ -s $BASE16_SHELL/profile_helper.sh ] && eval "$($BASE16_SHELL/profile_helper.sh)"
+# base16-shell:  (to run, use  $ base16 (tab completion)  # https://github.com/chriskempson/base16-shell
+#BASE16_SHELL=$HOME/.config/base16-shell/
+#[ -n "$PS1" ] && [ -s $BASE16_SHELL/profile_helper.sh ] && eval "$($BASE16_SHELL/profile_helper.sh)"
 
 ##########################################
 if ! ssh-add -l > /dev/null 2>&1; then
