@@ -405,7 +405,7 @@
             nnoremap <leader>s :call ToggleSyntaxHighlighthing()<CR>
         """ }}}
 
-        """ Highlight characters past 79, toggle with <leader>h
+        """ Highlight characters past 85, toggle with <leader>h
         """ You might want to override this function and its variables with
         """ your own in .vimrc.last which might set for example colorcolumn or
         """ even the textwidth. See https://github.com/timss/vimconf/pull/4 {{{
@@ -414,7 +414,7 @@
 
             function! ToggleOverLength()
                 if g:overlength_enabled == 0
-                    match OverLength /\%79v.*/
+                    match OverLength /\%85v.*/
                     let g:overlength_enabled = 1
                     echo 'OverLength highlighting turned on'
                 else
