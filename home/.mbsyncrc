@@ -19,13 +19,13 @@ UseIMAPS yes
 #RequireSSL yes
 #CertificateFile /etc/ssl/certs/ca-certificates.crt
 
-# the rempte repository:
+# the rempte repository (aka proxy store):
 IMAPStore gmail-remote
 Account gmail
 
 # the local repository:
 MaildirStore gmail-local
-# The trailing "/" is important
+# The trailing slash is important:
 Path ~/mail/gmail/
 Inbox ~/mail/gmail/INBOX
 

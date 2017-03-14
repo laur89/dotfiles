@@ -1,7 +1,7 @@
 # vim: ft=muttrc
 set realname = "Laur Aliste"
 set from          = "laur.aliste@williamhill.com"
-set sendmail      = "/usr/bin/msmtp -a work" # defaults to /usr/sbin/sendmail
+set sendmail      = "/usr/bin/msmtp -a work"  # defaults to /usr/sbin/sendmail
 set mbox          = "+work/Inbox"
 set postponed     = "+work/Drafts"
 #set query_command = "echo; ~/.local/bin/gcontacts pbrisbin@gmail.com 'getnetrc pbrisbin@gmail.com' '%s'"
