@@ -1,23 +1,21 @@
 # isync conf for retrieving mail (for mutt for instance)
 ################################################
 #
-# Automatically create missing mailboxes, both locally and on the server
-#Create Both
-Create Slave
-Expunge Both
-# Save the synchronization state files in the relevant directory
-SyncState *
-#
-#################################################
 IMAPAccount gmail
-# Address to connect to
+# Address to connect to:
 Host imap.gmail.com
 User laur.aliste@gmail.com
 PassCmd "getnetrc laur.aliste@gmail.com"
-# Use SSL
-UseIMAPS yes
-#RequireSSL yes
+AuthMechs LOGIN
+# Use SSL:
+SSLType IMAPS
+SSLVersions TLSv1.2
 #CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+# THEN WE SPECIFY THE LOCAL AND REMOTE STORAGE
+# - THE REMOTE STORAGE IS WHERE WE GET THE MAIL FROM (E.G., THE
+#   SPECIFICATION OF AN IMAP ACCOUNT)
+# - THE LOCAL STORAGE IS WHERE WE STORE THE EMAIL ON OUR COMPUTER
 
 # the rempte repository (aka proxy store):
 IMAPStore gmail-remote
@@ -29,33 +27,58 @@ MaildirStore gmail-local
 Path ~/mail/gmail/
 Inbox ~/mail/gmail/INBOX
 
-Channel gmail-INBOX
-Master :gmail-remote:INBOX
-Slave :gmail-local:INBOX
+# CONNECTIONS SPECIFY LINKS BETWEEN REMOTE AND LOCAL FOLDERS
+#
+# CONNECTIONS ARE SPECIFIED USING PATTERNS, WHICH MATCH REMOTE MAIl
+# FOLDERS. SOME COMMONLY USED PATTERS INCLUDE:
+#
+# 1 "*" TO MATCH EVERYTHING
+# 2 "!DIR" TO EXCLUDE "DIR"
+# 3 "DIR" TO MATCH DIR
+
+Channel gmail-default
+Master :gmail-remote:
+Slave :gmail-local:
+#Patterns "INBOX" "[Gmail]/Sent Mail" "[Gmail]/Drafts" "[Gmail]/Starred"  # <- use this if you're not using different channel per maildir
+Patterns "INBOX"
+Create Slave
+Expunge Both
+# Save the synchronization state files in the relevant directory:
+SyncState *
 
 Channel gmail-sent
 Master ":gmail-remote:[Gmail]/Sent Mail"
-Slave :gmail-local:Sent
+Slave :gmail-local:sent
+Create Slave
+Expunge Both
+SyncState *
 
-Channel gmail-Drafts
+Channel gmail-drafts
 Master :gmail-remote:[Gmail]/Drafts
-Slave :gmail-local:Drafts
+Slave :gmail-local:drafts
+Create Slave
+Expunge Both
+SyncState *
 
-Channel gmail-Trash
+Channel gmail-trash
 Master :gmail-remote:[Gmail]/Trash
-Slave :gmail-local:Trash
+Slave :gmail-local:trash
+Create Slave
+Expunge Both
+SyncState *
 
-Channel gmail-Archive
-Master ":gmail-remote:[Gmail]/All Mail"
-Slave :gmail-local:Archive
-
+# GROUPS PUT TOGETHER CHANNELS, SO THAT WE CAN INVOKE
+# MBSYNC ON A GROUP TO SYNC ALL CHANNELS
+#
+# FOR INSTANCE: "mbsync gmail" GETS MAIL FROM
+# "gmail-inbox", "gmail-sent", and "gmail-trash" (these are the names of channels)
+#
 # group channels together:
 Group gmail
-Channel gmail-INBOX
-Channel gmail-Sent
-Channel gmail-Drafts
-Channel gmail-Trash
-Channel gmail-Archive
+Channel gmail-default
+Channel gmail-sent
+Channel gmail-drafts
+Channel gmail-trash
 
 ################################################
 ################################################
@@ -64,11 +87,12 @@ IMAPAccount work
 Host localhost
 User laur.aliste@williamhill.com
 PassCmd "getnetrc laur.aliste@williamhill.com"
+AuthMechs LOGIN
 Port 1143
-#
-# Do not use SSL
+# Do not use SSL:
 #UseIMAPS yes
-RequireSSL no
+#RequireSSL no
+SSLType None
 CertificateFile /etc/ssl/certs/ca-certificates.crt
 
 IMAPStore work-remote
@@ -109,37 +133,6 @@ Channel work-inbox
 #Patterns * ![Gmail]* "[Gmail]/Sent Mail" "[Gmail]/Starred" "[Gmail]/All Mail"
 # Or include everything
 #Patterns *
-################################################
-
-#IMAPAccount work
-#Host outlook.office365.com
-#User laur.aliste@williamhill.com
-#PassCmd "getnetrc laur.aliste@williamhill.com"
-##Port 1143
-##
-## Do not use SSL
-#UseIMAPS yes
-#CertificateFile /etc/ssl/certs/ca-certificates.crt
-
-#IMAPStore work-remote
-#Account work
-
-#MaildirStore work-local
-## The trailing "/" is important
-#Path ~/mail/work/
-#Inbox ~/mail/work/Inbox
-
-#Channel work-inbox
-#Master :work-remote:
-#Slave :work-local:
-## exclude some, include all ohters:
-##Patterns * !_setupRelated !_workplaceRelated !Junk* !Trash* !Unsent\ Messages* !Issues* !Sync\ Issues* !Working\ Set* !INBOX/serviceDesk !INBOX/sbNotifications !INBOX/changeManagement
-## include some, exclude all others:
-#Patterns  !* INBOX INBOX/sb INBOX/jira INBOX/devs Drafts Sent Junk
-
-#Group work
-#Channel work-inbox
-
 ################################################
 Group INBOXES
 Channel gmail-INBOX
