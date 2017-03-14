@@ -80,7 +80,7 @@ declare -A COLORS=(
 #-----------------------
 
 
-function print_usage() {
+print_usage() {
 
     printf "${SELF}:  install/provision system.
         usage: $SELF  work|personal
@@ -88,12 +88,12 @@ function print_usage() {
 }
 
 
-function validate_and_init() {
+validate_and_init() {
 
     # need to define PRIVATE_CASTLE here, as otherwis 'single-step' mode of this
     # script might fail. be sure the repo names are in sync with the repos actually
     # pulled in fetch_castles().
-    case $MODE in
+    case "$MODE" in
         work)
             if [[ "$__ENV_VARS_LOADED_MARKER_VAR" == loaded ]] && ! __is_work; then
                 confirm "you selected [${COLORS[RED]}${COLORS[BOLD]}$MODE${COLORS[OFF]}] mode on non-work machine; sure you want to continue?" || exit
@@ -137,7 +137,7 @@ function validate_and_init() {
 
 
 # check dependencies required for this installation script
-function check_dependencies() {
+check_dependencies() {
     local dir prog perms
 
     readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
@@ -175,7 +175,7 @@ function check_dependencies() {
 }
 
 
-function setup_hosts() {
+setup_hosts() {
     local hosts_file_dest file current_hostline tmpfile
 
     readonly hosts_file_dest="/etc"
@@ -219,7 +219,7 @@ function setup_hosts() {
 }
 
 
-function setup_sudoers() {
+setup_sudoers() {
     local sudoers_dest file tmpfile
 
     readonly sudoers_dest="/etc"
@@ -244,7 +244,7 @@ function setup_sudoers() {
 }
 
 
-function setup_apt() {
+setup_apt() {
     local apt_dir file
 
     readonly apt_dir='/etc/apt'
@@ -267,7 +267,7 @@ function setup_apt() {
 }
 
 
-function setup_crontab() {
+setup_crontab() {
     local cron_dir tmpfile file
 
     readonly cron_dir="/etc/cron.d"  # where crontab will be installed at
@@ -294,7 +294,7 @@ function setup_crontab() {
 
 # pass '-s' or '--sudo' as first arg to execute as sudo
 #
-function backup_original_and_copy_file() {
+backup_original_and_copy_file() {
     local sudo file dest_dir filename i orig_suffixes
 
     [[ "$1" == -s || "$1" == --sudo ]] && { shift; readonly sudo=sudo; }
@@ -325,7 +325,7 @@ function backup_original_and_copy_file() {
 }
 
 
-function clone_or_pull_repo() {
+clone_or_pull_repo() {
     local user repo install_dir hub
 
     readonly user="$1"
@@ -350,7 +350,7 @@ function clone_or_pull_repo() {
 }
 
 
-function install_nfs_server() {
+install_nfs_server() {
     local nfs_conf client_ip share
 
     readonly nfs_conf="/etc/exports"
@@ -400,7 +400,7 @@ function install_nfs_server() {
 }
 
 
-function install_nfs_client() {
+install_nfs_client() {
     local fstab mountpoint nfs_share default_mountpoint server_ip prev_server_ip
     local mounted_shares used_mountpoints
 
@@ -455,7 +455,7 @@ function install_nfs_client() {
 }
 
 
-function install_ssh_server() {
+install_ssh_server() {
     local sshd_confdir config banner
 
     readonly sshd_confdir="/etc/ssh"
@@ -492,7 +492,7 @@ function install_ssh_server() {
 }
 
 
-function create_mountpoint() {
+create_mountpoint() {
     local mountpoint
 
     readonly mountpoint="$1"
@@ -507,7 +507,7 @@ function create_mountpoint() {
 }
 
 
-function install_sshfs() {
+install_sshfs() {
     local fuse_conf mountpoint default_mountpoint fstab server_ip remote_user ssh_port sel_ips_to_user
     local prev_server_ip used_mountpoints mounted_shares ssh_share identity_file
 
@@ -626,7 +626,7 @@ function install_sshfs() {
 # "deps" as in git repos/py modules et al our system setup depends on;
 # if equivalent is avaialble at deb repos, its installation should be
 # moved to  install_from_repo()
-function install_deps() {
+install_deps() {
     function _install_tmux_deps() {
         local dir plugins_dir
 
@@ -719,7 +719,7 @@ function install_deps() {
 }
 
 
-function install_laptop_deps() {
+install_laptop_deps() {
     is_laptop || return
 
     __install_wifi_driver() {
@@ -754,7 +754,7 @@ function install_laptop_deps() {
 }
 
 
-function setup_dirs() {
+setup_dirs() {
     local dir
 
     # create dirs:
@@ -792,7 +792,7 @@ function setup_dirs() {
 }
 
 
-function install_homesick() {
+install_homesick() {
 
     clone_or_pull_repo "andsens" "homeshick" "$BASE_HOMESICK_REPOS_LOC"
 
@@ -802,7 +802,7 @@ function install_homesick() {
 
 
 # homeshick specifics
-function clone_or_link_castle() {
+clone_or_link_castle() {
     local castle user hub homesick_exe
 
     readonly castle="$1"
@@ -846,7 +846,7 @@ function clone_or_link_castle() {
 }
 
 
-function fetch_castles() {
+fetch_castles() {
     local castle user hub
 
     # common public castles:
@@ -885,7 +885,7 @@ function fetch_castles() {
 
 
 # check whether ssh key(s) were pulled with homeshick; if not, offer to create one:
-function verify_ssh_key() {
+verify_ssh_key() {
 
     [[ "$IS_SSH_SETUP" -eq 1 ]] && return 0
     err "expected ssh keys to be there after cloning repo(s), but weren't."
@@ -904,7 +904,7 @@ function verify_ssh_key() {
 }
 
 
-function setup_homesick() {
+setup_homesick() {
     local https_castles
 
     install_homesick
@@ -920,7 +920,7 @@ function setup_homesick() {
 
 
 # creates symlink of our personal '.bash_env_vars' to /etc
-function setup_global_env_vars() {
+setup_global_env_vars() {
     local global_env_var_loc real_file_locations file
 
     declare -ar real_file_locations=(
@@ -960,7 +960,7 @@ function setup_global_env_vars() {
 
 
 # netrc file has to be accessible only by its owner.
-function setup_netrc_perms() {
+setup_netrc_perms() {
     local rc_loc perms
 
     readonly rc_loc="$HOME/.netrc"
@@ -975,7 +975,7 @@ function setup_netrc_perms() {
 }
 
 
-function setup_global_prompt() {
+setup_global_prompt() {
     local global_bashrc ps1
 
     readonly global_bashrc="/etc/bash.bashrc"
@@ -1001,7 +1001,7 @@ function setup_global_prompt() {
 # has to be invoked AFTER homeschick castles are cloned/pulled!
 #
 # note that this block overlaps logically a bit with post_install_progs_setup()
-function setup_config_files() {
+setup_config_files() {
 
     setup_apt
     setup_crontab
@@ -1015,7 +1015,7 @@ function setup_config_files() {
 }
 
 
-function install_acpi_events() {
+install_acpi_events() {
     local event_file  system_acpi_eventdir  src_eventfiles_dir
 
     readonly system_acpi_eventdir="/etc/acpi/events"
@@ -1041,7 +1041,7 @@ function install_acpi_events() {
 
 # network manager wrapper script;
 # runs other script that writes info to /tmp and manages locking logic for laptops (security, kinda)
-function install_SSID_checker() {
+install_SSID_checker() {
     local nm_wrapper_loc  nm_wrapper_dest
 
     readonly nm_wrapper_loc="$BASE_DATA_DIR/dev/scripts/network_manager_SSID_checker_wrapper.sh"
@@ -1061,7 +1061,7 @@ function install_SSID_checker() {
 }
 
 
-function setup() {
+setup() {
 
     setup_homesick
     verify_ssh_key
@@ -1074,7 +1074,7 @@ function setup() {
 }
 
 
-function setup_additional_apt_keys_and_sources() {
+setup_additional_apt_keys_and_sources() {
 
     # mopidy:
     # mopidy key: (from https://docs.mopidy.com/en/latest/installation/debian/):
@@ -1100,7 +1100,7 @@ function setup_additional_apt_keys_and_sources() {
 # or switch it via XKB options (see https://wiki.archlinux.org/index.php/Keyboard_configuration_in_Xorg)
 #
 # to see current active keyboard setting:    setxkbmap -print -verbose 10
-function swap_caps_lock_and_esc() {
+swap_caps_lock_and_esc() {
     local conf_file
 
     readonly conf_file="/usr/share/X11/xkb/symbols/pc"
@@ -1125,7 +1125,7 @@ function swap_caps_lock_and_esc() {
 }
 
 
-function install_altiris() {
+install_altiris() {
     local rpm_loc altiris_loc
 
     rpm_loc="/usr/bin/rpm"
@@ -1173,7 +1173,7 @@ function install_altiris() {
 }
 
 
-function install_symantec_endpoint_security() {
+install_symantec_endpoint_security() {
     local sep_loc jce_loc tmpdir tarball dir jars
 
     sep_loc='https://williamhillorg-my.sharepoint.com/personal/leighhall_williamhill_co_uk/_layouts/15/guestaccess.aspx?guestaccesstoken=B5plVjedQluwT7BgUH50bG3rs99cJaCg6lckbkGdS6I%3d&docid=2_15a1ca98041134ad8b2e4d93286806892'
@@ -1216,7 +1216,7 @@ function install_symantec_endpoint_security() {
 }
 
 
-function install_progs() {
+install_progs() {
 
     execute "sudo apt-get --yes update"
 
@@ -1241,7 +1241,7 @@ function install_progs() {
 
 # system deps, which depend on npm & nodejs
 # TODO: kind of depends in install_deps()?
-function install_npm_modules() {
+install_npm_modules() {
 
     if ! command -v nodejs >/dev/null || ! command -v npm >/dev/null; then
         report "need to install npm & nodejs first..."
@@ -1267,7 +1267,7 @@ function install_npm_modules() {
 
 # to force ver: apt-get install linux-image-amd64:version
 # check avail vers: apt-cache showpkg linux-image-amd64
-function upgrade_kernel() {
+upgrade_kernel() {
     local package_line kernels_list amd64_arch
 
     declare -a kernels_list=()
@@ -1315,7 +1315,7 @@ function upgrade_kernel() {
 
 # 'own build' as in everything from not the debian repository; either build from
 # source, or fetch from the interwebs and install/configure manually.
-function install_own_builds() {
+install_own_builds() {
 
     install_vim
     install_neovim
@@ -1328,7 +1328,7 @@ function install_own_builds() {
 
 
 # note that jdk will be installed under $JDK_INSTALLATION_DIR
-function install_oracle_jdk() {
+install_oracle_jdk() {
     local tarball tmpdir dir
 
     readonly tmpdir="$(mktemp -d "jdk-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
@@ -1362,7 +1362,7 @@ function install_oracle_jdk() {
 }
 
 
-function switch_jdk_versions() {
+switch_jdk_versions() {
     local avail_javas active_java
 
     [[ -d "$JDK_INSTALLATION_DIR" ]] || { err "[$JDK_INSTALLATION_DIR] does not exist. abort."; return 1; }
@@ -1395,7 +1395,7 @@ function switch_jdk_versions() {
 }
 
 
-function install_synergy() {
+install_synergy() {
     local re_clone
 
     is_server && { report "we're server, skipping synergy installation."; return; }
@@ -1415,7 +1415,7 @@ function install_synergy() {
 }
 
 
-function install_copyq() {
+install_copyq() {
     is_server && { report "we're server, skipping copyq installation."; return; }
 
     report "setting up copyq"
@@ -1430,7 +1430,7 @@ function install_copyq() {
 }
 
 
-function install_skype() {  # https://wiki.debian.org/skype
+install_skype() {  # https://wiki.debian.org/skype
     local skypeFile skype_downloads_dir
 
     is_server && { report "we're server, skipping skype installation."; return; }
@@ -1462,7 +1462,7 @@ function install_skype() {  # https://wiki.debian.org/skype
 }
 
 
-function install_webdev() {
+install_webdev() {
     is_server && { report "we're server, skipping webdev env installation."; return; }
 
     install_block '
@@ -1519,7 +1519,7 @@ function install_webdev() {
 }
 
 
-function install_keepassx() {
+install_keepassx() {
     is_server && { report "we're server, skipping keepassx installation."; return; }
 
     report "setting up keepassx..."
@@ -1536,7 +1536,7 @@ function install_keepassx() {
 
 # TO-DO list manager
 # https://github.com/mank319/Go-For-It
-function install_goforit() {
+install_goforit() {
     is_server && { report "we're server, skipping goforit installation."; return; }
     should_build_if_avail_in_repo go-for-it || { report "skipping building of go-for-it; remember to install it from the repo after the install!"; return; }
 
@@ -1553,7 +1553,7 @@ function install_goforit() {
 
 
 # building instructions from https://github.com/symless/synergy/wiki/Compiling
-function build_and_install_synergy() {
+build_and_install_synergy() {
     local builddir do_clone
 
     readonly do_clone="$1"  # set to '0' if synergy repo should NOT be re-cloned
@@ -1592,7 +1592,7 @@ function build_and_install_synergy() {
 
 
 # building instructions from https://github.com/hluk/CopyQ/blob/master/INSTALL
-function build_and_install_copyq() {
+build_and_install_copyq() {
     local tmpdir
 
     readonly tmpdir="$TMPDIR/copyq-build-${RANDOM}"
@@ -1624,7 +1624,7 @@ function build_and_install_copyq() {
 
 # runs checkinstall in current working dir, and copies the created
 # .deb file to $BASE_BUILDS_DIR/
-function create_deb_install_and_store() {
+create_deb_install_and_store() {
     local deb_file
 
     check_progs_installed checkinstall || return 1
@@ -1644,7 +1644,7 @@ function create_deb_install_and_store() {
 
 
 # building instructions from https://github.com/mank319/Go-For-It
-function build_and_install_goforit() {
+build_and_install_goforit() {
     local tmpdir
 
     should_build_if_avail_in_repo goforit || { report "skipping building of goforit. remember to install it from the repo after the install!"; return; }
@@ -1668,7 +1668,7 @@ function build_and_install_goforit() {
 
 
 # building instructions from https://github.com/keepassx/keepassx & www.keepass.org/dev/projects/keepasx/wiki/Install_instructions
-function build_and_install_keepassx() {
+build_and_install_keepassx() {
     local tmpdir
 
     should_build_if_avail_in_repo keepassx || { report "skipping building of keepassx. remember to install it from the repo after the install!"; return; }
@@ -1705,7 +1705,7 @@ function build_and_install_keepassx() {
 }
 
 
-function install_dwm() {
+install_dwm() {
     local build_dir
 
     readonly build_dir="$HOME/.dwm/w0ngBuild/source6.0"
@@ -1733,7 +1733,7 @@ function install_dwm() {
 
 # searches .deb packages with provided name in its filename from
 # $BASE_BUILDS_DIR and installs it.
-function install_from_deb() {
+install_from_deb() {
     local deb_file count name
 
     readonly name="$1"
@@ -1763,7 +1763,7 @@ function install_from_deb() {
 }
 
 #https://github.com/neovim/neovim/wiki/Building-Neovim
-function install_neovim() {
+install_neovim() {
     local tmpdir nvim_confdir
 
     readonly tmpdir="$TMPDIR/nvim-build-${RANDOM}"
@@ -1817,7 +1817,7 @@ function install_neovim() {
 }
 
 
-function install_vim() {
+install_vim() {
 
     report "setting up vim..."
     report "removing already installed vim components..."
@@ -1842,7 +1842,7 @@ function install_vim() {
 }
 
 
-function install_vim_plugin_deps() {
+install_vim_plugin_deps() {
     local vim_pluginsdir
 
     readonly vim_pluginsdir="$HOME/.vim/bundle"
@@ -1869,7 +1869,7 @@ function install_vim_plugin_deps() {
 }
 
 
-function vim_post_install_configuration() {
+vim_post_install_configuration() {
     local stored_vim_sessions vim_sessiondir i
 
     readonly stored_vim_sessions="$BASE_DATA_DIR/.vim_sessions"
@@ -1912,7 +1912,7 @@ function vim_post_install_configuration() {
 
 
 # building instructions from https://github.com/Valloric/YouCompleteMe/wiki/Building-Vim-from-source
-function build_and_install_vim() {
+build_and_install_vim() {
     local tmpdir expected_runtimedir python_confdir python3_confdir i
 
     readonly tmpdir="$TMPDIR/vim-build-${RANDOM}"
@@ -1982,7 +1982,7 @@ function build_and_install_vim() {
 
 # note: instructions & info here: https://github.com/Valloric/YouCompleteMe
 # note2: available in deb repo as 'ycmd'
-function install_YCM() {
+install_YCM() {
     local ycm_root  ycm_build_root  libclang_root  ycm_third_party_rootdir
 
     readonly ycm_root="$BASE_BUILDS_DIR/YCM"
@@ -2061,7 +2061,7 @@ function install_YCM() {
 }
 
 
-function install_fonts() {
+install_fonts() {
     local dir
 
     report "installing fonts..."
@@ -2105,7 +2105,7 @@ function install_fonts() {
 
 
 # majority of packages get installed at this point; including drivers, if any.
-function install_from_repo() {
+install_from_repo() {
     local block block1 block2 block3 block4 extra_apt_params
 
     declare -A extra_apt_params
@@ -2367,7 +2367,7 @@ function install_from_repo() {
 #
 # in order to reinstall the dkms part, purge both nvidia-driver &
 # nvidia-xconfig, and then reinstall.
-function install_nvidia() {
+install_nvidia() {
     # https://wiki.debian.org/NvidiaGraphicsDrivers
 
     # TODO: consider  lspci -vnn | grep VGA | grep -i nvidia
@@ -2386,7 +2386,7 @@ function install_nvidia() {
 
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
-function install_block() {
+install_block() {
     local list_to_install extra_apt_params dry_run_failed exit_sig exit_sig_install_failed pkg
 
     declare -ar list_to_install=( $1 )
@@ -2436,7 +2436,7 @@ function install_block() {
 
 # returns false, if there's an available package with given value in its name, and
 # user opts not to build the package, but later install it from the repo by himself.
-function should_build_if_avail_in_repo() {
+should_build_if_avail_in_repo() {
     local package_name packages
 
     readonly package_name="$1"
@@ -2456,7 +2456,7 @@ function should_build_if_avail_in_repo() {
 }
 
 
-function choose_step() {
+choose_step() {
     report "what do you want to do?"
 
     select_items "full-install single-task" 1
@@ -2473,7 +2473,7 @@ function choose_step() {
 
 
 # basically offers steps from setup() & install_progs():
-function choose_single_task() {
+choose_single_task() {
     local choices
 
     LOGGING_LVL=1
@@ -2518,7 +2518,7 @@ function choose_single_task() {
 
 # meta-function;
 # offerst steps from install_own_builds():
-function __choose_prog_to_build() {
+__choose_prog_to_build() {
     local choices
 
     declare -ar choices=(
@@ -2547,7 +2547,7 @@ function __choose_prog_to_build() {
 }
 
 
-function full_install() {
+full_install() {
 
     LOGGING_LVL=10
     readonly FULL_INSTALL=1
@@ -2567,7 +2567,7 @@ function full_install() {
 
 
 # programs that cannot be installed automatically should be reminded
-function remind_manually_installed_progs() {
+remind_manually_installed_progs() {
     local progs i
 
     declare -ar progs=(
@@ -2584,7 +2584,7 @@ function remind_manually_installed_progs() {
 
 
 # as per    https://confluence.jetbrains.com/display/IDEADEV/Inotify+Watches+Limit
-function increase_inotify_watches_limit() {
+increase_inotify_watches_limit() {
     local sysctl_conf property value
 
     readonly sysctl_conf="/etc/sysctl.conf"
@@ -2612,7 +2612,7 @@ function increase_inotify_watches_limit() {
 # (refer to proglist2 if docker complains about memory swappiness not supported.)
 #
 # add our user to docker group so it could be run as non-root:
-function setup_docker() {
+setup_docker() {
     execute "sudo adduser $USER docker"      # add user to docker group
     #execute "sudo gpasswd -a ${USER} docker"  # add user to docker group
     execute "sudo service docker restart"
@@ -2632,7 +2632,7 @@ function setup_docker() {
 # puts networkManager to manage our network interfaces;
 # alternatively, you can remove your interface name from /etc/network/interfaces
 # (bottom) line; eg from 'iface wlan0 inet dhcp' to 'iface inet dhcp'
-function enable_network_manager() {
+enable_network_manager() {
     local net_manager_conf_file
 
     readonly net_manager_conf_file='/etc/NetworkManager/NetworkManager.conf'
@@ -2643,7 +2643,7 @@ function enable_network_manager() {
 
 
 # Entryponit for gtk themes; comment out that should not be installed.
-function install_gtk_theme() {
+install_gtk_theme() {
     #install_gtk_numix
     install_block 'arc-theme'
 }
@@ -2655,7 +2655,7 @@ function install_gtk_theme() {
 #
 # another themes to consider: flatabolous (https://github.com/anmoljagetia/Flatabulous)  (hosts also flat icons);
 #                             ultra-flat (https://www.gnome-look.org/content/show.php/Ultra-Flat?content=167473)
-function install_gtk_numix() {
+install_gtk_numix() {
     local theme_repo tmpdir
 
     readonly theme_repo='https://github.com/numixproject/numix-gtk-theme.git'
@@ -2679,7 +2679,7 @@ function install_gtk_numix() {
 
 
 # add additional ntp servers
-function configure_ntp_for_work() {
+configure_ntp_for_work() {
     local conf servers i
 
     readonly conf='/etc/ntp.conf'
@@ -2699,7 +2699,7 @@ function configure_ntp_for_work() {
 }
 
 
-function setup_seafile_cli() {
+setup_seafile_cli() {
     local confdir datadir
 
     readonly confdir="$HOME/.config/ccnet"
@@ -2715,7 +2715,7 @@ function setup_seafile_cli() {
 # note that this block overlaps logically a bit with setup_config_files() (though
 # that function should contain configuration that doesn't depend on some programs
 # being installed beforehand)
-function post_install_progs_setup() {
+post_install_progs_setup() {
 
     install_acpi_events   # has to be after install_progs(), so acpid is already insalled and events/ dir present;
     enable_network_manager
@@ -2737,7 +2737,7 @@ function post_install_progs_setup() {
 }
 
 
-function install_ssh_server_or_client() {
+install_ssh_server_or_client() {
     report "installing ssh. what do you want to do?"
 
     while true; do
@@ -2757,7 +2757,7 @@ function install_ssh_server_or_client() {
 }
 
 
-function install_nfs_server_or_client() {
+install_nfs_server_or_client() {
     report "installing nfs. what do you want to do?"
 
     while true; do
@@ -2780,7 +2780,7 @@ function install_nfs_server_or_client() {
 # UTILS (contains no setup-related logic)
 ###################
 
-function confirm() {
+confirm() {
     local msg yno
 
     readonly msg=${1:+"\n$1"}
@@ -2805,7 +2805,7 @@ function confirm() {
 }
 
 
-function err() {
+err() {
     local msg caller_name
 
     readonly msg="$1"
@@ -2816,7 +2816,7 @@ function err() {
 }
 
 
-function report() {
+report() {
     local msg caller_name
 
     readonly msg="$1"
@@ -2827,7 +2827,7 @@ function report() {
 }
 
 
-function _sanitize_ssh() {
+_sanitize_ssh() {
 
     if ! [[ -d "$HOME/.ssh" ]]; then
         err "tried to sanitize ~/.ssh, but dir did not exist."
@@ -2839,12 +2839,12 @@ function _sanitize_ssh() {
 }
 
 
-function is_ssh_key_available() {
+is_ssh_key_available() {
     [[ -f "$PRIVATE_KEY_LOC" ]] && return 0 || return 1
 }
 
 
-function check_connection() {
+check_connection() {
     local timeout ip
 
     readonly timeout=5  # in seconds
@@ -2857,7 +2857,7 @@ function check_connection() {
 }
 
 
-function generate_key() {
+generate_key() {
     local mail valid_mail_regex
 
     readonly valid_mail_regex='^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+$'
@@ -2885,7 +2885,7 @@ function generate_key() {
 #
 # provide '-i' or '--ignore-errs' as first arg to avoid returning non-zero code or
 # logging ERR to exec logfile on unsuccessful execution.
-function execute() {
+execute() {
     local cmd exit_sig ignore_errs
 
     [[ "$1" == -i || "$1" == --ignore-errs ]] && { shift; readonly ignore_errs=1; } || readonly ignore_errs=0
@@ -2907,7 +2907,7 @@ function execute() {
 }
 
 
-function select_items() {
+select_items() {
     local DMENU nr_of_dmenu_vertical_lines dmenurc options options_dmenu i prompt msg choices num is_single_selection selections
 
     # original version stolen from http://serverfault.com/a/298312
@@ -2970,7 +2970,7 @@ function select_items() {
 }
 
 
-function remove_items_from_list() {
+remove_items_from_list() {
     local orig_list elements_to_remove i j
 
     [[ "$#" -ne 2 ]] && { err "exactly 2 args required" "$FUNCNAME"; return 1; }
@@ -2988,7 +2988,7 @@ function remove_items_from_list() {
 }
 
 
-function extract() {
+extract() {
     local file
 
     readonly file="$*"
@@ -3033,7 +3033,7 @@ function extract() {
 }
 
 
-function is_server() {
+is_server() {
     [[ "$HOSTNAME" == *"server"* ]] && return 0 || return 1
 }
 
@@ -3041,7 +3041,7 @@ function is_server() {
 # Checks whether system is a laptop.
 #
 # @returns {bool}   true if system is a laptop.
-function is_laptop() {
+is_laptop() {
     local pwr_supply_dir
     readonly pwr_supply_dir="/sys/class/power_supply"
 
@@ -3053,7 +3053,7 @@ function is_laptop() {
 }
 
 
-function is_64_bit() {
+is_64_bit() {
     [[ "$(uname -m)" == x86_64 ]] && return 0 || return 1
 }
 
@@ -3061,7 +3061,7 @@ function is_64_bit() {
 # Checks whether we're in a git repository.
 #
 # @returns {bool}  true, if we are in git repo.
-function is_git() {
+is_git() {
     if git rev-parse --is-inside-work-tree &>/dev/null; then
         return 0
     fi
@@ -3074,7 +3074,7 @@ function is_git() {
 #
 # second arg, the target, should end with a slash if a containing dir is meant to be
 # passed, not a literal path to the link-to-be-created.
-function create_link() {
+create_link() {
     local src target filename sudo
 
     [[ "$1" == -s || "$1" == --sudo ]] && { shift; readonly sudo=sudo; }
@@ -3094,7 +3094,7 @@ function create_link() {
 }
 
 
-function __is_work() {
+__is_work() {
     [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" || "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]] \
             && return 0 \
             || return 1
@@ -3107,7 +3107,7 @@ function __is_work() {
 # @param {string list}   string list to check passed element in. NOT a bash array!
 #
 # @returns {bool}  true if array contains the element.
-function list_contains() {
+list_contains() {
     local array element i
 
     readonly element="$1"
@@ -3130,7 +3130,7 @@ function list_contains() {
 # @param {string...}   list of programs whose existence to check. NOT a bash array!
 #
 # @returns {bool}  true if ALL the passed programs are installed.
-function check_progs_installed() {
+check_progs_installed() {
     local msg msg_beginning i progs_missing
 
     declare -a progs_missing=()
@@ -3159,7 +3159,7 @@ function check_progs_installed() {
 # @param {string...}   list of elements to build string from.
 #
 # @returns {string}  comma separated list, eg "a, b, c"
-function build_comma_separated_list() {
+build_comma_separated_list() {
     local list
 
     list="$*"
@@ -3173,7 +3173,7 @@ function build_comma_separated_list() {
 # @param {string}  input   text to put to the clipboard.
 #
 # @returns {bool}  true, if copying to clipboard succeeded.
-function copy_to_clipboard() {
+copy_to_clipboard() {
     local input
 
     readonly input="$1"
@@ -3186,7 +3186,7 @@ function copy_to_clipboard() {
 }
 
 
-function cleanup() {
+cleanup() {
     [[ "$__CLEANUP_EXECUTED_MARKER" -eq 1 ]] && return  # don't invoke more than once.
 
     if [[ -n "${PACKAGES_IGNORED_TO_INSTALL[*]}" ]]; then
