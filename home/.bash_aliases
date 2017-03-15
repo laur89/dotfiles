@@ -34,7 +34,7 @@ alias fileroller='file-roller'
 alias vscode='/data/progs/VSCode-linux-x64/Code'  # MS Visual Code (editor)
 alias franz='/data/progs/franz/franz'  # client that manages loads of different chat clients (via their web frontends)
 alias mattermost='/data/progs/mattermost/mattermost'
-alias charles='/data/progs/charles/charles'
+alias charles='/data/progs/charles/charles'  # charles proxy (think fiddler)
 alias pastebinit='pastebinit -P'
 alias uptime='uptime --pretty'
 alias xo='xdg-open'
@@ -153,8 +153,9 @@ alias grt='git-root'
 alias gpushall='is_git || err "not in a git repo" && { git push --tags && git checkout master && git push && git checkout develop && git push; }'
 
 # ------------------------------------
-# Docker alias and function
+# Docker alias and functions
 # from https://github.com/tcnksm/docker-alias/blob/master/zshrc
+# TODO: move to bash_functions
 # ------------------------------------
 
 # Get latest created container ID

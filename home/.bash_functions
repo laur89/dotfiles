@@ -1111,14 +1111,14 @@ astr() {
         i="${@: -1}"  # last arg; alternatively ${@:$#}
         if [[ -d "$i" ]]; then
             [[ "$#" -lt 3 ]] && report "assuming starting path [$i] was given" "$FUNCNAME"  # if less than 3 args, we need to assume
-            dir="$i"
+            dir="$i"  # optional
             set -- "${@:1:${#}-1}"  # shift the last arg
         fi
         unset i
     fi
 
     pattern="$1"
-    file_pattern="$2"
+    file_pattern="$2"  # optional
 
     if [[ "$#" -lt 1 || "$#" -gt 2 ]]; then
         err "incorrect nr of arguments." "$FUNCNAME"
@@ -1308,8 +1308,12 @@ $FUNCNAME  [-e]  /dir_to_look_from/filename_to_grep
 # Make your directories and files access rights sane.
 # (sane as in rw for owner, r for group, none for others)
 sanitize() {
-    [[ -z "$@" ]] && { err "provide a file/dir name plz." "$FUNCNAME"; return 1; }
-    [[ ! -e "$@" ]] && { err "[$*] does not exist." "$FUNCNAME"; return 1; }
+    local i
+
+    [[ -z "$*" ]] && { err "provide a file/dir name plz." "$FUNCNAME"; return 1; }
+    for i in "$@"; do
+        [[ ! -e "$i" ]] && { err "[$i] does not exist." "$FUNCNAME"; return 1; }
+    done
     chmod -R u=rwX,g=rX,o= -- "$@";
 }
 
@@ -1317,10 +1321,10 @@ sanitize() {
 sanitize_ssh() {
     local node="$*"
 
-    [[ -z "$node" ]] && { err "provide a file/dir name plz. (most likely you want the .ssh dir)" "$FUNCNAME"; return 1; }
+    [[ -z "$node" ]] && { err "provide a file/dir name plz. (most likely you want the [.ssh] dir)" "$FUNCNAME"; return 1; }
     [[ ! -e "$node" ]] && { err "[$node] does not exist." "$FUNCNAME"; return 1; }
     if [[ "$node" != *ssh*  ]]; then
-        confirm  "\nthe node name you're about to $FUNCNAME does not contain string [ssh]; still continue? (y/n)" || return 1
+        confirm  "\nthe node name you're about to ${FUNCNAME}() does not contain string [ssh]; still continue? (y/n)" || return 0
     fi
 
     chmod -R u=rwX,g=,o= -- "$node";
@@ -1338,10 +1342,15 @@ myip() {  # Get internal & external ip addies:
 
         interface="$1"
 
-        ip="$(ip addr show "$interface" | awk '/ inet /{print $2}')" || return 1
-        ip="${ip%%/*}"  # strip the subnet (eg /24)
+        if command -v ip > /dev/null 2>&1; then
+            ip="$(ip addr show "$interface" | awk '/ inet /{print $2}')" || return 1
+            ip="${ip%%/*}"  # strip the subnet (eg /24)
+        elif [[ -x /sbin/ifconfig ]]; then
+            ip="$(/sbin/ifconfig "$interface" | awk '/inet / {print $2}' | sed -e s/addr://)"  # TODO deprecated
+        else
+            err "nothing to find interface IP with" "$FUNCNAME"; return 1
+        fi
 
-        #ip="$(/sbin/ifconfig "$interface" | awk '/inet / {print $2}' | sed -e s/addr://)"  # deprecated
         [[ -z "$ip" && "$__REMOTE_SSH" -eq 1 ]] && return  # probaby the interface was not found
         echo -e "${ip:-"Not connected"}\t@ $interface"
     }
@@ -1351,10 +1360,11 @@ myip() {  # Get internal & external ip addies:
         echo -e "external:\t${external_ip:-"Not connected to the internet."}"
     }
 
-    command -v ip > /dev/null 2>&1 || {  # don't use check_progs_installed because of its verbosity
-        err "can't check internal ip as ip appears not to be installed." "$FUNCNAME"
-        return 1
-    }
+    # TODO: enable this block once ip has universally replaced ifconfig
+    #command -v ip > /dev/null 2>&1 || {  # don't use check_progs_installed because of its verbosity
+        #err "can't check internal ip as ip appears not to be installed." "$FUNCNAME"
+        #return 1
+    #}
 
     if [[ -n "$connected_interface" ]]; then
         __get_internal_ip_for_if "$connected_interface"
@@ -1362,14 +1372,11 @@ myip() {  # Get internal & external ip addies:
         return 0
     elif [[ "$__REMOTE_SSH" -eq 1 ]]; then
         if [[ -d "$if_dir" && -r "$if_dir" ]]; then
-            while IFS= read -r -d $'\0' interface; do
+            while IFS= read -r interface; do
                 # filter out blacklisted interfaces:
                 list_contains "$interface" "lo loopback" || interfaces+=" $interface "
-            done < <(find "$if_dir" -maxdepth 1 -mindepth 1 -print0)
-
-            # old solution:
-            #interfaces="$(ls "$if_dir")"
-        else
+            done < <(find "$if_dir" -maxdepth 1 -mindepth 1 -printf "%f\n")
+        else  # take a blind guess
             interfaces="eth0 eth1 eth2 eth3"
             report "can't read interfaces from [$if_dir] [not a (readable) dir]; trying these interfaces: [$interfaces]" "$FUNCNAME"
         fi
@@ -1544,12 +1551,14 @@ extract() {
 fontreset() {
     local dir
 
+    [[ -d ~/.fonts ]] || { err "~/.fonts is not a dir" "$FUNCNAME"; return 1; }
+
     xset +fp ~/.fonts
     mkfontscale ~/.fonts
     mkfontdir ~/.fonts
     #xset fp rehash
 
-    pushd ~/.fonts
+    pushd ~/.fonts || { err "[pushd ~/.fonts] failed with $?"; return 1; }
     for dir in * ; do
         if [[ -d "$dir" ]]; then
             pushd "$dir"
@@ -1577,9 +1586,10 @@ up() {
     for ((i=1; i <= limit; i++)); do
         d="$d/.."
     done
-    d="$(echo "$d" | sed 's/^\///')"
+    d="$(sed 's/^\///' <<< "$d")"
 
-    cd -- "$d"
+    cd -- "$d" || return 1
+    return 0
 }
 
 # clock - A bash clock that can run in your terminal window:
@@ -2754,6 +2764,7 @@ goto() {
 #                                     # from partialmatch_1 in /.
 #  g partialmatch_1  partialmatch     # searches for partialmatch in directory resolved
 #                                     # from partialmatch_1 in our current dir.
+#  g ../partialmatch                  # searches for partialmatch in parent directory.
 #  g ...../partialmatch               # searches for partialmatch in directory that's
 #                                     # 4 levels up.
 #  g partialmatch                     # searches for partialmatch in current dir.
@@ -2782,6 +2793,8 @@ g() {
         # debug:
         #report "patt: '$pattern'; dir: '$start_dir'" "${FUNCNAME[1]}"
 
+        # first check whether exact node name was given (including [..], given is_backing=1);
+        # then we can define [dir] without invoking find:
         [[ "$start_dir" != '/' ]] && _dir="$start_dir"  # avoid building double slashes
         ! [[ "$is_backing" -eq 0 && "$pattern" == '..' ]] && [[ "$pattern" != '.' && -d "$_dir/$pattern" ]] && { dir="$_dir/$pattern"; return 0; }
 
@@ -2804,7 +2817,7 @@ g() {
     # note this function sets the parent function's dir variable.
     __go_up() {
         local pattern i
-        readonly pattern="$1"  # dots only; will be minimum of 3 dots.
+        readonly pattern="$1"  # dots only; guaranteed to be minimum of 3 dots.
 
         for ((i=0; i <= (( ${#pattern} - 2 )) ; i++)); do
             dir+='../'
@@ -3057,7 +3070,7 @@ capture() {
 }
 
 # takes an input file and outputs mkv container for youtube:
-# stolen from https://wiki.archlinux.org/index.php/FFmpeg#YouTube
+# taken from https://wiki.archlinux.org/index.php/FFmpeg#YouTube
 ytconvert() {
     [[ "$#" -ne 2 ]] && { err "exactly 2 args required - input file to convert, and output filename (without extension)." "$FUNCNAME"; return 1; }
     [[ -f "$1" ]] || { err "need to provide an input file as first argument." "$FUNCNAME"; return 1; }
