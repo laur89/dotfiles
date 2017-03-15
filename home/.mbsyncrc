@@ -134,6 +134,3 @@ Channel work-inbox
 # Or include everything
 #Patterns *
 ################################################
-Group INBOXES
-Channel gmail-INBOX
-Channel work-Inbox
