@@ -2,6 +2,7 @@
 #
 # !! might be used by root as well!
 #
+export MAIN_SYSTEM_USER=laur
 export DEFAULT_SSH_USER=laur
 
 # load local (ie non-ssh'ed) system's vars:
