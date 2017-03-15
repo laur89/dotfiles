@@ -8,3 +8,4 @@ mailboxes +work/Inbox \
           +work/temp/search
 
 set spoolfile = "+work/Inbox"  # default inbox; so-called startup folder
+

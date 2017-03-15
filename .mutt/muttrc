@@ -70,6 +70,7 @@ set sidebar_width   = 24
   #set sort_aux          = date-received
   #
   set uncollapse_jump  #don't collapse on an unread message
+  # note spoolfile is set by detectMailboxes.sh:
   #set spoolfile         = "+work/Inbox"  # wh is dfault inbox; so-called startup folder
   #set spoolfile         = "+gmail/INBOX"  # gmail is dfault inbox
   set sort_re  # thread based on regex

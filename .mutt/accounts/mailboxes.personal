@@ -4,3 +4,4 @@ mailboxes +gmail/INBOX \
           +gmail/temp/search 
 
 set spoolfile = "+gmail/INBOX"  # default inbox; so-called startup folder
+

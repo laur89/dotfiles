@@ -1,5 +1,7 @@
 #!/bin/bash
 #
+# This script decides which mailboxes to monitor, based on system we're currently on.
+#
 # sourced by muttrc.
 # hostnames are configured in .bash_env_vars
 #
@@ -15,11 +17,6 @@ if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
         #exit 1  # TODO: exit?
     fi
 fi
-########################################################################
-personalBox=~/.mutt/accounts/mailboxes.personal
-workBox=~/.mutt/accounts/mailboxes.work
-boxSeparator="mailboxes +work/--------------"
-commands=
 
 # import common:
 if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
@@ -31,6 +28,13 @@ if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
     fi
 fi
 
+########################################################################
+personalBox=~/.mutt/accounts/mailboxes.personal
+workBox=~/.mutt/accounts/mailboxes.work
+boxSeparator="mailboxes +work/--------------"
+commands=
+########################################################################
+
 if is_work; then
     commands="$(cat -- "$workBox")"
 elif [[ "$HOSTNAME" == "$PERSONAL_DESKTOP_HOSTNAME" ]]; then
@@ -41,7 +45,7 @@ else
     commands+="$boxSeparator"
     commands+="$(cat -- "$workBox")"
     # override spool:
-    commands+="set spoolfile = +gmail/INBOX # default inbox; so-called startup folder"
+    commands+="set spoolfile = +gmail/INBOX  # default inbox; so-called startup folder"
 fi
 
 echo -e "$commands"
