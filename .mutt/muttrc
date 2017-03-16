@@ -96,7 +96,7 @@ color status red default
   set mask=""  # show all files/directories in the browser (eg dotfiles included)
 
 #alternates .*@pbrisbin\.com .*@brisb\.in
-alternative_order text/calendar text/plain text/enriched text/html text
+alternative_order text/calendar text/html text/plain text/enriched text/* text  # order matters"
 
 ignore *  # ignore all hdrs
 unignore from: to: cc: date: subject:  # show only these
@@ -110,7 +110,9 @@ hdr_order from: to: cc: date: subject:
 
 #source ~/.mutt/colors/colors_first
 #source ~/.mutt/colors/base16-solarized
-source ~/.mutt/colors/base16-solarized-dark
+#source ~/.mutt/colors/base16-solarized-dark
+#source ~/.mutt/colors/base16
+source ~/.mutt/colors/vombat
 #source ~/.mutt/mailboxes.all  # watch these mailboxes for new mail
 source '~/.mutt/detectMailboxes.sh|'  # watch these mailboxes for new mail
 source ~/.mutt/bindings

@@ -1,7 +1,8 @@
 #!/usr/bin/env ruby
 
-require "rubygems" # apt-get install rubygems
-require "icalendar" # gem install icalendar; !!! this version requires older icalendar: sudo gem install -v 1.5.4 icalendar
+require "rubygems"   # sudo apt-get install rubygems
+require "icalendar"  # sudo gem install icalendar;
+                     # !!! this version requires older icalendar: sudo gem install -v 1.5.4 icalendar
 require "date"
 
 class DateTime

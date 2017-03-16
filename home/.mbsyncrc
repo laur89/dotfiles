@@ -1,4 +1,6 @@
 # isync conf for retrieving mail (for mutt for instance)
+#
+# use `mbsync -Vla` to list remote tree without syncing
 ################################################
 #
 IMAPAccount gmail
