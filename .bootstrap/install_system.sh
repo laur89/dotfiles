@@ -768,6 +768,7 @@ setup_dirs() {
             $BASE_DATA_DIR/dev \
             $BASE_DATA_DIR/mail \
             $BASE_DATA_DIR/mail/work \
+            $BASE_DATA_DIR/mail/personal \
             $BASE_DATA_DIR/Downloads \
             $BASE_DATA_DIR/Downloads/Transmission \
             $BASE_DATA_DIR/Downloads/Transmission/incomplete \
@@ -777,7 +778,7 @@ setup_dirs() {
                 ; do
         if ! [[ -d "$dir" ]]; then
             report "[$dir] does not exist, creating..."
-            execute "mkdir $dir"
+            execute "mkdir -- $dir"
         fi
     done
 
@@ -1076,8 +1077,8 @@ setup() {
 
 setup_additional_apt_keys_and_sources() {
 
-    # mopidy:
-    # mopidy key: (from https://docs.mopidy.com/en/latest/installation/debian/):
+    # mopidy: (from https://docs.mopidy.com/en/latest/installation/debian/):
+    # mopidy key:
     execute 'wget -q -O - http://apt.mopidy.com/mopidy.gpg | sudo apt-key add -'
     # add mopidy source:
     execute 'sudo wget -q -O /etc/apt/sources.list.d/mopidy.list https://apt.mopidy.com/jessie.list'
@@ -2265,7 +2266,7 @@ install_from_repo() {
     )
 
     declare -ar block4=(
-        mutt-patched
+        mutt
         notmuch-mutt
         notmuch
         abook

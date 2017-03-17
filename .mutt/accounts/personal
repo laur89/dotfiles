@@ -1,0 +1,28 @@
+# vim: ft=muttrc
+set realname = "Laur Aliste"
+set from          = "laur.aliste@gmail.com"
+set sendmail      = "/usr/bin/msmtp -a personal"  # defaults to /usr/sbin/sendmail
+set trash         = "+personal/trash"
+#set mbox          = "+personal/archive"  # If you want to save (move) mails out of the inbox which you've read instead of deleting them right on (or cluttering up your inbox).
+#set postponed     = "+personal/drafts"
+
+#set query_command = "echo; ~/.local/bin/gcontacts pbrisbin@gmail.com 'getnetrc pbrisbin@gmail.com' '%s'"
+
+    set header_cache = ~/.mutt/caches/personal-headercache       # where to store hdrs
+    set message_cachedir = ~/.mutt/caches/personal-messagecache  # where to store bodies
+
+macro index ,c "<change-folder>+personal/INBOX<enter>" "change accounts"
+macro index ,z "<shell-escape>mbsync --pull-new personal<enter>" "sync IMAP"
+macro index D "<save-message>+personal/trash<enter>" "move message to the trash"
+#macro index S "<save-message>+personal/spam<enter>"  "mark message as spam"
+
+macro index ,D \
+  "<tag-pattern>all<enter><tag-prefix><save-message>+personal/trash<enter>" \
+  "delete all"
+
+# to change folder to different mailboxes: (do i want these?)
+#macro index,pager <f2> '<sync-mailbox><enter-command>source ~/.mutt/personal<enter><change-folder>!<enter>'
+#macro index,pager <f3> '<sync-mailbox><enter-command>source ~/.mutt/work<enter><change-folder>!<enter>'
+macro index S "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch.py -g ~/mail/personal/temp/search<enter><change-folder-readonly>+personal/temp/search<enter>" "search mail (using notmuch)"
+
+set spoolfile = "+personal/INBOX"

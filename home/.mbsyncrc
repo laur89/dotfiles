@@ -26,12 +26,13 @@ Account gmail
 # the local repository:
 MaildirStore gmail-local
 # The trailing slash is important:
-Path ~/mail/gmail/
-Inbox ~/mail/gmail/INBOX
+Path ~/mail/personal/
+Inbox ~/mail/personal/INBOX
+#Flatten .  # subdirs will be flattened onto root; this separator will separate levels
 
 # CONNECTIONS SPECIFY LINKS BETWEEN REMOTE AND LOCAL FOLDERS
 #
-# CONNECTIONS ARE SPECIFIED USING PATTERNS, WHICH MATCH REMOTE MAIl
+# CONNECTIONS ARE SPECIFIED USING PATTERNS, WHICH MATCH REMOTE MAIL
 # FOLDERS. SOME COMMONLY USED PATTERS INCLUDE:
 #
 # 1 "*" TO MATCH EVERYTHING
@@ -42,7 +43,7 @@ Channel gmail-default
 Master :gmail-remote:
 Slave :gmail-local:
 #Patterns "INBOX" "[Gmail]/Sent Mail" "[Gmail]/Drafts" "[Gmail]/Starred"  # <- use this if you're not using different channel per maildir
-Patterns "INBOX"
+Patterns * !"[Gmail]" !Archives !bug-bash !twitter
 Create Slave
 Expunge Both
 # Save the synchronization state files in the relevant directory:
@@ -55,31 +56,23 @@ Create Slave
 Expunge Both
 SyncState *
 
-Channel gmail-drafts
-Master :gmail-remote:[Gmail]/Drafts
-Slave :gmail-local:drafts
-Create Slave
-Expunge Both
-SyncState *
-
 Channel gmail-trash
-Master :gmail-remote:[Gmail]/Trash
+Master ":gmail-remote:[Gmail]/Trash"
 Slave :gmail-local:trash
 Create Slave
 Expunge Both
 SyncState *
 
 # GROUPS PUT TOGETHER CHANNELS, SO THAT WE CAN INVOKE
-# MBSYNC ON A GROUP TO SYNC ALL CHANNELS
+# MBSYNC ON A GROUP (instead of a channel) TO SYNC ALL CHANNELS
 #
 # FOR INSTANCE: "mbsync gmail" GETS MAIL FROM
 # "gmail-inbox", "gmail-sent", and "gmail-trash" (these are the names of channels)
 #
 # group channels together:
-Group gmail
+Group personal
 Channel gmail-default
 Channel gmail-sent
-Channel gmail-drafts
 Channel gmail-trash
 
 ################################################
@@ -104,30 +97,31 @@ MaildirStore work-local
 # The trailing "/" is important
 Path ~/mail/work/
 Inbox ~/mail/work/Inbox
+#Flatten .  # subdirs will be flattened onto root; this separator will separate levels
 
-Channel work-inbox
+Channel work-default
 Master :work-remote:
 Slave :work-local:
 # exclude some, include all ohters:
-#Patterns * !_setupRelated !_workplaceRelated !Junk* !Trash* !Unsent\ Messages* !Issues* !Sync\ Issues* !Working\ Set* !INBOX/serviceDesk !INBOX/sbNotifications !INBOX/changeManagement
-# include some, exclude all others:
-Patterns  !* INBOX INBOX/sb INBOX/jira INBOX/devs Drafts Sent Junk
+Patterns * !Archive !Drafts !Junk !Sync\ Issues !Unsent\ Messages !_setupRelated !_workplaceRelated !Inbox/serviceDesk !Inbox/sbNotifications !Inbox/changeManagement
+Create Slave
+Expunge Both
+# Save the synchronization state files in the relevant directory:
+SyncState *
 
+#  Note here we're renaming the local dir to something different:
 #Channel work-sb
 #Master :work-remote:
 #Slave :work-local:sb
-#Patterns !* INBOX/scoreboards
+#Patterns !* Inbox/scoreboards
 
 #Channel work-devs
 #Master :work-remote:
 #Slave :work-local:devs
-#Patterns !* INBOX/devs
+#Patterns !* Inbox/devs
 
 Group work
-Channel work-inbox
-#Channel work-sent
-#Channel work-drafts
-#Channel work-jira
+Channel work-default
 #Channel work-sb
 #Channel work-devs
 #

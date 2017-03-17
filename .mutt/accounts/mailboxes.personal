@@ -1,7 +1,18 @@
-mailboxes +gmail/INBOX \
-          +gMail/[Gmail].All\ Mail \
-          +gMail/[Gmail].Sent\ Mail  \
-          +gmail/temp/search 
+# Any imap folders that should be checked regularly for new mail should be listed here:
+mailboxes +personal/INBOX \
+          +personal/sent \
+          +personal/trash \
+          +personal/debian-announce \
+          +personal/github \
+          +personal/github/.lean \
+          +personal/intel \
+          +personal/intel/.cipher \
+          +personal/intel/.stratfor \
+          +personal/layr@hot \
+          +personal/layr89@gmail \
+          +personal/massdrop \
+          +personal/suckless \
+          +personal/temp/search
 
-set spoolfile = "+gmail/INBOX"  # default inbox; so-called startup folder
+set spoolfile = "+personal/INBOX"  # default inbox; so-called startup folder
 

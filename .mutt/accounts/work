@@ -2,8 +2,9 @@
 set realname = "Laur Aliste"
 set from          = "laur.aliste@williamhill.com"
 set sendmail      = "/usr/bin/msmtp -a work"  # defaults to /usr/sbin/sendmail
-set mbox          = "+work/Inbox"
-set postponed     = "+work/Drafts"
+#set mbox          = "+work/Inbox"  # If you want to save (move) mails out of the inbox which you've read instead of deleting them right on (or cluttering up your inbox).
+#set postponed     = "+work/Drafts"
+
 #set query_command = "echo; ~/.local/bin/gcontacts pbrisbin@gmail.com 'getnetrc pbrisbin@gmail.com' '%s'"
 #set query_command = "contacts -Sf '%eTOKEN%n' '%s' | sed -e 's/TOKEN/\t/g'"
 # goobook address qyery (executed by Tab binding):
@@ -11,16 +12,21 @@ set postponed     = "+work/Drafts"
 #macro index,pager ,a "<pipe-message>goobook add<return>" "add sender to google contacts"
 # abook binds:
 set query_command="abook --mutt-query '%s'"
+set trash = "+work/Trash"
 macro generic,index,pager \ca "<shell-escape>abook<return>" "launch abook"
 macro index,pager A "<pipe-message>abook --add-email-quiet<return>" "add the sender address to abook"
 
-    set header_cache = ~/.mutt/caches/wh-headercache # where to store hdrs
-    set message_cachedir = ~/.mutt/caches/wh-messagecache # where to store bodies
+    set header_cache = ~/.mutt/caches/wh-headercache       # where to store hdrs
+    set message_cachedir = ~/.mutt/caches/wh-messagecache  # where to store bodies
 
 macro index ,c "<change-folder>+work/Inbox<enter>" "change accounts"
 macro index ,z "<shell-escape>mbsync --pull-new work<enter>" "sync IMAP"
 macro index D "<save-message>+work/Trash<enter>" "move message to the trash"
-macro index S "<save-message>+work/Junk<enter>"  "mark message as spam"
+#macro index S "<save-message>+work/Junk<enter>"  "mark message as spam"
+
+# The default delete key 'd' will move an email to the 'trash' folder;
+# Bind 'D' to REALLY delete an email
+#bind index D purge-message
 
 macro index ,D \
   "<tag-pattern>all<enter><tag-prefix><save-message>+work/Trash<enter>" \
@@ -40,3 +46,5 @@ macro index a "<change-folder>+work/Inbox<enter>" "show all messages (undo limit
 #macro index,pager ,r ":unset wait_key; set pipe_decode\n|mutt_add_reminder\n:set wait_key; unset pipe_decode\n" "record a reminder"
 #macro index,pager ,r ":unset wait_key; set pipe_decode\n|icalview.rb\n:set wait_key; unset pipe_decode\n" "record a reminder"
 macro index,pager ,r ":unset wait_key; set pipe_decode\n|vim -\n:set wait_key; unset pipe_decode\n" "record a reminder"
+
+set spoolfile = "+work/Inbox"

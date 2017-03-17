@@ -1,19 +1,19 @@
 #! /bin/bash
 # from http://paul.kuntke.de/blog/2012/07/16/view-images-in-mutt/
 
-FONTH=14 # Size of one terminal row
-FONTW=8  # Size of one terminal column
+FONTH=14  # Size of one terminal row
+FONTW=8   # Size of one terminal column
 
 file="$1"
 [[ -z "$file" ]] && exit
 #### Determine size of Terminal
 #height=`stty  size | awk 'BEGIN {FS = " "} {print $1;}'`
 #width=`stty  size | awk 'BEGIN {FS = " "} {print $2;}'`
-read height width <<< $(stty  size)
+read -r height width <<< $(stty  size)
 # alt: read width height <<< `echo -e "5;$FILENAME" | $W3MIMGDISPLAY`
 #
 ### get the picture dimensions:
-read w h <<< $(identify -format '%w %h' $file)
+read -r w h <<< $(identify -format '%w %h' $file)
 
 ### convert to px
 heightPx=$((height*14-100))
@@ -29,7 +29,7 @@ else
     newFile=/tmp/$RANDOM
     convert $file -scale ${widthPx}x${heightPx} $newFile
     file="$newFile"
-    read width height <<< $(identify -format '%w %h' $file)
+    read -r width height <<< $(identify -format '%w %h' $file)
 fi
 
 ### Display Image / offset with mutt bar

@@ -29,23 +29,27 @@ if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
 fi
 
 ########################################################################
-personalBox=~/.mutt/accounts/mailboxes.personal
-workBox=~/.mutt/accounts/mailboxes.work
-boxSeparator="mailboxes +work/--------------"
-commands=
+readonly PERSONAL_BOX=~/.mutt/accounts/mailboxes.personal
+readonly WORK_BOX=~/.mutt/accounts/mailboxes.work
+readonly WORK_BOX_SEPARATOR="mailboxes +work/--------------"
 ########################################################################
 
 if is_work; then
-    commands="$(cat -- "$workBox")"
-elif [[ "$HOSTNAME" == "$PERSONAL_DESKTOP_HOSTNAME" ]]; then
-    commands="$(cat -- "$personalBox")"
+    commands="$(cat -- "$WORK_BOX")"
+    #commands+="$PERSONAL_BOX_SEPARATOR"
+    #commands="$(cat -- "$PERSONAL_BOX")"
+    # override spool:
+    #commands+="set spoolfile = +work/Inbox  # default inbox; so-called startup folder"
+#elif [[ "$HOSTNAME" == "$PERSONAL_DESKTOP_HOSTNAME" ]]; then
+#elif ! is_laptop; then
+    #commands="$(cat -- "$PERSONAL_BOX")"
 else
     # select all
-    commands="$(cat -- "$personalBox")"
-    commands+="$boxSeparator"
-    commands+="$(cat -- "$workBox")"
+    commands="$(cat -- "$PERSONAL_BOX")"
+    commands+="$WORK_BOX_SEPARATOR"
+    commands+="$(cat -- "$WORK_BOX")"
     # override spool:
-    commands+="set spoolfile = +gmail/INBOX  # default inbox; so-called startup folder"
+    commands+="set spoolfile = +personal/INBOX  # default inbox; so-called startup folder"
 fi
 
 echo -e "$commands"

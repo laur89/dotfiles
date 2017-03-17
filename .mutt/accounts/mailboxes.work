@@ -1,10 +1,12 @@
+# Any imap folders that should be checked regularly for new mail should be listed here:
 mailboxes +work/Inbox \
           +work/Inbox/.sb  \
           +work/Inbox/.devs  \
           +work/Inbox/.jira  \
+          +work/Inbox/.wily  \
+          +work/Clutter \
+          +work/Trash \
           +work/Sent \
-          +work/Drafts \
-          +work/Junk \
           +work/temp/search
 
 set spoolfile = "+work/Inbox"  # default inbox; so-called startup folder
