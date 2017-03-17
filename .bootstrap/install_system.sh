@@ -2211,7 +2211,7 @@ install_from_repo() {
     declare -ar block3=(
         firefox
         chromium
-        icedove
+        thunderbird
         rxvt-unicode-256color
         seafile-gui
         seafile-cli
