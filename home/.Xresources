@@ -926,93 +926,94 @@ URxvt3.matcher.button: 1
 !*.color21:      base06
 ! ==============================================================================
 ! wombat: (from https://github.com/jackrosenthal/wombat-colors/blob/master/urxvt/.Xresources)
-#define wb_bg           #1c1c1c
-#define wb_fg           #f6f3e8
-#define wb_cur          #656565
-#define wb_sel          #444444
-#define wb_grey         #99968b
-#define wb_blue         #8ac6f2
-#define wb_red          #e5786d
-#define wb_yellow       #cae682
-#define wb_ltgreen      #e7f6da
-#define wb_green        #95e454
-#define wb_dkgrey       #8f8f8f
+! !! good color for higher contrast/brightness !!
+!#define wb_bg           #1c1c1c
+!#define wb_fg           #f6f3e8
+!#define wb_cur          #656565
+!#define wb_sel          #444444
+!#define wb_grey         #99968b
+!#define wb_blue         #8ac6f2
+!#define wb_red          #e5786d
+!#define wb_yellow       #cae682
+!#define wb_ltgreen      #e7f6da
+!#define wb_green        #95e454
+!#define wb_dkgrey       #8f8f8f
 
-URxvt*background:       wb_bg
-URxvt*foreground:       wb_fg
-URxvt*cursorColor:      wb_cur
-URxvt*color0:           black
-URxvt*color1:           wb_red
-URxvt*color2:           wb_green
-URxvt*color3:           wb_yellow
-URxvt*color4:           wb_blue
-URxvt*color5:           wb_blue
-URxvt*color6:           wb_blue
-URxvt*color7:           wb_grey
-URxvt*color9:           wb_dkgrey
-URxvt*color8:           wb_red
-URxvt*color10:          wb_green
-URxvt*color11:          wb_yellow
-URxvt*color12:          wb_blue
-URxvt*color13:          wb_blue
-URxvt*color14:          wb_blue
-URxvt*color15:          white
+!URxvt*background:       wb_bg
+!URxvt*foreground:       wb_fg
+!URxvt*cursorColor:      wb_cur
+!URxvt*color0:           black
+!URxvt*color1:           wb_red
+!URxvt*color2:           wb_green
+!URxvt*color3:           wb_yellow
+!URxvt*color4:           wb_blue
+!URxvt*color5:           wb_blue
+!URxvt*color6:           wb_blue
+!URxvt*color7:           wb_grey
+!URxvt*color9:           wb_dkgrey
+!URxvt*color8:           wb_red
+!URxvt*color10:          wb_green
+!URxvt*color11:          wb_yellow
+!URxvt*color12:          wb_blue
+!URxvt*color13:          wb_blue
+!URxvt*color14:          wb_blue
+!URxvt*color15:          white
 ! ==============================================================================
 
 ! Base16 Atelier Heath
 ! Scheme: Bram de Haan (http://atelierbramdehaan.nl)
 
-!#define base00 #1b181b
-!#define base01 #292329
-!#define base02 #695d69
-!#define base03 #776977
-!#define base04 #9e8f9e
-!#define base05 #ab9bab
-!#define base06 #d8cad8
-!#define base07 #f7f3f7
-!#define base08 #ca402b
-!#define base09 #a65926
-!#define base0A #bb8a35
-!#define base0B #918b3b
-!#define base0C #159393
-!#define base0D #516aec
-!#define base0E #7b59c0
-!#define base0F #cc33cc
+#define base00 #1b181b
+#define base01 #292329
+#define base02 #695d69
+#define base03 #776977
+#define base04 #9e8f9e
+#define base05 #ab9bab
+#define base06 #d8cad8
+#define base07 #f7f3f7
+#define base08 #ca402b
+#define base09 #a65926
+#define base0A #bb8a35
+#define base0B #918b3b
+#define base0C #159393
+#define base0D #516aec
+#define base0E #7b59c0
+#define base0F #cc33cc
 
-!*.foreground:   base05
-!#ifdef background_opacity
-!*.background:   [background_opacity]base00
-!#else
-!*.background:   base00
-!#endif
-!*.cursorColor:  base05
+*.foreground:   base05
+#ifdef background_opacity
+*.background:   [background_opacity]base00
+#else
+*.background:   base00
+#endif
+*.cursorColor:  base05
 
-!*.color0:       base00
-!*.color1:       base08
-!*.color2:       base0B
-!*.color3:       base0A
-!*.color4:       base0D
-!*.color5:       base0E
-!*.color6:       base0C
-!*.color7:       base05
+*.color0:       base00
+*.color1:       base08
+*.color2:       base0B
+*.color3:       base0A
+*.color4:       base0D
+*.color5:       base0E
+*.color6:       base0C
+*.color7:       base05
 
-!*.color8:       base03
-!*.color9:       base08
-!*.color10:      base0B
-!*.color11:      base0A
-!*.color12:      base0D
-!*.color13:      base0E
-!*.color14:      base0C
-!*.color15:      base07
+*.color8:       base03
+*.color9:       base08
+*.color10:      base0B
+*.color11:      base0A
+*.color12:      base0D
+*.color13:      base0E
+*.color14:      base0C
+*.color15:      base07
 
-!! Note: colors beyond 15 might not be loaded (e.g., xterm, urxvt),
-!! use 'shell' template to set these if necessary
-!*.color16:      base09
-!*.color17:      base0F
-!*.color18:      base01
-!*.color19:      base02
-!*.color20:      base04
-!*.color21:      base06
+! Note: colors beyond 15 might not be loaded (e.g., xterm, urxvt),
+! use 'shell' template to set these if necessary
+*.color16:      base09
+*.color17:      base0F
+*.color18:      base01
+*.color19:      base02
+*.color20:      base04
+*.color21:      base06
 ! ==============================================================================
 
 ! ==============================================================================
