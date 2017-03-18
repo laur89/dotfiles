@@ -12,7 +12,7 @@ if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
         source "$_SCRIPTS_COMMONS"
     else
         echo -e "\n    ERROR: common file [$_SCRIPTS_COMMONS] not found!! Many functions will be unusable!!!"
-        # !do not exit, or you won't be able to open shell
+        # ¡ do not exit, or you won't be able to open shell
         # without the commons file being present!
     fi
 fi

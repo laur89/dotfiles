@@ -56,9 +56,24 @@ Create Slave
 Expunge Both
 SyncState *
 
+Channel gmail-archive
+#Master ":gmail-remote:Archives"
+Master ":gmail-remote:[Gmail]/All Mail"
+Slave :gmail-local:archive
+Create Slave
+Expunge Both
+SyncState *
+
 Channel gmail-trash
 Master ":gmail-remote:[Gmail]/Trash"
 Slave :gmail-local:trash
+Create Slave
+Expunge Both
+SyncState *
+
+Channel gmail-drafts
+Master ":gmail-remote:[Gmail]/Drafts"
+Slave :gmail-local:drafts
 Create Slave
 Expunge Both
 SyncState *
@@ -73,6 +88,8 @@ SyncState *
 Group personal
 Channel gmail-default
 Channel gmail-sent
+Channel gmail-drafts
+Channel gmail-archive
 Channel gmail-trash
 
 ################################################
@@ -103,7 +120,7 @@ Channel work-default
 Master :work-remote:
 Slave :work-local:
 # exclude some, include all ohters:
-Patterns * !Archive !Drafts !Junk !Sync\ Issues !Unsent\ Messages !_setupRelated !_workplaceRelated !Inbox/serviceDesk !Inbox/sbNotifications !Inbox/changeManagement
+Patterns * !Junk !Sync\ Issues !Unsent\ Messages !_setupRelated !_workplaceRelated !Inbox/serviceDesk !Inbox/sbNotifications !Inbox/changeManagement
 Create Slave
 Expunge Both
 # Save the synchronization state files in the relevant directory:

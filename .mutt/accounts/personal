@@ -1,10 +1,15 @@
 # vim: ft=muttrc
+#
+# Note that most (if not all) configs should be set on each profile; otherwise
+# you might get unexpected behaviour after switching dirs (and still using config
+# defined by the previous dir).
+
 set realname = "Laur Aliste"
 set from          = "laur.aliste@gmail.com"
 set sendmail      = "/usr/bin/msmtp -a personal"  # defaults to /usr/sbin/sendmail
 set trash         = "+personal/trash"
-#set mbox          = "+personal/archive"  # If you want to save (move) mails out of the inbox which you've read instead of deleting them right on (or cluttering up your inbox).
-#set postponed     = "+personal/drafts"
+set mbox          = "+personal/archive"  # If you want to save (move) mails out of the inbox which you've read instead of deleting them right on (or cluttering up your inbox).
+set postponed     = "+personal/drafts"
 
 #set query_command = "echo; ~/.local/bin/gcontacts pbrisbin@gmail.com 'getnetrc pbrisbin@gmail.com' '%s'"
 
@@ -26,3 +31,6 @@ macro index ,D \
 macro index S "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch.py -g ~/mail/personal/temp/search<enter><change-folder-readonly>+personal/temp/search<enter>" "search mail (using notmuch)"
 
 set spoolfile = "+personal/INBOX"
+
+# set status color so it's visually clear which account you're on:
+color status green default

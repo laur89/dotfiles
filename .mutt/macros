@@ -34,6 +34,11 @@ macro index \Cr "<tag-prefix><clear-flag>N" "mark tagged messages as read"
 macro pager \cb "<enter-command>unset wait_key<enter><pipe-entry>'urlview'<enter>" 'Follow links with urlview'
 # or:
 #macro pager \Cu "|urlview<enter>" "call urlview to open links"
+
+# urlscan is an alternative to urlview:  https://github.com/firecat53/urlscan
+#macro index,pager \cb "<pipe-message> urlscan<Enter>" "call urlscan to extract URLs out of a message"
+#macro attach,compose \cb "<pipe-entry> urlscan<Enter>" "call urlscan to extract URLs out of a message"
+
 macro attach 'V' "<pipe-entry>cat >~/.cache/mutt/mail.html && $BROWSER ~/.cache/mutt/mail.html && rm ~/.cache/mutt/mail.html<enter>" "open mail in graphical browser"
 macro index b '<enter-command>toggle sidebar_visible<enter><refresh>'
 macro pager b '<enter-command>toggle sidebar_visible<enter><redraw-screen>'

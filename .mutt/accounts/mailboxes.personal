@@ -1,6 +1,7 @@
 # Any imap folders that should be checked regularly for new mail should be listed here:
 mailboxes +personal/INBOX \
           +personal/sent \
+          +personal/drafts \
           +personal/trash \
           +personal/debian-announce \
           +personal/github \
@@ -14,5 +15,5 @@ mailboxes +personal/INBOX \
           +personal/suckless \
           +personal/temp/search
 
-set spoolfile = "+personal/INBOX"  # default inbox; so-called startup folder
+#set spoolfile = "+personal/INBOX"  # default inbox; so-called startup folder
 

@@ -40,6 +40,7 @@ disown
 
 # spoof window manager, so java apps would recognize it:
 wmname LG3D &
+export _JAVA_AWT_WM_NONREPARENTING=1  # some other java bs
 
 # loop, so exiting dwm actually restarts it without exiting clients;
 # (pointless if using restart patch):

@@ -26,7 +26,7 @@ unset confirmappend  # don't ask
 unset help
   set include  # include msg in replies
   set mail_check        = 0
-  set mailcap_path      = ~/.mutt/mailcap  # entries for filetypes; on ikka????
+  set mailcap_path      = ~/.mutt/mailcap
 unset mark_old   # read/new is ok enough
 #set beep_new  # bell on new mail
 unset markers  # no ugly plus signs
@@ -66,7 +66,7 @@ set imap_keepalive = 300  # Keep IMAP connection alive by polling intermittently
   # and optionally:
     set sidebar_folder_indent=yes
     set sidebar_short_path=yes  # shorten mailbox names
-  color sidebar_new yellow default   # TODO verify it's valid
+  color sidebar_new yellow default   # TODO verify it's still valid (ie after 1.7+)
   #color sidebar_new color221 color233
   #set sidebar_delim   = ' │'  # deprecated as of 1.6 or 1.7 (when sidebar patch was merged into mutt pkg)
   #set sidebar_divider_char = '|'
@@ -82,9 +82,9 @@ set imap_keepalive = 300  # Keep IMAP connection alive by polling intermittently
   #set sort              = reverse-threads
   #set sort_aux          = date-received
   #
-  set uncollapse_jump  #don't collapse on an unread message
-  # note spoolfile is set by detectMailboxes.sh:
-  #set spoolfile         = "+work/Inbox"  # wh is dfault inbox; so-called startup folder
+  set uncollapse_jump  # don't collapse on an unread message
+  # note our spoolfile is set by detectMailboxes.sh:
+  #set spoolfile         = "+work/Inbox"  # work is default inbox; so-called startup folder
   set sort_re  # thread based on regex
   set reply_regexp = "^(([Rr][Ee]?(\[[0-9]+\])?: *)?(\[[^]]+\] *)?)*"
 

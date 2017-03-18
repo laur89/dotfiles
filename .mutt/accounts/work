@@ -1,9 +1,15 @@
 # vim: ft=muttrc
+#
+# Note that most (if not all) configs should be set on each profile; otherwise
+# you might get unexpected behaviour after switching dirs (and still using config
+# defined by the previous dir).
+
 set realname = "Laur Aliste"
 set from          = "laur.aliste@williamhill.com"
 set sendmail      = "/usr/bin/msmtp -a work"  # defaults to /usr/sbin/sendmail
-#set mbox          = "+work/Inbox"  # If you want to save (move) mails out of the inbox which you've read instead of deleting them right on (or cluttering up your inbox).
-#set postponed     = "+work/Drafts"
+set trash         = "+work/Trash"
+set mbox          = "+work/Archive"  # If you want to save (move) mails out of the inbox which you've read instead of deleting them right on (or cluttering up your inbox).
+set postponed     = "+work/Drafts"
 
 #set query_command = "echo; ~/.local/bin/gcontacts pbrisbin@gmail.com 'getnetrc pbrisbin@gmail.com' '%s'"
 #set query_command = "contacts -Sf '%eTOKEN%n' '%s' | sed -e 's/TOKEN/\t/g'"
@@ -12,7 +18,6 @@ set sendmail      = "/usr/bin/msmtp -a work"  # defaults to /usr/sbin/sendmail
 #macro index,pager ,a "<pipe-message>goobook add<return>" "add sender to google contacts"
 # abook binds:
 set query_command="abook --mutt-query '%s'"
-set trash = "+work/Trash"
 macro generic,index,pager \ca "<shell-escape>abook<return>" "launch abook"
 macro index,pager A "<pipe-message>abook --add-email-quiet<return>" "add the sender address to abook"
 
@@ -48,3 +53,6 @@ macro index a "<change-folder>+work/Inbox<enter>" "show all messages (undo limit
 macro index,pager ,r ":unset wait_key; set pipe_decode\n|vim -\n:set wait_key; unset pipe_decode\n" "record a reminder"
 
 set spoolfile = "+work/Inbox"
+
+# set status color so it's visually clear which account you're on:
+color status cyan default

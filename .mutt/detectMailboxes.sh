@@ -31,16 +31,14 @@ fi
 ########################################################################
 readonly PERSONAL_BOX=~/.mutt/accounts/mailboxes.personal
 readonly WORK_BOX=~/.mutt/accounts/mailboxes.work
-readonly WORK_BOX_SEPARATOR="mailboxes +work/--------------"
+readonly WORK_BOX_SEPARATOR="\nmailboxes +work/--------------"
 ########################################################################
 
 if is_work; then
     commands="$(cat -- "$WORK_BOX")"
     #commands+="$PERSONAL_BOX_SEPARATOR"
     #commands="$(cat -- "$PERSONAL_BOX")"
-    # override spool:
-    #commands+="set spoolfile = +work/Inbox  # default inbox; so-called startup folder"
-#elif [[ "$HOSTNAME" == "$PERSONAL_DESKTOP_HOSTNAME" ]]; then
+    #commands+="\nset spoolfile = +work/Inbox  # default inbox; so-called startup folder"
 #elif ! is_laptop; then
     #commands="$(cat -- "$PERSONAL_BOX")"
 else
@@ -48,8 +46,7 @@ else
     commands="$(cat -- "$PERSONAL_BOX")"
     commands+="$WORK_BOX_SEPARATOR"
     commands+="$(cat -- "$WORK_BOX")"
-    # override spool:
-    commands+="set spoolfile = +personal/INBOX  # default inbox; so-called startup folder"
+    commands+="\nset spoolfile = +personal/INBOX"
 fi
 
 echo -e "$commands"

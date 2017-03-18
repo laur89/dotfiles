@@ -25,7 +25,7 @@ case "$input" in
         exec start_dwm
         #exec ck-launch-session dbus-launch --sh-syntax --exit-with-session /usr/local/bin/start_dwm
         #exec /usr/local/bin/start_dwm
-		#exec dbus-launch --sh-syntax --exit-with-session start_dwm
+        #exec dbus-launch --sh-syntax --exit-with-session start_dwm
         ;;
     i3)
         exec start_i3
