@@ -40,7 +40,33 @@ unset markers  # no ugly plus signs
   set forward_decode  # decode when fwding
   set check_new = yes
   set realname          = "Laur Aliste"
-  set envelope_from  # ???
+  set abort_nosubject = yes
+  set recall=no  # do not offer to recall a postponed msg when you start composig new one
+  set text_flowed=yes  # flow the lines of quoted text in outher mailclients,
+                       # instead of producing ugly linebreaks (read http://joeclark.org/ffaq.html)
+
+# this block from https://github.com/smemsh/.mutt/:
+# Postfix uses the envelope sender to determine which from
+# `sasl_auth_map' to use.  We have to use the correct login
+# because if it's different than the body's internal `from'
+# address, Gmail rewrites return-path to be the canonical
+# login account, which causes a mismatch and we get flagged
+# as spam at a lot of places.  Mutt will set the envelope
+# sender if told to, and if the address isn't specified, it
+# will be taken from the `from' header internal to the
+# message.  Note that the problem now becomes how to track
+# sent mail items from the account they didn't go through,
+# because these are not forwarded; only incoming mail is.
+#
+set use_envelope_from
+set envelope_from_address
+
+
+set wait_key=no # Don't show the "Press any key to continue..." message.
+set ssl_starttls            = yes
+set ssl_use_sslv3           = yes
+set ssl_use_tlsv1 = yes
+
  unset sig_dashes  # dashes before sig;
   set sleep_time=0  # open dirs w/o delay
   set sendmail_wait = -1  # dont wait for sending to complete
@@ -49,12 +75,14 @@ unset markers  # no ugly plus signs
   set forward_format    = "Fwd: %s"
   set ispell = "aspell -e -c"
   set attribution =  "On %d, %n wrote:"  # set the attribution
+  #set attribution = "%F on %{%Y/%m/%d %Z @%H:%M:%S}:"
 unset record  # do not save sent mails locally; it'll be managed by the services;
   set reply_to  # reply to Reply to: field
   set reverse_name  # reply to whomever it was to
   set sort_alias       = alias  # sort aliasfile by alias
 unset imap_passive  # Allow Mutt to open new imap connection automatically.
 set imap_keepalive = 300  # Keep IMAP connection alive by polling intermittently (time in seconds).
+#set display_filter    = '$HOME/.mutt/mutt_store_alias.sh'
 
 # sidebar:
     set mail_check_stats=yes
@@ -94,11 +122,13 @@ set imap_keepalive = 300  # Keep IMAP connection alive by polling intermittently
   #set status_format     = "-%r- %f%?t? Tagged:%t?%?p? Drafts:%p? -%>-"
   set status_format = "───[ Folder: %f ]───[%r%m messages%?n? (%n new)?%?d? (%d to delete)?%?t? (%t tagged)? ]───%>─%?p?( %p postponed )?───"
   set date_format = "%d/%m/%y at %I:%M%P"
+  #set date_format = "!%a %Y%m%d%H%M%S %Z"
   set index_format = "%3C [%Z] %D %-15.15F %s"
   #set index_format      = "%3C %Z %[!%m/%d] %-17.17F %s"
   set alias_format = "%4n %t %-20a %r"
 color status red default
 
+  set auto_tag = yes  # apply commands to all tagged messages by default
   set strict_threads
   set thorough_search  # strip headers and eval mimes before searching
   set tilde  # show tildes like in vim
@@ -114,6 +144,15 @@ ignore *  # ignore all hdrs
 unignore from: to: cc: date: subject:  # show only these
 unhdr_order *                          # some distros order things by default
 hdr_order from: to: cc: date: subject:
+
+# NeoMutt notmuch config:
+# -------------------------------------
+#set nm_default_uri="notmuch:///~/mail" # path to the maildir; defaults to $folder
+# make mutt aware of our virtual mailboxes:
+#set virtual_spoolfile=yes  # enable virtual spoolfile
+#source ~/.mailboxes        # ... and source it
+
+# -------------------------------------
 
 # this one is only used when using mutt's built in IMAP support, amirite?
 # or is it mail-list related stuff?

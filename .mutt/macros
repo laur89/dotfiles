@@ -1,6 +1,6 @@
 # vim: ft=muttrc
 macro index ,i      "<change-folder>!<enter>"  "go to inbox"
-macro index ,p      "<pipe-message>cat > ~/"   "save message as"
+#macro index ,p      "<pipe-message>cat > ~/"   "save message as"
 macro index <space> "<collapse-thread>"        "[un]collapse thread"
 
 macro index ,s "\
@@ -44,5 +44,15 @@ macro index b '<enter-command>toggle sidebar_visible<enter><refresh>'
 macro pager b '<enter-command>toggle sidebar_visible<enter><redraw-screen>'
 macro index 'c' '<change-folder>?<change-dir><home>^K=<enter>'
 # note, this one shadows the create_alias:
-macro index a "<limit>all\n" "show all messages (undo limit)"
 
+
+macro pager     i       ":set pager_index_lines=10\r"  # restore incex split with X lines
+macro pager     I       ":set pager_index_lines=0\r"   # hide index split
+macro pager     U       |urlscan\r
+
+#macro pager     M       ":toggle markers\r"
+#macro pager     z       ":set wrap=0\r"
+#macro pager Z ":set wrap=80\r"
+
+macro index c "<change-vfolder>?" "Change to vfolder overview"
+macro index \\\\ "<vfolder-from-query>" "Search mailbox"

@@ -57,8 +57,8 @@ Expunge Both
 SyncState *
 
 Channel gmail-archive
-#Master ":gmail-remote:Archives"
-Master ":gmail-remote:[Gmail]/All Mail"
+Master ":gmail-remote:Archives"
+#Master ":gmail-remote:[Gmail]/All Mail"
 Slave :gmail-local:archive
 Create Slave
 Expunge Both

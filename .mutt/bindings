@@ -31,6 +31,9 @@ bind index,pager \CO sidebar-open
 #bind index,pager <down>   sidebar-next
 #bind index,pager <up>     sidebar-prev
 #bind index,pager <right>  sidebar-open
+
+bind index,pager D delete-thread
+
 #
 # to reply or compose offline, postpone:
 bind compose p postpone-message
