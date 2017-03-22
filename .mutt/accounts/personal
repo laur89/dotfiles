@@ -22,13 +22,14 @@ macro index ,z "<shell-escape>mbsync --pull-new personal<enter>" "sync IMAP"
 #macro index D "<save-message>+personal/trash<enter>" "move message to the trash"
 #macro index S "<save-message>+personal/spam<enter>"  "mark message as spam"
 
-macro index ,D \
-  "<tag-pattern>all<enter><tag-prefix><save-message>+personal/trash<enter>" \
-  "delete all"
+# think <tag-pattern> is not required when $auto_tag is set?
+#macro index ,D \
+  #"<tag-pattern>all<enter><tag-prefix><save-message>+personal/trash<enter>" \
+  #"delete all"
 
-macro index ,A \
-  "<tag-pattern>all<enter><tag-prefix><save-message>+personal/archive<enter>" \
-  "archive all"
+#macro index ,A \
+  #"<tag-pattern>all<enter><tag-prefix><save-message>+personal/archive<enter>" \
+  #"archive all"
 
 # to change folder to different mailboxes: (do i want these?)
 #macro index,pager <f2> '<sync-mailbox><enter-command>source ~/.mutt/personal<enter><change-folder>!<enter>'
@@ -38,7 +39,7 @@ macro index S "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch.py
 set spoolfile = "+personal/INBOX"
 
 macro index,pager a "\
-    <save-message>=personal/archive<enter><enter>" \
+    <save-message>=personal/archive<enter>" \
     "Archive message"
 
 # set status color so it's visually clear which account you're on:

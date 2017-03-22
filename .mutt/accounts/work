@@ -34,13 +34,14 @@ macro index ,z "<shell-escape>mbsync --pull-new work<enter>" "sync IMAP"
 # Bind 'D' to REALLY delete an email
 #bind index D purge-message
 
-macro index ,D \
-  "<tag-pattern>all<enter><tag-prefix><save-message>+work/Trash<enter>" \
-  "delete all"
+# think <tag-pattern> is not required when $auto_tag is set?
+#macro index ,D \
+  #"<tag-pattern>all<enter><tag-prefix><save-message>+work/Trash<enter>" \
+  #"delete all"
 
-macro index ,A \
-  "<tag-pattern>all<enter><tag-prefix><save-message>+work/Archive<enter>" \
-  "archive all"
+#macro index ,A \
+  #"<tag-pattern>all<enter><tag-prefix><save-message>+work/Archive<enter>" \
+  #"archive all"
 
 # indexing: (if changing dir, do not forgot to change in crontab as well!); this is for py ver (https://github.com/honza/mutt-notmuch-py):
 macro index S "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch.py -G ~/mail/work/temp/search<enter><change-folder-readonly>+work/temp/search<enter>" "search mail (using notmuch)"
@@ -51,7 +52,7 @@ macro index S "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch.py
 
 
 macro index,pager a "\
-    <save-message>=work/Archive<enter><enter>" \
+    <save-message>=work/Archive<enter>" \
     "Archive message"
 
 
