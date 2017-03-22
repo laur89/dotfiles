@@ -121,9 +121,11 @@ set imap_keepalive = 300  # Keep IMAP connection alive by polling intermittently
   set status_chars = " *%A"
   #set status_format     = "-%r- %f%?t? Tagged:%t?%?p? Drafts:%p? -%>-"
   set status_format = "───[ Folder: %f ]───[%r%m messages%?n? (%n new)?%?d? (%d to delete)?%?t? (%t tagged)? ]───%>─%?p?( %p postponed )?───"
-  set date_format = "%d/%m/%y at %I:%M%P"
+  set date_format = "%d/%m/%y at %R"
+  #set date_format = "{}%"  # for dynamic date formatting
   #set date_format = "!%a %Y%m%d%H%M%S %Z"
   set index_format = "%3C [%Z] %D %-15.15F %s"
+  #set index_format='/data/Seafile/main/Documents/comp/C-code/mfdate "%[%d.%m.%y]" "%8[%e. %b]" "%8[%H:%m]" "%Z %%s %-20.20L %?y?[%-5.5y]&       ? %?M?+& ?%s%%" "%[%s]" |'  # for dynamic date formatting
   #set index_format      = "%3C %Z %[!%m/%d] %-17.17F %s"
   set alias_format = "%4n %t %-20a %r"
 color status red default

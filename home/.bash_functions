@@ -334,7 +334,7 @@ ffindproc() {
     #   grep '\$1\b'
 }
 
-# find top 5/x biggest or smallest nodes:
+# find top X biggest or smallest nodes:
 __find_top_big_small_fun() {
     local usage opt OPTIND itemsToShow file_type maxDepthParam maxDepth follow_links reverse du_size_unit
     local bigOrSmall du_include_regular_files duMaxDepthParam filetypeOptionCounter i

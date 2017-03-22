@@ -38,7 +38,7 @@ if is_work; then
     commands="$(cat -- "$WORK_BOX")"
     #commands+="$PERSONAL_BOX_SEPARATOR"
     #commands="$(cat -- "$PERSONAL_BOX")"
-    #commands+="\nset spoolfile = +work/Inbox  # default inbox; so-called startup folder"
+    commands+="\nset spoolfile = +work/Inbox"
 #elif ! is_laptop; then
     #commands="$(cat -- "$PERSONAL_BOX")"
 else
