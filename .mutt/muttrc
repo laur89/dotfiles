@@ -148,9 +148,17 @@ hdr_order from: to: cc: date: subject:
 # NeoMutt notmuch config:
 # -------------------------------------
 #set nm_default_uri="notmuch:///~/mail" # path to the maildir; defaults to $folder
-# make mutt aware of our virtual mailboxes:
-#set virtual_spoolfile=yes  # enable virtual spoolfile
-#source ~/.mailboxes        # ... and source it
+
+# When set, mutt will use the first virtual mailbox (see virtual-mailboxes) as a spoolfile:
+#set virtual_spoolfile=yes
+
+source ~/.mailboxes        # source virtual boxes
+
+# This variable allows you to customize the file browser display for virtual
+# folders to your personal taste.
+set vfolder_format = "%6n(%6N) %f"
+#unvirtual-mailboxes *
+
 
 # -------------------------------------
 

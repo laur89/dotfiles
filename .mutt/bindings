@@ -33,6 +33,8 @@ bind index,pager \CO sidebar-open
 #bind index,pager <right>  sidebar-open
 
 bind index,pager D delete-thread
+bind index,pager ,v sidebar-toggle-virtual
+bind index,pager ,t modify-labels
 
 #
 # to reply or compose offline, postpone:
