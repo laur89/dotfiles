@@ -47,9 +47,11 @@ other_email=laur.aliste@williamhill.com;
 #		names will be ignored, independent of its depth/location
 #		in the mail store.
 #
+
+# note that 'new' tag is required by afew (https://github.com/afewmail/afew)
 [new]
-tags=unread;inbox;
-ignore=
+tags=unread;inbox;new;
+ignore=Trash;trash;junk;Junk;Spam;spam;
 
 # Search configuration
 #

@@ -7,6 +7,7 @@
 set realname      = "Laur Aliste"
 set from          = "laur.aliste@williamhill.com"
 set sendmail      = "/usr/bin/msmtp -a work"  # defaults to /usr/sbin/sendmail
+#set sendmail      = "/path/to/msmtp-enqueue.sh -a work"  # to be able to send while offline
 set trash         = "+work/Trash"
 set mbox          = "+work/Archive"  # If you want to save (move) mails out of the inbox which you've read instead of deleting them right on (or cluttering up your inbox).
                                      # read mail gets moved if 'move' var is set or as a result of mbox-hook;
