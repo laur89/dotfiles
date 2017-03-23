@@ -84,7 +84,7 @@ unset imap_passive  # Allow Mutt to open new imap connection automatically.
 set imap_keepalive = 300  # Keep IMAP connection alive by polling intermittently (time in seconds).
 #set display_filter    = '$HOME/.mutt/mutt_store_alias.sh'
 #set display_filter = 'mutt_display_filter_strip_long_address_lists.sh'
-set display_filter = 'mutt_display_filter_save_abook_alias.sh'
+set display_filter = 'display_filter_entry.sh'
 
 # sidebar:
     set mail_check_stats=yes
