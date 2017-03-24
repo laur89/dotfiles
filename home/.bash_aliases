@@ -141,6 +141,7 @@ alias gitcom='git com'
 alias gita='git a'
 alias gitaa='git aa'
 alias gitb='git b'
+alias gitp='git pull'
 alias gitdi='git-root && git difftool --dir-diff && cd - > /dev/null 2>&1'                    # diff only unstaged files
 alias gitdi-all='git-root && git difftool --dir-diff HEAD && cd - > /dev/null 2>&1'           # also diff staged files
 alias gitdi-staged-only='git-root && git difftool --dir-diff --cached && cd - > /dev/null 2>&1'    # --cached == --staged, as in diff only staged files
