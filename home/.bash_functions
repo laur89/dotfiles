@@ -84,7 +84,7 @@ ffind() {
         -D  delete found nodes  (won't delete nonempty dirs!)
         -q  provide find the -quit flag (exit on first found item)
         -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;
-        -e  search for exact filename, not for a partial (you still can use wildcards)
+        -e  search for exact filename, not for a partial (wildcards can still be used)
         -p  expand the pattern search for path as well (adds the -path option);
             might want to consider regex, that also searches across the whole path;
         -0  null-terminated output."

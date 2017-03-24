@@ -132,6 +132,7 @@ alias dorpbox='dropbox'
 # git:
 alias gitst='git st'
 alias gitfe='git fe'
+alias gitdd='git dd'
 alias gitco='git co'
 alias gitrst='git rst'
 alias gitau='git au'
