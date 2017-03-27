@@ -42,6 +42,7 @@ set spoolfile = "+personal/INBOX"
 macro index,pager a "\
     <save-message>=personal/archive<enter>" \
     "Archive message"
+#macro index A "<modify-labels>+archive -unread -inbox\\n" "Archive message"
 
 # set status color so it's visually clear which account you're on:
 color status green default

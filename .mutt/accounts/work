@@ -55,6 +55,7 @@ macro index S "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch.py
 macro index,pager a "\
     <save-message>=work/Archive<enter>" \
     "Archive message"
+#macro index A "<modify-labels>+archive -unread -inbox\\n" "Archive message"
 
 
 
