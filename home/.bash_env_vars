@@ -94,6 +94,16 @@ export LESS_TERMCAP_ZW=$(tput rsupm)
 #export LESS_TERMCAP_ue=$(printf "\e[0m") \
 #export LESS_TERMCAP_us=$(printf "\e[1;32m")
 
+# python-based tldr (https://github.com/tldr-pages/tldr-python-client) conf:
+export TLDR_COLOR_BLANK="white"
+export TLDR_COLOR_NAME="cyan"
+export TLDR_COLOR_DESCRIPTION="white"
+export TLDR_COLOR_EXAMPLE="green"
+export TLDR_COLOR_COMMAND="red"
+export TLDR_COLOR_PARAMETER="white"
+export TLDR_CACHE_ENABLED=1
+export TLDR_CACHE_MAX_AGE=720
+
 
 if [[ -d "$BASE_DATA_DIR/tmp" && -w "$BASE_DATA_DIR/tmp" ]]; then
     export _PERSISTED_TMP="$BASE_DATA_DIR/tmp"

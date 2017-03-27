@@ -50,7 +50,7 @@ other_email=laur.aliste@williamhill.com;
 
 # note that 'new' tag is required by afew (https://github.com/afewmail/afew)
 [new]
-tags=unread;inbox;new;
+tags=new;
 ignore=Trash;trash;junk;Junk;Spam;spam;
 
 # Search configuration

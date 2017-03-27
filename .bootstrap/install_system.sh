@@ -626,6 +626,9 @@ install_sshfs() {
 # "deps" as in git repos/py modules et al our system setup depends on;
 # if equivalent is avaialble at deb repos, its installation should be
 # moved to  install_from_repo()
+#
+# also, why is install_npm_modules() not here?
+# aslo, should we extract python modules out?
 install_deps() {
     function _install_tmux_deps() {
         local dir plugins_dir
@@ -664,6 +667,7 @@ install_deps() {
     create_link "${BASE_DEPS_LOC}/git-playback/git-playback.sh" "$HOME/bin/git-playback-sh"
 
     # bars (as in bar-charts) in shell:
+    #  note: see also https://github.com/sindresorhus/sparkly-cli
     clone_or_pull_repo "holman" "spark" "$BASE_DEPS_LOC"  # https://github.com/holman/spark
     create_link "${BASE_DEPS_LOC}/spark/spark" "$HOME/bin/spark"
 
@@ -704,6 +708,12 @@ install_deps() {
     execute "sudo pip  install --upgrade img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
     execute "sudo pip3 install --upgrade scdl"          # https://github.com/flyingrub/scdl (soundcloud downloader)
     execute "sudo pip  install --upgrade rtv"           # https://github.com/michael-lazar/rtv (reddit reader)
+    execute "sudo pip  install --upgrade tldr"          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
+                                                        #   note its conf is in bash_env_vars
+    execute "sudo pip  install --upgrade maybe"         # https://github.com/p-e-w/maybe (check what command would do)
+
+
+    execute "sudo gem install speed_read"               # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
 
 
     # work deps:
@@ -1241,7 +1251,7 @@ install_progs() {
 
 
 # system deps, which depend on npm & nodejs
-# TODO: kind of depends in install_deps()?
+# TODO: kind of belongs in install_deps()?
 install_npm_modules() {
 
     if ! command -v nodejs >/dev/null || ! command -v npm >/dev/null; then
@@ -1257,11 +1267,15 @@ install_npm_modules() {
 
     # https://github.com/FredrikNoren/ungit
     # https://github.com/dominictarr/JSON.sh
+    # https://github.com/sindresorhus/speed-test
+    # https://github.com/riyadhalnur/weather-cli
     #
     # (note the required -H for ungit)
     execute "sudo -H npm install -g \
         ungit \
         JSON.sh \
+        speed-test \
+        weather-cli \
     "
 }
 
@@ -2169,6 +2183,7 @@ install_from_repo() {
         ntp
         gdebi
         synaptic
+        apt-file
         apt-show-versions
         apt-xapian-index
         mercurial
@@ -2185,6 +2200,8 @@ install_from_repo() {
         network-manager-openvpn-gnome
         gnome-keyring
         gsimplecal
+        khal
+        calcurse
         gnome-disk-utility
         cups
         system-config-printer
@@ -2213,6 +2230,7 @@ install_from_repo() {
         firefox
         chromium
         thunderbird
+        lightning
         rxvt-unicode-256color
         seafile-gui
         seafile-cli
