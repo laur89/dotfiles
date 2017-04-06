@@ -1102,6 +1102,11 @@ setup_additional_apt_keys_and_sources() {
     execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 8756C4F765C9AC3CB6B85D62379CE192D401AB61'
     execute 'echo deb http://dl.bintray.com/seafile-org/deb jessie main | sudo tee /etc/apt/sources.list.d/seafile.list > /dev/null'
 
+    # mono: (from http://www.mono-project.com/docs/getting-started/install/linux/):
+    # later on installed by 'mono-complete' pkg
+    execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF'
+    execute 'echo deb http://download.mono-project.com/repo/debian wheezy main | sudo tee /etc/apt/sources.list.d/mono-xamarin.list > /dev/null'
+
     # update sources (will be done anyway on full install):
     [[ "$FULL_INSTALL" -ne 1 ]] && execute 'sudo apt-get --yes update'
 }
@@ -1851,7 +1856,7 @@ install_vim() {
     echo 'initialising vim; simply exit when plugin fetching is complete. (quit with  :qa!)' | \
         vim -  # needs to be non-root
 
-    # YCM installation AFTER the first vim launch!
+    # YCM installation AFTER the first vim launch (vim launch pulls in ycm plugin, among others)!
     install_YCM
     install_vim_plugin_deps
 }
@@ -1995,7 +2000,7 @@ build_and_install_vim() {
 }
 
 
-# note: instructions & info here: https://github.com/Valloric/YouCompleteMe
+# note: instructions & info here: https://github.com/Valloric/YouCompleteMe#full-installation-guide
 # note2: available in deb repo as 'ycmd'
 install_YCM() {
     local ycm_root  ycm_build_root  libclang_root  ycm_third_party_rootdir
@@ -2044,6 +2049,7 @@ install_YCM() {
     else
         __fetch_libclang || { err "fetching libclang failed; aborting YCM installation."; return 1; }
     fi
+    unset __fetch_libclang  # to keep the inner function really an inner one (ie private).
 
     # clean previous builddir, if existing:
     [[ -d "$ycm_build_root" ]] && execute "sudo rm -rf -- '$ycm_build_root'"
@@ -2061,9 +2067,9 @@ install_YCM() {
 
     ############
     # set up support for additional languages:
-    # C#:
+    # C# (assumes you have mono installed):
     execute "pushd $ycm_third_party_rootdir/OmniSharpServer" || return 1
-    execute "xbuild"
+    execute "xbuild /property:Configuration=Release"
     execute "popd"
 
     # js:
@@ -2071,8 +2077,8 @@ install_YCM() {
     execute "npm install --production"
     execute "popd"
 
-
-    unset __fetch_libclang  # to keep the inner function really an inner one (ie private).
+    # go:
+    # TODO
 }
 
 
@@ -2152,6 +2158,7 @@ install_from_repo() {
         python-pip
         python-flake8
         python3-flake8
+        mono-complete
         devscripts
         curl
         lshw
