@@ -14,7 +14,7 @@
 #---   Configuration  ---
 #------------------------
 readonly TMPDIR='/tmp'
-readonly CLANG_LLVM_LOC='http://releases.llvm.org/3.9.1/clang+llvm-3.9.1-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
+readonly CLANG_LLVM_LOC='http://releases.llvm.org/4.0.0/clang+llvm-4.0.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
 readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - yeah.
 readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
 readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX - open password manager forked from keepass project
@@ -314,8 +314,8 @@ backup_original_and_copy_file() {
         if [[ "${#orig_suffixes[@]}" -eq 0 ]]; then
             i=0
         else
-            i="$(printf '%s\n' "${orig_suffixes[@]}" | sort -rn | head -n1)"  # latest/largest suffix value
-            let i++ || { err "incrementing [$dest_dir/$filename] latest backup suffix [$i] failed"; }
+            i="$(printf '%s\n' "${orig_suffixes[@]}" | sort -rn | head -n1)"  # largest suffix value
+            let i++ || { err "incrementing [$dest_dir/$filename] latest backup suffix [$i] failed"; i="$RANDOM"; }
         fi
 
         execute "$sudo cp -- '$dest_dir/$filename' '$dest_dir/${filename}.orig.$i'"
@@ -943,7 +943,7 @@ setup_global_env_vars() {
     for file in "${real_file_locations[@]}"; do
         if ! [[ -f "$file" ]]; then
             err "[$file] does not exist. can't link it to ${global_env_var_loc}/"
-            return 1
+            continue
         fi
 
         create_link --sudo "$file" "${global_env_var_loc}/"
@@ -1858,11 +1858,12 @@ install_vim() {
 
     # YCM installation AFTER the first vim launch (vim launch pulls in ycm plugin, among others)!
     install_YCM
-    install_vim_plugin_deps
+    configure_vim_plugins  # make sure vim has been opened by this time so plugins are installed
 }
 
 
-install_vim_plugin_deps() {
+# contains additional post-install vim plugin configuration for those that need it
+configure_vim_plugins() {
     local vim_pluginsdir
 
     readonly vim_pluginsdir="$HOME/.vim/bundle"
@@ -1875,25 +1876,40 @@ install_vim_plugin_deps() {
             install_block 'npm' || return 1
         fi
 
-        [[ -d "$plugindir" ]] || { err "$plugindir is not a dir."; return 1; }
+        [[ -d "$plugindir" ]] || { err "[$plugindir] is not a dir."; return 1; }
         execute "pushd $plugindir" || return 1
         execute "npm install"
         execute "popd"
     }
 
-    # install plugin deps:
+    function _install_omnisharp_deps() {
+        local plugindir
+        readonly plugindir="$vim_pluginsdir/omnisharp-vim/server"
+
+        if ! command -v xbuild >/dev/null; then
+			err "xbuild (with mono) not installed; can't install omnisharp vim plugin"
+			return 1
+        fi
+
+        [[ -d "$plugindir" ]] || { err "[$plugindir] is not a dir."; return 1; }
+        execute "pushd $plugindir" || return 1
+        execute "xbuild"
+        execute "popd"
+    }
+
     # tern: https://github.com/ternjs/tern_for_vim
     _install_tern_for_vim_deps
 
-    unset _install_tern_for_vim_deps
+	# omnisharp: https://github.com/OmniSharp/omnisharp-vim
+	_install_omnisharp_deps
+
+    unset _install_tern_for_vim_deps _install_omnisharp_deps
 }
 
 
+# NO plugin config should go here (as it's not guaranteed they've been installed by this time)
 vim_post_install_configuration() {
-    local stored_vim_sessions vim_sessiondir i
-
-    readonly stored_vim_sessions="$BASE_DATA_DIR/.vim_sessions"
-    readonly vim_sessiondir="$HOME/.vim/sessions"
+	local i
 
     # generate links for root, if not existing:
     for i in \
@@ -1912,22 +1928,31 @@ vim_post_install_configuration() {
         fi
     done
 
-    # link sessions dir, if stored @ $BASE_DATA_DIR: (related to the 'xolox/vim-session' plugin)
-    # note we don't want sessions in homesick, as they're likely to be machine-dependent.
-    if [[ -d "$stored_vim_sessions" ]]; then
-        if ! [[ -h "$vim_sessiondir" ]]; then
-            [[ -d "$vim_sessiondir" ]] && execute "sudo rm -rf -- $vim_sessiondir"
-            create_link "$stored_vim_sessions" "$vim_sessiondir"
-        fi
-    else  # $stored_vim_sessions does not exist; init it anyways
-        if [[ -d "$vim_sessiondir" ]]; then
-            execute "mv $vim_sessiondir $stored_vim_sessions"
-        else
-            execute "mkdir $stored_vim_sessions"
-        fi
+	function _setup_vim_sessions_dir() {
+		local stored_vim_sessions vim_sessiondir
 
-        create_link "$stored_vim_sessions" "$vim_sessiondir"
-    fi
+		readonly stored_vim_sessions="$BASE_DATA_DIR/.vim_sessions"
+		readonly vim_sessiondir="$HOME/.vim/sessions"
+
+		# link sessions dir, if stored @ $BASE_DATA_DIR: (related to the 'xolox/vim-session' plugin)
+		# note we don't want sessions in homesick, as they're likely to be machine-dependent.
+		if [[ -d "$stored_vim_sessions" ]]; then
+			# refresh link:
+			execute "rm -rf -- $vim_sessiondir"
+		else  # $stored_vim_sessions does not exist; init it anyways
+			if [[ -d "$vim_sessiondir" ]]; then
+				execute "mv -- $vim_sessiondir $stored_vim_sessions"
+			else
+				execute "mkdir -- $stored_vim_sessions"
+			fi
+		fi
+
+		create_link "$stored_vim_sessions" "$vim_sessiondir"
+	}
+
+	_setup_vim_sessions_dir
+
+	unset _setup_vim_sessions_dir
 }
 
 
@@ -1991,8 +2016,8 @@ build_and_install_vim() {
     execute "popd"
     execute "sudo rm -rf -- $tmpdir"
     if ! [[ -d "$expected_runtimedir" ]]; then
-        err "[$expected_runtimedir] is not a dir]; these match 'vim' under [$(dirname -- "$expected_runtimedir")]:"
-        find "$(dirname -- "$expected_runtimedir")" -maxdepth 1 -mindepth 1 -type d -name 'vim*' -print
+        err "[$expected_runtimedir] is not a dir; these match 'vim' under [$(dirname -- "$expected_runtimedir")]:"
+        err "$(find "$(dirname -- "$expected_runtimedir")" -maxdepth 1 -mindepth 1 -type d -name 'vim*' -print)"
         return 1
     fi
 
@@ -2003,12 +2028,13 @@ build_and_install_vim() {
 # note: instructions & info here: https://github.com/Valloric/YouCompleteMe#full-installation-guide
 # note2: available in deb repo as 'ycmd'
 install_YCM() {
-    local ycm_root  ycm_build_root  libclang_root  ycm_third_party_rootdir
+    local ycm_root  ycm_build_root  libclang_root  ycm_plugin_root  ycm_third_party_rootdir
 
     readonly ycm_root="$BASE_BUILDS_DIR/YCM"
     readonly ycm_build_root="$ycm_root/ycm_build"
     readonly libclang_root="$ycm_root/llvm"
-    readonly ycm_third_party_rootdir="$HOME/.vim/bundle/YouCompleteMe/third_party/ycmd/third_party"
+    readonly ycm_plugin_root="$HOME/.vim/bundle/YouCompleteMe"
+    readonly ycm_third_party_rootdir="$ycm_plugin_root/third_party/ycmd/third_party"
 
     function __fetch_libclang() {
         local tmpdir tarball dir
@@ -2032,7 +2058,7 @@ install_YCM() {
     }
 
     # sanity
-    if ! [[ -d "$HOME/.vim/bundle/YouCompleteMe" ]]; then
+    if ! [[ -d "$ycm_plugin_root" ]]; then
         err "expected vim plugin YouCompleteMe to be already pulled"
         err "you're either missing vimrc conf or haven't started vim yet (first start pulls all the plugins)."
         err
