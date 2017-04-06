@@ -2332,6 +2332,7 @@ install_from_repo() {
         toilet
         lolcat
         figlet
+        rdesktop
     )
 
     for block in \

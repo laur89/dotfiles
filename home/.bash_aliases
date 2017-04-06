@@ -53,6 +53,7 @@ alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
 alias c="clear"
 alias cp="cp -rp"
+alias dfh='df -h'
 #alias less="less -IRKFX" # handled by the $LESS env var
 alias ls="ls -h --color=auto --group-directories-first"
 alias ll='ls -l'
