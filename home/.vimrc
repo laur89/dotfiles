@@ -140,7 +140,7 @@ set nocompatible " Must be the first line
     " supertab et al; needs compilation! read the docs!:
     " !!! ühed väidavad, et javaphp,js,html jaoks on neocomplete parem;
     " for neovim, consider Shougo/deoplete.nvim as alternative;
-    Plugin 'Valloric/YouCompleteMe'
+    "Plugin 'Valloric/YouCompleteMe'
 
     " Go-lang/golang/go lang support:
     Plugin 'fatih/vim-go'
@@ -148,10 +148,10 @@ set nocompatible " Must be the first line
     " Scala
     Plugin 'derekwyatt/vim-scala'
 
-    " C# support:
+    " C# support: (requires mono)    https://github.com/OmniSharp/omnisharp-vim
     Plugin 'OmniSharp/omnisharp-vim'
 
-    " charp additions (mainly better syntax highlight):
+    " c# additions (mainly better syntax highlight):
     Plugin 'OrangeT/vim-csharp'
 
     " Node.js:

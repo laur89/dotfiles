@@ -229,7 +229,7 @@ ffind() {
         return 1
     elif [[ "$delete" -eq 1 && -z "$src" ]] && ! confirm "wish to delete ALL nodes? note you haven't defined filename pattern to search, so everything gets returned."; then
         return
-    elif [[ "$delete" -eq 1 && -n "$src" ]] && ! confirm "wish to delete nodes that match [$src]?"; then
+    elif [[ "$delete" -eq 1 && -n "$src" ]] && ! confirm "wish to delete nodes that match [${COLORS[RED]}${src}${COLORS[OFF]}]?"; then
         return
     fi
 

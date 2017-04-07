@@ -331,7 +331,7 @@ clone_or_pull_repo() {
     readonly user="$1"
     readonly repo="$2"
     readonly install_dir="$3"
-    readonly hub=${4:-'github.com'}  # OPTIONAL; if not provided, defaults to github.com;
+    readonly hub=${4:-'github.com'}  # OPTIONAL; defaults to github.com;
 
     [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
 
@@ -366,7 +366,7 @@ install_nfs_server() {
     fi
 
     while true; do
-        if confirm "$(report "add client IP for the exports list (who will access [$NFS_SERVER_SHARE])?")"; then
+        if confirm "$(report "add ${client_ip:+another }client IP for the exports list?")"; then
             echo -e "enter client ip:"
             read -r client_ip
 
@@ -417,7 +417,7 @@ install_nfs_client() {
     [[ -f "$fstab" ]] || { err "[$fstab] does not exist; cannot add fstab entry!"; return 1; }
 
     while true; do
-        if confirm "$(report "add ${server_ip:+another} nfs server entry to fstab?")"; then
+        if confirm "$(report "add ${server_ip:+another }nfs server entry to fstab?")"; then
             echo -e "enter server ip: ${prev_server_ip:+(leave blank to default to [$prev_server_ip])}"
             read -r server_ip
             [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
@@ -546,7 +546,7 @@ install_sshfs() {
     execute "sudo gpasswd -a $USER fuse"
 
     while true; do
-        if confirm "$(report "add ${server_ip:+another} sshfs entry to fstab?")"; then
+        if confirm "$(report "add ${prev_server_ip:+another }sshfs entry to fstab?")"; then
             echo -e "enter server ip: ${prev_server_ip:+(leave blank to default to [$prev_server_ip])}"
             read -r server_ip
             [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
@@ -593,6 +593,11 @@ install_sshfs() {
         remote_user="${sel_ips_to_user[$server_ip]}"
         report "testing ssh connection to ${remote_user}@${server_ip}..."
         execute "sudo ssh -p ${ssh_port} -o ConnectTimeout=7 ${remote_user}@${server_ip} echo ok"
+
+		# TODO: investigate this as an alternative instead:
+        #if [[ -z "$(sudo ssh-keygen -F "$server_ip")" ]]; then
+            #execute "sudo ssh-keyscan -H '$server_ip' >> /root/.ssh/known_hosts" || fail "adding host [$server_ip] to /root/.ssh/known_hosts failed"
+        #fi
     done
 
     return 0
