@@ -1,6 +1,9 @@
 # isync conf for retrieving mail (for mutt for instance)
 #
 # use `mbsync -Vla` to list remote tree without syncing
+#
+# good sources:
+#    http://pragmaticemacs.com/emacs/migrating-from-offlineimap-to-mbsync-for-mu4e/
 ################################################
 #
 IMAPAccount gmail
@@ -120,7 +123,8 @@ Channel work-default
 Master :work-remote:
 Slave :work-local:
 # exclude some, include all ohters:
-Patterns * !Junk !Sync\ Issues !Unsent\ Messages !_setupRelated !_workplaceRelated !Inbox/serviceDesk !Inbox/sbNotifications !Inbox/changeManagement
+#Patterns *
+Patterns * !Junk !Sync\ Issues* !Unsent\ Messages !_setupRelated !_workplaceRelated !Inbox/serviceDesk !Inbox/sbNotifications !Inbox/changeManagement
 Create Slave
 Expunge Both
 # Save the synchronization state files in the relevant directory:

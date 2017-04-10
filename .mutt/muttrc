@@ -5,7 +5,7 @@
 # main opts:
   set askcc  # ask for CC:
 unset confirmappend  # don't ask
-  set delete  # don't ask
+  set delete  # don't ask for deletion confirmation
   set quit    # dont ask
   unset move  # gmail and xchange does that
   set alias_file = '~/.mutt/alias'  # alias_file
