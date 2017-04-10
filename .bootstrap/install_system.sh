@@ -774,6 +774,8 @@ setup_dirs() {
 
     # create dirs:
     for dir in \
+            $BASE_DATA_DIR/.calendars \
+            $BASE_DATA_DIR/.calendars/work \
             $BASE_DATA_DIR/.rsync \
             $BASE_DATA_DIR/tmp \
             $BASE_DATA_DIR/vbox_vms \
