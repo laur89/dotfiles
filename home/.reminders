@@ -1,1 +1,10 @@
-REM Jan 28 2015 AT 18:00 DURATION 1:00 MSG 
+# main Remind config; here add only [includes]
+#
+############################################################
+
+# from https://www.roaringpenguin.com/wiki/index.php/Remind_use_case_1
+FSET t() iif($Daemon > 0, "%1", "%b %2")
+IF $Daemon > 0
+   REM AT 02:00 MSG Go to bed you're drunk
+ENDIF
+

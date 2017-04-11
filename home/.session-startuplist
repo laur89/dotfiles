@@ -113,6 +113,12 @@ if ! is_proc_running syndaemon && is_laptop; then
     echo "Launching syndaemon..."
 fi
 
+# from https://www.roaringpenguin.com/wiki/index.php/Remind_use_case_1
+if ! is_proc_running remind; then
+    [[ -f "$HOME/.reminders" ]] && remind -z -k'gxmessage -title "reminder" %s &' ~/.reminders &
+    echo "Launching remind..."
+fi
+
 if ! is_proc_running transmission_somethiNG_TODO && ! is_work; then
     # TODO: start transmission? client, server? where?
     true

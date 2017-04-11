@@ -716,7 +716,8 @@ install_deps() {
     execute "sudo pip  install --upgrade tldr"          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
                                                         #   note its conf is in bash_env_vars
     execute "sudo pip  install --upgrade maybe"         # https://github.com/p-e-w/maybe (check what command would do)
-
+    # some py deps requred by scripts:
+    execute "sudo pip3  install --upgrade exchangelib icalendar arrow tzlocal"
 
     execute "sudo gem install speed_read"               # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
 
@@ -2231,6 +2232,7 @@ install_from_repo() {
         git-flow
         git-cola
         zenity
+        gxmessage
         msmtp
         rsync
         gparted
