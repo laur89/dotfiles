@@ -1,0 +1,8 @@
+include "/etc/wyrdrc"
+
+# command for editing an old appointment, given a line number %line% and filename %file%
+set edit_old_command="$EDITOR +%line% %file%"
+# command for editing a new appointment, given a filename %file%
+set edit_new_command="$EDITOR +999999 %file%"
+# command for free editing of the reminders file, given a filename %file%
+set edit_any_command="$EDITOR %file%"
