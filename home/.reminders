@@ -8,3 +8,4 @@ IF $Daemon > 0
    REM AT 02:00 MSG Go to bed you're drunk
 ENDIF
 
+include /home/laur/.cal_reminds
