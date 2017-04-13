@@ -17,9 +17,7 @@ application/ods; libreoffice %s ; copiousoutput
 image/*                  ; sxiv %s
 audio/*                  ; /usr/bin/mplayer %s                             ; copiousoutput
 video/*                  ; /usr/bin/mplayer %s                             ; copiousoutput
-#text/calendar            ; icalview.rb                                     ; copiousoutput
-text/calendar; ~/bin/dump-ical2.py %s; copiousoutput;  # see http://simonjbeaumont.com/posts/mutt-exchange/
-application/ics; ~/bin/dump-ical2.py %s; copiousoutput;
-#text/calendar; khal import -a TODO_set_calendar_name_to_imprt_to --batch %s; copiousoutput;
-#text/calendar; calcurse --import %s; copiousoutput;
+
+text/calendar; ical-prettyprint.py %s; copiousoutput;  # see http://simonjbeaumont.com/posts/mutt-exchange/
+application/ics; ical-prettyprint.py %s; copiousoutput;
 

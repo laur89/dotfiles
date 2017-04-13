@@ -82,8 +82,6 @@ unset record  # do not save sent mails locally; it'll be managed by the services
   set sort_alias       = alias  # sort aliasfile by alias
 unset imap_passive  # Allow Mutt to open new imap connection automatically.
 set imap_keepalive = 300  # Keep IMAP connection alive by polling intermittently (time in seconds).
-#set display_filter    = '$HOME/.mutt/mutt_store_alias.sh'
-#set display_filter = 'mutt_display_filter_strip_long_address_lists.sh'
 set display_filter = 'display_filter_entry.sh'
 
 # sidebar:
