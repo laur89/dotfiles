@@ -19,7 +19,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export GRADLE_HOME=/usr/share/gradle
 
     # add additional locations to $PATH:
-    export PATH=/usr/local/sbin:/usr/sbin:/sbin:$JAVA_HOME/bin:$M2:$BASE_DATA_DIR/dev/scripts/system:$BASE_DATA_DIR/dev/scripts/git:$BASE_DATA_DIR/dev/scripts/mutt:$HOME/bin:$GRADLE_HOME/bin:$PATH
+    export PATH=/usr/local/sbin:/usr/sbin:/sbin:$JAVA_HOME/bin:$M2:$BASE_DATA_DIR/dev/scripts/system:$BASE_DATA_DIR/dev/scripts/git:$HOME/bin:$GRADLE_HOME/bin:$PATH
     # ruby env (rbenv):
     export PATH="$HOME/.rbenv/bin:$PATH"
 

@@ -1631,30 +1631,27 @@ xmlformat() {
 xmlf() { xmlformat "$@"; }  # alias for xmlformat;
 
 createUsbIso() {
-    local file device mountpoint cleaned_devicename usage override_dev_partitioncheck OPTIND partition
-    local reverse inf ouf full_lsblk_output
+    local file device mountpoint cleaned_devicename usage override_dev_partitioncheck
+    local reverse inf ouf full_lsblk_output i OPTIND partition
 
     readonly usage="${FUNCNAME}: write files onto devices and vice versa.
 
-    Usage:   $FUNCNAME  [options]  image.file  device
-        -r  reverse the direction - device will be written into a file.
+    Usage:   $FUNCNAME  [options]  source  destination
         -o  allow selecting devices whose name ends with a digit (note that you
             should be selecting a whole device instead of its parition (ie sda vs sda1),
-            but some devices have weird names (eg sd cards)).
+            but some devices have weird names (eg sd cards, optical drives)).
 
-    example: $FUNCNAME  file.iso  /dev/sdh"
+    example: $FUNCNAME  file.iso  /dev/sdh
+             $FUNCNAME  /dev/sdb  /tmp/file.iso"
 
     check_progs_installed   dd lsblk dirname umount sudo || return 1
 
-    while getopts "hor" opt; do
+    while getopts "ho" opt; do
         case "$opt" in
            h) echo -e "$usage";
               return 0
               ;;
            o) override_dev_partitioncheck=1
-              shift $((OPTIND-1))
-              ;;
-           r) reverse=1
               shift $((OPTIND-1))
               ;;
            *) echo -e "$usage";
@@ -1663,8 +1660,15 @@ createUsbIso() {
         esac
     done
 
-    readonly file="$1"
-    readonly device="${2%/}"  # strip trailing slash
+    [[ "$#" -ne 2 ]] && { err "exactly 2 params required"; return 1; }
+    for i in "$@"; do
+        if [[ "$i" == /dev/* ]]; then
+            [[ "$i" == "$1" ]] && reverse=1  # direction is reversed - device will be written into a file.
+            device="${i%/}"  # strip trailing slash
+        else
+            file="$i"
+        fi
+    done
 
     readonly cleaned_devicename="${device##*/}"  # strip everything before last slash (slash included)
 
@@ -1707,7 +1711,6 @@ createUsbIso() {
     #sudo fdisk -l $device
     readonly full_lsblk_output="$(lsblk)" || { err "issues running lsblk"; return 1; }
     echo "$full_lsblk_output" | grep --color=auto -- "$cleaned_devicename\|MOUNTPOINT"
-
     confirm  "\nis selected device [$device] the correct one? (y/n)" || { report "aborting, nothing written." "$FUNCNAME"; return 1; }
 
     # find if device is mounted:
