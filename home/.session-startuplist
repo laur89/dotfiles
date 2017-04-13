@@ -19,9 +19,6 @@ declare -a PROGS=(
     "urxvtc"
     "xfce4-volumed"
     "guake"
-
-    "Earth_sunlight_wallpaper_changer.sh"
-    "sunlight_map_wallpaper_changer.sh"
     "wait_for_suspend_to_lock_screen.sh"
 )
 

@@ -6,7 +6,7 @@
 #    http://pragmaticemacs.com/emacs/migrating-from-offlineimap-to-mbsync-for-mu4e/
 ################################################
 #
-IMAPAccount gmail
+IMAPAccount personal
 # Address to connect to:
 Host imap.gmail.com
 User laur.aliste@gmail.com
@@ -46,7 +46,7 @@ Channel gmail-default
 Master :gmail-remote:
 Slave :gmail-local:
 #Patterns "INBOX" "[Gmail]/Sent Mail" "[Gmail]/Drafts" "[Gmail]/Starred"  # <- use this if you're not using different channel per maildir
-Patterns * !"[Gmail]" !Archives !bug-bash !twitter
+Patterns * ![Gmail]* !Archives !bug-bash !twitter
 Create Slave
 Expunge Both
 # Save the synchronization state files in the relevant directory:
