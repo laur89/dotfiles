@@ -22,9 +22,9 @@ SSLVersions TLSv1.2
 #   SPECIFICATION OF AN IMAP ACCOUNT)
 # - THE LOCAL STORAGE IS WHERE WE STORE THE EMAIL ON OUR COMPUTER
 
-# the rempte repository (aka proxy store):
+# the remote repository (aka proxy store):
 IMAPStore gmail-remote
-Account gmail
+Account personal
 
 # the local repository:
 MaildirStore gmail-local

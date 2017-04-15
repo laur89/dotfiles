@@ -5,7 +5,7 @@
 # account-hook will run a command everytime mutt calls a function related to an
 # account, like IMAP syncing, it does not require to switch to any folder.
 #
-folder-hook personal/*      source ~/.mutt/accounts/personal
+folder-hook personal/*     source ~/.mutt/accounts/personal
 folder-hook work/*         source ~/.mutt/accounts/work
 #folder-hook . 'uncolor index "~b \"Hi Joe\" ~R !~T !~F !~p !~P"'
 #folder-hook ""!"" 'color index brightyellow black "~b \"Hi Joe\" ~N !~T !~F !~p !~P"'

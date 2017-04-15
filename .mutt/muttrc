@@ -67,7 +67,7 @@ set ssl_starttls            = yes
 set ssl_use_sslv3           = yes
 set ssl_use_tlsv1 = yes
 
- unset sig_dashes  # dashes before sig;
+unset sig_dashes  # dashes before sig;
   set sleep_time=0  # open dirs w/o delay
   set sendmail_wait = -1  # dont wait for sending to complete
   set fcc_attach  # save attachments with the body
@@ -82,7 +82,7 @@ unset record  # do not save sent mails locally; it'll be managed by the services
   set sort_alias       = alias  # sort aliasfile by alias
 unset imap_passive  # Allow Mutt to open new imap connection automatically.
 set imap_keepalive = 300  # Keep IMAP connection alive by polling intermittently (time in seconds).
-set display_filter = 'display_filter_entry.sh'
+set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh'
 
 # sidebar:
     set mail_check_stats=yes
@@ -125,9 +125,7 @@ set display_filter = 'display_filter_entry.sh'
   #set date_format = "{}%"  # for dynamic date formatting
   #set date_format = "!%a %Y%m%d%H%M%S %Z"
   #set index_format = "%3C [%Z] %?X?A&-? %D %-15.15F %s"  # note the '%?X?A&-?' displays 'A' or '-' depending on presence of an attachment
-  #set index_format='/data/Seafile/main/Documents/comp/C-code/mfdate "%[%d.%m.%y]" "%8[%e. %b]" "%8[%H:%m]" "%Z %%s %-20.20L %?y?[%-5.5y]&       ? %?M?+& ?%s%%" "%[%s]" |'  # for dynamic date formatting
-  set index_format='/data/Seafile/main/Documents/comp/C-code/mfdate "%[%d.%m.%y]" "%8[%e. %b]" "%8[%H:%m]" "%3C [%Z] %?X?A&-? %%s %-15.15F %s" "%[%s]" |'  # for dynamic date formatting
-  #set index_format      = "%3C %Z %[!%m/%d] %-17.17F %s"
+  set index_format = '/data/Seafile/main/Documents/comp/C-code/mutt-index-format "%9[%d.%m.%y]" "%9[%e.%b]" "%8[%a %H:%m]" "%[%H:%m]" "%3C [%Z] %?X?%2X& -? %%s %-20.20L %?M?+%-2M&   ? %s %> [%4c]asladfg" "%[%s]" |'
   set alias_format = "%4n %t %-20a %r"
 color status red default
 

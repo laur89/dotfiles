@@ -14,6 +14,7 @@ set mbox          = "+work/Archive"  # If you want to save (move) mails out of t
                                      # read mail gets moved if 'move' var is set or as a result of mbox-hook;
 set postponed     = "+work/Drafts"
 
+set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh -a ~/.abook/work_addressbook'
 #set query_command = "echo; ~/.local/bin/gcontacts pbrisbin@gmail.com 'getnetrc pbrisbin@gmail.com' '%s'"
 #set query_command = "contacts -Sf '%eTOKEN%n' '%s' | sed -e 's/TOKEN/\t/g'"
 # goobook address qyery (executed by Tab binding):
