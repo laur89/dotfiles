@@ -6,8 +6,9 @@
 
 set realname      = "Laur Aliste"
 set from          = "laur.aliste@gmail.com"
-set sendmail      = "/usr/bin/msmtp -a personal"  # defaults to /usr/sbin/sendmail
-#set sendmail      = "/path/to/msmtp-enqueue.sh -a personal"  # to be able to send while offline
+#set sendmail      = "/usr/bin/msmtp -a personal"  # defaults to /usr/sbin/sendmail
+set sendmail      = "/usr/share/doc/msmtp/examples/msmtpqueue/msmtp-enqueue.sh -a personal"  # to be able to send while offline;
+                                                                                             # make sure it's the same as in checkmail.sh
 set trash         = "+personal/trash"
 #folder-hook personal/trash unset trash  # unset trash if you're in trash folder as per http://unix.stackexchange.com/a/105608
 set mbox          = "+personal/archive"  # If you want to save (move) mails out of the inbox which you've read instead of deleting them right on (or cluttering up your inbox).

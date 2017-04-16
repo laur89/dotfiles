@@ -492,12 +492,12 @@ __find_top_big_small_fun() {
 }
 
 ffindtopbig() {
-    __find_top_big_small_fun "M" "large" 10 "$@"
+    __find_top_big_small_fun M large 10 "$@"
 }
 
 ffindtopsmall() {
     #find . -type f -exec ls -s --block-size=K {} \; | sort -n | head -$itemsToShow 2>/dev/null
-    __find_top_big_small_fun "K" "small" 10 "$@"
+    __find_top_big_small_fun K small 10 "$@"
 }
 
 # find smaller/bigger than Xmegas files
@@ -704,13 +704,13 @@ __find_bigger_smaller_common_fun() {
 # find  nodes bigger than x mb:
 ffindbiggerthan() {
     #find . -size +${size}M -exec ls -s --block-size=M {} \; | sort -nr 2>/dev/null
-    __find_bigger_smaller_common_fun "M" "bigger" "$@"
+    __find_bigger_smaller_common_fun M bigger "$@"
 }
 
 # find  nodes smaller than x mb:
 ffindsmallerthan() {
     #find . -size -${size}M -exec ls -s --block-size=M {} \; | sort -n 2>/dev/null
-    __find_bigger_smaller_common_fun "M" "smaller" "$@"
+    __find_bigger_smaller_common_fun M smaller "$@"
 }
 
 aptsearch() {
