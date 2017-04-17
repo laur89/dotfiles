@@ -119,7 +119,7 @@ set nocompatible " Must be the first line
     Plugin 'fmoralesc/vim-pad'   " alt to vim-notes
     Plugin 'vim-pandoc/vim-pandoc'  " this and pandoc-syntax for vim-pad
     Plugin 'vim-pandoc/vim-pandoc-syntax'
-    "Plugin 'jceb/vim-orgmode'  " text outlining (to use with note-taking plugins?)
+    Plugin 'jceb/vim-orgmode'  " text outlining (to use with note-taking plugins?)
 
     " Selfexplanatory...
     Plugin 'jlanzarotta/bufexplorer'
@@ -261,6 +261,12 @@ set nocompatible " Must be the first line
 
     " open terminal OR file manager at the directory of current location (got, goT, fog, goF)
     Plugin 'justinmk/vim-gtfo'
+    
+    " calendar in vim:   " https://github.com/mattn/calendar-vim
+    Plugin 'mattn/calendar-vim'
+
+    " universal text linking (here for orgmode hyperlink support) " vim-scripts/utl.vim
+    Plugin 'vim-scripts/utl.vim'
 
     " ctrl+w o   to zoom into a window and back:
     "Plugin 'drn/zoomwin-vim'  " TODO: atm only works with vim (not nvim; better use :tab split?)
@@ -594,11 +600,12 @@ set nocompatible " Must be the first line
     "let g:pad#dir = '/tmp/vim-pad'
     let g:pad#open_in_split = 0  " when set to 0, then opens note in full window, not in split
     let g:pad#window_height = 20  " the bottom split window height
-    let g:pad#default_format = "pandoc"  " default format is markdown; this overrides it
+    "let g:pad#default_format = "pandoc"  " default format is markdown; this overrides it
+    let g:pad#default_format = "orgmode"  " default format is markdown; this overrides it
     "let g:pad#exclude_dirnames = "img,assets"
     let g:pad#search_backend = 'ag'
     "let g:pad#local_dir = '.notes'  " local dir for separate (eg project-specific) set of notes
-    let g:pad#default_file_extension = '.note'
+    let g:pad#default_file_extension = '.org'  " note .org only makes sense when orgmode is used
 
     " Ag (silver-searcher)
     " by default, start search from project root:
@@ -620,9 +627,14 @@ set nocompatible " Must be the first line
     autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
 
     " vim-gtfo
-    " set shell to open with 'got' keykombo:
+    " set shell to open with 'got' keycombo:
     let g:gtfo#terminals = { 'unix' : 'urxvt -cd' }
 
+    " vim-orgmode
+    " conceal what can be concealed:
+    let g:org_aggressive_conceal = 1
+    " indent body text:
+    let g:org_indent = 1
 """ }}}
 
 """ Local ending config, will overwrite anything above. Generally use this. {{{{

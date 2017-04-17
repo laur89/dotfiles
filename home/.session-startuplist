@@ -14,7 +14,6 @@ declare -a PROGS=(
     "keepassx"
     "franz"
     "copyq"
-    "mbsync --all"
     "delay_screensaver"
     "urxvtc"
     "xfce4-volumed"
