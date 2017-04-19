@@ -1761,7 +1761,7 @@ mkgit() {
     readonly usage="usage:   $FUNCNAME  -g|-b|-w  <dirname> [project_name]
            -g   create repo in github
            -b   create repo in bitbucket
-           -w   create repo in work (not supported as of now)
+           -w   create repo at work
 
      if  [project_name]  is not given, then project name will be same as  <dirname>"
 
@@ -1854,9 +1854,9 @@ mkgit() {
         # find our namespaces:
         readonly gitlab_namespaces_json="$(curl -sL --insecure \
             --header "PRIVATE-TOKEN: $passwd" \
-            "https://${repo}/api/v3/namespaces")"
+            "https://${repo}/api/v3/namespaces?per_page=100")"
 
-        [[ "$gitlab_namespaces_json" == '[{"'* ]] || { err "found namespaces curl reply isn't expected json array" "$FUNCNAME"; return 1; }
+        [[ "$gitlab_namespaces_json" == '[{"'* ]] || { err "found namespaces curl reply isn't expected json array: $gitlab_namespaces_json" "$FUNCNAME"; return 1; }
 
         is_id_field=0
         declare -A namespace_to_id

@@ -104,6 +104,12 @@ export TLDR_COLOR_PARAMETER="white"
 export TLDR_CACHE_ENABLED=1
 export TLDR_CACHE_MAX_AGE=720
 
+# conscript (distribution mechanism for scala apps using github & mvn) env vars (from
+# http://www.foundweekends.org/conscript/setup.html):
+export CONSCRIPT_HOME="$HOME/.conscript"
+export CONSCRIPT_OPTS="-XX:MaxPermSize=512M -Dfile.encoding=UTF-8"
+export PATH=$CONSCRIPT_HOME/bin:$PATH
+
 
 if [[ -d "$BASE_DATA_DIR/tmp" && -w "$BASE_DATA_DIR/tmp" ]]; then
     export _PERSISTED_TMP="$BASE_DATA_DIR/tmp"

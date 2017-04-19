@@ -706,6 +706,18 @@ install_deps() {
     _install_tmux_deps
     unset _install_tmux_deps
 
+    # conscript (scala apps distribution manager):  # http://www.foundweekends.org/conscript/setup.html
+    execute 'wget https://raw.githubusercontent.com/foundweekends/conscript/master/setup.sh -O - | sh'
+
+    # install scala apps (requires conscript):
+    if [[ "$PATH" == *conscript* ]]; then  # (assuming conscript is installed and executable is on our PATH)
+        execute 'cs foundweekends/giter8'  # https://github.com/foundweekends/giter8
+                                           #   note its conf is in bash_env_vars
+    else
+        err "[conscript] not on \$PATH; make sure to re-install deps"
+    fi
+
+
     # TODO: these are not deps, are they?:
     execute "sudo pip install --upgrade git-playback"   # https://github.com/jianli/git-playback
 

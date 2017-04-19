@@ -269,7 +269,8 @@ __check_for_change_and_compile_ssh_config() {
     return 0
 }
 
-( __check_for_change_and_compile_ssh_config )  # execute in subshell because of cd-ing
+__check_for_change_and_compile_ssh_config &
+disown $!
 ##########################################
 # fasd init caching and loading:  (https://github.com/clvv/fasd)
 fasd_cache="$HOME/.fasd-init-bash.cache"
@@ -285,4 +286,6 @@ unset fasd_cache
 
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="/home/laur/.sdkman"
-[[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
+if [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]]; then
+    source "$SDKMAN_DIR/bin/sdkman-init.sh"
+fi
