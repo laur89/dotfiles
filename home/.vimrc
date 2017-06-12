@@ -109,7 +109,7 @@ set nocompatible " Must be the first line
 
     " Functions, class data etc.
     " REQUIREMENTS: (exuberant)-ctags
-    Plugin 'majutsushi/tagbar'
+    "Plugin 'majutsushi/tagbar'
 
     " Ctags generator/highlighter (note the vim-misc is dependency for it)
     Plugin 'xolox/vim-misc'
