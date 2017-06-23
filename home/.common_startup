@@ -94,11 +94,13 @@ set_keyboard_layout() {
 
 ################################################
 
-#xrandr --output DP-2 --auto --right-of DP-1 &
-check_progs_installed detect_displays.sh && detect_displays.sh &
-if is_work && ! is_laptop; then
-    check_progs_installed xrandr && xrandr --output DP-2 --rotate left
-fi
+(
+    #xrandr --output DP-2 --auto --right-of DP-1 &
+    check_progs_installed detect_displays.sh && detect_displays.sh
+    if is_work && ! is_laptop; then
+        check_progs_installed xrandr && xrandr --output DP-2 --rotate left
+    fi
+) &
 
 # Load bitmap fonts:
 xset +fp ~/.fonts
