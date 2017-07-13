@@ -2372,7 +2372,7 @@ fog() {
 
     opts="$1"
 
-    readonly default_depth="m10"
+    readonly default_depth="m6"
     declare -a matches=()
 
     if [[ "$opts" == -* ]]; then

@@ -707,6 +707,7 @@ install_deps() {
     unset _install_tmux_deps
 
     # conscript (scala apps distribution manager):  # http://www.foundweekends.org/conscript/setup.html
+                                                    # check https://github.com/foundweekends/conscript/issues/124
     execute 'wget https://raw.githubusercontent.com/foundweekends/conscript/master/setup.sh -O - | sh'
 
     # install scala apps (requires conscript):
@@ -714,7 +715,7 @@ install_deps() {
         execute 'cs foundweekends/giter8'  # https://github.com/foundweekends/giter8
                                            #   note its conf is in bash_env_vars
     else
-        err "[conscript] not on \$PATH; make sure to re-install deps"
+        err "[conscript] not on \$PATH; if it's the first run, then just re-run install_deps"
     fi
 
 
@@ -763,6 +764,8 @@ install_laptop_deps() {
                 confirm "we seem to have realtek wifi; want to install firmware-realtek?"; then
             report "we have realtek wifi; installing realtek drivers..."
             install_block "firmware-realtek"
+        else
+            err "can't detect Intel nor Realtek wifi; what card do you have?"
         fi
     }
 
