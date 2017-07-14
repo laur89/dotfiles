@@ -757,11 +757,11 @@ install_laptop_deps() {
         # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
         readonly wifi_info="$(sudo lshw | grep -iA 5 'Wireless interface')"
 
-        if echo "$wifi_info" | grep -iq 'vendor.*Intel'; then
+        if grep -iq 'vendor.*Intel' <<< "$wifi_info"; then
             report "we have intel wifi; installing intel drivers..."
             install_block "firmware-iwlwifi"
-        elif echo "$wifi_info" | grep -iq 'vendor.*Realtek' && \
-                confirm "we seem to have realtek wifi; want to install firmware-realtek?"; then
+        elif grep -iq 'vendor.*Realtek' <<< "$wifi_info"; then
+            confirm "we seem to have realtek wifi; want to install firmware-realtek?" || return
             report "we have realtek wifi; installing realtek drivers..."
             install_block "firmware-realtek"
         else
@@ -769,7 +769,7 @@ install_laptop_deps() {
         fi
     }
 
-    # xinput is for configuration; see  https://wiki.archlinux.org/index.php/Libinput
+    # xinput is for input device configuration; see  https://wiki.archlinux.org/index.php/Libinput
     install_block '
         libinput-tools
         xinput
@@ -2986,7 +2986,8 @@ execute() {
 
 
 select_items() {
-    local DMENU nr_of_dmenu_vertical_lines dmenurc options options_dmenu i prompt msg choices num is_single_selection selections
+    local DMENU nr_of_dmenu_vertical_lines dmenurc options options_dmenu
+    local i prompt msg choices num is_single_selection selections
 
     # original version stolen from http://serverfault.com/a/298312
     declare -ar options=( $1 )

@@ -2294,15 +2294,14 @@ ago() {
     check_progs_installed ag "$editor" dmenu || return 1
     [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
 
-    [[ -z "$@" ]] && { err "args required."; return 1; }
+    [[ -z "$*" ]] && { err "args required."; return 1; }
 
-    match="$(ag -g "$@")"
-    [[ "$?" -eq 0 ]] || return 1
+    match="$(ag -g "$@")" || return 1
 
     [[ $(echo "$match" | wc -l) -gt 1 ]] && match="$(echo "$match" | $DMENU -l 20 -p open)"
     [[ -z "$match" ]] && return 1
 
-    [[ -f "$match" ]] || { err "\"$match\" is not a regular file." "$FUNCNAME"; return 1; }
+    [[ -f "$match" ]] || { err "[$match] is not a regular file." "$FUNCNAME"; return 1; }
     $editor "$match"
 }
 
@@ -2639,10 +2638,10 @@ __fo() {
 
     case "$filetype" in
         'image/x-xcf; charset=binary')  # xcf is gimp
-            "$image_editor" -- "${files[@]}"
+            "$image_editor" -- "${files[@]}" &
             ;;
         image/*)
-            "$image_viewer" -- "${files[@]}"
+            "$image_viewer" -- "${files[@]}" &
             ;;
         application/octet-stream*)
             # should be the logs on app servers
@@ -2658,7 +2657,7 @@ __fo() {
             fi
             ;;
         video/* | audio/mp4*)
-            "$video_player" -- "${files[@]}"
+            "$video_player" -- "${files[@]}" &
             ;;
         text/*)
             # if we're dealing with a logfile (including *.out), force open in PAGER
@@ -2669,7 +2668,7 @@ __fo() {
             fi
             ;;
         application/pdf*)
-            "$pdf_viewer" -- "${files[@]}"
+            "$pdf_viewer" -- "${files[@]}" &
             ;;
         application/x-elc*)  # TODO: what exactly is it?
             "$editor" -- "${files[@]}"
@@ -2692,7 +2691,7 @@ __fo() {
                 | 'application/'*'opendocument'*'; charset=binary' \
                 | 'application/'*'ms-office; charset=binary' \
                 | 'application/'*'ms-excel; charset=binary')
-            "$office" "${files[@]}"  # libreoffice doesn't like option ending marker '--'
+            "$office" "${files[@]}" &  # libreoffice doesn't like option ending marker '--'
             ;;
         *)
             err "dunno what to open this type of file with:\n\t$filetype" "${FUNCNAME[1]}"
