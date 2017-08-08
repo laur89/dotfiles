@@ -2956,8 +2956,9 @@ transfer() {
 
     # write to output to tmpfile because of progress bar
     readonly tmpfile=$(mktemp -t transfer_XXX.tmp) || { err "unable to create temp with mktemp" "$FUNCNAME"; return 1; }
-    curl --progress-bar --upload-file -- "$file" "https://transfer.sh/$(basename -- "$file")" >> "$tmpfile" || { err; return 1; }
+    curl --progress-bar --upload-file "$file" "https://transfer.sh/$(basename -- "$file")" >> "$tmpfile" || { err; return 1; }
     cat -- "$tmpfile"
+    echo
     copy_to_clipboard "$(cat -- "$tmpfile")" && report "copied link to clipboard" "$FUNCNAME" || err "copying to clipboard failed" "$FUNCNAME"
 
     rm -f -- "$tmpfile"
@@ -2968,7 +2969,7 @@ transfer() {
 ## Copy && Follow ##
 ####################
 cpf() {
-    [[ -z "$@" ]] && { err "arguments for the cp command required." "$FUNCNAME"; return 1; }
+    [[ -z "$*" ]] && { err "arguments for the cp command required." "$FUNCNAME"; return 1; }
     cp -- "$@" && goto "$_";
 }
 
@@ -2976,7 +2977,7 @@ cpf() {
 ## Move && Follow ##
 ####################
 mvf() {
-    [[ -z "$@" ]] && { err "name of a node to be moved required." "$FUNCNAME"; return 1; }
+    [[ -z "$*" ]] && { err "name of a node to be moved required." "$FUNCNAME"; return 1; }
     mv -- "$@" && goto "$_";
 }
 
@@ -2984,7 +2985,7 @@ mvf() {
 ## Make dir && Follow ##
 ########################
 mkcd() {
-    [[ -z "$@" ]] && { err "name of a directory to be created required." "$FUNCNAME"; return 1; }
+    [[ -z "$*" ]] && { err "name of a directory to be created required." "$FUNCNAME"; return 1; }
     mkdir -p -- "$@" && cd -- "$@"
 }
 
