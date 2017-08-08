@@ -19,7 +19,8 @@
     ;autocrlf = input
     autocrlf = false
     safecrlf = true
-    pager = less
+    ;pager = less
+	pager = diff-so-fancy | less --tabs=4 -RFX
 [pull]
     rebase = true
 [difftool]

@@ -367,30 +367,28 @@ install_nfs_server() {
     fi
 
     while true; do
-        if confirm "$(report "add ${client_ip:+another }client IP for the exports list?")"; then
-            echo -e "enter client ip:"
-            read -r client_ip
+        confirm "$(report "add ${client_ip:+another }client IP for the exports list?")" || break
 
-            [[ "$client_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$client_ip]"; continue; }
+        echo -e "enter client ip:"
+        read -r client_ip
 
-            echo -e "enter share to expose (leave blank to default to [$NFS_SERVER_SHARE]):"
-            read -r share
+        [[ "$client_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$client_ip]"; continue; }
 
-            share=${share:-"$NFS_SERVER_SHARE"}
-            [[ "$share" != /* ]] && { err "share needs to be defined as full path."; continue; }
-            [[ -d "$share" ]] || { err "[$share] is not a valid dir."; continue; }
+        echo -e "enter share to expose (leave blank to default to [$NFS_SERVER_SHARE]):"
+        read -r share
 
-            # TODO: automate multi client/range options:
-            # entries are basically:         directory machine1(option11,option12) machine2(option21,option22)
-            # to set a range of ips, then:   directory 192.168.0.0/255.255.255.0(ro)
-            if ! grep -q "${share}.*${client_ip}" "$nfs_conf"; then
-                report "adding [$share] for $client_ip to $nfs_conf"
-                execute "echo $share ${client_ip}\(rw,sync,no_subtree_check\) | sudo tee --append $nfs_conf > /dev/null"
-            else
-                report "an entry for exposing [$share] to $client_ip is already present in $nfs_conf"
-            fi
+        share=${share:-"$NFS_SERVER_SHARE"}
+        [[ "$share" != /* ]] && { err "share needs to be defined as full path."; continue; }
+        [[ -d "$share" ]] || { err "[$share] is not a valid dir."; continue; }
+
+        # TODO: automate multi client/range options:
+        # entries are basically:         directory machine1(option11,option12) machine2(option21,option22)
+        # to set a range of ips, then:   directory 192.168.0.0/255.255.255.0(ro)
+        if ! grep -q "${share}.*${client_ip}" "$nfs_conf"; then
+            report "adding [$share] for $client_ip to $nfs_conf"
+            execute "echo $share ${client_ip}\(rw,sync,no_subtree_check\) | sudo tee --append $nfs_conf > /dev/null"
         else
-            break
+            report "an entry for exposing [$share] to $client_ip is already present in $nfs_conf"
         fi
     done
 
@@ -545,44 +543,42 @@ install_sshfs() {
     execute "sudo gpasswd -a $USER fuse"
 
     while true; do
-        if confirm "$(report "add ${prev_server_ip:+another }sshfs entry to fstab?")"; then
-            echo -e "enter server ip: ${prev_server_ip:+(leave blank to default to [$prev_server_ip])}"
-            read -r server_ip
-            [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
-            [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$server_ip]"; continue; }
+        confirm "$(report "add ${prev_server_ip:+another }sshfs entry to fstab?")" || break
 
-            echo -e "enter remote user to log in as (leave blank to default to your local user, [$USER]):"
-            read -r remote_user
-            [[ -z "$remote_user" ]] && remote_user="$USER"
+        echo -e "enter server ip: ${prev_server_ip:+(leave blank to default to [$prev_server_ip])}"
+        read -r server_ip
+        [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
+        [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$server_ip]"; continue; }
 
-            echo -e "enter local mountpoint to mount sshfs share to (leave blank to default to [$default_mountpoint]):"
-            read -r mountpoint
-            [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
-            list_contains "$mountpoint" "${used_mountpoints[*]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
-            create_mountpoint "$mountpoint" || continue
+        echo -e "enter remote user to log in as (leave blank to default to your local user, [$USER]):"
+        read -r remote_user
+        [[ -z "$remote_user" ]] && remote_user="$USER"
 
-            echo -e "enter remote share to mount (leave blank to default to [$SSH_SERVER_SHARE]):"
-            read -r ssh_share
-            [[ -z "$ssh_share" ]] && ssh_share="$SSH_SERVER_SHARE"
-            list_contains "${server_ip}${ssh_share}" "${mounted_shares[*]}" && { report "selected [${server_ip}:${ssh_share}] has already been used for previous definition"; continue; }
-            [[ "$ssh_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
+        echo -e "enter local mountpoint to mount sshfs share to (leave blank to default to [$default_mountpoint]):"
+        read -r mountpoint
+        [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
+        list_contains "$mountpoint" "${used_mountpoints[*]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
+        create_mountpoint "$mountpoint" || continue
 
-            if ! grep -q "${remote_user}@${server_ip}:${ssh_share}.*${mountpoint}" "$fstab"; then
-                report "adding [${server_ip}:$ssh_share] mounting to [$mountpoint] in $fstab"
-                execute "echo ${remote_user}@${server_ip}:${ssh_share} $mountpoint fuse.sshfs port=${ssh_port},noauto,x-systemd.automount,_netdev,users,idmap=user,IdentityFile=${identity_file},allow_other,reconnect 0 0 \
-                        | sudo tee --append $fstab > /dev/null"
+        echo -e "enter remote share to mount (leave blank to default to [$SSH_SERVER_SHARE]):"
+        read -r ssh_share
+        [[ -z "$ssh_share" ]] && ssh_share="$SSH_SERVER_SHARE"
+        list_contains "${server_ip}${ssh_share}" "${mounted_shares[*]}" && { report "selected [${server_ip}:${ssh_share}] has already been used for previous definition"; continue; }
+        [[ "$ssh_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
 
-                sel_ips_to_user["$server_ip"]="$remote_user"
-            else
-                report "an ssh share entry for [${server_ip}:${ssh_share}] in $fstab already exists."
-            fi
+        if ! grep -q "${remote_user}@${server_ip}:${ssh_share}.*${mountpoint}" "$fstab"; then
+            report "adding [${server_ip}:$ssh_share] mounting to [$mountpoint] in $fstab"
+            execute "echo ${remote_user}@${server_ip}:${ssh_share} $mountpoint fuse.sshfs port=${ssh_port},noauto,x-systemd.automount,_netdev,users,idmap=user,IdentityFile=${identity_file},allow_other,reconnect 0 0 \
+                    | sudo tee --append $fstab > /dev/null"
 
-            prev_server_ip="$server_ip"
-            used_mountpoints+=("$mountpoint")
-            mounted_shares+=("${server_ip}${ssh_share}")
+            sel_ips_to_user["$server_ip"]="$remote_user"
         else
-            break
+            report "an ssh share entry for [${server_ip}:${ssh_share}] in $fstab already exists."
         fi
+
+        prev_server_ip="$server_ip"
+        used_mountpoints+=("$mountpoint")
+        mounted_shares+=("${server_ip}${ssh_share}")
     done
 
     report "sudo ssh-ing to entered IPs [${!sel_ips_to_user[*]}], so our root would have the remote in the /root/.ssh/known_hosts ..."
@@ -691,6 +687,14 @@ install_deps() {
     # maven bash completion:
     clone_or_pull_repo "juven" "maven-bash-completion" "$BASE_DEPS_LOC"  # https://github.com/juven/maven-bash-completion
     create_link "${BASE_DEPS_LOC}/maven-bash-completion" "$HOME/.maven-bash-completion"
+
+    # diff-so-fancy - human-readable git diff:  # https://github.com/so-fancy/diff-so-fancy
+    if execute "wget -O /tmp/d-s-f 'https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy'"; then
+        git config core.pager | grep -q diff-so-fancy || err "git config core.pager not set for diff-so-fancy"
+        test -s /tmp/d-s-f && execute "mv -- /tmp/d-s-f $HOME/bin/diff-so-fancy; chmod +x $HOME/bin/diff-so-fancy" || err "fetched diff-so-fancy file is null"
+    else
+        err "diff-so-fancy fetch failed"
+    fi
 
     # dynamic colors loader:
     #clone_or_pull_repo "sos4nt" "dynamic-colors" "$BASE_DEPS_LOC"  # https://github.com/sos4nt/dynamic-colors
