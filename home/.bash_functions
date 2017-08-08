@@ -723,7 +723,7 @@ aptsearch() {
 
 aptsrc() { aptsearch "$@"; }  # alias
 
-aptreset() {
+aptclean() {
     local apt_lists_dir
 
     readonly apt_lists_dir="/var/lib/apt/lists"
@@ -743,8 +743,6 @@ aptreset() {
     sudo apt-get update
     #sudo apt-get upgrade
 }
-
-aptclean() { aptreset; }
 
 #  Find a pattern in a set of files and highlight them:
 #+ (needs a recent version of grep).
@@ -1914,7 +1912,7 @@ mkgit() {
                 ;;
         esac
 
-        if [[ "$http_statuscode" != 20* || "${#http_statuscode}" -ne 3 ]]; then
+        if [[ "${#http_statuscode}" -ne 3 || "$http_statuscode" != 20* ]]; then
             err "curl request for creating the repo @ [$repo] apparently failed; response code was [$http_statuscode]" "$FUNCNAME"
             if [[ -f "$curl_output" ]]; then
                 err "curl output can be found in [$curl_output]. contents are:\n\n" "$FUNCNAME"
