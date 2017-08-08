@@ -52,7 +52,7 @@ ffind() {
         # note exact and regex are mutually exclusive
         [[ "$exact" -eq 1 ]] || wildcard='*'
         [[ "$regex" -eq 1 ]] && wildcard='.*'
-        [[ "$src" == '*' || "$src" == '.*' ]] && unset src
+        [[ "$src" == '*' || "$src" == '.*' ]] && unset src  # TODO: verify this; what if we're searching for files starting with dot?
 
         if [[ -n "$src" ]]; then
             find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} "$wildcard$src$wildcard" $extra_params $printFlag $quitFlag $deleteFlag 2>/dev/null
@@ -3529,7 +3529,6 @@ d() {  # mnemonic: dir
 # marks (jumps)                             ##
 # from: http://jeroenjanssens.com/2013/08/16/quickly-navigate-your-filesystem-from-the-command-line.html
 ##############################################
-unset _MARKPATH  # otherwise we'll use the regular user defined _MARKPATH who changed into su
 if [[ "$EUID" -eq 0 ]]; then
     _MARKPATH="$(find $BASE_DATA_DIR /home -mindepth 2 -maxdepth 2 -type d -name $_MARKPATH_DIR -print0 -quit 2>/dev/null)"
     [[ -z "$_MARKPATH" ]] && _MARKPATH="$HOME/$_MARKPATH_DIR"
@@ -3538,7 +3537,6 @@ else
     [[ -d "$BASE_DATA_DIR" ]] && _MARKPATH="$BASE_DATA_DIR/$_MARKPATH_DIR" || _MARKPATH="$HOME/$_MARKPATH_DIR"
 fi
 
-#export _MARKPATH="${_MARKPATH:-$HOME/$_MARKPATH_DIR}"
 export _MARKPATH
 
 # jump to mark:

@@ -137,7 +137,13 @@ if [[ "$-" != *i* ]]; then
 #if ! shopt -q login_shell; then
 #if [[ "$(tty)" != "/dev/tty1" ]] && [[ \"\$(who | cut -d' ' -f1 | sort | uniq)\" == \"\$usr\" ]]; do
 
-    export DISPLAY=':0'
+    # try to extract our DISPLAY value from $(who) output
+    _DISP="$(LANG= who -u | grep -oP '\s+\(\K:[0-9](\.[0-9])?(?=\))' | sort -u)"
+    if [[ -z "$_DISP" || "$(wc -l <<< "$_DISP")" -ne 1 ]]; then
+        echo -e "\n\n    ERROR: couldn't find our \$DISPLAY from [$_DISP]\n\n"
+    else
+        export DISPLAY="$_DISP"
+    fi
 fi
 
 # marker var used to detect whether env vars have been loaded:
