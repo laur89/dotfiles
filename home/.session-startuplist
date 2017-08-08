@@ -12,7 +12,6 @@ declare -a PROGS=(
     "urxvtd"
     "davmail"
     "keepassx"
-    "franz"
     "copyq"
     "delay_screensaver"
     "urxvtc"
@@ -22,16 +21,17 @@ declare -a PROGS=(
 )
 
 # oldies:
-    #"icedove" \
-    #"volti" \
-    #"parcellite" \
-    #"delay_screensaver.py" \
+    #"icedove"
+    #"volti"
+    #"parcellite"
+    #"delay_screensaver.py"
     #"blueman-applet"
     #"nm-applet"
     #"xfce4-power-manager"
     #"ssh-agent"
     #"skype"
     #"spacefm"
+    #"franz"
 
 # alternative to lock automatically when suspending/hibernating: (requires xss-lock)
 # (currently using the shellscript that listens to dbus messages)
@@ -81,7 +81,7 @@ done
 
 #launchy &
 
-# set wallpaper (afterwards, script will be run periodically by cron):
+# set wallpaper (afterwards, script should be ran periodically by cron):
 wallpaper_changer.sh > /dev/null 2>&1 &
 
 #if ! [[ "$(ps -e | grep "\bmpd\b")" ]]; then
@@ -162,7 +162,7 @@ if is_laptop; then
             -i '/^lockTimeout:/s/^lockTimeout:.*/lockTimeout:\t0:00:05/g' ~/.xscreensaver || \
                 err_display "unable to edit ~/.xscreensaver with sed" "$SELF"; ) &
     else
-        err_display "xscreensaver conf does not exist; if not using it anymore, remove logic from [$SELF]"
+        err_display "xscreensaver conf does not exist; if not using xscreensaver anymore, remove logic from [$SELF]"
     fi
 fi
 
