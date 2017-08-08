@@ -110,7 +110,8 @@ fi
 
 # from https://www.roaringpenguin.com/wiki/index.php/Remind_use_case_1
 if ! is_proc_running remind; then
-    [[ -f "$HOME/.reminders" ]] && remind -z -k'gxmessage -title "reminder" %s &' ~/.reminders &
+    #[[ -f "$HOME/.reminders" ]] && remind -z -k'gxmessage -title "reminder" %s &' ~/.reminders &
+    [[ -f "$HOME/.reminders" ]] && remind -z -k'notify-send -t reminder -- "%s" &' ~/.reminders &
     echo "Launching remind..."
 fi
 
