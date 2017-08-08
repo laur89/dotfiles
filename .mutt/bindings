@@ -1,5 +1,6 @@
 # vim: ft=muttrc
 bind index i noop
+bind index g noop  # https://neomutt.org/guide/configuration.html#bind-warnings
 bind index gg first-entry
 bind index G last-entry
 bind index,pager N search-opposite
@@ -10,6 +11,7 @@ bind pager q exit
 bind pager / search
 bind pager j next-line
 bind pager k previous-line
+bind pager g noop  # https://neomutt.org/guide/configuration.html#bind-warnings
 bind pager gg top
 bind pager G bottom
 bind index,pager \# noop
