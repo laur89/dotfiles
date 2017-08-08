@@ -14,16 +14,19 @@
 #---   Configuration  ---
 #------------------------
 readonly TMPDIR='/tmp'
-readonly CLANG_LLVM_LOC='http://releases.llvm.org/4.0.0/clang+llvm-4.0.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
+readonly CLANG_LLVM_LOC='http://releases.llvm.org/4.0.1/clang+llvm-4.0.1-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
 readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - yeah.
 readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
+readonly RAMBOX_REPO_LOC='https://github.com/saenzramiro/rambox.git'  # opensource franz alt.
 readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX - open password manager forked from keepass project
 readonly GOFORIT_REPO_LOC='https://github.com/mank319/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
 readonly SYNERGY_REPO_LOC='https://github.com/symless/synergy.git'    # synergy - share keyboard&mouse between computers on same LAN
-readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u112-b15/jdk-8u112-linux-x64.tar.gz' # jdk8: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
-                                                                                                           # jdk7: http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
-                                                                                                           # jdk9: https://jdk9.java.net/  /  https://jdk9.java.net/download/
+readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u144-b01/090f390dda5b47b9b721c7dfaa008135/jdk-8u144-linux-x64.tar.gz'
+                                                                          #       http://www.oracle.com/technetwork/java/javase/downloads/index.html
+                                                                          # jdk8: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+                                                                          # jdk7: http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
+                                                                          # jdk9: https://jdk9.java.net/  /  https://jdk9.java.net/download/
 readonly SKYPE_LOC='http://www.skype.com/go/getskype-linux-deb'       # http://www.skype.com/en/download-skype/skype-for-computer/
 readonly JDK_LINK_LOC="/usr/local/jdk_link"      # symlink linking to currently active java installation
 readonly JDK_INSTALLATION_DIR="/usr/local/javas" # dir containing all the installed java versions
@@ -54,8 +57,9 @@ EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%b-%y--%R).log" \
 #--- Global Constants ---
 #------------------------
 readonly BASE_DATA_DIR="/data"  # try to keep this value in sync with equivalent defined in $SHELL_ENVS;
-readonly BASE_DEPS_LOC="$BASE_DATA_DIR/progs/deps"  # hosting stuff like homeshick, bash-git-prompt...
-readonly BASE_BUILDS_DIR="$BASE_DATA_DIR/progs/custom_builds"  # hosts our built progs and/or their .deb packages;
+readonly BASE_PROGS_DIR="$BASE_DATA_DIR/progs"
+readonly BASE_DEPS_LOC="$BASE_PROGS_DIR/deps"             # hosting stuff like homeshick, bash-git-prompt...
+readonly BASE_BUILDS_DIR="$BASE_PROGS_DIR/custom_builds"  # hosts our built progs and/or their .deb packages;
 readonly BASE_HOMESICK_REPOS_LOC="$BASE_DEPS_LOC/homesick/repos"
 readonly COMMON_DOTFILES="$BASE_HOMESICK_REPOS_LOC/dotfiles"
 readonly COMMON_PRIVATE_DOTFILES="$BASE_HOMESICK_REPOS_LOC/private-common"
@@ -90,7 +94,7 @@ print_usage() {
 
 validate_and_init() {
 
-    # need to define PRIVATE_CASTLE here, as otherwis 'single-step' mode of this
+    # need to define PRIVATE_CASTLE here, as otherwise 'single-step' mode of this
     # script might fail. be sure the repo names are in sync with the repos actually
     # pulled in fetch_castles().
     case "$MODE" in
@@ -142,7 +146,7 @@ check_dependencies() {
 
     readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
-    for prog in git cmp wget tar realpath dirname basename tee; do
+    for prog in git cmp wget tar unzip realpath dirname basename tee; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
             install_block "$prog" || { err "unable to install required prog [$prog] this script depends on. abort."; exit 1; }
@@ -188,7 +192,7 @@ setup_hosts() {
         readonly file="$1"
         #current="$(grep '\(127\.0\.1\.1\)\s\+\(.*\)\s\+\(\w\+\)' $file)"
         readonly current="$(grep "$HOSTNAME" "$file")"
-        if [[ -z "$current" || "$(echo "$current" | wc -l)" -ne 1 ]]; then
+        if [[ -z "$current" || "$(wc -l <<< "$current")" -ne 1 ]]; then
             err "[$file] contained either more or less than 1 line(s) containing our hostname. check manually."
             return 1
         fi
@@ -258,11 +262,8 @@ setup_apt() {
                 ; do
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
-        if [[ -f "$file" ]]; then
-            backup_original_and_copy_file --sudo "$file" "$apt_dir"
-        else
-            err "expected configuration file at [$file] does not exist; won't install it."
-        fi
+        [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it."; continue; }
+        backup_original_and_copy_file --sudo "$file" "$apt_dir"
     done
 }
 
@@ -295,7 +296,7 @@ setup_crontab() {
 # pass '-s' or '--sudo' as first arg to execute as sudo
 #
 backup_original_and_copy_file() {
-    local sudo file dest_dir filename i orig_suffixes
+    local sudo file dest_dir filename i old_suffixes
 
     [[ "$1" == -s || "$1" == --sudo ]] && { shift; readonly sudo=sudo; }
     readonly file="$1"          # full path of the file to be copied
@@ -309,12 +310,12 @@ backup_original_and_copy_file() {
     if $sudo test -e "$dest_dir/$filename" && ! $sudo cmp -s "$file" "$dest_dir/$filename"; then
         # collect older .orig files' suffixes and increment latest value for the new file:
         while IFS= read -r -d $'\0' i; do
-            orig_suffixes+=("${i##*.}")
+            old_suffixes+=("${i##*.}")
         done < <(find -L "$dest_dir/" -maxdepth 1 -mindepth 1 -type f -name "${filename}.orig.*" -print0)
-        if [[ "${#orig_suffixes[@]}" -eq 0 ]]; then
+        if [[ "${#old_suffixes[@]}" -eq 0 ]]; then
             i=0
         else
-            i="$(printf '%s\n' "${orig_suffixes[@]}" | sort -rn | head -n1)"  # largest suffix value
+            i="$(printf '%s\n' "${old_suffixes[@]}" | sort -rn | head -n1)"  # largest suffix value
             let i++ || { err "incrementing [$dest_dir/$filename] latest backup suffix [$i] failed"; i="$RANDOM"; }
         fi
 
@@ -417,38 +418,36 @@ install_nfs_client() {
     [[ -f "$fstab" ]] || { err "[$fstab] does not exist; cannot add fstab entry!"; return 1; }
 
     while true; do
-        if confirm "$(report "add ${server_ip:+another }nfs server entry to fstab?")"; then
-            echo -e "enter server ip: ${prev_server_ip:+(leave blank to default to [$prev_server_ip])}"
-            read -r server_ip
-            [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
-            [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$server_ip]"; continue; }
+        confirm "$(report "add ${server_ip:+another }nfs server entry to fstab?")" || break
 
-            echo -e "enter local mountpoint to mount nfs share to (leave blank to default to [$default_mountpoint]):"
-            read -r mountpoint
-            [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
-            list_contains "$mountpoint" "${used_mountpoints[*]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
-            create_mountpoint "$mountpoint" || continue
+        echo -e "enter server ip: ${prev_server_ip:+(leave blank to default to [$prev_server_ip])}"
+        read -r server_ip
+        [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
+        [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$server_ip]"; continue; }
 
-            echo -e "enter remote share to mount (leave blank to default to [$NFS_SERVER_SHARE]):"
-            read -r nfs_share
-            [[ -z "$nfs_share" ]] && nfs_share="$NFS_SERVER_SHARE"
-            list_contains "${server_ip}${nfs_share}" "${mounted_shares[*]}" && { report "selected [${server_ip}:${nfs_share}] has already been used for previous definition"; continue; }
-            [[ "$nfs_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
+        echo -e "enter local mountpoint to mount nfs share to (leave blank to default to [$default_mountpoint]):"
+        read -r mountpoint
+        [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
+        list_contains "$mountpoint" "${used_mountpoints[*]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
+        create_mountpoint "$mountpoint" || continue
 
-            if ! grep -q "${server_ip}:${nfs_share}.*${mountpoint}" "$fstab"; then
-                report "adding [${server_ip}:$nfs_share] mounting to [$mountpoint] in $fstab"
-                execute "echo ${server_ip}:${nfs_share} ${mountpoint} nfs noauto,x-systemd.automount,_netdev,x-systemd.device-timeout=10,timeo=14,rsize=8192,wsize=8192 0 0 \
-                        | sudo tee --append $fstab > /dev/null"
-            else
-                report "an nfs share entry for [${server_ip}:${nfs_share}] in $fstab already exists."
-            fi
+        echo -e "enter remote share to mount (leave blank to default to [$NFS_SERVER_SHARE]):"
+        read -r nfs_share
+        [[ -z "$nfs_share" ]] && nfs_share="$NFS_SERVER_SHARE"
+        list_contains "${server_ip}${nfs_share}" "${mounted_shares[*]}" && { report "selected [${server_ip}:${nfs_share}] has already been used for previous definition"; continue; }
+        [[ "$nfs_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
 
-            prev_server_ip="$server_ip"
-            used_mountpoints+=("$mountpoint")
-            mounted_shares+=("${server_ip}${nfs_share}")
+        if ! grep -q "${server_ip}:${nfs_share}.*${mountpoint}" "$fstab"; then
+            report "adding [${server_ip}:$nfs_share] mounting to [$mountpoint] in $fstab"
+            execute "echo ${server_ip}:${nfs_share} ${mountpoint} nfs noauto,x-systemd.automount,_netdev,x-systemd.device-timeout=10,timeo=14,rsize=8192,wsize=8192 0 0 \
+                    | sudo tee --append $fstab > /dev/null"
         else
-            break
+            report "an nfs share entry for [${server_ip}:${nfs_share}] in $fstab already exists."
         fi
+
+        prev_server_ip="$server_ip"
+        used_mountpoints+=("$mountpoint")
+        mounted_shares+=("${server_ip}${nfs_share}")
     done
 
     return 0
@@ -795,7 +794,7 @@ setup_dirs() {
             $BASE_DATA_DIR/.rsync \
             $BASE_DATA_DIR/tmp \
             $BASE_DATA_DIR/vbox_vms \
-            $BASE_DATA_DIR/progs \
+            $BASE_PROGS_DIR \
             $BASE_DEPS_LOC \
             $BASE_BUILDS_DIR \
             $BASE_DATA_DIR/dev \
@@ -846,7 +845,7 @@ clone_or_link_castle() {
     readonly homesick_exe="$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick"
 
     [[ -z "$castle" || -z "$user" || -z "$hub" ]] && { err "either user, repo or castle name were missing"; sleep 2; return 1; }
-    [[ -e "$homesick_exe" ]] || { err "expected to see homesick script @ $homesick_exe, but didn't. skipping cloning castle $castle"; return 1; }
+    [[ -e "$homesick_exe" ]] || { err "expected to see homesick script @ [$homesick_exe], but didn't. skipping cloning castle [$castle]"; return 1; }
 
     if [[ -d "$BASE_HOMESICK_REPOS_LOC/$castle" ]]; then
         if is_ssh_key_available; then
@@ -1365,6 +1364,7 @@ install_own_builds() {
     install_keepassx
     install_goforit
     install_copyq
+    install_rambox
     install_synergy
     install_dwm
 }
@@ -1470,6 +1470,106 @@ install_copyq() {
 
     build_and_install_copyq
     return $?
+}
+
+
+install_rambox() {  # https://github.com/saenzramiro/rambox/wiki/Install-on-Linux
+    local tmpdir tarball rambox_url rambox_dl page dir ver inst_loc
+
+    is_server && { report "we're server, skipping rambox installation."; return; }
+    should_build_if_avail_in_repo rambox || { report "skipping building of rambox; remember to install it from the repo after the install!"; return; }
+
+    readonly tmpdir="$(mktemp -d "rambox-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    readonly rambox_url='http://rambox.pro/#download'
+    readonly inst_loc="$BASE_PROGS_DIR/rambox"
+
+    report "setting up rambox"
+    install_block 'libappindicator1' || { err "rambox deps install_block failed" "$FUNCNAME"; return 1; }
+
+    execute "pushd -- $tmpdir" || return 1
+    page="$(wget "$rambox_url" -q -O -)" || { err "wgetting [$rambox_url] failed"; return 1; }
+    rambox_dl="$(grep -Po '.*a href="\Khttp.*linux_64.*deb(?=".*$)' <<< "$page")" || { err "parsing rambox download link failed"; return 1; }
+    is_valid_url "$rambox_dl" || { err "[$rambox_dl] is not a valid download link"; return 1; }
+
+    report "fetching [$rambox_dl]"
+    execute "wget '$rambox_dl'" || { err "wgetting [$rambox_dl] failed."; return 1; }
+    tarball="$(find . -type f)"
+    [[ -f "$tarball" ]] || { err "couldn't find downloaded file"; return 1; }
+    execute "tar xzf '$tarball'" || { err "extracting [$tarball] failed."; return 1; }  # since file extension is unknown
+    execute "rm -- '$tarball'" || { err "removing [$tarball] failed"; return 1; }
+    dir="$(find . -mindepth 1 -maxdepth 1 -type d)"
+    [[ -d "$dir" ]] || { err "couldn't find unpacked rambox"; return 1; }
+    ver="$(basename -- "$dir")"
+    [[ -e "$inst_loc/installations/$ver" ]] && { report "[$ver] already exists, skipping"; return 0; }
+    [[ -d "$inst_loc/installations" ]] || mkdir -p -- "$inst_loc/installations" || { err "rambox dir creation failed"; return 1; }
+
+    mv -- "$dir" "$inst_loc/installations/"
+    execute "pushd -- $inst_loc" || return 1
+    [[ -h rambox ]] && rm -- rambox
+    execute "ln -s 'installations/$ver/rambox' rambox"
+
+    execute "popd; popd"
+    execute "sudo rm -rf -- '$tmpdir'"
+
+    return 0
+}
+
+
+build_and_install_rambox() {  # https://github.com/saenzramiro/rambox
+    local expected_sencha_loc tmpdir
+
+    is_server && { report "we're server, skipping rambox installation."; return; }
+    should_build_if_avail_in_repo rambox || { report "skipping building of rambox; remember to install it from the repo after the install!"; return; }
+
+    readonly expected_sencha_loc="$HOME/bin/Sencha"
+    readonly tmpdir="$(mktemp -d "sencha-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+
+    is_x || { err "won't install rambox; need to be in graphical env for that."; return 1; }
+
+    function __fetch_and_install_sencha() {
+        local zip sencha_url sencha_dl page installer
+
+        readonly sencha_url='https://www.sencha.com/products/extjs/cmd-download/'
+
+        page="$(wget "$sencha_url" -q -O -)" || { err "wgetting [$sencha_url] failed"; return 1; }
+        sencha_dl="$(grep -Po '.*a id=.link_linux_64.*href="\K.*(?=".*$)' <<< "$page")" || { err "parsing sencha download link failed"; return 1; }
+        is_valid_url "$sencha_dl" || { err "[$sencha_dl] is not a valid download link"; return 1; }
+
+        report "fetching [$sencha_dl]"
+        execute "wget '$sencha_dl'" || { err "wgetting [$sencha_dl] failed."; return 1; }
+        zip="$(basename -- "$sencha_dl")"
+        extract "$zip" || { err "extracting [$zip] failed."; return 1; }
+        execute "rm -- '$zip'" || { err "removing [$zip] failed"; return 1; }
+        installer="$(find . -mindepth 1 -maxdepth 1 -type f)"
+        [[ -f "$installer" ]] || { err "couldn't find unpacked sencha installer"; return 1; }
+        execute "$installer" || { err "executing [$installer] failed."; return 1; }
+        rm -r -- * || { err "[$tmpdir] cleanup failed;"; return 1; }
+
+        return 0
+    }
+
+    execute "pushd -- $tmpdir" || return 1
+
+    report "setting up rambox"
+    if [[ -d "$expected_sencha_loc" ]] && confirm "sencha found @ [$expected_sencha_loc]; want to fetch latest still?"; then
+        __fetch_and_install_sencha || { err "fetching or installing sencha failed"; return 1; }
+    fi
+
+    # install deps
+    install_block '
+        nodejs-legacy
+        npm
+        git
+    ' || { err "rambox deps install_block failed" "$FUNCNAME"; return 1; }
+    execute 'sudo npm install electron-prebuilt -g' || return 1
+    execute "git clone $RAMBOX_REPO_LOC $tmpdir" || return 1
+    execute 'npm install' || { err "npm install failed" "$FUNCNAME"; return 1; }
+    # TODO set up env.conf
+    execute 'mv -- env-sample.js  env.js'
+    execute 'npm run sencha:compile' || { err "sencha:compile failed"; return 1; }
+
+    execute "popd"
+    execute "sudo rm -rf -- '$tmpdir'"
 }
 
 
@@ -2303,7 +2403,6 @@ install_from_repo() {
         audacity
         geany
         libreoffice
-        calibre
         zathura
         mplayer2
         gimp
@@ -2607,6 +2706,7 @@ __choose_prog_to_build() {
         install_goforit
         install_gtk_theme
         install_copyq
+        install_rambox
         install_synergy
         install_dwm
         install_oracle_jdk
@@ -2644,12 +2744,11 @@ full_install() {
 }
 
 
-# programs that cannot be installed automatically should be reminded
+# programs that cannot be installed automatically should be reminded of
 remind_manually_installed_progs() {
     local progs i
 
     declare -ar progs=(
-        franz
         lazyman2
     )
 
@@ -2663,24 +2762,24 @@ remind_manually_installed_progs() {
 
 # as per    https://confluence.jetbrains.com/display/IDEADEV/Inotify+Watches+Limit
 increase_inotify_watches_limit() {
-    local sysctl_conf property value
+    local sysctl_dir sysctl_conf property value
 
-    readonly sysctl_conf="/etc/sysctl.conf"
+    readonly sysctl_dir="/etc/sysctl.d"
+    readonly sysctl_conf="${sysctl_dir}/60-jetbrains.conf"
     readonly property='fs.inotify.max_user_watches'
     readonly value=524288
 
-    [[ -f "$sysctl_conf" ]] || { err "$sysctl_conf is not a valid file. can't increase inotify watches limit for IDEA"; return 1; }
+    [[ -d "$sysctl_dir" ]] || { err "[$sysctl_dir] is not a dir. can't increase inotify watches limit for IDEA"; return 1; }
+    grep -q "^$property = $value\$" "$sysctl_conf" && return  # value already set, nothing to do
 
-    if ! grep -q "^$property = $value\$" "$sysctl_conf"; then
-        # just in case delete all same prop definitions, regardless of its value:
-        execute "sudo sed -i '/^$property/d' \"$sysctl_conf\""
+    # just in case delete all same prop definitions, regardless of its value:
+    [[ -f "$sysctl_conf" ]] && execute "sudo sed -i '/^$property/d' \"$sysctl_conf\""
 
-        # increase inotify watches limit (for intellij idea):
-        execute "echo $property = $value | sudo tee --append $sysctl_conf > /dev/null"
+    # increase inotify watches limit (for intellij idea):
+    execute "echo $property = $value | sudo tee --append $sysctl_conf > /dev/null"
 
-        # apply the change:
-        execute "sudo sysctl -p"
-    fi
+    # apply the change:
+    execute "sudo sysctl -p --system"
 }
 
 
@@ -3011,7 +3110,7 @@ select_items() {
     }
 
     if [[ "$is_single_selection" -eq 1 ]]; then
-        if xset q &>/dev/null && [[ -n "$DISPLAY" ]] && command -v dmenu > /dev/null 2>&1; then
+        if is_x && command -v dmenu > /dev/null 2>&1; then
             for i in "${options[@]}"; do
                 options_dmenu+="$i\n"
             done
@@ -3146,6 +3245,43 @@ is_git() {
     fi
 
     return 1
+}
+
+
+# Checks whether we're in graphical environment.
+#
+# @returns {bool}  true, if we're currently in graphical env.
+function is_x() {
+    local exit_code
+
+    if command -v xset > /dev/null 2>&1; then
+        xset q &>/dev/null
+        exit_code="$?"
+    elif command -v wmctrl > /dev/null 2>&1; then
+        wmctrl -m &>/dev/null
+        exit_code="$?"
+    else
+        err "can't check, neither xset nor wmctrl are installed"
+        return 2
+    fi
+
+    [[ "$exit_code" -eq 0 && -n "$DISPLAY" ]] && return 0 || return 1
+}
+
+
+# Checks whether given url is a valid url.
+#
+# @param {string}  url   url which validity to test.
+#
+# @returns {bool}  true, if provided url was a valid url.
+function is_valid_url() {
+    local url regex
+
+    readonly url="$1"
+
+    readonly regex='(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
+
+    [[ "$url" =~ $regex ]] && return 0 || return 1
 }
 
 
