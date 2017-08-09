@@ -144,6 +144,7 @@ if [[ "$-" != *i* ]]; then
     else
         export DISPLAY="$_DISP"
     fi
+    unset _DISP
 fi
 
 # marker var used to detect whether env vars have been loaded:
