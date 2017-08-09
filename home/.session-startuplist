@@ -111,7 +111,9 @@ fi
 # from https://www.roaringpenguin.com/wiki/index.php/Remind_use_case_1
 if ! is_proc_running remind; then
     #[[ -f "$HOME/.reminders" ]] && remind -z -k'gxmessage -title "reminder" %s &' ~/.reminders &
-    [[ -f "$HOME/.reminders" ]] && remind -z -k'notify-send -t reminder -- "%s" &' ~/.reminders &
+    [[ -f "$HOME/.reminders" ]] && remind -z -k'notify-send -t 0 -i gtk-dialog-info reminder -- "%s" &' ~/.reminders &
+	# this could be used as a starting point if bash is required:
+	#remind -z -k'/bin/bash -c "notify-send -t 0 reminder -- \"$(echo "%s")\""  &' ~/.reminders
     echo "Launching remind..."
 fi
 
