@@ -630,7 +630,7 @@ install_sshfs() {
 # also, why is install_npm_modules() not here?
 # aslo, should we extract python modules out?
 install_deps() {
-    function _install_tmux_deps() {
+    _install_tmux_deps() {
         local dir plugins_dir
 
         readonly plugins_dir="$HOME/.tmux/plugins"
@@ -652,6 +652,42 @@ install_deps() {
 
             execute "popd"
         fi
+    }
+
+    _install_laptop_deps() {
+        is_laptop || return
+
+        __install_wifi_driver() {
+            local wifi_info
+
+            # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
+            readonly wifi_info="$(sudo lshw | grep -iA 5 'Wireless interface')"
+
+            if grep -iq 'vendor.*Intel' <<< "$wifi_info"; then
+                report "we have intel wifi; installing intel drivers..."
+                install_block "firmware-iwlwifi"
+            elif grep -iq 'vendor.*Realtek' <<< "$wifi_info"; then
+                confirm "we seem to have realtek wifi; want to install firmware-realtek?" || return
+                report "we have realtek wifi; installing realtek drivers..."
+                install_block "firmware-realtek"
+            else
+                err "can't detect Intel nor Realtek wifi; what card do you have?"
+            fi
+        }
+
+        # xinput is for input device configuration; see  https://wiki.archlinux.org/index.php/Libinput
+        install_block '
+            libinput-tools
+            xinput
+            blueman
+            xfce4-power-manager
+        '
+
+        __install_wifi_driver; unset __install_wifi_driver
+
+        # batt output (requires spark):
+        clone_or_pull_repo "Goles" "Battery" "$BASE_DEPS_LOC"  # https://github.com/Goles/Battery
+        create_link "${BASE_DEPS_LOC}/Battery/battery" "$HOME/bin/battery"
     }
 
     # bash-git-prompt:
@@ -689,9 +725,9 @@ install_deps() {
     create_link "${BASE_DEPS_LOC}/maven-bash-completion" "$HOME/.maven-bash-completion"
 
     # diff-so-fancy - human-readable git diff:  # https://github.com/so-fancy/diff-so-fancy
-    if execute "wget -O /tmp/d-s-f 'https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy'"; then
-        git config core.pager | grep -q diff-so-fancy || err "git config core.pager not set for diff-so-fancy"
-        test -s /tmp/d-s-f && execute "mv -- /tmp/d-s-f $HOME/bin/diff-so-fancy; chmod +x $HOME/bin/diff-so-fancy" || err "fetched diff-so-fancy file is null"
+    if execute "wget -O $TMPDIR/d-s-f 'https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy'"; then
+        git config core.pager | grep -q diff-so-fancy || err "git config core.pager not set for diff-so-fancy; configure it"
+        test -s $TMPDIR/d-s-f && execute "mv -- $TMPDIR/d-s-f $HOME/bin/diff-so-fancy; chmod +x $HOME/bin/diff-so-fancy" || err "fetched diff-so-fancy file is null"
     else
         err "diff-so-fancy fetch failed"
     fi
@@ -706,8 +742,7 @@ install_deps() {
     #create_link "${BASE_DEPS_LOC}/base16-shell" "$HOME/.config/base16-shell"
 
     # tmux plugin manager:
-    _install_tmux_deps
-    unset _install_tmux_deps
+    _install_tmux_deps; unset _install_tmux_deps
 
     # conscript (scala apps distribution manager):  # http://www.foundweekends.org/conscript/setup.html
                                                     # check https://github.com/foundweekends/conscript/issues/124
@@ -718,7 +753,7 @@ install_deps() {
         execute 'cs foundweekends/giter8'  # https://github.com/foundweekends/giter8
                                            #   note its conf is in bash_env_vars
     else
-        err "[conscript] not on \$PATH; if it's the first run, then just re-run install_deps"
+        err "[conscript] not on \$PATH; if it's the initial installation, then just re-run ${FUNCNAME}()"
     fi
 
 
@@ -733,7 +768,7 @@ install_deps() {
                                                         #   note its conf is in bash_env_vars
     execute "sudo pip  install --upgrade maybe"         # https://github.com/p-e-w/maybe (check what command would do)
     # some py deps requred by scripts:
-    execute "sudo pip3  install --upgrade exchangelib icalendar arrow tzlocal"
+    execute "sudo pip3  install --upgrade exchangelib icalendar arrow"
 
     execute "sudo gem install speed_read"               # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
 
@@ -747,45 +782,10 @@ install_deps() {
     fi
 
     # laptop deps:
-    is_laptop && install_laptop_deps
+    is_laptop && _install_laptop_deps; unset _install_laptop_deps
 }
 
 
-install_laptop_deps() {
-    is_laptop || return
-
-    __install_wifi_driver() {
-        local wifi_info
-
-        # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
-        readonly wifi_info="$(sudo lshw | grep -iA 5 'Wireless interface')"
-
-        if grep -iq 'vendor.*Intel' <<< "$wifi_info"; then
-            report "we have intel wifi; installing intel drivers..."
-            install_block "firmware-iwlwifi"
-        elif grep -iq 'vendor.*Realtek' <<< "$wifi_info"; then
-            confirm "we seem to have realtek wifi; want to install firmware-realtek?" || return
-            report "we have realtek wifi; installing realtek drivers..."
-            install_block "firmware-realtek"
-        else
-            err "can't detect Intel nor Realtek wifi; what card do you have?"
-        fi
-    }
-
-    # xinput is for input device configuration; see  https://wiki.archlinux.org/index.php/Libinput
-    install_block '
-        libinput-tools
-        xinput
-        blueman
-        xfce4-power-manager
-    '
-
-    __install_wifi_driver; unset __install_wifi_driver
-
-    # batt output (requires spark):
-    clone_or_pull_repo "Goles" "Battery" "$BASE_DEPS_LOC"  # https://github.com/Goles/Battery
-    create_link "${BASE_DEPS_LOC}/Battery/battery" "$HOME/bin/battery"
-}
 
 
 setup_dirs() {
@@ -1477,6 +1477,46 @@ install_copyq() {
 }
 
 
+# fetches the latest davmail
+install_davmail() {  # https://sourceforge.net/projects/davmail/files/
+    local tmpdir davmail_url davmail_dl page ver inst_loc
+
+    is_server && { report "we're server, skipping davmail installation."; return; }
+    should_build_if_avail_in_repo davmail || { report "skipping building of davmail; remember to install it from the repo after the install!"; return; }
+
+    readonly tmpdir="$(mktemp -d "davmail-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    readonly davmail_url='https://sourceforge.net/projects/davmail/files/latest/download?source=files'
+    readonly inst_loc="$BASE_PROGS_DIR/davmail"
+
+    report "setting up davmail"
+
+    execute "pushd -- $tmpdir" || return 1
+    page="$(wget "$davmail_url" --user-agent="Mozilla/5.0 (X11; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0" -q -O -)" || { err "wgetting [$davmail_url] failed"; return 1; }
+    davmail_dl="$(grep -Po '.*a href="\Khttp.*davmail.*davmail.*\.zip.*(?=".*class.*direct-download.*$)' <<< "$page")" || { err "parsing davmail download link failed"; return 1; }
+    is_valid_url "$davmail_dl" || { err "[$davmail_dl] is not a valid download link"; return 1; }
+
+    ver="$(grep -Po '.*davmail.*davmail/\K[0-9]+\.[0-9]+\.[-0-9]+(?=/.*$)' <<< "$davmail_dl")"
+    [[ -z "$ver" ]] && { err "unable to parse davmail ver from url. abort."; return 1; }
+
+    report "fetching [$davmail_dl]"
+    execute "wget '$davmail_dl' -O davmail.zip" || { err "wgetting [$davmail_dl] failed."; return 1; }
+    execute "unzip davmail.zip" || { err "extracting downloaded file failed."; return 1; }  # since file extension is unknown
+    execute "rm -- 'davmail.zip'" || { err "removing downloaded file failed"; return 1; }
+    [[ -e "$inst_loc/installations/$ver" ]] && { report "[$ver] already exists, skipping"; return 0; }
+    execute "mkdir -p -- '$inst_loc/installations/$ver'" || { err "davmail dir creation failed"; return 1; }
+
+    execute "mv -- ./* '$inst_loc/installations/$ver'"
+    execute "pushd -- $inst_loc" || return 1
+    [[ -h davmail ]] && rm -- davmail
+    execute "ln -s 'installations/$ver/davmail.sh' davmail"
+
+    execute "popd; popd"
+    execute "sudo rm -rf -- '$tmpdir'"
+
+    return 0
+}
+
+
 install_rambox() {  # https://github.com/saenzramiro/rambox/wiki/Install-on-Linux
     local tmpdir tarball rambox_url rambox_dl page dir ver inst_loc
 
@@ -1505,7 +1545,7 @@ install_rambox() {  # https://github.com/saenzramiro/rambox/wiki/Install-on-Linu
     [[ -d "$dir" ]] || { err "couldn't find unpacked rambox"; return 1; }
     ver="$(basename -- "$dir")"
     [[ -e "$inst_loc/installations/$ver" ]] && { report "[$ver] already exists, skipping"; return 0; }
-    [[ -d "$inst_loc/installations" ]] || mkdir -p -- "$inst_loc/installations" || { err "rambox dir creation failed"; return 1; }
+    [[ -d "$inst_loc/installations" ]] || execute "mkdir -p -- '$inst_loc/installations'" || { err "rambox dir creation failed"; return 1; }
 
     mv -- "$dir" "$inst_loc/installations/"
     execute "pushd -- $inst_loc" || return 1

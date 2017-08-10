@@ -64,6 +64,8 @@ fi
 #ResultInactive=no
 #ResultActive=yes
 
+#TODO: is necessary or not? (was related to xfce4-notifyd not starting)
+# dbus-update-activation-environment --systemd --all  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=842712
 /usr/lib/polkit-gnome-authentication-agent-1 &
 is_proc_running gnome-keyring-daemon || /usr/bin/gnome-keyring-daemon --start --components=secrets,ssh &
 
@@ -110,10 +112,12 @@ fi
 
 # from https://www.roaringpenguin.com/wiki/index.php/Remind_use_case_1
 if ! is_proc_running remind; then
-    #[[ -f "$HOME/.reminders" ]] && remind -z -k'gxmessage -title "reminder" %s &' ~/.reminders &
+    # note: notification command should be kept sync with the one in show_reminders.sh
     [[ -f "$HOME/.reminders" ]] && remind -z -k'notify-send -t 0 -i gtk-dialog-info reminder -- "%s" &' ~/.reminders &
-	# this could be used as a starting point if bash is required:
-	#remind -z -k'/bin/bash -c "notify-send -t 0 reminder -- \"$(echo "%s")\""  &' ~/.reminders
+
+    #[[ -f "$HOME/.reminders" ]] && remind -z -k'gxmessage -title "reminder" %s &' ~/.reminders &
+    # this could be used as a starting point if bash is required:
+    #remind -z -k'/bin/bash -c "notify-send -t 0 reminder -- \"$(echo "%s")\""  &' ~/.reminders
     echo "Launching remind..."
 fi
 
