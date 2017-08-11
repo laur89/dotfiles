@@ -1477,44 +1477,45 @@ install_copyq() {
 }
 
 
+# disabled as davmail's available in repo
 # fetches the latest davmail
-install_davmail() {  # https://sourceforge.net/projects/davmail/files/
-    local tmpdir davmail_url davmail_dl page ver inst_loc
+#install_davmail() {  # https://sourceforge.net/projects/davmail/files/
+    #local tmpdir davmail_url davmail_dl page ver inst_loc
 
-    is_server && { report "we're server, skipping davmail installation."; return; }
-    should_build_if_avail_in_repo davmail || { report "skipping building of davmail; remember to install it from the repo after the install!"; return; }
+    #is_server && { report "we're server, skipping davmail installation."; return; }
+    #should_build_if_avail_in_repo davmail || { report "skipping building of davmail; remember to install it from the repo after the install!"; return; }
 
-    readonly tmpdir="$(mktemp -d "davmail-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-    readonly davmail_url='https://sourceforge.net/projects/davmail/files/latest/download?source=files'
-    readonly inst_loc="$BASE_PROGS_DIR/davmail"
+    #readonly tmpdir="$(mktemp -d "davmail-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    #readonly davmail_url='https://sourceforge.net/projects/davmail/files/latest/download?source=files'
+    #readonly inst_loc="$BASE_PROGS_DIR/davmail"
 
-    report "setting up davmail"
+    #report "setting up davmail"
 
-    execute "pushd -- $tmpdir" || return 1
-    page="$(wget "$davmail_url" --user-agent="Mozilla/5.0 (X11; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0" -q -O -)" || { err "wgetting [$davmail_url] failed"; return 1; }
-    davmail_dl="$(grep -Po '.*a href="\Khttp.*davmail.*davmail.*\.zip.*(?=".*class.*direct-download.*$)' <<< "$page")" || { err "parsing davmail download link failed"; return 1; }
-    is_valid_url "$davmail_dl" || { err "[$davmail_dl] is not a valid download link"; return 1; }
+    #execute "pushd -- $tmpdir" || return 1
+    #page="$(wget "$davmail_url" --user-agent="Mozilla/5.0 (X11; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0" -q -O -)" || { err "wgetting [$davmail_url] failed"; return 1; }
+    #davmail_dl="$(grep -Po '.*a href="\Khttp.*davmail.*davmail.*\.zip.*(?=".*class.*direct-download.*$)' <<< "$page")" || { err "parsing davmail download link failed"; return 1; }
+    #is_valid_url "$davmail_dl" || { err "[$davmail_dl] is not a valid download link"; return 1; }
 
-    ver="$(grep -Po '.*davmail.*davmail/\K[0-9]+\.[0-9]+\.[-0-9]+(?=/.*$)' <<< "$davmail_dl")"
-    [[ -z "$ver" ]] && { err "unable to parse davmail ver from url. abort."; return 1; }
+    #ver="$(grep -Po '.*davmail.*davmail/\K[0-9]+\.[0-9]+\.[-0-9]+(?=/.*$)' <<< "$davmail_dl")"
+    #[[ -z "$ver" ]] && { err "unable to parse davmail ver from url. abort."; return 1; }
 
-    report "fetching [$davmail_dl]"
-    execute "wget '$davmail_dl' -O davmail.zip" || { err "wgetting [$davmail_dl] failed."; return 1; }
-    execute "unzip davmail.zip" || { err "extracting downloaded file failed."; return 1; }  # since file extension is unknown
-    execute "rm -- 'davmail.zip'" || { err "removing downloaded file failed"; return 1; }
-    [[ -e "$inst_loc/installations/$ver" ]] && { report "[$ver] already exists, skipping"; return 0; }
-    execute "mkdir -p -- '$inst_loc/installations/$ver'" || { err "davmail dir creation failed"; return 1; }
+    #report "fetching [$davmail_dl]"
+    #execute "wget '$davmail_dl' -O davmail.zip" || { err "wgetting [$davmail_dl] failed."; return 1; }
+    #execute "unzip davmail.zip" || { err "extracting downloaded file failed."; return 1; }  # since file extension is unknown
+    #execute "rm -- 'davmail.zip'" || { err "removing downloaded file failed"; return 1; }
+    #[[ -e "$inst_loc/installations/$ver" ]] && { report "[$ver] already exists, skipping"; return 0; }
+    #execute "mkdir -p -- '$inst_loc/installations/$ver'" || { err "davmail dir creation failed"; return 1; }
 
-    execute "mv -- ./* '$inst_loc/installations/$ver'"
-    execute "pushd -- $inst_loc" || return 1
-    [[ -h davmail ]] && rm -- davmail
-    execute "ln -s 'installations/$ver/davmail.sh' davmail"
+    #execute "mv -- ./* '$inst_loc/installations/$ver'"
+    #execute "pushd -- $inst_loc" || return 1
+    #[[ -h davmail ]] && rm -- davmail
+    #execute "ln -s 'installations/$ver/davmail.sh' davmail"
 
-    execute "popd; popd"
-    execute "sudo rm -rf -- '$tmpdir'"
+    #execute "popd; popd"
+    #execute "sudo rm -rf -- '$tmpdir'"
 
-    return 0
-}
+    #return 0
+#}
 
 
 install_rambox() {  # https://github.com/saenzramiro/rambox/wiki/Install-on-Linux
@@ -2431,6 +2432,7 @@ install_from_repo() {
         firefox
         chromium
         thunderbird
+        davmail
         lightning
         rxvt-unicode-256color
         seafile-gui
