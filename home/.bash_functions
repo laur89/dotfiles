@@ -1753,17 +1753,19 @@ createUsbIso() {
 #######################
 mkgit() {
     local user passwd repo dir project_name OPTIND opt usage mainOptCounter http_statuscode
-    local newly_created_dir curl_output namespace_id namespace
+    local newly_created_dir curl_output namespace_id namespace is_private
 
     mainOptCounter=0
-    readonly usage="usage:   $FUNCNAME  -g|-b|-w  <dirname> [project_name]
+    is_private=true  # by default create private repos
+    readonly usage="usage:   $FUNCNAME  -g|-b|-w [-p] <dirname> [project_name]
            -g   create repo in github
            -b   create repo in bitbucket
            -w   create repo at work
+           -p   create a public repo (default is private)
 
      if  [project_name]  is not given, then project name will be same as  <dirname>"
 
-    while getopts "hgbw" opt; do
+    while getopts "hgbwp" opt; do
         case "$opt" in
            h) echo -e "$usage";
               return 0
@@ -1783,6 +1785,9 @@ mkgit() {
            w) user="laliste"
               repo="$(getnetrc "${user}@git.url.workplace")"
               let mainOptCounter+=1
+              shift $((OPTIND-1))
+              ;;
+           p) is_private=false
               shift $((OPTIND-1))
               ;;
            *) echo -e "$usage";
@@ -1861,7 +1866,7 @@ mkgit() {
         while read -r i; do
             [[ "$is_id_field" -eq 0 ]] && { j="$i"; is_id_field=1; continue; }
 
-            [[ -n "$j" ]] || { err "found namespace name was empty string; gitlab namespaces json response: $gitlab_namespaces_json" "$FUNCNAME"; return 1; }
+            [[ -z "$j" ]] && { err "found namespace name was empty string; gitlab namespaces json response: $gitlab_namespaces_json" "$FUNCNAME"; return 1; }
             is_digit "$i" || { err "found namespace id [$i] was not a digit; gitlab namespaces json response: $gitlab_namespaces_json" "$FUNCNAME"; return 1; }
             namespace_to_id[$j]="$i"
             fzf_selection+="${j}\n"
@@ -1884,7 +1889,7 @@ mkgit() {
                     -w '%{http_code}' \
                     -u "$user:$passwd" \
                     https://api.github.com/user/repos \
-                    -d "{ \"name\":\"$project_name\", \"private\":\"true\" }" \
+                    -d "{ \"name\":\"$project_name\", \"private\":\"$is_private\" }" \
                     -o "$curl_output")"
                 ;;
             'bitbucket.org')
@@ -1893,16 +1898,17 @@ mkgit() {
                     -H "Content-Type: application/json" \
                     -u "$user:$passwd" \
                     "https://api.bitbucket.org/2.0/repositories/$user/$project_name" \
-                    -d '{ "scm": "git", "is_private": "true", "fork_policy": "no_public_forks" }' \
+                    -d "{ \"scm\": \"git\", \"is_private\": \"$is_private\", \"fork_policy\": \"no_public_forks\" }" \
                     -o "$curl_output")"
                 ;;
             "$(getnetrc "${user}@git.url.workplace")")
+                [[ "$is_private" == true ]] && is_private=0 || is_private=10  # 0 = private, 10 = internal, 20 = public
                 __select_namespace || { [[ "$newly_created_dir" -eq 1 ]] && rm -r -- "$dir"; unset __select_namespace; return 1; }  # delete the dir we just created
                 unset __select_namespace
                 readonly http_statuscode="$(curl -sL --insecure \
                     -w '%{http_code}' \
                     --header "PRIVATE-TOKEN: $passwd" \
-                    -X POST "https://${repo}/api/v3/projects?name=${project_name}&namespace_id=${namespace_id}&visibility_level=0" \
+                    -X POST "https://${repo}/api/v3/projects?name=${project_name}&namespace_id=${namespace_id}&visibility_level=$is_private" \
                     -o "$curl_output")"
                 ;;
             *)
