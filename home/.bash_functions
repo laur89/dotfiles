@@ -1776,7 +1776,7 @@ mkgit() {
               let mainOptCounter+=1
               shift $((OPTIND-1))
               ;;
-           b) user="layr"
+           b) user="layr"  # TODO broken (at least for auth) as user has changed
               namespace="$user"
               repo="bitbucket.org"
               let mainOptCounter+=1
@@ -1889,16 +1889,17 @@ mkgit() {
                     -w '%{http_code}' \
                     -u "$user:$passwd" \
                     https://api.github.com/user/repos \
-                    -d "{ \"name\":\"$project_name\", \"private\":\"$is_private\" }" \
+                    -d "{ \"name\":\"$project_name\", \"private\":$is_private }" \
                     -o "$curl_output")"
                 ;;
             'bitbucket.org')
+                # note: auth $user needs to be the one you actually log in with, user in url can/has to be the old username (layr)
                 readonly http_statuscode="$(curl -sL -X POST \
                     -w '%{http_code}' \
                     -H "Content-Type: application/json" \
                     -u "$user:$passwd" \
                     "https://api.bitbucket.org/2.0/repositories/$user/$project_name" \
-                    -d "{ \"scm\": \"git\", \"is_private\": \"$is_private\", \"fork_policy\": \"no_public_forks\" }" \
+                    -d "{ \"scm\": \"git\", \"is_private\": $is_private, \"fork_policy\": \"no_public_forks\" }" \
                     -o "$curl_output")"
                 ;;
             "$(getnetrc "${user}@git.url.workplace")")

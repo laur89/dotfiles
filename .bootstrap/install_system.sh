@@ -1363,14 +1363,21 @@ upgrade_kernel() {
 # source, or fetch from the interwebs and install/configure manually.
 install_own_builds() {
 
+    prepare_build_container
+
     install_vim
     install_neovim
-    install_keepassx
+    install_keepassxc
     install_goforit
     install_copyq
     install_rambox
     install_synergy
     install_dwm
+}
+
+
+prepare_build_container() {
+    true # TODO
 }
 
 
@@ -1707,6 +1714,21 @@ install_webdev() {
 }
 
 
+install_keepassxc() {
+    is_server && { report "we're server, skipping keepassxc installation."; return; }
+
+    report "setting up keepassxc..."
+
+    # first find whether we have deb packages from other times:
+    if confirm "do you wish to install keepassxc from our previous build .deb package, if available?"; then
+        install_from_deb keepassxc && return 0
+    fi
+
+    build_and_install_keepassxc
+    return $?
+}
+
+
 install_keepassx() {
     is_server && { report "we're server, skipping keepassx installation."; return; }
 
@@ -1852,6 +1874,12 @@ build_and_install_goforit() {
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
     return 0
+}
+
+
+# TODO
+build_and_install_keepassxc() {
+    true # TODO
 }
 
 
@@ -2749,6 +2777,7 @@ __choose_prog_to_build() {
         install_neovim
         install_YCM
         install_keepassx
+        install_keepassxc
         install_goforit
         install_gtk_theme
         install_copyq
@@ -2778,9 +2807,9 @@ full_install() {
 
     setup
 
-    execute "sudo apt-get --yes update"
+    execute "sudo apt-get --yes update"  # needs to be first
     upgrade_kernel
-    install_fonts  # has to be after apt has been updated
+    install_fonts
     install_progs
     post_install_progs_setup
     install_deps
@@ -2937,7 +2966,8 @@ setup_seafile_cli() {
 #
 # note that this block overlaps logically a bit with setup_config_files() (though
 # that function should contain configuration that doesn't depend on some programs
-# being installed beforehand)
+# being installed beforehand; also, should be mostly dependent on config files being
+# pulled with homesick);
 post_install_progs_setup() {
 
     install_acpi_events   # has to be after install_progs(), so acpid is already insalled and events/ dir present;
