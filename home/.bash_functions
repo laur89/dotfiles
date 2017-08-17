@@ -2134,9 +2134,13 @@ gfff() {
 
 
 # helper function for gfrs & gfrf
-__verify_files_changes_and_push_version_bump() {
-    local ver files
+#
+# pass -p or --push as first arg in order to push as well
+# (eg no point to push release branches)
+__verify_files_changes_and_commit() {
+    local ver files push
 
+    [[ "$1" == "-p" || "$1" == "--push" ]] && { push=1; shift; }
     ver="$1"; shift
     declare -a files=("$@")
 
@@ -2145,8 +2149,11 @@ __verify_files_changes_and_push_version_bump() {
     confirm "\nverify changes look ok. continue?" || return 1
     git add "${files[@]}" || return 1
     git commit -m "Bump version to $ver" || return 1
-    git push
-    return $?
+    if [[ "$push" -eq 1 ]]; then
+        git push
+        return $?
+    fi
+    return 0
 }
 
 
@@ -2221,7 +2228,7 @@ gfrs() {
         sed -i "0,/<version>.*</s//<version>${tag}</" "$pom" || { err "switching versions with sed failed" "$FUNCNAME"; return 1; }
         [[ "$(grep -c '<tag>HEAD</t' "$pom")" -ne 1 ]] && { err "unexpected number of <tag>HEAD</tag> tags in pom"; return 1; }
         sed -i "0,/<tag>HEAD</s//<tag>${tag}</" "$pom" || { err "switching scm tag versions with sed failed" "$FUNCNAME"; return 1; }
-        __verify_files_changes_and_push_version_bump "$tag" "$pom" || return 1
+        __verify_files_changes_and_commit "$tag" "$pom" || return 1
     fi
 }
 
@@ -2260,7 +2267,7 @@ gfrf() {
         # replace pom ver:
         sed -i "0,/<version>${tag}</s//<version>${next_dev}</" "$pom" || { err "switching versions with sed failed" "$FUNCNAME"; return 1; }
         sed -i "0,/<tag>${tag}</s//<tag>HEAD</" "$pom" || { err "switching scm tag version with sed failed" "$FUNCNAME"; return 1; }
-        __verify_files_changes_and_push_version_bump "$next_dev" "$pom" || return 1
+        __verify_files_changes_and_commit --push "$next_dev" "$pom" || return 1
 
         report "deploying to nexus..." "$FUNCNAME"
         git checkout "$tag" || { err "unable to check out [$tag]" "$FUNCNAME"; return 1; }
