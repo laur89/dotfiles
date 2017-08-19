@@ -34,10 +34,10 @@ readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
-readonly NFS_SERVER_SHARE="/data"            # default node to share over NFS
-readonly SSH_SERVER_SHARE="/data"            # default node to share over SSH
+readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
+readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
-readonly BUILD_DOCK="deb-build-box"            # name of the build container
+readonly BUILD_DOCK='deb-build-box'              # name of the build container
 #------------------------
 #--- Global Variables ---
 #------------------------
@@ -49,7 +49,7 @@ declare -a PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to
 declare -a PACKAGES_FAILED_TO_INSTALL=()
 LOGGING_LVL=0                   # execution logging level (full install mode logs everything);
                                 # don't set log level too soon; don't want to persist bullshit.
-                                # levels are currently 0, 1 and 10, 1 being the lowest (from lvl 1 to 9 only errors are logged)
+                                # levels are currently 0, 1 and 10; 0 being no logging, 1 being the lowest (from lvl 1 to 9 only execute() errors are logged)
 EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%b-%y--%R).log" \
         || readonly EXECUTION_LOG="$HOME/installation-exe.log"  # do not create logfile here! otherwise cleanup()
                                                                 # picks it up and reports of its existence, opening
@@ -591,7 +591,7 @@ install_sshfs() {
         report "testing ssh connection to ${remote_user}@${server_ip}..."
         execute "sudo ssh -p ${ssh_port} -o ConnectTimeout=7 ${remote_user}@${server_ip} echo ok"
 
-		# TODO: investigate this as an alternative instead:
+        # TODO: investigate this as an alternative instead:
         #if [[ -z "$(sudo ssh-keygen -F "$server_ip")" ]]; then
             #execute "sudo ssh-keyscan -H '$server_ip' >> /root/.ssh/known_hosts" || fail "adding host [$server_ip] to /root/.ssh/known_hosts failed"
         #fi
@@ -1123,17 +1123,17 @@ setup_additional_apt_keys_and_sources() {
 
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
-    execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys BBEBDCB318AD50EC6865090613B00F1FD2C19886'
+    execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys BBEBDCB318AD50EC6865090613B00F1FD2C19886 0DF731E45CE24F27EEEB1450EFDC8610341D9410'
     execute 'echo deb http://repository.spotify.com stable non-free | sudo tee /etc/apt/sources.list.d/spotify.list > /dev/null'
 
     # seafile: (from https://github.com/haiwen/seafile-user-manual/blob/master/en/desktop/install-on-linux.md#wiki-debian):
     execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 8756C4F765C9AC3CB6B85D62379CE192D401AB61'
     execute 'echo deb http://dl.bintray.com/seafile-org/deb jessie main | sudo tee /etc/apt/sources.list.d/seafile.list > /dev/null'
 
-    # mono: (from http://www.mono-project.com/docs/getting-started/install/linux/):
+    # mono: (from http://www.mono-project.com/download/#download-lin-debian):
     # later on installed by 'mono-complete' pkg
     execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF'
-    execute 'echo deb http://download.mono-project.com/repo/debian wheezy main | sudo tee /etc/apt/sources.list.d/mono-xamarin.list > /dev/null'
+    execute 'echo "deb http://download.mono-project.com/repo/debian jessie main" | sudo tee /etc/apt/sources.list.d/mono-official.list > /dev/null'
 
     # update sources (will be done anyway on full install):
     [[ "$FULL_INSTALL" -ne 1 ]] && execute 'sudo apt-get --yes update'
@@ -1269,7 +1269,7 @@ install_progs() {
     install_npm_modules
 
     install_from_repo
-    install_own_builds
+    install_own_builds  # has to be after install_from_repo()
 
     install_oracle_jdk
     #install_skype
@@ -1379,8 +1379,17 @@ install_own_builds() {
 
 
 prepare_build_container() {
-    #execute "docker create --name '$BUILD_DOCK' debian:testing-slim" || return 1
-    execute "docker run -dit --name '$BUILD_DOCK' debian:testing-slim" || return 1
+    if [[ -z "$(docker ps -qa -f name="$BUILD_DOCK" --format '{{.Names}}')" ]]; then  # container hasn't been created
+        #execute "docker create --name '$BUILD_DOCK' debian:testing-slim" || return 1  # TODO decide how to create the container (run vs create)
+        execute "docker run -dit --name '$BUILD_DOCK' debian:testing-slim" || return 1
+    fi
+
+    if [[ -z "$(docker ps -qa -f status=running -f name="$BUILD_DOCK" --format '{{.Names}}')" ]]; then
+        execute "docker start '$BUILD_DOCK'" || return 1
+    fi
+
+    execute "docker exec -it $(docker ps -qf "name=$BUILD_DOCK") apt-get --yes update" || return 1
+    return 0
 }
 
 
@@ -2086,8 +2095,8 @@ configure_vim_plugins() {
         readonly plugindir="$vim_pluginsdir/omnisharp-vim/server"
 
         if ! command -v xbuild >/dev/null; then
-			err "xbuild (with mono) not installed; can't install omnisharp vim plugin"
-			return 1
+            err "xbuild (with mono) not installed; can't install omnisharp vim plugin"
+            return 1
         fi
 
         [[ -d "$plugindir" ]] || { err "[$plugindir] is not a dir."; return 1; }
@@ -2099,8 +2108,8 @@ configure_vim_plugins() {
     # tern: https://github.com/ternjs/tern_for_vim
     _install_tern_for_vim_deps
 
-	# omnisharp: https://github.com/OmniSharp/omnisharp-vim
-	_install_omnisharp_deps
+    # omnisharp: https://github.com/OmniSharp/omnisharp-vim
+    _install_omnisharp_deps
 
     unset _install_tern_for_vim_deps _install_omnisharp_deps
 }
@@ -2108,7 +2117,7 @@ configure_vim_plugins() {
 
 # NO plugin config should go here (as it's not guaranteed they've been installed by this time)
 vim_post_install_configuration() {
-	local i
+    local i
 
     # generate links for root, if not existing:
     for i in \
@@ -2127,31 +2136,31 @@ vim_post_install_configuration() {
         fi
     done
 
-	function _setup_vim_sessions_dir() {
-		local stored_vim_sessions vim_sessiondir
+    function _setup_vim_sessions_dir() {
+        local stored_vim_sessions vim_sessiondir
 
-		readonly stored_vim_sessions="$BASE_DATA_DIR/.vim_sessions"
-		readonly vim_sessiondir="$HOME/.vim/sessions"
+        readonly stored_vim_sessions="$BASE_DATA_DIR/.vim_sessions"
+        readonly vim_sessiondir="$HOME/.vim/sessions"
 
-		# link sessions dir, if stored @ $BASE_DATA_DIR: (related to the 'xolox/vim-session' plugin)
-		# note we don't want sessions in homesick, as they're likely to be machine-dependent.
-		if [[ -d "$stored_vim_sessions" ]]; then
-			# refresh link:
-			execute "rm -rf -- $vim_sessiondir"
-		else  # $stored_vim_sessions does not exist; init it anyways
-			if [[ -d "$vim_sessiondir" ]]; then
-				execute "mv -- $vim_sessiondir $stored_vim_sessions"
-			else
-				execute "mkdir -- $stored_vim_sessions"
-			fi
-		fi
+        # link sessions dir, if stored @ $BASE_DATA_DIR: (related to the 'xolox/vim-session' plugin)
+        # note we don't want sessions in homesick, as they're likely to be machine-dependent.
+        if [[ -d "$stored_vim_sessions" ]]; then
+            # refresh link:
+            execute "rm -rf -- $vim_sessiondir"
+        else  # $stored_vim_sessions does not exist; init it anyways
+            if [[ -d "$vim_sessiondir" ]]; then
+                execute "mv -- $vim_sessiondir $stored_vim_sessions"
+            else
+                execute "mkdir -- $stored_vim_sessions"
+            fi
+        fi
 
-		create_link "$stored_vim_sessions" "$vim_sessiondir"
-	}
+        create_link "$stored_vim_sessions" "$vim_sessiondir"
+    }
 
-	_setup_vim_sessions_dir
+    _setup_vim_sessions_dir
 
-	unset _setup_vim_sessions_dir
+    unset _setup_vim_sessions_dir
 }
 
 
@@ -2469,6 +2478,7 @@ install_from_repo() {
         seafile-gui
         seafile-cli
         guake
+        spotify-client
         mopidy
         mopidy-soundcloud
         mopidy-spotify
@@ -2533,6 +2543,7 @@ install_from_repo() {
         lolcat
         figlet
         rdesktop
+        docker.io
     )
 
     for block in \
@@ -2563,7 +2574,6 @@ install_from_repo() {
             virtualbox-dkms
 
             puppet
-            docker.io
             nfs-common
             nfs-kernel-server
         '
@@ -2798,6 +2808,7 @@ __choose_prog_to_build() {
     select_items "${choices[*]}" 1
 
     [[ -z "$__SELECTED_ITEMS" ]] && return
+    prepare_build_container || { err "preparation of build container [$BUILD_DOCK] failed" "$FUNCNAME"; return 1; }
 
     $__SELECTED_ITEMS
 }
@@ -2960,7 +2971,7 @@ setup_seafile_cli() {
     readonly confdir="$HOME/.config/ccnet"
     readonly datadir='/data/Seafile'
 
-    [[ -d "$datadir" ]] || { err "[$datadir] is not a valid dir; please set up via gui first"; return 1; }
+    [[ -d "$datadir" ]] || { err "[$datadir] is not a valid dir; please set up via gui first" "$FUNCNAME"; return 1; }
 }
 
 

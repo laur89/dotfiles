@@ -2133,10 +2133,12 @@ gfff() {
 }
 
 
-# helper function for gfrs & gfrf
+# helper function for gfrs & gfrf.
 #
 # pass -p or --push as first arg in order to push as well
-# (eg no point to push release branches)
+# (eg no point to push release branches).
+#
+# ex: f  [-p]  1.2.3  file1  [file2...]
 __verify_files_changes_and_commit() {
     local ver files push
 
