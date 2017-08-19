@@ -36,6 +36,8 @@ readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; e
                                                  # (script-related) configuration lies within.
 readonly NFS_SERVER_SHARE="/data"            # default node to share over NFS
 readonly SSH_SERVER_SHARE="/data"            # default node to share over SSH
+
+readonly BUILD_DOCK="deb-build-box"            # name of the build container
 #------------------------
 #--- Global Variables ---
 #------------------------
@@ -1377,7 +1379,8 @@ install_own_builds() {
 
 
 prepare_build_container() {
-    true # TODO
+    #execute "docker create --name '$BUILD_DOCK' debian:testing-slim" || return 1
+    execute "docker run -dit --name '$BUILD_DOCK' debian:testing-slim" || return 1
 }
 
 
