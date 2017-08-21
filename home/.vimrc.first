@@ -63,7 +63,7 @@
         set relativenumber                          " linenumbers are relative
         set scrolloff=3                             " lines above/below cursor
         set showcmd                                 " show cmds being typed
-        set clipboard+=unnamed                      " use os clipboard by default
+        set clipboard+=unnamedplus                  " use os clipboard by default
         set title                                   " window title
         set vb t_vb=                                " disable beep and flashing
         set wildignore=.bak,.pyc,.o,.ojb,.a,
@@ -312,6 +312,18 @@
 
         " Go to the middle of the line:
         map gm :call cursor(0, virtcol('$')/2)<CR>
+
+        " Copy to system clipboard (from https://www.reddit.com/r/neovim/comments/3fricd/easiest_way_to_copy_from_neovim_to_system/ctrru3b/)
+        vnoremap  <leader>y  "+y
+        nnoremap  <leader>Y  "+yg_
+        nnoremap  <leader>y  "+y
+        nnoremap  <leader>yy  "+yy
+        
+        " Paste from system clipboard (from https://www.reddit.com/r/neovim/comments/3fricd/easiest_way_to_copy_from_neovim_to_system/ctrru3b/)
+        nnoremap <leader>p "+p
+        nnoremap <leader>P "+P
+        vnoremap <leader>p "+p
+        vnoremap <leader>P "+P
 
         " execute current line in shell and replace it with output from the command:
         noremap Q !!$SHELL<CR>

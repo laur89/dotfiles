@@ -1135,6 +1135,10 @@ setup_additional_apt_keys_and_sources() {
     execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF'
     execute 'echo "deb http://download.mono-project.com/repo/debian jessie main" | sudo tee /etc/apt/sources.list.d/mono-official.list > /dev/null'
 
+    # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
+    execute 'sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 1AD28806'
+    execute 'echo deb https://www.charlesproxy.com/packages/apt/ charles-proxy main | sudo tee /etc/apt/sources.list.d/charles.list > /dev/null'
+
     # update sources (will be done anyway on full install):
     [[ "$FULL_INSTALL" -ne 1 ]] && execute 'sudo apt-get --yes update'
 }
@@ -1398,7 +1402,7 @@ bc_install() {
 
 prepare_build_container() {  # TODO container build env not used atm
     if [[ -z "$(docker ps -qa -f name="$BUILD_DOCK" --format '{{.Names}}')" ]]; then  # container hasn't been created
-        #execute "docker create --name '$BUILD_DOCK' debian:testing-slim" || return 1  # TODO decide how to create the container (run vs create)
+        #execute "docker create -t --name '$BUILD_DOCK' debian:testing-slim" || return 1  # alternative to docker run
         execute "docker run -dit --name '$BUILD_DOCK' -v '$BASE_BUILDS_DIR:/out' debian:testing-slim" || return 1
         bc_exe "apt-get --yes update"
         bc_install git checkinstall build-essential cmake g++ || return 1
@@ -2050,46 +2054,27 @@ install_from_deb() {
     return $?
 }
 
-#https://github.com/neovim/neovim/wiki/Building-Neovim
-install_neovim() {
-    local tmpdir nvim_confdir
 
-    readonly tmpdir="$TMPDIR/nvim-build-${RANDOM}"
+# https://github.com/neovim/neovim/wiki/Installing-Neovim
+install_neovim() {  # the AppImage version
+    local tmpdir nvim_confdir inst_loc nvim_url
+
+    readonly tmpdir="$(mktemp -d "nvim-download-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     readonly nvim_confdir="$HOME/.config/nvim"
+    readonly inst_loc="$BASE_PROGS_DIR/neovim"
+    nvim_url='https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage'
 
     report "setting up nvim..."
 
-    # first find whether we have deb packages from other times:
-    if confirm "do you wish to install nvim from our previous build .deb package, if available?"; then
-        install_from_deb neovim || return 1
-    else
-        report "building neovim..."
+    execute "pushd -- $tmpdir" || return 1
+    execute "curl -LO $nvim_url" || { err "curling latest nvim appimage failed"; return 1; }
+    execute "chmod +x nvim.appimage" || return 1
 
-        report "installing neovim build dependencies..."  # https://github.com/neovim/neovim/wiki/Building-Neovim#build-prerequisites
-        install_block '
-            libtool
-            libtool-bin
-            autoconf
-            automake
-            cmake
-            g\+\+
-            pkg-config
-            unzip
-        ' || { err 'failed to install neovim build deps. abort.'; return 1; }
+    execute "mkdir -p -- '$inst_loc/'" || { err "neovim dir creation failed"; return 1; }
+    execute "mv -- nvim.appimage '$inst_loc/'" || return 1
 
-        execute "git clone $NVIM_REPO_LOC $tmpdir" || return 1
-        execute "pushd $tmpdir" || { err; return 1; }
-
-        # TODO: checkinstall fails with neovim (bug in checkinstall afaik):
-        #execute --ignore-errs "rm -r build"
-        execute "make clean" || { err; return 1; }
-        #execute "make CMAKE_BUILD_TYPE=Release" || { err; return 1; }
-        #create_deb_install_and_store neovim || { err; return 1; }
-        execute "sudo make CMAKE_BUILD_TYPE=Release install" || { err; return 1; }  # TODO  remove this once checkinstall issue is resolved;
-
-        execute "popd"
-        execute "sudo rm -rf -- $tmpdir"
-    fi
+    execute "popd"
+    execute "sudo rm -rf -- '$tmpdir'"
 
     # post-install config:
 
@@ -2097,12 +2082,66 @@ install_neovim() {
     create_link "$HOME/.vim" "$nvim_confdir"
     create_link "$HOME/.vimrc" "$nvim_confdir/init.vim"
 
-    # as per https://neovim.io/doc/user/nvim_python.html#nvim-python :
-    execute " sudo pip2 install --upgrade neovim"
-    execute " sudo pip3 install --upgrade neovim"
-
     return 0
 }
+
+# https://github.com/neovim/neovim/wiki/Building-Neovim
+# https://github.com/neovim/neovim/wiki/Installing-Neovim
+#install_neovim() {  # the build-from-source version
+    #local tmpdir nvim_confdir
+
+    #readonly tmpdir="$TMPDIR/nvim-build-${RANDOM}"
+    #readonly nvim_confdir="$HOME/.config/nvim"
+
+    #report "setting up nvim..."
+
+    ## first find whether we have deb packages from other times:
+    #if confirm "do you wish to install nvim from our previous build .deb package, if available?"; then
+        #install_from_deb neovim || return 1
+    #else
+        #report "building neovim..."
+
+        #report "installing neovim build dependencies..."  # https://github.com/neovim/neovim/wiki/Building-Neovim#build-prerequisites
+        #install_block '
+            #libtool
+            #libtool-bin
+            #autoconf
+            #automake
+            #cmake
+            #g\+\+
+            #pkg-config
+            #unzip
+        #' || { err 'failed to install neovim build deps. abort.'; return 1; }
+
+        #execute "git clone $NVIM_REPO_LOC $tmpdir" || return 1
+        #execute "pushd $tmpdir" || { err; return 1; }
+
+        ## TODO: checkinstall fails with neovim (bug in checkinstall afaik):
+        #execute "make clean" || { err; return 1; }
+        ##execute "make CMAKE_BUILD_TYPE=Release" || { err; return 1; }
+        ##create_deb_install_and_store neovim || { err; return 1; }
+
+        ## note it'll be installed into separate location; eases with uninstall; requires it setting on $PATH;
+        #execute "sudo make CMAKE_EXTRA_FLAGS='-DCMAKE_INSTALL_PREFIX=/usr/local/neovim' CMAKE_BUILD_TYPE=Release" || { err; return 1; }  # TODO  remove this once checkinstall issue is resolved;
+        #execute "sudo make install" || { err; return 1; }  # TODO  remove this once checkinstall issue is resolved;
+
+        #execute "popd"
+        #execute "sudo rm -rf -- $tmpdir"
+    #fi
+
+    ## post-install config:
+
+    ## create links (as per https://neovim.io/doc/user/nvim_from_vim.html):
+    #create_link "$HOME/.vim" "$nvim_confdir"
+    #create_link "$HOME/.vimrc" "$nvim_confdir/init.vim"
+
+    ## as per https://github.com/neovim/neovim/wiki/Installing-Neovim:
+    ##execute "sudo pip2 install --upgrade neovim"
+    ##execute "sudo pip3 install --upgrade neovim"
+    #install_block 'python-neovim python3-neovim'
+
+    #return 0
+#}
 
 
 install_vim() {
@@ -2137,40 +2176,40 @@ configure_vim_plugins() {
 
     readonly vim_pluginsdir="$HOME/.vim/bundle"
 
-    function _install_tern_for_vim_deps() {
-        local plugindir
-        readonly plugindir="$vim_pluginsdir/tern_for_vim"
+    #function _install_tern_for_vim_deps() {
+        #local plugindir
+        #readonly plugindir="$vim_pluginsdir/tern_for_vim"
 
-        if ! command -v npm >/dev/null; then
-            install_block 'npm' || return 1
-        fi
+        #if ! command -v npm >/dev/null; then
+            #install_block 'npm' || return 1
+        #fi
 
-        [[ -d "$plugindir" ]] || { err "[$plugindir] is not a dir."; return 1; }
-        execute "pushd $plugindir" || return 1
-        execute "npm install"
-        execute "popd"
-    }
+        #[[ -d "$plugindir" ]] || { err "[$plugindir] is not a dir."; return 1; }
+        #execute "pushd $plugindir" || return 1
+        #execute "npm install"
+        #execute "popd"
+    #}
 
-    function _install_omnisharp_deps() {
-        local plugindir
-        readonly plugindir="$vim_pluginsdir/omnisharp-vim/server"
+    #function _install_omnisharp_deps() {
+        #local plugindir
+        #readonly plugindir="$vim_pluginsdir/omnisharp-vim/server"
 
-        if ! command -v xbuild >/dev/null; then
-            err "xbuild (with mono) not installed; can't install omnisharp vim plugin"
-            return 1
-        fi
+        #if ! command -v xbuild >/dev/null; then
+            #err "xbuild (with mono) not installed; can't install omnisharp vim plugin"
+            #return 1
+        #fi
 
-        [[ -d "$plugindir" ]] || { err "[$plugindir] is not a dir."; return 1; }
-        execute "pushd $plugindir" || return 1
-        execute "xbuild"
-        execute "popd"
-    }
+        #[[ -d "$plugindir" ]] || { err "[$plugindir] is not a dir."; return 1; }
+        #execute "pushd $plugindir" || return 1
+        #execute "xbuild"
+        #execute "popd"
+    #}
 
     # tern: https://github.com/ternjs/tern_for_vim
-    #_install_tern_for_vim_deps  # using the one packaged with YCM
+    #_install_tern_for_vim_deps  # commented, as using the one packaged with YCM
 
     # omnisharp: https://github.com/OmniSharp/omnisharp-vim
-    #_install_omnisharp_deps  # using the one packaged with YCM
+    #_install_omnisharp_deps  # commented, as using the one packaged with YCM
 
     unset _install_tern_for_vim_deps _install_omnisharp_deps
 }
@@ -2607,6 +2646,7 @@ install_from_repo() {
         figlet
         rdesktop
         docker.io
+        charles-proxy
     )
 
     for block in \
