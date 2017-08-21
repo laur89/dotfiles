@@ -1854,7 +1854,7 @@ create_deb_install_and_store() {
 
     check_progs_installed checkinstall || return 1
     report "creating .deb and installing with checkinstall..."
-    execute "sudo checkinstall -D --default --fstrans=yes --pkgname=$pkg_name --pkgversion=$ver --pakdir=$BASE_BUILDS_DIR/" || { err "checkinstall run failed. abort."; return 1; }
+    execute "sudo checkinstall -D --default --fstrans=yes --pkgname=$pkg_name --pkgversion=$ver --pakdir=$BASE_BUILDS_DIR" || { err "checkinstall run failed. abort."; return 1; }
 
     return 0
 }
@@ -1953,7 +1953,7 @@ install_keepassxc() {
 }
 
 
-# building instructions from https://github.com/keepassx/keepassx & www.keepass.org/dev/projects/keepasx/wiki/Install_instructions
+# building instructions from https://github.com/keepassx/keepassx
 build_and_install_keepassx() {
     local tmpdir
 
@@ -1974,6 +1974,8 @@ build_and_install_keepassx() {
         qttools5-dev-tools
         libgcrypt20-dev
         zlib1g-dev
+        libxi-dev
+        libxtst-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
     execute "git clone $KEEPASS_REPO_LOC $tmpdir" || return 1
