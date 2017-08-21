@@ -1491,27 +1491,7 @@ install_synergy() {
 
     report "setting up synergy"
 
-    # first find whether we have deb packages from other times:
-    if confirm "do you wish to install synergy from our previous build .deb package, if available?"; then
-        install_from_deb synergy && return 0
-    fi
-
     build_and_install_synergy
-    return $?
-}
-
-
-install_copyq() {
-    is_server && { report "we're server, skipping copyq installation."; return; }
-
-    report "setting up copyq"
-
-    # first find whether we have deb packages from other times:
-    if confirm "do you wish to install copyq from our previous build .deb package, if available?"; then
-        install_from_deb copyq && return 0
-    fi
-
-    build_and_install_copyq
     return $?
 }
 
@@ -1666,10 +1646,6 @@ install_skype() {  # https://wiki.debian.org/skype
 
     report "setting up skype"
 
-    #if confirm "do you wish to install skype from our local .deb package, if available?"; then
-        #install_from_deb skype && return 0
-    #fi
-
     if is_64_bit; then
         execute "sudo dpkg --add-architecture i386"
         execute "sudo apt-get --yes update"
@@ -1746,39 +1722,6 @@ install_webdev() {
 }
 
 
-install_keepassx() {
-    is_server && { report "we're server, skipping keepassx installation."; return; }
-
-    report "setting up keepassx..."
-
-    # first find whether we have deb packages from other times:
-    if confirm "do you wish to install keepassx from our previous build .deb package, if available?"; then
-        install_from_deb keepassx && return 0
-    fi
-
-    build_and_install_keepassx
-    return $?
-}
-
-
-# TO-DO list manager
-# https://github.com/mank319/Go-For-It
-install_goforit() {
-    is_server && { report "we're server, skipping goforit installation."; return; }
-    should_build_if_avail_in_repo go-for-it || { report "skipping building of go-for-it; remember to install it from the repo after the install!"; return; }
-
-    report "setting up goforit..."
-
-    # first find whether we have deb packages from other times:
-    if confirm "do you wish to install goforit from our previous build .deb package, if available?"; then
-        install_from_deb goforit && return 0
-    fi
-
-    build_and_install_goforit
-    return $?
-}
-
-
 # building instructions from https://github.com/symless/synergy/wiki/Compiling
 build_and_install_synergy() {
     local tmpdir
@@ -1814,7 +1757,7 @@ build_and_install_synergy() {
 
 
 # building instructions from https://copyq.readthedocs.io/en/latest/build-source-code.html
-build_and_install_copyq() {
+install_copyq() {
     local tmpdir
 
     readonly tmpdir="$TMPDIR/copyq-build-${RANDOM}"
@@ -1865,10 +1808,11 @@ create_deb_install_and_store() {
 
 
 # building instructions from https://github.com/mank319/Go-For-It
-build_and_install_goforit() {
+install_goforit() {
     local tmpdir
 
     should_build_if_avail_in_repo goforit || { report "skipping building of goforit. remember to install it from the repo after the install!"; return; }
+    should_build_if_avail_in_repo go-for-it || { report "skipping building of go-for-it; remember to install it from the repo after the install!"; return; }
 
     readonly tmpdir="$TMPDIR/goforit-build-${RANDOM}"
     report "building goforit..."
@@ -1958,7 +1902,7 @@ install_keepassxc() {
 
 
 # building instructions from https://github.com/keepassx/keepassx
-build_and_install_keepassx() {
+install_keepassx() {
     local tmpdir
 
     should_build_if_avail_in_repo keepassx || { report "skipping building of keepassx. remember to install it from the repo after the install!"; return; }
@@ -2020,38 +1964,6 @@ install_dwm() {
     execute "sudo make clean install"
     execute "popd"
     return 0
-}
-
-
-# searches .deb packages with provided name in its filename from
-# $BASE_BUILDS_DIR and installs it.
-install_from_deb() {
-    local deb_file count name
-
-    readonly name="$1"
-
-    deb_file="$(find $BASE_BUILDS_DIR -type f -iname "*$name*.deb")"
-    [[ "$?" -eq 0 && -n "$deb_file" ]] || { report "didn't find any pre-build deb packages for $name; trying to build..."; return 1; }
-    readonly count="$(echo "$deb_file" | wc -l)"
-
-    if [[ "$count" -gt 1 ]]; then
-        report "found $count potential deb packages. select one, or select none to build instead:"
-
-        while true; do
-            select_items "$deb_file" 1
-
-            if [[ -n "$__SELECTED_ITEMS" ]]; then
-                deb_file="$__SELECTED_ITEMS"
-                break
-            else
-                confirm "no files selected; skip installing from .deb and build $name instead?" && { report "ok, won't install $name from .deb"; return 1; }
-            fi
-        done
-    fi
-
-    report "installing ${deb_file}..."
-    execute "sudo dpkg -i $deb_file"
-    return $?
 }
 
 
@@ -2147,16 +2059,8 @@ install_neovim() {  # the AppImage version
 install_vim() {
 
     report "setting up vim..."
-    report "removing already installed vim components..."
-    execute "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"
 
-    # first find whether we have deb packages from other times:
-    if confirm "do you wish to install vim from our previous build .deb package, if available?"; then
-        install_from_deb vim || build_and_install_vim || return 1
-    else
-        build_and_install_vim || return 1
-    fi
-
+    build_and_install_vim || return 1
     vim_post_install_configuration
 
     report "launching vim, so the initialization could be done (pulling in plugins et al. simply exit vim when it's done.)"
@@ -2278,6 +2182,9 @@ build_and_install_vim() {
     for i in "$python_confdir" "$python3_confdir"; do
         [[ -d "$i" ]] || err "[$i] is not a valid dir; will install vim, but you'll need to recompile"
     done
+
+    report "removing already installed vim components..."
+    execute "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"
 
     report "installing vim build dependencies..."
     install_block '
