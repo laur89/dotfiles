@@ -140,7 +140,7 @@ set nocompatible " Must be the first line
     " supertab et al; needs compilation! read the docs!:
     " !!! ühed väidavad, et javaphp,js,html jaoks on neocomplete parem;
     " for neovim, consider Shougo/deoplete.nvim as alternative;
-    "Plugin 'Valloric/YouCompleteMe'
+    Plugin 'Valloric/YouCompleteMe'
 
     " Go-lang/golang/go lang support:
     Plugin 'fatih/vim-go'
@@ -149,7 +149,7 @@ set nocompatible " Must be the first line
     Plugin 'derekwyatt/vim-scala'
 
     " C# support: (requires mono)    https://github.com/OmniSharp/omnisharp-vim
-    Plugin 'OmniSharp/omnisharp-vim'
+    "Plugin 'OmniSharp/omnisharp-vim'  " using one provided by YCM
 
     " c# additions (mainly better syntax highlight):
     Plugin 'OrangeT/vim-csharp'
@@ -195,7 +195,7 @@ set nocompatible " Must be the first line
     " tern for vim (tern is a standalone js analyzer)
     " depends on tern! - https://github.com/ternjs/tern
     " @ .vim/bundle/tern_for_vim:  npm install tern
-    Plugin 'marijnh/tern_for_vim'
+    "Plugin 'ternjs/tern_for_vim'  " using one provided by YCM
 
     " easy find and replace across multiple files
     " alternative - greplace

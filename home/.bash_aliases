@@ -36,6 +36,7 @@ alias vscode='/data/progs/VSCode-linux-x64/Code'  # MS Visual Code (editor)
 alias mattermost='/data/progs/mattermost/mattermost'
 alias charles='/data/progs/charles/charles'  # charles proxy (think fiddler)
 alias rambox='/data/progs/rambox/rambox'  # franz open-source alternative
+alias keepassxc='/data/progs/keepassxc/keepassxc'
 alias pastebinit='pastebinit -P'
 alias uptime='uptime --pretty'
 alias xo='xdg-open'

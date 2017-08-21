@@ -1233,7 +1233,7 @@ install_symantec_endpoint_security() {
     execute "wget -- $sep_loc" || return 1
     tarball="$(ls)"
     extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
-    dir="$(find -mindepth 1 -maxdepth 1 -type d)"
+    dir="$(find . -mindepth 1 -maxdepth 1 -type d)"
     [[ -d "$dir" ]] || { err "couldn't find unpacked SEP directory"; return 1; }
 
     execute "sudo $dir/install.sh" || return 1
@@ -1249,7 +1249,7 @@ install_symantec_endpoint_security() {
 
     tarball="$(basename -- $jce_loc)"
     extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
-    dir="$(find -mindepth 1 -maxdepth 1 -type d)"
+    dir="$(find . -mindepth 1 -maxdepth 1 -type d)"
     [[ -d "$dir" ]] || { err "couldn't find unpacked jce directory"; return 1; }
     jars="$(find "$dir" -mindepth 1 -type f -name '*.jar')" || { err "looks like we didn't find any .jar files under [$dir]"; return 1; }
     execute "sudo cp $jars $JDK_LINK_LOC/jre/lib/security" || return 1
@@ -1365,7 +1365,7 @@ upgrade_kernel() {
 # source, or fetch from the interwebs and install/configure manually.
 install_own_builds() {
 
-    prepare_build_container
+    #prepare_build_container
 
     install_vim
     install_neovim
@@ -1378,17 +1378,37 @@ install_own_builds() {
 }
 
 
-prepare_build_container() {
+# build container exec
+bc_exe() {
+    local cmds
+
+    cmds="$*"
+    execute "docker exec -it $(docker ps -qf "name=$BUILD_DOCK") bash -c '$cmds'" || return 1
+}
+
+
+# build container install
+bc_install() {
+    local progs
+
+    declare -ra progs=("$@")
+    bc_exe "apt-get --yes install ${progs[*]}" || return 1
+}
+
+
+prepare_build_container() {  # TODO container build env not used atm
     if [[ -z "$(docker ps -qa -f name="$BUILD_DOCK" --format '{{.Names}}')" ]]; then  # container hasn't been created
         #execute "docker create --name '$BUILD_DOCK' debian:testing-slim" || return 1  # TODO decide how to create the container (run vs create)
-        execute "docker run -dit --name '$BUILD_DOCK' debian:testing-slim" || return 1
+        execute "docker run -dit --name '$BUILD_DOCK' -v '$BASE_BUILDS_DIR:/out' debian:testing-slim" || return 1
+        bc_exe "apt-get --yes update"
+        bc_install git checkinstall build-essential cmake g++ || return 1
     fi
 
     if [[ -z "$(docker ps -qa -f status=running -f name="$BUILD_DOCK" --format '{{.Names}}')" ]]; then
         execute "docker start '$BUILD_DOCK'" || return 1
     fi
 
-    execute "docker exec -it $(docker ps -qf "name=$BUILD_DOCK") apt-get --yes update" || return 1
+    bc_exe "apt-get --yes update"
     return 0
 }
 
@@ -1409,7 +1429,7 @@ install_oracle_jdk() {
 
     readonly tarball="$(basename -- "$ORACLE_JDK_LOC")"
     extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
-    dir="$(find -mindepth 1 -maxdepth 1 -type d)"
+    dir="$(find . -mindepth 1 -maxdepth 1 -type d)"
     [[ -d "$dir" ]] || { err "couldn't find unpacked jdk directory"; return 1; }
 
     [[ -d "$JDK_INSTALLATION_DIR" ]] || execute "sudo mkdir -- $JDK_INSTALLATION_DIR"
@@ -1462,21 +1482,17 @@ switch_jdk_versions() {
 
 
 install_synergy() {
-    local re_clone
-
     is_server && { report "we're server, skipping synergy installation."; return; }
     should_build_if_avail_in_repo synergy || { report "skipping building of synergy remember to install it from the repo after the install!"; return; }
 
     report "setting up synergy"
 
-    # find whether there already is a synergy build dir present:
-    if [[ -d "$BASE_BUILDS_DIR/synergy" ]]; then
-        if confirm "$BASE_BUILDS_DIR/synergy dir already exists. use that one? (answering 'no' will re-clone repo)"; then
-            re_clone=0
-        fi
+    # first find whether we have deb packages from other times:
+    if confirm "do you wish to install synergy from our previous build .deb package, if available?"; then
+        install_from_deb synergy && return 0
     fi
 
-    build_and_install_synergy $re_clone
+    build_and_install_synergy
     return $?
 }
 
@@ -1517,12 +1533,12 @@ install_copyq() {
 
     #ver="$(grep -Po '.*davmail.*davmail/\K[0-9]+\.[0-9]+\.[-0-9]+(?=/.*$)' <<< "$davmail_dl")"
     #[[ -z "$ver" ]] && { err "unable to parse davmail ver from url. abort."; return 1; }
+    #[[ -e "$inst_loc/installations/$ver" ]] && { report "[$ver] already exists, skipping"; return 0; }
 
     #report "fetching [$davmail_dl]"
     #execute "wget '$davmail_dl' -O davmail.zip" || { err "wgetting [$davmail_dl] failed."; return 1; }
     #execute "unzip davmail.zip" || { err "extracting downloaded file failed."; return 1; }  # since file extension is unknown
     #execute "rm -- 'davmail.zip'" || { err "removing downloaded file failed"; return 1; }
-    #[[ -e "$inst_loc/installations/$ver" ]] && { report "[$ver] already exists, skipping"; return 0; }
     #execute "mkdir -p -- '$inst_loc/installations/$ver'" || { err "davmail dir creation failed"; return 1; }
 
     #execute "mv -- ./* '$inst_loc/installations/$ver'"
@@ -1726,21 +1742,6 @@ install_webdev() {
 }
 
 
-install_keepassxc() {
-    is_server && { report "we're server, skipping keepassxc installation."; return; }
-
-    report "setting up keepassxc..."
-
-    # first find whether we have deb packages from other times:
-    if confirm "do you wish to install keepassxc from our previous build .deb package, if available?"; then
-        install_from_deb keepassxc && return 0
-    fi
-
-    build_and_install_keepassxc
-    return $?
-}
-
-
 install_keepassx() {
     is_server && { report "we're server, skipping keepassx installation."; return; }
 
@@ -1776,11 +1777,10 @@ install_goforit() {
 
 # building instructions from https://github.com/symless/synergy/wiki/Compiling
 build_and_install_synergy() {
-    local builddir do_clone
+    local tmpdir
 
-    readonly do_clone="$1"  # set to '0' if synergy repo should NOT be re-cloned
+    readonly tmpdir="$TMPDIR/synergy-build-${RANDOM}"
 
-    readonly builddir="$BASE_BUILDS_DIR/synergy"
     report "building synergy"
 
     report "installing synergy build dependencies..."
@@ -1794,26 +1794,22 @@ build_and_install_synergy() {
         python
         qt4-dev-tools
         xorg-dev
+        fakeroot
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    if [[ "$do_clone" -ne 0 ]]; then
-        [[ -d "$builddir" ]] && execute "sudo rm -rf -- $builddir"
-        execute "git clone $SYNERGY_REPO_LOC $builddir" || return 1
-    fi
-
-    execute "pushd $builddir" || return 1
-    [[ "$do_clone" -eq 0 ]] && is_ssh_key_available && execute "git pull"
+    execute "git clone $SYNERGY_REPO_LOC $tmpdir" || return 1
+    execute "pushd $tmpdir" || return 1
 
     execute "./hm.sh conf -g1"
     execute "./hm.sh build"
 
-    # note builddir should not be deleted
     execute "popd"
+    execute "sudo rm -rf -- $tmpdir"
     return 0
 }
 
 
-# building instructions from https://github.com/hluk/CopyQ/blob/master/INSTALL
+# building instructions from https://copyq.readthedocs.io/en/latest/build-source-code.html
 build_and_install_copyq() {
     local tmpdir
 
@@ -1824,8 +1820,12 @@ build_and_install_copyq() {
 
     report "installing copyq build dependencies..."
     install_block '
-        libqt4-dev
         cmake
+        qtbase5-private-dev
+        qtscript5-dev
+        qttools5-dev
+        qttools5-dev-tools
+        libqt5svg5-dev
         libxfixes-dev
         libxtst-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
@@ -1833,10 +1833,10 @@ build_and_install_copyq() {
     execute "git clone $COPYQ_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
 
-    execute 'cmake .' || { err; popd; return 1; }
+    execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .' || { err; popd; return 1; }
     execute "make" || { err; popd; return 1; }
 
-    create_deb_install_and_store
+    create_deb_install_and_store copyq
 
     execute "popd"
     execute "sudo rm -rf -- $tmpdir"
@@ -1847,21 +1847,16 @@ build_and_install_copyq() {
 # runs checkinstall in current working dir, and copies the created
 # .deb file to $BASE_BUILDS_DIR/
 create_deb_install_and_store() {
-    local deb_file
+    local ver pkg_name
+
+    pkg_name="$1"
+    ver="${2:-'0.0.1'}"  # OPTIONAL
 
     check_progs_installed checkinstall || return 1
     report "creating .deb and installing with checkinstall..."
-    execute "sudo checkinstall" || { err "checkinstall run failed. abort."; return 1; }
+    execute "sudo checkinstall -D --default --fstrans=yes --pkgname=$pkg_name --pkgversion=$ver --pakdir=$BASE_BUILDS_DIR/" || { err "checkinstall run failed. abort."; return 1; }
 
-    readonly deb_file="$(find . -type f -name '*.deb')"
-    if [[ -f "$deb_file" ]]; then
-        report "moving built package [$deb_file] to [$BASE_BUILDS_DIR]"
-        execute "mv -- $deb_file $BASE_BUILDS_DIR/"
-        return $?
-    else
-        err "couldn't find built package (find cmd found [$deb_file])"
-        return 1
-    fi
+    return 0
 }
 
 
@@ -1881,7 +1876,7 @@ build_and_install_goforit() {
     execute 'cmake ..' || { err; popd; return 1; }
     execute "make" || { err; popd; return 1; }
 
-    create_deb_install_and_store
+    create_deb_install_and_store goforit
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -1889,9 +1884,72 @@ build_and_install_goforit() {
 }
 
 
-# TODO
-build_and_install_keepassxc() {
-    true # TODO
+# TODO: not used atm; still not sure what runtime deps are required on the host
+# instructions from  https://github.com/keepassxreboot/keepassxc/wiki/Set-up-Build-Environment-on-Linux
+#                    https://github.com/keepassxreboot/keepassxc/wiki/Building-KeePassXC
+# runtime dependencies from https://keepassxc.org/project
+build_and_install_keepassxc_TODO_container_edition() {
+
+    bc_install libxi-dev libxtst-dev qtbase5-dev \
+            libqt5x11extras5-dev qttools5-dev qttools5-dev-tools \
+            libgcrypt20-dev zlib1g-dev libyubikey-dev libykpers-1-dev || return 1
+
+    bc_exe 'git clone https://github.com/keepassxreboot/keepassxc.git /tmp/kxc || exit 1
+            pushd /tmp/kxc || exit 1
+
+            mkdir build
+            cd build
+            cmake -DWITH_XC_AUTOTYPE=ON -DWITH_XC_HTTP=ON -DWITH_XC_YUBIKEY=ON' \
+            '    -DCMAKE_BUILD_TYPE=Release .. || exit 1
+            make -j8 || exit 1
+            checkinstall -D --default --fstrans=yes --pkgname=keepassxc --pkgversion=0.0.1 --install=no --pakdir=/out || exit 1
+
+            popd
+            rm -rf /tmp/kxc || exit 1'
+}
+
+
+# downloads official AppImage and installs it.
+#                    https://github.com/keepassxreboot/keepassxc/wiki/Set-up-Build-Environment-on-Linux
+#                    https://github.com/keepassxreboot/keepassxc/wiki/Building-KeePassXC
+#                    https://keepassxc.org/download
+install_keepassxc() {
+    local tmpdir kxc_url kxc_dl page ver inst_loc img
+
+    is_server && { report "we're server, skipping keepassxc installation."; return; }
+    should_build_if_avail_in_repo keepassxc || { report "skipping building of keepassxc; remember to install it from the repo after the install!"; return; }
+
+    readonly tmpdir="$(mktemp -d "keepassxc-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    readonly kxc_url='https://keepassxc.org/download'
+    readonly inst_loc="$BASE_PROGS_DIR/keepassxc"
+
+    report "setting up keepassxc"
+
+    execute "pushd -- $tmpdir" || return 1
+    page="$(wget "$kxc_url" --user-agent="Mozilla/5.0 (X11; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0" -q -O -)" || { err "wgetting [$kxc_url] failed"; return 1; }
+    kxc_dl="$(grep -Po '.*a href="\Khttps.*github.*keepassxreboot/keepassxc.*KeePassXC-.*x86_64\.AppImage(?=".*$)' <<< "$page")" || { err "parsing keepassxc download link failed"; return 1; }
+    is_valid_url "$kxc_dl" || { err "[$kxc_dl] is not a valid download link"; return 1; }
+
+    ver="$(grep -Po '.*releases/download/\K[0-9]+\.[0-9]+\.[-0-9]+(?=/.*$)' <<< "$kxc_dl")"
+    [[ -z "$ver" ]] && { err "unable to parse keepassxc ver from url. abort."; return 1; }
+    [[ -e "$inst_loc/installations/$ver" ]] && { report "[$ver] already exists, skipping"; return 0; }
+
+    report "fetching [$kxc_dl]"
+    execute "wget '$kxc_dl'" || { err "wgetting [$kxc_dl] failed."; return 1; }
+    img="$(find . -type f -name '*.AppImage')"
+    [[ -f "$img" ]] || { err "couldn't find downloaded appimage"; return 1; }
+    execute "chmod +x '$img'" || return 1
+
+    execute "mkdir -p -- '$inst_loc/installations/$ver'" || { err "keepassxc dir creation failed"; return 1; }
+    execute "mv -- $img '$inst_loc/installations/$ver'"
+    execute "pushd -- $inst_loc" || return 1
+    [[ -h keepassxc ]] && rm -- keepassxc
+    execute "ln -s 'installations/$ver/$img' keepassxc"
+
+    execute "popd; popd"
+    execute "sudo rm -rf -- '$tmpdir'"
+
+    return 0
 }
 
 
@@ -1925,7 +1983,7 @@ build_and_install_keepassx() {
     execute 'cmake ..' || { err; popd; return 1; }
     execute "make" || { err; popd; return 1; }
 
-    create_deb_install_and_store
+    create_deb_install_and_store keepassx
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -2024,7 +2082,7 @@ install_neovim() {
         #execute --ignore-errs "rm -r build"
         execute "make clean" || { err; return 1; }
         #execute "make CMAKE_BUILD_TYPE=Release" || { err; return 1; }
-        #create_deb_install_and_store || { err; return 1; }
+        #create_deb_install_and_store neovim || { err; return 1; }
         execute "sudo make CMAKE_BUILD_TYPE=Release install" || { err; return 1; }  # TODO  remove this once checkinstall issue is resolved;
 
         execute "popd"
@@ -2071,6 +2129,7 @@ install_vim() {
 
 
 # contains additional post-install vim plugin configuration for those that need it
+# TODO: deprecated?
 configure_vim_plugins() {
     local vim_pluginsdir
 
@@ -2106,10 +2165,10 @@ configure_vim_plugins() {
     }
 
     # tern: https://github.com/ternjs/tern_for_vim
-    _install_tern_for_vim_deps
+    #_install_tern_for_vim_deps  # using the one packaged with YCM
 
     # omnisharp: https://github.com/OmniSharp/omnisharp-vim
-    _install_omnisharp_deps
+    #_install_omnisharp_deps  # using the one packaged with YCM
 
     unset _install_tern_for_vim_deps _install_omnisharp_deps
 }
@@ -2169,7 +2228,7 @@ build_and_install_vim() {
     local tmpdir expected_runtimedir python_confdir python3_confdir i
 
     readonly tmpdir="$TMPDIR/vim-build-${RANDOM}"
-    readonly expected_runtimedir='/usr/share/vim/vim80'
+    readonly expected_runtimedir='/usr/local/share/vim/vim80'  # depends on the ./configure --prefix
     readonly python_confdir='/usr/lib/python2.7/config-x86_64-linux-gnu'
     readonly python3_confdir='/usr/lib/python3.5/config-3.5m-x86_64-linux-gnu'
 
@@ -2214,12 +2273,12 @@ build_and_install_vim() {
             --enable-luainterp=yes \
             --enable-gui=gtk2 \
             --enable-cscope \
-            --prefix=/usr \
+            --prefix=/usr/local \
     " || { err 'vim configure build phase failed.'; return 1; }
 
     execute "make VIMRUNTIMEDIR=$expected_runtimedir" || { err 'vim make failed'; return 1; }
     #!(make sure rutimedir is correct; at this moment 74 was)
-    create_deb_install_and_store || { err; return 1; }
+    create_deb_install_and_store vim || { err; return 1; }
 
     execute "popd"
     execute "sudo rm -rf -- $tmpdir"
@@ -2254,7 +2313,7 @@ install_YCM() {
         report "fetching [$CLANG_LLVM_LOC]"
         execute "wget '$CLANG_LLVM_LOC'" || { err "wgetting [$CLANG_LLVM_LOC] failed."; return 1; }
         extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
-        dir="$(find -mindepth 1 -maxdepth 1 -type d)"
+        dir="$(find . -mindepth 1 -maxdepth 1 -type d)"
         [[ -d "$dir" ]] || { err "couldn't find unpacked clang directory"; return 1; }
         [[ -d "$libclang_root" ]] && execute "sudo rm -rf -- '$libclang_root'"
         execute "mv -- '$dir' '$libclang_root'"
@@ -2303,7 +2362,7 @@ install_YCM() {
     # set up support for additional languages:
     # C# (assumes you have mono installed):
     execute "pushd $ycm_third_party_rootdir/OmniSharpServer" || return 1
-    execute "xbuild /property:Configuration=Release"
+    execute "xbuild /property:Configuration=Release /p:NoCompilerStandardLib=false"  # https://github.com/Valloric/YouCompleteMe/issues/2188
     execute "popd"
 
     # js:
@@ -2424,6 +2483,7 @@ install_from_repo() {
         ntp
         gdebi
         synaptic
+        auto-apt
         apt-file
         apt-show-versions
         apt-xapian-index
@@ -2457,6 +2517,7 @@ install_from_repo() {
         lxappearance
         gtk2-engines-murrine
         gtk2-engines-pixbuf
+        arc-theme
         meld
         gthumb
         pastebinit
@@ -2792,7 +2853,6 @@ __choose_prog_to_build() {
         install_keepassx
         install_keepassxc
         install_goforit
-        install_gtk_theme
         install_copyq
         install_rambox
         install_synergy
@@ -2808,7 +2868,7 @@ __choose_prog_to_build() {
     select_items "${choices[*]}" 1
 
     [[ -z "$__SELECTED_ITEMS" ]] && return
-    prepare_build_container || { err "preparation of build container [$BUILD_DOCK] failed" "$FUNCNAME"; return 1; }
+    #prepare_build_container || { err "preparation of build container [$BUILD_DOCK] failed" "$FUNCNAME"; return 1; }
 
     $__SELECTED_ITEMS
 }
@@ -2908,13 +2968,6 @@ enable_network_manager() {
 }
 
 
-# Entryponit for gtk themes; comment out that should not be installed.
-install_gtk_theme() {
-    #install_gtk_numix
-    install_block 'arc-theme'
-}
-
-
 # https://github.com/numixproject/numix-gtk-theme
 #
 # consider also numix-gtk-theme & numix-icon-theme straight from the repo
@@ -2936,7 +2989,7 @@ install_gtk_numix() {
 
     execute "make" || { err; popd; return 1; }
 
-    create_deb_install_and_store
+    create_deb_install_and_store numix
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -2998,7 +3051,6 @@ post_install_progs_setup() {
     execute "newgrp wireshark"                  # log us into the new group
     execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
     execute "newgrp vboxusers"                  # log us into the new group
-    install_gtk_theme  # TODO: does this really belong here? why? was it because numix required some weird dependency that was only later on available?
     configure_ntp_for_work
     #setup_seafile_cli  # TODO https://github.com/haiwen/seafile/issues/1855 & https://github.com/haiwen/seafile/issues/1854
 }
@@ -3493,6 +3545,11 @@ copy_to_clipboard() {
 
 cleanup() {
     [[ "$__CLEANUP_EXECUTED_MARKER" -eq 1 ]] && return  # don't invoke more than once.
+
+    # shut down the build container:
+    if [[ -n "$(docker ps -qa -f status=running -f name="$BUILD_DOCK" --format '{{.Names}}')" ]]; then
+        execute "docker stop '$BUILD_DOCK'" || err "stopping build container [$BUILD_DOCK] failed"
+    fi
 
     if [[ -n "${PACKAGES_IGNORED_TO_INSTALL[*]}" ]]; then
         echo -e "    ERR INSTALL: dry run failed for these packages: [${PACKAGES_IGNORED_TO_INSTALL[*]}]" >> "$EXECUTION_LOG"
