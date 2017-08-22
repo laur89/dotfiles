@@ -1275,11 +1275,9 @@ install_progs() {
     install_from_repo
     install_own_builds  # has to be after install_from_repo()
 
-    install_oracle_jdk
-    #install_skype
     install_nvidia
 
-    # TODO; delete?:
+    # TODO: delete?:
     #if [[ "$MODE" == work ]]; then
         #install_altiris
         #install_symantec_endpoint_security
@@ -1367,6 +1365,8 @@ upgrade_kernel() {
 
 # 'own build' as in everything from not the debian repository; either build from
 # source, or fetch from the interwebs and install/configure manually.
+#
+# note single-task counterpart would be __choose_prog_to_build()
 install_own_builds() {
 
     #prepare_build_container
@@ -1377,8 +1377,9 @@ install_own_builds() {
     install_goforit
     install_copyq
     install_rambox
-    install_synergy
+    #install_synergy  # currently installing from repo
     install_dwm
+    install_oracle_jdk
 }
 
 
@@ -1485,17 +1486,6 @@ switch_jdk_versions() {
 }
 
 
-install_synergy() {
-    is_server && { report "we're server, skipping synergy installation."; return; }
-    should_build_if_avail_in_repo synergy || { report "skipping building of synergy remember to install it from the repo after the install!"; return; }
-
-    report "setting up synergy"
-
-    build_and_install_synergy
-    return $?
-}
-
-
 # disabled as davmail's available in repo
 # fetches the latest davmail
 #install_davmail() {  # https://sourceforge.net/projects/davmail/files/
@@ -1541,7 +1531,6 @@ install_rambox() {  # https://github.com/saenzramiro/rambox/wiki/Install-on-Linu
     local tmpdir tarball rambox_url rambox_dl page dir ver inst_loc
 
     is_server && { report "we're server, skipping rambox installation."; return; }
-    should_build_if_avail_in_repo rambox || { report "skipping building of rambox; remember to install it from the repo after the install!"; return; }
 
     readonly tmpdir="$(mktemp -d "rambox-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     readonly rambox_url='http://rambox.pro/#download'
@@ -1579,11 +1568,11 @@ install_rambox() {  # https://github.com/saenzramiro/rambox/wiki/Install-on-Linu
 }
 
 
+# builds rambox from source  (atm not used, as using AppImage or tarball)
 build_and_install_rambox() {  # https://github.com/saenzramiro/rambox
     local expected_sencha_loc tmpdir
 
     is_server && { report "we're server, skipping rambox installation."; return; }
-    should_build_if_avail_in_repo rambox || { report "skipping building of rambox; remember to install it from the repo after the install!"; return; }
 
     readonly expected_sencha_loc="$HOME/bin/Sencha"
     readonly tmpdir="$(mktemp -d "sencha-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
@@ -1723,7 +1712,7 @@ install_webdev() {
 
 
 # building instructions from https://github.com/symless/synergy/wiki/Compiling
-build_and_install_synergy() {
+install_synergy() {
     local tmpdir
 
     readonly tmpdir="$TMPDIR/synergy-build-${RANDOM}"
@@ -1762,7 +1751,6 @@ install_copyq() {
 
     readonly tmpdir="$TMPDIR/copyq-build-${RANDOM}"
 
-    should_build_if_avail_in_repo copyq || { report "skipping building of copyq remember to install it from the repo after the install!"; return; }
     report "building copyq"
 
     report "installing copyq build dependencies..."
@@ -1810,9 +1798,6 @@ create_deb_install_and_store() {
 # building instructions from https://github.com/mank319/Go-For-It
 install_goforit() {
     local tmpdir
-
-    should_build_if_avail_in_repo goforit || { report "skipping building of goforit. remember to install it from the repo after the install!"; return; }
-    should_build_if_avail_in_repo go-for-it || { report "skipping building of go-for-it; remember to install it from the repo after the install!"; return; }
 
     readonly tmpdir="$TMPDIR/goforit-build-${RANDOM}"
     report "building goforit..."
@@ -1865,7 +1850,6 @@ install_keepassxc() {
     local tmpdir kxc_url kxc_dl page ver inst_loc img
 
     is_server && { report "we're server, skipping keepassxc installation."; return; }
-    should_build_if_avail_in_repo keepassxc || { report "skipping building of keepassxc; remember to install it from the repo after the install!"; return; }
 
     readonly tmpdir="$(mktemp -d "keepassxc-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     readonly kxc_url='https://keepassxc.org/download'
@@ -1904,8 +1888,6 @@ install_keepassxc() {
 # building instructions from https://github.com/keepassx/keepassx
 install_keepassx() {
     local tmpdir
-
-    should_build_if_avail_in_repo keepassx || { report "skipping building of keepassx. remember to install it from the repo after the install!"; return; }
 
     readonly tmpdir="$TMPDIR/keepassx-build-${RANDOM}"
     report "building keepassx..."
@@ -2469,6 +2451,7 @@ install_from_repo() {
         meld
         gthumb
         pastebinit
+        synergy
     )
 
 
@@ -2708,28 +2691,6 @@ install_block() {
 }
 
 
-# returns false, if there's an available package with given value in its name, and
-# user opts not to build the package, but later install it from the repo by himself.
-should_build_if_avail_in_repo() {
-    local package_name packages
-
-    readonly package_name="$1"
-
-    readonly packages="$(apt-cache search --names-only "$package_name")" || { err; return 1; }
-    if [[ -n "$packages" ]]; then
-        report "FYI, these packages with [$package_name] in them are available in repo:\n"
-        echo -e "$packages"
-
-        if ! confirm "\tdo you still wish to build yourself?\n\t(answering 'no' will skip the build. you need to manually install it from the repo yourself.)"; then
-            # TODO: store and log!
-            return 1
-        fi
-    fi
-
-    return 0
-}
-
-
 choose_step() {
     report "what do you want to do?"
 
@@ -2792,6 +2753,8 @@ choose_single_task() {
 
 # meta-function;
 # offerst steps from install_own_builds():
+#
+# note full-install counterpart would be install_own_builds()
 __choose_prog_to_build() {
     local choices
 
