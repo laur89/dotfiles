@@ -747,7 +747,7 @@ install_deps() {
     _install_tmux_deps; unset _install_tmux_deps
 
     # conscript (scala apps distribution manager):  # http://www.foundweekends.org/conscript/setup.html
-                                                    # check https://github.com/foundweekends/conscript/issues/124
+                                                    # TODO: check https://github.com/foundweekends/conscript/issues/124
     execute 'wget https://raw.githubusercontent.com/foundweekends/conscript/master/setup.sh -O - | sh'
 
     # install scala apps (requires conscript):
@@ -851,7 +851,7 @@ clone_or_link_castle() {
     readonly homesick_exe="$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick"
 
     [[ -z "$castle" || -z "$user" || -z "$hub" ]] && { err "either user, repo or castle name were missing"; sleep 2; return 1; }
-    [[ -e "$homesick_exe" ]] || { err "expected to see homesick script @ [$homesick_exe], but didn't. skipping cloning castle [$castle]"; return 1; }
+    [[ -e "$homesick_exe" ]] || { err "expected to see homesick script @ [$homesick_exe], but didn't. skipping cloning|linking castle [$castle]"; return 1; }
 
     if [[ -d "$BASE_HOMESICK_REPOS_LOC/$castle" ]]; then
         if is_ssh_key_available; then
@@ -1492,7 +1492,6 @@ switch_jdk_versions() {
     #local tmpdir davmail_url davmail_dl page ver inst_loc
 
     #is_server && { report "we're server, skipping davmail installation."; return; }
-    #should_build_if_avail_in_repo davmail || { report "skipping building of davmail; remember to install it from the repo after the install!"; return; }
 
     #readonly tmpdir="$(mktemp -d "davmail-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     #readonly davmail_url='https://sourceforge.net/projects/davmail/files/latest/download?source=files'
@@ -1604,9 +1603,10 @@ build_and_install_rambox() {  # https://github.com/saenzramiro/rambox
     execute "pushd -- $tmpdir" || return 1
 
     report "setting up rambox"
-    if [[ -d "$expected_sencha_loc" ]] && confirm "sencha found @ [$expected_sencha_loc]; want to fetch latest still?"; then
+    if [[ ! -d "$expected_sencha_loc" ]] || confirm "sencha found @ [$expected_sencha_loc]; want to fetch latest anyways?"; then
         __fetch_and_install_sencha || { err "fetching or installing sencha failed"; return 1; }
     fi
+    [[ -d "$expected_sencha_loc" ]] || { err "couldn't find sencha @ [$expected_sencha_loc]"; return 1; }
 
     # install deps
     install_block '
@@ -1627,6 +1627,7 @@ build_and_install_rambox() {  # https://github.com/saenzramiro/rambox
 
 
 install_skype() {  # https://wiki.debian.org/skype
+                   # https://www.skype.com/en/download-skype/skype-for-linux/downloading/?type=weblinux-deb
     local skypeFile skype_downloads_dir
 
     is_server && { report "we're server, skipping skype installation."; return; }
@@ -1692,6 +1693,7 @@ install_webdev() {
 
     # ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki):
     install_block '
+        gcc-6
         autoconf
         bison
         build-essential
@@ -1712,6 +1714,7 @@ install_webdev() {
 
 
 # building instructions from https://github.com/symless/synergy/wiki/Compiling
+# TODO: latest built binaries also avail from https://github.com/symless/synergy/releases/latest
 install_synergy() {
     local tmpdir
 
@@ -1846,6 +1849,7 @@ build_and_install_keepassxc_TODO_container_edition() {
 #                    https://github.com/keepassxreboot/keepassxc/wiki/Set-up-Build-Environment-on-Linux
 #                    https://github.com/keepassxreboot/keepassxc/wiki/Building-KeePassXC
 #                    https://keepassxc.org/download
+# note latest builds also avail from  https://github.com/keepassxreboot/keepassxc/releases/latest
 install_keepassxc() {
     local tmpdir kxc_url kxc_dl page ver inst_loc img
 
@@ -2290,17 +2294,17 @@ install_YCM() {
 
     ############
     # set up support for additional languages:
-    # C# (assumes you have mono installed):
+    #     C# (assumes you have mono installed):
     execute "pushd $ycm_third_party_rootdir/OmniSharpServer" || return 1
     execute "xbuild /property:Configuration=Release /p:NoCompilerStandardLib=false"  # https://github.com/Valloric/YouCompleteMe/issues/2188
     execute "popd"
 
-    # js:
+    #     js:
     execute "pushd $ycm_third_party_rootdir/tern_runtime" || return 1
     execute "npm install --production"
     execute "popd"
 
-    # go:
+    #     go:
     # TODO
 }
 
