@@ -3207,9 +3207,11 @@ fh() {
     check_progs_installed history || return 1
 
     if command -v fzf > /dev/null 2>&1; then
+        # clean up history output, remove FUNCNAME, clean up multiple whitespace, sort unique:
         out="$(history \
                 | grep -Po -- "$cleanup_regex" \
                 | grep -vE -- "^\s*$FUNCNAME\b" \
+                | sed -n '/.*/s/\s\+/ /gp' \
                 | sort -u \
                 | fzf --no-sort --tac --query="$input" --expect=ctrl-e,ctrl-d +m -e --exit-0)"
         mapfile -t out <<< "$out"
@@ -3236,6 +3238,7 @@ fh() {
         declare -ar cmd=( $(history \
                 | grep -Po -- "$cleanup_regex" \
                 | grep -vE -- "^\s*$FUNCNAME\b" \
+                | sed -n '/.*/s/\s\+/ /gp' \
                 | grep -iE --color=auto -- "$input" \
                 | sort -u
         ) )
