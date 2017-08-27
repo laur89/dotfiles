@@ -58,6 +58,7 @@ set! javascript.options.jit.chrome=true
 
 " more colors from https://github.com/vimpr/vimperator-colors
 ":colorscheme sweets
+"colorscheme dark
 
 
 " Comms
