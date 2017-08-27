@@ -92,6 +92,15 @@ set_keyboard_layout() {
     setxkbmap -option grp:alt_shift_toggle "$layouts" || { err_display "err setting keyboard layout(s) to [$layouts]" "$SELF"; return 1; }
 }
 
+open_mpd_fifo() {
+    local fifo
+    readonly fifo='/tmp/mpd.fifo'
+
+    check_progs_installed mkfifo socat || return 1
+    mkfifo "$fifo" || { err_display "creating mpd fifo [$fifo] failed with $?"; return 1; } # create fifo for mpd/mopidy outpupt to get visuals in ncmpcpp
+    while :; do socat -d -d -T 1 -u UDP4-LISTEN:5555 OPEN:"$fifo"; done
+}
+
 ################################################
 
 (
@@ -237,5 +246,6 @@ check_max_allowed_size "$CUSTOM_LOGDIR" "$allowed_size"
 enableSmart &
 set_perms &
 set_keyboard_layout &
+open_mpd_fifo &
 
 unset i x f m n session_startfile autostart SELF
