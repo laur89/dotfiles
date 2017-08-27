@@ -1,0 +1,414 @@
+!_TAG_FILE_SORTED	2	/0=unsorted, 1=sorted, 2=foldcase/
++	/home/laur/.vimrc.first	/^        map <silent> + <C-W>+$/;"	m	language:Vim
+,/	/home/laur/.vimrc.first	/^        nmap <silent> ,\/ :nohlsearch<CR>$/;"	m	language:Vim
+,cf	/home/laur/.vimrc.first	/^        nnor ,cf :let @*=expand("%:p")<CR>    " Mnemonic: Copy File path$/;"	m	language:Vim
+,fn	/home/laur/.vimrc.first	/^        nnor ,fn :let @"=expand("%")<CR>      " Mnemonic: yank File Name$/;"	m	language:Vim
+,yf	/home/laur/.vimrc.first	/^        nnor ,yf :let @"=expand("%:p")<CR>    " Mnemonic: Yank File path$/;"	m	language:Vim
+-	/home/laur/.vimrc.first	/^        map <silent> - <C-W>-$/;"	m	language:Vim
+/	/home/laur/.vimrc.first	/^        nnoremap \/ \/\\v$/;"	m	language:Vim
+/	/home/laur/.vimrc.first	/^        vnoremap \/ \/\\v$/;"	m	language:Vim
+;	/home/laur/.vimrc.first	/^        nnoremap ; :$/;"	m	language:Vim
+<A-1>	/home/laur/.vimrc.first	/^        map <A-1> <Esc>:tabn 1<CR>$/;"	m	language:Vim
+<A-2>	/home/laur/.vimrc.first	/^        map <A-2> <Esc>:tabn 2<CR>$/;"	m	language:Vim
+<A-3>	/home/laur/.vimrc.first	/^        map <A-3> <Esc>:tabn 3<CR>$/;"	m	language:Vim
+<A-4>	/home/laur/.vimrc.first	/^        map <A-4> <Esc>:tabn 4<CR>$/;"	m	language:Vim
+<A-5>	/home/laur/.vimrc.first	/^        map <A-5> <Esc>:tabn 5<CR>$/;"	m	language:Vim
+<A-6>	/home/laur/.vimrc.first	/^        map <A-6> <Esc>:tabn 6<CR>$/;"	m	language:Vim
+<A-7>	/home/laur/.vimrc.first	/^        map <A-7> <Esc>:tabn 7<CR>$/;"	m	language:Vim
+<A-8>	/home/laur/.vimrc.first	/^        map <A-8> <Esc>:tabn 8<CR>$/;"	m	language:Vim
+<A-9>	/home/laur/.vimrc.first	/^        map <A-9> <Esc>:tabn 9<CR>$/;"	m	language:Vim
+<C-down>	/home/laur/.vimrc.first	/^        nmap <C-down> ]e$/;"	m	language:Vim
+<C-down>	/home/laur/.vimrc.first	/^        vmap <C-down> ]egv$/;"	m	language:Vim
+<c-h>	/home/laur/.vimrc	/^        nnoremap <silent> <c-h> :TmuxNavigateLeft<cr>$/;"	m	language:Vim
+<C-h>	/home/laur/.vimrc.first	/^        nnoremap <C-h> <C-w>h$/;"	m	language:Vim
+<c-j>	/home/laur/.vimrc	/^        nnoremap <silent> <c-j> :TmuxNavigateDown<cr>$/;"	m	language:Vim
+<C-j>	/home/laur/.vimrc.first	/^        nnoremap <C-j> <C-w>j$/;"	m	language:Vim
+<c-k>	/home/laur/.vimrc	/^        nnoremap <silent> <c-k> :TmuxNavigateUp<cr>$/;"	m	language:Vim
+<C-k>	/home/laur/.vimrc.first	/^        nnoremap <C-k> <C-w>k$/;"	m	language:Vim
+<c-l>	/home/laur/.vimrc	/^        nnoremap <silent> <c-l> :TmuxNavigateRight<cr>$/;"	m	language:Vim
+<C-l>	/home/laur/.vimrc.first	/^        nnoremap <C-l> <C-w>l$/;"	m	language:Vim
+<C-n>	/home/laur/.vimrc	/^        map <C-n> :NERDTreeToggle<CR>$/;"	m	language:Vim
+<C-S-t>	/home/laur/.vimrc.first	/^        inoremap <C-S-t> <Esc>:tabnew<CR>$/;"	m	language:Vim
+<C-S-t>	/home/laur/.vimrc.first	/^        nnoremap <C-S-t> :tabnew<CR>$/;"	m	language:Vim
+<C-S>	/home/laur/.vimrc.first	/^        inoremap <C-S>      <C-O>:update<CR>$/;"	m	language:Vim
+<C-S>	/home/laur/.vimrc.first	/^        noremap <C-S>       :update<CR>$/;"	m	language:Vim
+<C-S>	/home/laur/.vimrc.first	/^        vnoremap <C-S>      <C-C>:update<CR>$/;"	m	language:Vim
+<C-up>	/home/laur/.vimrc.first	/^        nmap <C-up> [e$/;"	m	language:Vim
+<C-up>	/home/laur/.vimrc.first	/^        vmap <C-up> [egv$/;"	m	language:Vim
+<down>	/home/laur/.vimrc.first	/^        map <silent> <down>  3<C-W>-$/;"	m	language:Vim
+<F11>	/home/laur/.vimrc	/^        nnoremap <silent> <F11> :YRShow<CR> "displays the yankring window$/;"	m	language:Vim
+<F1>	/home/laur/.vimrc	/^        map <F1> :TagbarToggle<CR>$/;"	m	language:Vim
+<F1>	/home/laur/.vimrc.first	/^        inoremap <F1> <nop>$/;"	m	language:Vim
+<F1>	/home/laur/.vimrc.first	/^        nnoremap <F1> <nop>$/;"	m	language:Vim
+<F1>	/home/laur/.vimrc.first	/^        vnoremap <F1> <nop>$/;"	m	language:Vim
+<F5>	/home/laur/.vimrc	/^        nnoremap <F5> :MundoToggle<CR>$/;"	m	language:Vim
+<F8>	/home/laur/.vimrc	/^        nmap <F8> :TagbarToggle<CR>$/;"	m	language:Vim
+<leader>	/home/laur/.vimrc	/^        map <silent><leader> b <Plug>CamelCaseMotion_b$/;"	m	language:Vim
+<leader>	/home/laur/.vimrc	/^        map <silent><leader> e <Plug>CamelCaseMotion_e$/;"	m	language:Vim
+<leader>	/home/laur/.vimrc	/^        map <silent><leader> w <Plug>CamelCaseMotion_w$/;"	m	language:Vim
+<leader><C-v>	/home/laur/.vimrc.first	/^                no <leader><C-v> :call setreg("\\"",system("pbpaste"))<CR>p$/;"	m	language:Vim
+<leader><C-v>	/home/laur/.vimrc.first	/^                no <leader><C-v> :call setreg("\\"",system("xclip -o -selection clipboard"))<CR>p$/;"	m	language:Vim
+<leader><space>	/home/laur/.vimrc.first	/^        nnoremap <leader><space> :noh<cr>$/;"	m	language:Vim
+<leader>h	/home/laur/.vimrc.first	/^            nnoremap <leader>h :call ToggleOverLength()<CR>$/;"	m	language:Vim
+<leader>lc	/home/laur/.vimrc	/^        noremap <silent><leader>lc :lcl<CR>$/;"	m	language:Vim
+<leader>ld	/home/laur/.vimrc.first	/^            nnoremap <leader>ld :call DeleteMultipleEmptyLines()<CR>$/;"	m	language:Vim
+<leader>le	/home/laur/.vimrc.first	/^            nnoremap <leader>le :call SplitRelSrc()<CR>$/;"	m	language:Vim
+<leader>lo	/home/laur/.vimrc	/^        noremap <silent><leader>lo :Errors<CR>$/;"	m	language:Vim
+<leader>q	/home/laur/.vimrc.first	/^        nnoremap <leader>q :e #<cr>:bd #<cr>$/;"	m	language:Vim
+<leader>r	/home/laur/.vimrc	/^        map <leader>r :NERDTreeFind<cr> " move to currently opened file in nerdtree$/;"	m	language:Vim
+<leader>s	/home/laur/.vimrc.first	/^            nnoremap <leader>s :call ToggleSyntaxHighlighthing()<CR>$/;"	m	language:Vim
+<leader>s	/home/laur/.vimrc.first	/^        nnoremap <leader>s <C-w>s<C-w>j$/;"	m	language:Vim
+<leader>v	/home/laur/.vimrc.first	/^        nnoremap <leader>v <C-w>v<C-w>l$/;"	m	language:Vim
+<leader>ve	/home/laur/.vimrc.first	/^        noremap <leader>ve :edit $HOME\/.vimrc<CR>$/;"	m	language:Vim
+<leader>vs	/home/laur/.vimrc.first	/^        noremap <leader>vs :source $HOME\/.vimrc<CR>$/;"	m	language:Vim
+<leader>w	/home/laur/.vimrc.first	/^        nmap <silent> <leader>w :set invwrap<CR>:set wrap?<CR>$/;"	m	language:Vim
+<leader>y	/home/laur/.vimrc.first	/^        noremap <leader>y "+y$/;"	m	language:Vim
+<left>	/home/laur/.vimrc.first	/^        map <silent> <left>  3<C-W><$/;"	m	language:Vim
+<right>	/home/laur/.vimrc.first	/^        map <silent> <right> 3<C-W>>$/;"	m	language:Vim
+<S-J>	/home/laur/.vimrc.first	/^        map <S-J> :bn <CR>$/;"	m	language:Vim
+<S-K>	/home/laur/.vimrc.first	/^        map <S-K> :bp <CR>$/;"	m	language:Vim
+<Space>	/home/laur/.vimrc.first	/^        nnoremap <silent> <Space> @=(foldlevel('.')?'za':"\\<Space>")<CR>$/;"	m	language:Vim
+<Space>	/home/laur/.vimrc.first	/^        vnoremap <Space> zf$/;"	m	language:Vim
+<up>	/home/laur/.vimrc.first	/^        map <silent> <up>    3<C-W>+$/;"	m	language:Vim
+ago	/home/laur/.bash_functions	/^ago() {$/;"	f	language:Sh
+aptclean	/home/laur/.bash_functions	/^aptclean() { aptreset; }$/;"	f	language:Sh
+aptreset	/home/laur/.bash_functions	/^aptreset() {$/;"	f	language:Sh
+aptsearch	/home/laur/.bash_functions	/^aptsearch() {$/;"	f	language:Sh
+aptsrc	/home/laur/.bash_functions	/^aptsrc() { aptsearch "$@"; }  # alias$/;"	f	language:Sh
+astr	/home/laur/.bash_functions	/^astr() {$/;"	f	language:Sh
+AutoBlockComment	/home/laur/.vimrc.first	/^        augroup AutoBlockComment$/;"	a	language:Vim
+backup_original_and_copy_file	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function backup_original_and_copy_file() {$/;"	f	language:Sh
+build_and_install_copyq	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function build_and_install_copyq() {$/;"	f	language:Sh
+build_and_install_goforit	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function build_and_install_goforit() {$/;"	f	language:Sh
+build_and_install_keepassx	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function build_and_install_keepassx() {$/;"	f	language:Sh
+build_and_install_synergy	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function build_and_install_synergy() {$/;"	f	language:Sh
+build_and_install_vim	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function build_and_install_vim() {$/;"	f	language:Sh
+build_comma_separated_list	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function build_comma_separated_list() {$/;"	f	language:Sh
+capture	/home/laur/.bash_functions	/^capture() {$/;"	f	language:Sh
+cdf	/home/laur/.bash_functions	/^cdf() {$/;"	f	language:Sh
+check_connection	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function check_connection() {$/;"	f	language:Sh
+check_dependencies	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function check_dependencies() {$/;"	f	language:Sh
+check_progs_installed	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function check_progs_installed() {$/;"	f	language:Sh
+choose_single_task	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function choose_single_task() {$/;"	f	language:Sh
+choose_step	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function choose_step() {$/;"	f	language:Sh
+ci(	/home/laur/.vimrc.first	/^        nnoremap ci( %ci($/;"	m	language:Vim
+cleanup	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function cleanup() {$/;"	f	language:Sh
+clock	/home/laur/.bash_functions	/^clock() {$/;"	f	language:Sh
+clone_or_link_castle	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function clone_or_link_castle() {$/;"	f	language:Sh
+clone_or_pull_repo	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function clone_or_pull_repo() {$/;"	f	language:Sh
+compress	/home/laur/.bash_functions	/^compress() {$/;"	f	language:Sh
+configure_ntp_for_work	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function configure_ntp_for_work() {$/;"	f	language:Sh
+configure_pulseaudio	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^        function configure_pulseaudio() {$/;"	f	language:Sh
+confirm	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function confirm() {$/;"	f	language:Sh
+copy_to_clipboard	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function copy_to_clipboard() {$/;"	f	language:Sh
+cpf	/home/laur/.bash_functions	/^cpf() {$/;"	f	language:Sh
+cpugt	/home/laur/.bash_functions	/^cpugt(){$/;"	f	language:Sh
+cpumost	/home/laur/.bash_functions	/^cpumost() {$/;"	f	language:Sh
+createUsbIso	/home/laur/.bash_functions	/^createUsbIso() {$/;"	f	language:Sh
+create_deb_install_and_store	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function create_deb_install_and_store() {$/;"	f	language:Sh
+create_link	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function create_link() {$/;"	f	language:Sh
+create_mountpoint	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function create_mountpoint() {$/;"	f	language:Sh
+CustomHighlighting	/home/laur/.vimrc.first	/^            function! CustomHighlighting()$/;"	f	language:Vim
+d	/home/laur/.bash_functions	/^d() {  # mnemonic: dir$/;"	f	language:Sh
+dcleanup	/home/laur/.bash_functions	/^dcleanup() {$/;"	f	language:Sh
+DeleteMultipleEmptyLines	/home/laur/.vimrc.first	/^            function! DeleteMultipleEmptyLines()$/;"	f	language:Vim
+e	/home/laur/.bash_functions	/^e() {  # mnemonic: edit$/;"	f	language:Sh
+enable_network_manager	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function enable_network_manager() {$/;"	f	language:Sh
+err	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function err() {$/;"	f	language:Sh
+execute	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function execute() {$/;"	f	language:Sh
+extract	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function extract() {$/;"	f	language:Sh
+extract	/home/laur/.bash_functions	/^extract() {$/;"	f	language:Sh
+FastEscape	/home/laur/.vimrc.first	/^            augroup FastEscape$/;"	a	language:Vim
+fbr	/home/laur/.bash_functions	/^fbr() {$/;"	f	language:Sh
+fco	/home/laur/.bash_functions	/^fco() {$/;"	f	language:Sh
+fcoc	/home/laur/.bash_functions	/^fcoc() {$/;"	f	language:Sh
+fd	/home/laur/.bash_functions	/^fd() {$/;"	f	language:Sh
+fda	/home/laur/.bash_functions	/^fda() {$/;"	f	language:Sh
+fdu	/home/laur/.bash_functions	/^fdu() {$/;"	f	language:Sh
+fetch_castles	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function fetch_castles() {$/;"	f	language:Sh
+ffind	/home/laur/.bash_functions	/^ffind() {$/;"	f	language:Sh
+ffindbiggerthan	/home/laur/.bash_functions	/^ffindbiggerthan() {$/;"	f	language:Sh
+ffindproc	/home/laur/.bash_functions	/^ffindproc() {$/;"	f	language:Sh
+ffindsmallerthan	/home/laur/.bash_functions	/^ffindsmallerthan() {$/;"	f	language:Sh
+ffindtopbig	/home/laur/.bash_functions	/^ffindtopbig() {$/;"	f	language:Sh
+ffindtopsmall	/home/laur/.bash_functions	/^ffindtopsmall() {$/;"	f	language:Sh
+ffstr	/home/laur/.bash_functions	/^ffstr() {$/;"	f	language:Sh
+fh	/home/laur/.bash_functions	/^fh() {$/;"	f	language:Sh
+fhd	/home/laur/.bash_functions	/^fhd() {$/;"	f	language:Sh
+FileTypeRules	/home/laur/.vimrc.first	/^            augroup FileTypeRules$/;"	a	language:Vim
+fo	/home/laur/.bash_functions	/^fo() {$/;"	f	language:Sh
+foa	/home/laur/.bash_functions	/^foa() {$/;"	f	language:Sh
+foc	/home/laur/.bash_functions	/^foc() {$/;"	f	language:Sh
+fod	/home/laur/.bash_functions	/^fod() {$/;"	f	language:Sh
+fog	/home/laur/.bash_functions	/^fog() {$/;"	f	language:Sh
+fon	/home/laur/.bash_functions	/^fon() {$/;"	f	language:Sh
+fontreset	/home/laur/.bash_functions	/^fontreset() {$/;"	f	language:Sh
+fow	/home/laur/.bash_functions	/^fow() {$/;"	f	language:Sh
+frompid	/home/laur/.bash_functions	/^frompid(){$/;"	f	language:Sh
+fsha	/home/laur/.bash_functions	/^fsha() {$/;"	f	language:Sh
+fshow	/home/laur/.bash_functions	/^fshow() {$/;"	f	language:Sh
+fstash	/home/laur/.bash_functions	/^fstash() {$/;"	f	language:Sh
+full_install	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function full_install() {$/;"	f	language:Sh
+g	/home/laur/.bash_functions	/^g() {$/;"	f	language:Sh
+g:ag_highlight	/home/laur/.vimrc	/^    let g:ag_highlight=1$/;"	v	language:Vim
+g:ag_prg	/home/laur/.vimrc	/^    let g:ag_prg="ag --vimgrep --smart-case"$/;"	v	language:Vim
+g:ag_working_path_mode	/home/laur/.vimrc	/^    let g:ag_working_path_mode='r'$/;"	v	language:Vim
+g:airline#extensions#bufferline#enabled	/home/laur/.vimrc	/^    let g:airline#extensions#bufferline#enabled = 0$/;"	v	language:Vim
+g:airline_powerline_fonts	/home/laur/.vimrc	/^    let g:airline_powerline_fonts = 1$/;"	v	language:Vim
+g:airline_theme	/home/laur/.vimrc	/^    let g:airline_theme='dark'$/;"	v	language:Vim
+g:bufferline_fixed_index	/home/laur/.vimrc	/^    let g:bufferline_fixed_index = 0 "always first$/;"	v	language:Vim
+g:bufferline_rotate	/home/laur/.vimrc	/^    let g:bufferline_rotate = 1  " scrolling with fixed current buf position$/;"	v	language:Vim
+g:bufferline_show_bufnr	/home/laur/.vimrc	/^    let g:bufferline_show_bufnr = 0$/;"	v	language:Vim
+g:copypath_copy_to_unnamed_register	/home/laur/.vimrc	/^    let g:copypath_copy_to_unnamed_register = 1$/;"	v	language:Vim
+g:ctrlp_cmd	/home/laur/.vimrc	/^    let g:ctrlp_cmd = 'CtrlPBuffer'  "buffer: CtrlPBuffer  mru: CtrlPMRU$/;"	v	language:Vim
+g:ctrlp_extensions	/home/laur/.vimrc	/^    let g:ctrlp_extensions = ['tag']    " enables tag browsing$/;"	v	language:Vim
+g:ctrlp_max_files	/home/laur/.vimrc	/^    let g:ctrlp_max_files = 0$/;"	v	language:Vim
+g:ctrlp_regexp	/home/laur/.vimrc	/^    let g:ctrlp_regexp = 1$/;"	v	language:Vim
+g:ctrlp_reuse_window	/home/laur/.vimrc	/^    let g:ctrlp_reuse_window = 'startify' "don't split in startify$/;"	v	language:Vim
+g:ctrlp_root_markers	/home/laur/.vimrc	/^    let g:ctrlp_root_markers = ['.ctrlp']  "consider this, since .git isn't as good with submodules; note this is IN ADDITION to the default ones$/;"	v	language:Vim
+g:ctrlp_switch_buffer	/home/laur/.vimrc	/^    let g:ctrlp_switch_buffer = 'Et'$/;"	v	language:Vim
+g:ctrlp_user_command	/home/laur/.vimrc	/^    let g:ctrlp_user_command = ['.git\/', 'cd %s && git ls-files --exclude-standard -co']$/;"	v	language:Vim
+g:ctrlp_working_path_mode	/home/laur/.vimrc	/^    let g:ctrlp_working_path_mode = 'ra'$/;"	v	language:Vim
+g:EasyGrepMode	/home/laur/.vimrc	/^    let g:EasyGrepMode=2 "search for files that are of a similar type to the current file$/;"	v	language:Vim
+g:EasyGrepOpenWindowOnMatch	/home/laur/.vimrc	/^    let g:EasyGrepOpenWindowOnMatch=0$/;"	v	language:Vim
+g:EasyGrepRecursive	/home/laur/.vimrc	/^    let g:EasyGrepRecursive=1$/;"	v	language:Vim
+g:EasyGrepRoot	/home/laur/.vimrc	/^    let g:EasyGrepRoot="search:.git,.svn,.hg,.ctrlp"$/;"	v	language:Vim
+g:EasyGrepWindow	/home/laur/.vimrc	/^    let g:EasyGrepWindow=0  " 0 -quickfix; 1 -location list$/;"	v	language:Vim
+g:easytags_always_enabled	/home/laur/.vimrc	/^    let g:easytags_always_enabled = 1$/;"	v	language:Vim
+g:easytags_async	/home/laur/.vimrc	/^    let g:easytags_async = 1$/;"	v	language:Vim
+g:easytags_by_filetype	/home/laur/.vimrc	/^    let g:easytags_by_filetype = '~\/.vim\/tags' " TODO: how to use with jsctags?; also fyi -  dynamic_files takes precedence over this$/;"	v	language:Vim
+g:easytags_dynamic_files	/home/laur/.vimrc	/^    let g:easytags_dynamic_files = 1 " search for project specific tags; relative to wd or buffer!$/;"	v	language:Vim
+g:easytags_on_cursorhold	/home/laur/.vimrc	/^    let g:easytags_on_cursorhold = 1$/;"	v	language:Vim
+g:EclimCompletionMethod	/home/laur/.vimrc	/^    let g:EclimCompletionMethod = 'omnifunc'$/;"	v	language:Vim
+g:gtfo#terminals	/home/laur/.vimrc	/^    let g:gtfo#terminals = { 'unix' : 'urxvt -cd' }$/;"	v	language:Vim
+g:notes_conceal_url	/home/laur/.vimrc	/^    let g:notes_conceal_url = 0  " don't conceal URL protocols$/;"	v	language:Vim
+g:notes_directories	/home/laur/.vimrc	/^    let g:notes_directories = ['\/data\/Seafile\/main\/notes']$/;"	v	language:Vim
+g:notes_indexfile	/home/laur/.vimrc	/^    let g:notes_indexfile = '\/data\/Seafile\/main\/notes\/.search_index'  " optional search index for :SearchNotes for accelerated searching$/;"	v	language:Vim
+g:notes_suffix	/home/laur/.vimrc	/^    let g:notes_suffix = '.note'$/;"	v	language:Vim
+g:notes_tagsindex	/home/laur/.vimrc	/^    let g:notes_tagsindex = '\/data\/Seafile\/main\/notes\/.tags_index'$/;"	v	language:Vim
+g:overlength_enabled	/home/laur/.vimrc.first	/^            let g:overlength_enabled = 0$/;"	v	language:Vim
+g:pad#default_file_extension	/home/laur/.vimrc	/^    let g:pad#default_file_extension = '.note'$/;"	v	language:Vim
+g:pad#default_format	/home/laur/.vimrc	/^    let g:pad#default_format = "pandoc"  " default format is markdown; this overrides it$/;"	v	language:Vim
+g:pad#dir	/home/laur/.vimrc	/^    let g:pad#dir = '\/data\/Seafile\/main\/vim-pad'$/;"	v	language:Vim
+g:pad#open_in_split	/home/laur/.vimrc	/^    let g:pad#open_in_split = 0  " when set to 0, then opens note in full window, not in split$/;"	v	language:Vim
+g:pad#search_backend	/home/laur/.vimrc	/^    let g:pad#search_backend = 'ag'$/;"	v	language:Vim
+g:pad#window_height	/home/laur/.vimrc	/^    let g:pad#window_height = 20  " the bottom split window height$/;"	v	language:Vim
+g:rainbow_active	/home/laur/.vimrc	/^    let g:rainbow_active = 1$/;"	v	language:Vim
+g:session_autosave	/home/laur/.vimrc	/^    let g:session_autosave = 'no'$/;"	v	language:Vim
+g:session_directory	/home/laur/.vimrc	/^    let g:session_directory = '~\/.vim\/sessions'  "default value; enforcing just in case$/;"	v	language:Vim
+g:startify_bookmarks	/home/laur/.vimrc	/^    let g:startify_bookmarks = [$/;"	v	language:Vim
+g:startify_custom_header	/home/laur/.vimrc	/^    let g:startify_custom_header = [$/;"	v	language:Vim
+g:SuperTabDefaultCompletionType	/home/laur/.vimrc	/^        let g:SuperTabDefaultCompletionType = '<C-j>' "enables us to use tab to cycle through non-ultisnip items$/;"	v	language:Vim
+g:syntastic_bash_checkers	/home/laur/.vimrc	/^    let g:syntastic_bash_checkers = ['shellcheck']$/;"	v	language:Vim
+g:syntastic_check_on_open	/home/laur/.vimrc	/^    let g:syntastic_check_on_open = 1$/;"	v	language:Vim
+g:syntastic_cpp_check_header	/home/laur/.vimrc	/^    let g:syntastic_cpp_check_header = 1$/;"	v	language:Vim
+g:syntastic_css_checkers	/home/laur/.vimrc	/^    let g:syntastic_css_checkers = ['csslint']$/;"	v	language:Vim
+g:syntastic_c_auto_refresh_includes	/home/laur/.vimrc	/^    let g:syntastic_c_auto_refresh_includes = 1$/;"	v	language:Vim
+g:syntastic_c_checkers	/home/laur/.vimrc	/^    let g:syntastic_c_checkers = ['gcc']$/;"	v	language:Vim
+g:syntastic_c_check_header	/home/laur/.vimrc	/^    let g:syntastic_c_check_header = 1$/;"	v	language:Vim
+g:syntastic_enable_signs	/home/laur/.vimrc	/^    let g:syntastic_enable_signs = 1$/;"	v	language:Vim
+g:syntastic_javascript_checkers	/home/laur/.vimrc	/^    let g:syntastic_javascript_checkers = ['jshint']$/;"	v	language:Vim
+g:syntastic_mode_map	/home/laur/.vimrc	/^    let g:syntastic_mode_map = {$/;"	v	language:Vim
+g:syntastic_python_checkers	/home/laur/.vimrc	/^    let g:syntastic_python_checkers = ['flake8', 'python']$/;"	v	language:Vim
+g:syntastic_sh_checkers	/home/laur/.vimrc	/^    let g:syntastic_sh_checkers = ['shellcheck', 'checkbashisms']$/;"	v	language:Vim
+g:tagbar_left	/home/laur/.vimrc	/^    let g:tagbar_left = 0$/;"	v	language:Vim
+g:tagbar_width	/home/laur/.vimrc	/^    let g:tagbar_width = 30$/;"	v	language:Vim
+g:tmux_navigator_no_mappings	/home/laur/.vimrc	/^    let g:tmux_navigator_no_mappings = 1$/;"	v	language:Vim
+g:tmux_navigator_save_on_switch	/home/laur/.vimrc	/^    let g:tmux_navigator_save_on_switch = 1$/;"	v	language:Vim
+g:UltiSnipsEditSplit	/home/laur/.vimrc	/^        let g:UltiSnipsEditSplit="vertical"$/;"	v	language:Vim
+g:UltiSnipsExpandTrigger	/home/laur/.vimrc	/^        let g:UltiSnipsExpandTrigger = "<tab>"$/;"	v	language:Vim
+g:UltiSnipsJumpBackwardTrigger	/home/laur/.vimrc	/^        let g:UltiSnipsJumpBackwardTrigger = "<s-tab>"$/;"	v	language:Vim
+g:UltiSnipsJumpForwardTrigger	/home/laur/.vimrc	/^        let g:UltiSnipsJumpForwardTrigger = "<tab>"$/;"	v	language:Vim
+g:yankring_history_dir	/home/laur/.vimrc	/^    let g:yankring_history_dir = '$HOME\/.vim'$/;"	v	language:Vim
+g:yankring_max_history	/home/laur/.vimrc	/^    let g:yankring_max_history = 1000$/;"	v	language:Vim
+g:yankring_replace_n_nkey	/home/laur/.vimrc	/^    let g:yankring_replace_n_nkey = '<leader>P'$/;"	v	language:Vim
+g:yankring_replace_n_pkey	/home/laur/.vimrc	/^    let g:yankring_replace_n_pkey = '<leader>p'$/;"	v	language:Vim
+g:ycm_key_list_previous_completion	/home/laur/.vimrc	/^        let g:ycm_key_list_previous_completion = ['<C-k>', '<Up>']$/;"	v	language:Vim
+g:ycm_key_list_select_completion	/home/laur/.vimrc	/^        let g:ycm_key_list_select_completion = ['<C-j>', '<Down>']$/;"	v	language:Vim
+g:ycm_show_diagnostics_ui	/home/laur/.vimrc	/^    let g:ycm_show_diagnostics_ui = 0$/;"	v	language:Vim
+generate_key	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function generate_key() {$/;"	f	language:Sh
+gfff	/home/laur/.bash_functions	/^gfff() {$/;"	f	language:Sh
+gffp	/home/laur/.bash_functions	/^gffp() {$/;"	f	language:Sh
+gffs	/home/laur/.bash_functions	/^gffs() {$/;"	f	language:Sh
+gfrf	/home/laur/.bash_functions	/^gfrf() {$/;"	f	language:Sh
+gfrs	/home/laur/.bash_functions	/^gfrs() {$/;"	f	language:Sh
+gg	/home/laur/.bash_functions	/^gg() { fog "$@"; }$/;"	f	language:Sh
+gito	/home/laur/.bash_functions	/^gito() {$/;"	f	language:Sh
+glt	/home/laur/.bash_functions	/^glt() {$/;"	f	language:Sh
+gm	/home/laur/.vimrc.first	/^        map gm :call cursor(0, virtcol('$')\/2)<CR>$/;"	m	language:Vim
+goto	/home/laur/.bash_functions	/^goto() {$/;"	f	language:Sh
+gut	/home/laur/.bash_functions	/^gut() {$/;"	f	language:Sh
+has_vundle	/home/laur/.vimrc	/^            let has_vundle=0$/;"	v	language:Vim
+has_vundle	/home/laur/.vimrc	/^        let has_vundle=1$/;"	v	language:Vim
+increase_inotify_watches_limit	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function increase_inotify_watches_limit() {$/;"	f	language:Sh
+increment_version	/home/laur/.bash_functions	/^increment_version() {$/;"	f	language:Sh
+install_acpi_events	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_acpi_events() {$/;"	f	language:Sh
+install_altiris	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_altiris() {$/;"	f	language:Sh
+install_block	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_block() {$/;"	f	language:Sh
+install_copyq	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_copyq() {$/;"	f	language:Sh
+install_deps	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_deps() {$/;"	f	language:Sh
+install_dwm	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_dwm() {$/;"	f	language:Sh
+install_fonts	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_fonts() {$/;"	f	language:Sh
+install_from_deb	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_from_deb() {$/;"	f	language:Sh
+install_from_repo	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_from_repo() {$/;"	f	language:Sh
+install_goforit	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_goforit() {$/;"	f	language:Sh
+install_gtk_numix	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_gtk_numix() {$/;"	f	language:Sh
+install_gtk_theme	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_gtk_theme() {$/;"	f	language:Sh
+install_homesick	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_homesick() {$/;"	f	language:Sh
+install_keepassx	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_keepassx() {$/;"	f	language:Sh
+install_laptop_deps	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_laptop_deps() {$/;"	f	language:Sh
+install_neovim	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_neovim() {$/;"	f	language:Sh
+install_nfs_client	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_nfs_client() {$/;"	f	language:Sh
+install_nfs_server	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_nfs_server() {$/;"	f	language:Sh
+install_nfs_server_or_client	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_nfs_server_or_client() {$/;"	f	language:Sh
+install_npm_modules	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_npm_modules() {$/;"	f	language:Sh
+install_nvidia	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_nvidia() {$/;"	f	language:Sh
+install_oracle_jdk	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_oracle_jdk() {$/;"	f	language:Sh
+install_own_builds	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_own_builds() {$/;"	f	language:Sh
+install_progs	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_progs() {$/;"	f	language:Sh
+install_skype	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_skype() {  # https:\/\/wiki.debian.org\/skype$/;"	f	language:Sh
+install_sshfs	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_sshfs() {$/;"	f	language:Sh
+install_ssh_server	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_ssh_server() {$/;"	f	language:Sh
+install_ssh_server_or_client	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_ssh_server_or_client() {$/;"	f	language:Sh
+install_SSID_checker	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_SSID_checker() {$/;"	f	language:Sh
+install_symantec_endpoint_security	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_symantec_endpoint_security() {$/;"	f	language:Sh
+install_synergy	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_synergy() {$/;"	f	language:Sh
+install_vim	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_vim() {$/;"	f	language:Sh
+install_vim_plugin_deps	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_vim_plugin_deps() {$/;"	f	language:Sh
+install_webdev	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_webdev() {$/;"	f	language:Sh
+install_YCM	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function install_YCM() {$/;"	f	language:Sh
+is_64_bit	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function is_64_bit() {$/;"	f	language:Sh
+is_git	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function is_git() {$/;"	f	language:Sh
+is_laptop	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function is_laptop() {$/;"	f	language:Sh
+is_server	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function is_server() {$/;"	f	language:Sh
+is_ssh_key_available	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function is_ssh_key_available() {$/;"	f	language:Sh
+j	/home/laur/.vimrc.first	/^        nnoremap j gj$/;"	m	language:Vim
+jj	/home/laur/.bash_functions	/^function jj {$/;"	f	language:Sh
+jj	/home/laur/.vimrc.first	/^        inoremap jj <Esc>$/;"	m	language:Vim
+jjj	/home/laur/.bash_functions	/^function jjj {$/;"	f	language:Sh
+jm	/home/laur/.bash_functions	/^function jm {$/;"	f	language:Sh
+jmo	/home/laur/.bash_functions	/^function jmo {$/;"	f	language:Sh
+jum	/home/laur/.bash_functions	/^function jum {$/;"	f	language:Sh
+k	/home/laur/.vimrc.first	/^        nnoremap k gk$/;"	m	language:Vim
+keepsudo	/home/laur/.bash_functions	/^keepsudo() {$/;"	f	language:Sh
+killmenao	/home/laur/.bash_functions	/^killmenao() {$/;"	f	language:Sh
+LastPosition	/home/laur/.vimrc.first	/^        augroup LastPosition$/;"	a	language:Vim
+lgrep	/home/laur/.bash_functions	/^lgrep() {$/;"	f	language:Sh
+list_contains	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function list_contains() {$/;"	f	language:Sh
+make7z	/home/laur/.bash_functions	/^make7z() {$/;"	f	language:Sh
+makerar	/home/laur/.bash_functions	/^makerar() {$/;"	f	language:Sh
+maketar	/home/laur/.bash_functions	/^maketar() { tar cvzf "${1%%\/}.tar.gz" -- "${1%%\/}\/"; }$/;"	f	language:Sh
+maketar2	/home/laur/.bash_functions	/^maketar2() { tar cvjf "${1%%\/}.tar.bz2" -- "${1%%\/}\/"; }$/;"	f	language:Sh
+makezip	/home/laur/.bash_functions	/^makezip() {$/;"	f	language:Sh
+mapleader	/home/laur/.vimrc.first	/^        let mapleader=","$/;"	v	language:Vim
+memgt	/home/laur/.bash_functions	/^memgt(){$/;"	f	language:Sh
+memmost	/home/laur/.bash_functions	/^memmost() {$/;"	f	language:Sh
+mkcd	/home/laur/.bash_functions	/^mkcd() {$/;"	f	language:Sh
+mkf	/home/laur/.bash_functions	/^mkf() { mkcd "$@"; }  # alias to mkcd$/;"	f	language:Sh
+mkgif	/home/laur/.bash_functions	/^mkgif() {$/;"	f	language:Sh
+mkgit	/home/laur/.bash_functions	/^mkgit() {$/;"	f	language:Sh
+mvf	/home/laur/.bash_functions	/^mvf() {$/;"	f	language:Sh
+myip	/home/laur/.bash_functions	/^myip() {  # Get internal & external ip addies:$/;"	f	language:Sh
+pack	/home/laur/.bash_functions	/^pack() { compress "$@"; }  # alias for compress$/;"	f	language:Sh
+post_install_progs_setup	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function post_install_progs_setup() {$/;"	f	language:Sh
+print_usage	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function print_usage() {$/;"	f	language:Sh
+pubkey	/home/laur/.bash_functions	/^pubkey() {$/;"	f	language:Sh
+Q	/home/laur/.vimrc.first	/^        map Q <nop>$/;"	m	language:Vim
+Q	/home/laur/.vimrc.first	/^        noremap Q !!$SHELL<CR>$/;"	m	language:Vim
+remind_manually_installed_progs	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function remind_manually_installed_progs() {$/;"	f	language:Sh
+RemovePreview	/home/laur/.vimrc	/^    augroup RemovePreview$/;"	a	language:Vim
+remove_items_from_list	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function remove_items_from_list() {$/;"	f	language:Sh
+report	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function report() {$/;"	f	language:Sh
+resetfont	/home/laur/.bash_functions	/^resetfont() { fontreset; }$/;"	f	language:Sh
+sanitize	/home/laur/.bash_functions	/^sanitize() {$/;"	f	language:Sh
+sanitize_ssh	/home/laur/.bash_functions	/^sanitize_ssh() {$/;"	f	language:Sh
+select_items	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function select_items() {$/;"	f	language:Sh
+setestoniatime	/home/laur/.bash_functions	/^setestoniatime() {$/;"	f	language:Sh
+setgibtime	/home/laur/.bash_functions	/^setgibtime() {$/;"	f	language:Sh
+sethometime	/home/laur/.bash_functions	/^sethometime() { setspaintime; }  # home is where you make it;$/;"	f	language:Sh
+setromaniatime	/home/laur/.bash_functions	/^setromaniatime() {$/;"	f	language:Sh
+setspaintime	/home/laur/.bash_functions	/^setspaintime() {$/;"	f	language:Sh
+setup	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function setup() {$/;"	f	language:Sh
+setup_additional_apt_keys_and_sources	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function setup_additional_apt_keys_and_sources() {$/;"	f	language:Sh
+setup_apt	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function setup_apt() {$/;"	f	language:Sh
+setup_config_files	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function setup_config_files() {$/;"	f	language:Sh
+setup_crontab	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function setup_crontab() {$/;"	f	language:Sh
+setup_dirs	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function setup_dirs() {$/;"	f	language:Sh
+setup_docker	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function setup_docker() {$/;"	f	language:Sh
+setup_global_env_vars	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function setup_global_env_vars() {$/;"	f	language:Sh
+setup_global_prompt	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function setup_global_prompt() {$/;"	f	language:Sh
+setup_homesick	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function setup_homesick() {$/;"	f	language:Sh
+setup_hosts	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function setup_hosts() {$/;"	f	language:Sh
+setup_netrc_perms	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function setup_netrc_perms() {$/;"	f	language:Sh
+setup_sudoers	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function setup_sudoers() {$/;"	f	language:Sh
+shot	/home/laur/.bash_functions	/^shot() {$/;"	f	language:Sh
+should_build_if_avail_in_repo	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function should_build_if_avail_in_repo() {$/;"	f	language:Sh
+SplitRelSrc	/home/laur/.vimrc.first	/^            function! SplitRelSrc()$/;"	f	language:Vim
+ssh_sanitize	/home/laur/.bash_functions	/^ssh_sanitize() { sanitize_ssh "$@"; }  # alias for sanitize_ssh$/;"	f	language:Sh
+StripTrailingWhitespace	/home/laur/.vimrc.first	/^            augroup StripTrailingWhitespace$/;"	a	language:Vim
+StripTrailingWhitespace	/home/laur/.vimrc.first	/^            function! <SID>StripTrailingWhitespace()$/;"	f	language:Vim
+swap	/home/laur/.bash_functions	/^swap() {$/;"	f	language:Sh
+swap_caps_lock_and_esc	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function swap_caps_lock_and_esc() {$/;"	f	language:Sh
+switch_jdk_versions	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function switch_jdk_versions() {$/;"	f	language:Sh
+td	/home/laur/.vimrc.first	/^        nnoremap td  :tabclose<CR>$/;"	m	language:Vim
+th	/home/laur/.vimrc.first	/^        nnoremap th  :tabfirst<CR>$/;"	m	language:Vim
+tj	/home/laur/.vimrc.first	/^        nnoremap tj  :tabnext<CR>$/;"	m	language:Vim
+tk	/home/laur/.vimrc.first	/^        nnoremap tk  :tabprev<CR>$/;"	m	language:Vim
+tl	/home/laur/.vimrc.first	/^        nnoremap tl  :tablast<CR>$/;"	m	language:Vim
+tm	/home/laur/.vimrc.first	/^        nnoremap tm  :tabm<Space> "tabmove$/;"	m	language:Vim
+tn	/home/laur/.vimrc.first	/^        nnoremap tn  :tabnext<CR>$/;"	m	language:Vim
+ToggleOverLength	/home/laur/.vimrc.first	/^            function! ToggleOverLength()$/;"	f	language:Vim
+ToggleSyntaxHighlighthing	/home/laur/.vimrc.first	/^            function! ToggleSyntaxHighlighthing()$/;"	f	language:Vim
+topid	/home/laur/.bash_functions	/^topid(){$/;"	f	language:Sh
+touser	/home/laur/.bash_functions	/^touser(){$/;"	f	language:Sh
+tp	/home/laur/.vimrc.first	/^        nnoremap tp  :tabprev<CR>$/;"	m	language:Vim
+transfer	/home/laur/.bash_functions	/^transfer() {$/;"	f	language:Sh
+tt	/home/laur/.vimrc.first	/^        nnoremap tt  :tabedit<CR>$/;"	m	language:Vim
+unpack	/home/laur/.bash_functions	/^unpack() { extract "$@"; }$/;"	f	language:Sh
+up	/home/laur/.bash_functions	/^up() {$/;"	f	language:Sh
+upgrade_kernel	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function upgrade_kernel() {$/;"	f	language:Sh
+validate_and_init	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function validate_and_init() {$/;"	f	language:Sh
+verify_ssh_key	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function verify_ssh_key() {$/;"	f	language:Sh
+vim_post_install_configuration	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function vim_post_install_configuration() {$/;"	f	language:Sh
+whatsmyip	/home/laur/.bash_functions	/^whatsmyip() { myip; }  # alias for myip$/;"	f	language:Sh
+wifilist	/home/laur/.bash_functions	/^wifilist() {$/;"	f	language:Sh
+xclass	/home/laur/.bash_functions	/^xclass() {$/;"	f	language:Sh
+xmlf	/home/laur/.bash_functions	/^xmlf() { xmlformat "$@"; }  # alias for xmlformat;$/;"	f	language:Sh
+xmlformat	/home/laur/.bash_functions	/^xmlformat() {$/;"	f	language:Sh
+Y	/home/laur/.vimrc.first	/^        noremap Y y\$$/;"	m	language:Vim
+ytconvert	/home/laur/.bash_functions	/^ytconvert() {$/;"	f	language:Sh
+_completemarks	/home/laur/.bash_functions	/^_completemarks() {$/;"	f	language:Sh
+_extract_current_hostname_line	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^    function _extract_current_hostname_line() {$/;"	f	language:Sh
+_get_parent_dirs	/home/laur/.bash_functions	/^    _get_parent_dirs() {$/;"	f	language:Sh
+_install_tern_for_vim_deps	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^    function _install_tern_for_vim_deps() {$/;"	f	language:Sh
+_install_tmux_deps	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^    function _install_tmux_deps() {$/;"	f	language:Sh
+_sanitize_ssh	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function _sanitize_ssh() {$/;"	f	language:Sh
+__ask_ver	/home/laur/.bash_functions	/^    __ask_ver() {$/;"	f	language:Sh
+__BASH_FUNS_LOADED_MARKER	/home/laur/.bash_functions	/^function __BASH_FUNS_LOADED_MARKER() { true; }$/;"	f	language:Sh
+__check_for_change_and_compile_ssh_config	/home/laur/.bashrc	/^__check_for_change_and_compile_ssh_config() {$/;"	f	language:Sh
+__choose_prog_to_build	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function __choose_prog_to_build() {$/;"	f	language:Sh
+__create_target_dir	/home/laur/.bash_functions	/^    __create_target_dir() {$/;"	f	language:Sh
+__delete_cmd	/home/laur/.bash_functions	/^    __delete_cmd() {$/;"	f	language:Sh
+__fetch_libclang	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^    function __fetch_libclang() {$/;"	f	language:Sh
+__filter_for_filetype	/home/laur/.bash_functions	/^    __filter_for_filetype() {$/;"	f	language:Sh
+__find_bigger_smaller_common_fun	/home/laur/.bash_functions	/^__find_bigger_smaller_common_fun() {$/;"	f	language:Sh
+__find_fun	/home/laur/.bash_functions	/^    __find_fun() {$/;"	f	language:Sh
+__find_fun	/home/laur/.bash_functions	/^    __find_fun() {$/;"	f	language:Sh
+__find_fun	/home/laur/.bash_functions	/^    __find_fun() {$/;"	f	language:Sh
+__find_top_big_small_fun	/home/laur/.bash_functions	/^__find_top_big_small_fun() {$/;"	f	language:Sh
+__fo	/home/laur/.bash_functions	/^__fo() {$/;"	f	language:Sh
+__get_internal_ip_for_if	/home/laur/.bash_functions	/^    __get_internal_ip_for_if() {$/;"	f	language:Sh
+__git_ls_fun	/home/laur/.bash_functions	/^    __git_ls_fun() {$/;"	f	language:Sh
+__go_back	/home/laur/.bash_functions	/^    __go_back() {$/;"	f	language:Sh
+__go_up	/home/laur/.bash_functions	/^    __go_up() {$/;"	f	language:Sh
+__install_wifi_driver	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^	__install_wifi_driver() {$/;"	f	language:Sh
+__is_work	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^function __is_work() {$/;"	f	language:Sh
+__mem_cpu_most_common_fun	/home/laur/.bash_functions	/^__mem_cpu_most_common_fun(){$/;"	f	language:Sh
+__menu	/data/progs/deps/homesick/repos/dotfiles/.bootstrap/install_system.sh	/^    function __menu() {$/;"	f	language:Sh
+__open_git_difftool_at_git_root	/home/laur/.bash_functions	/^__open_git_difftool_at_git_root() {$/;"	f	language:Sh
+__print_lines	/home/laur/.bash_functions	/^    __print_lines() {$/;"	f	language:Sh
+__select_dir	/home/laur/.bash_functions	/^    __select_dir() {$/;"	f	language:Sh
+__select_namespace	/home/laur/.bash_functions	/^    __select_namespace() {$/;"	f	language:Sh
+__settz	/home/laur/.bash_functions	/^__settz() {$/;"	f	language:Sh
+__verify_files_changes_and_push_version_bump	/home/laur/.bash_functions	/^__verify_files_changes_and_push_version_bump() {$/;"	f	language:Sh
+__writecmd	/home/laur/.bash_functions	/^__writecmd() {$/;"	f	language:Sh

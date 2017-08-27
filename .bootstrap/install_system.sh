@@ -2501,6 +2501,7 @@ install_from_repo() {
         ranger
         spacefm-gtk3
         screenfetch
+        neofetch
         scrot
         ffmpeg
         vokoscreen
