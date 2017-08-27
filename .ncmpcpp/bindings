@@ -1,7 +1,8 @@
-##########################################################
-## this is example bindings configuration file, copy it ##
-## to ~/.ncmpcpp/bindings and set up your preferences   ##
-##########################################################
+##############################################################
+## This is the example bindings file. Copy it to            ##
+## ~/.ncmpcpp/bindings or $XDG_CONFIG_HOME/ncmpcpp/bindings ##
+## and set up your preferences                              ##
+##############################################################
 ##
 ##### General rules #####
 ##
@@ -22,17 +23,12 @@
 ##      action2
 ##      ...
 ##
-##    This creates chain of actions. When such chain is
+##    This creates a chain of actions. When such chain is
 ##    executed, each action in chain is run until the end of
-##    chain is reached or one of actions failed to execute
-##    due to its requirements not being met. Note that
-##    execution of chain of actions ALWAYS succeeds, no
-##    matter if one of actions from the chain failed (even
-##    if it was the first one in order and thus nothing
-##    was really executed). Because of that, if you decide
-##    to bind both actions and chains to a single key, make
-##    sure that chain is defined in the end. Otherwise, all
-##    actions bound to the key after chain will never be run.
+##    chain is reached or one of its actions fails to execute
+##    due to its requirements not being met. If multiple actions
+##    and/or chains are bound to the same key, they will be
+##    consecutively run until one of them gets fully executed.
 ##
 ## 3) When ncmpcpp starts, bindings configuration file is
 ##    parsed and then ncmpcpp provides "missing pieces"
@@ -56,8 +52,11 @@
 ##      picked by ncmpcpp upon next call to readKey function.
 ##      Accepted values: mouse, up, down, page_up, page_down,
 ##      home, end, space, enter, insert, delete, left, right,
-##      tab, shift_tab, ctrl_a, ctrl_b, ..., ctrl_z, f1, f2,
-##      ..., f12, backspace, backspace_2.
+##      tab, ctrl-a, ctrl-b, ..., ctrl-z, ctrl-[, ctrl-\\,
+##      ctrl-], ctrl-^, ctrl-_, f1, f2, ..., f12, backspace.
+##      In addition, most of these names can be prefixed with
+##      alt-/ctrl-/shift- to be recognized with the appropriate
+##      modifier key(s).
 ##
 ##    - push_characters "string" - pushes given string into
 ##      input queue.
@@ -116,11 +115,12 @@
 ##    could be used. Then ncmpcpp will not wait for confirmation
 ##    (enter) and will execute the command the moment it sees it.
 ##
-## Note: Both 'backspace' and 'backspace_2' are used because some
-##       terminals interpret backspace using keycode of 'backspace'
-##       and some the one of 'backspace_2'. You can get away with
-##       binding once if all your terminal emulators use the same
-##       value.
+##    Note: while command chains are executed, internal environment
+##    update (which includes current window refresh and mpd status
+##    update) is not performed for performance reasons. However, it
+##    may be desirable to do so in some situration. Therefore it's
+##    possible to invoke by hand by performing 'update enviroment'
+##    action.
 ##
 ## Note: There is a difference between:
 ##
@@ -142,15 +142,29 @@
 ##
 ## Note: Function def_key accepts non-ascii characters.
 ##
+##### List of unbound actions #####
+##
+## The following actions are not bound to any key/command:
+##
+##  - set_volume
+##
 #
 #def_key "mouse"
 #  mouse_event
 #
-def_key "k"
-  scroll_up
+#def_key "up"
+#  scroll_up
 #
-def_key "j"
-  scroll_down
+#def_key "shift-up"
+#  select_item
+#  scroll_up
+#
+#def_key "down"
+#  scroll_down
+#
+#def_key "shift-down"
+#  select_item
+#  scroll_down
 #
 #def_key "["
 #  scroll_up_album
@@ -164,11 +178,11 @@ def_key "j"
 #def_key "}"
 #  scroll_down_artist
 #
-def_key "ctrl_u"
-  page_up
+#def_key "page_up"
+#  page_up
 #
-def_key "ctrl_d"
-  page_down
+#def_key "page_down"
+#  page_down
 #
 #def_key "home"
 #  move_home
@@ -176,20 +190,41 @@ def_key "ctrl_d"
 #def_key "end"
 #  move_end
 #
-#def_key "space"
-#  press_space
+#def_key "insert"
+#  select_item
 #
 #def_key "enter"
-#  press_enter
+#  enter_directory
 #
-def_key "d"
-  delete_playlist_items
+#def_key "enter"
+#  toggle_output
+#
+#def_key "enter"
+#  run_action
+#
+#def_key "enter"
+#  play_item
+#
+#def_key "space"
+#  add_item_to_playlist
+#
+#def_key "space"
+#  toggle_lyrics_update_on_song_change
+#
+#def_key "space"
+#  toggle_visualization_type
+#
+#def_key "delete"
+#  delete_playlist_items
+#
+#def_key "delete"
+#  delete_browser_items
 #
 #def_key "delete"
 #  delete_stored_playlist
 #
-def_key "ctrl_l"
-  next_column
+#def_key "right"
+#  next_column
 #
 #def_key "right"
 #  slave_screen
@@ -200,8 +235,8 @@ def_key "ctrl_l"
 #def_key "+"
 #  volume_up
 #
-def_key "ctrl_h"
-  previous_column
+#def_key "left"
+#  previous_column
 #
 #def_key "left"
 #  master_screen
@@ -218,7 +253,7 @@ def_key "ctrl_h"
 #def_key "tab"
 #  next_screen
 #
-#def_key "shift_tab"
+#def_key "shift-tab"
 #  previous_screen
 #
 #def_key "f1"
@@ -275,22 +310,16 @@ def_key "ctrl_h"
 #def_key "<"
 #  previous
 #
-#def_key "ctrl_h"
+#def_key "ctrl-h"
 #  jump_to_parent_directory
 #
-#def_key "ctrl_h"
+#def_key "ctrl-h"
 #  replay_song
 #
 #def_key "backspace"
 #  jump_to_parent_directory
 #
 #def_key "backspace"
-#  replay_song
-#
-#def_key "backspace_2"
-#  jump_to_parent_directory
-#
-#def_key "backspace_2"
 #  replay_song
 #
 #def_key "f"
@@ -320,9 +349,6 @@ def_key "ctrl_h"
 #def_key "Y"
 #  toggle_replay_gain_mode
 #
-#def_key "t"
-#  toggle_space_mode
-#
 #def_key "T"
 #  toggle_add_mode
 #
@@ -344,14 +370,23 @@ def_key "ctrl_h"
 #def_key "u"
 #  update_database
 #
-#def_key "ctrl_v"
+#def_key "ctrl-s"
 #  sort_playlist
 #
-#def_key "ctrl_r"
+#def_key "ctrl-s"
+#  toggle_browser_sort_mode
+#
+#def_key "ctrl-s"
+#  toggle_media_library_sort_mode
+#
+#def_key "ctrl-r"
 #  reverse_playlist
 #
-#def_key "ctrl_f"
+#def_key "ctrl-f"
 #  apply_filter
+#
+#def_key "ctrl-_"
+#  select_found_items
 #
 #def_key "/"
 #  find
@@ -404,6 +439,9 @@ def_key "ctrl_h"
 #def_key "l"
 #  show_lyrics
 #
+#def_key "ctrl-v"
+#  select_range
+#
 #def_key "v"
 #  reverse_selection
 #
@@ -433,9 +471,6 @@ def_key "ctrl_h"
 #
 #def_key "m"
 #  move_selected_items_up
-#
-#def_key "m"
-#  toggle_media_library_sort_mode
 #
 #def_key "n"
 #  move_sort_order_down
@@ -483,13 +518,13 @@ def_key "ctrl_h"
 #  toggle_lyrics_fetcher
 #
 #def_key "F"
+#  fetch_lyrics_in_background
+#
+#def_key "alt-l"
 #  toggle_fetching_lyrics_in_background
 #
-#def_key "ctrl_l"
+#def_key "ctrl-l"
 #  toggle_screen_lock
-#
-#def_key "`"
-#  toggle_browser_sort_mode
 #
 #def_key "`"
 #  toggle_library_tag_type
@@ -498,15 +533,96 @@ def_key "ctrl_h"
 #  refetch_lyrics
 #
 #def_key "`"
-#  refetch_artist_info
-#
-#def_key "`"
 #  add_random_items
 #
-#def_key "ctrl_p"
+#def_key "ctrl-p"
 #  set_selected_items_priority
 #
 #def_key "q"
 #  quit
 #
+###############################################################
+######################## initial ver from  https://gist.github.com/Soft/959188/1ffff2f3360b651c74bb9b7b5c6d854ab71b7d08
+# noteworthy defaults to remember:
+# c-v - select range mode
+# insert - select
+
+
+# the t key isn't used and it's easier to press than /, so lets use it
+#def_key "t"
+#    find
+#def_key "t"
+#    find_item_forward
+
+#def_key "+"
+#	show_clock
+#def_key "="
+#	volume_up
+
+def_key "j"
+    scroll_down
+def_key "k"
+    scroll_up
+
+def_key "ctrl-u"
+    page_up
+def_key "ctrl-d"
+    page_down
+def_key "ctrl-b"
+    page_up
+def_key "ctrl-f"
+    page_down
+
+def_key "h"
+    previous_column
+def_key "h"
+    master_screen
+def_key "l"
+    next_column
+def_key "l"
+    slave_screen
+
+#def_key "up"
+#  move_sort_order_up
+#
+#def_key "up"
+#  move_selected_items_up
+#
+#def_key "down"
+#  move_sort_order_down
+#
+#def_key "down"
+#  move_selected_items_down
+
+def_key "."
+    show_lyrics
+
+def_key "n"
+    next_found_item
+def_key "N"
+    previous_found_item
+
+# not used but bound
+def_key "J"
+    move_sort_order_down
+def_key "J"
+    move_selected_items_down
+def_key "K"
+    move_sort_order_up
+def_key "K"
+    move_selected_items_up
+
+def_key "g"
+  move_home
+def_key "G"
+  move_end
+#def_key "insert"
+#  select_item
+
+# diable mpd update, as it's not supported on mopidy
+#   see https://docs.mopidy.com/en/latest/ext/mpd/#limitations:
+#       https://github.com/arybczak/ncmpcpp/issues/157
+# TODO: perhaps bind it to 'run_external_command "command"', and update mopidy db?
+def_key "u"
+    dummy
 

@@ -1,5 +1,7 @@
-## Connection Settings ##
+## up-to-date config @ https://github.com/arybczak/ncmpcpp/blob/master/doc/config
+#########################
 
+## Connection Settings ##
 ## set it in order to make tag editor and renaming files work properly
 mpd_host = "localhost"
 mpd_port = "6600"
@@ -18,34 +20,53 @@ message_delay_time = "4"
 #song_list_format = "{%a - %t}|{$8%f$9}%{$3(%l)$9}"
 song_list_format = "{$8(%l)$9 }{%a - }{%t}|{$8%f$9}"
 song_library_format = "{%n - }{%t}|{%f}"
+#now_playing_prefix = "{ $6◀$5●$6▶}|{$5●}"
 browser_playlist_prefix = "$2playlist$9 "
 selected_item_prefix = "$6"
 selected_item_suffix = "$9"
 song_status_format = "{(%l) }{%a - }{%t}|{%f}"
 song_window_title_format = "{%a - }{%t}|{%f}"
 song_columns_list_format = "(5)[magenta]{l} (28)[cyan]{a} (30)[blue]{b} (50)[white]{t}"
+#song_columns_list_format = (20)[]{a} (6f)[green]{NE} (50)[white]{t|f:Title} (20)[cyan]{b} (7f)[magenta]{l}
 alternative_header_first_line_format = "{%t}"
 alternative_header_second_line_format = "$7{%a} - $5{%b} $8{(%y)}"
 
 ## Various Settings ##
 
-playlist_display_mode = "columns"
+playlist_display_mode = "columns" (classic/columns)
+playlist_separate_albums = "no"
 incremental_seeking = "yes"
 seek_time = "1"
 autocenter_mode = "yes"
 default_place_to_search_in = "database"
 default_find_mode = "wrapped"
-default_space_mode = "add"
 default_tag_editor_pattern = "%n - %t"
 header_visibility = "yes"
 header_text_scrolling = "yes"
 cyclic_scrolling = "yes"
 statusbar_visibility = "yes"
+#titles_visibility = "no"
 follow_now_playing_lyrics = "no"
 clock_display_seconds = "yes"
 enable_window_title = "yes"
 user_interface = "alternative"
-progressbar_look = "->"
+progressbar_look = "─>·"
+#progressbar_look = "◾◾◽"
+#progressbar_look = "╼·"
+volume_change_step = "5"
+display_volume_level = "yes"
+#display_remaining_time = "yes"
+#display_bitrate = "yes"
+#startup_screen = "media_library"
+ignore_leading_the = "no"  # ignores when sorting tags, playlist items...
+ask_before_clearing_playlists = "yes"
+mouse_support = "no"
+# switch with tab:
+screen_switcher_mode = previous
+
+# enable 2 screens:
+#startup_slave_screen = "tag_editor"
+#startup_slave_screen_focus = no
 
 
 ## Colors Definitions ##
@@ -73,5 +94,7 @@ visualizer_fifo_path = "/tmp/mpd.fifo"
 visualizer_output_name = "my_fifo"
 visualizer_sync_interval = "30"
 visualizer_in_stereo = "yes"
-#visualizer_type = "wave" (spectrum/wave)
-visualizer_type = "spectrum" (spectrum/wave)
+visualizer_color ="magenta,cyan,black,red,green"
+visualizer_type = "spectrum" (spectrum/wave/wave_filled/ellipse)
+visualizer_look = "+|"
+#visualizer_look = "▤▦"
