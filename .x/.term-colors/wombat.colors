@@ -1,0 +1,35 @@
+! wombat: (from https://github.com/jackrosenthal/wombat-colors/blob/master/urxvt/.Xresources)
+! !! good color for higher contrast/brightness !!
+
+#define wb_bg           #1c1c1c
+#define wb_fg           #f6f3e8
+#define wb_cur          #656565
+#define wb_sel          #444444
+#define wb_grey         #99968b
+#define wb_blue         #8ac6f2
+#define wb_red          #e5786d
+#define wb_yellow       #cae682
+#define wb_ltgreen      #e7f6da
+#define wb_green        #95e454
+#define wb_dkgrey       #8f8f8f
+
+URxvt*background:       wb_bg
+URxvt*foreground:       wb_fg
+URxvt*cursorColor:      wb_cur
+URxvt*color0:           black
+URxvt*color1:           wb_red
+URxvt*color2:           wb_green
+URxvt*color3:           wb_yellow
+URxvt*color4:           wb_blue
+URxvt*color5:           wb_blue
+URxvt*color6:           wb_blue
+URxvt*color7:           wb_grey
+URxvt*color9:           wb_dkgrey
+URxvt*color8:           wb_red
+URxvt*color10:          wb_green
+URxvt*color11:          wb_yellow
+URxvt*color12:          wb_blue
+URxvt*color13:          wb_blue
+URxvt*color14:          wb_blue
+URxvt*color15:          white
+
