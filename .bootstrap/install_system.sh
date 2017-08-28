@@ -657,7 +657,7 @@ install_deps() {
         fi
     }
 
-    _install_laptop_deps() {
+    _install_laptop_deps() {  # TODO: does this belong in install_deps()?
         is_laptop || return
 
         __install_wifi_driver() {
@@ -787,8 +787,6 @@ install_deps() {
     # laptop deps:
     is_laptop && _install_laptop_deps; unset _install_laptop_deps
 }
-
-
 
 
 setup_dirs() {
@@ -1322,7 +1320,6 @@ upgrade_kernel() {
     local package_line kernels_list amd64_arch
 
     declare -a kernels_list=()
-    is_64_bit && readonly amd64_arch="amd64"
 
     # install kernel meta-packages:
     # NOTE: these meta-packages only required, if using non-stable debian;
@@ -1333,6 +1330,7 @@ upgrade_kernel() {
             linux-image-amd64
             linux-headers-amd64
         '
+        readonly amd64_arch="amd64"
     else
         report "verified we're not running 64bit system. make sure it's correct. skipping kernel meta-package installation."
         sleep 5
@@ -2371,6 +2369,9 @@ install_from_repo() {
         sudo
         alsa-base
         alsa-utils
+        pulseaudio
+        pulseaudio-equalizer
+        pasystray
         xfce4-volumed
         xfce4-notifyd
         xscreensaver
@@ -2587,47 +2588,8 @@ install_from_repo() {
         # for the work's vagrant setup.
     fi
 
-    if confirm "wish to install ${COLORS[YELLOW]}${COLORS[BOLD]}pulseaudio${COLORS[OFF]}?"; then
-
-        # configure pulseaudio/equalizer
-        #
-        # see https://wiki.debian.org/PulseAudio#Dynamically_enable.2Fdisable
-        # to dynamically enable/disable pulseaudio;
-        function configure_pulseaudio() {
-            local conf conf_lines i
-
-            readonly conf='/etc/pulse/default.pa'
-            declare -ar conf_lines=(load-module module-equalizer-sink
-                                    load-module module-dbus-protocol
-                                   )
-
-            [[ -f "$conf" ]] || { err "[$conf] is not a valid file."; return 1; }
-
-            for i in "${conf_lines[@]}"; do
-                if ! grep -q "^$i\$" "$conf"; then
-                    report "adding [$i] to $conf"
-                    execute "echo $i | sudo tee --append $conf > /dev/null"
-                fi
-            done
-
-            # make bluetooth (headset) device connection possible:
-            # http://askubuntu.com/questions/801404/bluetooth-connection-failed-blueman-bluez-errors-dbusfailederror-protocol-no
-            # https://zach-adams.com/2014/07/bluetooth-audio-sink-stream-setup-failed/
-            if is_laptop; then
-                execute 'pactl load-module module-bluetooth-discover' || err
-            fi
-        }
-
-        # pasystray for easier config access; not meant to be ran continuously.
-        # fyi, PA settings exec is 'pavucontrol'
-        install_block '
-            pulseaudio
-            pulseaudio-equalizer
-            pasystray
-        '
-
-        is_laptop && install_block pulseaudio-module-bluetooth
-        configure_pulseaudio
+    if is_laptop; then
+        install_block pulseaudio-module-bluetooth
     fi
 }
 
@@ -2942,6 +2904,36 @@ configure_ntp_for_work() {
 }
 
 
+# configure pulseaudio/equalizer
+#
+# see https://wiki.debian.org/PulseAudio#Dynamically_enable.2Fdisable
+# to dynamically enable/disable pulseaudio;
+configure_pulseaudio() {
+    local conf conf_lines i
+
+    readonly conf='/etc/pulse/default.pa'
+    declare -ar conf_lines=(load-module module-equalizer-sink
+                            load-module module-dbus-protocol
+                            )
+
+    [[ -f "$conf" ]] || { err "[$conf] is not a valid file."; return 1; }
+
+    for i in "${conf_lines[@]}"; do
+        if ! grep -q "^$i\$" "$conf"; then
+            report "adding [$i] to $conf"
+            execute "echo $i | sudo tee --append $conf > /dev/null"
+        fi
+    done
+
+    # make bluetooth (headset) device connection possible:
+    # http://askubuntu.com/questions/801404/bluetooth-connection-failed-blueman-bluez-errors-dbusfailederror-protocol-no
+    # https://zach-adams.com/2014/07/bluetooth-audio-sink-stream-setup-failed/
+    if is_laptop; then
+        execute 'pactl load-module module-bluetooth-discover' || err
+    fi
+}
+
+
 setup_seafile_cli() {
     local confdir datadir
 
@@ -2976,6 +2968,7 @@ post_install_progs_setup() {
     execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
     execute "newgrp vboxusers"                  # log us into the new group
     configure_ntp_for_work
+    configure_pulseaudio
     #setup_seafile_cli  # TODO https://github.com/haiwen/seafile/issues/1855 & https://github.com/haiwen/seafile/issues/1854
 }
 
