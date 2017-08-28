@@ -160,7 +160,8 @@ set nocompatible " Must be the first line
     " js beautifier:
     Plugin 'jsbeautify'
 
-    " navigate seamlessly btw vim & tmux splits (don't forget tmux bindings as well):
+    " navigate seamlessly btw vim & tmux splits (don't forget tmux bindings in
+    " .tmux.conf as well):
     Plugin 'christoomey/vim-tmux-navigator'
 
     " supertab: (only so YCM and UltiSnips could play along, otherwise don't need)

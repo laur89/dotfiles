@@ -1,4 +1,5 @@
 ! one other source:   http://fluxbox-wiki.org/category/howtos/en/Xdefaults_setup.html
+! excellent all-around dotfiles: https://github.com/mohabaks/dotfiles/
 ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Xft.autohint: 0
 Xft.antialias: 1
@@ -6,21 +7,21 @@ Xft.hinting: 1
 Xft.hintstyle: hintfull
 !Xft*dpi: 96
 !Xft*dpi: 120
+! note rgba setting is monitor-dependent; test can be cound here: http://www.lagom.nl/lcd-test/subpixel.php
 Xft.rgba: rgb
 Xft.lcdfilter: lcddefault
 
-! -------------------------------------------------
-!URxvt.perl-lib: /your/folder/  ! only needed if yo use a non-standard directory
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+URxvt.perl-ext-common: default,clipboard,tabbedex,keyboard-select,vtwheel,matcher
+!URxvt.perl-lib: /your/folder/  ! only needed if you use a non-standard directory
 URxvt*geometry: 100x50
-!URxvt*background:[70]Black
-!URxvt*background:#222222
-!URxvt*foreground:White
 ! comment the depth, otherwise w3m cant render images in urxvt:
 !URxvt.depth: 32
 URxvt*cursorBlink: on
 URxvt*borderLess: false
 URxvt*cursorUnderline: false
-URxvt.visualBell: true
+URxvt.visualBell: false
 URxvt*scrollBar: false
 ! do not scroll with output:
 URxvt*scrollTtyOutput: false
@@ -30,14 +31,23 @@ URxvt*scrollTtyKeypress: true
 URxvt*scrollWithBuffer: true
 URxvt*secondaryScroll: true
 URxvt*saveLines: 80000
-URxvt*url-Launcher: xdg-open
-! matcher :
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Matcher
+!   note: either use this, or url-select, not both
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! open last url
 URxvt.keysym.C-Delete: perl:matcher:last
+! list recent urls
 URxvt.keysym.M-Delete: perl:matcher:list
+! note btn 2 masks pasting with btn 2
 URxvt.matcher.button:     2
-URxvt.termName:    xterm-color
+URxvt.termName:    rxvt-unicode-256color
+!URxvt.termName:    xterm-color
+URxvt*url-launcher: xdg-open
 
 !! matcher -  Full Path Patterns
+! render rule for match 0:
+URxvt.matcher.rend.0: Uline Bold fg5
 !URxvt.matcher.pattern.1:  \\bwww\\.[\\w-]+\\.[\\w./?&@#-]*[\\w/-]
 !URxvt.matcher.pattern.2:  \\B(/\\S+?):(\\d+)(?=:|$)
 !URxvt.matcher.launcher.2: gvim +$2 $1
@@ -49,32 +59,33 @@ URxvt.matcher.pattern.4: \\B(/[\\S]+):(\\d+):(\\d+):?
 URxvt.matcher.launcher.4: gvim $1 +$2
 URxvt.matcher.render.4: fg=5
 
-!URxvt.colorUL: #4682B4
-! /
-!!! yankable url settings (requires urxvt-perls package; disables clickable urls extension):
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-URxvt.keysym.M-u: perl:url-select:select_next
-URxvt.url-select.underline:                     true
-URxvt.url-select.launcher: /usr/bin/xdg-open
-!URxvt.url-select.launcher:                      /usr/bin/iceweasel
-!URvxt.url-select.button:    Mouse button to click-open URLs (default: 2)
+! font-size keybindings
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!URxvt.keysym.C-Up:       perl:font-size:increase
+!URxvt.keysym.C-Down:     perl:font-size:decrease
+!URxvt.keysym.C-S-Up:     perl:font-size:incglobal
+!URxvt.keysym.C-S-Down: perl:font-size:decglobal
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!! yankable url settings (requires urxvt-perls package; disables clickable urls extension):
+!!! note url-select is essentially deprecated by the matcher perl script; either use
+!!! one or the other, not both
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!URxvt.keysym.M-u: perl:url-select:select_next
+!URxvt.url-select.underline: true
+!URxvt.url-select.launcher: /usr/bin/xdg-open
+!!URvxt.url-select.button:    Mouse button to click-open URLs (default: 2)
 !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! keyboard-select:
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 URxvt.keysym.M-Escape: perl:keyboard-select:activate
 URxvt.keysym.M-s: perl:keyboard-select:search
 
-! TABS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! tabbedex: (if using this, disable 'tabbed' version below)
-!URxvt.perl-ext-common: ...,tabbedex,...
-! TODO search about the matcher perl script
-!
-!URxvt.perl-ext-common: default,clipboard,tabbedex,url-select,keyboard-select,vtwheel,matcher
-!reomve url-select from the list, as that caused urls to be opened twice (as in
-!url opening is also implemented in matcher)
-URxvt.perl-ext-common: default,clipboard,tabbedex,keyboard-select,vtwheel,matcher
-!URxvt.perl-ext-common: default,clipboard,tabbed
+! Tabs
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 URxvt.keysym.Shift-Control-T: perl:tabbedex:new_tab
 URxvt.keysym.Shift-t: perl:tabbedex:new_tab
@@ -96,21 +107,14 @@ URxvt.tabbed.tab-bg:    9
 URxvt.tabbed.autohide: false
 !URxvt.tabbed.new-button: true
 !URxvt.tabbed.title: no
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! meta key:
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!coopy-pasta:
+! copy-pasta:
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 URxvt.keysym.Shift-Control-V: perl:clipboard:paste
-URxvt.iso14755: False
-
-! man page colors:
-*VT100.colorBDMode:                   true
-*VT100.colorDB:                       magenta
-*VT100.colorULMode:                   true
-*VT100.colorUL:                       cyan
-*VT100.veryBoldColors:                6
+!URxvt.keysym.Shift-Control-C: perl:clipboard:copy
+URxvt.iso14755: false
+URxvt.iso14755_52: false
 
 ! allow ctrl+arrow keys by-word motions:
 !URxvt.keysym.Control-Up:   \033[1;5A
@@ -118,625 +122,49 @@ URxvt.iso14755: False
 !URxvt.keysym.Control-Left:    \033[1;5D
 !URxvt.keysym.Control-Right:    \033[1;5C
 
-! COLOR PALETTE
-!!colors:
-!!scheme: pnevma
-!!*foreground: #696969
-!!*background: #282626
-!*foreground: #6F6767
-!*background: #3A3636
-!*color0: #363636
-!*color8: #424242
-!*color1: #C37561
-!*color9: #D19485
-!*color2: #A0A57E
-!*color10: #B6B99D
-!*color3: #D1A375
-!*color11: #DEBC9C
-!*color4: #7985A3
-!*color12: #98A1B9
-!*color5: #AB716D
-!*color13: #BE918E
-!*color6: #98B9B1
-!*color14: #CBE6CB
-!*color7: #D0D0D0
-!*color15: #E6E6E6
-! -------------------------------------------------
-! from: https://raw.githubusercontent.com/z1lt0id/.Dotfiles/master/.Xresources
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Colors:
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! man page colors:
+*VT100.colorBDMode:                   true
+*VT100.colorDB:                       magenta
+*VT100.colorULMode:                   true
+*VT100.colorUL:                       cyan
+*VT100.veryBoldColors:                6
 
-!urxvt*cursorColor:                         #6d715e
-
-!*background: [80]#161212
-!*foreground: #c0b18b
-
-!!black
-!*color0:#4A3637
-!*color8:#4A3637
-
-!!red
-!*color1:#d17b49
-!*color9:#d17b49
-
-!!green
-!*color2:#7b8748
-!*color10:#7b8748
-
-!!yellow
-!*color3:#af865a
-!*color11:#af865a
-
-!!blue
-!*color4:#535C5C
-!*color12:#535C5C
-
-!!magenta
-!*color5:#775759
-!*color13:#775759
-
-!!cyan
-!*color6:#6d715e
-!*color14:#6d715e
-
-!!white
-!*color7:#c0b18b
-!*color15:#c0b18b
-! -------------------------------------------------
-!from https://github.com/windelicato/dotfiles/blob/master/.colors/s3r0:
-
-!*.background: #1f1f1f
-!*foreground: #c0b18b
-
-!!black
-!*color0:#4A3637
-!*color8:#4A3637
-
-!!red
-!*color1:#d17b49
-!*color9:#d17b49
-
-!!green
-!*color2:#7b8748
-!*color10:#7b8748
-
-!!yellow
-!*color3:#af865a
-!*color11:#af865a
-
-!!blue
-!*color4:#535C5C
-!*color12:#535C5C
-
-!!magenta
-!*color5:#775759
-!*color13:#775759
-
-!!cyan
-!*color6:#6d715e
-!*color14:#6d715e
-
-!!white
-!*color7:#c0b18b
-!*color15:#c0b18b
-
-!!!!! another good colors:
-!good collection: https://github.com/baskerville/xresources-color-schemes
-! -------------------------------------------------
-! from random nixporn pastebin:
-!Xcursor.theme:    Vanilla-DMZ-AA
-!!urxvt color scheme:
-!URxvt*background: #181818
-!URxvt*foreground: #DEDEDE
-!urxvt*background:       #181818
-!urxvt*foreground:       #cdcfce
-!urxvt*matcher.button:   1
-!urxvt*cursorBlink:      true
-!urxvt*cursorColor:      #c1c8c9
-!URxvt*colorUL: #86a2b0
- 
-!!black
-!URxvt*color0:           #181818
-!URxvt*color8:           #94b690
-!!red
-!URxvt*color1:           #9e6b71
-!URxvt*color9:           #b69094
-!!green
-!URxvt*color2:           #719e6b
-!URxvt*color10:          #94b690
-!!yellow
-!URxvt*color3:           #9e986c
-!URxvt*color11:          #b5b18f
-!!blue
-!URxvt*color4:           #6c8b9e
-!URxvt*color12:          #90a7b6
-!!magenta
-!URxvt*color5:           #986b9e
-!URxvt*color13:          #b290b6
-!!cyan
-!URxvt*color6:           #6b9e98
-!URxvt*color14:          #90b6b3
-!!white
-!URxvt*color7:           #cdcfce
-!URxvt*color15:          #cdcfce
- 
-!!urxvt fonts:
-!URxvt*font: xft:Tewi:pixelsize=8
-!URxvt*boldFont: xft:Tewi:pixelsize=8
-!URxvt*geometry: 80x20
-!URxvt.internalBorder: 10
-!URxvt*borderLess: false
-!!urxvt extensions:
-!URxvt.perl-ext-common:  default,matcher,tabbedex,clipboard
-!URxvt.keysym.Shift-Control-V: perl:clipboard:paste
-!URxvt.iso14755: False
-!!enabling clickable links:
-!URxvt.urlLauncher:      /usr/bin/firefox
-!URxvt.matcher.button:   1
-!!urxvt scrolling options and cursor style:
-!URxvt*saveLines: 12000
-!URxvt*scrollstyle:plain
-!URxvt*scrollBar: false
-!URxvt*cursorBlink: true
-!URxvt*cursorUnderline: true
-!! urxvt tabs settings:
-!URxvt.tabbed.tabbar-fg: 2
-!URxvt.tabbed.tabbar-bg: 0
-!URxvt.tabbed.tab-fg: 2
-!URxvt.tabbed.tab-bg: 8
-!URxvt.tabbed.autohide:  yes
-!URxvt.tabbed.new-button:  no
-!URxvt.tabbed.title: no
-!urxvt.transparent:      false
-!urxvt*allow_bold:       false
-!Xft*dpi:                96
-!Xft*antialias:          false
-!Xft*hinting:            full
-!URxvt*inheritPixmap:    false
-!!URxvt*tintColor:       black
-!!URxvt*shading:         80
-!!URxvt*geometry:        80x20
-
-! ---------------------------------------------------------
-
-!urxvt*background: #181512
-!!!urxvt*foreground: #D6C3B6
-!urxvt*foreground: #bea492
-!urxvt*cursorColor: #9a875f
-!urxvt*colorIT: #8c644c
-!urxvt*colorUL: #646a6d
-!urxvt*colorBD: #9a875f
-
-!!! black dark/light
-!urxvt*color0: #332d29
-!urxvt*color8: #817267
-
-!!! red dark/light
-!urxvt*color1: #8c644c
-!urxvt*color9: #9f7155
-
-!!! green dark/light
-!urxvt*color2:  #746C48
-!urxvt*color10:  #857B52
-
-!!! yellow dark/light
-!urxvt*color3:  #908A66
-!urxvt*color11:   #9C956E
-!!!urxvt*color11: #E0DAAC
-
-!!! blue dark/light
-!urxvt*color4: #646a6d
-!urxvt*color12: #71777A
-
-!!! magenta dark/light
-!!!urxvt*color5: #656565
-!!!urxvt*color13: #706D70
-!!!urxvt*color5: #463c3b
-!urxvt*color5: #605655
-!urxvt*color13: #656565
-
-!!! cyan dark/light
-!!!urxvt*color6: #3b484a
-!!!urxvt*color14: #444d4e
-!urxvt*color6: #4B5C5E
-!urxvt*color14: #556D70
-
-
-!!! white dark/light
-!urxvt*color7: #504339
-!urxvt*color15: #9a875f
-! -------------------------------------------------
-! base 16 from https://github.com/chriskempson/base16
-! Base16 Eighties
-! Scheme: Chris Kempson (http://chriskempson.com)
-
-!#define base00 #2d2d2d
-!#define base01 #393939
-!#define base02 #515151
-!#define base03 #747369
-!#define base04 #a09f93
-!#define base05 #d3d0c8
-!#define base06 #e8e6df
-!#define base07 #f2f0ec
-!#define base08 #f2777a
-!#define base09 #f99157
-!#define base0A #ffcc66
-!#define base0B #99cc99
-!#define base0C #66cccc
-!#define base0D #6699cc
-!#define base0E #cc99cc
-!#define base0F #d27b53
-
-!*.foreground:   base05
-!*.background:   base00
-!*.cursorColor:  base05
-
-!*.color0:       base00
-!*.color1:       base08
-!*.color2:       base0B
-!*.color3:       base0A
-!*.color4:       base0D
-!*.color5:       base0E
-!*.color6:       base0C
-!*.color7:       base05
-
-!*.color8:       base03
-!*.color9:       base08
-!*.color10:      base0B
-!*.color11:      base0A
-!*.color12:      base0D
-!*.color13:      base0E
-!*.color14:      base0C
-!*.color15:      base07
-
-!!Note: colors beyond 15 might not be loaded (e.g., xterm, urxvt),
-!!use 'shell' template to set these if necessary
-!*.color16:      base09
-!*.color17:      base0F
-!*.color18:      base01
-!*.color19:      base02
-!*.color20:      base04
-!*.color21:      base06
-
-! -------------------------------------------------
-! raven-m9-dark from https://github.com/baskerville/xresources-color-schemes:
-
-!#define t_bg_floor     #010000
-!#define t_bg_dip       #191815
-!#define t_background   #1f1e1b
-!#define t_bg_bump      #2B2A27
-!#define t_fg_comment   #68696C
-!#define t_foreground   #8E8F93
-!#define t_fg_highlight #9D9EA2
-!#define t_fg_ceiling   #FEFFFF
-
-!URxvt*background: t_background
-!URxvt*foreground: t_foreground
-
-!URxvt*colorBD: t_fg_highlight
-!URxvt*colorIT: t_fg_highlight
-!URxvt*colorUL: t_fg_highlight
-
-!URxvt*cursorColor: #B47CAD
-
-!! BLK
-!URxvt*color0: t_bg_bump
-!URxvt*color8: t_fg_comment
-
-!! WHT
-!URxvt*color7: t_fg_highlight
-!URxvt*color15: t_fg_ceiling
-
-!! RED
-!URxvt*color1: #99554F
-!URxvt*color9: #D58A83
-
-!! YEL
-!URxvt*color3: #756830
-!URxvt*color11: #AE9D62
-
-!! GRN
-!URxvt*color2: #38754B
-!URxvt*color10: #6EAC7E
-
-!! CYN
-!URxvt*color6: #007683
-!URxvt*color14: #42AEBA
-
-!! BLU
-!URxvt*color4: #496AA0
-!URxvt*color12: #81A0D9
-
-!! MAG
-!URxvt*color5: #8C5786
-!URxvt*color13: #C58CBE
-
-!URxvt*color16: t_bg_floor
-!URxvt*color17: t_bg_dip
-!URxvt*color18: t_background
-!URxvt*color19: t_bg_bump
-!URxvt*color20: t_fg_comment
-!URxvt*color21: t_foreground
-!URxvt*color22: t_fg_highlight
-!URxvt*color23: t_fg_ceiling
-
-!URxvt*color24: #C47890
-!URxvt*color25: #C4778F
-!URxvt*color26: #C5778D
-!URxvt*color27: #C5778C
-!URxvt*color28: #C5788A
-!URxvt*color29: #C57888
-!URxvt*color30: #C57887
-!URxvt*color31: #C57885
-!URxvt*color32: #C67884
-!URxvt*color33: #C67882
-!URxvt*color34: #C67881
-!URxvt*color35: #C5787F
-!URxvt*color36: #C5797E
-!URxvt*color37: #C5797C
-!URxvt*color38: #C5797B
-!URxvt*color39: #C57979
-!URxvt*color40: #C57978
-!URxvt*color41: #C47A77
-!URxvt*color42: #C47A75
-!URxvt*color43: #C47A74
-!URxvt*color44: #C37B72
-!URxvt*color45: #C37B71
-!URxvt*color46: #C27B70
-!URxvt*color47: #C27C6E
-!URxvt*color48: #C17C6D
-!URxvt*color49: #C17D6C
-!URxvt*color50: #C07D6B
-!URxvt*color51: #BF7D69
-!URxvt*color52: #BF7E68
-!URxvt*color53: #BE7E67
-!URxvt*color54: #BD7F66
-!URxvt*color55: #BC7F65
-!URxvt*color56: #BC8064
-!URxvt*color57: #BB8063
-!URxvt*color58: #BA8161
-!URxvt*color59: #B98160
-!URxvt*color60: #B88260
-!URxvt*color61: #B7825F
-!URxvt*color62: #B6835E
-!URxvt*color63: #B5835D
-!URxvt*color64: #B4845C
-!URxvt*color65: #B3845B
-!URxvt*color66: #B2855A
-!URxvt*color67: #B1865A
-!URxvt*color68: #AF8659
-!URxvt*color69: #AE8758
-!URxvt*color70: #AD8758
-!URxvt*color71: #AC8857
-!URxvt*color72: #AB8857
-!URxvt*color73: #A98956
-!URxvt*color74: #A88956
-!URxvt*color75: #A78A55
-!URxvt*color76: #A58A55
-!URxvt*color77: #A48B55
-!URxvt*color78: #A38B54
-!URxvt*color79: #A18C54
-!URxvt*color80: #A08D54
-!URxvt*color81: #9F8D54
-!URxvt*color82: #9D8E54
-!URxvt*color83: #9C8E54
-!URxvt*color84: #9A8F54
-!URxvt*color85: #998F54
-!URxvt*color86: #979054
-!URxvt*color87: #969054
-!URxvt*color88: #949154
-!URxvt*color89: #939154
-!URxvt*color90: #919254
-!URxvt*color91: #909255
-!URxvt*color92: #8E9255
-!URxvt*color93: #8C9356
-!URxvt*color94: #8B9356
-!URxvt*color95: #899457
-!URxvt*color96: #889457
-!URxvt*color97: #869558
-!URxvt*color98: #849558
-!URxvt*color99: #839559
-!URxvt*color100: #81965A
-!URxvt*color101: #7F965A
-!URxvt*color102: #7E975B
-!URxvt*color103: #7C975C
-!URxvt*color104: #7A975D
-!URxvt*color105: #79985E
-!URxvt*color106: #77985F
-!URxvt*color107: #759860
-!URxvt*color108: #749961
-!URxvt*color109: #729962
-!URxvt*color110: #709963
-!URxvt*color111: #6E9A64
-!URxvt*color112: #6D9A65
-!URxvt*color113: #6B9A66
-!URxvt*color114: #699B67
-!URxvt*color115: #679B69
-!URxvt*color116: #669B6A
-!URxvt*color117: #649B6B
-!URxvt*color118: #629C6D
-!URxvt*color119: #609C6E
-!URxvt*color120: #5F9C6F
-!URxvt*color121: #5D9C71
-!URxvt*color122: #5B9C72
-!URxvt*color123: #599D73
-!URxvt*color124: #589D75
-!URxvt*color125: #569D76
-!URxvt*color126: #549D78
-!URxvt*color127: #529D79
-!URxvt*color128: #519D7B
-!URxvt*color129: #4F9E7C
-!URxvt*color130: #4D9E7E
-!URxvt*color131: #4B9E7F
-!URxvt*color132: #4A9E81
-!URxvt*color133: #489E82
-!URxvt*color134: #469E84
-!URxvt*color135: #459E85
-!URxvt*color136: #439E87
-!URxvt*color137: #419E89
-!URxvt*color138: #409E8A
-!URxvt*color139: #3E9E8C
-!URxvt*color140: #3D9E8D
-!URxvt*color141: #3B9E8F
-!URxvt*color142: #3A9F91
-!URxvt*color143: #389F92
-!URxvt*color144: #379F94
-!URxvt*color145: #359F95
-!URxvt*color146: #349E97
-!URxvt*color147: #339E98
-!URxvt*color148: #329E9A
-!URxvt*color149: #319E9B
-!URxvt*color150: #309E9D
-!URxvt*color151: #2F9E9F
-!URxvt*color152: #2E9EA0
-!URxvt*color153: #2E9EA2
-!URxvt*color154: #2D9EA3
-!URxvt*color155: #2D9EA4
-!URxvt*color156: #2C9EA6
-!URxvt*color157: #2C9EA7
-!URxvt*color158: #2C9EA9
-!URxvt*color159: #2D9DAA
-!URxvt*color160: #2D9DAC
-!URxvt*color161: #2D9DAD
-!URxvt*color162: #2E9DAE
-!URxvt*color163: #2F9DB0
-!URxvt*color164: #309DB1
-!URxvt*color165: #319CB2
-!URxvt*color166: #329CB3
-!URxvt*color167: #339CB5
-!URxvt*color168: #349CB6
-!URxvt*color169: #369BB7
-!URxvt*color170: #379BB8
-!URxvt*color171: #399BB9
-!URxvt*color172: #3B9BBA
-!URxvt*color173: #3C9ABB
-!URxvt*color174: #3E9ABC
-!URxvt*color175: #409ABD
-!URxvt*color176: #4299BE
-!URxvt*color177: #4499BF
-!URxvt*color178: #4699C0
-!URxvt*color179: #4898C1
-!URxvt*color180: #4A98C1
-!URxvt*color181: #4C98C2
-!URxvt*color182: #4E97C3
-!URxvt*color183: #5097C3
-!URxvt*color184: #5297C4
-!URxvt*color185: #5496C5
-!URxvt*color186: #5796C5
-!URxvt*color187: #5995C6
-!URxvt*color188: #5B95C6
-!URxvt*color189: #5D95C7
-!URxvt*color190: #5F94C7
-!URxvt*color191: #6294C7
-!URxvt*color192: #6493C8
-!URxvt*color193: #6693C8
-!URxvt*color194: #6892C8
-!URxvt*color195: #6B92C8
-!URxvt*color196: #6D91C8
-!URxvt*color197: #6F91C9
-!URxvt*color198: #7190C9
-!URxvt*color199: #7390C9
-!URxvt*color200: #758FC9
-!URxvt*color201: #788FC8
-!URxvt*color202: #7A8EC8
-!URxvt*color203: #7C8EC8
-!URxvt*color204: #7E8DC8
-!URxvt*color205: #808DC8
-!URxvt*color206: #828CC7
-!URxvt*color207: #848CC7
-!URxvt*color208: #868BC7
-!URxvt*color209: #888BC6
-!URxvt*color210: #8A8AC6
-!URxvt*color211: #8C89C5
-!URxvt*color212: #8E89C5
-!URxvt*color213: #9088C4
-!URxvt*color214: #9288C4
-!URxvt*color215: #9487C3
-!URxvt*color216: #9687C2
-!URxvt*color217: #9886C2
-!URxvt*color218: #9986C1
-!URxvt*color219: #9B85C0
-!URxvt*color220: #9D84BF
-!URxvt*color221: #9F84BE
-!URxvt*color222: #A083BD
-!URxvt*color223: #A283BC
-!URxvt*color224: #A482BB
-!URxvt*color225: #A582BA
-!URxvt*color226: #A781B9
-!URxvt*color227: #A881B8
-!URxvt*color228: #AA80B7
-!URxvt*color229: #AB80B6
-!URxvt*color230: #AD7FB5
-!URxvt*color231: #AE7FB4
-!URxvt*color232: #AF7EB3
-!URxvt*color233: #B17EB1
-!URxvt*color234: #B27DB0
-!URxvt*color235: #B37DAF
-!URxvt*color236: #B47CAD
-!URxvt*color237: #B67CAC
-!URxvt*color238: #B77CAB
-!URxvt*color239: #B87BA9
-!URxvt*color240: #B97BA8
-!URxvt*color241: #BA7BA7
-!URxvt*color242: #BB7AA5
-!URxvt*color243: #BC7AA4
-!URxvt*color244: #BD7AA2
-!URxvt*color245: #BD79A1
-!URxvt*color246: #BE799F
-!URxvt*color247: #BF799E
-!URxvt*color248: #C0799C
-!URxvt*color249: #C0789B
-!URxvt*color250: #C17899
-!URxvt*color251: #C27898
-!URxvt*color252: #C27896
-!URxvt*color253: #C37895
-!URxvt*color254: #C37893
-!URxvt*color255: #C47892
-! -------------------------------------------------
-! Smyck from https://raw.githubusercontent.com/jorgeramirez/dotfiles/master/home/.colors/Smyck
-!!Black
-!URxvt*color0: #1B1B1B
-!URxvt*color8: #5D5D5D
-
-!!Red
-!URxvt*color1: #EA6868
-!URxvt*color9: #E09690
-
-!!Green
-!URxvt*color2:  #8EB338
-!URxvt*color10: #CDEE69
-
-!!Yellow
-!URxvt*color3:  #D0B03C
-!URxvt*color11: #FFE999
-
-!!Blue
-!URxvt*color4:  #8AD1F9
-!URxvt*color12: #B0E2FF
-
-!!Magenta
-!URxvt*color5:  #C9A0D1
-!URxvt*color13: #FBB1F9
-
-!!Cyan
-!URxvt*color6:  #218693
-!URxvt*color14: #77DFD8
-
-!!White
-!URxvt*color7:  #B0B0B0
-!URxvt*color15: #F7F7F7
-
-!URxvt*background:   #262626
-!URxvt*colorBD:      #FFFFFF
-!URxvt*cursorColor:  #A0A0A0
-!URxvt*cursorColor2: #FFFFFF
-!URxvt*foreground:   #F8F8F2
+! main shell colors:
+!#include </home/laur/.x/term-colors/synthwave.colors>
+#include </home/laur/.x/term-colors/blue.colors>
+!#include </home/laur/.x/term-colors/blue2.colors>
+!#include </home/laur/.x/term-colors/base16-atelier-heath.colors>
+!#include </home/laur/.x/term-colors/base16-default-dark.colors>
+!#include </home/laur/.x/term-colors/base16-eighties.colors>
+!#include </home/laur/.x/term-colors/dawn.colors>
+!#include </home/laur/.x/term-colors/gruvbox.colors>
+!#include </home/laur/.x/term-colors/mashup.colors>
+!#include </home/laur/.x/term-colors/pnevma1.colors>
+!#include </home/laur/.x/term-colors/pnevma2.colors>
+!#include </home/laur/.x/term-colors/raven-m9-dark.colors>
+!#include </home/laur/.x/term-colors/s3r0.colors>
+!#include </home/laur/.x/term-colors/smyck.colors>
+!#include </home/laur/.x/term-colors/unnamed1.colors>
+!#include </home/laur/.x/term-colors/unnamed2.colors>
+!#include </home/laur/.x/term-colors/unnamed3.colors>
+!#include </home/laur/.x/term-colors/unnamed4.colors>
+!#include </home/laur/.x/term-colors/wombat.colors>
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! -------------------------------------------------
 ! FONTS
 ! $ fc-list lists available fonts
 URxvt.allow_bold:           true
 URxvt.boldColors:           on
-!URxvt*font: xft:Terminus:pixelsize=14,xft:Inconsolata\ for\ Powerline:pixelsize=14
-!URxvt*boldFont: xft:TerminessPowerlineBold:pixelsize=14,xft:Inconsolata\ for\ Powerline:pixelsize=14
+
+! lineSpace=1 enables underscores for bold fonts (from https://bbs.archlinux.org/viewtopic.php?pid=1619832#p1619832)
+URxvt.lineSpace: 1
+! letterSpace regulates character spacing
+!URxvt.letterSpace: -1
+!URxvt.letterSpace: 0
 
 
 !! Terminus
@@ -750,6 +178,17 @@ URxvt.boldColors:           on
 URxvt.font: xft:Terminus:pixelsize=14:antialias=false:hinting=false:autohint=false, xft:Terminess Powerline:pixelsize=16:antialias=false:hinting=false:autohint=false
 URxvt.boldFont: xft:Terminus:style=bold:pixelsize=14:antialias=false:hinting=false:autohint=false, xft:Terminess Powerline:bold:pixelsize=16:antialias=false:hinting=false:autohint=false
 
+!! tewi (conf from https://github.com/mohabaks/dotfiles/blob/master/.x/.Xresources)
+!#define fonts xft:Tewi:size=7
+!URxvt*font:              fonts
+!URxvt*boldMode:          false
+!URxvt*boldFont:          fonts
+
+!! Droid Sans Mono for Powerline Mono
+!URxvt*font:             xft:Droid Sans Mono for Powerline:size=8, xft:Droid Mono Dotted for Powerline:size=8
+!URxvt*boldFont:         xft:Droid Sans Mono for Powerline:normal:size=8
+!URxvt*italicFont:       xft:Droid Sans Mono for Powerline:italic:autohint=true:size=8
+!URxvt*boldItalicFont:   xft:Droid Sans Mono for Powerline:bolditalic:italic:autohint=true:size=8
 
 !! Monofur
 ! URxvt.font:             xft:monofur For Powerline:size=11:hinting=True;antialias:True,xft:PowerlineSymbols,xft:Font Awesome:size=10,xft:WenQuanYi Bitmap Song-12:medium;antialias=False,xft:WenQuanYi Zen Hei-12:medium;antialias=True,xft:HanaMinA-12:medium;antialias:True,xft:HanaMinB-12:medium;antialias:True,xft:HanaMinPlus-12:medium;antialias:True
@@ -759,538 +198,47 @@ URxvt.boldFont: xft:Terminus:style=bold:pixelsize=14:antialias=false:hinting=fal
 !! Hack
 !URxvt.font:             xft:Hack:size=10:hinting=True;antialias:True,xft:PowerlineSymbols,xft:Font Awesome:size=10,xft:WenQuanYi Bitmap Song-12:medium;antialias=False,xft:WenQuanYi Zen Hei-12:medium;antialias=True,xft:HanaMinA-12:medium;antialias:True,xft:HanaMinB-12:medium;antialias:True,xft:HanaMinPlus-12:medium;antialias:True
 !URxvt.boldFont:             xft:Hack:size=10:bold;hinting=True;antialias:True,xft:Font Awesome:size=10,xft:WenQuanYi Bitmap Song-12:bold;antialias=False,xft:WenQuanYi Zen Hei-12:bold;antialias=True,xft:HanaMinA-12:bold;antialias:True,xft:HanaMinB-12:bold;antialias:True,xft:HanaMinPlus-12:bold;antialias:True
-!
 
 
 !! InconsolataDz
-! URxvt.font:             xft:Inconsolata-dz for Powerline:size=10:hinting=True;antialias:True,xft:PowerlineSymbols,xft:Font Awesome:size=10,xft:WenQuanYi Bitmap Song-12:medium;antialias=False,xft:WenQuanYi Zen Hei-12:medium;antialias=True,xft:HanaMinA-12:medium;antialias:True,xft:HanaMinB-12:medium;antialias:True,xft:HanaMinPlus-12:medium;antialias:True
-! URxvt.boldFont:             xft:Inconsolata-dz for Powerline:size=10:bold;hinting=True;antialias:True,xft:Font Awesome:size=10,xft:WenQuanYi Bitmap Song-12:bold;antialias=False,xft:WenQuanYi Zen Hei-12:bold;antialias=True,xft:HanaMinA-12:bold;antialias:True,xft:HanaMinB-12:bold;antialias:True,xft:HanaMinPlus-12:bold;antialias:True
-!
+!URxvt.font:             xft:Inconsolata-dz for Powerline:size=10:hinting=True;antialias:True,xft:PowerlineSymbols,xft:Font Awesome:size=10,xft:WenQuanYi Bitmap Song-12:medium;antialias=False,xft:WenQuanYi Zen Hei-12:medium;antialias=True,xft:HanaMinA-12:medium;antialias:True,xft:HanaMinB-12:medium;antialias:True,xft:HanaMinPlus-12:medium;antialias:True
+!URxvt.boldFont:             xft:Inconsolata-dz for Powerline:size=10:bold;hinting=True;antialias:True,xft:Font Awesome:size=10,xft:WenQuanYi Bitmap Song-12:bold;antialias=False,xft:WenQuanYi Zen Hei-12:bold;antialias=True,xft:HanaMinA-12:bold;antialias:True,xft:HanaMinB-12:bold;antialias:True,xft:HanaMinPlus-12:bold;antialias:True
+
 !URxvt.font:             xft:Inconsolata:size=10,xft:PowerlineSymbols,xft:FontAwesome,xft:WenQuanYi Bitmap Song-12:medium;antialias=False,xft:WenQuanYi Zen Hei-12:medium;antialias=True,xft:HanaMinA-12:medium;antialias:True,xft:HanaMinB-12:medium;antialias:True,xft:HanaMinPlus-12:medium;antialias:True
 !URxvt.boldFont:             xft:Inconsolata:size=10:bold;hinting=True;antialias:True,xft:PowerlineSymbols,xft:FontAwesome,xft:WenQuanYi Bitmap Song-12:bold;antialias=False,xft:WenQuanYi Zen Hei-12:bold;antialias=True,xft:HanaMinA-12:bold;antialias:True,xft:HanaMinB-12:bold;antialias:True,xft:HanaMinPlus-12:bold;antialias:True
 
 
 !! Droid Sans Mono
-! URxvt.font:             xft:Droid Sans Mono for Powerline-10:hinting=True;antialias:True,xft:WenQuanYi Bitmap Song-12:medium;antialias=False,xft:WenQuanYi Zen Hei-12:medium;antialias=True,xft:HanaMinA-12:medium;antialias:True,xft:HanaMinB-12:medium;antialias:True,xft:HanaMinPlus-12:medium;antialias:True
-! URxvt.boldFont:             xft:Droid Sans Mono for Powerline-10:bold;hinting=True;antialias:True,xft:WenQuanYi Bitmap Song-12:bold;antialias=False,xft:WenQuanYi Zen Hei-12:bold;antialias=True,xft:HanaMinA-12:bold;antialias:True,xft:HanaMinB-12:bold;antialias:True,xft:HanaMinPlus-12:bold;antialias:True
+!URxvt.font:             xft:Droid Sans Mono for Powerline-10:hinting=True;antialias:True,xft:WenQuanYi Bitmap Song-12:medium;antialias=False,xft:WenQuanYi Zen Hei-12:medium;antialias=True,xft:HanaMinA-12:medium;antialias:True,xft:HanaMinB-12:medium;antialias:True,xft:HanaMinPlus-12:medium;antialias:True
+!URxvt.boldFont:             xft:Droid Sans Mono for Powerline-10:bold;hinting=True;antialias:True,xft:WenQuanYi Bitmap Song-12:bold;antialias=False,xft:WenQuanYi Zen Hei-12:bold;antialias=True,xft:HanaMinA-12:bold;antialias:True,xft:HanaMinB-12:bold;antialias:True,xft:HanaMinPlus-12:bold;antialias:True
 
 !! Sauce Code Pro
 !URxvt.font:             xft:Source Code Pro for Powerline-10:hinting=True;antialias:True,xft:WenQuanYi Bitmap Song-10:medium;antialias=False,xft:WenQuanYi Zen Hei-10:medium;antialias=True,xft:HanaMinA-10:medium;antialias:True,xft:HanaMinB-10:medium;antialias:True,xft:HanaMinPlus-10:medium;antialias:True
 !URxvt.boldFont:             xft:Source Code Pro for Powerline-10:bold;hinting=True;antialias:True,xft:WenQuanYi Bitmap Song-10:bold;antialias=False,xft:WenQuanYi Zen Hei-10:bold;antialias=True,xft:HanaMinA-10:bold;antialias:True,xft:HanaMinB-10:bold;antialias:True,xft:HanaMinPlus-10:bold;antialias:True
 
-! URxvt.font:             xft:Source Code Pro for Powerline-9:hinting=True;antialias:True,xft:WenQuanYi Bitmap Song-9:medium;antialias=False,xft:WenQuanYi Zen Hei-9:medium;antialias=True,xft:HanaMinA-9:medium;antialias:True,xft:HanaMinB-9:medium;antialias:True,xft:HanaMinPlus-9:medium;antialias:True
-! URxvt.boldFont:             xft:Source Code Pro for Powerline-9:bold;hinting=True;antialias:True,xft:WenQuanYi Bitmap Song-9:bold;antialias=False,xft:WenQuanYi Zen Hei-9:bold;antialias=True,xft:HanaMinA-9:bold;antialias:True,xft:HanaMinB-9:bold;antialias:True,xft:HanaMinPlus-9:bold;antialias:True
+!URxvt.font:             xft:Source Code Pro for Powerline-9:hinting=True;antialias:True,xft:WenQuanYi Bitmap Song-9:medium;antialias=False,xft:WenQuanYi Zen Hei-9:medium;antialias=True,xft:HanaMinA-9:medium;antialias:True,xft:HanaMinB-9:medium;antialias:True,xft:HanaMinPlus-9:medium;antialias:True
+!URxvt.boldFont:             xft:Source Code Pro for Powerline-9:bold;hinting=True;antialias:True,xft:WenQuanYi Bitmap Song-9:bold;antialias=False,xft:WenQuanYi Zen Hei-9:bold;antialias=True,xft:HanaMinA-9:bold;antialias:True,xft:HanaMinB-9:bold;antialias:True,xft:HanaMinPlus-9:bold;antialias:True
 
-!URxvt.letterSpace:      0
 !URxvt*font: xft:source code pro for powerline:regular:pixelsize=14
 !URxvt*imFont: xft:source code pro for powerline:regular:pixelsize=14
 !URxvt*boldFont: xft:source code pro for powerline:semibold:pixelsize=14
 !URxvt*italicFont: xft:source code pro for powerline:italic:pixelsize=14
 !URxvt*boldItalicFont: xft:source code pro for powerline:semibold:italic:pixelsize=14
-!URxvt*letterSpace: -1
-
-
-
-
-! lineSpace=1 enables underscores for bold fonts (from https://bbs.archlinux.org/viewtopic.php?pid=1619832#p1619832)
-URxvt.lineSpace: 1
-! letterSpace regulates character spacing
-!URxvt.letterSpace: -1
-!URxvt*font: xft:Inconsolata\ for\ Powerline:pixelsize=12
-!URxvt*font: xft:Terminess\ Powerline:pixelsize=12
-!URxvt*font: xft:Terminess Powerline:pixelsize=14
-!URxvt*font: xft:Sauce Code Powerline:pixelsize=14
-!URxvt*boldFont: xft:Terminess Powerline:pixelsize=14
-!URxvt*italicFont:                               xft:terminus:style=italic:hinting=true:pixelsize=12:antialias=false
-!URxvt*boldItalicFont:                           xft:terminus:style=bolditalic:hinting=true:pixelsize=12:antialias=false
-
-! Alternative URxvt configs:
-! ==============================================================================
-URxvt2*geometry:                115x40
-URxvt2*font:  xft:cure:pixelsize=8
-URxvt2*depth:                24
-URxvt2*background:            [80]#000000
-URxvt2*foreground:            [30]#ffffff
-URxvt2*borderless: 1
-URxvt2*scrollBar:            false
-URxvt2*saveLines:  2000
-!URxvt2*termName:    URxvt2
-URxvt2.perl-ext-common: default,matcher
-URxvt2.urlLauncher: firefox
-URxvt2.matcher.button: 1
-URxvt2.transparent:      true
-! ==============================================================================
-URxvt3*geometry:                53x20
-URxvt3*font:  xft:Terminus:pixelsize=5
-URxvt3*depth:                32
-URxvt3*background:            [85]#000000
-URxvt3*foreground:            [100]#ffffff
-URxvt3*borderless: 1
-URxvt3*scrollBar:            false
-URxvt3*saveLines:  5000
-URxvt3*termName:    rxvt-unicode
-URxvt3.perl-ext-common: default,matcher
-URxvt3.urlLauncher: firefox
-URxvt3.matcher.button: 1
-
-!Pnevma1
-!URxvt*color0: #2F2E2D
-!URxvt*color8: #4A4845
-!URxvt*color1: #A36666
-!URxvt*color9: #D78787
-!URxvt*color2: #8FA57E
-!URxvt*color10: #A9BA9C
-!URxvt*color3: #D7AF87
-!URxvt*color11: #E4C9AF
-!URxvt*color4: #7FA5BD
-!URxvt*color12: #A1BDCE
-!URxvt*color5: #C79EC4
-!URxvt*color13: #D7BEDA
-!URxvt*color6: #8ADBB4
-!URxvt*color14: #B1E7DD
-!URxvt*color7: #D0D0D0
-!URxvt*color15: #EFEFEF
-
-!Pnevma2 - A heavy mod of the original.
-!URxvt*color0: #2F2E2D
-!URxvt*color8: #4A4845
-!URxvt*color1: #C37561
-!URxvt*color9: #D19485
-!URxvt*color2: #A0A57E
-!URxvt*color10: #B6B99D
-!URxvt*color3: #D1A375
-!URxvt*color11: #DEBC9C
-!URxvt*color4: #7985A3
-!URxvt*color12: #98A1B9
-!URxvt*color5: #AB716D
-!URxvt*color13: #BE918E
-!URxvt*color6: #98B9B1
-!URxvt*color14: #CBE6CB
-!URxvt*color7: #D0D0D0
-!URxvt*color15: #EFEFEF
-! ==============================================================================
-! other base 16 (note all base16 themes are at https://raw.githubusercontent.com/chriskempson/base16-xresources
-! Base16 Default Dark
-! Scheme: Chris Kempson (http://chriskempson.com)
-
-!#define base00 #181818
-!#define base01 #282828
-!#define base02 #383838
-!#define base03 #585858
-!#define base04 #b8b8b8
-!#define base05 #d8d8d8
-!#define base06 #e8e8e8
-!#define base07 #f8f8f8
-!#define base08 #ab4642
-!#define base09 #dc9656
-!#define base0A #f7ca88
-!#define base0B #a1b56c
-!#define base0C #86c1b9
-!#define base0D #7cafc2
-!#define base0E #ba8baf
-!#define base0F #a16946
-
-!*.foreground:   base05
-!#ifdef background_opacity
-!*.background:   [background_opacity]base00
-!#else
-!*.background:   base00
-!#endif
-!*.cursorColor:  base05
-
-!*.color0:       base00
-!*.color1:       base08
-!*.color2:       base0B
-!*.color3:       base0A
-!*.color4:       base0D
-!*.color5:       base0E
-!*.color6:       base0C
-!*.color7:       base05
-
-!*.color8:       base03
-!*.color9:       base08
-!*.color10:      base0B
-!*.color11:      base0A
-!*.color12:      base0D
-!*.color13:      base0E
-!*.color14:      base0C
-!*.color15:      base07
-
-!! Note: colors beyond 15 might not be loaded (e.g., xterm, urxvt),
-!! use 'shell' template to set these if necessary
-!*.color16:      base09
-!*.color17:      base0F
-!*.color18:      base01
-!*.color19:      base02
-!*.color20:      base04
-!*.color21:      base06
-! ==============================================================================
-! wombat: (from https://github.com/jackrosenthal/wombat-colors/blob/master/urxvt/.Xresources)
-! !! good color for higher contrast/brightness !!
-!#define wb_bg           #1c1c1c
-!#define wb_fg           #f6f3e8
-!#define wb_cur          #656565
-!#define wb_sel          #444444
-!#define wb_grey         #99968b
-!#define wb_blue         #8ac6f2
-!#define wb_red          #e5786d
-!#define wb_yellow       #cae682
-!#define wb_ltgreen      #e7f6da
-!#define wb_green        #95e454
-!#define wb_dkgrey       #8f8f8f
-
-!URxvt*background:       wb_bg
-!URxvt*foreground:       wb_fg
-!URxvt*cursorColor:      wb_cur
-!URxvt*color0:           black
-!URxvt*color1:           wb_red
-!URxvt*color2:           wb_green
-!URxvt*color3:           wb_yellow
-!URxvt*color4:           wb_blue
-!URxvt*color5:           wb_blue
-!URxvt*color6:           wb_blue
-!URxvt*color7:           wb_grey
-!URxvt*color9:           wb_dkgrey
-!URxvt*color8:           wb_red
-!URxvt*color10:          wb_green
-!URxvt*color11:          wb_yellow
-!URxvt*color12:          wb_blue
-!URxvt*color13:          wb_blue
-!URxvt*color14:          wb_blue
-!URxvt*color15:          white
-! ==============================================================================
-
-! Base16 Atelier Heath
-! Scheme: Bram de Haan (http://atelierbramdehaan.nl)
-
-#define base00 #1b181b
-#define base01 #292329
-#define base02 #695d69
-#define base03 #776977
-#define base04 #9e8f9e
-#define base05 #ab9bab
-#define base06 #d8cad8
-#define base07 #f7f3f7
-#define base08 #ca402b
-#define base09 #a65926
-#define base0A #bb8a35
-#define base0B #918b3b
-#define base0C #159393
-#define base0D #516aec
-#define base0E #7b59c0
-#define base0F #cc33cc
-
-*.foreground:   base05
-#ifdef background_opacity
-*.background:   [background_opacity]base00
-#else
-*.background:   base00
-#endif
-*.cursorColor:  base05
-
-*.color0:       base00
-*.color1:       base08
-*.color2:       base0B
-*.color3:       base0A
-*.color4:       base0D
-*.color5:       base0E
-*.color6:       base0C
-*.color7:       base05
-
-*.color8:       base03
-*.color9:       base08
-*.color10:      base0B
-*.color11:      base0A
-*.color12:      base0D
-*.color13:      base0E
-*.color14:      base0C
-*.color15:      base07
-
-! Note: colors beyond 15 might not be loaded (e.g., xterm, urxvt),
-! use 'shell' template to set these if necessary
-*.color16:      base09
-*.color17:      base0F
-*.color18:      base01
-*.color19:      base02
-*.color20:      base04
-*.color21:      base06
-! ==============================================================================
-
-! ==============================================================================
-! Base16 Eighties
-! Scheme: Chris Kempson (http://chriskempson.com)
-
-!#define base00 #2d2d2d
-!#define base01 #393939
-!#define base02 #515151
-!#define base03 #747369
-!#define base04 #a09f93
-!#define base05 #d3d0c8
-!#define base06 #e8e6df
-!#define base07 #f2f0ec
-!#define base08 #f2777a
-!#define base09 #f99157
-!#define base0A #ffcc66
-!#define base0B #99cc99
-!#define base0C #66cccc
-!#define base0D #6699cc
-!#define base0E #cc99cc
-!#define base0F #d27b53
-
-!*.foreground:   base05
-!#ifdef background_opacity
-!*.background:   [background_opacity]base00
-!#else
-!*.background:   base00
-!#endif
-!*.cursorColor:  base05
-
-!*.color0:       base00
-!*.color1:       base08
-!*.color2:       base0B
-!*.color3:       base0A
-!*.color4:       base0D
-!*.color5:       base0E
-!*.color6:       base0C
-!*.color7:       base05
-
-!*.color8:       base03
-!*.color9:       base08
-!*.color10:      base0B
-!*.color11:      base0A
-!*.color12:      base0D
-!*.color13:      base0E
-!*.color14:      base0C
-!*.color15:      base07
-
-!! Note: colors beyond 15 might not be loaded (e.g., xterm, urxvt),
-!! use 'shell' template to set these if necessary
-!*.color16:      base09
-!*.color17:      base0F
-!*.color18:      base01
-!*.color19:      base02
-!*.color20:      base04
-!*.color21:      base06
-! ==============================================================================
-
-!-------------------------------------------
-! c o l o r -  s e t t i n g s
-
-URxvt4*background: #222222
-URxvt4*foreground: #777777
-
-! Default
-! 0: black
-URxvt4.color0:  #222222
-URxvt4.color8:  #222222
-! 1: red
-URxvt4.color1:  #9f6767
-URxvt4.color9:  #9f6767
-! 2: green
-URxvt4.color2:  #92ac68
-URxvt4.color10: #92ac68
-! 3: yellow
-URxvt4.color3:  #d0d293
-URxvt4.color11: #d0d293
-! 4: blue
-URxvt4.color4:  #9aacc3
-URxvt4.color12: #9aacc3
-! 5: magenta
-URxvt4.color5:  #bb77a4
-URxvt4.color13: #bb77a4
-! 6: cyan
-URxvt4.color6:  #77bbb5
-URxvt4.color14: #77bbb5
-! 7: white
-URxvt4.color7:  #777777
-URxvt4.color15: #777777
-
-!-------------------------------------------
-! u r x v t
-
-URxvt4*geometry:         112x22  
-URxvt4*font:            xft:terminus:size=8
-URxvt4*urlLauncher:         firefox  
-URxvt4*scrollBar:        false
-URxvt4*scrollBar_right:        true
-URxvt4*scrollColor:        #000000
-! ==============================================================================
-! ==============================================================================
-! ==============================================================================
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! xterm ----------------------------------------------------------------------
-!!xterm*VT100.geometry:     80x25
-!!xterm*faceName:           Terminus:style=Regular:size=10
-!xterm*faceName:           xft:Terminess Powerline:pixelsize=14
-!xterm*faceSize:           11
-!!xterm*font:              -*-dina-medium-r-*-*-16-*-*-*-*-*-*-*
-!xterm*dynamicColors:      true
-!xterm*utf8:               2
-!xterm*eightBitInput:      true
-!xterm*saveLines:          16384
-!xterm*scrollKey:          true
-!xterm*scrollTtyOutput:    false
-!xterm*scrollBar:          true
-!xterm*rightScrollBar:     true
-!xterm*jumpScroll:         true
-!xterm*multiScroll:        true
-!xterm*toolBar:            false
-!! DOS-box colours...
-!xterm*foreground: rgb:a8/a8/a8
-!xterm*background: rgb:00/00/00
-!xterm*color0: rgb:00/00/00
-!xterm*color1: rgb:a8/00/00
-!xterm*color2: rgb:00/a8/00
-!xterm*color3: rgb:a8/54/00
-!xterm*color4: rgb:00/00/a8
-!xterm*color5: rgb:a8/00/a8
-!xterm*color6: rgb:00/a8/a8
-!xterm*color7: rgb:a8/a8/a8
-!xterm*color8: rgb:54/54/54
-!xterm*color9: rgb:fc/54/54
-!xterm*color10: rgb:54/fc/54
-!xterm*color11: rgb:fc/fc/54
-!xterm*color12: rgb:54/54/fc
-!xterm*color13: rgb:fc/54/fc
-!xterm*color14: rgb:54/fc/fc
-!xterm*color15: rgb:fc/fc/fc
-
-!!!!!!!!!!!!!!1
-!  2nd xterm conf:
-!!!!!!!!!!!!!!
-XTerm*background:                       grey15
- XTerm*foreground:                       grey75
- XTerm*cursorColor:                      darkorange1
- XTerm*scrollBar:                        false
- XTterm*utf8:                            2
- XTerm*termName:                         xterm-256color
-!XTerm*faceName:                         xft:Dejavu Sans Mono:pixelsize=11.5
-xterm*faceName:           xft:Terminess\ Powerline:pixelsize=12
-! http://invisible-island.net/xterm/xterm.faq.html#tiny_menus
- XTerm.VT100.geometry:                   93x29
- XTerm*saveLines:                        7777
- XTerm*metaSendsEscape:                  true
- XTerm*highlightSelection:               true
- XTerm*trimSelection:                    true
- XTerm*cutNewline:                       false
- XTerm*colorBDMode:                      true
- XTerm*colorBD:                          khaki
- XTerm*charClass: 3:48,35:48,37:48,43:48,45-47:48,64:48,95:48,126:48,35:48,58:48,63:48,61:48,44:48,38:48,59:48
- 
-!colors
-!black
- XTerm*color0:                           #171717
- XTerm*color8:                           #737373
-!red
- XTerm*color1:                           #FF5E5E
- XTerm*color9:                           #FF7878
-!green
- XTerm*color2:                           #9CE82B
- XTerm*color10:                          #9ACD32
-!yellow
- XTerm*color3:                           #F0E68C
- XTerm*color11:                          #EEE8AA
-!blue
- XTerm*color4:                           #008AFF
- XTerm*color12:                          #4F98FF
-!magenta
- XTerm*color5:                           #E88CFF
- XTerm*color13:                          #EDA6FF
-!cyan
- XTerm*color6:                           #87CEFA
- XTerm*color14:                          #B0E2FF
-!white
- XTerm*color7:                           #DCDCCC
- XTerm*color15:                          #FFFFFF
-
+#include </home/laur/.x/xterm/1>
+!#include </home/laur/.x/xterm/2>
 
 ! xclock ---------------------------------------------------------------------
-
 xclock*update:            1
 xclock*analog:            false
 xclock*Foreground:        white
 xclock*background:        #222222
 
-!xcalc-----------------------------------------------------------------------
+! xcalc ----------------------------------------------------------------------
+#include </home/laur/.x/xcalc/1>
 
-xcalc*geometry:                        200x275
-xcalc.ti.bevel.background:             #111111
-xcalc.ti.bevel.screen.background:      #000000
-xcalc.ti.bevel.screen.DEG.background:  #000000
-xcalc.ti.bevel.screen.DEG.foreground:  LightSeaGreen
-xcalc.ti.bevel.screen.GRAD.background: #000000
-xcalc.ti.bevel.screen.GRAD.foreground: LightSeaGreen
-xcalc.ti.bevel.screen.RAD.background:  #000000
-xcalc.ti.bevel.screen.RAD.foreground:  LightSeaGreen
-xcalc.ti.bevel.screen.INV.background:  #000000
-xcalc.ti.bevel.screen.INV.foreground:  Red
-xcalc.ti.bevel.screen.LCD.background:  #000000
-xcalc.ti.bevel.screen.LCD.foreground:  LightSeaGreen
-xcalc.ti.bevel.screen.LCD.shadowWidth: 0
-xcalc.ti.bevel.screen.M.background:    #000000
-xcalc.ti.bevel.screen.M.foreground:    LightSeaGreen
-xcalc.ti.bevel.screen.P.background:    #000000
-xcalc.ti.bevel.screen.P.foreground:    Yellow
-xcalc.ti.Command.foreground:  White
-xcalc.ti.Command.background:  #777777
-xcalc.ti.button5.background:  Orange3
-xcalc.ti.button19.background: #611161
-xcalc.ti.button18.background: #611161
-xcalc.ti.button20.background: #611111
-!uncomment to change label on division button
-!xcalc.ti.button20.label:      /
-xcalc.ti.button25.background: #722222
-xcalc.ti.button30.background: #833333
-xcalc.ti.button35.background: #944444
-xcalc.ti.button40.background: #a55555
-xcalc.ti.button22.background: #222262
-xcalc.ti.button23.background: #222262
-xcalc.ti.button24.background: #222272
-xcalc.ti.button27.background: #333373
-xcalc.ti.button28.background: #333373
-xcalc.ti.button29.background: #333373
-xcalc.ti.button32.background: #444484
-xcalc.ti.button33.background: #444484
-xcalc.ti.button34.background: #444484
-xcalc.ti.button37.background: #555595
-xcalc.ti.button38.background: #555595
-xcalc.ti.button39.background: #555595
-XCalc*Cursor:                 hand2
-XCalc*ShapeStyle:             rectangle
-! ============================================
-! xscreensaver
+! xscreensaver ---------------------------------------------------------------
+#include </home/laur/.x/xscreensaver/1>
 
-xscreensaver.splash: false
-
-!font settings
-xscreensaver.Dialog.headingFont:        -*-dina-bold-r-*-*-12-*-*-*-*-*-*-*
-xscreensaver.Dialog.bodyFont:           -*-dina-medium-r-*-*-12-*-*-*-*-*-*-*
-xscreensaver.Dialog.labelFont:          -*-dina-medium-r-*-*-12-*-*-*-*-*-*-*
-xscreensaver.Dialog.unameFont:          -*-dina-medium-r-*-*-12-*-*-*-*-*-*-*
-xscreensaver.Dialog.buttonFont:         -*-dina-bold-r-*-*-12-*-*-*-*-*-*-*
-xscreensaver.Dialog.dateFont:           -*-dina-medium-r-*-*-12-*-*-*-*-*-*-*
-xscreensaver.passwd.passwdFont:         -*-dina-bold-r-*-*-12-*-*-*-*-*-*-*
-
-!general dialog box (affects main hostname, username, password text)
-xscreensaver.Dialog.foreground:         #ffffff
-xscreensaver.Dialog.background:         #111111
-xscreensaver.Dialog.topShadowColor:     #111111
-xscreensaver.Dialog.bottomShadowColor:  #111111
-xscreensaver.Dialog.Button.foreground:  #666666
-xscreensaver.Dialog.Button.background:  #ffffff
-
-!username/password input box and date text colour
-xscreensaver.Dialog.text.foreground:    #666666
-xscreensaver.Dialog.text.background:    #ffffff
-xscreensaver.Dialog.internalBorderWidth:24
-xscreensaver.Dialog.borderWidth:        20
-xscreensaver.Dialog.shadowThickness:    2
-
-!timeout bar (background is actually determined by Dialog.text.background)
-xscreensaver.passwd.thermometer.foreground:  #ff0000
-xscreensaver.passwd.thermometer.background:  #000000
-xscreensaver.passwd.thermometer.width:       8
-
-!datestamp format--see the strftime(3) manual page for details
-!xscreensaver.dateFormat:    %I:%M%P %a %b %d, %Y
-xscreensaver.dateFormat:    %R %a %b %d, %Y
