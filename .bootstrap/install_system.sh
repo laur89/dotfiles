@@ -339,7 +339,7 @@ clone_or_pull_repo() {
     [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
 
     if ! [[ -d "$install_dir/$repo" ]]; then
-        execute "git clone https://$hub/$user/${repo}.git $install_dir/$repo" || return 1
+        execute "git clone --recursive -j8 https://$hub/$user/${repo}.git $install_dir/$repo" || return 1
 
         execute "pushd $install_dir/$repo" || return 1
         execute "git remote set-url origin git@${hub}:$user/${repo}.git"
@@ -348,6 +348,7 @@ clone_or_pull_repo() {
     elif is_ssh_key_available; then
         execute "pushd $install_dir/$repo" || return 1
         execute "git pull"
+        execute "git submodule update --init --recursive"  # make sure to pull submodules
         execute "popd"
     fi
 }
