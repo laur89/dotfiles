@@ -982,7 +982,7 @@ setup_global_env_vars() {
         #err "$(dirname -- $global_env_var) is not a dir; can't install globally for all the users."
     #else
         #if ! [[ -h "$global_env_var" ]]; then
-            #execute "sudo ln -s -- $SHELL_ENVS $global_env_var"
+            #create_link "$SHELL_ENVS" "$global_env_var"
         #fi
     #fi
 
@@ -1517,7 +1517,7 @@ switch_jdk_versions() {
     #execute "mv -- ./* '$inst_loc/installations/$ver'"
     #execute "pushd -- $inst_loc" || return 1
     #[[ -h davmail ]] && rm -- davmail
-    #execute "ln -s 'installations/$ver/davmail.sh' davmail"
+    #execute "ln -fs 'installations/$ver/davmail.sh' davmail"
 
     #execute "popd; popd"
     #execute "sudo rm -rf -- '$tmpdir'"
@@ -1558,7 +1558,8 @@ install_rambox() {  # https://github.com/saenzramiro/rambox/wiki/Install-on-Linu
     mv -- "$dir" "$inst_loc/installations/"
     execute "pushd -- $inst_loc" || return 1
     [[ -h rambox ]] && rm -- rambox
-    execute "ln -s 'installations/$ver/rambox' rambox"
+    create_link "installations/$ver/rambox" rambox
+    create_link rambox "$HOME/bin/rambox"
 
     execute "popd; popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -1880,7 +1881,8 @@ install_keepassxc() {
     execute "mv -- $img '$inst_loc/installations/$ver'"
     execute "pushd -- $inst_loc" || return 1
     [[ -h keepassxc ]] && rm -- keepassxc
-    execute "ln -s 'installations/$ver/$img' keepassxc"
+    create_link "installations/$ver/$img" keepassxc
+    create_link keepassxc "$HOME/bin/keepassxc"
 
     execute "popd; popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -1970,8 +1972,10 @@ install_neovim() {  # the AppImage version
 
     execute "mkdir -p -- '$inst_loc/'" || { err "neovim dir creation failed"; return 1; }
     execute "mv -- nvim.appimage '$inst_loc/'" || return 1
+    execute "pushd -- $inst_loc" || return 1
+    create_link "nvim.appimage" "$HOME/bin/nvim"
 
-    execute "popd"
+    execute "popd; popd" || { err; return 1; }
     execute "sudo rm -rf -- '$tmpdir'"
 
     # post-install config:
@@ -2381,8 +2385,10 @@ install_from_repo() {
         python3
         python3-dev
         python3-pip
+        python3-virtualenv
         python-dev
         python-pip
+        virtualenv
         python-flake8
         python3-flake8
         mono-complete
@@ -3357,12 +3363,12 @@ create_link() {
     target="$2"
 
     if [[ "$target" == */ ]] && $sudo test -d "$target"; then
-        readonly filename="$(basename -- "$src")"
+        filename="$(basename -- "$src")"
         target="${target}$filename"
     fi
 
-    $sudo test -h "$target" && execute "$sudo rm -- $target"
-    execute "$sudo ln -s -- \"$src\" \"$target\""
+    $sudo test -h "$target" && execute "$sudo rm -- '$target'"  # TODO: instead of removing, just add -f flag to ln?
+    execute "$sudo ln -s -- '$src' '$target'"
 
     return 0
 }
