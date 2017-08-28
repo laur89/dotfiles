@@ -70,3 +70,6 @@ _ReSharper*/
 
 # Office Temp Files
 ~$*
+
+###### own additions ######
+.notes/  # vim-pad local notes dir
