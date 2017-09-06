@@ -1,0 +1,369 @@
+# i3 version 4.12-8-gd7fd3c0 (2016-03-09, branch "gaps-next") © 2009 Michael Stapelberg and contributors
+# i3 config file.
+# Please see http://i3wm.org/docs/userguide.html for a complete reference!
+# Github https://github.com/mohabaks/dotfiles
+
+
+#*************** Keybindings ******************
+
+set $mod Mod4
+set $mod1 Mod1
+
+#focus_follows_mouse no
+floating_modifier $mod1
+
+# Start a terminal
+bindsym $mod+Return exec urxvtc
+
+# Kill focused window
+bindsym $mod+c kill
+
+# Start dmenu (a program launcher)
+#bindsym $mod+d exec  dmenu_run -b -nf "#839496" -sb "#b58900" -sf "#002b36" -nb "#002b36" -fn "tewi-8"
+
+# Start Rofi (a program launcher, ssh, window switcher)
+# https://davedavenport.github.io/rofi/
+bindsym $mod+space exec --no-startup-id rofi -show run -lines 5 -width 20 -separator-style "none" -hide-bar
+
+# Change focus
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+
+# Alternatively, you can use the cursor keys:
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+
+# Move focused window
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+
+# Alternatively, you can use the cursor keys:
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+
+# TODO:
+# Navigate workspaces next / previous
+#bindsym $mod+Ctrl+Right workspace next
+#bindsym $mod+Ctrl+Left workspace prev
+
+
+# Split in horizontal orientation
+bindsym $mod+b split h
+
+# Split in vertical orientation
+bindsym $mod+v split v
+
+# Enter fullscreen mode for the focused container
+bindsym $mod+f fullscreen toggle
+
+# Change container layout (stacked, tabbed, toggle split)
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+
+# Toggle tiling / floating
+bindsym $mod+Shift+f floating toggle
+
+# Change focus between tiling / floating windows
+bindsym $mod+Control+f focus mode_toggle
+
+# Focus the parent container
+bindsym $mod+a focus parent
+
+# Focus the child container
+bindsym $mod+d focus child
+
+# Initialize workspace
+# 
+set $w1   1:Surf
+set $w2   2:Code
+set $w3   3:Read
+set $w4   4:Flix
+set $w5   5:Core
+set $w6   6:Term
+set $w7   7:Hlab
+set $w8   8:Apps
+set $w9   9:Expl
+set $w10  10:Misc
+
+ 
+# Switch to workspace
+bindsym $mod+1 workspace $w1
+bindsym $mod+2 workspace $w2
+bindsym $mod+3 workspace $w3
+bindsym $mod+4 workspace $w4
+bindsym $mod+5 workspace $w5
+bindsym $mod+6 workspace $w6
+bindsym $mod+7 workspace $w7
+bindsym $mod+8 workspace $w8
+bindsym $mod+9 workspace $w9
+bindsym $mod+0 workspace $w10
+bindsym $mod+Tab workspace back_and_forth
+bindsym $mod+Shift+Tab move container to workspace back_and_forth; workspace back_and_forth
+
+# Move focused container to workspace; add '; workspace $wn' to navigate there
+bindsym $mod+Shift+1 move container to workspace $w1
+bindsym $mod+Shift+2 move container to workspace $w2
+bindsym $mod+Shift+3 move container to workspace $w3
+bindsym $mod+Shift+4 move container to workspace $w4
+bindsym $mod+Shift+5 move container to workspace $w5
+bindsym $mod+Shift+6 move container to workspace $w6
+bindsym $mod+Shift+7 move container to workspace $w7
+bindsym $mod+Shift+8 move container to workspace $w8
+bindsym $mod+Shift+9 move container to workspace $w9
+bindsym $mod+Shift+0 move container to workspace $w10
+
+# Reload the configuration file ('config' for c mnemonic)
+bindsym $mod+Shift+c reload
+
+# Restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
+bindsym $mod+Shift+r restart
+
+# Resize window (you can also use the mouse for that)
+bindsym $mod+r mode "resize"
+mode "resize" {
+        # These bindings trigger as soon as you enter the resize mode
+        # Pressing left will shrink the window’s width.
+        # Pressing right will grow the window’s width.
+        # Pressing up will shrink the window’s height.
+        # Pressing down will grow the window’s height.
+        bindsym h resize shrink width 5 px or 5 ppt
+        bindsym j resize grow height 5 px or 5 ppt
+        bindsym k resize shrink height 5 px or 5 ppt
+        bindsym l resize grow width 5 px or 5 ppt
+
+        # same bindings, but for the arrow keys
+        bindsym Left resize shrink width 5 px or 5 ppt
+        bindsym Down resize grow height 5 px or 5 ppt
+        bindsym Up resize shrink height 5 px or 5 ppt
+        bindsym Right resize grow width 5 px or 5 ppt
+
+        # exit resize mode: Enter or Escape
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
+}
+
+# Show the next scratchpad window or hide the focused scratchpad window.
+# If there are multiple scratchpad windows, this command cycles through them.
+bindsym $mod+Shift+s scratchpad show
+
+# Show the first scratchpad window
+bindsym $mod+Control+Shift+s move scratchpad
+
+#  i3-gaps settings 
+#  More info visit: https://github.com/Airblader/i3
+
+#smart_gaps on     
+# smart_borders on
+
+# Global gaps size
+gaps inner 15
+gaps outer 0
+
+set $mode_gaps Gaps: (o) outer, (i) inner
+set $mode_gaps_outer Outer Gaps: +|-|0 (local), Shift + +|-|0 (global)
+set $mode_gaps_inner Inner Gaps: +|-|0 (local), Shift + +|-|0 (global)
+bindsym $mod+Shift+g mode "$mode_gaps"
+
+mode "$mode_gaps" {
+        bindsym o      mode "$mode_gaps_outer"
+        bindsym i      mode "$mode_gaps_inner"
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
+}
+
+mode "$mode_gaps_inner" {
+        bindsym plus  gaps inner current plus 5
+        bindsym minus gaps inner current minus 5
+        bindsym 0     gaps inner current set 0
+
+        bindsym Shift+plus  gaps inner all plus 5
+        bindsym Shift+minus gaps inner all minus 5
+        bindsym Shift+0     gaps inner all set 0
+
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
+}
+
+mode "$mode_gaps_outer" {
+        bindsym plus  gaps outer current plus 5
+        bindsym minus gaps outer current minus 5
+        bindsym 0     gaps outer current set 0
+
+        bindsym Shift+plus  gaps outer all plus 5
+        bindsym Shift+minus gaps outer all minus 5
+        bindsym Shift+0     gaps outer all set 0
+
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
+}
+
+# Specify gaps for specific workspace
+# workspace $w1 gaps outer 15
+# workspace $w2 gaps outer 15
+# workspace $w5 gaps outer 15
+# workspace $w8 gaps outer 15
+
+bindsym $mod+r mode "resize"
+
+# Lock screen
+bindsym Control+mod1+delete exec --no-startup-id i3-blurlock.sh
+
+# Shutdwon, Restart, Logout, Suspend, Hibernate, Reboot, Lock
+ # set $mode_system System (l) lock, (e) logout, (s) suspend, (h) hibernate, (r) reboot, (Shift+s) shutdown
+ # mode "$mode_system" {
+ #     bindsym l exec --no-startup-id $Locker, mode "default"
+ #     bindsym e exec --no-startup-id i3-msg exit, mode "default"
+ #     bindsym s exec --no-startup-id $Locker && systemctl suspend, mode "default"
+ #     bindsym h exec --no-startup-id $Locker && systemctl hibernate,mode "default"
+ #     bindsym r exec --no-startup-id systemctl reboot, mode "default"
+ #     bindsym Shift+s exec --no-startup-id systemctl poweroff -i, mode "default"  
+
+ #     # back to normal: Enter or Escape
+ #     bindsym Return mode "default"
+ #     bindsym Escape mode "default"
+ # }
+#bindsym $mod+F9 mode "$mode_system"
+bindsym $mod+F9 exec --no-startup-id $HOME/.config/polybar/popups/power/power
+
+# Volume control
+bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume 0 +5%
+bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume 0 -5%
+bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute 0 toggle
+
+# Brightness control
+bindsym XF86MonBrightnessUp exec xbacklight -inc 20
+bindsym XF86MonBrightnessDown exec xbacklight -dec 20
+
+# Touchpad controls
+bindsym XF86TouchpadToggle exec /some/path/toggletouchpad.sh
+
+# Screenshot with scrot
+bindsym Print exec scrot -e 'mv $f ~/Pictures/screenshots' && notify-send "Screenshot Taken"
+
+# My apps shortcut
+#bindsym $mod+p exec pcmanfm 
+#bindsym $mod+b exec firefox
+
+##################################
+## Custom colors
+#set_from_resource $black       color0  #000000
+##set_from_resource $darkblack   color8  #000000
+#set_from_resource $darkred     color1  #000000
+#set_from_resource $red         color9  #000000
+#set_from_resource $darkgreen   color2  #000000
+#set_from_resource $green       color10 #000000
+#set_from_resource $darkyellow  color3  #000000
+#set_from_resource $yellow      color11 #000000
+#set_from_resource $darkblue    color4  #000000
+#set_from_resource $blue        color12 #000000
+#set_from_resource $darkmagenta color5  #000000
+#set_from_resource $magenta     color13 #000000
+#set_from_resource $darkcyan    color6  #000000
+#set_from_resource $cyan        color14 #000000
+#set_from_resource $white       color15 #000000
+
+#set $darkblack #271c24
+
+## Window colors           border      background   text            indicator    child_border
+#client.focused            $red        $red         $red            $red        $red
+#client.focused_inactive   $magenta    $magenta     $blue           $magenta    $magenta
+#client.unfocused          $darkblack  $darkblack   $blue           $darkblack  $darkblack
+#client.urgent             $darkblack  $darkblack   $blue           $darkblack  $darkblack
+
+# Theme colors
+set $bg-color            #d79921
+set $inactive-bg-color   #454849
+set $text-color          #454849
+set $inactive-text-color #f9f5d7
+set $urgent-bg-color     #db3f3f
+
+# Window colors         border              background         text                 indicator    
+client.focused          $bg-color           $bg-color          $text-color          $bg-color
+client.unfocused        $inactive-bg-color  $inactive-bg-color $inactive-text-color $inactive-bg-color
+client.focused_inactive $inactive-bg-color  $inactive-bg-color $inactive-text-color $inactive-bg-color
+client.urgent           $urgent-bg-color    $urgent-bg-color   $text-color          $urgent-bg-color
+##################################
+
+#Start i3bar to display a workspace bar
+#Uncomment to use the default i3bar status
+# bar {      
+#    
+#           status_command  $HOME/.local/bin/conkyi3.sh     
+#           position top
+#           font xft:tewi, FontAwesome 8
+#           strip_workspace_numbers yes
+#          
+#           colors {
+#               separator          #161615
+#               background         #020202
+#               statusline         #111111
+#              
+#               # Bar colors       border    background    text 
+#               focused_workspace  #07090d   #020202       #5E468C
+#               active_workspace   #07090d   #020202       #268bd2
+#               inactive_workspace #07090d   #020202       #899CA1
+#               urgent_workspace   #07090d   #020202       #287373
+#          }
+# }
+
+# Fancy title bar
+#font pango:Terminus 11px
+font -*-terminus-*-*-*-*-12-*-*-*-*-*-*-13
+#for_window [class=".*"] title_format "<span font='tewi 8'> ➤ %title</span>"
+#for_window [class=".*"] title_format "<span font='tewi 8'> </span>"
+
+
+#*************  My apps settings  *********************
+
+
+# # Start apps during startup
+#exec --no-startup-id nitrogen --restore  &
+#exec --no-startup-id conky -c $HOME/.config/i3/conkybar-top -d
+#exec --no-startup-id compton --config ~/.compton.conf -b 
+#exec --no-startup-id dunst -config $HOME/.config/dunst/dunstrc
+#exec --no-startup-id xrdb -load -I$HOME ~/.Xresources
+#exec --no-startup-id . $HOME/.local/bin/urxvt_daemon &
+#exec --no-startup-id . $HOME/.local/bin/barstart &
+
+# Set per-application border
+#for_window [class="^.*"] border pixel 1
+#for_window [class="(?i)urxvt"] border pixel 1
+for_window [class="^.*"] border normal 0
+
+# Enable or disable floating
+for_window [class="Arandr"] floating enable
+for_window [class="Lxappearance"] floating enable
+for_window [class="Nitrogen"] floating enable
+for_window [class="Artha"] floating enable
+for_window [instance="dukto"] floating enable
+for_window [class="feh"] floating enable
+for_window [window_role="Preferences"] floating enable
+for_window [window_type="dialog"] floating enable
+for_window [window_type="menu"] floating enable
+for_window [class="Pavucontrol"] floating enable
+# for_window [class="^.*"] floating enable
+
+# Starting apps on a specific workspace
+assign [class="^Tor Browser$"]           $w1
+assign [class="^Firefox$"]               $w1
+assign [class="^Zathura"]                $w3
+assign [class="^mpv$"]                   $w4
+assign [class="^VirtualBox$"]            $w7
+assign [class="^Gimp$"]                  $w8
+assign [class="^Wireshark"]              $w8
+assign [class="^Pcmanfm"]                $w8
+assign [class="^burp-StartBurp"]         $w8
+assign [class="^OWASP ZAP"]              $w8
+assign [class="^jetbrains-studio"]       $w8
+assign [class="^Deluge"]                 $w8
+
+# vim:filetype=i3
