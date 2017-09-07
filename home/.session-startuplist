@@ -9,15 +9,16 @@
 SELF="${0##*/}"
 
 declare -a PROGS=(
-    "urxvtd"
-    "davmail"
-    "keepassx"
-    "copyq"
-    "delay_screensaver"
-    "urxvtc"
-    "xfce4-volumed"
-    "guake"
-    "wait_for_suspend_to_lock_screen.sh"
+    urxvtd
+    davmail
+    keepassx
+    copyq
+    delay_screensaver
+    xfce4-volumed
+    guake
+    wait_for_suspend_to_lock_screen.sh
+    mopidy
+    redshift
 )
 
 # oldies:
@@ -90,25 +91,33 @@ wallpaper_changer.sh > /dev/null 2>&1 &
     #mpd /etc/mpd.conf &
     #echo "Launching mpd..."
 #fi
-if ! is_proc_running mopidy; then
-    mopidy &
-    echo "Launching mopidy"
-fi
 
 #if ! is_proc_running dropbox; then
     #dropbox start &
     #echo "Launching dropbox..."
 #fi
 
+if ! is_proc_running seaf-daemon && ! is_work; then
+    seaf-cli start &
+fi
+
 if ! is_proc_running xscreensaver; then
     xscreensaver -no-splash &
     echo "Launching xscreensaver..."
+fi
+
+if ! is_proc_running compton; then
+    echo "Launching compton..."
+    compton --config ~/.compton.conf --daemon
 fi
 
 if ! is_proc_running syndaemon && is_laptop; then
     syndaemon -t -K -i 1.5 &
     echo "Launching syndaemon..."
 fi
+
+# launch urxvtc (note we need to wait for the daemon to be launched first)
+( until is_proc_running urxvtd; do sleep 1; done; sleep 2; urxvtc & ) &
 
 # from https://www.roaringpenguin.com/wiki/index.php/Remind_use_case_1
 if ! is_proc_running remind; then

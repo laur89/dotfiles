@@ -1554,7 +1554,6 @@ fontreset() {
     xset +fp ~/.fonts
     mkfontscale ~/.fonts
     mkfontdir ~/.fonts
-    #xset fp rehash
 
     pushd ~/.fonts || { err "[pushd ~/.fonts] failed with $?"; return 1; }
     for dir in * ; do

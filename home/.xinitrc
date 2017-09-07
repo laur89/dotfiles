@@ -3,9 +3,8 @@
 # ~/.xinitrc
 #
 # Executed by startx (run your window manager from here) or DM;
-# Mul execute'ib siit SLiM või .profile
-#
-# Make sure that default_session script is in the slim's $PATH!;  /usr/local/bin should be fine;
+# Mul execute'ib siit DM või .profile
+##################################
 
 DEFAULT_SESSION="start_dwm"
 #export GTK2_RC_FILES="$HOME/.gtkrc-2.0" # seda vist pole vaja
@@ -28,7 +27,7 @@ case "$input" in
         #exec dbus-launch --sh-syntax --exit-with-session start_dwm
         ;;
     i3)
-        exec start_i3
+        exec i3
         ;;
     kde)
         exec startkde
@@ -55,7 +54,7 @@ case "$input" in
         exec bspwm
         ;;
     none | nil | console)
-        xterm
+        exec xterm
         ;;
     *)
         exec "$DEFAULT_SESSION"

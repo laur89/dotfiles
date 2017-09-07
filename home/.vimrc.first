@@ -5,7 +5,8 @@
         syntax on                                   " syntax highlighting
         set background=dark                         " we're using a dark bg
         if !exists("$__REMOTE_SSH")
-            colors jellybeans                           " select colorscheme
+            "colors jellybeans                           " select colorscheme
+            colors gruvbox                           " select colorscheme
         endif
         """ force behavior and filetypes, and by extension highlighting {{{
             augroup FileTypeRules
@@ -24,7 +25,7 @@
             augroup END
         """ }}}
 
-        """ 256 colors for maximum jellybeans bling. See commit log for info {{{
+        """ 256 colors for maximum color (eg jellybeans) bling. See commit log for info {{{
             "if (&term =~ "xterm") || (&term =~ "screen")
             "    set t_Co=256
             "endif
@@ -63,7 +64,11 @@
         set relativenumber                          " linenumbers are relative
         set scrolloff=3                             " lines above/below cursor
         set showcmd                                 " show cmds being typed
-        set clipboard+=unnamedplus                  " use os clipboard by default
+        set clipboard+=unnamed                      " use os clipboard by default;
+                                                    " change to 'unnamedplus' to use
+                                                    " system clipboard for all
+                                                    " operations (delete, yank, you
+                                                    " name it).
         set title                                   " window title
         set vb t_vb=                                " disable beep and flashing
         set wildignore=.bak,.pyc,.o,.ojb,.a,
@@ -160,7 +165,7 @@
     """ Matching {{{
         set matchtime=2                             " time to blink match {}
         set matchpairs+=<:>                         " for ci< or ci>
-        set showmatch                               " tmpjump to match-bracket
+        set showmatch                               " shows matching bracket when cursor is over
     """ }}}
 
     """ Return to last edit position when opening files {{{

@@ -612,6 +612,15 @@ def_key "K"
 def_key "K"
     move_selected_items_up
 
+def_key "d"
+  delete_playlist_items
+
+def_key "d"
+  delete_browser_items
+
+def_key "d"
+  delete_stored_playlist
+
 def_key "g"
   move_home
 def_key "G"

@@ -3,7 +3,10 @@
 # note that services to be started are handled by different file, imported here.
 #
 # this file is launched/sourced by .xinputrc
-# #####
+#
+# according to https://wiki.archlinux.org/index.php/Xinit#Starting_applications_without_a_window_manager,
+# this file should *at least* contain the last block of /etc/X11/xinit/xinitrc
+##################################
 
 session_startfile="$HOME/.session-startuplist"
 declare -a autostart=()
@@ -97,7 +100,7 @@ open_mpd_fifo() {
     readonly fifo='/tmp/mpd.fifo'
 
     check_progs_installed mkfifo socat || return 1
-    mkfifo "$fifo" || { err_display "creating mpd fifo [$fifo] failed with $?"; return 1; } # create fifo for mpd/mopidy outpupt to get visuals in ncmpcpp
+    mkfifo "$fifo" || { err_display "creating mpd fifo [$fifo] failed with $?"; return 1; }  # create fifo for mpd/mopidy outpupt to get visuals in ncmpcpp
     while :; do socat -d -d -T 1 -u UDP4-LISTEN:5555 OPEN:"$fifo"; done
 }
 
@@ -174,6 +177,14 @@ for x in "${autostart[@]}"; do
     # Give it a little time to start
     sleep 0.1s
 done
+
+# TODO: alternatively (to the previous xinitrc.d blocks), use this:
+#if [ -d /etc/X11/xinit/xinitrc.d ] ; then
+	#for f in /etc/X11/xinit/xinitrc.d/?*.sh ; do
+		#[ -x "$f" ] && . "$f"
+	#done
+	#unset f
+#fi
 
 # Start the programs/scripts in $session_startfile:
 if [[ -r "$session_startfile" ]]; then

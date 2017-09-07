@@ -62,8 +62,9 @@ set nocompatible " Must be the first line
     "Plugin  'justinmk/vim-sneak'
 
     " Glorious colorscheme
-    Plugin 'nanotech/jellybeans.vim'
+    "Plugin 'nanotech/jellybeans.vim'
     "Plug 'mhinz/vim-janah'  " A dark colorscheme for Vim.
+    Plugin 'morhetz/gruvbox'
 
     " Super easy commenting, toggle comments etc
     Plugin 'scrooloose/nerdcommenter'
@@ -268,6 +269,8 @@ set nocompatible " Must be the first line
 
     " universal text linking (here for orgmode hyperlink support) " vim-scripts/utl.vim
     Plugin 'vim-scripts/utl.vim'
+
+    Plugin 'PotatoesMaster/i3-vim-syntax'
 
     " ctrl+w o   to zoom into a window and back:
     "Plugin 'drn/zoomwin-vim'  " TODO: atm only works with vim (not nvim; better use :tab split?)

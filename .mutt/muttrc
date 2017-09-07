@@ -169,6 +169,8 @@ set vfolder_format = "%6n(%6N) %f"
           #rubyparley vim web-devel xmonad yesod
 
 # set colors:
+# see https://github.com/tomauty/dotfiles/tree/master/mutt/.mutt/colors
+# ##########################################
 #source ~/.mutt/colors/colors_first
 #source ~/.mutt/colors/base16-solarized
 #source ~/.mutt/colors/base16-solarized-dark

@@ -1,5 +1,7 @@
 ! one other source:   http://fluxbox-wiki.org/category/howtos/en/Xdefaults_setup.html
 ! excellent all-around dotfiles: https://github.com/mohabaks/dotfiles/
+! another source of colors: http://terminal.sexy or http://www.xcolors.net/ or
+! http://dotshare.it/category/terms/colors/
 ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Xft.autohint: 0
 Xft.antialias: 1
@@ -30,7 +32,12 @@ URxvt*scrollTtyKeypress: true
 ! scroll in relation to buffer (with mouse scroll or Shift+Page Up):
 URxvt*scrollWithBuffer: true
 URxvt*secondaryScroll: true
-URxvt*saveLines: 80000
+! keep the lines low, let tmux handle the buffer:
+URxvt*saveLines: 10000
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! kuake
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+URxvt.kuake.hotkey: F12
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Matcher
 !   note: either use this, or url-select, not both
@@ -134,13 +141,13 @@ URxvt.iso14755_52: false
 
 ! main shell colors:
 !#include </home/laur/.x/term-colors/synthwave.colors>
-#include </home/laur/.x/term-colors/blue.colors>
+!#include </home/laur/.x/term-colors/blue.colors>
 !#include </home/laur/.x/term-colors/blue2.colors>
 !#include </home/laur/.x/term-colors/base16-atelier-heath.colors>
 !#include </home/laur/.x/term-colors/base16-default-dark.colors>
 !#include </home/laur/.x/term-colors/base16-eighties.colors>
 !#include </home/laur/.x/term-colors/dawn.colors>
-!#include </home/laur/.x/term-colors/gruvbox.colors>
+#include </home/laur/.x/term-colors/gruvbox.colors>
 !#include </home/laur/.x/term-colors/mashup.colors>
 !#include </home/laur/.x/term-colors/pnevma1.colors>
 !#include </home/laur/.x/term-colors/pnevma2.colors>

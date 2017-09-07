@@ -158,11 +158,17 @@ bindsym $mod+Shift+s scratchpad show
 # Show the first scratchpad window
 bindsym $mod+Control+Shift+s move scratchpad
 
+bindsym $mod+Shift+z sticky toggle
+
 #  i3-gaps settings 
 #  More info visit: https://github.com/Airblader/i3
 
-#smart_gaps on     
-# smart_borders on
+# Smart borders (draw borders around container only if it is not the only container on this workspace) 
+# on|no_gaps (on=always activate and no_gaps=only activate if the gap size to the edge of the screen is 0)
+#smart_borders on
+
+# Smart gaps (gaps used if only more than one container on the workspace)
+#smart_gaps on
 
 # Global gaps size
 gaps inner 15
@@ -315,7 +321,8 @@ client.urgent           $urgent-bg-color    $urgent-bg-color   $text-color      
 #          }
 # }
 
-# Fancy title bar
+# Font for window titles. Will also be used by the bar unless a different font
+# is used in the bar {} block.
 #font pango:Terminus 11px
 font -*-terminus-*-*-*-*-12-*-*-*-*-*-*-13
 #for_window [class=".*"] title_format "<span font='tewi 8'> ➤ %title</span>"
@@ -323,6 +330,12 @@ font -*-terminus-*-*-*-*-12-*-*-*-*-*-*-13
 
 
 #*************  My apps settings  *********************
+# Autolock/turn off screen
+#exec --no-startup-id xautolock -detectsleep \
+  #-notify   300 -notifier "xset dpms force off" \
+  #-time     10  -locker   "$Locker" \
+  #-killtime 20 -killer "systemctl suspend"
+exec_always --no-startup-id $HOME/.config/polybar/launch.sh
 
 
 # # Start apps during startup

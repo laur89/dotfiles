@@ -15,6 +15,9 @@
 #------------------------
 readonly TMPDIR='/tmp'
 readonly CLANG_LLVM_LOC='http://releases.llvm.org/4.0.1/clang+llvm-4.0.1-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
+readonly I3_REPO_LOC='https://www.github.com/Airblader/i3'            # i3-gaps
+readonly NERD_FONTS_REPO_LOC='https://github.com/ryanoasis/nerd-fonts'
+readonly POLYBAR_REPO_LOC='https://github.com/jaagr/polybar'          # polybar
 readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - yeah.
 readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
 readonly RAMBOX_REPO_LOC='https://github.com/saenzramiro/rambox.git'  # opensource franz alt.
@@ -1118,7 +1121,7 @@ setup_additional_apt_keys_and_sources() {
     # mopidy key:
     execute 'wget -q -O - http://apt.mopidy.com/mopidy.gpg | sudo apt-key add -'
     # add mopidy source:
-    execute 'sudo wget -q -O /etc/apt/sources.list.d/mopidy.list https://apt.mopidy.com/jessie.list'
+    execute 'sudo wget -q -O /etc/apt/sources.list.d/mopidy.list https://apt.mopidy.com/stretch.list'
 
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
@@ -1127,12 +1130,12 @@ setup_additional_apt_keys_and_sources() {
 
     # seafile: (from https://github.com/haiwen/seafile-user-manual/blob/master/en/desktop/install-on-linux.md#wiki-debian):
     execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 8756C4F765C9AC3CB6B85D62379CE192D401AB61'
-    execute 'echo deb http://dl.bintray.com/seafile-org/deb jessie main | sudo tee /etc/apt/sources.list.d/seafile.list > /dev/null'
+    execute 'echo deb http://deb.seadrive.org stretch main | sudo tee /etc/apt/sources.list.d/seafile.list > /dev/null'
 
     # mono: (from http://www.mono-project.com/download/#download-lin-debian):
     # later on installed by 'mono-complete' pkg
     execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF'
-    execute 'echo "deb http://download.mono-project.com/repo/debian jessie main" | sudo tee /etc/apt/sources.list.d/mono-official.list > /dev/null'
+    execute 'echo "deb http://download.mono-project.com/repo/debian stretch main" | sudo tee /etc/apt/sources.list.d/mono-official.list > /dev/null'
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
     execute 'sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 1AD28806'
@@ -1377,7 +1380,9 @@ install_own_builds() {
     install_copyq
     install_rambox
     #install_synergy  # currently installing from repo
-    install_dwm
+    #install_dwm
+    install_i3
+    install_polybar
     install_oracle_jdk
 }
 
@@ -1928,6 +1933,123 @@ install_keepassx() {
 }
 
 
+# https://github.com/Airblader/i3/wiki/Compiling-&-Installing
+install_i3() {
+    local tmpdir
+
+    readonly tmpdir="$TMPDIR/i3-gaps-build-${RANDOM}"
+    report "building i3-gaps..."
+
+    report "installing i3 build dependencies..."
+    install_block '
+        libxcb-keysyms1-dev
+        libpango1.0-dev
+        libxcb-util0-dev
+        xcb
+        libxcb1-dev
+        libxcb-icccm4-dev
+        libyajl-dev
+        libev-dev
+        libxcb-xkb-dev
+        libxcb-cursor-dev
+        libxkbcommon-dev
+        libxcb-xinerama0-dev
+        libxkbcommon-x11-dev
+        libstartup-notification0-dev
+        libxcb-randr0-dev
+        libxcb-xrm0
+        libxcb-xrm-dev
+    ' || { err 'failed to install build deps. abort.'; return 1; }
+
+    # clone the repository
+    execute "git clone $I3_REPO_LOC '$tmpdir'" || return 1
+    execute "pushd $tmpdir" || return 1
+
+    # compile & install
+    execute 'autoreconf --force --install' || return 1
+    execute 'rm -rf build/' || return 1
+    execute 'mkdir -p build && cd build/' || return 1
+
+    # Disabling sanitizers is important for release versions!
+    # The prefix and sysconfdir are, obviously, dependent on the distribution.
+    execute '../configure --prefix=/usr/local --sysconfdir=/etc --disable-sanitizers' || return 1
+    execute 'make'
+    create_deb_install_and_store i3-gaps
+
+    execute "popd"
+    execute "sudo rm -rf -- '$tmpdir'"
+    return 0
+}
+
+
+# the ./build.sh version
+# https://github.com/jaagr/polybar/wiki/Compiling
+# https://github.com/jaagr/polybar
+install_polybar() {
+    local tmpdir
+
+    readonly tmpdir="$TMPDIR/polybar-build-${RANDOM}"
+
+    report "installing polybar build dependencies..."
+    install_block '
+        cmake
+        cmake-data
+        libcairo2-dev
+        libxcb1-dev
+        libxcb-ewmh-dev
+        libxcb-icccm4-dev
+        libxcb-image0-dev
+        libxcb-randr0-dev
+        libxcb-util0-dev
+        libxcb-xkb-dev
+        pkg-config
+        python-xcbgen
+        xcb-proto
+        libxcb-xrm-dev
+        libasound2-dev
+        libmpdclient-dev
+        libiw-dev
+        libcurl4-openssl-dev
+    ' || { err 'failed to install build deps. abort.'; return 1; }
+
+    execute "git clone --recursive $POLYBAR_REPO_LOC '$tmpdir'" || return 1
+    execute "pushd $tmpdir" || return 1
+    execute "./build.sh" || return 1
+    create_deb_install_and_store polybar
+
+    execute "popd"
+    execute "sudo rm -rf -- '$tmpdir'"
+    return 0
+}
+
+
+## https://github.com/jaagr/polybar
+#install_polybar() {
+    #local tmpdir
+
+    #readonly tmpdir="$TMPDIR/polybar-build-${RANDOM}"
+
+    #report "installing polybar build dependencies..."
+    #install_block '
+        #libxcb-ewmh-dev
+        #python-xcbgen
+    #' || { err 'failed to install build deps. abort.'; return 1; }
+
+    ## clone the repository
+    #execute "git clone --recursive $POLYBAR_REPO_LOC '$tmpdir'" || return 1
+    #execute "mkdir $tmpdir/build"
+    #execute "pushd $tmpdir/build" || return 1
+
+    ## compile & install
+    #execute 'cmake ..' || return 1  # TODO: clang++ set because of issue #572
+    #create_deb_install_and_store polybar
+
+    #execute "popd"
+    #execute "sudo rm -rf -- '$tmpdir'"
+    #return 0
+#}
+
+
 install_dwm() {
     local build_dir
 
@@ -2332,6 +2454,30 @@ install_fonts() {
         fontforge
     '
 
+    # https://github.com/ryanoasis/nerd-fonts#option-3-install-script
+    install_nerd_fonts() {
+        local tmpdir fonts
+
+        readonly tmpdir="$TMPDIR/nerd-fonts-${RANDOM}"
+        fonts=(
+            Hack
+            Source
+            Terminus
+        )
+
+        report "installing nerd-fonts..."
+
+        execute "git clone --recursive $NERD_FONTS_REPO_LOC '$tmpdir'" || return 1
+        execute "pushd $tmpdir" || return 1
+        execute "./install.sh" || return 1
+
+        execute "popd"
+        execute "sudo rm -rf -- '$tmpdir'"
+        return 0
+    }
+
+    install_nerd_fonts
+
     # TODO: guess we can't use xset when xserver is not yet running:
     #execute "xset +fp ~/.fonts"
     #execute "mkfontscale ~/.fonts"
@@ -2355,6 +2501,7 @@ install_fonts() {
 }
 
 
+# TODO: add udiskie?
 # majority of packages get installed at this point; including drivers, if any.
 install_from_repo() {
     local block block1 block2 block3 block4 extra_apt_params
@@ -2374,7 +2521,11 @@ install_from_repo() {
         pasystray
         xfce4-volumed
         xfce4-notifyd
+        dunst
         xscreensaver
+        xautolock
+        rofi
+        compton
         smartmontools
         gksu
         pm-utils
@@ -2472,6 +2623,8 @@ install_from_repo() {
         #- !! gksu no moar recommended; pkexec advised; to use pkexec, you need to define its
         #     action in /usr/share/polkit-1/actions.
 
+        # socat for mopidy+ncmpcpp visualisation
+
     declare -ar block3=(
         firefox
         chromium
@@ -2487,6 +2640,7 @@ install_from_repo() {
         mopidy-soundcloud
         mopidy-spotify
         mopidy-youtube
+        socat
         youtube-dl
         mpc
         ncmpcpp
@@ -2524,10 +2678,12 @@ install_from_repo() {
         powerline
         libxml2-utils
         pidgin
+        weechat
         filezilla
         etckeeper
         gradle
         lxrandr
+        arandr
         transmission
         transmission-remote-cli
         transmission-remote-gtk
@@ -2540,6 +2696,7 @@ install_from_repo() {
         isync
         atool
         highlight
+        python3-pygments
         urlview
         silversearcher-ag
         cowsay
@@ -2547,6 +2704,7 @@ install_from_repo() {
         toilet
         lolcat
         figlet
+        redshift
         rdesktop
         docker.io
         charles-proxy
@@ -2743,6 +2901,8 @@ __choose_prog_to_build() {
         install_rambox
         install_synergy
         install_dwm
+        install_i3
+        install_polybar
         install_oracle_jdk
         install_skype
         install_altiris

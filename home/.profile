@@ -26,16 +26,18 @@ fi
 # siit alates kõik enda defineeritud:
 ##############################################
 # start X; note the ssh-agent:
+#if [ -z "$DISPLAY" ] && [ -n "$XDG_VTNR" ] && [ "$XDG_VTNR" -eq 1 ]; then
 if [ -z "$DISPLAY" ] && [ "$(tty)" == "/dev/tty1" ]; then
     echo -e "Enter DE/WM:"
     echo '============'
-    read session
-    ssh-agent startx "$HOME/.xinitrc" "$session" # -- -logverbose 6
+    read -r session
+    exec ssh-agent startx "$HOME/.xinitrc" "$session" # -- -logverbose 6
 fi
 
 # provides automatic logout; for debugging puroposes:
 #export TMOUT=120
 
+# TODO: exec startx masks this?
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="/home/laur/.sdkman"
 [[ -s "/home/laur/.sdkman/bin/sdkman-init.sh" ]] && source "/home/laur/.sdkman/bin/sdkman-init.sh"
