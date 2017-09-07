@@ -73,11 +73,12 @@
     stashtofile = "!stof () { _stash=$(git config --local remote.origin.url) || return 1; _stash=/tmp/${_stash##*/}.stash || return 1; _token=6c1372ce93186e7957cd299179b2ddf6308cc244; git stash save $_token > /dev/null || return 1; if git stash list | grep -q $_token; then git stash show -p stash@{0} > $_stash && git stash pop && echo && echo stashfile @ [$_stash]; else echo && echo nothing to stash; fi; }; stof"
 
     ;stashtofile-pick = !git stash --patch && git stash show -p stash@{0} > /tmp/stashfile.git && git stash pop
-    stashtofile-pick = "!stof () { _stash=$(git config --local remote.origin.url) || return 1; _stash=/tmp/${_stash##*/}.stash || return 1; _token=6c1372ce93186e7957cd299179b2ddf6308cc244; git stash save --patch $_token || return 1; if git stash list | grep -q $_token; then git stash show -p stash@{0} > $_stash && git stash pop && echo && echo stashfile @ [$_stash]; else echo && echo nothing to stash; fi; }; stof"
+    stashtofile-pick = "!stof () { _stash=$(git config --local remote.origin.url) || return 1; _stash=/tmp/${_stash##*/}.stash || return 1; _token=6c1372ce93186e7957cd299179b2ddf6308cc245; git stash save --patch $_token || return 1; if git stash list | grep -q $_token; then git stash show -p stash@{0} > $_stash && git stash pop && echo && echo stashfile @ [$_stash]; else echo && echo nothing to stash; fi; }; stof"
     stash-pick = stash --patch
     show-stashed = stash show -p stash@{0}
     stashed-show = stash show -p stash@{0}
-    stashdrop = !git stash && git stash drop
+    ;stashdrop = !git stash && git stash drop
+    stashdrop = "!stshtof () { _stash=$(git config --local remote.origin.url) || return 1; _stash=/tmp/${_stash##*/}.stash || return 1; _token=6c1372ce93186e7957cd299179b2ddf6308cc246; git stash save $_token > /dev/null || return 1; if git stash list | grep -q $_token; then git stash drop; else echo && echo nothing to stash; fi; }; stshtof"
     keepstaged = !git stash save --keep-index
 
     new-branch = checkout -b

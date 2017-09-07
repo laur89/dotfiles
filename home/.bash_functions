@@ -1847,7 +1847,7 @@ mkgit() {
         return 1
     fi
 
-    # offers user to choose the namespace/group to create project in.
+    # offers user to choose the gitlab namespace/group to create project in.
     # doesn't return, but defines fun-global vars 'namespace' & 'namespace_id'
     __select_namespace() {
         local gitlab_namespaces_json namespace_to_id is_id_field i j fzf_selection
