@@ -663,6 +663,26 @@ install_deps() {
     _install_laptop_deps() {  # TODO: does this belong in install_deps()?
         is_laptop || return
 
+        __install_realtek() {
+            local rgx repo driver tmpdir
+
+            repo="https://github.com/lwfinger/rtlwifi_new.git"
+            rgx='\s+driver=\Krtl\w+(?=\s+\S+)'
+            driver="$(grep -Poi "$rgx" <<< "$(sudo lshw)")"
+            tmpdir="$TMPDIR/realtek-driver-${RANDOM}"
+            [[ -z "$driver" || "$(wc -l <<< "$driver")" -ne 1 ]] && { err "realtek driver from lshw output was [$driver]"; return 1; }
+            execute "git clone $repo" || return 1
+            execute "pushd $tmpdir" || return 1
+            execute "make clean" || return 1
+            create_deb_install_and_store realtek-wifi-github
+            execute "popd"
+            execute "sudo rm -rf -- $tmpdir"
+            execute "sudo modprobe -r $driver" || { err "unable removing modprobe [$driver]"; return 1; }
+            execute "sudo modprobe $driver" || { err "unable adding modprobe [$driver]; make sure secure boot is turned off in BIOS"; return 1; }
+
+            #install_block "firmware-realtek"  # alternatievly, opt for the driver available in debian repos
+        }
+
         __install_wifi_driver() {
             local wifi_info
 
@@ -673,9 +693,9 @@ install_deps() {
                 report "we have intel wifi; installing intel drivers..."
                 install_block "firmware-iwlwifi"
             elif grep -iq 'vendor.*Realtek' <<< "$wifi_info"; then
-                confirm "we seem to have realtek wifi; want to install firmware-realtek?" || return
+                confirm "we seem to have realtek wifi; want to install realtek wifi drivers?" || return
                 report "we have realtek wifi; installing realtek drivers..."
-                install_block "firmware-realtek"
+                __install_realtek; unset __install_realtek
             else
                 err "can't detect Intel nor Realtek wifi; what card do you have?"
             fi
@@ -1797,7 +1817,10 @@ create_deb_install_and_store() {
 
     check_progs_installed checkinstall || return 1
     report "creating .deb and installing with checkinstall..."
-    execute "sudo checkinstall -D --default --fstrans=yes --pkgname=$pkg_name --pkgversion=$ver --pakdir=$BASE_BUILDS_DIR" || { err "checkinstall run failed. abort."; return 1; }
+    execute "sudo checkinstall \
+        -D --default --fstrans=yes \
+        --pkgname=$pkg_name --pkgversion=$ver \
+        --pakdir=$BASE_BUILDS_DIR" || { err "checkinstall run failed. abort."; return 1; }
 
     return 0
 }
@@ -2462,23 +2485,23 @@ install_fonts() {
         fonts=(
             Hack
             SourceCodePro
-			AnonymousPro
+            AnonymousPro
             Terminus
-			Ubuntu
-			UbuntuMonno
-			DejaVuSansMono
-			DroidSansMono
-			InconsolataGo
-			Inconsolata
+            Ubuntu
+            UbuntuMono
+            DejaVuSansMono
+            DroidSansMono
+            InconsolataGo
+            Inconsolata
         )
 
         report "installing nerd-fonts..."
 
         execute "git clone --recursive $NERD_FONTS_REPO_LOC '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
-		for i in "${fonts[@]}"; do
-			execute --ignore-errs "./install.sh '$i'"
-		done
+        for i in "${fonts[@]}"; do
+            execute --ignore-errs "./install.sh '$i'"
+        done
 
         execute "popd"
         execute "sudo rm -rf -- '$tmpdir'"
