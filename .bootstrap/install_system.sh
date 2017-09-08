@@ -2456,20 +2456,29 @@ install_fonts() {
 
     # https://github.com/ryanoasis/nerd-fonts#option-3-install-script
     install_nerd_fonts() {
-        local tmpdir fonts
+        local tmpdir fonts i
 
         readonly tmpdir="$TMPDIR/nerd-fonts-${RANDOM}"
         fonts=(
             Hack
-            Source
+            SourceCodePro
+			AnonymousPro
             Terminus
+			Ubuntu
+			UbuntuMonno
+			DejaVuSansMono
+			DroidSansMono
+			InconsolataGo
+			Inconsolata
         )
 
         report "installing nerd-fonts..."
 
         execute "git clone --recursive $NERD_FONTS_REPO_LOC '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
-        execute "./install.sh" || return 1
+		for i in "${fonts[@]}"; do
+			execute --ignore-errs "./install.sh '$i'"
+		done
 
         execute "popd"
         execute "sudo rm -rf -- '$tmpdir'"
