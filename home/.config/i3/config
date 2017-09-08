@@ -218,10 +218,8 @@ mode "$mode_gaps_outer" {
 # workspace $w5 gaps outer 15
 # workspace $w8 gaps outer 15
 
-bindsym $mod+r mode "resize"
-
 # Lock screen
-bindsym Control+mod1+delete exec --no-startup-id i3-blurlock.sh
+bindsym Control+mod1+Delete exec --no-startup-id i3-blurlock.sh
 
 # Shutdwon, Restart, Logout, Suspend, Hibernate, Reboot, Lock
  # set $mode_system System (l) lock, (e) logout, (s) suspend, (h) hibernate, (r) reboot, (Shift+s) shutdown
