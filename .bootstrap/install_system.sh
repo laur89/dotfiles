@@ -817,6 +817,7 @@ setup_dirs() {
 
     # create dirs:
     for dir in \
+            $HOME/bin \
             $BASE_DATA_DIR/.calendars \
             $BASE_DATA_DIR/.calendars/work \
             $BASE_DATA_DIR/.rsync \
@@ -855,10 +856,10 @@ setup_dirs() {
 
 install_homesick() {
 
-    clone_or_pull_repo "andsens" "homeshick" "$BASE_HOMESICK_REPOS_LOC"
+    clone_or_pull_repo "andsens" "homeshick" "$BASE_HOMESICK_REPOS_LOC" || return 1
 
     # add the link, since homeshick is not installed in its default location (which is $HOME):
-    create_link "$BASE_DEPS_LOC/homesick" "$HOME/.homesick"
+    create_link "$BASE_DEPS_LOC/homesick" "$HOME/.homesick" || return 1
 }
 
 
@@ -911,18 +912,18 @@ fetch_castles() {
     local castle user hub
 
     # common public castles:
-    clone_or_link_castle dotfiles laur89 github.com
+    clone_or_link_castle dotfiles laur89 github.com || { err "failed pulling public dotfiles; it's required!"; return 1; }
 
     # common private:
-    clone_or_link_castle private-common layr bitbucket.org
+    clone_or_link_castle private-common layr bitbucket.org || { err "failed pulling private dotfiles; it's required!"; return 1; }
 
     # !! if you change private repos, make sure you update PRIVATE_CASTLE definitions @ validate_and_init()!
     case "$MODE" in
         work)
-            clone_or_link_castle "$(basename -- "$PRIVATE_CASTLE")" laliste git.nonprod.williamhill.plc
+            clone_or_link_castle "$(basename -- "$PRIVATE_CASTLE")" laliste git.nonprod.williamhill.plc || err "failed pulling work dotfiles; won't abort"
             ;;
         personal)
-            clone_or_link_castle "$(basename -- "$PRIVATE_CASTLE")" layr bitbucket.org
+            clone_or_link_castle "$(basename -- "$PRIVATE_CASTLE")" layr bitbucket.org || err "failed pulling personal dotfiles; won't abort"
             ;;
     esac
 
@@ -965,11 +966,13 @@ verify_ssh_key() {
 }
 
 
+# note: as homesick (and some of its managed castles) are paramount for the whole
+# setup logic, then script should abort if this function returns non-0.
 setup_homesick() {
     local https_castles
 
-    install_homesick
-    fetch_castles
+    install_homesick || return 1
+    fetch_castles || return 1
 
     # just in case check if any of the castles are still tracking https instead of ssh:
     readonly https_castles="$($BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick list | grep '\bhttps://\b')"
@@ -1124,7 +1127,7 @@ install_SSID_checker() {
 
 setup() {
 
-    setup_homesick
+    setup_homesick || { err "homesick setup failed; as homesick is necessary, script will exit"; exit 1; }
     verify_ssh_key
     execute "source $SHELL_ENVS"  # so we get our env vars after dotfiles are pulled in
 
