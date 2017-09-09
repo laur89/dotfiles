@@ -345,13 +345,13 @@ clone_or_pull_repo() {
         execute "git clone --recursive -j8 https://$hub/$user/${repo}.git $install_dir/$repo" || return 1
 
         execute "pushd $install_dir/$repo" || return 1
-        execute "git remote set-url origin git@${hub}:$user/${repo}.git"
-        execute "git remote set-url --push origin git@${hub}:$user/${repo}.git"
+        execute "git remote set-url origin git@${hub}:$user/${repo}.git" || return 1
+        execute "git remote set-url --push origin git@${hub}:$user/${repo}.git" || return 1
         execute "popd"
     elif is_ssh_key_available; then
         execute "pushd $install_dir/$repo" || return 1
-        execute "git pull"
-        execute "git submodule update --init --recursive"  # make sure to pull submodules
+        execute "git pull" || return 1
+        execute "git submodule update --init --recursive" || return 1  # make sure to pull submodules
         execute "popd"
     fi
 }
@@ -671,7 +671,7 @@ install_deps() {
             driver="$(grep -Poi "$rgx" <<< "$(sudo lshw)")"
             tmpdir="$TMPDIR/realtek-driver-${RANDOM}"
             [[ -z "$driver" || "$(wc -l <<< "$driver")" -ne 1 ]] && { err "realtek driver from lshw output was [$driver]"; return 1; }
-            execute "git clone $repo" || return 1
+            execute "git clone $repo $tmpdir" || return 1
             execute "pushd $tmpdir" || return 1
             execute "make clean" || return 1
             create_deb_install_and_store realtek-wifi-github
@@ -878,19 +878,19 @@ clone_or_link_castle() {
     if [[ -d "$BASE_HOMESICK_REPOS_LOC/$castle" ]]; then
         if is_ssh_key_available; then
             report "[$castle] already exists; pulling & linking"
-            execute "$homesick_exe pull $castle"
+            retry 3 "$homesick_exe pull $castle" || { err "pulling castle [$castle] failed with $?"; return 1; }  # TODO: should we exit here?
         else
             report "[$castle] already exists; linking..."
         fi
 
-        execute "$homesick_exe link $castle"
+        execute "$homesick_exe link $castle" || { err "linking castle [$castle] failed with $?"; return 1; }  # TODO: should we exit here?
     else
         report "cloning ${castle}..."
         if is_ssh_key_available; then
-            execute "$homesick_exe clone git@${hub}:$user/${castle}.git"
+            retry 3 "$homesick_exe clone git@${hub}:$user/${castle}.git" || { err "cloning castle [$castle] failed with $?"; return 1; }
         else
             # note we clone via https, not ssh:
-            execute "$homesick_exe clone https://${hub}/$user/${castle}.git"
+            retry 3 "$homesick_exe clone https://${hub}/$user/${castle}.git" || { err "cloning castle [$castle] failed with $?"; return 1; }
 
             # change just cloned repo remote from https to ssh:
             execute "pushd $BASE_HOMESICK_REPOS_LOC/$castle" || return 1
@@ -2768,6 +2768,7 @@ install_from_repo() {
 
             virtualbox
             virtualbox-dkms
+            virtualbox-guest-dkms
 
             puppet
             nfs-common
@@ -3617,6 +3618,30 @@ check_progs_installed() {
     fi
 
     return 0
+}
+
+
+# Retries a command on failure.
+#
+# @param {digit}  retries  number of retries (if 0, then no retries will be made)
+# @param {string...}  cmd  command to run
+#
+# @returns {bool}  false, if command failed to execute successfully after
+#                  given attempts.
+retry() {
+    local -r -i max_attempts="$1"; shift
+    local -r cmd="$*"
+    local -i attempt_num=1
+
+    until $cmd; do
+        if (( attempt_num > max_attempts )); then
+            err "Attempt $attempt_num failed and there are no more attempts left!"
+            return 1
+        else
+            report "Attempt $attempt_num failed! Trying again in $attempt_num seconds..."
+            sleep $(( attempt_num++ ))
+        fi
+    done
 }
 
 
