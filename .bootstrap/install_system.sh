@@ -2017,7 +2017,10 @@ install_polybar() {
     readonly tmpdir="$TMPDIR/polybar-build-${RANDOM}"
 
     report "installing polybar build dependencies..."
+
+    # note: clang is installed because of  https://github.com/jaagr/polybar/issues/572
     install_block '
+        clang
         cmake
         cmake-data
         libcairo2-dev
