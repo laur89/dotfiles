@@ -1586,7 +1586,7 @@ install_rambox() {  # https://github.com/saenzramiro/rambox/wiki/Install-on-Linu
     execute "pushd -- $inst_loc" || return 1
     [[ -h rambox ]] && rm -- rambox
     create_link "installations/$ver/rambox" rambox
-    create_link rambox "$HOME/bin/rambox"
+    create_link "$inst_loc/rambox" "$HOME/bin/rambox"
 
     execute "popd; popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -1912,7 +1912,7 @@ install_keepassxc() {
     execute "pushd -- $inst_loc" || return 1
     [[ -h keepassxc ]] && rm -- keepassxc
     create_link "installations/$ver/$img" keepassxc
-    create_link keepassxc "$HOME/bin/keepassxc"
+    create_link "$inst_loc/keepassxc" "$HOME/bin/keepassxc"
 
     execute "popd; popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -2122,10 +2122,9 @@ install_neovim() {  # the AppImage version
 
     execute "mkdir -p -- '$inst_loc/'" || { err "neovim dir creation failed"; return 1; }
     execute "mv -- nvim.appimage '$inst_loc/'" || return 1
-    execute "pushd -- $inst_loc" || return 1
-    create_link "nvim.appimage" "$HOME/bin/nvim"
+    create_link "$inst_loc/nvim.appimage" "$HOME/bin/nvim"
 
-    execute "popd; popd" || { err; return 1; }
+    execute "popd" || { err; return 1; }
     execute "sudo rm -rf -- '$tmpdir'"
 
     # post-install config:
