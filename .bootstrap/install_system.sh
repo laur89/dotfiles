@@ -1161,7 +1161,7 @@ setup_additional_apt_keys_and_sources() {
     execute 'echo "deb http://download.mono-project.com/repo/debian stretch main" | sudo tee /etc/apt/sources.list.d/mono-official.list > /dev/null'
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
-    execute 'sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 1AD28806'
+    execute 'wget -q -O - https://www.charlesproxy.com/packages/apt/PublicKey | sudo apt-key add -'
     execute 'echo deb https://www.charlesproxy.com/packages/apt/ charles-proxy main | sudo tee /etc/apt/sources.list.d/charles.list > /dev/null'
 
     # update sources (will be done anyway on full install):
