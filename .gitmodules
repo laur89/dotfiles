@@ -1,0 +1,4 @@
+[submodule ".fonts/tewi-font"]
+	path = .fonts/tewi-font
+	url = https://github.com/lucy/tewi-font.git
+	branch = master
