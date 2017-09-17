@@ -1365,7 +1365,7 @@ upgrade_kernel() {
     # search for available kernel images:
     while IFS= read -r package_line; do
         kernels_list+=( $(echo "$package_line" | cut -d' ' -f1) )
-    done <   <(apt-cache search  --names-only "^linux-image-[0-9+]\.[0-9+]\.[0-9+].*$amd64_arch\$" | sort -n)
+    done <   <(apt-cache search  --names-only "^linux-image-[0-9]+\.[0-9]+\.[0-9]+.*$amd64_arch\$" | sort -n)
 
     [[ -z "${kernels_list[@]}" ]] && { err "apt-cache search didn't find any kernel images. skipping kernel upgrade"; sleep 5; return 1; }
 
