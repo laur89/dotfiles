@@ -1399,7 +1399,7 @@ install_own_builds() {
     install_vim
     install_neovim
     install_keepassxc
-    install_goforit
+    #install_goforit
     install_copyq
     install_rambox
     #install_synergy  # currently installing from repo
@@ -1465,6 +1465,7 @@ install_oracle_jdk() {
     [[ -d "$dir" ]] || { err "couldn't find unpacked jdk directory"; return 1; }
 
     [[ -d "$JDK_INSTALLATION_DIR" ]] || execute "sudo mkdir -- $JDK_INSTALLATION_DIR"
+    [[ -d "$JDK_INSTALLATION_DIR/$(basename -- "$dir")" ]] && { report "ver [$(basename -- "$dir")] java already installed"; return 0; }
     report "installing fetched JDK to [$JDK_INSTALLATION_DIR]"
     execute "sudo mv -- $dir $JDK_INSTALLATION_DIR/" || { err "could not move extracted jdk dir [$dir] to [$JDK_INSTALLATION_DIR]"; return 1; }
 
@@ -2477,8 +2478,8 @@ install_fonts() {
         xfonts-100dpi
         xfonts-100dpi-transcoded
         xfonts-mplus
-        xfonts-bitmap-mule
         xfonts-base
+        xbitmaps
         fontforge
     '
 
@@ -2551,13 +2552,10 @@ install_from_repo() {
     declare -ar block1=(
         xorg
         sudo
-        alsa-base
         alsa-utils
         pulseaudio
         pulseaudio-equalizer
         pasystray
-        xfce4-volumed
-        xfce4-notifyd
         dunst
         xscreensaver
         xautolock
@@ -2603,7 +2601,7 @@ install_from_repo() {
         htop
         ncdu
         pydf
-        ntop
+        netdata
         wireshark
         iptraf
         tkremind
@@ -2613,7 +2611,6 @@ install_from_repo() {
         ntp
         gdebi
         synaptic
-        auto-apt
         apt-file
         apt-show-versions
         apt-xapian-index
