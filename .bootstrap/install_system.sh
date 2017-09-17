@@ -3026,7 +3026,7 @@ setup_docker() {
     execute "sudo adduser $USER docker"      # add user to docker group
     #execute "sudo gpasswd -a ${USER} docker"  # add user to docker group
     execute "sudo service docker restart"
-    execute "newgrp docker"  # log us into the new group
+    #execute "newgrp docker"  # log us into the new group; !! will stop script execution
 }
 
 
@@ -3035,7 +3035,7 @@ setup_docker() {
 ## and http://stackoverflow.com/a/21536041/1803648
 #function increase_ulimit() {
     #readonly ulimit=3000
-    #execute "newgrp docker"  # log us into the new group
+    #execute "newgrp docker"  # log us into the new group; !! will stop script execution
 #}
 
 
@@ -3162,9 +3162,9 @@ post_install_progs_setup() {
     execute "sudo adduser $USER wireshark"      # add user to wireshark group, so it could be run as non-root;
                                                 # (implies wireshark is installed with allowing non-root users
                                                 # to capture packets - it asks this during installation);
-    execute "newgrp wireshark"                  # log us into the new group
+    #execute "newgrp wireshark"                  # log us into the new group; !! will stop script execution
     execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
-    execute "newgrp vboxusers"                  # log us into the new group
+    #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
     configure_ntp_for_work
     configure_pulseaudio
     #setup_seafile_cli  # TODO https://github.com/haiwen/seafile/issues/1855 & https://github.com/haiwen/seafile/issues/1854
