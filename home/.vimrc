@@ -106,7 +106,8 @@ set nocompatible " Must be the first line
 
     " Awesome syntax checker.
     " REQUIREMENTS: See :h syntastic-intro
-    Plugin 'scrooloose/syntastic'
+    " alternative: neomake
+    Plugin 'vim-syntastic/syntastic'
 
     " Functions, class data etc.
     " REQUIREMENTS: (exuberant)-ctags

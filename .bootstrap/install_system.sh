@@ -1365,7 +1365,7 @@ upgrade_kernel() {
     # search for available kernel images:
     while IFS= read -r package_line; do
         kernels_list+=( $(echo "$package_line" | cut -d' ' -f1) )
-    done <   <(apt-cache search  --names-only "^linux-image-[0-9]+\.[0-9]+\.[0-9]+.*$amd64_arch\$" | sort -n)
+    done <   <(apt-cache search --names-only "^linux-image-[0-9]+\.[0-9]+\.[0-9]+.*$amd64_arch\$" | sort -n)
 
     [[ -z "${kernels_list[@]}" ]] && { err "apt-cache search didn't find any kernel images. skipping kernel upgrade"; sleep 5; return 1; }
 
@@ -1705,7 +1705,7 @@ install_webdev() {
 
     # install npm modules:
     execute "sudo npm install -g \
-        jshint grunt-cli csslint \
+        typescript jshint grunt-cli csslint \
     "
 
     # install ruby modules:          # sass: http://sass-lang.com/install
@@ -3684,14 +3684,14 @@ cleanup() {
 
     # shut down the build container:
     if [[ -n "$(docker ps -qa -f status=running -f name="$BUILD_DOCK" --format '{{.Names}}')" ]]; then
-        execute "docker stop '$BUILD_DOCK'" || err "stopping build container [$BUILD_DOCK] failed"
+        execute "docker stop '$BUILD_DOCK'" || err "[cleanup] stopping build container [$BUILD_DOCK] failed"
     fi
 
     if [[ -n "${PACKAGES_IGNORED_TO_INSTALL[*]}" ]]; then
-        echo -e "    ERR INSTALL: dry run failed for these packages: [${PACKAGES_IGNORED_TO_INSTALL[*]}]" >> "$EXECUTION_LOG"
+        echo -e "    ERR INSTALL: [cleanup] dry run failed for these packages: [${PACKAGES_IGNORED_TO_INSTALL[*]}]" >> "$EXECUTION_LOG"
     fi
     if [[ -n "${PACKAGES_FAILED_TO_INSTALL[*]}" ]]; then
-        echo -e "    ERR INSTALL: failed installing these packages: [${PACKAGES_FAILED_TO_INSTALL[*]}]" >> "$EXECUTION_LOG"
+        echo -e "    ERR INSTALL: [cleanup] failed installing these packages: [${PACKAGES_FAILED_TO_INSTALL[*]}]" >> "$EXECUTION_LOG"
     fi
 
     if [[ -e "$EXECUTION_LOG" ]]; then
