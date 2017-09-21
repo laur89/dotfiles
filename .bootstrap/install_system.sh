@@ -2134,6 +2134,11 @@ install_neovim() {  # the AppImage version
     create_link "$HOME/.vim" "$nvim_confdir"
     create_link "$HOME/.vimrc" "$nvim_confdir/init.vim"
 
+    # as per https://github.com/neovim/neovim/wiki/Installing-Neovim:
+    execute "sudo pip2 install --upgrade neovim"
+    execute "sudo pip3 install --upgrade neovim"
+    #install_block 'python-neovim python3-neovim'
+
     return 0
 }
 
@@ -2349,14 +2354,14 @@ build_and_install_vim() {
     execute "git clone $VIM_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
 
-            #--enable-python3interp=yes \
-            #--with-python3-config-dir=$python3_confdir \
+            #--enable-pythoninterp=yes \
+            #--with-python-config-dir=$python_confdir \
     execute "./configure \
             --with-features=huge \
             --enable-multibyte \
             --enable-rubyinterp=yes \
-            --enable-pythoninterp=yes \
-            --with-python-config-dir=$python_confdir \
+            --enable-python3interp=yes \
+            --with-python3-config-dir=$python3_confdir \
             --enable-perlinterp=yes \
             --enable-luainterp=yes \
             --enable-gui=gtk2 \
