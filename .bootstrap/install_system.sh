@@ -2385,87 +2385,115 @@ build_and_install_vim() {
 }
 
 
-# note: instructions & info here: https://github.com/Valloric/YouCompleteMe#full-installation-guide
+# note: instructions & info here: https://github.com/Valloric/YouCompleteMe
 # note2: available in deb repo as 'ycmd'
-install_YCM() {
-    local ycm_root  ycm_build_root  libclang_root  ycm_plugin_root  ycm_third_party_rootdir
+install_YCM() {  # the quick-and-not-dirty install.py way
+    local ycm_plugin_root
 
-    readonly ycm_root="$BASE_BUILDS_DIR/YCM"
-    readonly ycm_build_root="$ycm_root/ycm_build"
-    readonly libclang_root="$ycm_root/llvm"
     readonly ycm_plugin_root="$HOME/.vim/bundle/YouCompleteMe"
-    readonly ycm_third_party_rootdir="$ycm_plugin_root/third_party/ycmd/third_party"
-
-    function __fetch_libclang() {
-        local tmpdir tarball dir
-
-        readonly tmpdir="$(mktemp -d "ycm-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-        readonly tarball="$(basename -- "$CLANG_LLVM_LOC")"
-
-        execute "pushd -- $tmpdir" || return 1
-        report "fetching [$CLANG_LLVM_LOC]"
-        execute "wget '$CLANG_LLVM_LOC'" || { err "wgetting [$CLANG_LLVM_LOC] failed."; return 1; }
-        extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
-        dir="$(find . -mindepth 1 -maxdepth 1 -type d)"
-        [[ -d "$dir" ]] || { err "couldn't find unpacked clang directory"; return 1; }
-        [[ -d "$libclang_root" ]] && execute "sudo rm -rf -- '$libclang_root'"
-        execute "mv -- '$dir' '$libclang_root'"
-
-        execute "popd"
-        execute "sudo rm -rf -- '$tmpdir'"
-
-        return 0
-    }
 
     # sanity
     if ! [[ -d "$ycm_plugin_root" ]]; then
         err "expected vim plugin YouCompleteMe to be already pulled"
         err "you're either missing vimrc conf or haven't started vim yet (first start pulls all the plugins)."
-        err
         return 1
     fi
 
-    [[ -d "$ycm_root" ]] || execute "mkdir -- '$ycm_root'"
+    # install deps
+    install_block '
+        build-essential
+        cmake
+        python-dev
+        python3-dev
+    '
+    execute "sudo npm install -g typescript"  # for js support
 
-    # first make sure we have libclang:
-    if [[ -d "$libclang_root" ]]; then
-        if ! confirm "found existing libclang at [$libclang_root]; use this one? (answering 'no' will fetch new version)"; then
-            __fetch_libclang || { err "fetching libclang failed; aborting YCM installation."; return 1; }
-        fi
-    else
-        __fetch_libclang || { err "fetching libclang failed; aborting YCM installation."; return 1; }
-    fi
-    unset __fetch_libclang  # to keep the inner function really an inner one (ie private).
-
-    # clean previous builddir, if existing:
-    [[ -d "$ycm_build_root" ]] && execute "sudo rm -rf -- '$ycm_build_root'"
-
-    # build:
-    execute "mkdir -- '$ycm_build_root'"
-    execute "pushd -- '$ycm_build_root'" || return 1
-    execute "cmake -G 'Unix Makefiles' \
-        -DPATH_TO_LLVM_ROOT=$libclang_root \
-        . \
-        ~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp \
-    "
-    execute 'cmake --build . --target ycm_core --config Release'
-    execute "popd"
-
-    ############
-    # set up support for additional languages:
-    #     C# (assumes you have mono installed):
-    execute "pushd $ycm_third_party_rootdir/OmniSharpServer" || return 1
-    execute "xbuild /property:Configuration=Release /p:NoCompilerStandardLib=false"  # https://github.com/Valloric/YouCompleteMe/issues/2188
-    execute "popd"
-
-    #     js:
-    execute "pushd $ycm_third_party_rootdir/tern_runtime" || return 1
-    execute "npm install --production"
-    execute "popd"
-
-    #     go:
-    # TODO
+    # install YCM
+    execute "pushd -- $ycm_plugin_root" || return 1
+    execute "python3 ./install.py --all" || return 1  # run with py3 because of https://github.com/Valloric/YouCompleteMe/issues/2136
 }
+
+
+# note: instructions & info here: https://github.com/Valloric/YouCompleteMe#full-installation-guide
+# note2: available in deb repo as 'ycmd'
+#install_YCM() {  # the manual, full-installation-guide way
+    #local ycm_root  ycm_build_root  libclang_root  ycm_plugin_root  ycm_third_party_rootdir
+
+    #readonly ycm_root="$BASE_BUILDS_DIR/YCM"
+    #readonly ycm_build_root="$ycm_root/ycm_build"
+    #readonly libclang_root="$ycm_root/llvm"
+    #readonly ycm_plugin_root="$HOME/.vim/bundle/YouCompleteMe"
+    #readonly ycm_third_party_rootdir="$ycm_plugin_root/third_party/ycmd/third_party"
+
+    #function __fetch_libclang() {
+        #local tmpdir tarball dir
+
+        #readonly tmpdir="$(mktemp -d "ycm-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+        #readonly tarball="$(basename -- "$CLANG_LLVM_LOC")"
+
+        #execute "pushd -- $tmpdir" || return 1
+        #report "fetching [$CLANG_LLVM_LOC]"
+        #execute "wget '$CLANG_LLVM_LOC'" || { err "wgetting [$CLANG_LLVM_LOC] failed."; return 1; }
+        #extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
+        #dir="$(find . -mindepth 1 -maxdepth 1 -type d)"
+        #[[ -d "$dir" ]] || { err "couldn't find unpacked clang directory"; return 1; }
+        #[[ -d "$libclang_root" ]] && execute "sudo rm -rf -- '$libclang_root'"
+        #execute "mv -- '$dir' '$libclang_root'"
+
+        #execute "popd"
+        #execute "sudo rm -rf -- '$tmpdir'"
+
+        #return 0
+    #}
+
+    ## sanity
+    #if ! [[ -d "$ycm_plugin_root" ]]; then
+        #err "expected vim plugin YouCompleteMe to be already pulled"
+        #err "you're either missing vimrc conf or haven't started vim yet (first start pulls all the plugins)."
+        #return 1
+    #fi
+
+    #[[ -d "$ycm_root" ]] || execute "mkdir -- '$ycm_root'"
+
+    ## first make sure we have libclang:
+    #if [[ -d "$libclang_root" ]]; then
+        #if ! confirm "found existing libclang at [$libclang_root]; use this one? (answering 'no' will fetch new version)"; then
+            #__fetch_libclang || { err "fetching libclang failed; aborting YCM installation."; return 1; }
+        #fi
+    #else
+        #__fetch_libclang || { err "fetching libclang failed; aborting YCM installation."; return 1; }
+    #fi
+    #unset __fetch_libclang  # to keep the inner function really an inner one (ie private).
+
+    ## clean previous builddir, if existing:
+    #[[ -d "$ycm_build_root" ]] && execute "sudo rm -rf -- '$ycm_build_root'"
+
+    ## build:
+    #execute "mkdir -- '$ycm_build_root'"
+    #execute "pushd -- '$ycm_build_root'" || return 1
+    #execute "cmake -G 'Unix Makefiles' \
+        #-DPATH_TO_LLVM_ROOT=$libclang_root \
+        #. \
+        #~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp \
+    #"
+    #execute 'cmake --build . --target ycm_core --config Release'
+    #execute "popd"
+
+    #############
+    ## set up support for additional languages:
+    ##     C# (assumes you have mono installed):
+    #execute "pushd $ycm_third_party_rootdir/OmniSharpServer" || return 1
+    #execute "xbuild /property:Configuration=Release /p:NoCompilerStandardLib=false"  # https://github.com/Valloric/YouCompleteMe/issues/2188
+    #execute "popd"
+
+    ##     js:
+    #execute "pushd $ycm_third_party_rootdir/tern_runtime" || return 1
+    #execute "npm install --production"
+    #execute "popd"
+
+    ##     go:
+    ## TODO
+#}
 
 
 install_fonts() {
