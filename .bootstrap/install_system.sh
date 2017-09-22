@@ -679,8 +679,6 @@ install_deps() {
             execute "sudo rm -rf -- $tmpdir"
             execute "sudo modprobe -r $driver" || { err "unable removing modprobe [$driver]"; return 1; }
             execute "sudo modprobe $driver" || { err "unable adding modprobe [$driver]; make sure secure boot is turned off in BIOS"; return 1; }
-
-            #install_block "firmware-realtek"  # alternatievly, opt for the driver available in debian repos
         }
 
         __install_wifi_driver() {
@@ -693,9 +691,11 @@ install_deps() {
                 report "we have intel wifi; installing intel drivers..."
                 install_block "firmware-iwlwifi"
             elif grep -iq 'vendor.*Realtek' <<< "$wifi_info"; then
-                confirm "we seem to have realtek wifi; want to install realtek wifi drivers?" || return
-                report "we have realtek wifi; installing realtek drivers..."
-                __install_realtek; unset __install_realtek
+                #confirm "we seem to have realtek wifi; want to install realtek wifi drivers?" || return
+                #report "we have realtek wifi; installing realtek drivers..."
+                #__install_realtek; unset __install_realtek
+
+                install_block "firmware-realtek"  # alternatievly, opt for the driver available in debian repos
             else
                 err "can't detect Intel nor Realtek wifi; what card do you have?"
             fi
@@ -2410,14 +2410,15 @@ install_YCM() {  # the quick-and-not-dirty install.py way
 
     # install YCM
     execute "pushd -- $ycm_plugin_root" || return 1
-    execute "python3 ./install.py --all" || return 1  # run with py3 because of https://github.com/Valloric/YouCompleteMe/issues/2136
+    execute --ignore-errs "python3 ./install.py --all" || return 1  # run with py3 because of https://github.com/Valloric/YouCompleteMe/issues/2136
+    execute "popd"
 }
 
 
 # note: instructions & info here: https://github.com/Valloric/YouCompleteMe#full-installation-guide
 # note2: available in deb repo as 'ycmd'
 #install_YCM() {  # the manual, full-installation-guide way
-    #local ycm_root  ycm_build_root  libclang_root  ycm_plugin_root  ycm_third_party_rootdir
+    #local ycm_root ycm_build_root libclang_root ycm_plugin_root ycm_third_party_rootdir
 
     #readonly ycm_root="$BASE_BUILDS_DIR/YCM"
     #readonly ycm_build_root="$ycm_root/ycm_build"
@@ -2587,6 +2588,7 @@ install_from_repo() {
         sudo
         alsa-utils
         pulseaudio
+        pavucontrol
         pulseaudio-equalizer
         pasystray
         dunst
@@ -3140,9 +3142,14 @@ configure_pulseaudio() {
     local conf conf_lines i
 
     readonly conf='/etc/pulse/default.pa'
-    declare -ar conf_lines=(load-module module-equalizer-sink
-                            load-module module-dbus-protocol
-                            )
+    declare -a conf_lines=('load-module module-equalizer-sink'
+                           'load-module module-dbus-protocol'
+                          )
+
+    # make bluetooth (headset) device connection possible:
+    # http://askubuntu.com/questions/801404/bluetooth-connection-failed-blueman-bluez-errors-dbusfailederror-protocol-no
+    # https://zach-adams.com/2014/07/bluetooth-audio-sink-stream-setup-failed/
+    is_laptop && conf_lines+=('load-module module-bluetooth-discover')
 
     [[ -f "$conf" ]] || { err "[$conf] is not a valid file."; return 1; }
 
@@ -3153,12 +3160,6 @@ configure_pulseaudio() {
         fi
     done
 
-    # make bluetooth (headset) device connection possible:
-    # http://askubuntu.com/questions/801404/bluetooth-connection-failed-blueman-bluez-errors-dbusfailederror-protocol-no
-    # https://zach-adams.com/2014/07/bluetooth-audio-sink-stream-setup-failed/
-    if is_laptop; then
-        execute 'pactl load-module module-bluetooth-discover' || err
-    fi
 }
 
 
