@@ -238,18 +238,16 @@ setup_sudoers() {
     if ! [[ -d "$sudoers_dest" ]]; then
         err "[$sudoers_dest] is not a dir; skipping sudoers file installation."
         return 1
-    fi
-
-    if [[ -f "$file" ]]; then
-        execute "cp -- '$file' '$tmpfile'" || return 1
-        execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-        backup_original_and_copy_file --sudo "$tmpfile" "$sudoers_dest"
-
-        execute "rm -- '$tmpfile'"
-    else
+    elif ! [[ -f "$file" ]]; then
         err "expected configuration file at [$file] does not exist; won't install it."
         return 1
     fi
+
+    execute "cp -- '$file' '$tmpfile'" || return 1
+    execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
+    backup_original_and_copy_file --sudo "$tmpfile" "$sudoers_dest"
+
+    execute "rm -- '$tmpfile'"
 }
 
 
@@ -1397,16 +1395,17 @@ install_own_builds() {
     #prepare_build_container
 
     install_vim
-    install_neovim
+    #install_neovim
     install_keepassxc
     #install_goforit
-    install_copyq
+    #install_copyq
     install_rambox
     #install_synergy  # currently installing from repo
-    #install_dwm
-    install_i3
     install_polybar
     install_oracle_jdk
+
+    #install_dwm
+    install_i3
 }
 
 
@@ -2681,7 +2680,6 @@ install_from_repo() {
         gtk2-engines-pixbuf
         arc-theme
         meld
-        gthumb
         pastebinit
         synergy
     )
@@ -2723,6 +2721,7 @@ install_from_repo() {
         feh
         sxiv
         geeqie
+        gthumb
         imagemagick
         pinta
         xsel
@@ -2744,6 +2743,7 @@ install_from_repo() {
         links2
         w3m
         tmux
+        neovim
         powerline
         libxml2-utils
         pidgin
@@ -2756,6 +2756,7 @@ install_from_repo() {
         transmission
         transmission-remote-cli
         transmission-remote-gtk
+        copyq
     )
 
     declare -ar block4=(
