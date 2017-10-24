@@ -585,18 +585,26 @@ install_sshfs() {
         mounted_shares+=("${server_ip}${ssh_share}")
     done
 
-    report "sudo ssh-ing to entered IPs [${!sel_ips_to_user[*]}], so our root would have the remote in the /root/.ssh/known_hosts ..."
-    report "select [yes] if asked whether to add entry to known hosts"
+    #report "sudo ssh-ing to entered IPs [${!sel_ips_to_user[*]}], so our root would have the remote in the /root/.ssh/known_hosts ..."
+    #report "select [yes] if asked whether to add entry to known hosts"
 
     for server_ip in "${!sel_ips_to_user[@]}"; do
         remote_user="${sel_ips_to_user[$server_ip]}"
-        report "testing ssh connection to ${remote_user}@${server_ip}..."
-        execute "sudo ssh -p ${ssh_port} -o ConnectTimeout=7 ${remote_user}@${server_ip} echo ok"
+        #report "testing ssh connection to ${remote_user}@${server_ip}..."
+        #execute "sudo ssh -p ${ssh_port} -o ConnectTimeout=7 ${remote_user}@${server_ip} echo ok"
 
-        # TODO: investigate this as an alternative instead:
-        #if [[ -z "$(sudo ssh-keygen -F "$server_ip")" ]]; then
-            #execute "sudo ssh-keyscan -H '$server_ip' >> /root/.ssh/known_hosts" || fail "adding host [$server_ip] to /root/.ssh/known_hosts failed"
-        #fi
+        if confirm "try to ssh-copy-id public key to [$server_ip]?"; then
+            # install public key on ssh server:
+            if [[ -f "$identity_file" ]]; then
+                ssh-copy-id -i "${identity_file}.pub" ${remote_user}@${server_ip}
+            fi
+        fi
+
+        # add $server_ip to root's known_hosts, if not already present:
+        if [[ -z "$(sudo ssh-keygen -F "$server_ip")" ]]; then
+            execute "sudo ssh-keyscan -H '$server_ip' >> /root/.ssh/known_hosts" || err "adding host [$server_ip] to /root/.ssh/known_hosts failed"
+        fi
+        # note2: also could circumvent known_hosts issue by adding 'StrictHostKeyChecking=no'; it does add a bit insecurity tho
     done
 
     return 0
@@ -791,10 +799,15 @@ install_deps() {
     execute "sudo pip  install --upgrade tldr"          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
                                                         #   note its conf is in bash_env_vars
     execute "sudo pip  install --upgrade maybe"         # https://github.com/p-e-w/maybe (check what command would do)
-    # some py deps requred by scripts:
-    execute "sudo pip3  install --upgrade exchangelib icalendar arrow"
+
+    # colorscheme generator:
+    # see also complementing script @ https://github.com/dylanaraps/bin/blob/master/wal-set
+    execute "sudo pip3 install --upgrade pywal"         # https://github.com/dylanaraps/pywal/wiki/Installation
 
     execute "sudo gem install speed_read"               # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
+
+    # some py deps requred by scripts:
+    execute "sudo pip3  install --upgrade exchangelib icalendar arrow"
 
 
     # work deps:
@@ -2532,6 +2545,9 @@ install_fonts() {
             DroidSansMono
             InconsolataGo
             Inconsolata
+            Iosevka
+            FontAwesome
+            Devicons
         )
 
         report "installing nerd-fonts..."
@@ -3767,3 +3783,6 @@ exit
     #defaults.pcm.card 1
     #defaults.timer.card 1
 # in that case you probably need to change the device xfce4-volumed is controlling
+
+# TODOS:
+#  - install peek's appimage: https://github.com/phw/peek/releases

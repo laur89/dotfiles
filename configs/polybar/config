@@ -1,301 +1,444 @@
-#from https://github.com/matjaz132/i3-Gruvbox/blob/master/polybar/config
-###################################
-[global/wm]
-margin-top = 5
-margin-bottom = 2
-
-
 [colors]
-orange = #d79921
-darkgray = #8a8a8a
-white = #f9f5d7
-gray = #585858
-black = #090909
-red = #db3f3f
-blue = #95aec7
-yellow = #c7ae95
-green = #aec795
-background = #111313
-background-alt = #111313
-foreground = #f9f5d7
-foreground-alt = #f9f5d7
-primary = #111313
-secondary = #d79921
-alert = #db2f2f
+background = #ee292d3e
+foreground = #bfc7d5
+yellow = #ffcb6b
+black = #073642
+white = #bfc7d5
+red = #ac4142
+green = #a9c77d
+blue = #82aaff
+magenta = #c792ea
+cyan = #89ddff
 
-[bar/bar]
-monitor = LVDS-1
-bottom = false
-override-redirect = false
-wm_stack = i3
+;tray-position = right
+;
+;; If true, the bar will not shift its
+;; contents when the tray changes
+;tray-detached = false
+;
+;; Tray icon max size
+;tray-maxsize = 16
+;
+;; Enable pseudo transparency
+;; Will automatically be enabled if a fully transparent
+;; background color is defined using `tray-background`
+;tray-transparent = false
+;
+;; Background color for the tray container
+;; By default the tray container will use the bar
+;; background color.
+;; Note: 32 bit alpha blending is not supported.
+;tray-background = ${root.background}
+;
+;; Tray offset defined as pixel value (e.g. 35) or percentage (e.g. 50%)
+;tray-offset-x = 0
+;tray-offset-y = 0
+;
+;; Pad the sides of each tray icon
+;tray-padding = 0
+;
+;; Scale factor for tray clients
+;tray-scale = 1.0
+
+tray-detached		= false
+tray-position		= right
+tray-offset-x		= 0
+tray-offset-y		= 0
+; Tray icon max size:
+tray-maxsize		= 16
+tray-padding		= 0
+tray-scale		= 1.0
+tray-background = ${colors.background}
+
+[bar/master]
 width = 100%
-height = 24
-offset-x =
-offset-y =
-
-#border-left-size = 6
-#border-right-size = 6
-#border-top-size = 7
-
-padding-left = 0
-padding-right = 0
-
-module-margin-right = 1
-module-margin-left = 1
-
-#modules-right = cpu memory temperature filesystem wlan backlight volume battery date
-modules-right = backlight volume battery date
-modules-center = i3
-modules-left = eth wlan filesystem temperature memory cpu
-
+height = 20
+separator = " "
 background = ${colors.background}
 foreground = ${colors.foreground}
+underline-size = 0
+overline-size = 0
+;font-0 = "DejaVu Sans Mono:pixelsize=9:antialias=false;1"
+;font-1 = "FontAwesome:pixelsize=9:antialias=false;1"
+;font-0 = Iosevka:size=10;0
+;font-1 = SourceSansPro:size=10;0
+;font-2 = SauceCodePro:size=10;0
+;font-3 = "Inconsolata for Powerline:size=10;0"
+;font-4 = "FontAwesome:size=10;0"
+;font-5 = "Inconsolata:size=10;0"
+;font-6 = FontAwesome:size=10:dpi=138;2
+;font-7 = SauceCodePro Nerd Font:size=11;2
 
-underline-size = 3
-underline-color = ${colors.orange}
+;font-0 = tewi:pixelsize=12;1
+font-0 = SauceCodePro Nerd Font:size=10;2
+font-1 = FontAwesome:size=10;1
+;font-1 = TerminessTTF Nerd Font:size=11;2
+;font-0 = UbuntuCondensed Nerd Font:size=11;2
+;font-0 = SauceCodePro Nerd Font:size=11;2
+;font-0 = Ubuntu Nerd Font:size=11;2
+;font-0 = UbuntuMono Nerd Font:size=11;2
+;font-0 = DroidSansMono Nerd Font:size=11;2
+;font-0 = InconsolataGo Nerd Font:size=11;0
 
-tray-detached = false
-tray-position = right
-tray-offset-x = 0
-tray-offset-y = 0
-tray-maxsize = 16
-tray-padding = 0
+[bar/top]
+inherit = bar/master
+modules-left = wm
+modules-center = title
+modules-right = ram battery cpu temperature volume time 
+;modules-right = network wireless-network wired-network weather battery ram cpu temperature volume time 
+;modules-right = vpn japinput volume filesystem battery wlan weather date power-menu ovpn
 
-font-0 = "Inconsolata for Powerline:size=10;0"
-font-1 = "FontAwesome:size=10;0"
+padding-right = 0
 
-[module/xwindow]
-type = internal/xwindow
-#format-underline = ${colors.background}
-label = %title%
-label-maxlen = 30
+[module/powermenu]
+type = custom/menu
 
-[module/i3]
-type = internal/i3
-format = <label-state> <label-mode>
-index-sort = false
-wrapping-scroll = false
-strip-wsnumbers = true
-pin-workspaces = false
-enable-click = true
+; If true, <label-toggle> will be to the left of the menu items (default).
+; If false, it will be on the right of all the items.
+expand-right = true
 
-label-mode-padding = 1
-label-mode-foreground = #db3f3f
-label-mode-background = ${colors.primary}
+; "menu-LEVEL-N" has the same properties as "label-NAME" with
+; the additional "exec" property
+;
+; Available exec commands:
+;   menu-open-LEVEL
+;   menu-close
+; Other commands will be executed using "/usr/bin/env sh -c $COMMAND"
 
-label-focused = %name%
-label-focused-background =${colors.gray}
-label-focused-underline = ${colors.orange}
-label-focused-padding = 1
+menu-0-0 = Browsers
+menu-0-0-exec = menu-open-1
+menu-0-2 = Multimedia
+menu-0-2-exec = menu-open-2
 
-label-unfocused = %name%
-label-unfocused-padding = 1
+menu-1-0 = Firefox
+menu-1-0-exec = firefox &
+menu-1-1 = Chromium
+menu-1-1-exec = chromium &
 
-label-urgent = %name%!
-label-urgent-foreground = ${colors.red}
-label-urgent-padding = 1
+menu-2-0 = Gimp
+menu-2-0-exec = gimp &
+menu-2-1 = Scrot
+menu-2-1-exec = scrot &
+label-open = aaa
+label-close = bbb
 
-label-visible = %name%
-label-visible-background = ${self.label-focused-background}
-label-visible-underline = ${self.label-focused-underline}
-label-visible-padding = ${self.label-focused-padding}
+;[module/powermenu]
+;type = custom/menu
+;label-separator = " "
+;
+;format-padding = 10
+;
+;label-open = ⏣
+;label-close = ⌬
+;
+;menu-0-0 = 
+;menu-0-0-foreground = #ff5555
+;menu-0-0-exec = i3lock-fancy -p
+;menu-0-1 = 
+;menu-0-1-foreground = #ff5555
+;menu-0-1-exec = reboot
+;menu-0-2 = 
+;menu-0-2-foreground = #ff5555
+;menu-0-2-exec = shutdown -h now
+;menu-1-0 = Cancel
+;menu-1-0-foreground = #fba922
+;menu-1-0-exec = menu_open-0
+;menu-1-1 = Reboot
+;menu-1-1-foreground = #fba922
+;menu-1-1-exec = sudo reboot
+;
+;menu-2-0 = Power off
+;menu-2-0-foreground = #fba922
+;menu-2-0-exec = sudo poweroff
+;menu-2-1 = Cancel
+;menu-2-1-foreground = #fba922
+;menu-2-1-exec = menu_open-0
 
-[module/backlight]
-type = internal/backlight
-card = intel_backlight
+[module/ovpn]
+type = internal/network
+interface = tun0
+interval = 3.0
+exec-if = pgrep openvpn
 
-format = <label>
-format-padding = 1
-format-underline = ${colors.orange}
-label =  %percentage%%
+format-connected-padding = 1
+format-disconnected-padding = 1
 
-bar-width = 6
-bar-indicator =
-bar-indicator-foreground = ${colors.white}
-bar-indicator-font = 2
-bar-fill = 
-bar-fill-font = 2
-bar-fill-foreground = ${colors.white}
-bar-empty = 
-bar-empty-font = 2
-bar-empty-foreground = #282a2e
+format-connected = <label-connected>
 
-[module/date]
-type = internal/date
-date =  %A %d %b  %H:%M
-interval = 5
-format-underline = ${colors.orange}
-format-foreground = ${colors.foreground}
-format-padding = 1
+label-connected = 
+label-connected-foreground = ${colors.cyan}
+
+label-disconnected = 
+label-disconnected-foreground = ${colors.red}
+
+;[module/volume]
+;type = internal/volume
+;
+;format-volume = <label-volume> <bar-volume>
+;label-volume = 
+;label-volume-foreground = ${colors.foreground}
+;
+;format-muted-prefix = ""
+;;format-muted-foreground = ${colors.foreground-alt}
+;label-muted = " MUTE" 
+;
+;bar-volume-width = 10
+;bar-volume-foreground-0 = ${colors.foreground}
+;bar-volume-foreground-1 = ${colors.foreground}
+;bar-volume-foreground-2 = ${colors.foreground} 
+;bar-volume-foreground-3 = ${colors.foreground}
+;bar-volume-foreground-4 = ${colors.foreground}
+;bar-volume-foreground-5 = #f5a70a
+;bar-volume-foreground-6 = #ff5555
+;bar-volume-gradient = false
+;bar-volume-indicator = ┫
+;bar-volume-indicator-font = 2
+;bar-volume-fill = ━
+;bar-volume-fill-font = 2
+;bar-volume-empty = ─
+;bar-volume-empty-font = 2
+;;bar-volume-empty-foreground = ${colors.foreground-alt}
+
 
 [module/volume]
 type = internal/volume
 
 format-volume = <ramp-volume> <label-volume>
-format-volume-padding = 1
-label-muted-padding = 1
-
-format-volume-underline = ${colors.orange}
-
-label-volume = %percentage%%
-
-label-muted =  mut
-label-muted-underline = ${colors.orange}
-
+label-muted =  muted
 ramp-volume-0 = 
 ramp-volume-1 = 
 ramp-volume-2 = 
 
+;[module/pavolume]
+;type = custom/script
+;interval = 2
+;exec = ~/.config/polybar/pavolume.sh
+
+click-right = exec pavucontrol
+click-left = ~/.config/polybar/pavolume.sh --togmute
+scroll-up = ~/.config/polybar/pavolume.sh --up
+scroll-down = ~/.config/polybar/pavolume.sh --down
+
+label = %output%
+label-foreground = ${colors.yellow}
+format-padding = 1
+
+[module/temperature]
+type = internal/temperature
+
+thermal-zone = 2
+
+format = <ramp> <label>
+format-padding = 0
+
+label-foreground = ${colors.green}
+
+ramp-0 = 
+ramp-1 = 
+ramp-2 = 
+
+ramp-foreground = ${colors.green}
+
+[module/network]
+type = internal/network
+interface = enp0s25
+ping-interval = 3
+accumlate-stats = true
+
+[module/wireless-network]
+type = internal/network
+interface = wlo1
+interval = 3.0
+ping-interval = 10
+
+format-connected = <ramp-signal> <label-connected>
+label-connected = %essid%
+label-disconnected =    not connected
+label-disconnected-foreground = #66
+
+ramp-signal-0 = 
+ramp-signal-1 = 
+ramp-signal-2 = 
+ramp-signal-3 = 
+ramp-signal-4 = 
+
+animation-packetloss-0 = 
+animation-packetloss-0-foreground = #ffa64c
+animation-packetloss-1 = 
+animation-packetloss-1-foreground = ${bar/top.foreground}
+animation-packetloss-framerate = 500
+
+[module/wired-network]
+type = internal/network
+interface = enp0s25
+interval = 3.0
+
+label-connected =    %{T3}%local_ip%%{T-}
+label-disconnected-foreground = #66
+
+[module/title]
+type = internal/xwindow
+label = %title%
+label-maxlen = 75
+
+[module/ram]
+type = internal/memory
+interval = 3
+
+format = <label> <bar-used>
+
+;label-foreground = ${colors.blue}
+;label-padding = 1
+;format-prefix = ""
+format-prefix-foreground = ${colors.blue}
+;format-padding = 0
+bar-used-width = 10
+bar-used-foreground-0 = #ff5555
+bar-used-foreground-1 = #ff5555
+bar-used-foreground-2 = #ff5555
+bar-used-foreground-3 = #c62828
+
+bar-used-indicator = ⭓
+;bar-used-indicator = ""
+bar-used-indicator-font = 6
+bar-used-indicator-foreground = #ff
+bar-used-fill = ━
+bar-used-fill-font = 6
+bar-used-empty = ─
+bar-used-empty-font = 6
+bar-used-empty-foreground = #444444
+
+[module/cpu]
+type = internal/cpu
+interval = 1
+label-foreground = ${colors.cyan}
+label-padding = 1
+format-prefix = ""
+format-prefix-foreground = ${colors.cyan}
+format-padding = 0
+
+;[module/cpu]
+;type = internal/cpu
+;interval = 1
+;format = <label> <ramp-coreload>
+;;label = CPU
+;label-padding = 1
+;format-prefix = ""
+
+ramp-coreload-0 = ▁
+ramp-coreload-0-font = 2
+ramp-coreload-0-foreground = #aaff77
+ramp-coreload-1 = ▂
+ramp-coreload-1-font = 2
+ramp-coreload-1-foreground = #aaff77
+ramp-coreload-2 = ▃
+ramp-coreload-2-font = 2
+ramp-coreload-2-foreground = #aaff77
+ramp-coreload-3 = ▄
+ramp-coreload-3-font = 2
+ramp-coreload-3-foreground = #aaff77
+ramp-coreload-4 = ▅
+ramp-coreload-4-font = 2
+ramp-coreload-4-foreground = #fba922
+ramp-coreload-5 = ▆
+ramp-coreload-5-font = 2
+ramp-coreload-5-foreground = #fba922
+ramp-coreload-6 = ▇
+ramp-coreload-6-font = 2
+ramp-coreload-6-foreground = #ff5555
+ramp-coreload-7 = █
+ramp-coreload-7-font = 2
+ramp-coreload-7-foreground = #ff5555
+
+;[module/battery]
+;type = internal/battery
+;battery = BAT0
+;adapter = AC
+;full-at = 96
+;interval = 10
+
 [module/battery]
 type = internal/battery
+full-at = 98
 battery = BAT0
-adapter = AC
-full-at = 96
-interval = 10
 
 format-charging = <animation-charging> <label-charging>
-label-charging = %percentage%%
-format-charging-underline = ${colors.orange}
-format-charging-padding = 1
-
-time-format = %H:%M
-#label-discharging = %percentage%% - %time%
-label-discharging = %percentage%%
 format-discharging = <ramp-capacity> <label-discharging>
-format-discharging-underline = ${colors.orange}
-format-discharging-padding = 1
-
-label-full = %percentage%%
 format-full = <ramp-capacity> <label-full>
-format-full-underline = ${self.format-charging-underline}
-format-full-overline = ${self.format-charging-underline}
-format-full-padding = 1
 
 ramp-capacity-0 = 
-ramp-capacity-1 = 
-ramp-capacity-2 = 
-ramp-capacity-3 = 
-ramp-capacity-foreground = ${colors.foreground}
+ramp-capacity-0-foreground = #f53c3c
+ramp-capacity-1 = 
+ramp-capacity-1-foreground = #ffa900
+ramp-capacity-2 = 
+ramp-capacity-3 = 
+ramp-capacity-4 = 
+
+bar-capacity-width = 10
+bar-capacity-format = %{+u}%{+o}%fill%%empty%%{-u}%{-o}
+bar-capacity-fill = █
+bar-capacity-fill-foreground = #ddffffff
+bar-capacity-fill-font = 3
+bar-capacity-empty = █
+bar-capacity-empty-font = 3
+bar-capacity-empty-foreground = #44ffffff
 
 animation-charging-0 = 
 animation-charging-1 = 
 animation-charging-2 = 
 animation-charging-3 = 
 animation-charging-4 = 
-animation-charging-foreground = ${colors.foreground}
-animation-charging-framerate = 1000
+animation-charging-framerate = 500
 
-[module/temperature]
-type = internal/temperature
-thermal-zone = 3
-warn-temperature = 65
-interval = 5
 
-format = <ramp> <label>
-format-underline = ${colors.orange}
-format-warn = <ramp> <label-warn>
-format-warn-underline = ${colors.red}
+[module/wm]
+type = internal/i3
+enable-click = true
+enable-scroll = false
+strip-wsnumbers = true
 
+ws-icon-0 = 1:Surf;
+ws-icon-1 = 2:Code;
+; - intellij
+ws-icon-2 = 3:Chat;
+ws-icon-3 = 4:Term;
+ws-icon-4 = 5:Core;
+ws-icon-5 = 6:Read;
+ws-icon-6 = 7:Media;
+ws-icon-7 = 8:Misc;
+;
+;ws-icon-7 = 8;
+;ws-icon-8 = 9;
+;ws-icon-9 = 10;
+
+format-padding = 0
+label-focused-foreground = ${colors.magenta}
+label-focused-padding = 1
+
+label-unfocused-padding = 1
+
+label-visible-padding = 1
+
+label-urgent-foreground = ${colors.red}
+label-urgent-padding = 1
+
+[module/time]
+type = internal/date
+interval = 40
 format-padding = 1
-format-warn-padding = 1
-
-label = %temperature%
-label-warn = %temperature%
-
-ramp-0 = 
-ramp-1 = 
-ramp-2 = 
-ramp-foreground = #f9f5d7
-
-[module/cpu]
-format-label = internal/cpu
-
-#format = <label> <ramp-coreload>
-fotmat = <label>
-
-ramp-coreload-0 = ▁
-ramp-coreload-1 = ▂
-ramp-coreload-2 = ▃
-ramp-coreload-3 = ▄
-ramp-coreload-4 = ▅
-ramp-coreload-5 = ▆
-ramp-coreload-6 = ▇
-ramp-coreload-7 = █
-ramp-coreload-underline = ${colors.orange}
-
-type = internal/cpu
-interval = 2
-label = %{F${colors.white} %percentage%%
-label-underline = ${colors.orange}
-label-padding = 1
-
-[module/memory]
-type = internal/memory
-interval = 2
-
-label = %{F${colors.white} %percentage_used%%
-label-underline = ${colors.orange}
-label-foreground = ${colors.orange}
-label-padding = 1
-
-[module/wlan]
-type = internal/network
-interface = wlp3s0
-interval = 5
-
-format-connected-padding = 1
-format-disconnected-padding = 0
-
-format-connected = <label-connected>
-format-connected-underline = ${colors.orange}
-format-disconnected-underline = ${colors.gray}
-
-label-connected = %essid%
-label-disconnected =
-label-disconnected-foreground = ${colors.gray}
+label-foreground = ${colors.magenta}
+date = "%I:%M %p"
 
 
-[module/eth]
-type = internal/network
-interface = enp2s0
-interval = 5
+;[module/time]
+;type = internal/date
+;date =    %%{F#99}%Y-%m-%d%%{F-}  %%{F#fff}%H:%M%%{F-}
+;date-alt = %%{F#fff}%A, %d %B %Y  %%{F#fff}%H:%M%%{F#666}:%%{F#fba922}%S%%{F-}
 
-format-connected-padding = 1
-format-disconnected-padding = 0
-
-format-connected-underline = ${colors.orange}
-format-disconnected-underline = ${colors.gray}
-
-label-connected =  %linkspeed%
-label-disconnected =
-label-disconnected-foreground = ${colors.white}
-
-
-[module/filesystem]
-type = internal/fs
-interval = 25
-
-mount-0 = /
-
-label-mounted =  %percentage_used%% %free%
-label-mounted-underline = ${colors.orange}
-label-mounted-padding = 1
-
-label-unmounted =
-label-unmounted-foreground = ${colors.black}
-
-[module/menu0]
-type = custom/menu
-
-format = <label-toggle>
-format-underline = ${colors.orange}
-format-padding = 1
-
-label-open =  
-
-[module/spotify]
+[module/weather]
 type = custom/script
-exec = ~/.config/polybar/spotify.sh
-tail = true
-format-padding = 2
-
+interval = 10
+format = <label>
+format-prefix = " "
+;format-prefix-foreground = ${colors.foreground-alt}
+exec = ~/dev/scripts/i3-weather.py
