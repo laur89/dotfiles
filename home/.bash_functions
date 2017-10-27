@@ -2149,7 +2149,7 @@ __verify_files_changes_and_commit() {
     git diff
     confirm "\nverify changes look ok. continue?" || return 1
     git add "${files[@]}" || return 1
-    git commit -m "Bump version to $ver" || return 1
+    git commit -m "Bump version to $ver" || { err "git commit failed with [$?]"; return 1; }
     if [[ "$push" -eq 1 ]]; then
         git push
         return $?
@@ -2227,7 +2227,7 @@ gfrs() {
         [[ "$pom_ver" =~ ^[0-9\.]+(-SNAPSHOT)?$ ]] || { err "fyi: current maven/pom ver [$pom_ver] is in an unexpected format.\n" "$FUNCNAME"; sleep 3; }
         # replace pom ver:
         sed -i "0,/<version>.*</s//<version>${tag}</" "$pom" || { err "switching versions with sed failed" "$FUNCNAME"; return 1; }
-        [[ "$(grep -c '<tag>HEAD</t' "$pom")" -ne 1 ]] && { err "unexpected number of <tag>HEAD</tag> tags in pom"; return 1; }
+        [[ "$(grep -c '<tag>HEAD</t' "$pom")" -gt 1 ]] && { err "unexpected number of <tag>HEAD</tag> tags in pom"; return 1; }
         sed -i "0,/<tag>HEAD</s//<tag>${tag}</" "$pom" || { err "switching scm tag versions with sed failed" "$FUNCNAME"; return 1; }
         __verify_files_changes_and_commit "$tag" "$pom" || return 1
     fi

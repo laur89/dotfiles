@@ -30,6 +30,7 @@ readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u144-b01/0
                                                                           # jdk8: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
                                                                           # jdk7: http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
                                                                           # jdk9: https://jdk9.java.net/  /  https://jdk9.java.net/download/
+                                                                          # archive: http://www.oracle.com/technetwork/java/javase/archive-139210.html
 readonly SKYPE_LOC='http://www.skype.com/go/getskype-linux-deb'       # http://www.skype.com/en/download-skype/skype-for-computer/
 readonly JDK_LINK_LOC="/usr/local/jdk_link"      # symlink linking to currently active java installation
 readonly JDK_INSTALLATION_DIR="/usr/local/javas" # dir containing all the installed java versions
@@ -705,7 +706,8 @@ install_deps() {
                 #__install_rtlwifi_new; unset __install_rtlwifi_new  # ...this
 
                 # add config to solve the intermittent disconnection problem; YMMV (https://github.com/lwfinger/rtlwifi_new/issues/126):
-                execute "echo options $driver ant_sel=1 fwlps=0 | sudo tee /etc/modprobe.d/$driver.conf"
+                #execute "echo options $driver ant_sel=1 fwlps=0 | sudo tee /etc/modprobe.d/$driver.conf"
+                execute "echo options $driver ant_sel=1 | sudo tee /etc/modprobe.d/$driver.conf"
 
                 execute "sudo modprobe -r $driver" || { err "unable removing modprobe [$driver]"; return 1; }
                 execute "sudo modprobe $driver" || { err "unable adding modprobe [$driver]; make sure secure boot is turned off in BIOS"; return 1; }
