@@ -669,26 +669,26 @@ install_deps() {
     _install_laptop_deps() {  # TODO: does this belong in install_deps()?
         is_laptop || return
 
-        __install_realtek() {
-            local rgx repo driver tmpdir
-
-            repo="https://github.com/lwfinger/rtlwifi_new.git"
-            rgx='\s+driver=\Krtl\w+(?=\s+\S+)'
-            driver="$(grep -Poi "$rgx" <<< "$(sudo lshw)")"
-            tmpdir="$TMPDIR/realtek-driver-${RANDOM}"
-            [[ -z "$driver" || "$(wc -l <<< "$driver")" -ne 1 ]] && { err "realtek driver from lshw output was [$driver]"; return 1; }
-            execute "git clone $repo $tmpdir" || return 1
-            execute "pushd $tmpdir" || return 1
-            execute "make clean" || return 1
-            create_deb_install_and_store realtek-wifi-github
-            execute "popd"
-            execute "sudo rm -rf -- $tmpdir"
-            execute "sudo modprobe -r $driver" || { err "unable removing modprobe [$driver]"; return 1; }
-            execute "sudo modprobe $driver" || { err "unable adding modprobe [$driver]; make sure secure boot is turned off in BIOS"; return 1; }
-        }
-
         __install_wifi_driver() {
-            local wifi_info
+            local wifi_info driver
+
+            __install_rtlwifi_new() {  # custom driver installation, pulling from github
+                local repo tmpdir
+
+                repo="https://github.com/lwfinger/rtlwifi_new.git"
+
+                report "installing rtlwifi_new for card [$driver]"
+                tmpdir="$TMPDIR/realtek-driver-${RANDOM}"
+                execute "git clone $repo $tmpdir" || return 1
+                execute "pushd $tmpdir" || return 1
+                execute "make clean" || return 1
+
+                #create_deb_install_and_store realtek-wifi-github  # doesn't work with checkinstall
+                execute "sudo make install"
+
+                execute "popd"
+                execute "sudo rm -rf -- $tmpdir"
+            }
 
             # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
             readonly wifi_info="$(sudo lshw | grep -iA 5 'Wireless interface')"
@@ -697,11 +697,18 @@ install_deps() {
                 report "we have intel wifi; installing intel drivers..."
                 install_block "firmware-iwlwifi"
             elif grep -iq 'vendor.*Realtek' <<< "$wifi_info"; then
-                #confirm "we seem to have realtek wifi; want to install realtek wifi drivers?" || return
-                #report "we have realtek wifi; installing realtek drivers..."
-                #__install_realtek; unset __install_realtek
+                report "we have realtek wifi; installing realtek drivers..."
+                driver="$(grep -Poi '\s+driver=\Krtl\w+(?=\s+\S+)' <<< "$(sudo lshw)")"
+                [[ -z "$driver" || "$(wc -l <<< "$driver")" -ne 1 ]] && { err "realtek driver from lshw output was [$driver]"; return 1; }
 
-                install_block "firmware-realtek"  # alternatievly, opt for the driver available in debian repos
+                install_block "firmware-realtek"  # either from repos, or...
+                #__install_rtlwifi_new; unset __install_rtlwifi_new  # ...this
+
+                # add config to solve the intermittent disconnection problem; YMMV (https://github.com/lwfinger/rtlwifi_new/issues/126):
+                execute "echo options $driver ant_sel=1 fwlps=0 | sudo tee /etc/modprobe.d/$driver.conf"
+
+                execute "sudo modprobe -r $driver" || { err "unable removing modprobe [$driver]"; return 1; }
+                execute "sudo modprobe $driver" || { err "unable adding modprobe [$driver]; make sure secure boot is turned off in BIOS"; return 1; }
             else
                 err "can't detect Intel nor Realtek wifi; what card do you have?"
             fi
