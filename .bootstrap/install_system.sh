@@ -702,8 +702,8 @@ install_deps() {
                 rtl_driver="$(grep -Poi '\s+driver=\Krtl\w+(?=\s+\S+)' <<< "$(sudo lshw -C network)")"
                 is_single "$rtl_driver" || { err "realtek driver from lshw output was [$rtl_driver]"; return 1; }
 
-                install_block "firmware-realtek"                     # either from repos, or...
-                #__install_rtlwifi_new; unset __install_rtlwifi_new  # ...this
+                #install_block "firmware-realtek"                     # either from repos, or...
+                __install_rtlwifi_new; unset __install_rtlwifi_new    # ...this
 
                 # add config to solve the intermittent disconnection problem; YMMV (https://github.com/lwfinger/rtlwifi_new/issues/126):
                 #     note: 'ips, swlps, fwlps' are power-saving options.
@@ -2574,7 +2574,7 @@ install_fonts() {
         return 0
     }
 
-    install_nerd_fonts
+    install_nerd_fonts; unset install_nerd_fonts
 
     # TODO: guess we can't use xset when xserver is not yet running:
     #execute "xset +fp ~/.fonts"
@@ -2854,15 +2854,15 @@ install_from_repo() {
 #
 # in order to reinstall the dkms part, purge both nvidia-driver &
 # nvidia-xconfig, and then reinstall.
+#
+# https://wiki.debian.org/NvidiaGraphicsDrivers
 install_nvidia() {
-    # https://wiki.debian.org/NvidiaGraphicsDrivers
-
     # TODO: consider  lspci -vnn | grep VGA | grep -i nvidia
     if sudo lshw | grep -iA 5 'display' | grep -iq 'vendor.*NVIDIA'; then
         if confirm "we seem to have NVIDIA card; want to install nvidia drivers?"; then
             report "installing NVIDIA drivers..."
             install_block 'nvidia-driver  nvidia-xconfig'
-            execute "sudo nvidia-xconfig"
+            #execute "sudo nvidia-xconfig"  # should not be required as of Stretch
             return $?
         fi
     else
@@ -3577,7 +3577,7 @@ function is_x() {
         wmctrl -m &>/dev/null
         exit_code="$?"
     else
-        err "can't check, neither xset nor wmctrl are installed"
+        err "can't check, neither xset nor wmctrl are installed" "$FUNCNAME"
         return 2
     fi
 
@@ -3749,7 +3749,7 @@ copy_to_clipboard() {
 is_single() {
     local s
 
-    readonly s="$(tr -d '[:blank:]' <<< "$*")"  # remember not to strip newlines
+    readonly s="$(tr -d '[:blank:]' <<< "$*")"  # make sure not to strip newlines
 
     [[ -n "$s" && "$(wc -l <<< "$s")" -eq 1 ]]
 }
