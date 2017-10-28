@@ -1,0 +1,507 @@
+[colors]
+foreground		= #CACAC8
+background		= #55000000
+
+t1			= #6b0102
+t11			= #026b01
+t2			= #ED4800
+t22			= #8a2be2
+t3			= #101010
+t4			= #202020
+t5			= #303030
+t6			= #404040
+t7			= #505050
+t8			= #606060
+t9			= #707070
+t42			= #FFFF00
+t10			= #000000
+t99			= colors.background
+t100			= colors.background
+twarn			= #ff4500
+
+; variables
+[var]
+wireless-interface      = wlp3s0
+eth-interface		= enp3s0
+
+
+[bar/top]
+;monitor			= DP-0
+bottom			= false
+height			= 15
+
+override-redirect	= false
+width			= 100%
+enable-ipc		= true
+
+padding-left		= 0
+
+padding-right		= 0
+offset-x		= 0
+offset-y		= 0
+
+tray-detached		= false
+tray-position		= right
+tray-offset-x		= 0
+tray-offset-y		= 0
+tray-maxsize		= 0
+tray-padding		= 0
+tray-scale		= 1
+tray-background = ${colors.t1}
+
+background		= ${colors.background}
+foreground		= ${colors.foreground}
+
+; border-left-size	= 15
+border-right-size	= 0
+border-color		= ${self.background}
+
+font-0			= Fantasque Sans Mono:size=10:dpi=138;2
+font-1			= FontAwesome:size=10:dpi=138;2
+font-2			= SauceCodePro Nerd Font:size=11;2
+
+modules-left		= mpd mpcGenre mpcType mpcPercent mpcPL i3 
+modules-center		= 
+modules-right		=  drive serverCheck pkg ping eth memory temperature cpu date
+
+;### LEFT ###
+[module/i3]
+type			= internal/i3
+format			= <label-state>
+index-sort		= true
+strip-wsnumbers = true
+fuzzy-match		= true
+
+label-visible = %icon%
+label-visible-foreground = #505050
+label-visible-padding	= 1
+label-visible-underline = #FFFFFF
+
+label-focused		= %icon%
+label-focused-foreground = #ff4500
+label-focused-padding	= 1
+label-focused-underline = #FFFFFF
+
+label-unfocused		= %icon%
+label-unfocused-foreground = #505050
+label-unfocused-padding	= 1
+
+label-urgent		= %icon%
+label-urgent-foreground	= #FF5F5F
+label-urgent-padding	= 1
+
+
+ws-icon-0		= 1;
+ws-icon-1		= 2;
+ws-icon-2		= 3;
+ws-icon-3		= 4;
+ws-icon-4		= 5;
+ws-icon-5		= 6;6
+ws-icon-6		= 7;
+ws-icon-7		= 8;8
+ws-icon-8		= 9;
+ws-icon-9		= 10;
+ws-icon-default		= 
+
+
+;### CENTER ###
+[module/xwindow]
+type			= internal/xwindow
+label-maxlen		= 30
+label-padding		= 2
+label-padding-right	= 0
+
+;### RIGHT ###
+[module/date]
+type			= internal/date
+interval		= 2
+
+date			= " %d.%m.%Y"
+date-alt		= "  %A, %d. %B"
+
+time			= " %H:%M"
+time-alt		= "%H:%M:%S"
+
+format-prefix		= 
+format-prefix-foreground = ${colors.t1}
+format-prefix-background = ${colors.background}
+label-background	= ${colors.t1}
+label-padding-right	= 0
+label-padding		= 1
+format-padding		= 0
+format			= <label>
+label			= %time%  %date%
+
+format-prefix-font		= 2
+format-suffix-font		= 2
+label-font		= 1
+
+[module/cpu]
+format-label		= internal/cpu
+
+format-prefix		= 
+format-foreground	= ${colors.t3}
+format-background	= ${colors.background}
+format-suffix		= 
+format-suffix-background = ${colors.background}
+format-suffix-foreground = ${colors.t3}
+
+format			= <label> <ramp-coreload>
+label-background	= ${colors.t3}
+label-foreground	= ${colors.foreground}
+type			= internal/cpu
+interval		= 2
+label			= "  %percentage%% "
+padding			= 0
+
+ramp-coreload-0		= ▁
+ramp-coreload-1		= ▂
+ramp-coreload-2		= ▃
+ramp-coreload-3		= ▄
+ramp-coreload-4		= ▅
+ramp-coreload-5		= ▆
+ramp-coreload-6		= ▇
+ramp-coreload-7		= █
+
+ramp-coreload-0-foreground = #00FF00
+ramp-coreload-1-foreground = #3FFF00
+ramp-coreload-2-foreground = #7FFF00
+ramp-coreload-3-foreground = #BFFF00
+ramp-coreload-4-foreground = #FFFF00
+ramp-coreload-5-foreground = #FDBF00
+ramp-coreload-6-foreground = #FC7F00
+ramp-coreload-7-foreground = #FB3F00
+
+ramp-coreload-background = ${colors.t3}
+
+[module/temperature]
+type			= internal/temperature
+thermal-zone		= 0
+warn-temperature	= 80
+
+format			= <ramp><label>
+format-background	= ${colors.t4}
+label-background	= ${colors.t4}
+label-padding		= 0
+label-warn-padding	= 1
+
+format-prefix		= 
+format-prefix-foreground = ${colors.t4}
+format-prefix-background = ${colors.background}
+format-suffix		= 
+format-suffix-background = ${colors.background}
+format-suffix-foreground = ${colors.t4}
+;format-prefix-background = ${module/battery.format-background}
+;format-prefix-foreground = ${self.label-background}
+
+;format-suffix		= 
+;format-suffix-foreground = ${self.label-background}
+
+;format-warn-prefix	= 
+;format-warn-prefix-background = ${module/battery.format-background}
+;format-warn-prefix-foreground = ${self.label-warn-background}
+
+;format-warn-suffix	= 
+;format-warn-suffix-foreground = ${self.label-warn-background}
+
+format-warn		= <label-warn>
+;label-warn-background	= ${colors.t2}
+
+ramp-background		= ${colors.t4}
+
+label			= %temperature%
+label-warn		=  %temperature%
+label-warn-background	= ${colors.twarn}
+
+format-warn-prefix	= 
+format-warn-prefix-foreground = ${colors.twarn}
+format-warn-prefix-background = ${colors.background}
+format-warn-suffix	= 
+format-warn-suffix-background = ${colors.background}
+format-warn-suffix-foreground = ${colors.twarn}
+
+ramp-0			= "  "
+ramp-1			= "  "
+ramp-2			= "  "
+
+[module/memory]
+type			= internal/memory
+interval		= 2
+format			= <label><bar-used>
+
+label			=  %percentage_used%%
+
+label-background	= ${colors.t5}
+label-padding		= 2
+
+format-prefix		= 
+format-prefix-background = ${colors.background}
+format-prefix-foreground = ${colors.t5}
+format-suffix		= 
+format-suffix-background = ${colors.background}
+format-suffix-foreground = ${colors.t5}
+
+bar-used-indicator	=
+bar-used-width		= 16
+
+
+bar-used-foreground-0	= #00FF00
+bar-used-foreground-1	= #FDBF00
+bar-used-foreground-2	= #FC7F00
+bar-used-foreground-3	= #FB3F00
+
+bar-used-fill		= ●
+bar-used-empty		= ●
+bar-used-empty-foreground = #444444
+bar-used-fill-background = ${colors.t5}
+bar-used-empty-background = ${colors.t5}
+
+
+[module/pkg]
+type			= custom/script
+interval		= 120
+format			= <label>
+label			= "%output:0:30%"
+exec			= ~/.config/polybar/pkg.sh
+
+label-background	= ${colors.t8}
+label-foreground	= ${colors.foreground}
+; format-underline	= ${colors.cyan}
+label-padding		= 2
+
+format-prefix		= 
+format-prefix-background = ${colors.background}
+format-prefix-foreground = ${colors.t8}
+format-suffix		= 
+format-suffix-background = ${colors.background}
+format-suffix-foreground = ${colors.t8}
+
+
+
+
+;### DISABLED ###
+[module/mpd]
+type			= internal/mpd
+interval		= 2
+
+host			= 127.0.0.1
+
+label-song		= %title% - %artist%
+label-song-maxlen	= 40
+label-song-ellipsis	= true
+
+format-online		= <label-song><toggle>
+# <icon-prev>    <icon-seekb>  <toggle>  <icon-seekf>    <icon-next>     <icon-random>  <icon-repeat>
+
+
+format-online-padding-left = 2
+
+label-song-background	= ${colors.t1}
+icon-pause-background	= ${colors.t1}
+icon-play-background	= ${colors.t1}
+icon-pause-foreground	= ${colors.foreground}
+icon-play-foreground	= ${colors.foreground}
+
+label-song-padding	= 0
+icon-pause-padding	= 1
+icon-play-padding	= 1
+
+icon-prev		= 
+icon-seekb		= 
+icon-stop		= 
+icon-pause		= 
+icon-play		= 
+icon-next		= 
+icon-seekf		= 
+
+format-online-suffix	= 
+format-online-suffix-background = ${colors.background}
+format-online-suffix-foreground = ${colors.t1}
+
+format-online-foreground = ${colors.foreground}
+format-online-background = ${colors.t1}
+
+; padding-left		= 50
+icon-random		= 
+icon-repeat		= 
+toggle-off-foreground	= ${colors.grey}
+toggle-on-foreground	= ${colors.blue}
+
+
+
+
+
+[module/eth]
+type			= internal/network
+interface		= ${var.eth-interface}
+interval		= 3.0
+
+format-connected	= <label-connected>
+format-disconnected	= <label-disconnected>
+
+label-connected-padding	= 2
+label-disconnected-padding = 2
+
+label-connected		=  %downspeed%  %upspeed%
+label-disconnected	= not connected :(
+
+label-connected-foreground = ${colors.foreground}
+label-connected-background = ${colors.t6}
+
+label-disconnected-foreground = ${colors.foreground}
+label-disconnected-background = ${colors.t6}
+
+format-connected-prefix	= 
+format-connected-prefix-background = ${colors.background}
+format-connected-prefix-foreground = ${colors.t6}
+
+format-disconnected-prefix = 
+format-disconnected-prefix-background = ${colors.background}
+format-disconnected-prefix-foreground = ${colors.t6}
+
+format-connected-suffix	= 
+format-connected-suffix-background = ${colors.background}
+format-connected-suffix-foreground = ${colors.t6}
+
+format-disconnected-suffix = 
+format-disconnected-suffix-background = ${colors.background}
+format-disconnected-suffix-foreground = ${colors.t6}
+
+
+
+
+[module/serverCheck]
+type			= custom/script
+interval		= 300
+format			= <label>
+exec			= ~/.config/polybar/serverCheck.sh
+
+label-background	= ${colors.t8}
+label-padding		= 2
+
+format-prefix		= 
+format-prefix-background = ${colors.background}
+format-prefix-foreground = ${colors.t8}
+
+format-suffix		= 
+format-suffix-background = ${colors.background}
+format-suffix-foreground = ${colors.t8}
+
+[module/mpcTime]
+interval		= 1
+type			= custom/script
+format			= <label>
+exec			= ~/.config/polybar/mpcTime.sh
+label-background	= ${colors.t2}
+
+format-suffix		= 
+format-suffix-background = ${colors.background}
+format-suffix-foreground = ${colors.t2}
+format-suffix-padding-right = 0
+
+format-prefix		= 
+format-prefix-background = ${colors.background}
+format-prefix-foreground = ${colors.t2}
+
+[module/mpcGenre]
+interval		= 1
+type			= custom/script
+format			= <label>
+exec			= ~/.config/polybar/mpcGenre.sh
+label-background	= ${colors.t4}
+label-maxlen		= 15
+
+format-suffix		= 
+format-suffix-background = ${colors.background}
+format-suffix-foreground = ${colors.t4}
+format-suffix-padding-right = 0
+
+format-prefix		= 
+format-prefix-background = ${colors.background}
+format-prefix-foreground = ${colors.t4}
+
+[module/mpcType]
+interval		= 1
+type			= custom/script
+format			= <label>
+exec			= ~/.config/polybar/mpcType.sh
+label-background	= ${colors.t11}
+
+format-suffix		= 
+format-suffix-background = ${colors.background}
+format-suffix-foreground = ${colors.t11}
+format-suffix-padding-right = 0
+
+format-prefix		= 
+format-prefix-background = ${colors.background}
+format-prefix-foreground = ${colors.t11}
+
+[module/mpcPercent]
+interval		= 1
+type			= custom/script
+format			= <label>
+exec			= ~/.config/polybar/mpcPercent.sh
+label-background	= ${colors.t2}
+
+format-suffix		= 
+format-suffix-background = ${colors.background}
+format-suffix-foreground = ${colors.t2}
+format-suffix-padding-right = 0
+
+format-prefix		= 
+format-prefix-background = ${colors.background}
+format-prefix-foreground = ${colors.t2}
+
+
+[module/drive]
+interval		= 1
+type			= custom/script
+format			= <label>
+exec			= ~/.config/polybar/drives.sh
+
+label-background	= ${colors.t9}
+label-padding		= 1
+
+format-prefix		= 
+format-prefix-background = ${colors.background}
+format-prefix-foreground = ${colors.t9}
+
+format-suffix		= 
+format-suffix-background = ${colors.background}
+format-suffix-foreground = ${colors.t9}
+
+[module/ping]
+interval		= 10
+type			= custom/script
+format			= <label>
+exec			= ~/.config/polybar/ping.sh
+
+label-background	= ${colors.t3}
+label-padding		= 1
+
+format-prefix		= 
+format-prefix-background = ${colors.background}
+format-prefix-foreground = ${colors.t3}
+
+format-suffix		= 
+format-suffix-background = ${colors.background}
+format-suffix-foreground = ${colors.t3}
+
+
+[module/mpcPL]
+interval		= 1
+type			= custom/script
+format			= <label>
+exec			= ~/.config/polybar/mpcNumInPL.sh
+
+label-background	= ${colors.t5}
+label-padding		= 0
+
+format-suffix		= 
+format-suffix-background = ${colors.background}
+format-suffix-foreground = ${colors.t5}
+format-suffix-padding-right = 0
+
+format-prefix		= 
+format-prefix-background = ${colors.background}
+format-prefix-foreground = ${colors.t5}
