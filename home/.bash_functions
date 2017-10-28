@@ -3523,6 +3523,7 @@ e() {  # mnemonic: edit
 
 
 # select recent dir with fasd and cd into
+#
 # note: d clashes with fasd alias; make sure you remove that one (in generated cache)
 d() {  # mnemonic: dir
     local dir

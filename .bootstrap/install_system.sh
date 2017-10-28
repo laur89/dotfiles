@@ -198,7 +198,7 @@ setup_hosts() {
         readonly file="$1"
         #current="$(grep '\(127\.0\.1\.1\)\s\+\(.*\)\s\+\(\w\+\)' $file)"
         readonly current="$(grep "$HOSTNAME" "$file")"
-        if [[ -z "$current" || "$(wc -l <<< "$current")" -ne 1 ]]; then
+        if ! is_single "$current"; then
             err "[$file] contained either more or less than 1 line(s) containing our hostname. check manually."
             return 1
         fi
@@ -445,7 +445,7 @@ install_nfs_client() {
             execute "echo ${server_ip}:${nfs_share} ${mountpoint} nfs noauto,x-systemd.automount,_netdev,x-systemd.device-timeout=10,timeo=14,rsize=8192,wsize=8192 0 0 \
                     | sudo tee --append $fstab > /dev/null"
         else
-            report "an nfs share entry for [${server_ip}:${nfs_share}] in $fstab already exists."
+            err "an nfs share entry for [${server_ip}:${nfs_share}] in $fstab already exists."
         fi
 
         prev_server_ip="$server_ip"
@@ -578,7 +578,7 @@ install_sshfs() {
 
             sel_ips_to_user["$server_ip"]="$remote_user"
         else
-            report "an ssh share entry for [${server_ip}:${ssh_share}] in $fstab already exists."
+            err "an ssh share entry for [${server_ip}:${ssh_share}] in $fstab already exists."
         fi
 
         prev_server_ip="$server_ip"
@@ -671,14 +671,14 @@ install_deps() {
         is_laptop || return
 
         __install_wifi_driver() {
-            local wifi_info driver
+            local wifi_info rtl_driver
 
             __install_rtlwifi_new() {  # custom driver installation, pulling from github
                 local repo tmpdir
 
                 repo="https://github.com/lwfinger/rtlwifi_new.git"
 
-                report "installing rtlwifi_new for card [$driver]"
+                report "installing rtlwifi_new for card [$rtl_driver]"
                 tmpdir="$TMPDIR/realtek-driver-${RANDOM}"
                 execute "git clone $repo $tmpdir" || return 1
                 execute "pushd $tmpdir" || return 1
@@ -692,25 +692,27 @@ install_deps() {
             }
 
             # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
-            readonly wifi_info="$(sudo lshw | grep -iA 5 'Wireless interface')"
+            readonly wifi_info="$(sudo lshw -C network | grep -iA 5 'Wireless interface')"
 
             if grep -iq 'vendor.*Intel' <<< "$wifi_info"; then
                 report "we have intel wifi; installing intel drivers..."
                 install_block "firmware-iwlwifi"
             elif grep -iq 'vendor.*Realtek' <<< "$wifi_info"; then
                 report "we have realtek wifi; installing realtek drivers..."
-                driver="$(grep -Poi '\s+driver=\Krtl\w+(?=\s+\S+)' <<< "$(sudo lshw)")"
-                [[ -z "$driver" || "$(wc -l <<< "$driver")" -ne 1 ]] && { err "realtek driver from lshw output was [$driver]"; return 1; }
+                rtl_driver="$(grep -Poi '\s+driver=\Krtl\w+(?=\s+\S+)' <<< "$(sudo lshw -C network)")"
+                is_single "$rtl_driver" || { err "realtek driver from lshw output was [$rtl_driver]"; return 1; }
 
-                install_block "firmware-realtek"  # either from repos, or...
+                install_block "firmware-realtek"                     # either from repos, or...
                 #__install_rtlwifi_new; unset __install_rtlwifi_new  # ...this
 
                 # add config to solve the intermittent disconnection problem; YMMV (https://github.com/lwfinger/rtlwifi_new/issues/126):
-                #execute "echo options $driver ant_sel=1 fwlps=0 | sudo tee /etc/modprobe.d/$driver.conf"
-                execute "echo options $driver ant_sel=1 | sudo tee /etc/modprobe.d/$driver.conf"
+                #     note: 'ips, swlps, fwlps' are power-saving options.
+                #     note2: ant_sel=1 or =2
+                #execute "echo options $rtl_driver ant_sel=1 fwlps=0 | sudo tee /etc/modprobe.d/$rtl_driver.conf"
+                execute "echo options $rtl_driver ant_sel=1 msi=1 ips=0 | sudo tee /etc/modprobe.d/$rtl_driver.conf"
 
-                execute "sudo modprobe -r $driver" || { err "unable removing modprobe [$driver]"; return 1; }
-                execute "sudo modprobe $driver" || { err "unable adding modprobe [$driver]; make sure secure boot is turned off in BIOS"; return 1; }
+                execute "sudo modprobe -r $rtl_driver" || { err "unable removing modprobe [$rtl_driver]"; return 1; }
+                execute "sudo modprobe $rtl_driver" || { err "unable adding modprobe [$rtl_driver]; make sure secure boot is turned off in BIOS"; return 1; }
             else
                 err "can't detect Intel nor Realtek wifi; what card do you have?"
             fi
@@ -3736,6 +3738,20 @@ copy_to_clipboard() {
         || return 1
 
     return 0
+}
+
+
+# Verifies given string is non-empty, non-whitespace-only and on single line.
+#
+# @param {string}  s  string to validate.
+#
+# @returns {bool}  true, if passed string is non-empty, and on a single line.
+is_single() {
+    local s
+
+    readonly s="$(tr -d '[:blank:]' <<< "$*")"  # remember not to strip newlines
+
+    [[ -n "$s" && "$(wc -l <<< "$s")" -eq 1 ]]
 }
 
 
