@@ -3359,8 +3359,24 @@ fcoc() {
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
     commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&
-        commit=$(echo "$commits" | fzf --select-1 --query="$q" --tac +s +m -e --exit-0) &&
-        git checkout "$(echo "$commit" | sed 's/ .*//')"
+            commit=$(echo "$commits" | fzf --select-1 --query="$q" --tac +s +m -e --exit-0) &&
+            git checkout "$(echo "$commit" | sed 's/ .*//')"
+}
+
+
+# fcol - checkout git LOST commit (as in search for dangling commits)
+# good for recovering lost commits (including stashes)
+fcol() {
+    local commits sha q
+
+    q="$*"
+    check_progs_installed fzf git || return 1
+    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+
+    #commits=$(git log --oneline --decorate --all --reverse $(git fsck --no-reflog | awk '/dangling commit/ {print $3}')) &&
+    commits=$(git log --pretty=format:"%h  %d [%s] on %cd by [%cn]; parents: [%p]" --abbrev-commit --decorate --all --reverse $(git fsck --no-reflog | awk '/dangling commit/ {print $3}')) &&
+            sha=$(echo "$commits" | fzf --select-1 --query="$q" --tac +s +m -e --exit-0) &&
+            __open_git_difftool_at_git_root "$(sed 's/ .*//' <<< "$sha")"
 }
 
 
@@ -3370,8 +3386,9 @@ __open_git_difftool_at_git_root() {
     local cwd git_root commit
     readonly commit="$1"
 
-    readonly cwd="$PWD"
-    readonly git_root="$(git rev-parse --show-toplevel)" || { err "unable to find project root" "${FUNCNAME[1]}"; return 1; }
+    [[ -z "$commit" ]] && { err "need to provide commit sha"; return 1; }
+    cwd="$(realpath "$PWD")"
+    git_root="$(realpath "$(git rev-parse --show-toplevel)")" || { err "unable to find project root" "${FUNCNAME[1]}"; return 1; }
 
     [[ "$cwd" != "$git_root" ]] && pushd -- "$git_root" &> /dev/null  # git root
     git difftool --dir-diff "$commit"^ "$commit"
