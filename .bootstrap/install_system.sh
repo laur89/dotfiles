@@ -799,6 +799,9 @@ install_deps() {
         err "[conscript] not on \$PATH; if it's the initial installation, then just re-run ${FUNCNAME}()"
     fi
 
+    # nvm (node version manager) :  # https://github.com/creationix/nvm#git-install
+    clone_or_pull_repo "creationix" "nvm" "$HOME/.nvm"  # do not change location, keep _real_ .nvm/ under ~
+    execute "source '$HOME/.nvm/nvm.sh'" || err "sourcing ~/.nvm/nvm.sh failed"
 
     # TODO: these are not deps, are they?:
     execute "sudo pip install --upgrade git-playback"   # https://github.com/jianli/git-playback
@@ -818,15 +821,16 @@ install_deps() {
     execute "sudo gem install speed_read"               # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
 
     # some py deps requred by scripts:
-    execute "sudo pip3  install --upgrade exchangelib icalendar arrow"
+    execute "sudo pip3 install --upgrade exchangelib icalendar arrow"
 
 
-    # work deps:
+    # work deps:  # TODO remove block?
     if [[ "$MODE" == work ]] && ! is_laptop; then  # TODO: do we want to include != laptop?
-        # cx toolbox/vagrant env deps:
-        execute "sudo gem install \
-            puppet puppet-lint bundler nokogiri builder \
-        "
+        true
+        # cx toolbox/vagrant env deps:  # TODO: deprecate
+        #execute "sudo gem install \
+            #puppet puppet-lint bundler nokogiri builder \
+        #"
     fi
 
     # laptop deps:
@@ -2765,6 +2769,7 @@ install_from_repo() {
         kazam
         screenkey
         mediainfo
+        screenruler
         lynx
         elinks
         links2
@@ -2829,13 +2834,11 @@ install_from_repo() {
             samba-common-bin
             smbclient
             ruby-dev
-            vagrant
 
             virtualbox
             virtualbox-dkms
             virtualbox-guest-dkms
 
-            puppet
             nfs-common
             nfs-kernel-server
         '
@@ -3050,6 +3053,8 @@ remind_manually_installed_progs() {
             report "    don't forget to install [$i]"
         fi
     done
+
+    [[ "$MODE" == work ]] && report "don't forget to install docker root CA"
 }
 
 

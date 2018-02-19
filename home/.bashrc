@@ -281,6 +281,11 @@ fi
 [[ -s "$fasd_cache" ]] && source "$fasd_cache"
 unset fasd_cache
 ##########################################
+# nvm (node version manager):  (https://github.com/creationix/nvm#git-install)
+export NVM_DIR="$HOME/.nvm"  # do not change location, keep _real_ .nvm/ under ~
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+##########################################
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 

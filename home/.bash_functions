@@ -2255,6 +2255,10 @@ gfrf() {
     pom="$(git rev-parse --show-toplevel)/pom.xml" || { err "unable to find git root" "$FUNCNAME"; return 1; }
     pom_ver="$(grep -Pos -m 1 '^\s+<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
 
+    if [[ -n "$pom_ver" ]]; then  # we're dealing with a maven project
+        # check tests _before_ tagging
+        mvn clean install || { err "fix tests" "$FUNCNAME"; return 1; }
+    fi
     git flow release finish -F -p "$tag" || { err "finishing git release failed." "$FUNCNAME"; return 1; }
     report "pushing tags..." "$FUNCNAME"
     git push --tags || { err "...pushing tags failed." "$FUNCNAME"; return 1; }
@@ -2272,7 +2276,7 @@ gfrf() {
 
         report "deploying to nexus..." "$FUNCNAME"
         git checkout "$tag" || { err "unable to check out [$tag]" "$FUNCNAME"; return 1; }
-        mvn clean deploy || { err "mvn depolyment failed" "$FUNCNAME"; return 1; }
+        mvn clean deploy -Dmaven.test.skip=true || { err "mvn deployment failed" "$FUNCNAME"; return 1; }
         git checkout develop || { err "unable to check out [develop]" "$FUNCNAME"; return 1; }
     fi
 
