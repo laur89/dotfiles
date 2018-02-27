@@ -25,7 +25,7 @@ readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX
 readonly GOFORIT_REPO_LOC='https://github.com/mank319/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
 readonly SYNERGY_REPO_LOC='https://github.com/symless/synergy.git'    # synergy - share keyboard&mouse between computers on same LAN
-readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u144-b01/090f390dda5b47b9b721c7dfaa008135/jdk-8u144-linux-x64.tar.gz'
+readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u162-b12/0da788060d494f5095bf8624735fa2f1/jdk-8u162-linux-x64.tar.gz'
                                                                           #       http://www.oracle.com/technetwork/java/javase/downloads/index.html
                                                                           # jdk8: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
                                                                           # jdk7: http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
@@ -1481,10 +1481,8 @@ install_oracle_jdk() {
     report "fetcing [$ORACLE_JDK_LOC]"
     execute "pushd -- $tmpdir" || return 1
 
-    execute "wget --no-check-certificate \
-        --no-cookies \
-        --header 'Cookie: oraclelicense=accept-securebackup-cookie' \
-        -- '$ORACLE_JDK_LOC'" || { err "wgetting [$ORACLE_JDK_LOC] failed."; return 1; }
+    execute "curl -L -b 'oraclelicense=a' \
+        '$ORACLE_JDK_LOC' -O" || { err "curling [$ORACLE_JDK_LOC] failed."; return 1; }
 
     readonly tarball="$(basename -- "$ORACLE_JDK_LOC")"
     extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
@@ -2063,7 +2061,9 @@ install_polybar() {
         python-xcbgen
         xcb-proto
         libxcb-xrm-dev
+        libxcb-cursor-dev
         libasound2-dev
+        libpulse-dev
         libmpdclient-dev
         libiw-dev
         libcurl4-openssl-dev
@@ -2078,33 +2078,6 @@ install_polybar() {
     execute "sudo rm -rf -- '$tmpdir'"
     return 0
 }
-
-
-## https://github.com/jaagr/polybar
-#install_polybar() {
-    #local tmpdir
-
-    #readonly tmpdir="$TMPDIR/polybar-build-${RANDOM}"
-
-    #report "installing polybar build dependencies..."
-    #install_block '
-        #libxcb-ewmh-dev
-        #python-xcbgen
-    #' || { err 'failed to install build deps. abort.'; return 1; }
-
-    ## clone the repository
-    #execute "git clone --recursive $POLYBAR_REPO_LOC '$tmpdir'" || return 1
-    #execute "mkdir $tmpdir/build"
-    #execute "pushd $tmpdir/build" || return 1
-
-    ## compile & install
-    #execute 'cmake ..' || return 1  # TODO: clang++ set because of issue #572
-    #create_deb_install_and_store polybar
-
-    #execute "popd"
-    #execute "sudo rm -rf -- '$tmpdir'"
-    #return 0
-#}
 
 
 install_dwm() {
@@ -2578,6 +2551,17 @@ install_fonts() {
         return 0
     }
 
+    enable_bitmap_rendering() {
+        local file
+
+        readonly file='/etc/fonts/conf.d/70-no-bitmaps.conf'
+
+        [[ -f "$file" ]] || { err "[$file] does not exist; cannot enable bitmap font render"; return; }
+        execute "sudo rm -- '$file'"
+        return $?
+    }
+
+    enable_bitmap_rendering; unset enable_bitmap_rendering
     install_nerd_fonts; unset install_nerd_fonts
 
     # TODO: guess we can't use xset when xserver is not yet running:

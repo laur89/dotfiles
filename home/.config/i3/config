@@ -163,13 +163,13 @@ bindsym $mod+Shift+z sticky toggle
 
 # Smart borders (draw borders around container only if it is not the only container on this workspace) 
 # on|no_gaps (on=always activate and no_gaps=only activate if the gap size to the edge of the screen is 0)
-#smart_borders on
+smart_borders on
 
 # Smart gaps (gaps used if only more than one container on the workspace)
 #smart_gaps on
 
 # Global gaps size
-gaps inner 15
+gaps inner 0
 gaps outer 0
 
 set $mode_gaps Gaps: (o) outer, (i) inner
@@ -344,9 +344,9 @@ exec_always --no-startup-id $HOME/.config/polybar/launch.sh
 #exec --no-startup-id . $HOME/.local/bin/barstart &
 
 # Set per-application border
-#for_window [class="^.*"] border pixel 1
+#for_window [class="^.*"] border pixel 1   # note border pixel 0 is required if you wanna use gaps
 #for_window [class="(?i)urxvt"] border pixel 1
-for_window [class="^.*"] border normal 0
+for_window [class="^.*"] border normal 2
 
 # Enable or disable floating
 for_window [class="Arandr"] floating enable
