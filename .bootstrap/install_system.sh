@@ -2515,6 +2515,7 @@ install_fonts() {
         xfonts-base
         xbitmaps
         fontforge
+        gucharmap
     '
 
     # https://github.com/ryanoasis/nerd-fonts#option-3-install-script

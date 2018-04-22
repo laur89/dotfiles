@@ -225,6 +225,7 @@ set nocompatible " Must be the first line
     " better jquery syntax highlighting:
     Plugin 'jQuery'
 
+    " TODO: consider  pangloss/vim-javascript  instead
     Plugin 'jelera/vim-javascript-syntax'
 
     " show search window as 'at match # out of # matches':

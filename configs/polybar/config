@@ -9,6 +9,9 @@ green = #a9c77d
 blue = #82aaff
 magenta = #c792ea
 cyan = #89ddff
+; TODO:
+background-alt = #ee292d3e
+primary = #ee292d3e
 
 
 tray-detached        = false
@@ -52,11 +55,11 @@ module-margin-left = 1
 ;font-6 = FontAwesome:size=10:dpi=138;2
 ;font-7 = SauceCodePro Nerd Font:size=11;2
 
-font-1 = tewi:pixelsize=12;1
+;font-0 = tewi:pixelsize=12;1
 font-0 = Terminus2:pixelsize=12;1
 ;font-0 = SauceCodePro Nerd Font:size=10;2
-font-3 = FontAwesome:size=10;1
-font-2 = xbmicons:pixelsize=12;1
+font-1 = FontAwesome:size=10;1
+;font-2 = xbmicons:pixelsize=12;1
 ;font-0 = TerminessTTF Nerd Font:size=9;2
 ;font-0 = UbuntuCondensed Nerd Font:size=11;2
 ;font-0 = SauceCodePro Nerd Font:size=11;2
@@ -73,7 +76,7 @@ fixed-center = false
 inherit = bar/master
 modules-left = wm
 modules-center = mpd
-modules-right = wired-network wireless-network cpu-single-bar ram-vert-bar battery temperature2 pulseaudio time 
+modules-right = wired-network wireless-network cpu-single-bar ram-vert-bar battery temperature pulseaudio time 
 ;modules-right = wireless-network wired-network weather battery ram cpu temperature volume time 
 ;modules-right = vpn volume filesystem battery wlan weather date power-menu ovpn
 tray-position = right
@@ -203,8 +206,8 @@ type = internal/pulseaudio
 sink = alsa_output.pci-0000_00_1b.0.analog-stereo.equalizer
 
 format-volume = <ramp-volume> <label-volume>
-label-muted = 
-;format-muted-prefix = "muted "
+label-muted = 
+format-muted-prefix = "M"
 ramp-volume-0 = 
 ramp-volume-1 = 
 ramp-volume-2 = 
@@ -266,6 +269,7 @@ interface = wlp3s0
 interval = 3.0
 ping-interval = 30
 format-connected = <ramp-signal> <label-connected>
+;format-connected-underline = #f50a4d
 label-connected =  %essid% %downspeed%
 label-disconnected = 
 label-disconnected-foreground = #66
@@ -482,15 +486,14 @@ strip-wsnumbers = true
 
 ws-icon-0 = 1:Surf;
 ws-icon-1 = 2:Code;
-; - intellij
 ws-icon-2 = 3:Chat;
 ws-icon-3 = 4:Term;
-ws-icon-4 = 5:Core;
-ws-icon-5 = 6:Read;
+ws-icon-4 = 5:Core;
+ws-icon-5 = 6:Read;
 ws-icon-6 = 7:Media;
-ws-icon-7 = 8:Misc;
+ws-icon-7 = 8:Misc;
 ;
-;ws-icon-7 = 8;
+;ws-icon-7 = 8;  gitlab
 ;ws-icon-8 = 9;
 ;ws-icon-9 = 10;
 
@@ -505,18 +508,23 @@ label-visible-padding = 1
 label-urgent-foreground = ${colors.red}
 label-urgent-padding = 1
 
+
+
 [module/time]
 type = internal/date
 interval = 40
 format-padding = 1
 label-foreground = ${colors.magenta}
-date = "%I:%M %p"
+date = "%a %d > %H:%M"
+
 
 
 ;[module/time]
 ;type = internal/date
 ;date =    %%{F#99}%Y-%m-%d%%{F-}  %%{F#fff}%H:%M%%{F-}
 ;date-alt = %%{F#fff}%A, %d %B %Y  %%{F#fff}%H:%M%%{F#666}:%%{F#fba922}%S%%{F-}
+
+
 
 [module/weather]
 type = custom/script
@@ -576,9 +584,13 @@ tray-padding = 2
 ;scroll-up = i3wm-wsnext
 ;scroll-down = i3wm-wsprev
 
+
+
 [module/xwindow]
 type = internal/xwindow
 label = %title:0:30:...%
+
+
 
 [module/xkeyboard]
 type = internal/xkeyboard
@@ -596,6 +608,8 @@ label-indicator-margin = 1
 label-indicator-background = ${colors.secondary}
 label-indicator-underline = ${colors.secondary}
 
+
+
 [module/filesystem]
 type = internal/fs
 interval = 25
@@ -605,6 +619,8 @@ mount-0 = /
 label-mounted = %{F#0a81f5}%mountpoint%%{F-}: %percentage_used%%
 label-unmounted = %mountpoint% not mounted
 label-unmounted-foreground = ${colors.foreground-alt}
+
+
 
 [module/bspwm]
 type = internal/bspwm
@@ -624,6 +640,8 @@ label-urgent-padding = 2
 label-empty = %index%
 label-empty-foreground = ${colors.foreground-alt}
 label-empty-padding = 2
+
+
 
 [module/i3]
 type = internal/i3
@@ -731,6 +749,8 @@ card = intel_backlight
 ;format-underline = #f90000
 ;label = %percentage%%
 ;
+;
+;
 ;[module/memory]
 ;type = internal/memory
 ;interval = 2
@@ -738,6 +758,8 @@ card = intel_backlight
 ;format-prefix-foreground = ${colors.foreground-alt}
 ;format-underline = #4bffdc
 ;label = %percentage_used%%
+;
+;
 ;
 ;[module/wlan]
 ;type = internal/network
@@ -760,6 +782,8 @@ card = intel_backlight
 ;ramp-signal-3 = 
 ;ramp-signal-4 = 
 ;ramp-signal-foreground = ${colors.foreground-alt}
+;
+;
 ;
 ;[module/eth]
 ;type = internal/network
@@ -853,6 +877,7 @@ animation-charging-foreground = ${colors.foreground-alt}
 animation-charging-framerate = 750
 
 
+
 [module/temperature2]
 type = internal/temperature
 thermal-zone = 0
@@ -863,8 +888,8 @@ format-underline = #f50a4d
 format-warn = <ramp> <label-warn>
 format-warn-underline = ${self.format-underline}
 
-label = %temperature%
-label-warn = %temperature%
+label = %temperature-c%
+label-warn = %temperature-c%
 label-warn-foreground = ${colors.green}
 
 ramp-0 = 
@@ -915,4 +940,3 @@ ramp-2 = 
 ;margin-bottom = 5
 
 ; vim:ft=dosini
-
