@@ -108,7 +108,7 @@ fi
 
 if ! is_proc_running compton; then
     echo "Launching compton..."
-    compton --config ~/.compton.conf --daemon
+    compton --config ~/.compton.conf --respect-prop-shadow --daemon
 fi
 
 if ! is_proc_running syndaemon && is_laptop; then

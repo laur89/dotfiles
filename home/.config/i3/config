@@ -21,9 +21,10 @@ bindsym $mod+c kill
 # Start dmenu (a program launcher)
 #bindsym $mod+d exec  dmenu_run -b -nf "#839496" -sb "#b58900" -sf "#002b36" -nb "#002b36" -fn "tewi-8"
 
-# Start Rofi (a program launcher, ssh, window switcher)
+# Start Rofi (a program launcher, ssh, window switcher et al)
 # https://davedavenport.github.io/rofi/
-bindsym $mod+space exec --no-startup-id rofi -show run -lines 5 -width 20 -separator-style "none" -hide-bar
+#bindsym $mod+space exec --no-startup-id rofi -show run -lines 5 -width 20 -separator-style "none" -hide-bar -sidebar-mode
+bindsym $mod+space exec --no-startup-id rofi -show combi -combi-modi 'window#run' -modi combi -lines 15 -width 50 -separator-style "none"
 
 # Change focus
 bindsym $mod+h focus left
@@ -238,9 +239,9 @@ bindsym Control+mod1+Delete exec --no-startup-id /usr/local/bin/lock
 bindsym $mod+F9 exec --no-startup-id $HOME/.config/polybar/popups/power/power
 
 # Volume control
-bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume 0 +5%
-bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume 0 -5%
-bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute 0 toggle
+bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +5%
+bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -5%
+bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle
 
 # Brightness control
 bindsym XF86MonBrightnessUp exec xbacklight -inc 20
@@ -333,6 +334,7 @@ font -*-terminus-*-*-*-*-12-*-*-*-*-*-*-13
   #-time     10  -locker   "$Locker" \
   #-killtime 20 -killer "systemctl suspend"
 exec_always --no-startup-id $HOME/.config/polybar/launch.sh
+exec_always --no-startup-id flashfocus
 
 
 # # Start apps during startup

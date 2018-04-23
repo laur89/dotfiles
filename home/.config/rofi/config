@@ -6,5 +6,6 @@ rofi.color-window: #111313, #d79921, #111313
 rofi.color-normal: #111313, #f9f5d7, #111313, #f9f5d7, #111313
 rofi.color-active: #111313, #f9f5d7, #111313, #f9f5d7, #111313
 rofi.color-urgent: #111313, #db3f3f, #111313, #db3f3f, #f9f5d7
-rofi.font: Inconsolata for Powerline 10
+rofi.font: Inconsolata for Powerline 12
+rofi.theme: gruvbox-dark-hard
 rofi.bw: 3

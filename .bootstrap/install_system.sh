@@ -855,6 +855,10 @@ install_deps() {
     clone_or_pull_repo "meskarune" "i3lock-fancy" "$BASE_DEPS_LOC"
     create_link --sudo "${BASE_DEPS_LOC}/i3lock-fancy/lock" /usr/local/bin/
 
+    # flashfocus - flash window when focus changes  https://github.com/fennerm/flashfocus
+    install_block 'libxcb-render0-dev'
+    execute "sudo pip3 install flashfocus"
+
 
     # work deps:  # TODO remove block?
     if [[ "$MODE" == work ]] && ! is_laptop; then  # TODO: do we want to include != laptop?
@@ -2080,6 +2084,15 @@ install_i3lock() {
 install_i3() {
     local tmpdir
 
+    apply_patches() {
+        local f
+
+        f='/tmp/i3-patch.patch'
+        curl -o "$f" 'https://raw.githubusercontent.com/laur89/i3-extras/976ab0c3ce3e0b35349dac2cd37d25674b468c01/window-icons/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
+        #curl -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
+        patch -p1 < "$f" || return 1
+    }
+
     readonly tmpdir="$TMPDIR/i3-gaps-build-${RANDOM}"
     report "building i3-gaps..."
 
@@ -2107,6 +2120,7 @@ install_i3() {
     # clone the repository
     execute "git clone $I3_REPO_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
+    apply_patches
 
     # compile & install
     execute 'autoreconf --force --install' || return 1
@@ -2695,6 +2709,7 @@ install_from_repo() {
         alsa-utils
         pulseaudio
         pavucontrol
+        pulsemixer
         pulseaudio-equalizer
         pasystray
         dunst
