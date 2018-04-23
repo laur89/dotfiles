@@ -217,7 +217,8 @@ mode "$mode_gaps_outer" {
 # workspace $w8 gaps outer 15
 
 # Lock screen
-bindsym Control+mod1+Delete exec --no-startup-id i3-blurlock.sh
+#bindsym Control+mod1+Delete exec --no-startup-id i3-blurlock.sh
+bindsym Control+mod1+Delete exec --no-startup-id /usr/local/bin/lock
 
 # Shutdwon, Restart, Logout, Suspend, Hibernate, Reboot, Lock
  # set $mode_system System (l) lock, (e) logout, (s) suspend, (h) hibernate, (r) reboot, (Shift+s) shutdown

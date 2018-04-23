@@ -16,6 +16,8 @@
 readonly TMPDIR='/tmp'
 readonly CLANG_LLVM_LOC='http://releases.llvm.org/4.0.1/clang+llvm-4.0.1-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
 readonly I3_REPO_LOC='https://www.github.com/Airblader/i3'            # i3-gaps
+readonly I3_LOCK_LOC='https://github.com/PandorasFox/i3lock-color'    # i3lock-color
+readonly I3_LOCK_FANCY_LOC='https://github.com/meskarune/i3lock-fancy'    # i3lock-fancy
 readonly NERD_FONTS_REPO_LOC='https://github.com/ryanoasis/nerd-fonts'
 readonly POLYBAR_REPO_LOC='https://github.com/jaagr/polybar'          # polybar
 readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - yeah.
@@ -181,6 +183,29 @@ check_dependencies() {
 
         execute "sudo chown $USER:$USER $dir" || { err "unable to change [$dir] ownership to [$USER:$USER]. abort."; exit 1; }
         execute "sudo chmod $perms -- $dir" || { err "unable to change [$dir] permissions to [$perms]. abort."; exit 1; }
+    done
+}
+
+
+setup_systemd() {
+    local sysd_src sysd_target file tmpfile
+
+    readonly sysd_src="$PRIVATE_CASTLE/backups/systemd"
+    readonly sysd_target='/etc/systemd/system'
+    readonly tmpfile='/tmp/sysd_setup'
+
+    if ! [[ -d "$sysd_target" ]]; then
+        err "[$sysd_target] is not a dir; skipping systemd file(s) installation."
+        return 1
+    elif ! [[ -d "$sysd_src" ]]; then
+        err "[$sysd_src] is not a dir; skipping systemd file(s) installation."
+        return 1
+    fi
+
+    for file in "$sysd_src"/*; do
+        execute "cp -- '$file' '$tmpfile'" || return 1
+        execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
+        execute "sudo mv -- '$tmpfile' $sysd_target/" || { err "moving [$tmpfile] to [$sysd_src] failed"; return 1; }
     done
 }
 
@@ -823,6 +848,13 @@ install_deps() {
     # some py deps requred by scripts:
     execute "sudo pip3 install --upgrade exchangelib icalendar arrow"
 
+    # i3lock-fancy                                      # https://github.com/meskarune/i3lock-fancy
+    # depends on i3lock-color-git (see i3lock-fancy's github page)
+    # TODO: fyi apt has i3lock-fancy; if it's new enough (newer some some 2016 build),
+    # this could be deprecated
+    clone_or_pull_repo "meskarune" "i3lock-fancy" "$BASE_DEPS_LOC"
+    create_link --sudo "${BASE_DEPS_LOC}/i3lock-fancy/lock" /usr/local/bin/
+
 
     # work deps:  # TODO remove block?
     if [[ "$MODE" == work ]] && ! is_laptop; then  # TODO: do we want to include != laptop?
@@ -1098,6 +1130,7 @@ setup_config_files() {
     setup_sudoers
     #setup_ssh_config   # better stick to ~/.ssh/config, rite?  # TODO
     setup_hosts
+    setup_systemd
     setup_global_env_vars
     setup_netrc_perms
     setup_global_prompt
@@ -1434,6 +1467,7 @@ install_own_builds() {
 
     #install_dwm
     install_i3
+    install_i3lock
 }
 
 
@@ -1981,6 +2015,63 @@ install_keepassx() {
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
+    return 0
+}
+
+
+# https://github.com/PandorasFox/i3lock-color
+# this is a depency for i3lock-fancy.
+# TODO: fyi apt has i3lock-fancy; if it's new enough (newer some some 2016 build),
+# this could be deprecated
+install_i3lock() {
+    local tmpdir
+
+    readonly tmpdir="$TMPDIR/i3lock-build-${RANDOM}"
+    report "building i3lock..."
+
+    report "installing i3lock build dependencies..."
+
+    install_block '
+      autoconf
+      automake
+      checkinstall
+      libev-dev
+      libxcb-composite0
+      libxcb-composite0-dev
+      libxcb-xinerama0
+      libxcb-randr0
+      libxcb-xinerama0-dev
+      libxcb-xkb-dev
+      libxcb-image0-dev
+      libxcb-util0-dev
+      libxkbcommon-x11-dev
+      libjpeg62-turbo-dev
+      libpam0g-dev
+      pkg-config
+      xcb-proto
+      libxcb-xrm-dev
+      libxcb-randr0-dev
+      libxkbcommon-dev
+      libcairo2-dev
+      libxcb1-dev
+      libxcb-dpms0-dev
+      libev-dev' || { err 'failed to install i3lock build deps. abort.'; return 1; }
+
+    # clone the repository
+    execute "git clone $I3_LOCK_LOC '$tmpdir'" || return 1
+    execute "pushd $tmpdir" || return 1
+
+    # compile & install
+    execute 'git tag -f "git-$(git rev-parse --short HEAD)"' || return 1
+    execute 'autoreconf --install' || return 1
+    execute './configure' || return 1
+    execute 'make' || return 1
+
+    create_deb_install_and_store i3lock
+
+    execute "popd"
+    execute "sudo rm -rf -- '$tmpdir'"
+
     return 0
 }
 
@@ -2607,7 +2698,6 @@ install_from_repo() {
         pulseaudio-equalizer
         pasystray
         dunst
-        xscreensaver
         xautolock
         rofi
         compton
@@ -2988,6 +3078,7 @@ __choose_prog_to_build() {
         install_synergy
         install_dwm
         install_i3
+        install_i3lock
         install_polybar
         install_oracle_jdk
         install_skype
