@@ -148,6 +148,7 @@ URxvt.iso14755_52: false
 !#include </home/laur/.x/term-colors/base16-eighties.colors>
 !#include </home/laur/.x/term-colors/dawn.colors>
 #include </home/laur/.x/term-colors/gruvbox.colors>
+!#include </home/laur/.x/term-colors/nord.colors>
 !#include </home/laur/.x/term-colors/mashup.colors>
 !#include </home/laur/.x/term-colors/pnevma1.colors>
 !#include </home/laur/.x/term-colors/pnevma2.colors>
