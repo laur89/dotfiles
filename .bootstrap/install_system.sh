@@ -814,7 +814,7 @@ install_deps() {
 
     # conscript (scala apps distribution manager):  # http://www.foundweekends.org/conscript/setup.html
                                                     # TODO: check https://github.com/foundweekends/conscript/issues/124
-    execute 'wget https://raw.githubusercontent.com/foundweekends/conscript/master/setup.sh -O - | sh'
+    execute -i 'wget https://raw.githubusercontent.com/foundweekends/conscript/master/setup.sh -O - | sh'
 
     # install scala apps (requires conscript):
     if [[ "$PATH" == *conscript* ]]; then  # (assuming conscript is installed and executable is on our PATH)
@@ -2783,6 +2783,7 @@ install_from_repo() {
         network-manager-gnome
         network-manager-openvpn-gnome
         gnome-keyring
+        seahorse
         gsimplecal
         khal
         calcurse

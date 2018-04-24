@@ -11,7 +11,7 @@ SELF="${0##*/}"
 declare -a PROGS=(
     urxvtd
     davmail
-    keepassx
+    keepassxc
     copyq
     delay_screensaver
     xfce4-volumed
@@ -49,26 +49,6 @@ if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
     fi
 fi
 # ---------------------------------------------------
-
-
-# TODO: delete this?:
-#export DISPLAY=:0.0
-
-# See policykit käitati tavaliste DE-de puhul /etc/xdg/autostart/polkit-gnome....desktop-ist;
-# kui ei käivitanud, siis andis network-manager wireless võrku ühendamisel permission errori:
-# teine variant, kuidas soovitatakse NM permission errorist jagu saada:
-# loo fail  /etc/polkit-1/localauthority/50-local.d/org.freedesktop.NetworkManager.pkla sisuga:
-#[nm-applet]
-#Identity=unix-group:netdev
-#Action=org.freedesktop.NetworkManager.*
-#ResultAny=yes
-#ResultInactive=no
-#ResultActive=yes
-
-#TODO: is necessary or not? (was related to xfce4-notifyd not starting)
-# dbus-update-activation-environment --systemd --all  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=842712
-/usr/lib/polkit-gnome-authentication-agent-1 &
-is_proc_running gnome-keyring-daemon || /usr/bin/gnome-keyring-daemon --start --components=secrets,ssh &
 
 
 for PROG in "${PROGS[@]}"; do

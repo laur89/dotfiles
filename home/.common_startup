@@ -8,9 +8,9 @@
 # this file should *at least* contain the last block of /etc/X11/xinit/xinitrc
 ##################################
 
-session_startfile="$HOME/.session-startuplist"
-declare -a autostart=()
-SELF=".common_startup"
+SESSION_STARTFILE="$HOME/.session-startuplist"
+declare -a AUTOSTART=()
+_SELF=".common_startup"
 ################################################
 
 #### ENTRY ####
@@ -40,21 +40,21 @@ function enableSmart() {
 
     if [[ "$_status" -ne 0 ]]; then
         msg="smartctl --scan returned exit code [$_status]"
-        err_display "$msg" "$SELF"
+        err_display "$msg" "$_SELF"
         #log "$msg" "$error_log"
-        #mail_error_report_and_log "$SELF: unable to scan drives with smartctl --scan on $HOSTNAME" "$msg" "$error_log"
+        #mail_error_report_and_log "$_SELF: unable to scan drives with smartctl --scan on $HOSTNAME" "$msg" "$error_log"
         return 1
     elif [[ -z "$_disk_list" ]]; then
         msg="no disks returned from [sudo smartctl --scan] command."
-        err_display "$msg" "$SELF"
-        #log "$SELF" "$error_log"
-        #mail_error_report_and_log "$SELF: no disks found using smartctl on $HOSTNAME." "$msg" "$error_log"
+        err_display "$msg" "$_SELF"
+        #log "$_SELF" "$error_log"
+        #mail_error_report_and_log "$_SELF: no disks found using smartctl on $HOSTNAME." "$msg" "$error_log"
         return 1
     fi
 
     for _disk in $_disk_list; do
         disk_check="$(echo "$_disk" | sed 's/.*\///')"  # strip everything before last slash (included)
-        [[ -z "$disk_check" ]] && { err_display "something went wrong with cleaning cmartctl returned disk; continuing." "$SELF"; continue; }
+        [[ -z "$disk_check" ]] && { err_display "something went wrong with cleaning cmartctl returned disk; continuing." "$_SELF"; continue; }
 
         # sanity - check whether smartctl found disk is listed in /proc/partitions; if not, send error:
         if grep -Eq "\b${disk_check}\b" /proc/partitions; then
@@ -63,9 +63,9 @@ function enableSmart() {
             #	-o on	turns on offline data collection every 4 hours
             sudo smartctl -s on -o on -S on "$_disk" || {
                 msg="unable to enable SMART on [$_disk]"
-                err_display "$msg" "$SELF"
+                err_display "$msg" "$_SELF"
                 #log "$msg" "$error_log"
-                #mail_error_report_and_log "$SELF: unable to enable SMART on $HOSTNAME." "$msg" "$error_log"
+                #mail_error_report_and_log "$_SELF: unable to enable SMART on $HOSTNAME." "$msg" "$error_log"
                 # do NOT return!
             }
 
@@ -74,13 +74,13 @@ function enableSmart() {
             msg="The disk [$_disk] has been passed to me via
     [sudo smartctl --scan] command, but it cannot be located in
     [/proc/partitions]. Unmounted/mismounted volume perhaps?"
-            err_display "$msg" "$SELF"
+            err_display "$msg" "$_SELF"
             #log "$msg" "$error_log"
             #mail_error_report_and_log "invalid drive detected on $HOSTNAME" "$msg" "$error_log"
         fi
     done
 
-    display_message "${SELF}: enabled SMART for [$processed_disks_count] drives." $(( 10 * 1000 ))
+    display_message "${_SELF}: enabled SMART for [$processed_disks_count] drives." $(( 10 * 1000 ))
 }
 
 set_perms() {
@@ -92,7 +92,7 @@ set_keyboard_layout() {
     local layouts
     readonly layouts='ee,us'
     check_progs_installed setxkbmap || return 1
-    setxkbmap -option grp:alt_shift_toggle "$layouts" || { err_display "err setting keyboard layout(s) to [$layouts]" "$SELF"; return 1; }
+    setxkbmap -option grp:alt_shift_toggle "$layouts" || { err_display "err setting keyboard layout(s) to [$layouts]" "$_SELF"; return 1; }
 }
 
 open_mpd_fifo() {
@@ -123,10 +123,36 @@ xset fp rehash
 #xsetroot -cursor_name left_ptr
 
 # Load the Xresources database:
-[[ -r ~/.Xresources ]] && { xrdb -merge ~/.Xresources || err_display "xrdb merge failed" "$SELF"; }  # do not background!
+[[ -r ~/.Xresources ]] && { xrdb -merge ~/.Xresources || err_display "xrdb merge failed" "$_SELF"; }  # do not background!
 
 # disable system beep:
 xset -b &
+
+
+
+
+# TODO: delete this?:
+#export DISPLAY=:0.0
+
+# See policykit käitati tavaliste DE-de puhul /etc/xdg/autostart/polkit-gnome....desktop-ist;
+# kui ei käivitanud, siis andis network-manager wireless võrku ühendamisel permission errori:
+# teine variant, kuidas soovitatakse NM permission errorist jagu saada:
+# loo fail  /etc/polkit-1/localauthority/50-local.d/org.freedesktop.NetworkManager.pkla sisuga:
+#[nm-applet]
+#Identity=unix-group:netdev
+#Action=org.freedesktop.NetworkManager.*
+#ResultAny=yes
+#ResultInactive=no
+#ResultActive=yes
+
+#TODO: is necessary or not? (was related to xfce4-notifyd not starting)
+dbus-update-activation-environment --systemd --all  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=842712
+/usr/lib/polkit-gnome-authentication-agent-1 &
+
+is_proc_running gnome-keyring-daemon || eval $(/usr/bin/gnome-keyring-daemon --start --components=gpg,pkcs11,secrets,ssh)
+export GNOME_KEYRING_CONTROL GNOME_KEYRING_PID GPG_AGENT_INFO SSH_AUTH_SOCK DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
+
+
 
 # Secondary autostart directory, nothing important started here so okay to skip in clean for minimal session
 if [[ -d $HOME/.config/autostart ]]; then
@@ -136,7 +162,7 @@ if [[ -d $HOME/.config/autostart ]]; then
             *OnlyShowIn*) true
                 ;;
             *)
-                autostart+=("$(echo "$m" | grep -m 1 "Exec=" | sed 's/Exec=//g')")
+                AUTOSTART+=("$(echo "$m" | grep -m 1 "Exec=" | sed 's/Exec=//g')")
                 ;;
         esac
     done
@@ -145,12 +171,19 @@ if [[ -d $HOME/.config/autostart ]]; then
 fi
 
 # System autostart directories
+#if [[ -d /etc/X11/xinit/xinitrc.d ]]; then
+  #for f in /etc/X11/xinit/xinitrc.d/*; do
+    #AUTOSTART+=("$f")
+  #done
+  #unset f
+#fi
 if [[ -d /etc/X11/xinit/xinitrc.d ]]; then
-  for f in /etc/X11/xinit/xinitrc.d/*; do
-    autostart+=("$f")
-  done
-  unset f
+    for f in /etc/X11/xinit/xinitrc.d/?*.sh ; do
+        [ -x "$f" ] && . "$f"
+    done
+    unset f
 fi
+
 
 if [[ -d /etc/xdg/autostart ]]; then
     for y in /etc/xdg/autostart/*; do
@@ -161,7 +194,7 @@ if [[ -d /etc/xdg/autostart ]]; then
                 # Similarly, ain't no-one putting "NotShowIn=dwm" in a .desktop file. Hence, both cases are ignored
                 ;;
             *)
-                autostart+=("$(echo "$x" | grep -m 1 "Exec=" | sed 's/Exec=//g')")
+                AUTOSTART+=("$(echo "$x" | grep -m 1 "Exec=" | sed 's/Exec=//g')")
                 ;;
         esac
     done
@@ -169,26 +202,16 @@ if [[ -d /etc/xdg/autostart ]]; then
     unset x
 fi
 
-export GNOME_KEYRING_CONTROL GNOME_KEYRING_PID GPG_AGENT_INFO SSH_AUTH_SOCK &
-
-# Runs everything in the autostart array simultaneously without blocking startup
-for x in "${autostart[@]}"; do
+# Runs everything in the AUTOSTART array simultaneously without blocking startup
+for x in "${AUTOSTART[@]}"; do
     eval "$x" &
     # Give it a little time to start
     sleep 0.1s
 done
 
-# TODO: alternatively (to the previous xinitrc.d blocks), use this:
-#if [ -d /etc/X11/xinit/xinitrc.d ] ; then
-	#for f in /etc/X11/xinit/xinitrc.d/?*.sh ; do
-		#[ -x "$f" ] && . "$f"
-	#done
-	#unset f
-#fi
-
-# Start the programs/scripts in $session_startfile:
-if [[ -r "$session_startfile" ]]; then
-    source "$session_startfile" &
+# Start the programs/scripts in $SESSION_STARTFILE:
+if [[ -r "$SESSION_STARTFILE" ]]; then
+    source "$SESSION_STARTFILE"
     # give some time before wm is launched:
     sleep 1.5
 else
@@ -219,7 +242,7 @@ for i in \
         /data/ \
             ; do
     if [[ ! -w "$i" ]]; then
-        err_display  "[$i] is not created or no write permissions granted. Do it!" "$SELF" &
+        err_display  "[$i] is not created or no write permissions granted. Do it!" "$_SELF" &
     fi
 done &
 
@@ -229,7 +252,7 @@ for i in \
         "$_PERSISTED_TMP" \
             ; do
     if [[ ! -d "$i" ]] && ! mkdir "$i"; then
-        err_display  "Tried to create required directory [$i] but mkdir failed." "$SELF" &
+        err_display  "Tried to create required directory [$i] but mkdir failed." "$_SELF" &
     fi
 done &
 
@@ -243,8 +266,8 @@ done &
 #if is_laptop && check_progs_installed xinput; then
     ## OLD, synaptic-based config (pre libinput):
     ## enable tapping on synaptics touchpad:
-    ##synclient TapButton1=1 TapButton2=3 TapButton3=2 || err_display "something went wrong while setting synaptics" "$SELF"
-    ##synclient PalmDetect=1 || err_display "err setting synclient palmdetect" "$SELF"
+    ##synclient TapButton1=1 TapButton2=3 TapButton3=2 || err_display "something went wrong while setting synaptics" "$_SELF"
+    ##synclient PalmDetect=1 || err_display "err setting synclient palmdetect" "$_SELF"
     #true  # TODO add xinput config
 #fi
 
@@ -259,4 +282,4 @@ set_perms &
 set_keyboard_layout &
 open_mpd_fifo &
 
-unset i x f m n session_startfile autostart SELF
+unset i x f m n SESSION_STARTFILE AUTOSTART _SELF

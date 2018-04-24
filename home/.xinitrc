@@ -6,7 +6,7 @@
 # Mul execute'ib siit DM või .profile
 ##################################
 
-DEFAULT_SESSION="start_dwm"
+DEFAULT_SESSION="i3"
 #export GTK2_RC_FILES="$HOME/.gtkrc-2.0" # seda vist pole vaja
 #if test -z "$DBUS_SESSION_BUS_ADDRESS"; then
 #    exec dbus-launch --sh-syntax --exit-with-session
@@ -15,6 +15,7 @@ DEFAULT_SESSION="start_dwm"
 #export GPG_AGENT_INFO SSH_AUTH_SOCK
 
 input="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
+systemctl --user import-environment DISPLAY  # make sure display env var is set
 source "$HOME/.common_startup"
 
 case "$input" in

@@ -31,7 +31,9 @@ if [ -z "$DISPLAY" ] && [ "$(tty)" == "/dev/tty1" ]; then
     echo -e "Enter DE/WM:"
     echo '============'
     read -r session
-    exec ssh-agent startx "$HOME/.xinitrc" "$session" # -- -logverbose 6
+    # note ssh-agent ver should be used when we _don't_ use gnome-keyring (or equivalent):
+    #exec ssh-agent startx "$HOME/.xinitrc" "$session" # -- -logverbose 6
+    exec startx "$HOME/.xinitrc" "$session" # -- -logverbose 6
 fi
 
 # provides automatic logout; for debugging puroposes:
