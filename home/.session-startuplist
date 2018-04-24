@@ -19,6 +19,7 @@ declare -a PROGS=(
     wait_for_suspend_to_lock_screen.sh
     mopidy
     redshift
+    devmon
 )
 
 # oldies:
