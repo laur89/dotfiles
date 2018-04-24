@@ -19,6 +19,7 @@ readonly I3_REPO_LOC='https://www.github.com/Airblader/i3'            # i3-gaps
 readonly I3_LOCK_LOC='https://github.com/PandorasFox/i3lock-color'    # i3lock-color
 readonly I3_LOCK_FANCY_LOC='https://github.com/meskarune/i3lock-fancy'    # i3lock-fancy
 readonly NERD_FONTS_REPO_LOC='https://github.com/ryanoasis/nerd-fonts'
+readonly PWRLINE_FONTS_REPO_LOC='https://github.com/powerline/fonts'
 readonly POLYBAR_REPO_LOC='https://github.com/jaagr/polybar'          # polybar
 readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - yeah.
 readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
@@ -2602,12 +2603,15 @@ install_YCM() {  # the quick-and-not-dirty install.py way
 #}
 
 
+# consider also https://github.com/whitelynx/artwiz-fonts-wl
+#
 install_fonts() {
     local dir
 
     report "installing fonts..."
 
     install_block '
+        fonts-powerline
         ttf-dejavu
         ttf-liberation
         ttf-mscorefonts-installer
@@ -2657,6 +2661,38 @@ install_fonts() {
         return 0
     }
 
+    # https://github.com/powerline/fonts
+    install_powerline_fonts() {
+        local tmpdir
+
+        readonly tmpdir="$TMPDIR/powerline-fonts-${RANDOM}"
+        report "installing powerline-fonts..."
+
+        execute "git clone --recursive $PWRLINE_FONTS_REPO_LOC '$tmpdir'" || return 1
+        execute "pushd $tmpdir" || return 1
+        execute "./install.sh" || return 1
+
+        execute "popd"
+        execute "sudo rm -rf -- '$tmpdir'"
+        return 0
+    }
+
+    # https://github.com/stark/siji   (bitmap fonts icons)
+    install_siji() {
+        local tmpdir
+
+        readonly tmpdir='/tmp/siji-font'
+
+        execute "git clone https://github.com/stark/siji $tmpdir" || { err 'err cloning siji font'; return 1; }
+        execute "pushd $tmpdir" || return 1
+
+        execute "./install.sh" || { err "siji-font install.sh failed with $?"; return 1; }
+
+        execute "popd"
+        execute "sudo rm -rf -- '$tmpdir'"
+        return 0
+    }
+
     enable_bitmap_rendering() {
         local file
 
@@ -2669,6 +2705,8 @@ install_fonts() {
 
     enable_bitmap_rendering; unset enable_bitmap_rendering
     install_nerd_fonts; unset install_nerd_fonts
+    install_powerline_fonts; unset install_powerline_fonts
+    install_siji; unset install_siji
 
     # TODO: guess we can't use xset when xserver is not yet running:
     #execute "xset +fp ~/.fonts"

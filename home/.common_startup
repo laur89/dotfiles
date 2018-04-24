@@ -151,7 +151,7 @@ dbus-update-activation-environment --systemd --all  # https://bugs.debian.org/cg
 /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
 
 is_proc_running gnome-keyring-daemon || eval $(/usr/bin/gnome-keyring-daemon --start --components=gpg,pkcs11,secrets,ssh)
-sleep 0.5
+sleep 1  # TODO potential race condition here - dunst as root sometimes not picking up config
 export GNOME_KEYRING_CONTROL GNOME_KEYRING_PID GPG_AGENT_INFO SSH_AUTH_SOCK DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
 
 
@@ -276,7 +276,7 @@ done &
 
 #TODO: this stuff needs to be done via logrotate perhaps?
 # Check the filesize in MB of logs dir:
-allowed_size="20"   # Max size in MB
+allowed_size=20   # Max size in MB
 check_max_allowed_size "$CUSTOM_LOGDIR" "$allowed_size"
 
 enableSmart &
@@ -284,4 +284,4 @@ set_perms &
 set_keyboard_layout &
 open_mpd_fifo &
 
-unset i x f m n SESSION_STARTFILE AUTOSTART _SELF
+unset i x f m n SESSION_STARTFILE AUTOSTART _SELF allowed_size
