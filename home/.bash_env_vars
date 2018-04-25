@@ -123,7 +123,7 @@ fi
 # markpath/jumps dir:
 export _MARKPATH_DIR=.shell_jump_marks
 
-# test whether the shell is interactive; if not, set the display:
+# test whether the shell is interactive; if not, set missing env vars:
 # (as per http://www.tldp.org/LDP/abs/html/intandnonint.html)
 #if [[ -z "$DISPLAY" ]]; then
 #if ! [[ -t 0 || -p /dev/stdin ]]; then

@@ -193,7 +193,7 @@ setup_systemd() {
 
     readonly sysd_src="$PRIVATE_CASTLE/backups/systemd"
     readonly sysd_target='/etc/systemd/system'
-    readonly tmpfile='/tmp/sysd_setup'
+    readonly tmpfile="$TMPDIR/sysd_setup-$RANDOM"
 
     if ! [[ -d "$sysd_target" ]]; then
         err "[$sysd_target] is not a dir; skipping systemd file(s) installation."
@@ -1188,7 +1188,7 @@ install_nm_dispatchers() {
         fi
 
         # do not create .orig backup!
-        execute "sudo cp -- $f $nm_wrapper_dest/"
+        execute "sudo cp -- '$f' $nm_wrapper_dest/"
     done
 }
 
@@ -2092,7 +2092,7 @@ install_i3() {
     apply_patches() {
         local f
 
-        f='/tmp/i3-patch.patch'
+        f="$TMPDIR/i3-patch-${RANDOM}.patch"
         curl -o "$f" 'https://raw.githubusercontent.com/laur89/i3-extras/976ab0c3ce3e0b35349dac2cd37d25674b468c01/window-icons/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
         #curl -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
         patch -p1 < "$f" || return 1
@@ -2685,7 +2685,7 @@ install_fonts() {
     install_siji() {
         local tmpdir
 
-        readonly tmpdir='/tmp/siji-font'
+        readonly tmpdir="$TMPDIR/siji-font-$RANDOM"
 
         execute "git clone https://github.com/stark/siji $tmpdir" || { err 'err cloning siji font'; return 1; }
         execute "pushd $tmpdir" || return 1
