@@ -1168,24 +1168,28 @@ install_acpi_events() {
 
 
 # network manager wrapper script;
-# runs other script that writes info to /tmp and manages locking logic for laptops (security, kinda)
-install_SSID_checker() {
-    local nm_wrapper_loc  nm_wrapper_dest
+install_nm_dispatchers() {
+    local dispatchers nm_wrapper_dest f
 
-    readonly nm_wrapper_loc="$BASE_DATA_DIR/dev/scripts/network_manager_SSID_checker_wrapper.sh"
     readonly nm_wrapper_dest="/etc/NetworkManager/dispatcher.d"
+    readonly dispatchers=(
+        "$BASE_DATA_DIR/dev/scripts/network_manager_SSID_checker_wrapper.sh"
+    )
 
-    if ! [[ -f "$nm_wrapper_loc" ]]; then
-        err "[$nm_wrapper_loc] does not exist; SSID checker won't be installed"
-        return 1
-    elif ! [[ -d "$nm_wrapper_dest" ]]; then
-        err "[$nm_wrapper_dest] dir does not exist; SSID checker won't be installed"
+    if ! [[ -d "$nm_wrapper_dest" ]]; then
+        err "[$nm_wrapper_dest] dir does not exist; network-manager dispatcher script(s) won't be installed"
         return 1
     fi
 
-    # do not create .orig backup!
-    execute "sudo cp -- $nm_wrapper_loc $nm_wrapper_dest/NW_SSID_checker_wrapper.sh"
-    return $?
+    for f in "${dispatchers[@]}"; do
+        if ! [[ -f "$f" ]]; then
+            err "[$f] does not exist; this netw-manager dispatcher won't be installed"
+            continue
+        fi
+
+        # do not create .orig backup!
+        execute "sudo cp -- $f $nm_wrapper_dest/"
+    done
 }
 
 
@@ -2885,6 +2889,7 @@ install_from_repo() {
         imagemagick
         pinta
         xsel
+        xss-lock
         xclip
         exuberant-ctags
         shellcheck
@@ -3089,7 +3094,7 @@ choose_single_task() {
 
         generate_key
         switch_jdk_versions
-        install_SSID_checker
+        install_nm_dispatchers
         install_acpi_events
         install_deps
         install_fonts
@@ -3347,7 +3352,7 @@ post_install_progs_setup() {
 
     install_acpi_events   # has to be after install_progs(), so acpid is already insalled and events/ dir present;
     enable_network_manager
-    install_SSID_checker  # has to come after install_progs; otherwise NM wrapper dir won't be present
+    install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present
     execute --ignore-errs "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
     execute "mopidy local scan"            # update mopidy library
     execute "sudo sensors-detect --auto"   # answer enter for default values (this is lm-sensors config)

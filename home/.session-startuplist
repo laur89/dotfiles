@@ -14,7 +14,6 @@ declare -a PROGS=(
     copyq
     xfce4-volumed
     guake
-    wait_for_suspend_to_lock_screen.sh
     mopidy
     redshift
     devmon
@@ -32,6 +31,7 @@ declare -a PROGS=(
     #"skype"
     #"spacefm"
     #"franz"
+    #wait_for_suspend_to_lock_screen.sh   # not required with xss-lock
 
 # alternative to lock automatically when suspending/hibernating: (requires xss-lock)
 # (currently using the shellscript that listens to dbus messages)
@@ -80,9 +80,16 @@ if ! is_proc_running seaf-daemon && ! is_work; then
     seaf-cli start &
 fi
 
-if ! is_proc_running xscreensaver; then
-    xscreensaver -no-splash &
-    echo "Launching xscreensaver..."
+#if ! is_proc_running xscreensaver; then
+    #xscreensaver -no-splash &
+    #echo "Launching xscreensaver..."
+#fi
+if ! is_proc_running xss-lock; then
+    xset s 300
+    xss-lock -- lock -n &   # lock here is i3lock-fancy
+    # or, if you first want to do notif/screen dimmin, followed by lock:
+    #xset s 300 310
+    #xss-lock -n /home/laur/bri.sh -- lock -n
 fi
 
 if ! is_proc_running compton; then
