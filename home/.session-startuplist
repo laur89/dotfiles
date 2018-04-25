@@ -9,11 +9,9 @@
 SELF="${0##*/}"
 
 declare -a PROGS=(
-    urxvtd
     davmail
     keepassxc
     copyq
-    delay_screensaver
     xfce4-volumed
     guake
     wait_for_suspend_to_lock_screen.sh
@@ -66,7 +64,7 @@ done
 #launchy &
 
 # set wallpaper (afterwards, script should be ran periodically by cron):
-wallpaper_changer.sh > /dev/null 2>&1 &
+( sleep 5; wallpaper_changer.sh > /dev/null 2>&1; ) &
 
 #if ! [[ "$(ps -e | grep "\bmpd\b")" ]]; then
     #mpd /etc/mpd.conf &
@@ -97,8 +95,20 @@ if ! is_proc_running syndaemon && is_laptop; then
     echo "Launching syndaemon..."
 fi
 
-# launch urxvtc (note we need to wait for the daemon to be launched first)
-( until is_proc_running urxvtd; do sleep 1; done; sleep 2; urxvtc & ) &
+(
+    sleep 20  # give time for screensaver app (xscreensaver, xss-lock,...) to startup beforehand
+    if ! is_proc_running delay_screensaver; then
+        delay_screensaver
+    fi
+) &
+
+(
+    if ! is_proc_running urxvtd; then
+        urxvtd --fork
+    fi
+    sleep 3
+    urxvtc
+) &
 
 # from https://www.roaringpenguin.com/wiki/index.php/Remind_use_case_1
 if ! is_proc_running remind; then

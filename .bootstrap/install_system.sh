@@ -1431,7 +1431,7 @@ upgrade_kernel() {
         kernels_list+=( $(echo "$package_line" | cut -d' ' -f1) )
     done <   <(apt-cache search --names-only "^linux-image-[0-9]+\.[0-9]+\.[0-9]+.*$amd64_arch\$" | sort -n)
 
-    [[ -z "${kernels_list[@]}" ]] && { err "apt-cache search didn't find any kernel images. skipping kernel upgrade"; sleep 5; return 1; }
+    [[ -z "${kernels_list[*]}" ]] && { err "apt-cache search didn't find any kernel images. skipping kernel upgrade"; sleep 5; return 1; }
 
     while true; do
         echo
@@ -1758,7 +1758,7 @@ install_webdev() {
     ' || { err "first install_block failed" "$FUNCNAME"; return 1; }
 
     # create link for node (there's a different package called 'node' for debian,
-    # that's why the 'node' executable is very likely to be missing from the $PATH:
+    # that's why the 'node' executable is very likely to be missing from the $PATH):
     if ! command -v node >/dev/null; then
         command -v nodejs >/dev/null || { err "nodejs is not on \$PATH; can't create 'node' link to it. fix it."; }
         create_link --sudo "$(which nodejs)" "/usr/bin/node"
