@@ -2746,6 +2746,7 @@ install_from_repo() {
     )
 
     declare -ar block1=(
+        aptitude
         xorg
         sudo
         alsa-utils
