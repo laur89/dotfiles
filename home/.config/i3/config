@@ -23,8 +23,7 @@ bindsym $mod+c kill
 
 # Start Rofi (a program launcher, ssh, window switcher et al)
 # https://davedavenport.github.io/rofi/
-#bindsym $mod+space exec --no-startup-id rofi -show run -lines 5 -width 20 -separator-style "none" -hide-bar -sidebar-mode
-bindsym $mod+space exec --no-startup-id rofi -show combi -combi-modi 'window#run' -modi combi -lines 15 -width 50 -separator-style "none"
+bindsym $mod+space exec --no-startup-id rofi -show combi -combi-modi 'window#drun#run' -modi combi#ssh -lines 15 -columns 2 -width 50 -separator-style "none" -sidebar-mode
 
 # Change focus
 bindsym $mod+h focus left
