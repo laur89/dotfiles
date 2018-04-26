@@ -95,8 +95,9 @@ alias t5='tree -L 5'
 
 #
 # hate the typos:
-alias mut="mutt"
-alias utt="mutt"
+alias mut="neomutt"
+alias utt="neomutt"
+alias mutt="neomutt"
 alias cim='vim'
 alias vin='vim'
 alias bim='vim'

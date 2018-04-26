@@ -2926,7 +2926,7 @@ install_from_repo() {
     )
 
     declare -ar block4=(
-        mutt
+        neomutt
         notmuch
         abook
         isync
