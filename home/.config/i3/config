@@ -23,7 +23,8 @@ bindsym $mod+c kill
 
 # Start Rofi (a program launcher, ssh, window switcher et al)
 # https://davedavenport.github.io/rofi/
-bindsym $mod+space exec --no-startup-id rofi -show combi -combi-modi 'window#drun#run' -modi combi#ssh -lines 15 -columns 2 -width 50 -separator-style "none" -sidebar-mode
+bindsym $mod+space exec --no-startup-id rofi -show combi -combi-modi 'window#drun#run' \
+-modi combi#ssh -lines 15 -columns 2 -width 50 -separator-style "none" -sidebar-mode
 
 # Change focus
 bindsym $mod+h focus left
@@ -56,10 +57,10 @@ bindsym $mod+Shift+Right move right
 
 
 # Split in horizontal orientation
-bindsym $mod+b split h
+bindsym $mod+b split v
 
 # Split in vertical orientation
-bindsym $mod+v split v
+bindsym $mod+v split h
 
 # Enter fullscreen mode for the focused container
 bindsym $mod+f fullscreen toggle
@@ -126,8 +127,11 @@ bindsym $mod+Shift+c reload
 bindsym $mod+Shift+r restart
 
 # Resize window (you can also use the mouse for that)
-bindsym $mod+r mode "resize"
-mode "resize" {
+#set $resize <span background='blue'>resize</span>
+set $resize resize
+bindsym $mod+r mode "$resize"
+#mode --pango_markup "$resize" {  # note pango_markup only avail with i3bar
+mode "$resize" {
         # These bindings trigger as soon as you enter the resize mode
         # Pressing left will shrink the window’s width.
         # Pressing right will grow the window’s width.
@@ -144,7 +148,8 @@ mode "resize" {
         bindsym Up resize shrink height 5 px or 5 ppt
         bindsym Right resize grow width 5 px or 5 ppt
 
-        # exit resize mode: Enter or Escape
+        # exit resize mode:
+        bindsym $mod+r mode "default"
         bindsym Return mode "default"
         bindsym Escape mode "default"
 }
@@ -161,8 +166,10 @@ bindsym $mod+Shift+z sticky toggle
 #  i3-gaps settings 
 #  More info visit: https://github.com/Airblader/i3
 
-# Smart borders (draw borders around container only if it is not the only container on this workspace) 
-# on|no_gaps (on=always activate and no_gaps=only activate if the gap size to the edge of the screen is 0)
+# Smart borders (draw borders around container only if it is not
+# the only container on this workspace);
+# on|no_gaps (on=always activate and no_gaps=only activate if the
+# gap size to the edge of the screen is 0)
 smart_borders on
 
 # Smart gaps (gaps used if only more than one container on the workspace)
@@ -171,6 +178,9 @@ smart_borders on
 # Global gaps size
 gaps inner 0
 gaps outer 0
+
+# hide borders if only 1 window visible (smart):
+hide_edge_borders smart
 
 set $mode_gaps Gaps: (o) outer, (i) inner
 set $mode_gaps_outer Outer Gaps: +|-|0 (local), Shift + +|-|0 (global)
@@ -210,11 +220,14 @@ mode "$mode_gaps_outer" {
         bindsym Escape mode "default"
 }
 
-# Specify gaps for specific workspace
+# Specify gaps for specific workspace:
 # workspace $w1 gaps outer 15
 # workspace $w2 gaps outer 15
 # workspace $w5 gaps outer 15
 # workspace $w8 gaps outer 15
+
+# Assign workspaces on specific screens:
+# workspace $w1 output LVDS1
 
 # Lock screen
 #bindsym Control+mod1+Delete exec --no-startup-id i3-blurlock.sh
@@ -239,7 +252,9 @@ bindsym $mod+F9 exec --no-startup-id $HOME/.config/polybar/popups/power/power
 
 # Volume control
 bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +5%
+bindsym $mod+plus exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +5%
 bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -5%
+bindsym $mod+minus exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -5%
 bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle
 
 # Brightness control
@@ -257,7 +272,7 @@ bindsym Print exec scrot -e 'mv $f ~/Pictures/screenshots' && notify-send "Scree
 #bindsym $mod+b exec firefox
 
 ##################################
-## Custom colors
+## Custom colors (from xresources):
 #set_from_resource $black       color0  #000000
 ##set_from_resource $darkblack   color8  #000000
 #set_from_resource $darkred     color1  #000000
@@ -325,6 +340,9 @@ font pango:Terminess Powerline 12px
 #for_window [class=".*"] title_format "<span font='tewi 8'> ➤ %title</span>"
 #for_window [class=".*"] title_format "<span font='tewi 8'> </span>"
 
+# default border size for new windows:
+default_border pixel 2
+
 
 #*************  My apps settings  *********************
 # Autolock/turn off screen
@@ -348,7 +366,7 @@ exec_always --no-startup-id flashfocus
 # Set per-application border
 #for_window [class="^.*"] border pixel 1   # note border pixel 0 is required if you wanna use gaps
 #for_window [class="(?i)urxvt"] border pixel 1
-for_window [class="^.*"] border normal 2
+#for_window [class="^.*"] border pixel 2
 
 # Enable or disable floating
 for_window [class="Arandr"] floating enable
@@ -361,6 +379,7 @@ for_window [window_role="Preferences"] floating enable
 for_window [window_type="dialog"] floating enable
 for_window [window_type="menu"] floating enable
 for_window [class="Pavucontrol"] floating enable
+for_window [class="^copyq$"] floating enable
 # for_window [class="^.*"] floating enable
 
 # Starting apps on a specific workspace
