@@ -132,14 +132,14 @@ export _MARKPATH_DIR=.shell_jump_marks
 #if [[ "$-" != *i* ]] && [[ -z "$DISPLAY" ]]; then
 #if [ "$PS1" ] ; then # interactive shell
 #if [[ "$EUID" -eq 0 && -z "$DISPLAY" ]] || [[ "$-" != *i* ]]; then
-if [[ "$-" != *i* ]]; then
+if [[ "$-" != *i* && -n "$MAIN_SYSTEM_USER" ]]; then
 
 #if ! shopt -q login_shell; then
 #if [[ "$(tty)" != "/dev/tty1" ]] && [[ \"\$(who | cut -d' ' -f1 | sort | uniq)\" == \"\$usr\" ]]; do
 
     # try to extract our DISPLAY value from $(who) output
     if [[ -z "$DISPLAY" ]]; then
-        _DISP="$(LANG= who -u | grep -oP '\s+\(\K:[0-9](\.[0-9])?(?=\))' | sort -u)"
+        _DISP="$(LANG= who -u | grep "\b$MAIN_SYSTEM_USER\b" | grep -oP '\s+\(\K:[0-9](\.[0-9])?(?=\))' | sort -u)"
         if [[ -z "$_DISP" || "$(wc -l <<< "$_DISP")" -ne 1 ]]; then
             echo -e "\n\n    ERROR: couldn't find our \$DISPLAY from [$_DISP]\n\n"
         else
@@ -147,10 +147,11 @@ if [[ "$-" != *i* ]]; then
         fi
         unset _DISP
     fi
-    if [[ -z "$DBUS_SESSION_BUS_ADDRESS" && -n "$MAIN_SYSTEM_USER" ]]; then
+    if [[ -z "$DBUS_SESSION_BUS_ADDRESS" ]]; then
         _ID="$(id -u "$MAIN_SYSTEM_USER")"
-        [[ "$_ID" =~ ^[0-9]+$ ]] && export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$_ID/bus"
-        unset _ID
+        _BUS="/run/user/$_ID/bus"
+        [[ "$_ID" =~ ^[0-9]+$ ]] && test -e "$_BUS" && export DBUS_SESSION_BUS_ADDRESS="unix:path=$_BUS"
+        unset _ID _BUS
     fi
 fi
 
