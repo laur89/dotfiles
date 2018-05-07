@@ -31,6 +31,8 @@ bindsym $mod+h focus left
 bindsym $mod+j focus down
 bindsym $mod+k focus up
 bindsym $mod+l focus right
+bindsym $mod+period focus output right
+bindsym $mod+comma focus output left
 
 # Alternatively, you can use the cursor keys:
 bindsym $mod+Left focus left
@@ -38,7 +40,7 @@ bindsym $mod+Down focus down
 bindsym $mod+Up focus up
 bindsym $mod+Right focus right
 
-# Move focused window
+# Move focused window:
 bindsym $mod+Shift+h move left
 bindsym $mod+Shift+j move down
 bindsym $mod+Shift+k move up
@@ -62,7 +64,7 @@ bindsym $mod+b split v
 # Split in vertical orientation
 bindsym $mod+v split h
 
-# Enter fullscreen mode for the focused container
+# Enter fullscreen mode for the focused container; fullscreen toggle global for global
 bindsym $mod+f fullscreen toggle
 
 # Change container layout (stacked, tabbed, toggle split)
