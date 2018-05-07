@@ -134,6 +134,12 @@ set $resize resize
 bindsym $mod+r mode "$resize"
 #mode --pango_markup "$resize" {  # note pango_markup only avail with i3bar
 mode "$resize" {
+        # change focus while in resize mode:
+        bindsym $mod+h focus left
+        bindsym $mod+j focus down
+        bindsym $mod+k focus up
+        bindsym $mod+l focus right
+
         # These bindings trigger as soon as you enter the resize mode
         # Pressing left will shrink the window’s width.
         # Pressing right will grow the window’s width.
@@ -194,6 +200,7 @@ mode "$mode_gaps" {
         bindsym i      mode "$mode_gaps_inner"
         bindsym Return mode "default"
         bindsym Escape mode "default"
+        bindsym $mod+Shift+g mode "default"
 }
 
 mode "$mode_gaps_inner" {
