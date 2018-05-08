@@ -145,8 +145,7 @@ xset -b &
 #ResultInactive=no
 #ResultActive=yes
 
-#TODO: is necessary or not? (was related to xfce4-notifyd not starting)
-dbus-update-activation-environment --systemd --all  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=842712
+#dbus-update-activation-environment --systemd --all  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=842712
 #/usr/lib/polkit-gnome-authentication-agent-1 &
 /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
 
@@ -185,6 +184,16 @@ if [[ -d /etc/X11/xinit/xinitrc.d ]]; then
     done
     unset f
 fi
+
+
+# TODO https://unix.stackexchange.com/questions/440044/xinitrc-set-dbus-session-bus-address/440617#440617
+# suggests this should be enabled on debian, but it broke startup script for me:
+#if [[ -d /etc/X11/Xsession.d ]]; then
+    #for f in /etc/X11/Xsession.d/*; do
+        #[ -f "$f" ] && . "$f"
+    #done
+    #unset f
+#fi
 
 
 if [[ -d /etc/xdg/autostart ]]; then
