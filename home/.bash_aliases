@@ -50,7 +50,7 @@ alias logout="pkill -TERM -u $(whoami) & sleep 5 && pkill -KILL -u $(whoami) && 
 #alias logout='kill -9 -1' # kill all processes *you* can kill
 alias grep="grep --color=auto"
 alias fgrep='fgrep --color=auto'
-alias egrep='egrep --color=auto'
+alias egrep='grep -E --color=auto'
 alias c="clear"
 alias cp="cp -rp"
 alias dfh='df -h'
@@ -86,6 +86,7 @@ alias su='su --login'  # so env vars would be cleared
 alias lns='ln -s'
 alias svim='sudo vim'
 alias root='sudo su'
+alias lsd='{ ls | tr "\n" " "; echo; } | lolcat -a -d 150 -s 60'
 
 alias t1='tree -L 1'
 alias t2='tree -L 2'
