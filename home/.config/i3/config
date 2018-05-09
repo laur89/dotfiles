@@ -400,6 +400,7 @@ for_window [window_type="dialog"] floating enable
 for_window [window_type="menu"] floating enable
 for_window [class="Pavucontrol"] floating enable
 for_window [class="^copyq$"] floating enable
+for_window [class="^keepassxc?$"] floating enable
 
 # these two are from https://www.reddit.com/r/i3wm/comments/8gh4c0/working_fix_for_focusing_intellij_popups/
 # to solve intellij quirks:
