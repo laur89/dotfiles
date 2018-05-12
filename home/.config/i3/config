@@ -18,11 +18,10 @@ bindsym $mod+Return exec urxvtc
 # Kill focused window
 bindsym $mod+c kill
 
-# Start dmenu (a program launcher)
+# Start dmenu:
 #bindsym $mod+d exec  dmenu_run -b -nf "#839496" -sb "#b58900" -sf "#002b36" -nb "#002b36" -fn "tewi-8"
 
-# Start Rofi (a program launcher, ssh, window switcher et al)
-# https://davedavenport.github.io/rofi/
+# Start Rofi:    https://davedavenport.github.io/rofi/
 bindsym $mod+space exec --no-startup-id rofi -show combi -combi-modi 'window#drun#run' \
 -modi combi#ssh -lines 15 -columns 2 -width 50 -separator-style "none" -sidebar-mode
 
