@@ -310,24 +310,7 @@ bindsym Print exec scrot -e 'mv $f ~/Pictures/screenshots' && notify-send "Scree
 
 #set $darkblack #271c24
 
-## Window colors           border      background   text            indicator    child_border
-#client.focused            $red        $red         $red            $red        $red
-#client.focused_inactive   $magenta    $magenta     $blue           $magenta    $magenta
-#client.unfocused          $darkblack  $darkblack   $blue           $darkblack  $darkblack
-#client.urgent             $darkblack  $darkblack   $blue           $darkblack  $darkblack
 
-# Theme colors
-set $bg-color            #d79921
-set $inactive-bg-color   #454849
-set $text-color          #454849
-set $inactive-text-color #f9f5d7
-set $urgent-bg-color     #db3f3f
-
-# Window colors         border              background         text                 indicator    
-client.focused          $bg-color           $bg-color          $text-color          $bg-color
-client.unfocused        $inactive-bg-color  $inactive-bg-color $inactive-text-color $inactive-bg-color
-client.focused_inactive $inactive-bg-color  $inactive-bg-color $inactive-text-color $inactive-bg-color
-client.urgent           $urgent-bg-color    $urgent-bg-color   $text-color          $urgent-bg-color
 ##################################
 
 #Start i3bar to display a workspace bar; this block cannot exist when using polybar
@@ -421,3 +404,22 @@ assign [class="^jetbrains-studio"]       $w8
 assign [class="^Deluge"]                 $w8
 
 # vim:filetype=i3
+
+
+# Theme colors
+set $bg-color            #d79921
+set $inactive-bg-color   #454849
+set $text-color          #454849
+set $inactive-text-color #f9f5d7
+set $urgent-bg-color     #db3f3f
+
+## Window colors           border      background   text            indicator    child_border
+#client.focused          $bg-color           $bg-color          $text-color          $bg-color
+#client.unfocused        $inactive-bg-color  $inactive-bg-color $inactive-text-color $inactive-bg-color
+#client.focused_inactive $inactive-bg-color  $inactive-bg-color $inactive-text-color $inactive-bg-color
+#client.urgent           $urgent-bg-color    $urgent-bg-color   $text-color          $urgent-bg-color
+
+client.focused #81a2be #81a2be #1d1f21 #282a2e
+client.focused_inactive #373b41 #373b41 #969896 #282a2e
+client.unfocused #282a2e #282a2e #969896 #282a2e
+client.urgent #373b41 #cc6666 #ffffff #cc6666
