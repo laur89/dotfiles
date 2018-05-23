@@ -7,7 +7,7 @@
                 "priority": 50,
                 "args": {
                     "unit": "C",
-                    "location_query": "gibraltar"
+                    "location_query": "gibraltar, gibraltar"
                 }
             },
 			{
