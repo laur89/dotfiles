@@ -826,7 +826,7 @@ install_deps() {
     fi
 
     # nvm (node version manager) :  # https://github.com/creationix/nvm#git-install
-    clone_or_pull_repo "creationix" "nvm" "$HOME/.nvm"  # do not change location, keep _real_ .nvm/ under ~
+    execute "git clone --recursive -j8 https://github.com/creationix/nvm.git $HOME/.nvm"  # do not change location, keep _real_ .nvm/ under ~
     execute "source '$HOME/.nvm/nvm.sh'" || err "sourcing ~/.nvm/nvm.sh failed"
 
     # TODO: these are not deps, are they?:
@@ -2140,7 +2140,24 @@ install_i3() {
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
+
+    install_i3_deps
     return 0
+}
+
+
+install_i3_deps() {
+    local f
+    f="$TMPDIR/i3-dep-${RANDOM}"
+
+    execute "sudo pip3 install --upgrade i3ipc"  # https://github.com/acrisci/i3ipc-python
+
+    # TODO: depending on multimon performance, decide whether urxvtq is enough,
+    # or i3-quickterm is required;!
+    ##########################################
+    # install i3-quickterm   # https://github.com/lbonn/i3-quickterm
+    curl -o "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3-quickterm' \
+        && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-quickterm"
 }
 
 
@@ -2756,7 +2773,6 @@ install_from_repo() {
         pulseaudio-equalizer
         pasystray
         dunst
-        xautolock
         rofi
         compton
         smartmontools
@@ -2866,7 +2882,6 @@ install_from_repo() {
         rxvt-unicode-256color
         seafile-gui
         seafile-cli
-        guake
         spotify-client
         mopidy
         mopidy-soundcloud
@@ -2892,6 +2907,8 @@ install_from_repo() {
         xsel
         xss-lock
         xclip
+        wmctrl
+        xdotool
         exuberant-ctags
         shellcheck
         ranger
@@ -3138,6 +3155,7 @@ __choose_prog_to_build() {
         install_synergy
         install_dwm
         install_i3
+        install_i3_deps
         install_i3lock
         install_polybar
         install_oracle_jdk

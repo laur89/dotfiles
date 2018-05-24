@@ -35,7 +35,7 @@ URxvt*secondaryScroll: true
 ! keep the lines low, let tmux handle the buffer:
 URxvt*saveLines: 2000
 ! icon:
-URxvt.iconFile: /home/laur/.icons/ultra-flat-icons/apps/scalable/lxterminal.svg
+!URxvt.iconFile: /home/laur/.icons/ultra-flat-icons/apps/scalable/lxterminal.svg
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! kuake
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

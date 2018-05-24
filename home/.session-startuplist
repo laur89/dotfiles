@@ -13,7 +13,6 @@ declare -a PROGS=(
     keepassxc
     copyq
     xfce4-volumed
-    guake
     mopidy
     redshift
     devmon
@@ -31,6 +30,7 @@ declare -a PROGS=(
     #"skype"
     #"spacefm"
     #"franz"
+    #guake
     #wait_for_suspend_to_lock_screen.sh   # not required with xss-lock
 
 # alternative to lock automatically when suspending/hibernating: (requires xss-lock)
@@ -111,9 +111,9 @@ fi
 
 (
     if ! is_proc_running urxvtd; then
-        urxvtd --fork
+        urxvtd --fork -o -q
     fi
-    sleep 3
+    sleep 2
     urxvtc
 ) &
 
