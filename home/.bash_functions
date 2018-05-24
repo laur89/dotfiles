@@ -744,6 +744,16 @@ aptclean() {
     #sudo apt-get upgrade
 }
 
+upgrade() {
+    sudo -s -- <<EOF
+        apt-get update
+        apt-get upgrade -y
+        apt-get dist-upgrade -y
+        apt-get autoremove -y
+        apt-get autoclean -y
+EOF
+}
+
 #  Find a pattern in a set of files and highlight them:
 #+ (needs a recent version of grep).
 # !!! deprecated by ag/astr
