@@ -767,10 +767,6 @@ install_deps() {
     clone_or_pull_repo "bobthecow" "git-flow-completion" "$BASE_DEPS_LOC"
     create_link "${BASE_DEPS_LOC}/git-flow-completion" "$HOME/.git-flow-completion"
 
-    # git-playback:   # https://github.com/mmozuras/git-playback
-    clone_or_pull_repo "mmozuras" "git-playback" "$BASE_DEPS_LOC"
-    create_link "${BASE_DEPS_LOC}/git-playback/git-playback.sh" "$HOME/bin/git-playback-sh"
-
     # bars (as in bar-charts) in shell:
     #  note: see also https://github.com/sindresorhus/sparkly-cli
     clone_or_pull_repo "holman" "spark" "$BASE_DEPS_LOC"  # https://github.com/holman/spark
@@ -829,8 +825,14 @@ install_deps() {
     execute "git clone --recursive -j8 https://github.com/creationix/nvm.git $HOME/.nvm"  # do not change location, keep _real_ .nvm/ under ~
     execute "source '$HOME/.nvm/nvm.sh'" || err "sourcing ~/.nvm/nvm.sh failed"
 
-    # TODO: these are not deps, are they?:
+    # TODO: following are not deps, are they?:
+    # git-playback; install _either_ of these two (ie either from jianli or mmozuras):
     execute "sudo pip install --upgrade git-playback"   # https://github.com/jianli/git-playback
+
+    # git-playback:   # https://github.com/mmozuras/git-playback
+    #clone_or_pull_repo "mmozuras" "git-playback" "$BASE_DEPS_LOC"
+    #create_link "${BASE_DEPS_LOC}/git-playback/git-playback.sh" "$HOME/bin/git-playback-sh"
+
 
     # this needs apt-get install  python-imaging ?:
     execute "sudo pip  install --upgrade img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
@@ -839,6 +841,7 @@ install_deps() {
     execute "sudo pip  install --upgrade tldr"          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
                                                         #   note its conf is in bash_env_vars
     execute "sudo pip  install --upgrade maybe"         # https://github.com/p-e-w/maybe (check what command would do)
+    execute "sudo pip3 install --upgrade httpstat"      # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
 
     # colorscheme generator:
     # see also complementing script @ https://github.com/dylanaraps/bin/blob/master/wal-set
@@ -848,6 +851,18 @@ install_deps() {
 
     # some py deps requred by scripts:
     execute "sudo pip3 install --upgrade exchangelib icalendar arrow"
+    # note: if exchangelib fails with something like
+				#In file included from src/kerberos.c:19:0:
+				#src/kerberosbasic.h:17:27: fatal error: gssapi/gssapi.h: No such file or directory
+				##include <gssapi/gssapi.h>
+											#^
+				#compilation terminated.
+				#error: command 'x86_64-linux-gnu-gcc' failed with exit status 1
+	# you'd might wanna install  libkrb5-dev (or whatever ver avail at the time)
+
+
+    # install docker-compose:
+    execute "sudo pip install --upgrade docker-compose" # https://docs.docker.com/compose/install/#install-compose
 
     # i3lock-fancy                                      # https://github.com/meskarune/i3lock-fancy
     # depends on i3lock-color-git (see i3lock-fancy's github page)
@@ -1411,36 +1426,37 @@ install_npm_modules() {
 # to force ver: apt-get install linux-image-amd64:version
 # check avail vers: apt-cache showpkg linux-image-amd64
 upgrade_kernel() {
-    local package_line kernels_list amd64_arch
+    local package_line kernels_list arch
 
     declare -a kernels_list=()
 
     # install kernel meta-packages:
     # NOTE: these meta-packages only required, if using non-stable debian;
-    # they keep the kernel and headers in sync:
+    # they keep the kernel and headers in sync; also note 'linux-image-amd64'
+    # always pulls in latest kernel by default.
     if is_64_bit; then
         report "first installing kernel meta-packages..."
         install_block '
             linux-image-amd64
             linux-headers-amd64
         '
-        readonly amd64_arch="amd64"
+        readonly arch="amd64"
     else
-        report "verified we're not running 64bit system. make sure it's correct. skipping kernel meta-package installation."
+        err "verified we're not running 64bit system. make sure it's correct. skipping kernel meta-package installation."
         sleep 5
     fi
 
     # search for available kernel images:
     while IFS= read -r package_line; do
         kernels_list+=( $(echo "$package_line" | cut -d' ' -f1) )
-    done <   <(apt-cache search --names-only "^linux-image-[0-9]+\.[0-9]+\.[0-9]+.*$amd64_arch\$" | sort -n)
+    done < <(apt-cache search --names-only "^linux-image-[0-9]+\.[0-9]+\.[0-9]+.*$arch\$" | sort -n)
 
     [[ -z "${kernels_list[*]}" ]] && { err "apt-cache search didn't find any kernel images. skipping kernel upgrade"; sleep 5; return 1; }
 
     while true; do
         echo
-        report "current kernel: $(uname -r)"
-        report "select kernel to install: (select none to skip kernel upgrade)\n"
+        report "note kernel was just updated, but you can select different ver:"
+        report "select kernel to install: (select none to skip kernel change)\n"
         select_items "${kernels_list[*]}" 1
 
         if [[ -n "$__SELECTED_ITEMS" ]]; then
@@ -1448,7 +1464,7 @@ upgrade_kernel() {
             execute "sudo apt-get --yes install $__SELECTED_ITEMS"
             break
         else
-            confirm "no items were selected; skip kernel upgrade?" && break
+            confirm "no items were selected; skip kernel change?" && break
         fi
     done
 
@@ -1464,9 +1480,9 @@ install_own_builds() {
 
     #prepare_build_container
 
-    install_vim
+    install_vim  # note: can't exclude it as-is, as it also configures vim (if you ever want to go nvim-only)
     #install_neovim
-    install_keepassxc
+    #install_keepassxc
     #install_goforit
     #install_copyq
     install_rambox
@@ -1804,8 +1820,9 @@ install_webdev() {
         libgdbm-dev
     '
 
+	# install rails:
     # this would install it globally; better install new local ver by
-    # rbenv install <ver> && rbenv global <ver> && gem install rails
+    # $rbenv install <ver> && rbenv global <ver> && gem install rails
     #execute 'sudo gem install rails'
 }
 
@@ -2863,6 +2880,7 @@ install_from_repo() {
         meld
         pastebinit
         synergy
+        keepassxc
     )
 
 
@@ -2941,6 +2959,7 @@ install_from_repo() {
         transmission-remote-cli
         transmission-remote-gtk
         copyq
+		googler
     )
 
     declare -ar block4=(
@@ -2959,7 +2978,6 @@ install_from_repo() {
         lolcat
         figlet
         redshift
-        rdesktop
         docker.io
         charles-proxy
     )
@@ -2983,6 +3001,7 @@ install_from_repo() {
 
     if [[ "$MODE" == work ]]; then
         install_block '
+            remmina
             samba-common-bin
             smbclient
             ruby-dev
@@ -2990,13 +3009,9 @@ install_from_repo() {
             virtualbox
             virtualbox-dkms
             virtualbox-guest-dkms
-
-            nfs-common
-            nfs-kernel-server
         '
 
-        # note that both nfs-common & nfs-kernel-server at this point are required
-        # for the work's vagrant setup.
+        # remmina is remote desktop for windows; rdesktop, remote vnc;
     fi
 
     if is_laptop; then
