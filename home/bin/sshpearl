@@ -20,6 +20,10 @@
 # This is a slightly modified version of the original ssh_pearl:
 # it calls the ssh_pearl function with passed arguments; that way it can be invoked
 # by other scripts. It also forces the TERM env var.
+# also defines gosu() alias for going sudo with included rc files.
+#
+# Check https://github.com/Russell91/sshrc for alternative.
+#
 
 readonly SELF="$(basename -- "$0")"
 
@@ -59,7 +63,7 @@ function ssh_pearl() {
         done
     }
 
-    [[ -z "$@" ]] && { ssh; return $?; }
+    [[ -z "$*" ]] && { ssh; return $?; }
 
     for opt in "$@"; do
         case "$opt" in
@@ -72,7 +76,7 @@ function ssh_pearl() {
         commands+=("$arg")
     done
 
-    [[ -n "${commands[@]}" ]] && commands_opt="-c '${commands[*]}'"
+    [[ -n "${commands[*]}" ]] && commands_opt="-c '${commands[*]}'"
 
     command -v base64 >/dev/null 2>&1 || { echo >&2 "pearl-ssh requires base64 to be installed locally. Aborting."; return 1; }
     command -v gzip >/dev/null 2>&1 || { echo >&2 "pearl-ssh requires gzip to be installed locally. Aborting."; return 1; }
@@ -92,7 +96,7 @@ function ssh_pearl() {
         PEARLSSH_HOME=\"\$(mktemp -d pearl-XXXXX -p \"\$foundTmpDir\")\";
         PEARLSSH_BIN=\"\$(mktemp -d pearl-bin-XXXXX -p \"\$PEARLSSH_HOME\")\";
         export PEARL_HOME=\"\$PEARLSSH_HOME\";
-        trap \"rm -rf \"\$PEARLSSH_HOME\"; exit\" EXIT HUP INT QUIT PIPE TERM;
+        trap \"rm -rf \"\$PEARLSSH_HOME\"; exit\" EXIT HUP INT QUIT PIPE TERM KILL;
         echo \"${rcScript}\" | base64 -di | gunzip > \"\${PEARLSSH_HOME}/bashrc\";
         echo \"${inputrcScript}\" | base64 -di | gunzip > \"\${PEARLSSH_HOME}/inputrc\";
         echo \"${vimrcScript}\" | base64 -di | gunzip > \"\${PEARLSSH_HOME}/vimrc\";

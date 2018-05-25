@@ -106,8 +106,8 @@ export TLDR_COLOR_PARAMETER="white"
 export TLDR_CACHE_ENABLED=1
 export TLDR_CACHE_MAX_AGE=720
 
-# conscript (distribution mechanism for scala apps using github & mvn) env vars (from
-# http://www.foundweekends.org/conscript/setup.html):
+# conscript (distribution mechanism for scala apps using github & mvn) env vars
+# (from http://www.foundweekends.org/conscript/setup.html):
 export CONSCRIPT_HOME="$HOME/.conscript"
 export CONSCRIPT_OPTS="-XX:MaxPermSize=512M -Dfile.encoding=UTF-8"
 export PATH=$CONSCRIPT_HOME/bin:$PATH
@@ -136,6 +136,11 @@ if [[ "$-" != *i* && -n "$MAIN_SYSTEM_USER" ]]; then
 
 #if ! shopt -q login_shell; then
 #if [[ "$(tty)" != "/dev/tty1" ]] && [[ \"\$(who | cut -d' ' -f1 | sort | uniq)\" == \"\$usr\" ]]; do
+
+    # find currently active user/id: (note 'type' _should_ be x11 || wayland, but seems to be 'tty' with xinitrc;
+    #for sessionid in $(loginctl list-sessions --no-legend | awk '{ print $1 }'); do
+        #loginctl show-session -p Id -p Name -p User -p State -p Type -p Remote $sessionid | sort
+    #done | awk -F= '/Name/ { name = $2 } /User/ { user = $2 } /State/ { state = $2 } /Type/ { type = $2 } /Remote/ { remote = $2 } /User/ && remote == "no" && state == "active" && (type == "tty" || type == "wayland") { print user, name }'
 
     # try to extract our DISPLAY value from $(who) output
     if [[ -z "$DISPLAY" ]]; then
