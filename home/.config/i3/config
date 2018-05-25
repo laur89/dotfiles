@@ -172,15 +172,6 @@ mode "$resize" {
         bindsym Escape mode "default"
 }
 
-# Show the next scratchpad window or hide the focused scratchpad window.
-# If there are multiple scratchpad windows, this command cycles through them:
-bindsym $mod+Shift+s scratchpad show
-
-# Show the first scratchpad window:
-bindsym $mod+Control+Shift+s move scratchpad
-
-bindsym $mod+Shift+z sticky toggle
-
 #  i3-gaps settings 
 #  More info visit: https://github.com/Airblader/i3
 
@@ -249,8 +240,9 @@ mode "$mode_gaps_outer" {
 # workspace $w1 output LVDS1
 
 # Lock screen
-#bindsym Control+mod1+Delete exec --no-startup-id i3-blurlock.sh
 bindsym Control+mod1+Delete exec --no-startup-id /usr/local/bin/lock
+# first switch to likely-unused ws to avoid typing passwd for the world:
+#bindsym Control+mod1+Delete exec --no-startup-id i3-msg workspace $w8 && /usr/local/bin/lock
 
 # Shutdwon, Restart, Logout, Suspend, Hibernate, Reboot, Lock
  # set $mode_system System (l) lock, (e) logout, (s) suspend, (h) hibernate, (r) reboot, (Shift+s) shutdown
@@ -383,6 +375,7 @@ for_window [window_type="menu"] floating enable
 for_window [class="Pavucontrol"] floating enable
 for_window [class="^copyq$"] floating enable
 for_window [class="^keepassxc?$"] floating enable
+for_window [class="^vokoscreen$"] floating enable
 
 # these two are from https://www.reddit.com/r/i3wm/comments/8gh4c0/working_fix_for_focusing_intellij_popups/
 # to solve intellij quirks:
@@ -406,20 +399,58 @@ assign [class="^Deluge"]                 $w8
 # vim:filetype=i3
 
 
-# Theme colors
-set $bg-color            #d79921
-set $inactive-bg-color   #454849
-set $text-color          #454849
-set $inactive-text-color #f9f5d7
-set $urgent-bg-color     #db3f3f
+# Theme colors (standalone, ie not plugin managed)
+#set $bg-color            #d79921
+#set $inactive-bg-color   #454849
+#set $text-color          #454849
+#set $inactive-text-color #f9f5d7
+#set $urgent-bg-color     #db3f3f
 
 ## Window colors           border      background   text            indicator    child_border
 #client.focused          $bg-color           $bg-color          $text-color          $bg-color
 #client.unfocused        $inactive-bg-color  $inactive-bg-color $inactive-text-color $inactive-bg-color
 #client.focused_inactive $inactive-bg-color  $inactive-bg-color $inactive-text-color $inactive-bg-color
 #client.urgent           $urgent-bg-color    $urgent-bg-color   $text-color          $urgent-bg-color
+# /Theme colors
 
 client.focused #81a2be #81a2be #1d1f21 #282a2e
 client.focused_inactive #373b41 #373b41 #969896 #282a2e
 client.unfocused #282a2e #282a2e #969896 #282a2e
 client.urgent #373b41 #cc6666 #ffffff #cc6666
+
+
+
+
+
+# Scratchpad: #######
+# Show the next scratchpad window or hide the focused scratchpad window.
+# If there are multiple scratchpad windows, this command cycles through them:
+bindsym $mod+Shift+s scratchpad show
+
+# Move focused win to scratchpad:
+bindsym $mod+Control+Shift+s move scratchpad
+### common scratchpad (ie multiple windows being toggled simultaneously):
+bindsym $mod+Shift+z [con_mark="^scratch_mark"] scratchpad show
+bindsym $mod+Control+Shift+z exec --no-startup-id i3-scratch-marker.sh scratch_mark
+
+
+# TODO: what keybinding for sticky? do we even want it?
+#bindsym $mod+Shift+z sticky toggle
+
+# quake style terminal:
+# 1st ver, using urxvtq:
+for_window [instance="^scratchpad_urxvt_top$"] border pixel 1, floating enable, move position 0 px 0 px, resize set 100 ppt 40 ppt
+#bindsym $mod1+i exec urxvtq scratchpad_urxvt_top
+
+# 2nd ver, using i3-quickterm:  TODO: when in multi-mon, find which one to use (ie this or urxvtq)
+# with prompt:
+#bindsym $mod1+i exec i3-quickterm
+# always pop standard shell, without the rofi menu:
+bindsym $mod1+i exec i3-quickterm shell
+
+
+
+# alt-tab between latest windows:
+exec --no-startup-id i3-focus-last-window.sh
+bindsym $mod1+Tab [con_mark=_last] focus
+
