@@ -1481,6 +1481,8 @@ make7z() {
 # alias for extract
 unpack() { extract "$@"; }
 
+# TODO: consider atool instead
+#
 # helper wrapper for uncompressing archives. it uncompresses into new directory, which
 # name is the same as the archive's, sans the file extension. this avoids situations
 # where gazillion files are being extracted into working dir. note that if the dir
@@ -1747,7 +1749,7 @@ createUsbIso() {
     clear
 
     report "Running dd, writing [$inf] into [$ouf]; this might take a while..." "$FUNCNAME"
-    sudo dd if="$inf" of="$ouf" bs=4M || { err "some error occurred while running dd (err code [$?])." "$FUNCNAME"; }
+    sudo dd if="$inf" of="$ouf" bs=4M status=progress || { err "some error occurred while running dd (err code [$?])." "$FUNCNAME"; }
     sync
     #eject $device
 
@@ -1755,6 +1757,14 @@ createUsbIso() {
     # verify integrity:
     #md5sum mydisk.iso
     #md5sum /dev/sr0
+}
+
+
+# display hardware
+# see also: hardinfo
+hw() {
+    check_progs_installed inxi || return 1
+    inxi -F
 }
 
 #######################

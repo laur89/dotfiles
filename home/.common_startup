@@ -149,7 +149,8 @@ xset -b &
 #/usr/lib/polkit-gnome-authentication-agent-1 &
 /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
 
-is_proc_running gnome-keyring-daemon || eval $(/usr/bin/gnome-keyring-daemon --start --components=gpg,pkcs11,secrets,ssh)
+# keyring is tricky with i3; see https://wiki.archlinux.org/index.php/GNOME/Keyring#PAM_method & https://www.reddit.com/r/archlinux/comments/648dxp/using_gnomekeyring_with_i3/
+eval $(/usr/bin/gnome-keyring-daemon --start --components=gpg,pkcs11,secrets,ssh)
 sleep 1  # TODO potential race condition here - dunst as root sometimes not picking up config
 export GNOME_KEYRING_CONTROL GNOME_KEYRING_PID GPG_AGENT_INFO SSH_AUTH_SOCK DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
 
