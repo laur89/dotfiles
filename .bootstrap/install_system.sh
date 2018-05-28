@@ -14,7 +14,7 @@
 #---   Configuration  ---
 #------------------------
 readonly TMPDIR='/tmp'
-readonly CLANG_LLVM_LOC='http://releases.llvm.org/4.0.1/clang+llvm-4.0.1-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
+readonly CLANG_LLVM_LOC='http://releases.llvm.org/5.0.0/clang+llvm-5.0.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
 readonly I3_REPO_LOC='https://www.github.com/Airblader/i3'            # i3-gaps
 readonly I3_LOCK_LOC='https://github.com/PandorasFox/i3lock-color'    # i3lock-color
 readonly I3_LOCK_FANCY_LOC='https://github.com/meskarune/i3lock-fancy'    # i3lock-fancy
@@ -829,6 +829,9 @@ install_deps() {
     # git-playback; install _either_ of these two (ie either from jianli or mmozuras):
     execute "sudo pip install --upgrade git-playback"   # https://github.com/jianli/git-playback
 
+    # whatportis: query applications' default port:
+    execute "sudo pip install whatportis"   # https://github.com/ncrocfer/whatportis
+
     # git-playback:   # https://github.com/mmozuras/git-playback
     #clone_or_pull_repo "mmozuras" "git-playback" "$BASE_DEPS_LOC"
     #create_link "${BASE_DEPS_LOC}/git-playback/git-playback.sh" "$HOME/bin/git-playback-sh"
@@ -852,13 +855,13 @@ install_deps() {
     # some py deps requred by scripts:
     execute "sudo pip3 install --upgrade exchangelib icalendar arrow"
     # note: if exchangelib fails with something like
-				#In file included from src/kerberos.c:19:0:
-				#src/kerberosbasic.h:17:27: fatal error: gssapi/gssapi.h: No such file or directory
-				##include <gssapi/gssapi.h>
-											#^
-				#compilation terminated.
-				#error: command 'x86_64-linux-gnu-gcc' failed with exit status 1
-	# you'd might wanna install  libkrb5-dev (or whatever ver avail at the time)
+                #In file included from src/kerberos.c:19:0:
+                #src/kerberosbasic.h:17:27: fatal error: gssapi/gssapi.h: No such file or directory
+                ##include <gssapi/gssapi.h>
+                                            #^
+                #compilation terminated.
+                #error: command 'x86_64-linux-gnu-gcc' failed with exit status 1
+    # you'd might wanna install  libkrb5-dev (or whatever ver avail at the time)
 
 
     # install docker-compose:
@@ -1820,7 +1823,7 @@ install_webdev() {
         libgdbm-dev
     '
 
-	# install rails:
+    # install rails:
     # this would install it globally; better install new local ver by
     # $rbenv install <ver> && rbenv global <ver> && gem install rails
     #execute 'sudo gem install rails'
@@ -2110,9 +2113,8 @@ install_i3() {
         local f
 
         f="$TMPDIR/i3-patch-${RANDOM}.patch"
-        curl -o "$f" 'https://raw.githubusercontent.com/laur89/i3-extras/976ab0c3ce3e0b35349dac2cd37d25674b468c01/window-icons/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
-        #curl -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
-        patch -p1 < "$f" || return 1
+        curl -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
+        patch -p1 < "$f" || { err "applying window-icons.patch failed"; return 1; }
     }
 
     readonly tmpdir="$TMPDIR/i3-gaps-build-${RANDOM}"
@@ -2155,6 +2157,15 @@ install_i3() {
     execute 'make'
     create_deb_install_and_store i3-gaps
 
+    # install required perl modules (eg for i3-save-tree):
+    execute "pushd AnyEvent-I3" || return 1
+    execute 'perl Makefile.PL'
+    execute 'make'
+    create_deb_install_and_store i3-anyevent
+    install_block "libjson-any-perl"
+    execute "popd"
+
+
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
 
@@ -2175,6 +2186,20 @@ install_i3_deps() {
     # install i3-quickterm   # https://github.com/lbonn/i3-quickterm
     curl -o "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3-quickterm' \
         && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-quickterm"
+
+
+    # install i3ass (i3fyra and friends):  https://github.com/budRich/i3ass.git
+    clone_or_pull_repo "budRich" "i3ass" "$BASE_DEPS_LOC"  # https://github.com/budRich/i3ass.git
+    execute "pushd $BASE_DEPS_LOC/i3ass" || return 1
+    execute "./install.sh -q $HOME/bin/"  # install executable links on $PATH
+    execute popd
+
+
+    # create links of our own i3 scripts on $PATH:
+    create_symlinks "$BASE_DATA_DIR/dev/scripts/i3" "$HOME/bin"
+
+
+    execute "sudo rm -rf -- '$f'"
 }
 
 
@@ -2462,9 +2487,9 @@ build_and_install_vim() {
     local tmpdir expected_runtimedir python_confdir python3_confdir i
 
     readonly tmpdir="$TMPDIR/vim-build-${RANDOM}"
-    readonly expected_runtimedir='/usr/local/share/vim/vim80'  # depends on the ./configure --prefix
+    readonly expected_runtimedir='/usr/local/share/vim/vim81'  # depends on the ./configure --prefix
     readonly python_confdir='/usr/lib/python2.7/config-x86_64-linux-gnu'
-    readonly python3_confdir='/usr/lib/python3.5/config-3.5m-x86_64-linux-gnu'
+    readonly python3_confdir='/usr/lib/python3.6/config-3.6m-x86_64-linux-gnu'
 
     report "building vim..."
 
@@ -2770,7 +2795,7 @@ install_fonts() {
 
 
 # TODO: add udiskie?
-# majority of packages get installed at this point; including drivers, if any.
+# majority of packages get installed at this point;
 install_from_repo() {
     local block block1 block2 block3 block4 extra_apt_params
 
@@ -2819,6 +2844,7 @@ install_from_repo() {
         psensor
         xsensors
         hardinfo
+        inxi
         macchanger
         ufw
         gufw
@@ -2830,11 +2856,13 @@ install_from_repo() {
         dnsutils
         glances
         htop
+        iotop
         ncdu
         pydf
         netdata
         wireshark
         iptraf
+        nethogs
         tkremind
         remind
         tree
@@ -2847,6 +2875,7 @@ install_from_repo() {
         apt-xapian-index
         mercurial
         git
+        tig
         git-flow
         git-cola
         zenity
@@ -2867,6 +2896,7 @@ install_from_repo() {
         cups
         system-config-printer
         galculator
+        atool
         file-roller
         rar
         unrar
@@ -2933,7 +2963,7 @@ install_from_repo() {
         spacefm-gtk3
         screenfetch
         neofetch
-        scrot
+        maim
         ffmpeg
         vokoscreen
         kazam
@@ -2959,7 +2989,7 @@ install_from_repo() {
         transmission-remote-cli
         transmission-remote-gtk
         copyq
-		googler
+        googler
     )
 
     declare -ar block4=(
@@ -3912,6 +3942,23 @@ copy_to_clipboard() {
         || return 1
 
     return 0
+}
+
+
+# Create links of files in given directory, into antther dir.
+#
+# @param {string}  src  directory whose contents should be linked to dest
+# @param {string}  dest directory where links of files in $src should be created in.
+create_symlinks() {
+    local src dest
+
+    src="$1"
+    dest="$2"
+
+    [[ -d "$src" && -d "$dest" ]] || { err "either given [$src] or [$dest] are not valid dirs"; return 1; }
+
+    # Create symlink of every file except for itself (note target file will be overwrittne no matter what):
+    find "$src" -maxdepth 1 -mindepth 1 -type f -printf 'ln -sf -- "%p" "$dest"\n' | dest="$dest" bash
 }
 
 
