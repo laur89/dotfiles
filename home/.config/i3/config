@@ -26,18 +26,24 @@ bindsym $mod+space exec --no-startup-id rofi -show combi -combi-modi 'window#dru
 -modi combi#ssh -lines 15 -columns 2 -width 50 -separator-style "none" -sidebar-mode
 
 # Change focus
-bindsym $mod+h focus left
-bindsym $mod+j focus down
-bindsym $mod+k focus up
-bindsym $mod+l focus right
+bindsym $mod+h exec --no-startup-id i3-cycle-exclude-tabs.py left
+bindsym $mod+j exec --no-startup-id i3-cycle-exclude-tabs.py down
+bindsym $mod+k exec --no-startup-id i3-cycle-exclude-tabs.py up
+bindsym $mod+l exec --no-startup-id i3-cycle-exclude-tabs.py right
 bindsym $mod+period focus output right
 bindsym $mod+comma focus output left
 
 # Alternatively, you can use the cursor keys:
-bindsym $mod+Left focus left
-bindsym $mod+Down focus down
-bindsym $mod+Up focus up
-bindsym $mod+Right focus right
+#bindsym $mod+Left focus left
+#bindsym $mod+Down focus down
+#bindsym $mod+Up focus up
+#bindsym $mod+Right focus right
+
+# i3ass' i3flip for sane tab navigation:
+bindsym $mod1+l   exec --no-startup-id i3flip n
+bindsym $mod1+h   exec --no-startup-id i3flip p
+bindsym $mod1+j   exec --no-startup-id i3flip n
+bindsym $mod1+k   exec --no-startup-id i3flip p
 
 # Move focused window:
 bindsym $mod+Shift+h move left
@@ -145,10 +151,12 @@ bindsym $mod+r mode "$resize"
 #mode --pango_markup "$resize" {  # note pango_markup only avail with i3bar
 mode "$resize" {
         # change focus while in resize mode:
-        bindsym $mod+h focus left
-        bindsym $mod+j focus down
-        bindsym $mod+k focus up
-        bindsym $mod+l focus right
+        bindsym $mod+h exec --no-startup-id i3-cycle-exclude-tabs.py left
+        bindsym $mod+j exec --no-startup-id i3-cycle-exclude-tabs.py down
+        bindsym $mod+k exec --no-startup-id i3-cycle-exclude-tabs.py up
+        bindsym $mod+l exec --no-startup-id i3-cycle-exclude-tabs.py right
+        bindsym $mod+period focus output right
+        bindsym $mod+comma focus output left
 
         # These bindings trigger as soon as you enter the resize mode
         # Pressing left will shrink the window’s width.
@@ -376,6 +384,7 @@ for_window [class="Pavucontrol"] floating enable
 for_window [class="^copyq$"] floating enable
 for_window [class="^keepassxc?$"] floating enable
 for_window [class="^vokoscreen$"] floating enable
+for_window [class="^Galculator$"] floating enable
 
 # these two are from https://www.reddit.com/r/i3wm/comments/8gh4c0/working_fix_for_focusing_intellij_popups/
 # to solve intellij quirks:
@@ -446,11 +455,14 @@ for_window [instance="^scratchpad_urxvt_top$"] border pixel 1, floating enable, 
 # with prompt:
 #bindsym $mod1+i exec i3-quickterm
 # always pop standard shell, without the rofi menu:
-bindsym $mod1+i exec i3-quickterm shell
+bindsym $mod1+i exec --no-startup-id i3-quickterm shell
 
 
 
-# alt-tab between latest windows:
-exec --no-startup-id i3-focus-last-window.sh
-bindsym $mod1+Tab [con_mark=_last] focus
+# alt-tab between latest windows (note 2 similar implementations):
+#exec --no-startup-id i3-focus-last-window.sh
+#bindsym $mod1+Tab [con_mark=^_last$] focus
+# another, py-based alt-tab alternative:
+exec --no-startup-id ./i3-cycle-focus.py --history 2
+bindsym $mod1+Tab exec --no-startup-id i3-cycle-focus.py --switch
 
