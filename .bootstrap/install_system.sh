@@ -28,10 +28,9 @@ readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX
 readonly GOFORIT_REPO_LOC='https://github.com/mank319/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
 readonly SYNERGY_REPO_LOC='https://github.com/symless/synergy.git'    # synergy - share keyboard&mouse between computers on same LAN
-readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u162-b12/0da788060d494f5095bf8624735fa2f1/jdk-8u162-linux-x64.tar.gz'
+readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/10.0.1+10/fb4372174a714e6b8c52526dc134031e/jdk-10.0.1_linux-x64_bin.tar.gz'
                                                                           #       http://www.oracle.com/technetwork/java/javase/downloads/index.html
                                                                           # jdk8: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
-                                                                          # jdk7: http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html
                                                                           # jdk9: https://jdk9.java.net/  /  https://jdk9.java.net/download/
                                                                           # archive: http://www.oracle.com/technetwork/java/javase/archive-139210.html
 readonly SKYPE_LOC='http://www.skype.com/go/getskype-linux-deb'       # http://www.skype.com/en/download-skype/skype-for-computer/
@@ -1672,6 +1671,7 @@ install_rambox() {  # https://github.com/saenzramiro/rambox/wiki/Install-on-Linu
 
     mv -- "$dir" "$inst_loc/installations/"
     execute "pushd -- $inst_loc" || return 1
+    clear_old_vers
     [[ -h rambox ]] && rm -- rambox
     create_link "installations/$ver/rambox" rambox
     create_link "$inst_loc/rambox" "$HOME/bin/rambox"
@@ -1909,8 +1909,10 @@ create_deb_install_and_store() {
 
     check_progs_installed checkinstall || return 1
     report "creating .deb and installing with checkinstall..."
+
+    # note --fstrans=no is because of checkinstall bug; see  https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=717778
     execute "sudo checkinstall \
-        -D --default --fstrans=yes \
+        -D --default --fstrans=no \
         --pkgname=$pkg_name --pkgversion=$ver \
         --pakdir=$BASE_BUILDS_DIR" || { err "checkinstall run failed. abort."; return 1; }
 
@@ -2149,13 +2151,14 @@ install_i3() {
     # compile & install
     execute 'autoreconf --force --install' || return 1
     execute 'rm -rf build/' || return 1
-    execute 'mkdir -p build && cd build/' || return 1
+    execute 'mkdir -p build && pushd build/' || return 1
 
     # Disabling sanitizers is important for release versions!
     # The prefix and sysconfdir are, obviously, dependent on the distribution.
     execute '../configure --prefix=/usr/local --sysconfdir=/etc --disable-sanitizers' || return 1
     execute 'make'
     create_deb_install_and_store i3-gaps
+    execute "popd"
 
     # install required perl modules (eg for i3-save-tree):
     execute "pushd AnyEvent-I3" || return 1
@@ -3957,8 +3960,59 @@ create_symlinks() {
 
     [[ -d "$src" && -d "$dest" ]] || { err "either given [$src] or [$dest] are not valid dirs"; return 1; }
 
-    # Create symlink of every file except for itself (note target file will be overwrittne no matter what):
+    # Create symlink of every file (note target file will be overwritten no matter what):
     find "$src" -maxdepth 1 -mindepth 1 -type f -printf 'ln -sf -- "%p" "$dest"\n' | dest="$dest" bash
+}
+
+
+# Removes too old installations from given dir.
+#
+# @param {string}  src_dir                 directory where installations are kept
+# @param {string}  number_of_olds_to_keep  how many old vers should we keep?
+clear_old_vers() {
+    local src_dir number_of_olds_to_keep nodes i
+
+    src_dir="${1:-./installations}"   # default to ./installations
+    number_of_olds_to_keep=${2:-2}    # default to 2 newest to keep
+
+    [[ -d "$src_dir" ]] || { err "dir [$src_dir] is not a valid dir"; return 1; }
+    is_digit "$number_of_olds_to_keep" || { err "\$number_of_olds_to_keep is not a digit"; return 1; }
+    declare -a nodes
+
+    while IFS= read -r i; do
+        nodes+=("$(grep -Poi '^\d+\.\d+\s\K.*' <<< "$i")")
+    done < <(find "$src_dir" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr)
+    [[ ${#nodes[@]} -le "$number_of_olds_to_keep" ]] && return
+
+    for ((i=number_of_olds_to_keep;i<${#nodes[@]};i++)); do
+        execute "sudo rm -rf -- '${nodes[i]}'"
+    done
+}
+
+
+# Tests whether given directory is empty.
+#
+# @param {string}  dir   directory whose emptiness to test.
+#
+# @returns {bool}  true, if directory IS empty.
+function is_dir_empty() {
+    local dir
+
+    readonly dir="$1"
+
+    [[ -d "$dir" ]] || { err "[$dir] is not a valid dir." "$FUNCNAME"; return 2; }
+    find "$dir" -mindepth 1 -maxdepth 1 -print -quit | grep -q .
+    [[ $? -eq 0 ]] && return 1 || return 0
+}
+
+
+# Checks whether the argument is a non-negative digit.
+#
+# @param {digit}  arg   argument to check.
+#
+# @returns {bool}  true if argument is a valid (and non-negative) digit.
+function is_digit() {
+    [[ "$*" =~ ^[0-9]+$ ]]
 }
 
 
