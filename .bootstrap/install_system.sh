@@ -863,8 +863,8 @@ install_deps() {
     # you'd might wanna install  libkrb5-dev (or whatever ver avail at the time)
 
 
-    # install docker-compose:
-    execute "sudo pip install --upgrade docker-compose" # https://docs.docker.com/compose/install/#install-compose
+    # install docker-compose:  (atm installing from repo)
+    #execute "sudo pip install --upgrade docker-compose" # https://docs.docker.com/compose/install/#install-compose
 
     # i3lock-fancy                                      # https://github.com/meskarune/i3lock-fancy
     # depends on i3lock-color-git (see i3lock-fancy's github page)
@@ -1430,8 +1430,6 @@ install_npm_modules() {
 upgrade_kernel() {
     local package_line kernels_list arch
 
-    declare -a kernels_list=()
-
     # install kernel meta-packages:
     # NOTE: these meta-packages only required, if using non-stable debian;
     # they keep the kernel and headers in sync; also note 'linux-image-amd64'
@@ -1447,6 +1445,10 @@ upgrade_kernel() {
         err "verified we're not running 64bit system. make sure it's correct. skipping kernel meta-package installation."
         sleep 5
     fi
+
+    [[ "$FULL_INSTALL" -eq 1 ]] && return  # don't ask for custom kernel ver when doing full install
+
+    declare -a kernels_list=()
 
     # search for available kernel images:
     while IFS= read -r package_line; do
@@ -3012,6 +3014,8 @@ install_from_repo() {
         figlet
         redshift
         docker.io
+        docker-compose
+        docker-swarm
         charles-proxy
     )
 
@@ -3290,10 +3294,32 @@ increase_inotify_watches_limit() {
 #
 # add our user to docker group so it could be run as non-root:
 setup_docker() {
+
+    # see https://github.com/docker/for-linux/issues/58 (without it container exits with 139):
+    add_kernel_option() {
+        local conf line param
+        conf='/etc/default/grub'
+        param='vsyscall=emulate'
+
+        [[ -f "$conf" ]] || { err "[$conf] grub conf not a file"; return 1; }
+        readonly line="$(grep -Po '^GRUB_CMDLINE_LINUX_DEFAULT="\K.*(?="$)' "$conf")"
+        if ! is_single "$line"; then
+            err "[$conf] contained either more or less than 1 line(s) containing kernel opt: [$line]"
+            return 1
+        fi
+
+        grep -q "$param" <<< "$line" && report "vsyscall opt already set in [$conf]" && return 0
+
+        execute "sudo sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT.*$/GRUB_CMDLINE_LINUX_DEFAULT=\"$line $param\"/g' $conf" || { err; return 1; }
+        execute 'sudo update-grub'
+    }
+
     execute "sudo adduser $USER docker"      # add user to docker group
     #execute "sudo gpasswd -a ${USER} docker"  # add user to docker group
-    execute "sudo service docker restart"
     #execute "newgrp docker"  # log us into the new group; !! will stop script execution
+    add_kernel_option
+
+    execute "sudo service docker restart"
 }
 
 

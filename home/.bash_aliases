@@ -41,6 +41,7 @@ alias printer-config='system-config-printer'
 alias equalizer='qpaeq'  # qpaeq = pulseaudio-equalizer
 alias firefox='GTK_THEME=Arc-Darker firefox'  # Arc-Dark renders some elements in firefox unreadable (https://github.com/horst3180/arc-theme/issues/714)
 alias pcat='pygmentize -f terminal256 -O style=native -g'  # syntax highlighter with python3-pygments
+alias goo='googler'
 ##################################
 #alias clean_failed_mvn="$(find ~/.m2 -name *.lastUpdated -delete)"
 #alias amq="/data/progs/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"
