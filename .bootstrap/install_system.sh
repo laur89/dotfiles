@@ -28,7 +28,7 @@ readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX
 readonly GOFORIT_REPO_LOC='https://github.com/mank319/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
 readonly SYNERGY_REPO_LOC='https://github.com/symless/synergy.git'    # synergy - share keyboard&mouse between computers on same LAN
-readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/10.0.1+10/fb4372174a714e6b8c52526dc134031e/jdk-10.0.1_linux-x64_bin.tar.gz'
+readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u172-b11/a58eab1ec242421181065cdc37240b08/jdk-8u172-linux-x64.tar.gz'
                                                                           #       http://www.oracle.com/technetwork/java/javase/downloads/index.html
                                                                           # jdk8: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
                                                                           # jdk9: https://jdk9.java.net/  /  https://jdk9.java.net/download/
@@ -187,6 +187,30 @@ check_dependencies() {
 }
 
 
+setup_udev() {
+    local udev_src udev_target file tmpfile
+
+    readonly udev_src="$PRIVATE_CASTLE/backups/udev"
+    readonly udev_target='/etc/udev/rules.d/'
+    readonly tmpfile="$TMPDIR/udev_setup-$RANDOM"
+
+    if ! [[ -d "$udev_target" ]]; then
+        err "[$udev_target] is not a dir; skipping udev file(s) installation."
+        return 1
+    elif ! [[ -d "$udev_src" ]]; then
+        err "[$udev_src] is not a dir; skipping udev file(s) installation."
+        return 1
+    fi
+
+    is_dir_empty "$udev_src" && return 0
+    for file in "$udev_src/"*; do
+        execute "cp -- '$file' '$tmpfile'" || return 1
+        execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
+        execute "sudo mv -- '$tmpfile' $udev_target/" || { err "moving [$tmpfile] to [$udev_src] failed"; return 1; }
+    done
+}
+
+
 setup_systemd() {
     local sysd_src sysd_target file tmpfile
 
@@ -202,7 +226,8 @@ setup_systemd() {
         return 1
     fi
 
-    for file in "$sysd_src"/*; do
+    is_dir_empty "$sysd_src" && return 0
+    for file in "$sysd_src/"*; do
         execute "cp -- '$file' '$tmpfile'" || return 1
         execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
         execute "sudo mv -- '$tmpfile' $sysd_target/" || { err "moving [$tmpfile] to [$sysd_src] failed"; return 1; }
@@ -561,7 +586,7 @@ install_sshfs() {
         err "[$fuse_conf] is not readable; cannot uncomment \"\#user_allow_other\" prop in it."
     elif grep -q '#user_allow_other' "$fuse_conf"; then
         # hasn't been uncommented yet
-        execute "sudo sed -i 's/#user_allow_other/user_allow_other/g' $fuse_conf"
+        execute "sudo sed -i --follow-symlinks 's/#user_allow_other/user_allow_other/g' $fuse_conf"
         [[ $? -ne 0 ]] && { err "uncommenting '#user_allow_other' in $fuse_conf failed"; return 2; }
     elif grep -q 'user_allow_other' "$fuse_conf"; then
         true  # do nothing; already uncommented, all good;
@@ -1131,7 +1156,7 @@ setup_global_prompt() {
     fi
 
     # just in case delete previous global PS1 def:
-    execute "sudo sed -i '/^PS1=.*# own_def_marker$/d' \"$global_bashrc\""
+    execute "sudo sed -i --follow-symlinks '/^PS1=.*# own_def_marker$/d' \"$global_bashrc\""
     execute "echo '$ps1' | sudo tee --append $global_bashrc > /dev/null"
 
     #if ! sudo grep -q '^PS1=.*# own_def_marker$' $global_bashrc; then
@@ -1153,6 +1178,7 @@ setup_config_files() {
     #setup_ssh_config   # better stick to ~/.ssh/config, rite?  # TODO
     setup_hosts
     setup_systemd
+    setup_udev
     setup_global_env_vars
     setup_netrc_perms
     setup_global_prompt
@@ -1268,14 +1294,14 @@ swap_caps_lock_and_esc() {
     # map caps to esc:
     if ! grep -q 'key <ESC>.*Caps_Lock' "$conf_file"; then
         # hasn't been replaced yet
-        execute "sudo sed -i 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock        \]   \};/g' $conf_file"
+        execute "sudo sed -i --follow-symlinks 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock        \]   \};/g' $conf_file"
         [[ $? -ne 0 ]] && { err "replacing esc<->caps @ [$conf_file] failed"; return 2; }
     fi
 
     # map esc to caps:
     if ! grep -q 'key <CAPS>.*Escape' "$conf_file"; then
         # hasn't been replaced yet
-        execute "sudo sed -i 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS> \{    \[ Escape     \]   \};/g' $conf_file"
+        execute "sudo sed -i --follow-symlinks 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS> \{    \[ Escape     \]   \};/g' $conf_file"
         [[ $? -ne 0 ]] && { err "replacing esc<->caps @ [$conf_file] failed"; return 2; }
     fi
 
@@ -2191,13 +2217,6 @@ install_i3_deps() {
     # install i3-quickterm   # https://github.com/lbonn/i3-quickterm
     curl -o "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3-quickterm' \
         && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-quickterm"
-
-
-    # install i3ass (i3fyra and friends):  https://github.com/budRich/i3ass.git
-    clone_or_pull_repo "budRich" "i3ass" "$BASE_DEPS_LOC"  # https://github.com/budRich/i3ass.git
-    execute "pushd $BASE_DEPS_LOC/i3ass" || return 1
-    execute "./install.sh -q $HOME/bin/"  # install executable links on $PATH
-    execute popd
 
 
     # create links of our own i3 scripts on $PATH:
@@ -3277,7 +3296,7 @@ increase_inotify_watches_limit() {
     grep -q "^$property = $value\$" "$sysctl_conf" && return  # value already set, nothing to do
 
     # just in case delete all same prop definitions, regardless of its value:
-    [[ -f "$sysctl_conf" ]] && execute "sudo sed -i '/^$property/d' \"$sysctl_conf\""
+    [[ -f "$sysctl_conf" ]] && execute "sudo sed -i --follow-symlinks '/^$property/d' \"$sysctl_conf\""
 
     # increase inotify watches limit (for intellij idea):
     execute "echo $property = $value | sudo tee --append $sysctl_conf > /dev/null"
@@ -3310,7 +3329,7 @@ setup_docker() {
 
         grep -q "$param" <<< "$line" && report "vsyscall opt already set in [$conf]" && return 0
 
-        execute "sudo sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT.*$/GRUB_CMDLINE_LINUX_DEFAULT=\"$line $param\"/g' $conf" || { err; return 1; }
+        execute "sudo sed -i --follow-symlinks 's/^GRUB_CMDLINE_LINUX_DEFAULT.*$/GRUB_CMDLINE_LINUX_DEFAULT=\"$line $param\"/g' $conf" || { err; return 1; }
         execute 'sudo update-grub'
     }
 
@@ -3341,7 +3360,7 @@ enable_network_manager() {
     readonly net_manager_conf_file='/etc/NetworkManager/NetworkManager.conf'
 
     [[ -f "$net_manager_conf_file" ]] || { err "[$net_manager_conf_file] does not exist; are you using NetworkManager? if not, this config logic should be removed."; return 1; }
-    execute "sudo sed -i 's/^managed=false$/managed=true/' \"$net_manager_conf_file\""
+    execute "sudo sed -i --follow-symlinks 's/^managed=false$/managed=true/' \"$net_manager_conf_file\""
 }
 
 
@@ -4072,7 +4091,7 @@ cleanup() {
     fi
 
     if [[ -e "$EXECUTION_LOG" ]]; then
-        sed -i '/^\s*$/d' "$EXECUTION_LOG"  # strip empty lines
+        sed -i --follow-symlinks '/^\s*$/d' "$EXECUTION_LOG"  # strip empty lines
 
         echo -e "\n\n___________________________________________"
         echo -e "\tscript execution log can be found at [$EXECUTION_LOG]"

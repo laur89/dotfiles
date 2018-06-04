@@ -33,17 +33,16 @@ bindsym $mod+l exec --no-startup-id i3-cycle-exclude-tabs.py right
 bindsym $mod+period focus output right
 bindsym $mod+comma focus output left
 
-# Alternatively, you can use the cursor keys:
-#bindsym $mod+Left focus left
-#bindsym $mod+Down focus down
-#bindsym $mod+Up focus up
-#bindsym $mod+Right focus right
+# Alternatively, you can use the cursor keys (note these are defaults):
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
 
-# i3ass' i3flip for sane tab navigation:
-bindsym $mod1+l   exec --no-startup-id i3flip n
-bindsym $mod1+h   exec --no-startup-id i3flip p
-bindsym $mod1+j   exec --no-startup-id i3flip n
-bindsym $mod1+k   exec --no-startup-id i3flip p
+bindsym $mod1+l   exec --no-startup-id i3-cycle-tabs.py right
+bindsym $mod1+h   exec --no-startup-id i3-cycle-tabs.py left
+bindsym $mod1+j   exec --no-startup-id i3-cycle-tabs.py down
+bindsym $mod1+k   exec --no-startup-id i3-cycle-tabs.py up
 
 # Move focused window:
 bindsym $mod+Shift+h move left
@@ -463,6 +462,6 @@ bindsym $mod1+i exec --no-startup-id i3-quickterm shell
 #exec --no-startup-id i3-focus-last-window.sh
 #bindsym $mod1+Tab [con_mark=^_last$] focus
 # another, py-based alt-tab alternative:
-exec --no-startup-id ./i3-cycle-focus.py --history 2
+exec --no-startup-id i3-cycle-focus.py --history 2
 bindsym $mod1+Tab exec --no-startup-id i3-cycle-focus.py --switch
 
