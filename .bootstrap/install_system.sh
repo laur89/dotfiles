@@ -205,7 +205,7 @@ setup_udev() {
     is_dir_empty "$udev_src" && return 0
     for file in "$udev_src/"*; do
         execute "cp -- '$file' '$tmpfile'" || return 1
-        execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
+        execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
         execute "sudo mv -- '$tmpfile' $udev_target/" || { err "moving [$tmpfile] to [$udev_src] failed"; return 1; }
     done
 }
@@ -229,7 +229,7 @@ setup_systemd() {
     is_dir_empty "$sysd_src" && return 0
     for file in "$sysd_src/"*; do
         execute "cp -- '$file' '$tmpfile'" || return 1
-        execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
+        execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
         execute "sudo mv -- '$tmpfile' $sysd_target/" || { err "moving [$tmpfile] to [$sysd_src] failed"; return 1; }
     done
 }
@@ -266,7 +266,7 @@ setup_hosts() {
         [[ -f "$hosts_file_dest/hosts" ]] || { err "system hosts file is missing!"; return 1; }
         readonly current_hostline="$(_extract_current_hostname_line $hosts_file_dest/hosts)" || return 1
         execute "cp -- $file $tmpfile" || { err; return 1; }
-        execute "sed -i 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' $tmpfile" || { err; return 1; }
+        execute "sed --follow-symlinks -i 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' $tmpfile" || { err; return 1; }
 
         backup_original_and_copy_file --sudo "$tmpfile" "$hosts_file_dest"
         execute "rm -- '$tmpfile'"
@@ -284,7 +284,7 @@ setup_sudoers() {
 
     readonly sudoers_dest="/etc"
     readonly tmpfile="$TMPDIR/sudoers"
-    readonly file="$COMMON_DOTFILES/backups/sudoers"
+    readonly file="$COMMON_PRIVATE_DOTFILES/backups/sudoers"
 
     if ! [[ -d "$sudoers_dest" ]]; then
         err "[$sudoers_dest] is not a dir; skipping sudoers file installation."
@@ -295,7 +295,7 @@ setup_sudoers() {
     fi
 
     execute "cp -- '$file' '$tmpfile'" || return 1
-    execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
+    execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
     backup_original_and_copy_file --sudo "$tmpfile" "$sudoers_dest"
 
     execute "rm -- '$tmpfile'"
@@ -336,7 +336,7 @@ setup_crontab() {
 
     if [[ -f "$file" ]]; then
         execute "cp -- '$file' '$tmpfile'" || return 1
-        execute "sed -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
+        execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
         #backup_original_and_copy_file --sudo "$tmpfile" "$cron_dir"  # don't create backup - dont wanna end up with 2 crontabs
         execute "sudo cp -- '$tmpfile' '$cron_dir'"
 
