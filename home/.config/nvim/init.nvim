@@ -11,23 +11,23 @@ set nocompatible " Must be the first line
     """ Automatically setting up Vundle, taken from
     """ http://www.erikzaadi.com/2012/03/19/auto-installing-vundle-from-your-vimrc/ {{{
         let has_vundle=1
-        if !filereadable($HOME."/.vim/bundle/Vundle.vim/README.md")
+        if !filereadable($HOME."/.config/nvim/bundle/Vundle.vim/README.md")
             echo "Installing Vundle..."
             echo ""
-            silent !mkdir -p $HOME/.vim/bundle
-            silent !git clone https://github.com/gmarik/Vundle.vim $HOME/.vim/bundle/Vundle.vim
+            silent !mkdir -p $HOME/.config/nvim/bundle
+            silent !git clone https://github.com/gmarik/Vundle.vim $HOME/.config/nvim/bundle/Vundle.vim
             let has_vundle=0
 
             " make directory for the persistent undo storage (not related to vundle)...
-            silent !mkdir -p $HOME/.vim/undo
+            silent !mkdir -p $HOME/.config/nvim/undo
             " ...and for tags (used by vim-easytags):
-            silent !mkdir -p $HOME/.vim/tags
+            silent !mkdir -p $HOME/.config/nvim/tags
         endif
     """ }}}
 
     """ Initialize Vundle {{{
         filetype off                                " required to init
-        set rtp+=$HOME/.vim/bundle/Vundle.vim       " include vundle
+        set rtp+=$HOME/.config/nvim/bundle/Vundle.vim   " include vundle
         call vundle#begin()                         " init vundle
     """ }}}
 
@@ -36,8 +36,8 @@ set nocompatible " Must be the first line
     Plugin 'gmarik/Vundle.vim'
 
     """ Local plugins (and only plugins in this file!) {{{
-        if filereadable($HOME."/.vimrc.plugins")
-            source $HOME/.vimrc.plugins
+        if filereadable($HOME."/.config/nvim/nvim.plugins")
+            source $HOME/.config/nvim/nvim.plugins
         endif
     """ }}}
 
@@ -249,7 +249,7 @@ set nocompatible " Must be the first line
     " add :CopyPath and :CopyFileName commands
     Plugin 'vim-scripts/copypath.vim'
 
-    " project specific vimrc:
+    " project specific vimrc:   # TODO: works with nvim?
     Plugin 'LucHermitte/lh-vim-lib' " dependency for local_vimrc
     Plugin 'LucHermitte/local_vimrc'
 
@@ -292,8 +292,8 @@ set nocompatible " Must be the first line
 
 """ Local leading config, only use for prerequisites as it will be
 """ overwritten by anything below {{{
-    if filereadable($HOME."/.vimrc.first")
-        source $HOME/.vimrc.first
+    if filereadable($HOME."/.config/nvim/init.nvim.first")
+        source $HOME/.config/nvim/init.nvim.first
     endif
 """ }}}
 
@@ -349,8 +349,8 @@ set nocompatible " Must be the first line
 """ Plugin settings {{{
     " Startify, the fancy start page
     let g:startify_bookmarks = [
-        \ $HOME . "/.vimrc", $HOME . "/.vimrc.first",
-        \ $HOME . "/.vimrc.last", $HOME . "/.vimrc.plugins"
+        \ $HOME . "/.config/nvim/init.nvim", $HOME . "/.config/nvim/init.nvim.first",
+        \ $HOME . "/.config/nvim/init.nvim.last", $HOME . "/.config/nvim/nvim.plugins"
         \ ]
     let g:startify_custom_header = [
         \ '   Author:               la',
@@ -385,7 +385,7 @@ set nocompatible " Must be the first line
     " TODO: think of an actual mappings!:
     let g:yankring_replace_n_pkey = '<leader>p'
     let g:yankring_replace_n_nkey = '<leader>P'
-    let g:yankring_history_dir = '$HOME/.vim'
+    let g:yankring_history_dir = '$HOME/.config/nvim'
     let g:yankring_max_history = 1000
 
     " yankstack (if using this, perhaps lose the yankring stuff?):
@@ -420,7 +420,7 @@ set nocompatible " Must be the first line
     " vim-easytags:
     set tags=./.tags;,~/.vimtags
     let g:easytags_dynamic_files = 1 " search for project specific tags; relative to wd or buffer!
-    let g:easytags_by_filetype = '~/.vim/tags' " TODO: how to use with jsctags?; also fyi -  dynamic_files takes precedence over this
+    let g:easytags_by_filetype = '~/.config/nvim/tags' " TODO: how to use with jsctags?; also fyi -  dynamic_files takes precedence over this
     let g:easytags_always_enabled = 1
     let g:easytags_on_cursorhold = 1
     let g:easytags_async = 1
@@ -430,7 +430,7 @@ set nocompatible " Must be the first line
     "let g:easytags_languages = {
                 "\   'javascript': {
                 "\     'cmd': 'jsctags',
-                "\       'args': ['-f', '$HOME/.vim/tags/javascript'],
+                "\       'args': ['-f', '$HOME/.config/nvim/tags/javascript'],
                 "\   },
                 "\   'haskell': {
                 "\       'cmd': '~/.cabal/bin/lushtags',
@@ -550,7 +550,7 @@ set nocompatible " Must be the first line
     " by default, don't ask to save sessions:
     let g:session_autosave = 'no'
     " session data store:
-    let g:session_directory = '~/.vim/sessions'  "default value; enforcing just in case
+    let g:session_directory = '~/.config/nvim/sessions'
 
     " rainbow_parentheses:
     "let g:rbpt_colorpairs = [
@@ -643,8 +643,8 @@ set nocompatible " Must be the first line
 """ }}}
 
 """ Local ending config, will overwrite anything above. Generally use this. {{{{
-    if filereadable($HOME."/.vimrc.last")
-        source $HOME/.vimrc.last
+    if filereadable($HOME."/.config/nvim/init.nvim.last")
+        source $HOME/.config/nvim/init.nvim.last
     endif
 """ }}}
 "

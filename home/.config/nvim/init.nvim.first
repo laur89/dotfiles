@@ -129,7 +129,7 @@
     set lazyredraw                                  " redraw only when need to
 
     if !has('nvim') && !exists("$__REMOTE_SSH")
-        set viminfo+=n~/.vim/viminfo
+        set viminfo+=n~/.config/nvim/viminfo
     endif
 
 
@@ -148,7 +148,7 @@
     "au FocusLost * :wa
 
     " auto-reload vimrc on save:
-    autocmd! BufWritePost ~/.vimrc nested :source ~/.vimrc
+    autocmd! BufWritePost ~/.config/nvim/init.nvim nested :source ~/.config/nvim/init.nvim
 
     """ Folding {{{
         set foldcolumn=0                            " hide folding column
@@ -188,7 +188,7 @@
     set updatecount=50                              " update swp after 50chars
     """ Persistent undo. Requires Vim 7.3 {{{
         if has('persistent_undo') && exists("&undodir")
-            set undodir=$HOME/.vim/undo/            " where to store undofiles
+            set undodir=$HOME/.config/nvim/undo/    " where to store undofiles
             set undofile                            " enable undofile
             set undolevels=300                      " max undos stored
             set undoreload=10000                    " buffer stored undos
@@ -224,9 +224,9 @@
         " Remap <leader>
         let mapleader=","
 
-        " Quickly edit/source .vimrc
-        noremap <leader>ve :edit $HOME/.vimrc<CR>
-        noremap <leader>vs :source $HOME/.vimrc<CR>
+        " Quickly edit/source .config/nvim/init.nvim
+        noremap <leader>ve :edit $HOME/.config/nvim/init.nvim<CR>
+        noremap <leader>vs :source $HOME/.config/nvim/init.nvim<CR>
 
         " Yank(copy) to system clipboard (implies visual mode)
         noremap <leader>y "+y
