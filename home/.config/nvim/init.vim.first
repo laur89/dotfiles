@@ -148,7 +148,7 @@
     "au FocusLost * :wa
 
     " auto-reload vimrc on save:
-    autocmd! BufWritePost ~/.config/nvim/init.nvim nested :source ~/.config/nvim/init.nvim
+    autocmd! BufWritePost ~/.config/nvim/init.vim nested :source ~/.config/nvim/init.vim
 
     """ Folding {{{
         set foldcolumn=0                            " hide folding column
@@ -224,9 +224,9 @@
         " Remap <leader>
         let mapleader=","
 
-        " Quickly edit/source .config/nvim/init.nvim
-        noremap <leader>ve :edit $HOME/.config/nvim/init.nvim<CR>
-        noremap <leader>vs :source $HOME/.config/nvim/init.nvim<CR>
+        " Quickly edit/source .config/nvim/init.vim
+        noremap <leader>ve :edit $HOME/.config/nvim/init.vim<CR>
+        noremap <leader>vs :source $HOME/.config/nvim/init.vim<CR>
 
         " Yank(copy) to system clipboard (implies visual mode)
         noremap <leader>y "+y
