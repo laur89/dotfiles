@@ -140,7 +140,7 @@ validate_and_init() {
 
     # ask for the admin password upfront:
     report "enter sudo password:"
-    sudo -v || { clear; err "is user in sudoers file? is sudo installed? if not, then \"su && apt-get install sudo\""; exit 2; }
+    sudo -v || { clear; err "is user in sudoers file? is sudo installed? if not, then [su && apt-get install sudo]"; exit 2; }
     clear
 
     # keep-alive: update existing `sudo` time stamp
@@ -1034,13 +1034,13 @@ fetch_castles() {
 
     while true; do
         if confirm "$(report 'want to clone another castle?')"; then
-            echo -e "enter git repo domain (eg \"github.com\", \"bitbucket.org\"):"
+            echo -e "enter git repo domain (eg [github.com], [bitbucket.org]):"
             read -r hub
 
             echo -e "enter username:"
             read -r user
 
-            echo -e "enter castle name (repo name, eg \"dotfiles\"):"
+            echo -e "enter castle name (repo name, eg [dotfiles]):"
             read -r castle
 
             execute "clone_or_link_castle $castle $user $hub"
@@ -1066,7 +1066,7 @@ verify_ssh_key() {
     if is_ssh_key_available; then
         IS_SSH_SETUP=1
     else
-        err "didn't find the key at $PRIVATE_KEY_LOC after generating keys."
+        err "didn't find the key at [$PRIVATE_KEY_LOC] after generating keys."
     fi
 }
 
@@ -1106,25 +1106,6 @@ setup_global_env_vars() {
 
         create_link --sudo "$file" "${global_env_var_loc}/"
     done
-
-    # don't create; otherwise gobal_env_var will prevent loading env_var_overrides in our .bashrc!
-    #if ! [[ -d "$(dirname -- $global_env_var)" ]]; then
-        #err "$(dirname -- $global_env_var) is not a dir; can't install globally for all the users."
-    #else
-        #if ! [[ -h "$global_env_var" ]]; then
-            #create_link "$SHELL_ENVS" "$global_env_var"
-        #fi
-    #fi
-
-    #if sudo test -f $root_bashrc; then
-        #if ! sudo grep -q "source $SHELL_ENVS" $root_bashrc; then
-            ## hasn't been sourced in $root_bashrc yet:
-            #execute "echo source $SHELL_ENVS | sudo tee --append $root_bashrc > /dev/null"
-        #fi
-    #else
-        #err "[$root_bashrc] doesn't exist; cannot source [$SHELL_ENVS] from it!"
-        #return 1
-    #fi
 }
 
 
@@ -2299,41 +2280,56 @@ install_dwm() {
 }
 
 
-# https://github.com/neovim/neovim/wiki/Installing-Neovim
-install_neovim() {  # the AppImage version
-    local tmpdir nvim_confdir inst_loc nvim_url
+setup_nvim() {
+    nvim_post_install_configuration
 
-    readonly tmpdir="$(mktemp -d "nvim-download-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-    readonly nvim_confdir="$HOME/.config/nvim"
-    readonly inst_loc="$BASE_PROGS_DIR/neovim"
-    nvim_url='https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage'
+    if [[ "$FULL_INSTALL" -eq 1 ]]; then
+        execute "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"  # no vim pls
+        report "launching nvim, so the initialization could be done (pulling in plugins et al. simply exit nvim when it's done.)"
+        echo 'initialising nvim; simply exit when plugin fetching is complete. (quit with  :qa!)' | \
+                nvim -  # needs to be non-root so plugins & other config are installed as reg. user
+    fi
 
-    report "setting up nvim..."
-
-    execute "pushd -- $tmpdir" || return 1
-    execute "curl -LO $nvim_url" || { err "curling latest nvim appimage failed"; return 1; }
-    execute "chmod +x nvim.appimage" || return 1
-
-    execute "mkdir -p -- '$inst_loc/'" || { err "neovim dir creation failed"; return 1; }
-    execute "mv -- nvim.appimage '$inst_loc/'" || return 1
-    create_link "$inst_loc/nvim.appimage" "$HOME/bin/nvim"
-
-    execute "popd" || { err; return 1; }
-    execute "sudo rm -rf -- '$tmpdir'"
-
-    # post-install config:
-
-    # create links (as per https://neovim.io/doc/user/nvim_from_vim.html):
-    create_link "$HOME/.vim" "$nvim_confdir"
-    create_link "$HOME/.vimrc" "$nvim_confdir/init.vim"
-
-    # as per https://github.com/neovim/neovim/wiki/Installing-Neovim:
-    execute "sudo pip2 install --upgrade neovim"
-    execute "sudo pip3 install --upgrade neovim"
-    #install_block 'python-neovim python3-neovim'
-
-    return 0
+    # YCM installation AFTER the first nvim launch (nvim launch pulls in ycm plugin, among others)!
+    install_YCM
 }
+
+
+# https://github.com/neovim/neovim/wiki/Installing-Neovim
+#install_neovim() {  # the AppImage version
+    #local tmpdir nvim_confdir inst_loc nvim_url
+
+    #readonly tmpdir="$(mktemp -d "nvim-download-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    #readonly nvim_confdir="$HOME/.config/nvim"
+    #readonly inst_loc="$BASE_PROGS_DIR/neovim"
+    #nvim_url='https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage'
+
+    #report "setting up nvim..."
+
+    #execute "pushd -- $tmpdir" || return 1
+    #execute "curl -LO $nvim_url" || { err "curling latest nvim appimage failed"; return 1; }
+    #execute "chmod +x nvim.appimage" || return 1
+
+    #execute "mkdir -p -- '$inst_loc/'" || { err "neovim dir creation failed"; return 1; }
+    #execute "mv -- nvim.appimage '$inst_loc/'" || return 1
+    #create_link "$inst_loc/nvim.appimage" "$HOME/bin/nvim"
+
+    #execute "popd" || { err; return 1; }
+    #execute "sudo rm -rf -- '$tmpdir'"
+
+    ## post-install config:
+
+    ## create links (as per https://neovim.io/doc/user/nvim_from_vim.html):
+    #create_link "$HOME/.vim" "$nvim_confdir"
+    #create_link "$HOME/.vimrc" "$nvim_confdir/init.vim"
+
+    ## as per https://github.com/neovim/neovim/wiki/Installing-Neovim:
+    #execute "sudo pip2 install --upgrade neovim"
+    #execute "sudo pip3 install --upgrade neovim"
+    ##install_block 'python-neovim python3-neovim'
+
+    #return 0
+#}
 
 # https://github.com/neovim/neovim/wiki/Building-Neovim
 # https://github.com/neovim/neovim/wiki/Installing-Neovim
@@ -2457,6 +2453,42 @@ configure_vim_plugins() {
 }
 
 
+# NO plugin config should go here (as it's not guaranteed they've been installed by this time)
+nvim_post_install_configuration() {
+    local i nvim_confdir
+
+    readonly nvim_confdir="$HOME/.config/nvim"
+
+    execute "sudo mkdir -p /root/.config"
+    create_link --sudo "$nvim_confdir" "/root/.config/"  # root should use same conf
+
+    _setup_vim_sessions_dir() {
+        local stored_vim_sessions vim_sessiondir
+
+        readonly stored_vim_sessions="$BASE_DATA_DIR/.vim_sessions"
+        readonly vim_sessiondir="$nvim_confdir/sessions"
+
+        # link sessions dir, if stored @ $BASE_DATA_DIR: (related to the 'xolox/vim-session' plugin)
+        # note we don't want sessions in homesick, as they're likely to be machine-dependent.
+        if [[ -d "$stored_vim_sessions" ]]; then
+            # refresh link:
+            execute "rm -rf -- $vim_sessiondir"
+        else  # $stored_vim_sessions does not exist; init it anyways
+            if [[ -d "$vim_sessiondir" ]]; then
+                execute "mv -- $vim_sessiondir $stored_vim_sessions"
+            else
+                execute "mkdir -- $stored_vim_sessions"
+            fi
+        fi
+
+        create_link "$stored_vim_sessions" "$vim_sessiondir"
+    }
+
+    _setup_vim_sessions_dir
+}
+
+
+# TODO: deprecate?
 # NO plugin config should go here (as it's not guaranteed they've been installed by this time)
 vim_post_install_configuration() {
     local i
@@ -2583,7 +2615,7 @@ build_and_install_vim() {
 install_YCM() {  # the quick-and-not-dirty install.py way
     local ycm_plugin_root
 
-    readonly ycm_plugin_root="$HOME/.vim/bundle/YouCompleteMe"
+    readonly ycm_plugin_root="$HOME/.config/nvim/bundle/YouCompleteMe"
 
     # sanity
     if ! [[ -d "$ycm_plugin_root" ]]; then
@@ -2999,7 +3031,9 @@ install_from_repo() {
         links2
         w3m
         tmux
-        neovim
+        neovim/unstable
+        python-neovim/unstable
+        python3-neovim/unstable
         powerline
         libxml2-utils
         pidgin
@@ -3216,7 +3250,6 @@ __choose_prog_to_build() {
 
     declare -ar choices=(
         install_vim
-        install_neovim
         install_YCM
         install_keepassx
         install_keepassxc
@@ -3470,6 +3503,7 @@ post_install_progs_setup() {
     execute "sudo sensors-detect --auto"   # answer enter for default values (this is lm-sensors config)
     increase_inotify_watches_limit         # for intellij IDEA
     setup_docker
+    setup_nvim
     execute "sudo adduser $USER wireshark"      # add user to wireshark group, so it could be run as non-root;
                                                 # (implies wireshark is installed with allowing non-root users
                                                 # to capture packets - it asks this during installation);
