@@ -7,33 +7,32 @@
 "
 set nocompatible " Must be the first line
 
-""" Vundle plugin manager {{{
-    """ Automatically setting up Vundle, taken from
-    """ http://www.erikzaadi.com/2012/03/19/auto-installing-vundle-from-your-vimrc/ {{{
-        let has_vundle=1
-        if !filereadable($HOME."/.config/nvim/bundle/Vundle.vim/README.md")
-            echo "Installing Vundle..."
+""" vim-plug plugin manager {{{
+    """ Automatically setting up, taken from
+    """ https://github.com/junegunn/vim-plug/wiki/tips#automatic-installation
+        let has_plug=1
+        if empty(glob('~/.config/nvim/autoload/plug.vim'))
+            let has_plug=0
+            echo "Installing vim-plug..."
             echo ""
-            silent !mkdir -p $HOME/.config/nvim/bundle
-            silent !git clone https://github.com/gmarik/Vundle.vim $HOME/.config/nvim/bundle/Vundle.vim
-            let has_vundle=0
+            silent !curl -fLo ~/.config/nvim/autoload/plug.vim --create-dirs
+                \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+            autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
 
-            " make directory for the persistent undo storage (not related to vundle)...
+            " make directory for the persistent undo storage (not related to vim-plug)...
             silent !mkdir -p $HOME/.config/nvim/undo
             " ...and for tags (used by vim-easytags):
             silent !mkdir -p $HOME/.config/nvim/tags
         endif
     """ }}}
 
-    """ Initialize Vundle {{{
-        filetype off                                " required to init
-        set rtp+=$HOME/.config/nvim/bundle/Vundle.vim   " include vundle
-        call vundle#begin()                         " init vundle
+    """ Initialize vim-plug {{{
+            call plug#begin('~/.config/nvim/bundle')
     """ }}}
 
     """ Github repos, uncomment to disable a plugin {{{
     " consider NeoBundle or vim-plug
-    Plugin 'gmarik/Vundle.vim'
+    Plug 'gmarik/Vundle.vim'
 
     """ Local plugins (and only plugins in this file!) {{{
         if filereadable($HOME."/.config/nvim/nvim.plugins")
@@ -42,249 +41,250 @@ set nocompatible " Must be the first line
     """ }}}
 
     " Edit files using sudo/su
-    "Plugin 'chrisbra/SudoEdit.vim'
+    "Plug 'chrisbra/SudoEdit.vim'
 
     " Fuzzy finder (files, mru, etc)
-    "Plugin 'kien/ctrlp.vim'  " kien/ repo (the original one) is not maintained.
-    Plugin 'ctrlpvim/ctrlp.vim'
+    "Plug 'kien/ctrlp.vim'  " kien/ repo (the original one) is not maintained.
+    Plug 'ctrlpvim/ctrlp.vim'
 
     " A pretty statusline, bufferline integration:
-    "Plugin 'itchyny/lightline.vim' "liiga minimalist mu jaoks
+    "Plug 'itchyny/lightline.vim' "liiga minimalist mu jaoks
     " !! use either vim-airline OR powerline !!
     "   also, pwrline needs to be installed EITHER with vundle OR by pip, never /w both
-    Plugin 'vim-airline/vim-airline'
-    Plugin 'bling/vim-bufferline'
+    Plug 'vim-airline/vim-airline'
+    Plug 'bling/vim-bufferline'
 
     " Easy... motions... yeah.
-    Plugin 'Lokaltog/vim-easymotion'
+    Plug 'Lokaltog/vim-easymotion'
 
     " TODO: check out this alternative to easymotion:
-    "Plugin  'justinmk/vim-sneak'
+    "Plug  'justinmk/vim-sneak'
 
     " Glorious colorscheme
-    "Plugin 'nanotech/jellybeans.vim'
+    "Plug 'nanotech/jellybeans.vim'
     "Plug 'mhinz/vim-janah'  " A dark colorscheme for Vim.
-    Plugin 'morhetz/gruvbox'
+    Plug 'morhetz/gruvbox'
 
     " Super easy commenting, toggle comments etc
-    Plugin 'scrooloose/nerdcommenter'
+    Plug 'scrooloose/nerdcommenter'
 
     " Autoclose (, " etc; ie when you insert an (, then ) will be automatically
     " inserted, and cursor placed between them;
-    "Plugin 'Townk/vim-autoclose'
+    "Plug 'Townk/vim-autoclose'
     " uses delimitMate instead of vim-autoclose, if you use YCM (they conflict):
-    Plugin 'Raimondi/delimitMate'
+    Plug 'Raimondi/delimitMate'
 
     " Git wrapper inside Vim
-    Plugin 'tpope/vim-fugitive'
+    Plug 'tpope/vim-fugitive'
 
     " better git log borwser (hit :gitv)
     " !!! depfnds on tpope/fugitive !!!
-    Plugin 'gregsexton/gitv'
+    Plug 'gregsexton/gitv'
 
     " Handle surround chars like ''
-    Plugin 'tpope/vim-surround'
+    Plug 'tpope/vim-surround'
 
     " Align your = etc.
-    Plugin 'vim-scripts/Align'
+    Plug 'vim-scripts/Align'
 
     " Snippets like textmate
-    "Plugin 'MarcWeber/vim-addon-mw-utils' "vim-snipmate depends on this one
-    "Plugin 'tomtom/tlib_vim'              " ... and this.
-    Plugin 'honza/vim-snippets'           " The snippets repo, and...
-    Plugin 'SirVer/ultisnips'             "...the engine.
+    "Plug 'MarcWeber/vim-addon-mw-utils' "vim-snipmate depends on this one
+    "Plug 'tomtom/tlib_vim'              " ... and this.
+    Plug 'honza/vim-snippets'           " The snippets repo, and...
+    Plug 'SirVer/ultisnips'             "...the engine.
 
     " A fancy start screen, shows MRU etc:
-    Plugin 'mhinz/vim-startify'
+    Plug 'mhinz/vim-startify'
 
     " Vim signs (:h signs) for modified lines based off VCS (e.g. Git)
     " for git-only usage, better look for vim-gitgutter
-    Plugin 'mhinz/vim-signify'
+    Plug 'mhinz/vim-signify'
 
     " git-only support similar to vim-signify (only use one of them!)
-    "Plugin 'airblade/vim-gitgutter'
+    "Plug 'airblade/vim-gitgutter'
 
     " Awesome syntax checker.
     " REQUIREMENTS: See :h syntastic-intro
     " alternative: neomake
-    Plugin 'vim-syntastic/syntastic'
+    Plug 'vim-syntastic/syntastic'
 
     " Functions, class data etc.
     " REQUIREMENTS: (exuberant)-ctags
-    "Plugin 'majutsushi/tagbar'
+    "Plug 'majutsushi/tagbar'
 
     " Ctags generator/highlighter (note the vim-misc is dependency for it)
-    Plugin 'xolox/vim-misc'
-    Plugin 'xolox/vim-easytags' " alternative shoud be taginator?
-    Plugin 'xolox/vim-session'
-    "Plugin 'xolox/vim-notes'  " alternative: http://orgmode.org/
-    Plugin 'fmoralesc/vim-pad'   " alt to vim-notes
-    Plugin 'vim-pandoc/vim-pandoc'  " this and pandoc-syntax for vim-pad
-    Plugin 'vim-pandoc/vim-pandoc-syntax'
-    Plugin 'jceb/vim-orgmode'  " text outlining (to use with note-taking plugins?)
+    Plug 'xolox/vim-misc'
+    Plug 'xolox/vim-easytags' " alternative shoud be taginator?
+    Plug 'xolox/vim-session'
+    "Plug 'xolox/vim-notes'  " alternative: http://orgmode.org/
+    Plug 'fmoralesc/vim-pad'   " alt to vim-notes
+    Plug 'vim-pandoc/vim-pandoc'  " this and pandoc-syntax for vim-pad
+    Plug 'vim-pandoc/vim-pandoc-syntax'
+    Plug 'jceb/vim-orgmode'  " text outlining (to use with note-taking plugins?)
 
     " Selfexplanatory...
-    Plugin 'jlanzarotta/bufexplorer'
+    Plug 'jlanzarotta/bufexplorer'
 
     " File browser
-    Plugin 'scrooloose/nerdtree'
+    " NERD tree will be loaded on the first invocation of NERDTreeToggle command:
+    Plug 'scrooloose/nerdtree', { 'on': 'NERDTreeToggle' }
 
     " Visualise the undo tree
-    "Plugin 'sjl/gundo.vim'
-    Plugin 'simnalamburt/vim-mundo'  " gundo fork with neovim support
+    "Plug 'sjl/gundo.vim'
+    Plug 'simnalamburt/vim-mundo', { 'on': 'MundoToggle' }  " gundo fork with neovim support
 
     " fast mechanism to open files and buffers.
     " requires compiling - read the docs/wiki!
     " perhaps time to deprecate for ctrl-p?
-    Plugin 'wincent/Command-T'
+    Plug 'wincent/Command-T'
 
     " development completion engine (integrates with utilsnips and deprecates
     " supertab et al; needs compilation! read the docs!:
     " !!! ühed väidavad, et javaphp,js,html jaoks on neocomplete parem;
     " for neovim, consider Shougo/deoplete.nvim as alternative;
-    Plugin 'Valloric/YouCompleteMe'
+    Plug 'Valloric/YouCompleteMe'
 
     " Go-lang/golang/go lang support:
-    Plugin 'fatih/vim-go'
+    Plug 'fatih/vim-go'
 
     " Scala
-    Plugin 'derekwyatt/vim-scala'
+    Plug 'derekwyatt/vim-scala'
 
     " C# support: (requires mono)    https://github.com/OmniSharp/omnisharp-vim
-    "Plugin 'OmniSharp/omnisharp-vim'  " using one provided by YCM
+    "Plug 'OmniSharp/omnisharp-vim'  " using one provided by YCM
 
     " c# additions (mainly better syntax highlight):
-    Plugin 'OrangeT/vim-csharp'
+    Plug 'OrangeT/vim-csharp'
 
     " Node.js:
-    Plugin 'moll/vim-node'
+    Plug 'moll/vim-node'
 
     " js beautifier:
-    Plugin 'jsbeautify'
+    "Plug 'jsbeautify'
 
     " navigate seamlessly btw vim & tmux splits (don't forget tmux bindings in
     " .tmux.conf as well):
-    Plugin 'christoomey/vim-tmux-navigator'
+    Plug 'christoomey/vim-tmux-navigator'
 
     " supertab: (only so YCM and UltiSnips could play along, otherwise don't need)
     " <Tab> everything!
-    Plugin 'ervandew/supertab'
+    Plug 'ervandew/supertab'
 
     " basically here only so vim-puppet can auto-align rockets:
-    "Plugin 'godlygeek/tabular'
+    "Plug 'godlygeek/tabular'
 
     " yankring: hold copy of yanked elements:
     " alternative: yankstack
-    Plugin 'vim-scripts/YankRing.vim'
-    "Plugin 'maxbrunsfeld/vim-yankstack'
+    Plug 'vim-scripts/YankRing.vim'
+    "Plug 'maxbrunsfeld/vim-yankstack'
 
     " show location of the marks: (! requires compilation with +signs)
     " !!! deprecated by vim-signature?
-    "Plugin 'showmarks'
+    "Plug 'showmarks'
 
     " show, place and toggle marks: (! requires compilation with +signs)
-    Plugin 'kshenoy/vim-signature'
+    Plug 'kshenoy/vim-signature'
 
     " camel case movements:
-    Plugin 'bkad/CamelCaseMotion'
+    Plug 'bkad/CamelCaseMotion'
 
     " typos:
-    "Plugin 'chip/vim-fat-finger'
+    "Plug 'chip/vim-fat-finger'
 
     " rainbow parnes:
-    "Plugin 'kien/rainbow_parentheses.vim'
-    Plugin 'luochen1990/rainbow'
+    "Plug 'kien/rainbow_parentheses.vim'
+    Plug 'luochen1990/rainbow'
 
     " tern for vim (tern is a standalone js analyzer)
     " depends on tern! - https://github.com/ternjs/tern
     " @ .vim/bundle/tern_for_vim:  npm install tern
-    "Plugin 'ternjs/tern_for_vim'  " using one provided by YCM
+    "Plug 'ternjs/tern_for_vim'  " using one provided by YCM
 
     " easy find and replace across multiple files
     " alternative - greplace
-    Plugin 'dkprice/vim-easygrep'
+    Plug 'dkprice/vim-easygrep'
 
     " visual-star-search - search words selected in visual mode:
-    Plugin 'bronson/vim-visual-star-search'
+    Plug 'bronson/vim-visual-star-search'
 
     " front for ag, aka the silver_searcher:
     " depends on the_silver_searcher - apt-get install silversearcher-ag   proj @ ggreer/the_silver_searcher
-    Plugin 'rking/ag.vim'
+    Plug 'rking/ag.vim'
 
     " manipulate on blocks based on their indentation:
     " use  vai  and vii
-    Plugin 'michaeljsmith/vim-indent-object'
+    Plug 'michaeljsmith/vim-indent-object'
 
     " provides text-object 'a' (argument) - you can delete, change, select etc in
     " familiar ways;, eg daa, cia,...
-    Plugin 'vim-scripts/argtextobj.vim'
+    Plug 'vim-scripts/argtextobj.vim'
 
     " gives 'f' textobj so vaf to select javascript function
-    Plugin 'thinca/vim-textobj-function-javascript'
+    Plug 'thinca/vim-textobj-function-javascript'
 
     " better jquery syntax highlighting:
-    Plugin 'jQuery'
+    "Plug 'jQuery'
 
     " TODO: consider  pangloss/vim-javascript  instead
-    Plugin 'jelera/vim-javascript-syntax'
+    Plug 'jelera/vim-javascript-syntax'
 
     " show search window as 'at match # out of # matches':
-    Plugin 'henrik/vim-indexed-search'
+    Plug 'henrik/vim-indexed-search'
 
     " tab completion in search:
-    Plugin 'vim-scripts/SearchComplete' "TODO: currently doesn't work!
+    Plug 'vim-scripts/SearchComplete' "TODO: currently doesn't work!
 
     " adds . (repeat) functionality to more complex commands instead of the native-only ones:
-    Plugin 'tpope/vim-repeat'
+    Plug 'tpope/vim-repeat'
 
     " ends if-blocks etc for few langs:
-    Plugin 'tpope/vim-endwise'
+    Plug 'tpope/vim-endwise'
 
     " vim sugar for unix shell commands:
-    Plugin 'tpope/vim-eunuch'
+    Plug 'tpope/vim-eunuch'
 
     " async jobs
-    Plugin 'tpope/vim-dispatch'
+    Plug 'tpope/vim-dispatch'
 
     " add :CopyPath and :CopyFileName commands
-    Plugin 'vim-scripts/copypath.vim'
+    Plug 'vim-scripts/copypath.vim'
 
     " project specific vimrc:   # TODO: works with nvim?
-    Plugin 'LucHermitte/lh-vim-lib' " dependency for local_vimrc
-    Plugin 'LucHermitte/local_vimrc'
+    Plug 'LucHermitte/lh-vim-lib' " dependency for local_vimrc
+    Plug 'LucHermitte/local_vimrc'
 
     " puppet syntax highlight, formatting...
-    Plugin 'rodjek/vim-puppet'
+    Plug 'rodjek/vim-puppet'
 
     " tabline + tab rename
-    Plugin 'gcmt/taboo.vim'
+    Plug 'gcmt/taboo.vim'
 
     " vim multidiff in tabs:
-    "Plugin 'xenomachina/public/tree/master/vim/plugin'
+    "Plug 'xenomachina/public/tree/master/vim/plugin'
     " consider targets.vim - adds new text objects
 
     " open terminal OR file manager at the directory of current location (got, goT, fog, goF)
-    Plugin 'justinmk/vim-gtfo'
+    Plug 'justinmk/vim-gtfo'
     
     " calendar in vim:   " https://github.com/mattn/calendar-vim
-    Plugin 'mattn/calendar-vim'
+    Plug 'mattn/calendar-vim'
 
     " universal text linking (here for orgmode hyperlink support) " vim-scripts/utl.vim
-    Plugin 'vim-scripts/utl.vim'
+    Plug 'vim-scripts/utl.vim'
 
-    Plugin 'PotatoesMaster/i3-vim-syntax'
+    Plug 'PotatoesMaster/i3-vim-syntax'
 
     " ctrl+w o   to zoom into a window and back:
-    "Plugin 'drn/zoomwin-vim'  " TODO: atm only works with vim (not nvim; better use :tab split?)
+    "Plug 'drn/zoomwin-vim'  " TODO: atm only works with vim (not nvim; better use :tab split?)
     set rtp+=~/.fzf  "https://github.com/junegunn/fzf TODO: start using junegunn's Plug instead of Vundle
 
 
-    " Finish Vundle stuff
-    call vundle#end()
+    " Finish vim-plug stuff
+    call plug#end()
 
-    """ Installing plugins the first time, quits when done {{{
-        if has_vundle == 0
-            :silent! PluginInstall
+    """ Installing plugins the first time; quits when done {{{
+        if has_plug == 0
+            :silent! PlugInstall
             :qa
         endif
     """ }}}
