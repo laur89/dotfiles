@@ -869,6 +869,7 @@ install_deps() {
                                                         #   note its conf is in bash_env_vars
     execute "sudo pip  install --upgrade maybe"         # https://github.com/p-e-w/maybe (check what command would do)
     execute "sudo pip3 install --upgrade httpstat"      # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
+    execute "sudo pip3 install --upgrade tendo"         # https://github.com/pycontribs/tendo  py utils, eg singleton (lockfile management)
 
     # colorscheme generator:
     # see also complementing script @ https://github.com/dylanaraps/bin/blob/master/wal-set
@@ -1255,6 +1256,10 @@ setup_additional_apt_keys_and_sources() {
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
     execute 'wget -q -O - https://www.charlesproxy.com/packages/apt/PublicKey | sudo apt-key add -'
     execute 'echo deb https://www.charlesproxy.com/packages/apt/ charles-proxy main | sudo tee /etc/apt/sources.list.d/charles.list > /dev/null'
+
+    # yarn:  (from https://yarnpkg.com/en/docs/install#debian-stable):
+    execute 'curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -'
+    execute 'echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list > /dev/null'
 
     # update sources (will be done anyway on full install):
     [[ "$FULL_INSTALL" -ne 1 ]] && execute 'sudo apt-get --yes update'
@@ -1808,6 +1813,9 @@ install_webdev() {
     execute "sudo gem install \
         sass \
     "
+
+    # install yarn:  https://yarnpkg.com/en/docs/install#debian-stable
+    execute "sudo apt-get --no-install-recommends yarn"
 
     # ruby (rbenv):
     ##################################
@@ -3393,7 +3401,7 @@ enable_network_manager() {
     readonly net_manager_conf_file='/etc/NetworkManager/NetworkManager.conf'
 
     [[ -f "$net_manager_conf_file" ]] || { err "[$net_manager_conf_file] does not exist; are you using NetworkManager? if not, this config logic should be removed."; return 1; }
-    execute "sudo sed -i --follow-symlinks 's/^managed=false$/managed=true/' \"$net_manager_conf_file\""
+    execute "sudo sed -i --follow-symlinks 's/^managed=false$/managed=true/' '$net_manager_conf_file'"
 }
 
 
