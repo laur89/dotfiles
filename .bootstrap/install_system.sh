@@ -776,11 +776,11 @@ install_deps() {
             xfce4-power-manager
         '
 
-        __install_wifi_driver; unset __install_wifi_driver
-
         # batt output (requires spark):
-        clone_or_pull_repo "Goles" "Battery" "$BASE_DEPS_LOC"  # https://github.com/Goles/Battery
+        clone_or_pull_repo "laur89" "Battery" "$BASE_DEPS_LOC"  # https://github.com/laur89/Battery
         create_link "${BASE_DEPS_LOC}/Battery/battery" "$HOME/bin/battery"
+
+        __install_wifi_driver && sleep 5; unset __install_wifi_driver  # keep last, as this _might_ restart wifi kernel module
     }
 
     # bash-git-prompt:
@@ -796,9 +796,9 @@ install_deps() {
     clone_or_pull_repo "holman" "spark" "$BASE_DEPS_LOC"  # https://github.com/holman/spark
     create_link "${BASE_DEPS_LOC}/spark/spark" "$HOME/bin/spark"
 
-    # imgur screenshooter-uploader:
-    clone_or_pull_repo "jomo" "imgur-screenshot" "$BASE_DEPS_LOC"  # https://github.com/jomo/imgur-screenshot.git
-    create_link "${BASE_DEPS_LOC}/imgur-screenshot/imgur-screenshot.sh" "$HOME/bin/imgur-screenshot"
+    # imgur uploader:
+    clone_or_pull_repo "ram-on" "imgurbash2" "$BASE_DEPS_LOC"  # https://github.com/ram-on/imgurbash2
+    create_link "${BASE_DEPS_LOC}/imgurbash2/imgurbash2" "$HOME/bin/imgurbash2"
 
     # fuzzy file finder/command completer etc:
     clone_or_pull_repo "junegunn" "fzf" "$BASE_DEPS_LOC"  # https://github.com/junegunn/fzf
