@@ -15,7 +15,7 @@
     ;keepBackup = false
 [core]
     excludesfile = /home/laur/.gitignore_global
-    editor = vim
+    editor = nvim
     ;autocrlf = input
     autocrlf = false
     safecrlf = true
