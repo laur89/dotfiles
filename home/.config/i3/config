@@ -26,10 +26,10 @@ bindsym $mod+space exec --no-startup-id rofi -show combi -combi-modi 'window#dru
 -modi combi#ssh -lines 15 -columns 2 -width 50 -separator-style "none" -sidebar-mode
 
 # Change focus
-bindsym $mod+h exec --no-startup-id i3-cycle-exclude-tabs.py left
-bindsym $mod+j exec --no-startup-id i3-cycle-exclude-tabs.py down
-bindsym $mod+k exec --no-startup-id i3-cycle-exclude-tabs.py up
-bindsym $mod+l exec --no-startup-id i3-cycle-exclude-tabs.py right
+bindsym $mod+h nop
+bindsym $mod+j nop
+bindsym $mod+k nop
+bindsym $mod+l nop
 bindsym $mod+period focus output right
 bindsym $mod+comma focus output left
 
@@ -39,10 +39,10 @@ bindsym $mod+Down focus down
 bindsym $mod+Up focus up
 bindsym $mod+Right focus right
 
-bindsym $mod1+l   exec --no-startup-id i3-cycle-tabs.py right
-bindsym $mod1+h   exec --no-startup-id i3-cycle-tabs.py left
-bindsym $mod1+j   exec --no-startup-id i3-cycle-tabs.py down
-bindsym $mod1+k   exec --no-startup-id i3-cycle-tabs.py up
+bindsym $mod1+l   nop
+bindsym $mod1+h   nop
+bindsym $mod1+j   nop
+bindsym $mod1+k   nop
 
 # Move focused window:
 bindsym $mod+Shift+h move left
@@ -150,10 +150,10 @@ bindsym $mod+r mode "$resize"
 #mode --pango_markup "$resize" {  # note pango_markup only avail with i3bar
 mode "$resize" {
         # change focus while in resize mode:
-        bindsym $mod+h exec --no-startup-id i3-cycle-exclude-tabs.py left
-        bindsym $mod+j exec --no-startup-id i3-cycle-exclude-tabs.py down
-        bindsym $mod+k exec --no-startup-id i3-cycle-exclude-tabs.py up
-        bindsym $mod+l exec --no-startup-id i3-cycle-exclude-tabs.py right
+        bindsym $mod+h nop
+        bindsym $mod+j nop
+        bindsym $mod+k nop
+        bindsym $mod+l nop
         bindsym $mod+period focus output right
         bindsym $mod+comma focus output left
 
@@ -464,4 +464,8 @@ bindsym $mod1+i exec --no-startup-id i3-quickterm shell
 # another, py-based alt-tab alternative:
 exec --no-startup-id i3-cycle-focus.py --history 2
 bindsym $mod1+Tab exec --no-startup-id i3-cycle-focus.py --switch
+
+# start focus change listener scripts:
+exec --no-startup-id i3-cycle-exclude-tabs.py
+exec --no-startup-id i3-cycle-tabs.py
 

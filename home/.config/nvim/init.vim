@@ -130,7 +130,6 @@ set nocompatible " Must be the first line
     Plug 'scrooloose/nerdtree', { 'on': 'NERDTreeToggle' }
 
     " Visualise the undo tree
-    "Plug 'sjl/gundo.vim'
     Plug 'simnalamburt/vim-mundo', { 'on': 'MundoToggle' }  " gundo fork with neovim support
 
     " fast mechanism to open files and buffers.
