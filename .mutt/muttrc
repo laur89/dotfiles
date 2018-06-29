@@ -127,7 +127,7 @@ set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh'
   #set index_format = "%3C [%Z] %?X?A&-? %D %-15.15F %s"  # note the '%?X?A&-?' displays 'A' or '-' depending on presence of an attachment
   set index_format = '/data/Seafile/main/Documents/comp/C-code/mutt-index-format "%9[%d.%m.%y]" "%9[%e.%b]" "%8[%a %H:%m]" "%[%H:%m]" "%3C [%Z] %?X?%2X& -? %%s %-20.20L %?M?+%-2M&   ? %s %> [%4c]asladfg" "%[%s]" |'
   set alias_format = "%4n %t %-20a %r"
-color status red default
+#color status red default  # colors come from included file
 
   set auto_tag = yes  # apply commands to all tagged messages by default
   set strict_threads
@@ -175,7 +175,8 @@ set vfolder_format = "%6n(%6N) %f"
 #source ~/.mutt/colors/base16-solarized
 #source ~/.mutt/colors/base16-solarized-dark
 #source ~/.mutt/colors/base16
-source ~/.mutt/colors/vombat
+#source ~/.mutt/colors/vombat
+source ~/.mutt/colors/gruvbox
 
 
 source ~/.mutt/bindings
