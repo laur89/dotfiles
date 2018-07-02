@@ -133,7 +133,8 @@ shopt -s hostcomplete   # try to autocomplete hostnames
 shopt -s huponexit      # send SIGHUP on when interactive login shell exits
 shopt -s globstar       # ** in pathname expansion will match all files and zero or more directories and subdirs
 shopt -s autocd         # if you type dir name, it's interpreted as an argument to cd
-set -o vi               # needs to be added *before* fzf is sourced, otherwise fzf is screwed.
+set -o vi               # needs to be added *before* fzf is sourced, otherwise fzf is screwed:
+                        #     https://github.com/junegunn/fzf#key-bindings-for-command-line
 
 unset MAILCHECK
 ##########################################
@@ -286,8 +287,24 @@ export NVM_DIR="$HOME/.nvm"  # do not change location, keep _real_ .nvm/ under ~
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 ##########################################
-
+# fzf
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
+
+# Replace default shell autocompeltes:  https://github.com/junegunn/fzf#settings
+####################
+# Use fd (https://github.com/sharkdp/fd) instead of the default find
+# command for listing path candidates.
+# - The first argument to the function ($1) is the base path to start traversal
+# - See the source code (completion.{bash,zsh}) for the details.
+_fzf_compgen_path() {
+  fd --hidden --follow --exclude ".git" . "$1"
+}
+
+# Use fd to generate the list for directory completion
+_fzf_compgen_dir() {
+  fd --type d --hidden --follow --exclude ".git" . "$1"
+}
+##########################################
 
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="/home/laur/.sdkman"
