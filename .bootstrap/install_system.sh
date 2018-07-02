@@ -14,7 +14,7 @@
 #---   Configuration  ---
 #------------------------
 readonly TMPDIR='/tmp'
-readonly CLANG_LLVM_LOC='http://releases.llvm.org/5.0.0/clang+llvm-5.0.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
+readonly CLANG_LLVM_LOC='http://releases.llvm.org/6.0.0/clang+llvm-6.0.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
 readonly I3_REPO_LOC='https://www.github.com/Airblader/i3'            # i3-gaps
 readonly I3_LOCK_LOC='https://github.com/PandorasFox/i3lock-color'    # i3lock-color
 readonly I3_LOCK_FANCY_LOC='https://github.com/meskarune/i3lock-fancy'    # i3lock-fancy
@@ -1496,12 +1496,14 @@ install_own_builds() {
 
     #prepare_build_container
 
-    install_vim  # note: can't exclude it as-is, as it also configures vim (if you ever want to go nvim-only)
+    #install_vim  # note: can't exclude it as-is, as it also configures vim (if you ever want to go nvim-only)
     #install_neovim
     #install_keepassxc
     #install_goforit
     #install_copyq
     install_rambox
+    install_ripgrep
+    install_fd
     #install_synergy  # currently installing from repo
     install_polybar
     install_oracle_jdk
@@ -1652,6 +1654,50 @@ switch_jdk_versions() {
 
     #return 0
 #}
+
+
+# $1 - git user
+# $2 - git repo
+# $3 - build/file regex to be used to parse correct item from git /releases page
+fetch_release_from_git() {
+    local tmpdir file loc dl_url page
+
+    is_server && { report "we're server, skipping rambox installation."; return; }
+
+    readonly loc="https://github.com/$1/$2/releases/latest"
+    readonly tmpdir="$(mktemp -d "release-from-git-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+
+    page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed"; return 1; }
+    dl_url="$(grep -Po '.*a href="\K.*'"$3"'(?=".*$)' <<< "$page")" || { err "parsing [$3] download link failed"; return 1; }
+    [[ -n "$dl_url" && "$dl_url" != http* ]] && dl_url="https://github.com/$dl_url"
+    is_valid_url "$dl_url" || { err "[$dl_url] is not a valid download link"; return 1; }
+
+    report "fetching [$dl_url]"
+    execute "wget '$dl_url' -q --directory-prefix=$tmpdir" || { err "wgetting [$dl_url] failed."; return 1; }
+    file="$(find "$tmpdir" -type f)"
+    [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
+    echo "$file"
+
+    return 0
+}
+
+
+install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
+    local deb
+
+    deb="$(fetch_release_from_git BurntSushi ripgrep _amd64.deb)" || return 1
+    execute "sudo dpkg -i '$deb'" || { err "installing [$deb] failed"; return 1; }
+    execute "rm -rf -- '$deb'"
+}
+
+
+install_fd() {  # https://github.com/sharkdp/fd
+    local deb
+
+    deb="$(fetch_release_from_git sharkdp fd 'musl_[0-9.]+_amd64.deb')" || return 1
+    execute "sudo dpkg -i '$deb'" || { err "installing [$deb] failed"; return 1; }
+    execute "rm -rf -- '$deb'"
+}
 
 
 install_rambox() {  # https://github.com/saenzramiro/rambox/wiki/Install-on-Linux
@@ -2398,67 +2444,20 @@ setup_nvim() {
 #}
 
 
-install_vim() {
+#install_vim() {
 
-    report "setting up vim..."
+    #report "setting up vim..."
 
-    build_and_install_vim || return 1
-    vim_post_install_configuration
+    #build_and_install_vim || return 1
+    #vim_post_install_configuration
 
-    report "launching vim, so the initialization could be done (pulling in plugins et al. simply exit vim when it's done.)"
-    echo 'initialising vim; simply exit when plugin fetching is complete. (quit with  :qa!)' | \
-        vim -  # needs to be non-root
+    #report "launching vim, so the initialization could be done (pulling in plugins et al. simply exit vim when it's done.)"
+    #echo 'initialising vim; simply exit when plugin fetching is complete. (quit with  :qa!)' | \
+        #vim -  # needs to be non-root
 
-    # YCM installation AFTER the first vim launch (vim launch pulls in ycm plugin, among others)!
-    install_YCM
-    configure_vim_plugins  # make sure vim has been opened by this time so plugins are installed
-}
-
-
-# contains additional post-install vim plugin configuration for those that need it
-# TODO: deprecated?
-configure_vim_plugins() {
-    local vim_pluginsdir
-
-    readonly vim_pluginsdir="$HOME/.vim/bundle"
-
-    #function _install_tern_for_vim_deps() {
-        #local plugindir
-        #readonly plugindir="$vim_pluginsdir/tern_for_vim"
-
-        #if ! command -v npm >/dev/null; then
-            #install_block 'npm' || return 1
-        #fi
-
-        #[[ -d "$plugindir" ]] || { err "[$plugindir] is not a dir."; return 1; }
-        #execute "pushd $plugindir" || return 1
-        #execute "npm install"
-        #execute "popd"
-    #}
-
-    #function _install_omnisharp_deps() {
-        #local plugindir
-        #readonly plugindir="$vim_pluginsdir/omnisharp-vim/server"
-
-        #if ! command -v xbuild >/dev/null; then
-            #err "xbuild (with mono) not installed; can't install omnisharp vim plugin"
-            #return 1
-        #fi
-
-        #[[ -d "$plugindir" ]] || { err "[$plugindir] is not a dir."; return 1; }
-        #execute "pushd $plugindir" || return 1
-        #execute "xbuild"
-        #execute "popd"
-    #}
-
-    # tern: https://github.com/ternjs/tern_for_vim
-    #_install_tern_for_vim_deps  # commented, as using the one packaged with YCM
-
-    # omnisharp: https://github.com/OmniSharp/omnisharp-vim
-    #_install_omnisharp_deps  # commented, as using the one packaged with YCM
-
-    unset _install_tern_for_vim_deps _install_omnisharp_deps
-}
+    ## YCM installation AFTER the first vim launch (vim launch pulls in ycm plugin, among others)!
+    #install_YCM
+#}
 
 
 # NO plugin config should go here (as it's not guaranteed they've been installed by this time)
@@ -3257,13 +3256,14 @@ __choose_prog_to_build() {
     local choices
 
     declare -ar choices=(
-        install_vim
         install_YCM
         install_keepassx
         install_keepassxc
         install_goforit
         install_copyq
         install_rambox
+        install_ripgrep
+        install_fd
         install_synergy
         install_dwm
         install_i3
@@ -3599,7 +3599,7 @@ err() {
     readonly caller_name="$2"  # OPTIONAL
 
     [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "    ERR LOG: ${caller_name:+[$caller_name]: }$msg" >> "$EXECUTION_LOG"
-    echo -e "${COLORS[RED]}${caller_name:-"error"}:${COLORS[OFF]} ${msg:-"Abort"}" 1>&2
+    >&2 echo -e "${COLORS[RED]}${caller_name:-"error"}:${COLORS[OFF]} ${msg:-"Abort"}" 1>&2
 }
 
 
@@ -3610,7 +3610,7 @@ report() {
     readonly caller_name="$2"  # OPTIONAL
 
     [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "OK LOG: ${caller_name:+[$caller_name]: }$msg" >> "$EXECUTION_LOG"
-    echo -e "${COLORS[YELLOW]}${caller_name:-"INFO"}:${COLORS[OFF]} ${msg:-"--info lvl message placeholder--"}"
+    >&2 echo -e "${COLORS[YELLOW]}${caller_name:-"INFO"}:${COLORS[OFF]} ${msg:-"--info lvl message placeholder--"}"
 }
 
 
@@ -3678,7 +3678,7 @@ execute() {
     [[ "$1" == -i || "$1" == --ignore-errs ]] && { shift; readonly ignore_errs=1; } || readonly ignore_errs=0
     readonly cmd="$1"
 
-    echo -e "--> executing [$cmd]"
+    >&2 echo -e "--> executing [$cmd]"
     # TODO: collect and log command execution stderr?
     # TODO: eval?! seriously, were i drunk?
     eval "$cmd"
