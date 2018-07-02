@@ -71,7 +71,7 @@ set nocompatible " Must be the first line
 
     " better git log borwser (hit :gitv)
     " !!! depfnds on tpope/fugitive !!!
-    Plug 'gregsexton/gitv'
+    Plug 'gregsexton/gitv', {'on': ['Gitv']}
 
     " Handle surround chars like ''
     Plug 'tpope/vim-surround'
@@ -147,7 +147,7 @@ set nocompatible " Must be the first line
     "Plug 'OmniSharp/omnisharp-vim'  " using one provided by YCM
 
     " c# additions (mainly better syntax highlight):
-    Plug 'OrangeT/vim-csharp'
+    Plug 'OrangeT/vim-csharp'  " TODO: deprecate for omnisharp?
 
     " Node.js:
     Plug 'moll/vim-node'
@@ -179,7 +179,7 @@ set nocompatible " Must be the first line
     Plug 'kshenoy/vim-signature'
 
     " camel case movements:
-    Plug 'bkad/CamelCaseMotion'
+    Plug 'bkad/CamelCaseMotion'  " TODO not configured
 
     " typos:
     "Plug 'chip/vim-fat-finger'
@@ -199,10 +199,6 @@ set nocompatible " Must be the first line
 
     " visual-star-search - search words selected in visual mode:
     Plug 'bronson/vim-visual-star-search'
-
-    " front for ag, aka the silver_searcher:
-    " depends on the_silver_searcher - apt-get install silversearcher-ag   proj @ ggreer/the_silver_searcher
-    Plug 'rking/ag.vim'
 
     " manipulate on blocks based on their indentation:
     " use  vai  and vii
@@ -583,20 +579,14 @@ set nocompatible " Must be the first line
     let g:pad#local_dir = '.notes'  " local dir for separate (eg project-specific) set of notes
     let g:pad#default_file_extension = '.org'  " note .org only makes sense when orgmode is used
 
-    " Ag (silver-searcher)
-    " by default, start search from project root:
-    let g:ag_working_path_mode='r'
-    let g:ag_highlight=1
-    let g:ag_prg="ag --vimgrep --smart-case"
-
     " vim-easygrep
     let g:EasyGrepRoot="search:.git,.svn,.hg,.ctrlp"
-    "let g:EasyGrepCommand="ag --vimgrep --smart-case"  " does not support ag at the moment
+    let g:EasyGrepCommand='ag'
     let g:EasyGrepWindow=0  " 0 -quickfix; 1 -location list
     "let g:EasyGrepWindowPosition="botleft lopen"
     let g:EasyGrepOpenWindowOnMatch=0
     let g:EasyGrepRecursive=1
-    let g:EasyGrepMode=2 "search for files that are of a similar type to the current file
+    let g:EasyGrepMode=2  "search for files that are of a similar type to the current file
 
     " nerdtree
     " close vim if the only window left open is nerdtree:
@@ -627,11 +617,15 @@ set nocompatible " Must be the first line
 if executable("rg")
     command! -bang -nargs=* Rg
           \ call fzf#vim#grep(
-          \   'rg --column --line-number --no-heading --color=always --ignore-case '.shellescape(<q-args>), 1,
+          \   'rg --column --line-number --no-heading --hidden --follow --color=always --ignore-case '.shellescape(<q-args>), 1,
           \   <bang>0 ? fzf#vim#with_preview('up:60%')
           \           : fzf#vim#with_preview('right:50%:hidden', '?'),
           \   <bang>0)
 
-    nnoremap <C-p>a :Rg
+    nnoremap <C-P> :Files<CR>
+    nnoremap <leader><C-P> :Buffers<CR>
+
+    " additional rg-related additions:
+    set grepprg=rg\ --vimgrep\ --no-heading
 endif
 
