@@ -154,7 +154,7 @@ check_dependencies() {
 
     readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
-    for prog in git cmp wget tar unzip realpath dirname basename tee; do
+    for prog in git cmp wget curl tar unzip realpath dirname basename tee; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
             install_block "$prog" || { err "unable to install required prog [$prog] this script depends on. abort."; exit 1; }
@@ -174,15 +174,15 @@ check_dependencies() {
                 ; do
         if ! [[ -d "$dir" ]]; then
             if confirm "[$dir] mountpoint/dir does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
-                execute "sudo mkdir $dir" || { err "unable to create [$dir] directory. abort."; exit 1; }
+                execute "sudo mkdir '$dir'" || { err "unable to create [$dir] directory. abort."; exit 1; }
             else
                 err "expected [$dir] to be already-existing dir. abort"
                 exit 1
             fi
         fi
 
-        execute "sudo chown $USER:$USER $dir" || { err "unable to change [$dir] ownership to [$USER:$USER]. abort."; exit 1; }
-        execute "sudo chmod $perms -- $dir" || { err "unable to change [$dir] permissions to [$perms]. abort."; exit 1; }
+        execute "sudo chown $USER:$USER '$dir'" || { err "unable to change [$dir] ownership to [$USER:$USER]. abort."; exit 1; }
+        execute "sudo chmod $perms -- '$dir'" || { err "unable to change [$dir] permissions to [$perms]. abort."; exit 1; }
     done
 }
 
@@ -359,6 +359,8 @@ backup_original_and_copy_file() {
     readonly filename="$(basename -- "$file")"
 
     $sudo test -d "$dest_dir" || { err "second arg [$dest_dir] was not a dir" "$FUNCNAME"; return 1; }
+    [[ "$dest_dir" == *.d ]] && err "sure we want to be backing up in [$dest_dir]?" "$FUNCNAME"
+    declare -a old_suffixes
 
     # back up the destination file, if it already exists and differs from new content:
     if $sudo test -e "$dest_dir/$filename" && ! $sudo cmp -s "$file" "$dest_dir/$filename"; then
@@ -366,11 +368,11 @@ backup_original_and_copy_file() {
         while IFS= read -r -d $'\0' i; do
             old_suffixes+=("${i##*.}")
         done < <(find -L "$dest_dir/" -maxdepth 1 -mindepth 1 -type f -name "${filename}.orig.*" -print0)
-        if [[ "${#old_suffixes[@]}" -eq 0 ]]; then
-            i=0
-        else
-            i="$(printf '%s\n' "${old_suffixes[@]}" | sort -rn | head -n1)"  # largest suffix value
-            let i++ || { err "incrementing [$dest_dir/$filename] latest backup suffix [$i] failed"; i="$RANDOM"; }
+
+        i=0
+        if [[ ${#old_suffixes[@]} -gt 0 ]]; then
+            i="$(printf '%s\n' "${old_suffixes[@]}" | sort -rn | head -n1)"  # take largest (ie latest) suffix value
+            (( i++ )) || { err "incrementing [$dest_dir/$filename] latest backup suffix [$i] failed; setting suffix to RANDOM"; i="$RANDOM"; }
         fi
 
         execute "$sudo cp -- '$dest_dir/$filename' '$dest_dir/${filename}.orig.$i'"
@@ -877,6 +879,23 @@ install_deps() {
 
     execute "sudo gem install speed_read"               # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
 
+    # rbenv & ruby-build:                               # https://github.com/rbenv/rbenv-installer
+    #   ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki):
+    install_block '
+        autoconf
+        bison
+        build-essential
+        libssl-dev
+        libyaml-dev
+        libreadline6-dev
+        zlib1g-dev
+        libncurses5-dev
+        libffi-dev
+        libgdbm3
+        libgdbm-dev
+    '
+    execute 'curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-installer | bash'
+
     # some py deps requred by scripts:
     execute "sudo pip3 install --upgrade exchangelib icalendar arrow"
     # note: if exchangelib fails with something like
@@ -905,12 +924,11 @@ install_deps() {
 
 
     # work deps:  # TODO remove block?
-    if [[ "$MODE" == work ]] && ! is_laptop; then  # TODO: do we want to include != laptop?
-        true
-        # cx toolbox/vagrant env deps:  # TODO: deprecate
-        #execute "sudo gem install \
-            #puppet puppet-lint bundler nokogiri builder \
-        #"
+    if [[ "$MODE" == work ]]; then
+        # cx toolbox/vagrant env deps:  # TODO: deprecate? (not yet imo, puppet still used)
+        execute "sudo gem install \
+            puppet puppet-lint bundler nokogiri builder \
+        "
     fi
 
     # laptop deps:
@@ -951,7 +969,7 @@ setup_dirs() {
 
     # create logdir ($CUSTOM_LOGDIR comes from $SHELL_ENVS):
     if ! [[ -d "$CUSTOM_LOGDIR" ]]; then
-        [[ -z "$CUSTOM_LOGDIR" ]] && { err "\$CUSTOM_LOGDIR env var was missing. abort."; sleep 5; return 1; }
+        [[ -z "$CUSTOM_LOGDIR" ]] && { err "[CUSTOM_LOGDIR] env var was missing. abort."; sleep 5; return 1; }
 
         report "[$CUSTOM_LOGDIR] does not exist, creating..."
         execute "sudo mkdir -- $CUSTOM_LOGDIR"
@@ -1030,6 +1048,9 @@ fetch_castles() {
             ;;
         personal)
             clone_or_link_castle "$(basename -- "$PRIVATE_CASTLE")" layr bitbucket.org || err "failed pulling personal dotfiles; won't abort"
+            ;;
+        *)
+            err "unexpected \$MODE [$MODE]"; exit 1
             ;;
     esac
 
@@ -1656,20 +1677,22 @@ switch_jdk_versions() {
 #}
 
 
+# Fetch a file from given github /releases page, and return full path to the file.
+#
 # $1 - git user
 # $2 - git repo
-# $3 - build/file regex to be used to parse correct item from git /releases page
+# $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
 fetch_release_from_git() {
     local tmpdir file loc dl_url page
 
     is_server && { report "we're server, skipping rambox installation."; return; }
 
     readonly loc="https://github.com/$1/$2/releases/latest"
-    readonly tmpdir="$(mktemp -d "release-from-git-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    tmpdir="$(mktemp -d "release-from-git-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed"; return 1; }
     dl_url="$(grep -Po '.*a href="\K.*'"$3"'(?=".*$)' <<< "$page")" || { err "parsing [$3] download link failed"; return 1; }
-    [[ -n "$dl_url" && "$dl_url" != http* ]] && dl_url="https://github.com/$dl_url"
+    [[ -n "$dl_url" && "$dl_url" != http* ]] && dl_url="https://github.com/$dl_url"  # convert to full url
     is_valid_url "$dl_url" || { err "[$dl_url] is not a valid download link"; return 1; }
 
     report "fetching [$dl_url]"
@@ -1862,29 +1885,6 @@ install_webdev() {
 
     # install yarn:  https://yarnpkg.com/en/docs/install#debian-stable
     execute "sudo apt-get --no-install-recommends yarn"
-
-    # ruby (rbenv):
-    ##################################
-    install_block '
-        ruby-build
-        rbenv
-    '
-
-    # ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki):
-    install_block '
-        gcc-6
-        autoconf
-        bison
-        build-essential
-        libssl-dev
-        libyaml-dev
-        libreadline6-dev
-        zlib1g-dev
-        libncurses5-dev
-        libffi-dev
-        libgdbm3
-        libgdbm-dev
-    '
 
     # install rails:
     # this would install it globally; better install new local ver by
@@ -3617,7 +3617,7 @@ report() {
 _sanitize_ssh() {
 
     if ! [[ -d "$HOME/.ssh" ]]; then
-        err "tried to sanitize ~/.ssh, but dir did not exist."
+        err "tried to sanitize [~/.ssh], but dir doesn't exist."
         return 1
     fi
 
@@ -3678,7 +3678,7 @@ execute() {
     [[ "$1" == -i || "$1" == --ignore-errs ]] && { shift; readonly ignore_errs=1; } || readonly ignore_errs=0
     readonly cmd="$1"
 
-    >&2 echo -e "--> executing [$cmd]"
+    >&2 echo -e "${COLORS[GREEN]}-->${COLORS[OFF]} executing [${COLORS[YELLOW]}${cmd}${COLORS[OFF]}]"
     # TODO: collect and log command execution stderr?
     # TODO: eval?! seriously, were i drunk?
     eval "$cmd"
@@ -3871,7 +3871,7 @@ function is_x() {
         wmctrl -m &>/dev/null
         exit_code="$?"
     else
-        err "can't check, neither xset nor wmctrl are installed" "$FUNCNAME"
+        err "can't check, neither [xset] nor [wmctrl] are installed" "$FUNCNAME"
         return 2
     fi
 
@@ -3912,7 +3912,7 @@ create_link() {
         target="${target}$filename"
     fi
 
-    $sudo test -h "$target" && execute "$sudo rm -- '$target'"  # TODO: instead of removing, just add -f flag to ln?
+    $sudo test -h "$target" && execute "$sudo rm -- '$target'"  # only remove $target if it's already a symlink
     execute "$sudo ln -s -- '$src' '$target'"
 
     return 0
@@ -4088,8 +4088,7 @@ function is_dir_empty() {
     readonly dir="$1"
 
     [[ -d "$dir" ]] || { err "[$dir] is not a valid dir." "$FUNCNAME"; return 2; }
-    find "$dir" -mindepth 1 -maxdepth 1 -print -quit | grep -q .
-    [[ $? -eq 0 ]] && return 1 || return 0
+    find "$dir" -mindepth 1 -maxdepth 1 -print -quit | grep -q . && return 1 || return 0
 }
 
 

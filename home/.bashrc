@@ -215,7 +215,7 @@ GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274
 
 
 ##########################################
-#ruby env (rbenv) - enable shims and autocompletion:
+#ruby env (rbenv) - enable shims and autocompletion:  (as per `rbenv init` instructions)
 command -v rbenv >/dev/null 2>/dev/null && eval "$(rbenv init -)"
 
 ##########################################
