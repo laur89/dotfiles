@@ -30,10 +30,6 @@ set nocompatible " Must be the first line
             call plug#begin('~/.config/nvim/bundle')
     """ }}}
 
-    """ Github repos, uncomment to disable a plugin {{{
-    " consider NeoBundle or vim-plug
-    Plug 'gmarik/Vundle.vim'
-
     """ Local plugins (and only plugins in this file!) {{{
         if filereadable($HOME."/.config/nvim/nvim.plugins")
             source $HOME/.config/nvim/nvim.plugins
@@ -43,14 +39,10 @@ set nocompatible " Must be the first line
     " Edit files using sudo/su
     "Plug 'chrisbra/SudoEdit.vim'
 
-    " Fuzzy finder (files, mru, etc)
-    "Plug 'kien/ctrlp.vim'  " kien/ repo (the original one) is not maintained.
-    Plug 'ctrlpvim/ctrlp.vim'
-
     " A pretty statusline, bufferline integration:
     "Plug 'itchyny/lightline.vim' "liiga minimalist mu jaoks
     " !! use either vim-airline OR powerline !!
-    "   also, pwrline needs to be installed EITHER with vundle OR by pip, never /w both
+    "   also, pwrline needs to be installed EITHER with vim-plug-manager OR by pip, never /w both
     Plug 'vim-airline/vim-airline'
     Plug 'bling/vim-bufferline'
 
@@ -97,11 +89,14 @@ set nocompatible " Must be the first line
     Plug 'mhinz/vim-startify'
 
     " Vim signs (:h signs) for modified lines based off VCS (e.g. Git)
-    " for git-only usage, better look for vim-gitgutter
+    " for git-only usage, consider vim-gitgutter
     Plug 'mhinz/vim-signify'
 
     " git-only support similar to vim-signify (only use one of them!)
     "Plug 'airblade/vim-gitgutter'
+
+    " change vim working dir to project root:
+    Plug 'airblade/vim-rooter'
 
     " Awesome syntax checker.
     " REQUIREMENTS: See :h syntastic-intro
@@ -117,7 +112,7 @@ set nocompatible " Must be the first line
     Plug 'xolox/vim-easytags' " alternative shoud be taginator?
     Plug 'xolox/vim-session'
     "Plug 'xolox/vim-notes'  " alternative: http://orgmode.org/
-    Plug 'fmoralesc/vim-pad'   " alt to vim-notes
+    Plug 'fmoralesc/vim-pad', { 'branch': 'devel' }   " alt to vim-notes
     Plug 'vim-pandoc/vim-pandoc'  " this and pandoc-syntax for vim-pad
     Plug 'vim-pandoc/vim-pandoc-syntax'
     Plug 'jceb/vim-orgmode'  " text outlining (to use with note-taking plugins?)
@@ -126,8 +121,7 @@ set nocompatible " Must be the first line
     Plug 'jlanzarotta/bufexplorer'
 
     " File browser
-    " NERD tree will be loaded on the first invocation of NERDTreeToggle command:
-    Plug 'scrooloose/nerdtree', { 'on': 'NERDTreeToggle' }
+    Plug 'scrooloose/nerdtree', { 'on': ['NERDTreeToggle', 'NERDTreeFind'] }
 
     " Visualise the undo tree
     Plug 'simnalamburt/vim-mundo', { 'on': 'MundoToggle' }  " gundo fork with neovim support
@@ -144,7 +138,7 @@ set nocompatible " Must be the first line
     Plug 'Valloric/YouCompleteMe'
 
     " Go-lang/golang/go lang support:
-    Plug 'fatih/vim-go'
+    Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
 
     " Scala
     Plug 'derekwyatt/vim-scala'
@@ -264,18 +258,17 @@ set nocompatible " Must be the first line
 
     " open terminal OR file manager at the directory of current location (got, goT, fog, goF)
     Plug 'justinmk/vim-gtfo'
-    
-    " calendar in vim:   " https://github.com/mattn/calendar-vim
-    Plug 'mattn/calendar-vim'
 
     " universal text linking (here for orgmode hyperlink support) " vim-scripts/utl.vim
     Plug 'vim-scripts/utl.vim'
 
     Plug 'PotatoesMaster/i3-vim-syntax'
 
+    Plug 'junegunn/fzf.vim'  " https://github.com/junegunn/fzf.vim
+
     " ctrl+w o   to zoom into a window and back:
     "Plug 'drn/zoomwin-vim'  " TODO: atm only works with vim (not nvim; better use :tab split?)
-    set rtp+=~/.fzf  "https://github.com/junegunn/fzf TODO: start using junegunn's Plug instead of Vundle
+    set rtp+=~/.fzf  "https://github.com/junegunn/fzf
 
 
     " Finish vim-plug stuff
@@ -356,27 +349,6 @@ set nocompatible " Must be the first line
         \ '   Original vimconf:     http://github.com/timss/vimconf',
         \ ''
         \ ]
-
-    " CtrlP
-    "don't recalculate files on start (slow)
-    let g:ctrlp_reuse_window = 'startify' "don't split in startify
-    "let g:ctrlp_clear_cache_on_exit = 0
-    let g:ctrlp_working_path_mode = 'ra'
-    let g:ctrlp_root_markers = ['.ctrlp']  "consider this, since .git isn't as good with submodules; note this is IN ADDITION to the default ones
-    "let g:ctrlp_working_path_mode = ""
-    "let g:ctrlp_dotfiles = 0
-    let g:ctrlp_max_files = 0
-    "TODO: confirm these:
-    let g:ctrlp_user_command = ['.git/', 'cd %s && git ls-files --exclude-standard -co']
-    "let g:ctrlp_user_command = "find %s -type f | egrep -v '/\.(git|hg|svn)|solr|tmp/' | egrep -v '/\.(git|hg|svn)|solr|tmp/' | egrep -v '\.(png|exe|jpg|gif|jar|class|swp|swo|log|gitkep|keepme|so|o)$'"
-    " Start ctrlp in find buffer mode
-    let g:ctrlp_cmd = 'CtrlPBuffer'  "buffer: CtrlPBuffer  mru: CtrlPMRU
-    " Start ctrlp in MRU file mode
-    "let g:ctrlp_cmd = 'CtrlPMRU'
-    let g:ctrlp_regexp = 1
-    " ???:
-    let g:ctrlp_switch_buffer = 'Et'
-    let g:ctrlp_extensions = ['tag']    " enables tag browsing
 
 
     " yankring:
@@ -650,4 +622,16 @@ set nocompatible " Must be the first line
 " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 " !!!!! UNORGANISED STUFF:
 " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+" fzf ripgrep  (from https://github.com/junegunn/fzf.vim)
+if executable("rg")
+    command! -bang -nargs=* Rg
+          \ call fzf#vim#grep(
+          \   'rg --column --line-number --no-heading --color=always --ignore-case '.shellescape(<q-args>), 1,
+          \   <bang>0 ? fzf#vim#with_preview('up:60%')
+          \           : fzf#vim#with_preview('right:50%:hidden', '?'),
+          \   <bang>0)
+
+    nnoremap <C-p>a :Rg
+endif
 
