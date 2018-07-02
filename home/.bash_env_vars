@@ -123,6 +123,12 @@ fi
 # markpath/jumps dir:
 export _MARKPATH_DIR=.shell_jump_marks
 
+# FZF settings:  # https://github.com/sharkdp/fd
+export FZF_DEFAULT_OPTS='--ansi'  # note this is detrimental to fzf perf
+export FZF_DEFAULT_COMMAND='fd --hidden --follow --exclude .git'
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_CTRL_C_COMMAND="$FZF_DEFAULT_COMMAND --type d"
+
 # test whether the shell is interactive; if not, set missing env vars:
 # (as per http://www.tldp.org/LDP/abs/html/intandnonint.html)
 #if [[ -z "$DISPLAY" ]]; then
