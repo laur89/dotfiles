@@ -3140,7 +3140,7 @@ pubkey() {
 
 
 # fd - cd to selected directory
-fd() {
+fdd() {  # 'fd' conflicts with https://github.com/sharkdp/fd
     local dir src
 
     readonly src="$1"
