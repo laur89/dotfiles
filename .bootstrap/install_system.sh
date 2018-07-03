@@ -847,6 +847,9 @@ install_deps() {
         err "[conscript] not on \$PATH; if it's the initial installation, then just re-run ${FUNCNAME}()"
     fi
 
+    # sdkman:  # https://sdkman.io/
+    execute "curl -s 'https://get.sdkman.io' | bash"
+
     # nvm (node version manager) :  # https://github.com/creationix/nvm#git-install
     execute "git clone --recursive -j8 https://github.com/creationix/nvm.git $HOME/.nvm"  # do not change location, keep _real_ .nvm/ under ~
     execute "source '$HOME/.nvm/nvm.sh'" || err "sourcing ~/.nvm/nvm.sh failed"
