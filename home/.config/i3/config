@@ -31,12 +31,12 @@ bindsym $mod+j nop
 bindsym $mod+k nop
 bindsym $mod+l nop
 bindsym $mod+period focus output right
-bindsym $mod+comma focus output left
+bindsym $mod+comma  focus output left
 
 # Alternatively, you can use the cursor keys (note these are defaults):
-bindsym $mod+Left focus left
-bindsym $mod+Down focus down
-bindsym $mod+Up focus up
+bindsym $mod+Left  focus left
+bindsym $mod+Down  focus down
+bindsym $mod+Up    focus up
 bindsym $mod+Right focus right
 
 bindsym $mod1+l   nop
@@ -51,9 +51,9 @@ bindsym $mod+Shift+k move up
 bindsym $mod+Shift+l move right
 
 # Alternatively, you can use the cursor keys:
-bindsym $mod+Shift+Left move left
-bindsym $mod+Shift+Down move down
-bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Left  move left
+bindsym $mod+Shift+Down  move down
+bindsym $mod+Shift+Up    move up
 bindsym $mod+Shift+Right move right
 
 
@@ -283,7 +283,7 @@ bindsym XF86MonBrightnessDown exec xbacklight -dec 20
 bindsym XF86TouchpadToggle exec /some/path/toggletouchpad.sh
 
 # Screenshot with scrot
-bindsym Print exec scrot -e 'mv $f ~/Pictures/screenshots' && notify-send "Screenshot Taken"
+bindsym Print exec --no-startup-id scrot -e 'mv $f ~/Pictures/screenshots' && notify-send "Screenshot Taken"
 
 # My apps shortcut
 #bindsym $mod+p exec pcmanfm 
