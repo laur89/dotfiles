@@ -444,6 +444,7 @@ set nocompatible " Must be the first line
         " make YCM compatible with UltiSnips (using supertab):
         let g:ycm_key_list_select_completion = ['<C-j>', '<Down>']
         let g:ycm_key_list_previous_completion = ['<C-k>', '<Up>']
+        let g:ycm_python_binary_path = 'python3'
         let g:SuperTabDefaultCompletionType = '<C-j>' "enables us to use tab to cycle through non-ultisnip items
 
         " better key bindings for UltiSnipsExpandTrigger
