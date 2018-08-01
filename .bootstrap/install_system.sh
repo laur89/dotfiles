@@ -836,7 +836,7 @@ install_deps() {
     _install_tmux_deps; unset _install_tmux_deps
 
     # conscript (scala apps distribution manager):  # http://www.foundweekends.org/conscript/setup.html
-                                                    # TODO: check https://github.com/foundweekends/conscript/issues/124
+                                                    # TODO: check https://github.com/foundweekends/conscript/issues/124 (reason we exec with -i)
     execute -i 'wget https://raw.githubusercontent.com/foundweekends/conscript/master/setup.sh -O - | sh'
 
     # install scala apps (requires conscript):
@@ -2303,6 +2303,7 @@ install_polybar() {
     execute "git clone --recursive $POLYBAR_REPO_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
     execute "./build.sh" || return 1
+    #execute "./build.sh --auto --all-features --no-install --no-install-config" || return 1  # TODO enable this one after build.sh PR gets accpeted;
     create_deb_install_and_store polybar
 
     execute "popd"

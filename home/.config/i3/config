@@ -384,6 +384,7 @@ for_window [class="^copyq$"] floating enable
 for_window [class="^keepassxc?$"] floating enable
 for_window [class="^vokoscreen$"] floating enable
 for_window [class="^Galculator$"] floating enable
+for_window [class="^i3expod.py$"] fullscreen enable
 
 # these two are from https://www.reddit.com/r/i3wm/comments/8gh4c0/working_fix_for_focusing_intellij_popups/
 # to solve intellij quirks:

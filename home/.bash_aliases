@@ -43,6 +43,7 @@ alias firefox='GTK_THEME=Arc-Darker firefox'  # Arc-Dark renders some elements i
 alias pcat='pygmentize -f terminal256 -O style=native -g'  # syntax highlighter with python3-pygments
 alias goo='googler'
 alias define='googler -n 4 define'
+alias py3='python3'
 ##################################
 #alias clean_failed_mvn="$(find ~/.m2 -name *.lastUpdated -delete)"
 #alias amq="/data/progs/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"
