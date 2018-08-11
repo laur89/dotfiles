@@ -609,6 +609,10 @@ set nocompatible " Must be the first line
         source $HOME/.config/nvim/init.vim.last
     endif
 """ }}}
+
+" save fold states
+autocmd BufWinLeave *.* mkview
+autocmd BufWinEnter *.* silent loadview
 "
 " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 " !!!!! UNORGANISED STUFF:

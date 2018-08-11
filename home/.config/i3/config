@@ -384,7 +384,7 @@ for_window [class="^copyq$"] floating enable
 for_window [class="^keepassxc?$"] floating enable
 for_window [class="^vokoscreen$"] floating enable
 for_window [class="^Galculator$"] floating enable
-for_window [class="^i3expod.py$"] fullscreen enable
+for_window [class="^i3expod\.py$"] fullscreen enable
 
 # these two are from https://www.reddit.com/r/i3wm/comments/8gh4c0/working_fix_for_focusing_intellij_popups/
 # to solve intellij quirks:
@@ -457,6 +457,9 @@ for_window [instance="^scratchpad_urxvt_top$"] border pixel 1, floating enable, 
 # always pop standard shell, without the rofi menu:
 bindsym $mod1+i exec --no-startup-id i3-quickterm shell
 
+# bind i3expo launcher:
+bindsym $mod1+e exec --no-startup-id killall -s SIGUSR1 i3expod.py
+
 
 
 # alt-tab between latest windows (note 2 similar implementations):
@@ -469,4 +472,7 @@ bindsym $mod1+Tab exec --no-startup-id i3-cycle-focus.py --switch
 # start focus change listener scripts:
 exec --no-startup-id i3-cycle-exclude-tabs.py
 exec --no-startup-id i3-cycle-tabs.py
+
+# start i3expo daemon:
+exec --no-startup-id i3expod.py
 
