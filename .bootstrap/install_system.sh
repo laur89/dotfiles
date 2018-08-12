@@ -2895,11 +2895,9 @@ install_from_repo() {
         cmake
         python3
         python3-dev
+        python3-venv
         python3-pip
-        python3-virtualenv
         python-dev
-        python-pip
-        virtualenv
         python-flake8
         python3-flake8
         mono-complete
