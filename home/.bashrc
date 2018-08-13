@@ -286,6 +286,35 @@ unset fasd_cache
 export NVM_DIR="$HOME/.nvm"  # do not change location, keep _real_ .nvm/ under ~
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" --no-use  # This loads nvm; note --no-use postpones using nvm until manually invoked
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+#   from https://stackoverflow.com/a/50378304/1803648
+# Run 'nvm use' automatically every time there's
+# a .nvmrc file in the directory. Also, revert to default
+# version when entering a directory without .nvmrc
+#
+_enter_dir() {
+    local d
+    if ! d=$(git rev-parse --show-toplevel 2>/dev/null); then
+        if [[ "$NVM_DIRTY" == 1 ]]; then
+            nvm use default
+            NVM_DIRTY=0
+        fi
+        return
+    elif [[ "$d" == "$PREV_PWD" ]]; then
+        return
+    fi
+
+    PREV_PWD="$d"
+    if [[ -f "$d/.nvmrc" ]]; then
+        nvm use
+        NVM_DIRTY=1
+    elif [[ "$NVM_DIRTY" == 1 ]]; then
+        nvm use default
+        NVM_DIRTY=0
+    fi
+}
+
+export PROMPT_COMMAND=_enter_dir
 ##########################################
 # fzf
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
