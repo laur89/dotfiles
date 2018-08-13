@@ -25,6 +25,11 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # ruby env (rbenv):
     export PATH="$HOME/.rbenv/bin:$PATH"
 
+    # add local ruby gems to path: (https://guides.rubygems.org/faqs/#user-install)
+    if command -v ruby >/dev/null && command -v gem >/dev/null; then
+        PATH="$(ruby -r rubygems -e 'puts Gem.user_dir')/bin:$PATH"
+    fi
+
     export CUSTOM_LOGDIR="/var/log/custom_logs"
     export PANEL_FIFO="/tmp/panel-fifo"  # for BSPWM
 
