@@ -314,7 +314,7 @@ _enter_dir() {
     fi
 }
 
-export PROMPT_COMMAND=_enter_dir
+export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
 ##########################################
 # fzf
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
