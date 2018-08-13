@@ -856,10 +856,10 @@ install_deps() {
 
     # TODO: following are not deps, are they?:
     # git-playback; install _either_ of these two (ie either from jianli or mmozuras):
-    execute "sudo pip install --upgrade git-playback"   # https://github.com/jianli/git-playback
+    execute "pip3 install --upgrade git-playback"   # https://github.com/jianli/git-playback
 
     # whatportis: query applications' default port:
-    execute "sudo pip install whatportis"   # https://github.com/ncrocfer/whatportis
+    execute "pip3 install --upgrade whatportis"     # https://github.com/ncrocfer/whatportis
 
     # git-playback:   # https://github.com/mmozuras/git-playback
     #clone_or_pull_repo "mmozuras" "git-playback" "$BASE_DEPS_LOC"
@@ -867,20 +867,20 @@ install_deps() {
 
 
     # this needs apt-get install  python-imaging ?:
-    execute "sudo pip  install --upgrade img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
-    execute "sudo pip3 install --upgrade scdl"          # https://github.com/flyingrub/scdl (soundcloud downloader)
-    execute "sudo pip  install --upgrade rtv"           # https://github.com/michael-lazar/rtv (reddit reader)
-    execute "sudo pip  install --upgrade tldr"          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
+    execute "pip3 install --upgrade img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
+    execute "pip3 install --upgrade scdl"           # https://github.com/flyingrub/scdl (soundcloud downloader)
+    execute "pip3 install --upgrade rtv"           # https://github.com/michael-lazar/rtv (reddit reader)
+    execute "pip3 install --upgrade tldr"          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
                                                         #   note its conf is in bash_env_vars
-    execute "sudo pip  install --upgrade maybe"         # https://github.com/p-e-w/maybe (check what command would do)
-    execute "sudo pip3 install --upgrade httpstat"      # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
-    execute "sudo pip3 install --upgrade tendo"         # https://github.com/pycontribs/tendo  py utils, eg singleton (lockfile management)
+    execute "pip3 install --upgrade maybe"         # https://github.com/p-e-w/maybe (check what command would do)
+    execute "pip3 install --upgrade httpstat"       # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
+    execute "pip3 install --upgrade tendo"          # https://github.com/pycontribs/tendo  py utils, eg singleton (lockfile management)
 
     # colorscheme generator:
     # see also complementing script @ https://github.com/dylanaraps/bin/blob/master/wal-set
-    execute "sudo pip3 install --upgrade pywal"         # https://github.com/dylanaraps/pywal/wiki/Installation
+    execute "pip3 install --upgrade pywal"          # https://github.com/dylanaraps/pywal/wiki/Installation
 
-    execute "sudo gem install speed_read"               # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
+    execute "gem install --user-install speed_read" # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
 
     # rbenv & ruby-build:                               # https://github.com/rbenv/rbenv-installer
     #   ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki):
@@ -900,7 +900,7 @@ install_deps() {
     execute 'curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-installer | bash'
 
     # some py deps requred by scripts:
-    execute "sudo pip3 install --upgrade exchangelib icalendar arrow"
+    execute "pip3 install --upgrade exchangelib icalendar arrow"
     # note: if exchangelib fails with something like
                 #In file included from src/kerberos.c:19:0:
                 #src/kerberosbasic.h:17:27: fatal error: gssapi/gssapi.h: No such file or directory
@@ -908,11 +908,8 @@ install_deps() {
                                             #^
                 #compilation terminated.
                 #error: command 'x86_64-linux-gnu-gcc' failed with exit status 1
-    # you'd might wanna install  libkrb5-dev (or whatever ver avail at the time)
+    # you'd might wanna install  libkrb5-dev (or whatever ver avail at the time)   https://github.com/ecederstrand/exchangelib/issues/404
 
-
-    # install docker-compose:  (atm installing from repo)
-    #execute "sudo pip install --upgrade docker-compose" # https://docs.docker.com/compose/install/#install-compose
 
     # i3lock-fancy                                      # https://github.com/meskarune/i3lock-fancy
     # depends on i3lock-color-git (see i3lock-fancy's github page)
@@ -923,13 +920,13 @@ install_deps() {
 
     # flashfocus - flash window when focus changes  https://github.com/fennerm/flashfocus
     install_block 'libxcb-render0-dev'
-    execute "sudo pip3 install flashfocus"
+    execute "pip3 install --upgrade flashfocus"
 
 
     # work deps:  # TODO remove block?
     if [[ "$MODE" == work ]]; then
         # cx toolbox/vagrant env deps:  # TODO: deprecate? (not yet imo, puppet still used)
-        execute "sudo gem install \
+        execute "gem install --user-install \
             puppet puppet-lint bundler nokogiri builder \
         "
     fi
@@ -1882,17 +1879,18 @@ install_webdev() {
     "
 
     # install ruby modules:          # sass: http://sass-lang.com/install
-    execute "sudo gem install \
-        sass \
-    "
+    # TODO sass deprecated, use https://github.com/sass/dart-sass instead
+    #execute "gem install --user-install \
+        #sass \
+    #"
 
     # install yarn:  https://yarnpkg.com/en/docs/install#debian-stable
     execute "sudo apt-get --no-install-recommends yarn"
 
     # install rails:
     # this would install it globally; better install new local ver by
-    # $rbenv install <ver> && rbenv global <ver> && gem install rails
-    #execute 'sudo gem install rails'
+    # rbenv install <ver> && rbenv global <ver> && gem install rails
+    #execute 'gem install --user-install rails'
 }
 
 
@@ -2247,7 +2245,7 @@ install_i3_deps() {
     local f
     f="$TMPDIR/i3-dep-${RANDOM}"
 
-    execute "sudo pip3 install --upgrade i3ipc"  # https://github.com/acrisci/i3ipc-python
+    execute "pip3 install --upgrade i3ipc"  # https://github.com/acrisci/i3ipc-python
 
     # TODO: depending on multimon performance, decide whether urxvtq is enough,
     # or i3-quickterm is required;!
@@ -3421,7 +3419,7 @@ install_gtk_numix() {
 
     check_progs_installed  glib-compile-schemas  gdk-pixbuf-pixdata || { err "those need to be on path for numix build to succeed."; return 1; }
     report "installing numix build dependencies..."
-    execute "sudo gem install sass" || return 1
+    execute "gem install --user-install sass" || return 1
 
     execute "git clone $theme_repo $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
