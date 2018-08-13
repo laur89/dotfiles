@@ -387,20 +387,21 @@ clone_or_pull_repo() {
 
     readonly user="$1"
     readonly repo="$2"
-    readonly install_dir="$3"
+    install_dir="$3"  # if has trailing / then $repo won't be appended
     readonly hub=${4:-'github.com'}  # OPTIONAL; defaults to github.com;
 
     [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
+    [[ "$install_dir" != */ ]] && install_dir="${install_dir}/$repo"
 
-    if ! [[ -d "$install_dir/$repo" ]]; then
-        execute "git clone --recursive -j8 https://$hub/$user/${repo}.git $install_dir/$repo" || return 1
+    if ! [[ -d "$install_dir" ]]; then
+        execute "git clone --recursive -j8 https://$hub/$user/${repo}.git $install_dir" || return 1
 
-        execute "pushd $install_dir/$repo" || return 1
+        execute "pushd $install_dir" || return 1
         execute "git remote set-url origin git@${hub}:$user/${repo}.git" || return 1
         execute "git remote set-url --push origin git@${hub}:$user/${repo}.git" || return 1
         execute "popd"
     elif is_ssh_key_available; then
-        execute "pushd $install_dir/$repo" || return 1
+        execute "pushd $install_dir" || return 1
         execute "git pull" || return 1
         execute "git submodule update --init --recursive" || return 1  # make sure to pull submodules
         execute "popd"
@@ -850,10 +851,6 @@ install_deps() {
     # sdkman:  # https://sdkman.io/
     execute "curl -s 'https://get.sdkman.io' | bash"
 
-    # nvm (node version manager) :  # https://github.com/creationix/nvm#git-install
-    execute "git clone --recursive -j8 https://github.com/creationix/nvm.git $HOME/.nvm"  # do not change location, keep _real_ .nvm/ under ~
-    execute "source '$HOME/.nvm/nvm.sh'" || err "sourcing ~/.nvm/nvm.sh failed"
-
     # TODO: following are not deps, are they?:
     # git-playback; install _either_ of these two (ie either from jianli or mmozuras):
     execute "pip3 install --upgrade git-playback"   # https://github.com/jianli/git-playback
@@ -942,6 +939,7 @@ setup_dirs() {
     # create dirs:
     for dir in \
             $HOME/bin \
+            $HOME/.npm-packages \
             $BASE_DATA_DIR/.calendars \
             $BASE_DATA_DIR/.calendars/work \
             $BASE_DATA_DIR/.rsync \
@@ -1432,24 +1430,13 @@ install_progs() {
 # TODO: kind of belongs in install_deps()?
 install_npm_modules() {
 
-    if ! command -v nodejs >/dev/null || ! command -v npm >/dev/null; then
-        report "need to install npm & nodejs first..."
-        install_block '
-            nodejs
-            npm
-        ' || { err "err installing npm and/or nodejs"; return 1; }
-    fi
-
-    # first thing update npm:
-    execute "sudo npm install npm -g" && sleep 0.5
-
     # https://github.com/FredrikNoren/ungit
     # https://github.com/dominictarr/JSON.sh
     # https://github.com/sindresorhus/speed-test
     # https://github.com/riyadhalnur/weather-cli
     #
     # (note the required -H for ungit)
-    execute "sudo -H npm install -g \
+    execute "npm install -g \
         ungit \
         JSON.sh \
         speed-test \
@@ -1813,7 +1800,7 @@ build_and_install_rambox() {  # https://github.com/saenzramiro/rambox
         npm
         git
     ' || { err "rambox deps install_block failed" "$FUNCNAME"; return 1; }
-    execute 'sudo npm install electron-prebuilt -g' || return 1
+    execute 'npm install electron-prebuilt -g' || return 1
     execute "git clone $RAMBOX_REPO_LOC $tmpdir" || return 1
     execute 'npm install' || { err "npm install failed" "$FUNCNAME"; return 1; }
     # TODO set up env.conf
@@ -1857,24 +1844,23 @@ install_skype() {  # https://wiki.debian.org/skype
 install_webdev() {
     is_server && { report "we're server, skipping webdev env installation."; return; }
 
-    install_block '
-        ruby
-        nodejs
-        npm
-    ' || { err "first install_block failed" "$FUNCNAME"; return 1; }
-
-    # create link for node (there's a different package called 'node' for debian,
-    # that's why the 'node' executable is very likely to be missing from the $PATH):
-    if ! command -v node >/dev/null; then
-        command -v nodejs >/dev/null || { err "nodejs is not on \$PATH; can't create 'node' link to it. fix it."; }
-        create_link --sudo "$(which nodejs)" "/usr/bin/node"
+    # first get nvm (node version manager) :  # https://github.com/creationix/nvm#git-install
+    clone_or_pull_repo creationix nvm "$HOME/.nvm/"  # note repo dest needs to be exactly @ ~/.nvm
+    execute "source '$HOME/.nvm/nvm.sh'" || err "sourcing ~/.nvm/nvm.sh failed"
+    if ! command -v node >/dev/null 2>&1; then
+        execute "nvm install stable" || err "installing nodejs 'stable' version failed"
+        execute "nvm alias default $(nvm version)" || err "setting [nvm default] failed (nvm version reports [$(nvm version)])"
     fi
 
-    # first thing update npm:
-    execute "sudo npm install npm -g" && sleep 0.5
+        #nodejs  # TODO remove these 3 when confirmed we can just use nvm
+        #nodejs-legacy
+        #npm
+
+    # install/update npm:
+    execute "npm install npm@latest -g" && sleep 0.5
 
     # install npm modules:
-    execute "sudo npm install -g \
+    execute "npm install -g \
         typescript jshint grunt-cli csslint \
     "
 
@@ -2640,7 +2626,7 @@ install_YCM() {  # the quick-and-not-dirty install.py way
         python-dev
         python3-dev
     '
-    execute "sudo npm install -g typescript"  # for js support
+    execute "npm install -g typescript"  # for js support
 
     # install YCM
     execute "pushd -- $ycm_plugin_root" || return 1
@@ -2891,6 +2877,7 @@ install_from_repo() {
         checkinstall
         build-essential
         cmake
+        ruby
         python3
         python3-dev
         python3-venv
