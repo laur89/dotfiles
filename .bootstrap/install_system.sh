@@ -1852,10 +1852,6 @@ install_webdev() {
         execute "nvm alias default stable" || err "setting [nvm default stable] failed"
     fi
 
-        #nodejs  # TODO remove these 3 when confirmed we can just use nvm
-        #nodejs-legacy
-        #npm
-
     # install/update npm:
     execute "npm install npm@latest -g" && sleep 0.5
 
