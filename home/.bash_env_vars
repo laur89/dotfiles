@@ -27,12 +27,22 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
 
     # add local ruby gems to path: (https://guides.rubygems.org/faqs/#user-install)
     if command -v ruby >/dev/null && command -v gem >/dev/null; then
-        PATH="$(ruby -r rubygems -e 'puts Gem.user_dir')/bin:$PATH"
+        export PATH="$(ruby -r rubygems -e 'puts Gem.user_dir')/bin:$PATH"
     fi
+
+
+    # set path for global, but non-sudo, npm pacakges:  (https://stackoverflow.com/questions/10081293/install-npm-into-home-directory-with-distribution-nodejs-package-ubuntu/13021677#13021677)
+    export NPM_PACKAGES="$HOME/.npm-packages"
+    export PATH="$NPM_PACKAGES/bin:$PATH"
+    # Unset manpath so we can inherit from /etc/manpath via the `manpath` command:
+    unset MANPATH  # delete if you already modified MANPATH elsewhere in your configuration
+    MANPATH="$NPM_PACKAGES/share/man:$(manpath)"
+    # Tell Node about these packages
+    NODE_PATH="$NPM_PACKAGES/lib/node_modules:$NODE_PATH"
+
 
     export CUSTOM_LOGDIR="/var/log/custom_logs"
     export PANEL_FIFO="/tmp/panel-fifo"  # for BSPWM
-
 
     #export HGRCPATH="$HOME/.config/hg/hgrc"
     export PASSWORD_STORE_DIR="$HOME/.config/password-store"
