@@ -693,7 +693,6 @@ install_sshfs() {
 # if equivalent is avaialble at deb repos, its installation should be
 # moved to  install_from_repo()
 #
-# also, why is install_npm_modules() not here?
 # aslo, should we extract python modules out?
 install_deps() {
     _install_tmux_deps() {
@@ -930,6 +929,20 @@ install_deps() {
 
     # laptop deps:
     is_laptop && _install_laptop_deps; unset _install_laptop_deps
+
+
+    # install npm_modules:
+    # https://github.com/FredrikNoren/ungit
+    # https://github.com/dominictarr/JSON.sh
+    # https://github.com/sindresorhus/speed-test
+    # https://github.com/riyadhalnur/weather-cli
+    #
+    execute "npm install -g \
+        ungit \
+        JSON.sh \
+        speed-test \
+        weather-cli \
+    "
 }
 
 
@@ -1411,7 +1424,6 @@ install_progs() {
 
     #confirm "do you want to install our webdev lot?" && install_webdev
     install_webdev
-    install_npm_modules
 
     install_from_repo
     install_own_builds  # has to be after install_from_repo()
@@ -1423,25 +1435,6 @@ install_progs() {
         #install_altiris
         #install_symantec_endpoint_security
     #fi
-}
-
-
-# system deps, which depend on npm & nodejs
-# TODO: kind of belongs in install_deps()?
-install_npm_modules() {
-
-    # https://github.com/FredrikNoren/ungit
-    # https://github.com/dominictarr/JSON.sh
-    # https://github.com/sindresorhus/speed-test
-    # https://github.com/riyadhalnur/weather-cli
-    #
-    # (note the required -H for ungit)
-    execute "npm install -g \
-        ungit \
-        JSON.sh \
-        speed-test \
-        weather-cli \
-    "
 }
 
 
@@ -1847,7 +1840,7 @@ install_webdev() {
     # first get nvm (node version manager) :  # https://github.com/creationix/nvm#git-install
     clone_or_pull_repo creationix nvm "$HOME/.nvm/"  # note repo dest needs to be exactly @ ~/.nvm
     execute "source '$HOME/.nvm/nvm.sh'" || err "sourcing ~/.nvm/nvm.sh failed"
-    if ! command -v node >/dev/null 2>&1; then
+    if ! command -v node >/dev/null 2>&1; then  # only proceed if node hasn't already been installed
         execute "nvm install stable" || err "installing nodejs 'stable' version failed"
         execute "nvm alias default stable" || err "setting [nvm default stable] failed"
     fi
@@ -1855,7 +1848,7 @@ install_webdev() {
     # install/update npm:
     execute "npm install npm@latest -g" && sleep 0.5
 
-    # install npm modules:
+    # install npm modules:  # TODO review
     execute "npm install -g \
         typescript jshint grunt-cli csslint \
     "
@@ -3214,7 +3207,6 @@ choose_single_task() {
         upgrade_kernel
         install_nvidia
         install_webdev
-        install_npm_modules
         install_from_repo
         install_ssh_server_or_client
         install_nfs_server_or_client
