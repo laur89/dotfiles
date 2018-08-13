@@ -13,7 +13,7 @@
 #------------------------
 #---   Configuration  ---
 #------------------------
-readonly TMPDIR='/tmp'
+readonly TMP_DIR='/tmp'
 readonly CLANG_LLVM_LOC='http://releases.llvm.org/6.0.0/clang+llvm-6.0.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
 readonly I3_REPO_LOC='https://www.github.com/Airblader/i3'            # i3-gaps
 readonly I3_LOCK_LOC='https://github.com/PandorasFox/i3lock-color'    # i3lock-color
@@ -192,7 +192,7 @@ setup_udev() {
 
     readonly udev_src="$PRIVATE_CASTLE/backups/udev"
     readonly udev_target='/etc/udev/rules.d/'
-    readonly tmpfile="$TMPDIR/udev_setup-$RANDOM"
+    readonly tmpfile="$TMP_DIR/udev_setup-$RANDOM"
 
     if ! [[ -d "$udev_target" ]]; then
         err "[$udev_target] is not a dir; skipping udev file(s) installation."
@@ -216,7 +216,7 @@ setup_systemd() {
 
     readonly sysd_src="$PRIVATE_CASTLE/backups/systemd"
     readonly sysd_target='/etc/systemd/system'
-    readonly tmpfile="$TMPDIR/sysd_setup-$RANDOM"
+    readonly tmpfile="$TMP_DIR/sysd_setup-$RANDOM"
 
     if ! [[ -d "$sysd_target" ]]; then
         err "[$sysd_target] is not a dir; skipping systemd file(s) installation."
@@ -239,7 +239,7 @@ setup_hosts() {
     local hosts_file_dest file current_hostline tmpfile
 
     readonly hosts_file_dest="/etc"
-    readonly tmpfile="$TMPDIR/hosts"
+    readonly tmpfile="$TMP_DIR/hosts"
     readonly file="$PRIVATE_CASTLE/backups/hosts"
 
     function _extract_current_hostname_line() {
@@ -283,7 +283,7 @@ setup_sudoers() {
     local sudoers_dest file tmpfile
 
     readonly sudoers_dest="/etc"
-    readonly tmpfile="$TMPDIR/sudoers"
+    readonly tmpfile="$TMP_DIR/sudoers"
     readonly file="$COMMON_PRIVATE_DOTFILES/backups/sudoers"
 
     if ! [[ -d "$sudoers_dest" ]]; then
@@ -326,7 +326,7 @@ setup_crontab() {
     local cron_dir tmpfile file
 
     readonly cron_dir="/etc/cron.d"  # where crontab will be installed at
-    readonly tmpfile="$TMPDIR/crontab"
+    readonly tmpfile="$TMP_DIR/crontab"
     readonly file="$PRIVATE_CASTLE/backups/crontab"
 
     if ! [[ -d "$cron_dir" ]]; then
@@ -732,7 +732,7 @@ install_deps() {
                 repo="https://github.com/lwfinger/rtlwifi_new.git"
 
                 report "installing rtlwifi_new for card [$rtl_driver]"
-                tmpdir="$TMPDIR/realtek-driver-${RANDOM}"
+                tmpdir="$TMP_DIR/realtek-driver-${RANDOM}"
                 execute "git clone $repo $tmpdir" || return 1
                 execute "pushd $tmpdir" || return 1
                 execute "make clean" || return 1
@@ -817,9 +817,9 @@ install_deps() {
     create_link "${BASE_DEPS_LOC}/maven-bash-completion" "$HOME/.maven-bash-completion"
 
     # diff-so-fancy - human-readable git diff:  # https://github.com/so-fancy/diff-so-fancy
-    if execute "wget -O $TMPDIR/d-s-f 'https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy'"; then
+    if execute "wget -O $TMP_DIR/d-s-f 'https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy'"; then
         git config core.pager | grep -q diff-so-fancy || err "git config core.pager not set for diff-so-fancy; configure it"
-        test -s $TMPDIR/d-s-f && execute "mv -- $TMPDIR/d-s-f $HOME/bin/diff-so-fancy; chmod +x $HOME/bin/diff-so-fancy" || err "fetched diff-so-fancy file is null"
+        test -s $TMP_DIR/d-s-f && execute "mv -- $TMP_DIR/d-s-f $HOME/bin/diff-so-fancy; chmod +x $HOME/bin/diff-so-fancy" || err "fetched diff-so-fancy file is null"
     else
         err "diff-so-fancy fetch failed"
     fi
@@ -1338,12 +1338,12 @@ install_altiris() {
         wget --no-check-certificate \
             --no-cookies \
             --header 'Cookie: studio.crowd.tokenkey=sy1UCiW0EIXwN5lf7tUMLA00' \
-            -O $TMPDIR/altiris_install.sh \
+            -O $TMP_DIR/altiris_install.sh \
             -- $altiris_loc \
     " || { err "couldn't find altiris script; read wiki."; return 1; }
 
-    execute "chmod +x -- $TMPDIR/altiris_install.sh"
-    execute "sudo $TMPDIR/altiris_install.sh" || {
+    execute "chmod +x -- $TMP_DIR/altiris_install.sh"
+    execute "sudo $TMP_DIR/altiris_install.sh" || {
         err "something's wrong; if it failed at rollout.sh, then you probably need to install libc6:i386"
         err "(as per https://williamhill.jira.com/wiki/display/TRAD/Altiris+on+Ubuntu)"
         return 1
@@ -1371,7 +1371,7 @@ install_symantec_endpoint_security() {
     [[ "$MODE" != work ]] && { err "won't install it in [$MODE] mode; only in work mode."; return 1; }
     [[ -d "$JDK_LINK_LOC" ]] || { err "expected [$JDK_LINK_LOC] to link to existing jdk installation."; return 1; }
 
-    tmpdir="$(mktemp -d "symantec-endpoint-sec-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$ mktemp"; return 1; }
+    tmpdir="$(mktemp -d "symantec-endpoint-sec-tempdir-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$ mktemp"; return 1; }
     execute "pushd $tmpdir" || return 1
 
     # fetch & install SEP:
@@ -1561,7 +1561,7 @@ prepare_build_container() {  # TODO container build env not used atm
 install_oracle_jdk() {
     local tarball tmpdir dir
 
-    readonly tmpdir="$(mktemp -d "jdk-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    readonly tmpdir="$(mktemp -d "jdk-tempdir-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     report "fetcing [$ORACLE_JDK_LOC]"
     execute "pushd -- $tmpdir" || return 1
@@ -1631,7 +1631,7 @@ switch_jdk_versions() {
 
     #is_server && { report "we're server, skipping davmail installation."; return; }
 
-    #readonly tmpdir="$(mktemp -d "davmail-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    #readonly tmpdir="$(mktemp -d "davmail-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     #readonly davmail_url='https://sourceforge.net/projects/davmail/files/latest/download?source=files'
     #readonly inst_loc="$BASE_PROGS_DIR/davmail"
 
@@ -1675,7 +1675,7 @@ fetch_release_from_git() {
     is_server && { report "we're server, skipping rambox installation."; return; }
 
     readonly loc="https://github.com/$1/$2/releases/latest"
-    tmpdir="$(mktemp -d "release-from-git-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    tmpdir="$(mktemp -d "release-from-git-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed"; return 1; }
     dl_url="$(grep -Po '.*a href="\K.*'"$3"'(?=".*$)' <<< "$page")" || { err "parsing [$3] download link failed"; return 1; }
@@ -1715,7 +1715,7 @@ install_rambox() {  # https://github.com/saenzramiro/rambox/wiki/Install-on-Linu
 
     is_server && { report "we're server, skipping rambox installation."; return; }
 
-    readonly tmpdir="$(mktemp -d "rambox-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    readonly tmpdir="$(mktemp -d "rambox-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     readonly rambox_url='http://rambox.pro/#download'
     readonly inst_loc="$BASE_PROGS_DIR/rambox"
 
@@ -1760,7 +1760,7 @@ build_and_install_rambox() {  # https://github.com/saenzramiro/rambox
     is_server && { report "we're server, skipping rambox installation."; return; }
 
     readonly expected_sencha_loc="$HOME/bin/Sencha"
-    readonly tmpdir="$(mktemp -d "sencha-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    readonly tmpdir="$(mktemp -d "sencha-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     is_x || { err "won't install rambox; need to be in graphical env for that."; return 1; }
 
@@ -1817,7 +1817,7 @@ install_skype() {  # https://wiki.debian.org/skype
     local skypeFile skype_downloads_dir
 
     is_server && { report "we're server, skipping skype installation."; return; }
-    readonly skypeFile="$TMPDIR/skype-install.deb"
+    readonly skypeFile="$TMP_DIR/skype-install.deb"
     readonly skype_downloads_dir="$BASE_DATA_DIR/Downloads/skype_dl"
 
     report "setting up skype"
@@ -1849,7 +1849,7 @@ install_webdev() {
     execute "source '$HOME/.nvm/nvm.sh'" || err "sourcing ~/.nvm/nvm.sh failed"
     if ! command -v node >/dev/null 2>&1; then
         execute "nvm install stable" || err "installing nodejs 'stable' version failed"
-        execute "nvm alias default $(nvm version)" || err "setting [nvm default] failed (nvm version reports [$(nvm version)])"
+        execute "nvm alias default stable" || err "setting [nvm default stable] failed"
     fi
 
         #nodejs  # TODO remove these 3 when confirmed we can just use nvm
@@ -1871,7 +1871,7 @@ install_webdev() {
     #"
 
     # install yarn:  https://yarnpkg.com/en/docs/install#debian-stable
-    execute "sudo apt-get --no-install-recommends yarn"
+    execute "sudo apt-get --no-install-recommends --yes install yarn"
 
     # install rails:
     # this would install it globally; better install new local ver by
@@ -1885,7 +1885,7 @@ install_webdev() {
 install_synergy() {
     local tmpdir
 
-    readonly tmpdir="$TMPDIR/synergy-build-${RANDOM}"
+    readonly tmpdir="$TMP_DIR/synergy-build-${RANDOM}"
 
     report "building synergy"
 
@@ -1919,7 +1919,7 @@ install_synergy() {
 install_copyq() {
     local tmpdir
 
-    readonly tmpdir="$TMPDIR/copyq-build-${RANDOM}"
+    readonly tmpdir="$TMP_DIR/copyq-build-${RANDOM}"
 
     report "building copyq"
 
@@ -1974,7 +1974,7 @@ create_deb_install_and_store() {
 install_goforit() {
     local tmpdir
 
-    readonly tmpdir="$TMPDIR/goforit-build-${RANDOM}"
+    readonly tmpdir="$TMP_DIR/goforit-build-${RANDOM}"
     report "building goforit..."
 
     execute "git clone $GOFORIT_REPO_LOC $tmpdir" || return 1
@@ -2027,7 +2027,7 @@ install_keepassxc() {
 
     is_server && { report "we're server, skipping keepassxc installation."; return; }
 
-    readonly tmpdir="$(mktemp -d "keepassxc-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    readonly tmpdir="$(mktemp -d "keepassxc-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     readonly kxc_url='https://keepassxc.org/download'
     readonly inst_loc="$BASE_PROGS_DIR/keepassxc"
 
@@ -2066,7 +2066,7 @@ install_keepassxc() {
 install_keepassx() {
     local tmpdir
 
-    readonly tmpdir="$TMPDIR/keepassx-build-${RANDOM}"
+    readonly tmpdir="$TMP_DIR/keepassx-build-${RANDOM}"
     report "building keepassx..."
 
     export QT_SELECT=qt5  # without defining this, autotype was not working (even the settings were missing for it)
@@ -2107,7 +2107,7 @@ install_keepassx() {
 install_i3lock() {
     local tmpdir
 
-    readonly tmpdir="$TMPDIR/i3lock-build-${RANDOM}"
+    readonly tmpdir="$TMP_DIR/i3lock-build-${RANDOM}"
     report "building i3lock..."
 
     report "installing i3lock build dependencies..."
@@ -2164,12 +2164,12 @@ install_i3() {
     apply_patches() {
         local f
 
-        f="$TMPDIR/i3-patch-${RANDOM}.patch"
+        f="$TMP_DIR/i3-patch-${RANDOM}.patch"
         curl -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
         patch -p1 < "$f" || { err "applying window-icons.patch failed"; return 1; }
     }
 
-    readonly tmpdir="$TMPDIR/i3-gaps-build-${RANDOM}"
+    readonly tmpdir="$TMP_DIR/i3-gaps-build-${RANDOM}"
     report "building i3-gaps..."
 
     report "installing i3 build dependencies..."
@@ -2229,7 +2229,7 @@ install_i3() {
 
 install_i3_deps() {
     local f
-    f="$TMPDIR/i3-dep-${RANDOM}"
+    f="$TMP_DIR/i3-dep-${RANDOM}"
 
     execute "pip3 install --upgrade i3ipc"  # https://github.com/acrisci/i3ipc-python
 
@@ -2255,7 +2255,7 @@ install_i3_deps() {
 install_polybar() {
     local tmpdir
 
-    readonly tmpdir="$TMPDIR/polybar-build-${RANDOM}"
+    readonly tmpdir="$TMP_DIR/polybar-build-${RANDOM}"
 
     report "installing polybar build dependencies..."
 
@@ -2341,7 +2341,7 @@ setup_nvim() {
 #install_neovim() {  # the AppImage version
     #local tmpdir nvim_confdir inst_loc nvim_url
 
-    #readonly tmpdir="$(mktemp -d "nvim-download-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    #readonly tmpdir="$(mktemp -d "nvim-download-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     #readonly nvim_confdir="$HOME/.config/nvim"
     #readonly inst_loc="$BASE_PROGS_DIR/neovim"
     #nvim_url='https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage'
@@ -2378,7 +2378,7 @@ setup_nvim() {
 #install_neovim() {  # the build-from-source version
     #local tmpdir nvim_confdir
 
-    #readonly tmpdir="$TMPDIR/nvim-build-${RANDOM}"
+    #readonly tmpdir="$TMP_DIR/nvim-build-${RANDOM}"
     #readonly nvim_confdir="$HOME/.config/nvim"
 
     #report "setting up nvim..."
@@ -2537,7 +2537,7 @@ vim_post_install_configuration() {
 build_and_install_vim() {
     local tmpdir expected_runtimedir python_confdir python3_confdir i
 
-    readonly tmpdir="$TMPDIR/vim-build-${RANDOM}"
+    readonly tmpdir="$TMP_DIR/vim-build-${RANDOM}"
     readonly expected_runtimedir='/usr/local/share/vim/vim81'  # depends on the ./configure --prefix
     readonly python_confdir='/usr/lib/python2.7/config-x86_64-linux-gnu'
     readonly python3_confdir='/usr/lib/python3.6/config-3.6m-x86_64-linux-gnu'
@@ -2649,7 +2649,7 @@ install_YCM() {  # the quick-and-not-dirty install.py way
     #function __fetch_libclang() {
         #local tmpdir tarball dir
 
-        #readonly tmpdir="$(mktemp -d "ycm-tempdir-XXXXX" -p $TMPDIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+        #readonly tmpdir="$(mktemp -d "ycm-tempdir-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
         #readonly tarball="$(basename -- "$CLANG_LLVM_LOC")"
 
         #execute "pushd -- $tmpdir" || return 1
@@ -2745,7 +2745,7 @@ install_fonts() {
     install_nerd_fonts() {
         local tmpdir fonts i
 
-        readonly tmpdir="$TMPDIR/nerd-fonts-${RANDOM}"
+        readonly tmpdir="$TMP_DIR/nerd-fonts-${RANDOM}"
         fonts=(
             Hack
             SourceCodePro
@@ -2779,7 +2779,7 @@ install_fonts() {
     install_powerline_fonts() {
         local tmpdir
 
-        readonly tmpdir="$TMPDIR/powerline-fonts-${RANDOM}"
+        readonly tmpdir="$TMP_DIR/powerline-fonts-${RANDOM}"
         report "installing powerline-fonts..."
 
         execute "git clone --recursive $PWRLINE_FONTS_REPO_LOC '$tmpdir'" || return 1
@@ -2795,7 +2795,7 @@ install_fonts() {
     install_siji() {
         local tmpdir
 
-        readonly tmpdir="$TMPDIR/siji-font-$RANDOM"
+        readonly tmpdir="$TMP_DIR/siji-font-$RANDOM"
 
         execute "git clone https://github.com/stark/siji $tmpdir" || { err 'err cloning siji font'; return 1; }
         execute "pushd $tmpdir" || return 1
@@ -3402,7 +3402,7 @@ install_gtk_numix() {
     local theme_repo tmpdir
 
     readonly theme_repo='https://github.com/numixproject/numix-gtk-theme.git'
-    readonly tmpdir="$TMPDIR/numix-theme-build-${RANDOM}"
+    readonly tmpdir="$TMP_DIR/numix-theme-build-${RANDOM}"
 
     check_progs_installed  glib-compile-schemas  gdk-pixbuf-pixdata || { err "those need to be on path for numix build to succeed."; return 1; }
     report "installing numix build dependencies..."
