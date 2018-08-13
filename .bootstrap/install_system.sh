@@ -1845,10 +1845,10 @@ install_webdev() {
         execute "nvm alias default stable" || err "setting [nvm default stable] failed"
     fi
 
-    # install/update npm:
+    # update npm:
     execute "npm install npm@latest -g" && sleep 0.5
 
-    # install npm modules:  # TODO review
+    # install npm modules:  # TODO review what we want to install
     execute "npm install -g \
         typescript jshint grunt-cli csslint \
     "
