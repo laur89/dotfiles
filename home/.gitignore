@@ -73,3 +73,5 @@ _ReSharper*/
 
 ###### own additions ######
 .notes/  # vim-pad local notes dir
+*.min.js
+*.min.css

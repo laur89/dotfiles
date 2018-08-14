@@ -14,7 +14,7 @@
 ;[mergetool]
     ;keepBackup = false
 [core]
-    excludesfile = /home/laur/.gitignore_global
+    excludesfile = /home/laur/.gitignore
     editor = nvim
     ;autocrlf = input
     autocrlf = false
