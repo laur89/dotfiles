@@ -262,7 +262,7 @@ ffind() {
         fi
     fi
 
-    # find metacharacter or regex sanity:
+    # find metacharacter or regex sanity:  # TODO: this sanity should be removed
     if [[ "$regex" -eq 1 ]]; then
         if [[ "$src" == *\** && "$src" != *\.\** ]]; then
             err 'use .* as wildcards, not a single *; are you misusing regex?' "$FUNCNAME"
@@ -1761,10 +1761,23 @@ createUsbIso() {
 
 
 # display hardware
-# see also: hardinfo
+# see also: hardinfo, lscpu
+#
+# all with -s flag to run as sudo (for additional info)
 hw() {
+    local opt sudo OPTIND
+
+    while getopts "s" opt; do
+        case "$opt" in
+            s) sudo=sudo ;;
+            *) err "incorrect opt [$opt]"; return 1 ;;
+        esac
+    done
+    shift $((OPTIND-1))
+
+
     check_progs_installed inxi || return 1
-    inxi -F
+    $sudo inxi -F
 }
 
 #######################
@@ -2789,8 +2802,8 @@ xclass() {
 ## Smarter CD ##
 ################
 goto() {
-    [[ -z "$@" ]] && { err "node operand required" "$FUNCNAME"; return 1; }
-    [[ -d "$@" ]] && { cd -- "$@"; } || cd -- "$(dirname -- "$@")";
+    [[ -z "$*" ]] && { err "node operand required" "$FUNCNAME"; return 1; }
+    [[ -d "$*" ]] && { cd -- "$*"; } || cd -- "$(dirname -- "$(realpath -- "$*")")";
 }
 
 # cd-s to directory by partial match; if multiple matches, opens input via fzf. smartcase.
@@ -3647,6 +3660,7 @@ function jjj {
 _completemarks() {
     local curw wordlist
 
+    [[ -d "$_MARKPATH" ]] || { err "no marks saved in [$_MARKPATH] - dir does not exist." "$FUNCNAME"; return 1; }
     curw=${COMP_WORDS[COMP_CWORD]}
     wordlist=$(find "$_MARKPATH" -type l -printf "%f\n")
     COMPREPLY=($(compgen -W '${wordlist[@]}' -- "$curw"))
