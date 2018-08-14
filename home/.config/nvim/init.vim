@@ -198,7 +198,7 @@ set nocompatible " Must be the first line
     Plug 'dkprice/vim-easygrep'
 
     " visual-star-search - search words selected in visual mode:
-    Plug 'bronson/vim-visual-star-search'
+    Plug 'bronson/vim-visual-star-search'  " TODO seek alternatives, doesn't appear to be working correctly anymore
 
     " manipulate on blocks based on their indentation:
     " use  vai  and vii
