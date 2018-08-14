@@ -295,16 +295,17 @@ export NVM_DIR="$HOME/.nvm"  # do not change location, keep _real_ .nvm/ under ~
 _enter_dir() {
     local d
     d=$(git rev-parse --show-toplevel 2>/dev/null)
-    [[ "$d" == "$PREV_PWD" ]] && return
 
-    PREV_PWD="$d"
-    if [[ -n "$d" && -f "$d/.nvmrc" ]]; then
+    if [[ "$d" == "$PREV_PWD" ]]; then
+        return
+    elif [[ -n "$d" && -f "$d/.nvmrc" ]]; then
         nvm use
         NVM_DIRTY=1
     elif [[ "$NVM_DIRTY" == 1 ]]; then
         nvm use default
         NVM_DIRTY=0
     fi
+    PREV_PWD="$d"
 }
 
 export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
