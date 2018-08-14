@@ -29,9 +29,11 @@ readonly GOFORIT_REPO_LOC='https://github.com/mank319/Go-For-It.git'  # go-for-i
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
 readonly SYNERGY_REPO_LOC='https://github.com/symless/synergy.git'    # synergy - share keyboard&mouse between computers on same LAN
 readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u172-b11/a58eab1ec242421181065cdc37240b08/jdk-8u172-linux-x64.tar.gz'
+#readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/10.0.1+10/fb4372174a714e6b8c52526dc134031e/jdk-10.0.1_linux-x64_bin.tar.gz'
                                                                           #       http://www.oracle.com/technetwork/java/javase/downloads/index.html
                                                                           # jdk8: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
                                                                           # jdk9: https://jdk9.java.net/  /  https://jdk9.java.net/download/
+                                                                          # jdk10: http://www.oracle.com/technetwork/java/javase/downloads/jdk10-downloads-4416644.html
                                                                           # archive: http://www.oracle.com/technetwork/java/javase/archive-139210.html
 readonly SKYPE_LOC='http://www.skype.com/go/getskype-linux-deb'       # http://www.skype.com/en/download-skype/skype-for-computer/
 readonly JDK_LINK_LOC="/usr/local/jdk_link"      # symlink linking to currently active java installation
@@ -1505,6 +1507,7 @@ install_own_builds() {
     install_rambox
     install_ripgrep
     install_fd
+    install_lazygit
     #install_synergy  # currently installing from repo
     install_polybar
     install_oracle_jdk
@@ -1700,6 +1703,15 @@ install_fd() {  # https://github.com/sharkdp/fd
     deb="$(fetch_release_from_git sharkdp fd 'musl_[0-9.]+_amd64.deb')" || return 1
     execute "sudo dpkg -i '$deb'" || { err "installing [$deb] failed"; return 1; }
     execute "rm -rf -- '$deb'"
+}
+
+
+install_lazygit() {  # https://github.com/jesseduffield/lazygit
+    local binary
+
+    binary="$(fetch_release_from_git jesseduffield lazygit 'linux_amd64_v[0-9.]+')" || return 1
+    execute "chmod +x '$binary'" || return 1
+    execute "mv -- '$binary' $HOME/bin/lazygit" || { err "installing [$binary] failed"; return 1; }
 }
 
 
@@ -2275,8 +2287,7 @@ install_polybar() {
 
     execute "git clone --recursive $POLYBAR_REPO_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
-    execute "./build.sh" || return 1
-    #execute "./build.sh --auto --all-features --no-install --no-install-config" || return 1  # TODO enable this one after build.sh PR gets accpeted;
+    execute "./build.sh --auto --all-features --no-install" || return 1
     create_deb_install_and_store polybar
 
     execute "popd"
@@ -3239,6 +3250,7 @@ __choose_prog_to_build() {
         install_rambox
         install_ripgrep
         install_fd
+        install_lazygit
         install_synergy
         install_dwm
         install_i3
