@@ -850,7 +850,7 @@ install_deps() {
     fi
 
     # sdkman:  # https://sdkman.io/
-    execute "curl -s 'https://get.sdkman.io' | bash"
+    execute "curl -s 'https://get.sdkman.io' | bash"  # TODO depends whether dev on win or linux
 
     # TODO: following are not deps, are they?:
     # git-playback; install _either_ of these two (ie either from jianli or mmozuras):
@@ -930,7 +930,7 @@ install_deps() {
     fi
 
     # laptop deps:
-    is_laptop && _install_laptop_deps; unset _install_laptop_deps
+    ! is_windows && is_laptop && _install_laptop_deps; unset _install_laptop_deps
 
 
     # install npm_modules:
@@ -1194,11 +1194,11 @@ setup_config_files() {
     #setup_ssh_config   # better stick to ~/.ssh/config, rite?  # TODO
     setup_hosts
     setup_systemd
-    setup_udev
+    is_window || setup_udev
     setup_global_env_vars
     setup_netrc_perms
     setup_global_prompt
-    swap_caps_lock_and_esc
+    is_window || swap_caps_lock_and_esc
 }
 
 
@@ -1430,7 +1430,7 @@ install_progs() {
     install_from_repo
     install_own_builds  # has to be after install_from_repo()
 
-    install_nvidia
+    is_windows || install_nvidia
 
     # TODO: delete?:
     #if [[ "$MODE" == work ]]; then
@@ -3282,7 +3282,7 @@ full_install() {
     setup
 
     execute "sudo apt-get --yes update"  # needs to be first
-    upgrade_kernel
+    is_windows || upgrade_kernel
     install_fonts
     install_progs
     post_install_progs_setup
@@ -3490,23 +3490,23 @@ setup_seafile_cli() {
 # pulled with homesick);
 post_install_progs_setup() {
 
-    install_acpi_events   # has to be after install_progs(), so acpid is already insalled and events/ dir present;
-    enable_network_manager
-    install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present
-    execute --ignore-errs "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
-    execute "mopidy local scan"            # update mopidy library
-    execute "sudo sensors-detect --auto"   # answer enter for default values (this is lm-sensors config)
+    is_windows || install_acpi_events   # has to be after install_progs(), so acpid is already insalled and events/ dir present;
+    is_windows || enable_network_manager
+    is_windows || install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present
+    is_windows || execute --ignore-errs "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
+    is_windows || execute "mopidy local scan"            # update mopidy library
+    is_windows || execute "sudo sensors-detect --auto"   # answer enter for default values (this is lm-sensors config)
     increase_inotify_watches_limit         # for intellij IDEA
-    setup_docker
+    is_windows || setup_docker
     setup_nvim
-    execute "sudo adduser $USER wireshark"      # add user to wireshark group, so it could be run as non-root;
+    is_windows || execute "sudo adduser $USER wireshark"      # add user to wireshark group, so it could be run as non-root;
                                                 # (implies wireshark is installed with allowing non-root users
                                                 # to capture packets - it asks this during installation);
     #execute "newgrp wireshark"                  # log us into the new group; !! will stop script execution
-    execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
+    is_windows || execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
     #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
-    configure_ntp_for_work
-    configure_pulseaudio
+    is_windows || configure_ntp_for_work
+    is_windows || configure_pulseaudio  # TODO might be possible w/ windows
     #setup_seafile_cli  # TODO https://github.com/haiwen/seafile/issues/1855 & https://github.com/haiwen/seafile/issues/1854
 }
 
