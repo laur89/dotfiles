@@ -39,7 +39,3 @@ fi
 # provides automatic logout; for debugging puroposes:
 #export TMOUT=120
 
-# TODO: exec startx masks this?
-#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
-export SDKMAN_DIR="/home/laur/.sdkman"
-[[ -s "/home/laur/.sdkman/bin/sdkman-init.sh" ]] && source "/home/laur/.sdkman/bin/sdkman-init.sh"
