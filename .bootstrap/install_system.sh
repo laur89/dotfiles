@@ -3828,6 +3828,14 @@ is_laptop() {
 }
 
 
+# Checks whether system is running in WSL.
+#
+# @returns {bool}   true if we're running inside Windows.
+is_windows() {
+	grep -qE "(Microsoft|WSL)" /proc/version &>/dev/null
+}
+
+
 is_64_bit() {
     [[ "$(uname -m)" == x86_64 ]] && return 0 || return 1
 }

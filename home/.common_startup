@@ -289,9 +289,11 @@ done &
 allowed_size=20   # Max size in MB
 check_max_allowed_size "$CUSTOM_LOGDIR" "$allowed_size"
 
-enableSmart &
 set_perms &
-set_keyboard_layout &
-open_mpd_fifo &
+if ! is_windows; then
+    enableSmart &
+    set_keyboard_layout &
+    open_mpd_fifo &
+fi
 
 unset i x f m n SESSION_STARTFILE AUTOSTART _SELF allowed_size
