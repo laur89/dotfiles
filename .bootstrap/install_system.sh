@@ -2880,6 +2880,7 @@ install_from_repo() {
     )
 
     declare -ar block1=(
+        xinit
         aptitude
         sudo
         dunst
@@ -3846,7 +3847,7 @@ is_laptop() {
 #
 # @returns {bool}   true if we're running inside Windows.
 is_windows() {
-	grep -qE "(Microsoft|WSL)" /proc/version &>/dev/null
+    grep -qE "(Microsoft|WSL)" /proc/version &>/dev/null
 }
 
 
