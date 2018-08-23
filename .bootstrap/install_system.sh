@@ -2848,47 +2848,25 @@ install_fonts() {
 # TODO: add udiskie?
 # majority of packages get installed at this point;
 install_from_repo() {
-    local block block1 block2 block3 block4 extra_apt_params
+    local block blocks block1 block2 block3 block4 extra_apt_params
+    local block1_nonwin block2_nonwin block3_nonwin block4_nonwin
 
-    declare -A extra_apt_params
-    extra_apt_params=(
-       [block2]="--no-install-recommends"
+    declare -A extra_apt_params=(
     )
 
-    declare -ar block1=(
-        aptitude
+    declare -ar block1_nonwin=(
         xorg
-        sudo
         alsa-utils
         pulseaudio
         pavucontrol
         pulsemixer
         pulseaudio-equalizer
         pasystray
-        dunst
-        rofi
-        compton
         smartmontools
-        gksu
         pm-utils
         ntfs-3g
         fuseiso
-        dosfstools
-        checkinstall
-        build-essential
-        cmake
-        ruby
-        python3
-        python3-dev
-        python3-venv
-        python3-pip
-        python-dev
-        python-flake8
-        python3-flake8
         mono-complete
-        devscripts
-        curl
-        lshw
         acpid
         lm-sensors
         psensor
@@ -2901,29 +2879,65 @@ install_from_repo() {
         fail2ban
     )
 
-    declare -ar block2=(
-        jq
+    declare -ar block1=(
+        aptitude
+        sudo
+        dunst
+        rofi
+        compton
+        gksu
+        dosfstools
+        checkinstall
+        build-essential
+        cmake
+        ruby
+        python3
+        python3-dev
+        python3-venv
+        python3-pip
+        python-dev
+        python-flake8
+        python3-flake8
+        devscripts
+        curl
+        lshw
+    )
+
+    declare -ar block2_nonwin=(
         dnsutils
         glances
+        netdata
+        wireshark
+        iptraf
+        ntp
+        gdebi
+        mercurial
+        rsync
+        gparted
+        openvpn
+        network-manager
+        network-manager-gnome
+        network-manager-openvpn-gnome
+        gnome-disk-utility
+        cups
+        system-config-printer
+    )
+
+    declare -ar block2=(
+        jq
         htop
         iotop
         ncdu
         pydf
-        netdata
-        wireshark
-        iptraf
         nethogs
         tkremind
         remind
         tree
         flashplugin-nonfree
-        ntp
-        gdebi
         synaptic
         apt-file
         apt-show-versions
         apt-xapian-index
-        mercurial
         git
         tig
         git-flow
@@ -2931,20 +2945,11 @@ install_from_repo() {
         zenity
         gxmessage
         msmtp
-        rsync
-        gparted
-        openvpn
-        network-manager
-        network-manager-gnome
-        network-manager-openvpn-gnome
         gnome-keyring
         seahorse
         gsimplecal
         khal
         calcurse
-        gnome-disk-utility
-        cups
-        system-config-printer
         galculator
         atool
         file-roller
@@ -2971,15 +2976,7 @@ install_from_repo() {
 
         # socat for mopidy+ncmpcpp visualisation
 
-    declare -ar block3=(
-        firefox
-        chromium
-        thunderbird
-        davmail
-        lightning
-        rxvt-unicode-256color
-        seafile-gui
-        seafile-cli
+    declare -ar block3_nonwin=(
         spotify-client
         mopidy
         mopidy-soundcloud
@@ -2991,11 +2988,27 @@ install_from_repo() {
         ncmpcpp
         ncmpc
         audacity
+        mplayer2
+        gimp
+        xss-lock
+        filezilla
+        transmission
+        transmission-remote-cli
+        transmission-remote-gtk
+    )
+
+    declare -ar block3=(
+        firefox
+        chromium
+        thunderbird
+        davmail
+        lightning
+        rxvt-unicode-256color
+        seafile-gui
+        seafile-cli
         geany
         libreoffice
         zathura
-        mplayer2
-        gimp
         feh
         sxiv
         geeqie
@@ -3003,7 +3016,6 @@ install_from_repo() {
         imagemagick
         pinta
         xsel
-        xss-lock
         xclip
         wmctrl
         xdotool
@@ -3032,16 +3044,19 @@ install_from_repo() {
         libxml2-utils
         pidgin
         weechat
-        filezilla
         etckeeper
         gradle
         lxrandr
         arandr
-        transmission
-        transmission-remote-cli
-        transmission-remote-gtk
         copyq
         googler
+    )
+
+    declare -ar block4_nonwin=(
+        charles-proxy
+        docker.io
+        docker-compose
+        docker-swarm
     )
 
     declare -ar block4=(
@@ -3060,20 +3075,14 @@ install_from_repo() {
         lolcat
         figlet
         redshift
-        docker.io
-        docker-compose
-        docker-swarm
-        charles-proxy
     )
 
-    for block in \
-            block1 \
-            block2 \
-            block3 \
-            block4 \
-                ; do
-        # update apt-get before each main block; had issues with first one returning code 100:
-        execute "sudo apt-get --yes update"
+    blocks=()
+    ! is_windows && blocks=(block1_nonwin block2_nonwin block3_nonwin block4_nonwin)
+    blocks+=(block1 block2 block3 block4)
+
+    execute "sudo apt-get --yes update"
+    for block in "${blocks[@]}"; do
         install_block "$(eval echo "\${$block[@]}")" "${extra_apt_params[$block]}"
         if [[ "$?" -ne 0 && "$?" -ne "$SOME_PACKAGE_IGNORED_EXIT_CODE" ]]; then
             err "one of the main-block installation failed. these are the packages that have failed to install so far:"
@@ -3084,21 +3093,26 @@ install_from_repo() {
 
 
     if [[ "$MODE" == work ]]; then
-        install_block '
-            remmina
-            samba-common-bin
-            smbclient
-            ruby-dev
+        if ! is_windows; then
+            install_block '
+                remmina
+                samba-common-bin
+                smbclient
 
-            virtualbox
-            virtualbox-dkms
-            virtualbox-guest-dkms
+                virtualbox
+                virtualbox-dkms
+                virtualbox-guest-dkms
+            '
+        fi
+
+        install_block '
+            ruby-dev
         '
 
         # remmina is remote desktop for windows; rdesktop, remote vnc;
     fi
 
-    if is_laptop; then
+    if ! is_windows && is_laptop; then
         install_block pulseaudio-module-bluetooth
     fi
 }
@@ -3145,9 +3159,9 @@ install_block() {
             #packages_not_found+=( $pkg )
             #continue
         #fi
-        if execute "sudo apt-get -qq --dry-run install $extra_apt_params $pkg"; then
+        if execute "sudo apt-get -qq --dry-run --no-install-recommends install $extra_apt_params $pkg"; then
             sleep 0.1
-            execute "sudo apt-get --yes install $extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
+            execute "sudo apt-get --yes install --no-install-recommends $extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
         else
             dry_run_failed+=( $pkg )
         fi
