@@ -284,7 +284,7 @@ setup_hosts() {
 setup_sudoers() {
     local sudoers_dest file tmpfile
 
-    readonly sudoers_dest="/etc"
+    readonly sudoers_dest="/etc/sudoers.d"
     readonly tmpfile="$TMP_DIR/sudoers"
     readonly file="$COMMON_PRIVATE_DOTFILES/backups/sudoers"
 
@@ -298,9 +298,10 @@ setup_sudoers() {
 
     execute "cp -- '$file' '$tmpfile'" || return 1
     execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-    backup_original_and_copy_file --sudo "$tmpfile" "$sudoers_dest"
+    execute "sudo chown root:root $tmpfile" || return 1
+    execute "sudo chmod 0440 $tmpfile" || return 1
 
-    execute "rm -- '$tmpfile'"
+    execute "sudo mv -f -- $tmpfile $sudoers_dest/" || return 1
 }
 
 
