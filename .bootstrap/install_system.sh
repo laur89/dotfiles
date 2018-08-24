@@ -1195,11 +1195,11 @@ setup_config_files() {
     #setup_ssh_config   # better stick to ~/.ssh/config, rite?  # TODO
     setup_hosts
     setup_systemd
-    is_window || setup_udev
+    is_windows || setup_udev
     setup_global_env_vars
     setup_netrc_perms
     setup_global_prompt
-    is_window || swap_caps_lock_and_esc
+    is_windows || swap_caps_lock_and_esc
 }
 
 
