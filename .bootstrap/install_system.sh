@@ -1515,7 +1515,7 @@ install_own_builds() {
 
     #install_dwm
     install_i3
-    install_i3lock
+    is_windows || install_i3lock
 }
 
 
@@ -2738,9 +2738,9 @@ install_fonts() {
         xfonts-mplus
         xfonts-base
         xbitmaps
-        fontforge
-        gucharmap
     '
+
+    is_windows || install_block 'fontforge gucharmap'
 
     # https://github.com/ryanoasis/nerd-fonts#option-3-install-script
     install_nerd_fonts() {
@@ -3303,8 +3303,8 @@ full_install() {
     install_progs
     post_install_progs_setup
     install_deps
-    install_ssh_server_or_client
-    install_nfs_server_or_client
+    is_windows || install_ssh_server_or_client
+    is_windows || install_nfs_server_or_client
     remind_manually_installed_progs
 }
 
