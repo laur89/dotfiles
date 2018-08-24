@@ -855,10 +855,10 @@ install_deps() {
 
     # TODO: following are not deps, are they?:
     # git-playback; install _either_ of these two (ie either from jianli or mmozuras):
-    execute "pip3 install --upgrade git-playback"   # https://github.com/jianli/git-playback
+    execute "/usr/bin/env python3 -m pip install --user --upgrade git-playback"   # https://github.com/jianli/git-playback
 
     # whatportis: query applications' default port:
-    execute "pip3 install --upgrade whatportis"     # https://github.com/ncrocfer/whatportis
+    execute "/usr/bin/env python3 -m pip install --user --upgrade whatportis"     # https://github.com/ncrocfer/whatportis
 
     # git-playback:   # https://github.com/mmozuras/git-playback
     #clone_or_pull_repo "mmozuras" "git-playback" "$BASE_DEPS_LOC"
@@ -866,18 +866,18 @@ install_deps() {
 
 
     # this needs apt-get install  python-imaging ?:
-    execute "pip3 install --upgrade img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
-    execute "pip3 install --upgrade scdl"           # https://github.com/flyingrub/scdl (soundcloud downloader)
-    execute "pip3 install --upgrade rtv"           # https://github.com/michael-lazar/rtv (reddit reader)
-    execute "pip3 install --upgrade tldr"          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
-                                                        #   note its conf is in bash_env_vars
-    execute "pip3 install --upgrade maybe"         # https://github.com/p-e-w/maybe (check what command would do)
-    execute "pip3 install --upgrade httpstat"       # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
-    execute "pip3 install --upgrade tendo"          # https://github.com/pycontribs/tendo  py utils, eg singleton (lockfile management)
+    execute "/usr/bin/env python3 -m pip install --user --upgrade img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
+    execute "/usr/bin/env python3 -m pip install --user --upgrade scdl"           # https://github.com/flyingrub/scdl (soundcloud downloader)
+    execute "/usr/bin/env python3 -m pip install --user --upgrade rtv"           # https://github.com/michael-lazar/rtv (reddit reader)
+    execute "/usr/bin/env python3 -m pip install --user --upgrade tldr"          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
+                                                                                      #   note its conf is in bash_env_vars
+    execute "/usr/bin/env python3 -m pip install --user --upgrade maybe"         # https://github.com/p-e-w/maybe (check what command would do)
+    execute "/usr/bin/env python3 -m pip install --user --upgrade httpstat"       # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
+    execute "/usr/bin/env python3 -m pip install --user --upgrade tendo"          # https://github.com/pycontribs/tendo  py utils, eg singleton (lockfile management)
 
     # colorscheme generator:
     # see also complementing script @ https://github.com/dylanaraps/bin/blob/master/wal-set
-    execute "pip3 install --upgrade pywal"          # https://github.com/dylanaraps/pywal/wiki/Installation
+    execute "/usr/bin/env python3 -m pip install --user --upgrade pywal"          # https://github.com/dylanaraps/pywal/wiki/Installation
 
     execute "gem install --user-install speed_read" # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
 
@@ -899,7 +899,7 @@ install_deps() {
     execute 'curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-installer | bash'
 
     # some py deps requred by scripts:
-    execute "pip3 install --upgrade exchangelib icalendar arrow"
+    execute "/usr/bin/env python3 -m pip install --user --upgrade exchangelib icalendar arrow"
     # note: if exchangelib fails with something like
                 #In file included from src/kerberos.c:19:0:
                 #src/kerberosbasic.h:17:27: fatal error: gssapi/gssapi.h: No such file or directory
@@ -919,7 +919,7 @@ install_deps() {
 
     # flashfocus - flash window when focus changes  https://github.com/fennerm/flashfocus
     install_block 'libxcb-render0-dev'
-    execute "pip3 install --upgrade flashfocus"
+    execute "/usr/bin/env python3 -m pip install --user --upgrade flashfocus"
 
 
     # work deps:  # TODO remove block?
@@ -2233,7 +2233,7 @@ install_i3_deps() {
     local f
     f="$TMP_DIR/i3-dep-${RANDOM}"
 
-    execute "pip3 install --upgrade i3ipc"  # https://github.com/acrisci/i3ipc-python
+    execute "/usr/bin/env python3 -m pip install --user --upgrade i3ipc"  # https://github.com/acrisci/i3ipc-python
 
     # TODO: depending on multimon performance, decide whether urxvtq is enough,
     # or i3-quickterm is required;!
@@ -2997,6 +2997,7 @@ install_from_repo() {
         transmission
         transmission-remote-cli
         transmission-remote-gtk
+        etckeeper
     )
 
     declare -ar block3=(
@@ -3046,7 +3047,6 @@ install_from_repo() {
         libxml2-utils
         pidgin
         weechat
-        etckeeper
         gradle
         lxrandr
         arandr
