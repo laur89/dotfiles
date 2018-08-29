@@ -2657,10 +2657,7 @@ __fo() {
 
     declare -a files=()
 
-    if [[ "$__REMOTE_SSH" -ne 1 ]]; then  # only check for progs if not ssh-d
-        check_progs_installed "$PAGER" "$file_mngr" "$editor" "$image_viewer" \
-                "$image_editor" "$video_player" "$pdf_viewer" "$office" file || return 1
-    fi
+    check_progs_installed file || return 1
 
     if [[ -z "$@" ]]; then  # no params provided, meaning expect input via stdin
         #while IFS= read -r -d $'\0' i; do  # TODO enable once fzf gets the --print0 option
@@ -2688,39 +2685,48 @@ __fo() {
 
     case "$filetype" in
         'image/x-xcf; charset=binary')  # xcf is gimp
+            check_progs_installed "$image_editor" || return 1
             "$image_editor" -- "${files[@]}" &
             ;;
         image/*)
+            check_progs_installed "$image_viewer" || return 1
             "$image_viewer" -- "${files[@]}" &
             ;;
         application/octet-stream*)
             # should be the logs on app servers
+            check_progs_installed "$PAGER" || return 1
             "$PAGER" -- "${files[@]}"
             ;;
         application/xml*)
             [[ "$count" -gt 1 ]] && { report "won't format multiple xml files! will just open them" "${FUNCNAME[1]}"; sleep 1.5; }
             if [[ "$(wc -l < "${files[0]}")" -gt 2 || "$count" -gt 1 ]]; then  # note if more than 2 lines we also assume it's already formatted;
                 # assuming it's already formatted:
+            check_progs_installed "$editor" || return 1
                 "$editor" -- "${files[@]}"
             else
                 xmlformat "${files[@]}"
             fi
             ;;
         video/* | audio/mp4*)
+            check_progs_installed "$video_player" || return 1
             "$video_player" -- "${files[@]}" &
             ;;
         text/*)
             # if we're dealing with a logfile (including *.out), force open in PAGER
             if [[ "${files[0]}" =~ \.(log|out)(\.[\.a-z0-9]+)*$ ]]; then
+                check_progs_installed "$PAGER" || return 1
                 "$PAGER" -- "${files[@]}"
             else
+                check_progs_installed "$editor" || return 1
                 "$editor" -- "${files[@]}"
             fi
             ;;
         application/pdf*)
+            check_progs_installed "$pdf_viewer" || return 1
             "$pdf_viewer" -- "${files[@]}" &
             ;;
         application/x-elc*)  # TODO: what exactly is it?
+            check_progs_installed "$editor" || return 1
             "$editor" -- "${files[@]}"
             ;;
         'application/x-executable; charset=binary'*)
@@ -2731,9 +2737,11 @@ __fo() {
             ;;
         'inode/directory;'*)
             [[ "$count" -gt 1 ]] && { report "won't navigate to multiple dirs! select one please" "${FUNCNAME[1]}"; return 1; }
+            check_progs_installed "$file_mngr" || return 1
             "$file_mngr" -- "${files[0]}"
             ;;
         'inode/x-empty; charset=binary')
+            check_progs_installed "$editor" || return 1
             "$editor" -- "${files[@]}"
             ;;
         # try keeping doc files' definitions in sync with the ones in ffind()
@@ -2741,6 +2749,7 @@ __fo() {
                 | 'application/'*'opendocument'*'; charset=binary' \
                 | 'application/'*'ms-office; charset=binary' \
                 | 'application/'*'ms-excel; charset=binary')
+            check_progs_installed "$office" || return 1
             "$office" "${files[@]}" &  # libreoffice doesn't like option ending marker '--'
             ;;
         *)
