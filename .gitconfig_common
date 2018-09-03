@@ -21,6 +21,7 @@
     safecrlf = true
     ;pager = less
     pager = diff-so-fancy | less --tabs=4 -RFX
+    preloadindex = true
 [pull]
     rebase = true
 [rebase]
