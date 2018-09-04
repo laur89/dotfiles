@@ -136,7 +136,7 @@ shopt -s autocd         # if you type dir name, it's interpreted as an argument 
 set -o vi               # needs to be added *before* fzf is sourced, otherwise fzf is screwed:
                         #     https://github.com/junegunn/fzf#key-bindings-for-command-line
 
-unset MAILCHECK
+unset MAILCHECK         # avoid delays;
 ##########################################
 
 # source own functions and env vars:

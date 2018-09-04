@@ -923,12 +923,12 @@ install_deps() {
 
 
     # work deps:  # TODO remove block?
-    if [[ "$MODE" == work ]]; then
-        # cx toolbox/vagrant env deps:  # TODO: deprecate? (not yet imo, puppet still used)
-        execute "gem install --user-install \
-            puppet puppet-lint bundler nokogiri builder \
-        "
-    fi
+    #if [[ "$MODE" == work ]]; then
+        ## cx toolbox/vagrant env deps:  # TODO: deprecate? at least try to find what is _really_ required.
+        #execute "gem install --user-install \
+            #puppet puppet-lint bundler nokogiri builder \
+        #"
+    #fi
 
     # laptop deps:
     ! is_windows && is_laptop && _install_laptop_deps; unset _install_laptop_deps
