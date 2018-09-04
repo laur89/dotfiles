@@ -2881,6 +2881,7 @@ install_from_repo() {
     )
 
     declare -ar block1=(
+        ca-certificates
         x11-session-manager
         x11-apps
         xinit

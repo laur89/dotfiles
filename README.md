@@ -49,3 +49,8 @@ It provides maintenance/management options, such as
 * installing the base package set
 * build and/or install software (such as vim, copyq, oracle jdk)
 
+### TODO
+
+1. delay homeshick repos' https->ssh change to later stages; otherwise
+   if we need to restart installation, pull can fail due to missing ssh
+   keys or port 22 being blocked (and relevant git config still not in place);
