@@ -2881,6 +2881,8 @@ install_from_repo() {
     )
 
     declare -ar block1=(
+        x11-session-manager
+        x11-apps
         xinit
         aptitude
         sudo
@@ -2998,14 +3000,18 @@ install_from_repo() {
         transmission-remote-cli
         transmission-remote-gtk
         etckeeper
+        thunderbird
+        davmail
+        lightning
+        neomutt
+        notmuch
+        abook
+        isync
     )
 
     declare -ar block3=(
         firefox
         chromium
-        thunderbird
-        davmail
-        lightning
         rxvt-unicode-256color
         seafile-gui
         seafile-cli
@@ -3062,10 +3068,6 @@ install_from_repo() {
     )
 
     declare -ar block4=(
-        neomutt
-        notmuch
-        abook
-        isync
         atool
         highlight
         python3-pygments
