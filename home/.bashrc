@@ -308,7 +308,7 @@ _enter_dir() {
     PREV_PWD="$d"
 }
 
-export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
+[[ -s "$NVM_DIR/nvm.sh" ]] && export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
 ##########################################
 # fzf
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
