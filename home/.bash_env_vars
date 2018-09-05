@@ -25,12 +25,6 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # ruby env (rbenv):
     export PATH="$HOME/.rbenv/bin:$PATH"
 
-    # add local ruby gems to path: (https://guides.rubygems.org/faqs/#user-install)
-    if command -v ruby >/dev/null && command -v gem >/dev/null; then
-        export PATH="$(ruby -r rubygems -e 'puts Gem.user_dir')/bin:$PATH"
-    fi
-
-
     # set path for global, but non-sudo, npm pacakges:  (https://stackoverflow.com/questions/10081293/install-npm-into-home-directory-with-distribution-nodejs-package-ubuntu/13021677#13021677)
     # note this also requires ~/.npmrc with 'prefix = ~/.npm-packages', which is not
     # supported by nvm:

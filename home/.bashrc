@@ -218,6 +218,13 @@ GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274
 #ruby env (rbenv) - enable shims and autocompletion:  (as per `rbenv init` instructions)
 command -v rbenv >/dev/null 2>/dev/null && eval "$(rbenv init -)"
 
+# add local ruby gems to path: (https://guides.rubygems.org/faqs/#user-install)
+# note this needs to exec after rbenv has set the version!
+if command -v ruby >/dev/null && command -v gem >/dev/null; then
+    _rb_pth="$(ruby -r rubygems -e 'puts Gem.user_dir')/bin"
+    [[ "$_rb_pth" != *${PATH}* ]] && export PATH="$_rb_pth:$PATH"
+fi
+
 ##########################################
 # git-flow-competion:
 [[ -e "$HOME/.git-flow-completion" ]] && source "$HOME/.git-flow-completion/git-flow-completion.bash"
