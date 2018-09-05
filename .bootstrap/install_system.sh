@@ -2328,9 +2328,7 @@ setup_nvim() {
 
     if [[ "$FULL_INSTALL" -eq 1 ]]; then
         execute "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"  # no vim pls
-        report "launching nvim, so the initialization could be done (pulling in plugins et al. simply exit nvim when it's done.)"
-        echo 'initialising nvim; simply exit when plugin fetching is complete. (quit with  :qa!)' | \
-                nvim -  # needs to be non-root so plugins & other config are installed as reg. user
+        nvim +PlugInstall +qall
     fi
 
     # YCM installation AFTER the first nvim launch (nvim launch pulls in ycm plugin, among others)!
