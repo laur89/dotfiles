@@ -28,12 +28,20 @@ fi
 # start X; note the ssh-agent:
 #if [ -z "$DISPLAY" ] && [ -n "$XDG_VTNR" ] && [ "$XDG_VTNR" -eq 1 ]; then
 if [ -z "$DISPLAY" ] && [ "$(tty)" == "/dev/tty1" ]; then
-    echo -e "Enter DE/WM:"
     echo '============'
-    read -r session
-    # note ssh-agent ver should be used when we _don't_ use gnome-keyring (or equivalent):
-    #exec ssh-agent startx "$HOME/.xinitrc" "$session" # -- -logverbose 6
-    exec startx "$HOME/.xinitrc" "$session" # -- -logverbose 6
+    read -r -p 'Enter DE/WM: ' __xsession_
+
+    if is_windows; then
+        # we're not starting any servers, so need to define DISPLAY to connect to:
+        export DISPLAY=:0.0
+
+        #ssh-agent "$HOME/.xinitrc" "$__xsession_"
+        exec "$HOME/.xinitrc" "$__xsession_"
+    else
+        # note ssh-agent ver should be used when we _don't_ use gnome-keyring (or equivalent):
+        #exec ssh-agent startx "$HOME/.xinitrc" "$__xsession_" # -- -logverbose 6
+        exec startx "$HOME/.xinitrc" "$__xsession_" # -- -logverbose 6
+    fi
 fi
 
 # provides automatic logout; for debugging puroposes:

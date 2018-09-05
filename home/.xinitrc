@@ -16,7 +16,6 @@ DEFAULT_SESSION="i3"
 
 input="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
 systemctl --user import-environment DISPLAY  # make sure display env var is set
-source "$HOME/.common_startup"
 
 case "$input" in
     dwm)
@@ -28,7 +27,14 @@ case "$input" in
         #exec dbus-launch --sh-syntax --exit-with-session start_dwm
         ;;
     i3)
-        exec i3
+        if is_windows; then
+            i3 &
+            #sleep 1
+            source "$HOME/.common_startup"
+        else
+            source "$HOME/.common_startup"
+            exec i3
+        fi
         ;;
     kde)
         exec startkde
@@ -55,7 +61,11 @@ case "$input" in
         exec bspwm
         ;;
     none | nil | console)
-        exec xterm
+        if command -v uxterm; then
+            exec uxterm
+        else
+            exec xterm
+        fi
         ;;
     *)
         exec "$DEFAULT_SESSION"
