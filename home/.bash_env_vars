@@ -49,8 +49,12 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     #export GTK2_RC_FILES="$HOME/.config/gtk-2.0/gtkrc"
     export GTK2_RC_FILES=$HOME/.gtkrc-2.0
 
+    # see https://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
     export XDG_CONFIG_HOME="/home/$USER/.config"
-    export XDG_DATA_DIR="/home/$USER/.config"
+    export XDG_DATA_HOME="/home/$USER/.local/share"
+    export XDG_DATA_DIR="/home/$USER/.local/share"
+    export XDG_DATA_DIRS="$XDG_DATA_DIR"
+
     export XDG_CACHE_HOME="/home/$USER/.cache"
     export XDG_DOWNLOAD_DIR="/home/$USER/Downloads"
 
