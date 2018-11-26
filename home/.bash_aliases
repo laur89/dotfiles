@@ -44,6 +44,7 @@ alias pcat='pygmentize -f terminal256 -O style=native -g'  # syntax highlighter 
 alias goo='googler'
 alias define='googler -n 4 define'
 alias py3='python3'
+alias dunc='ncdu'  # never remember it, if it starts w/ 'du', it'll be more likely to find
 ##################################
 #alias clean_failed_mvn="$(find ~/.m2 -name *.lastUpdated -delete)"
 #alias amq="/data/progs/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"

@@ -34,7 +34,7 @@ if [ -z "$DISPLAY" ] && [ "$(tty)" == "/dev/tty1" ]; then
     if is_windows; then
         # we're not starting any servers, so need to define DISPLAY to connect to:
         export DISPLAY=:0.0
-        #export LIBGL_ALWAYS_INDIRECT=1
+        #export LIBGL_ALWAYS_INDIRECT=1  # for WSL
 
         #ssh-agent "$HOME/.xinitrc" "$__xsession_"
         exec "$HOME/.xinitrc" "$__xsession_"

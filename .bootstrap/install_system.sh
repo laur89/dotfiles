@@ -706,7 +706,7 @@ install_deps() {
         if ! [[ -d "$plugins_dir/tpm" ]]; then
             clone_or_pull_repo "tmux-plugins" "tpm" "$plugins_dir"
             report "don't forget to install tmux plugins by running <prefix + I> in tmux later on." && sleep 4
-        else
+        elif ! is_dir_empty "$plugins_dir"; then
             # update all the tmux plugins, including the plugin manager itself:
             execute "pushd $plugins_dir" || return 1
 

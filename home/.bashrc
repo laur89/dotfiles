@@ -223,6 +223,7 @@ command -v rbenv >/dev/null 2>/dev/null && eval "$(rbenv init -)"
 if command -v ruby >/dev/null && command -v gem >/dev/null; then
     _rb_pth="$(ruby -r rubygems -e 'puts Gem.user_dir')/bin"
     [[ "$_rb_pth" != *${PATH}* ]] && export PATH="$_rb_pth:$PATH"
+    unset _rb_pth
 fi
 
 ##########################################
