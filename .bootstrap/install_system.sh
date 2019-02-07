@@ -1507,6 +1507,7 @@ install_own_builds() {
     #install_copyq
     install_rambox
     install_ripgrep
+    install_rebar
     install_fd
     install_lazygit
     #install_synergy  # currently installing from repo
@@ -1686,6 +1687,19 @@ fetch_release_from_git() {
     echo "$file"
 
     return 0
+}
+
+
+# TODO: consolidate .deb & bin installations from github releases page;
+install_rebar() {  # https://github.com/erlang/rebar3
+    local bin target
+
+    target="/usr/local/bin"
+    [[ -d "$target" ]] || { err "[$target] not a dir, can't install rebar"; return 1; }
+
+    bin="$(fetch_release_from_git erlang rebar3 rebar3)" || return 1
+    execute "chmod +x '$bin'" || return 1
+    execute "sudo mv -- '$bin' '$target'" || { err "installing [$bin] in [$target] failed"; return 1; }
 }
 
 
@@ -2866,6 +2880,7 @@ install_from_repo() {
         ntfs-3g
         fuseiso
         mono-complete
+        erlang
         acpid
         lm-sensors
         psensor
@@ -3266,6 +3281,7 @@ __choose_prog_to_build() {
         install_copyq
         install_rambox
         install_ripgrep
+        install_rebar
         install_fd
         install_lazygit
         install_synergy
