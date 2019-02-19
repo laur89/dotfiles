@@ -44,6 +44,7 @@ readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; e
                                                  # (script-related) configuration lies within.
 readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
 readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
+readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log"  # log of all installed debs/binaries from git releases/latest page
 
 readonly BUILD_DOCK='deb-build-box'              # name of the build container
 #------------------------
@@ -1675,20 +1676,29 @@ fetch_release_from_git() {
     is_server && { report "we're server, skipping rambox installation."; return; }
 
     readonly loc="https://github.com/$1/$2/releases/latest"
-    tmpdir="$(mktemp -d "release-from-git-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    tmpdir="$(mktemp -d "release-from-git-${1}-${2}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed"; return 1; }
     dl_url="$(grep -Po '.*a href="\K.*'"$3"'(?=".*$)' <<< "$page")" || { err "parsing [$3] download link from [$loc] content failed"; return 1; }
     [[ -n "$dl_url" && "$dl_url" != http* ]] && dl_url="https://github.com/$dl_url"  # convert to full url
     is_valid_url "$dl_url" || { err "[$dl_url] is not a valid download link"; return 1; }
 
+    if grep -q "$dl_url" "$GIT_RLS_LOG" 2>/dev/null; then
+        report "[$dl_url] already encountered, skipping installation..."
+        return 2
+    fi
+
     report "fetching [$dl_url]..."
     [[ -n "$4" ]] && wget_param="--output-document=$tmpdir/$4" || wget_param="--directory-prefix=$tmpdir"
     execute "wget '$dl_url' -q $wget_param" || { err "wgetting [$dl_url] failed."; return 1; }
     file="$(find "$tmpdir" -type f)"
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
-    echo "$file"
 
+    # we're assuming here that installation succeeded from here on:
+    test -f "$GIT_RLS_LOG" && sed -i "/^${1}-${2}:/d" "$GIT_RLS_LOG"
+    echo -e "${1}-${2}:\t$dl_url" >> "$GIT_RLS_LOG"
+
+    echo "$file"
     return 0
 }
 
