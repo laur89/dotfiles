@@ -19,6 +19,7 @@ systemctl --user import-environment DISPLAY  # make sure display env var is set
 
 case "$input" in
     dwm)
+        source "$HOME/.common_startup" &
         report "waiting for couple of time to give .common_startup some time to spin up services..."
         sleep 5
         exec start_dwm
