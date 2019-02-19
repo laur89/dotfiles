@@ -23,7 +23,7 @@ readonly PWRLINE_FONTS_REPO_LOC='https://github.com/powerline/fonts'
 readonly POLYBAR_REPO_LOC='https://github.com/jaagr/polybar'          # polybar
 readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - yeah.
 readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
-readonly RAMBOX_REPO_LOC='https://github.com/saenzramiro/rambox.git'  # opensource franz alt.
+readonly RAMBOX_REPO_LOC='https://github.com/saenzramiro/rambox.git'  # closed source franz alt.
 readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX - open password manager forked from keepass project
 readonly GOFORIT_REPO_LOC='https://github.com/mank319/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
@@ -156,7 +156,7 @@ check_dependencies() {
 
     readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
-    for prog in git cmp wget curl tar unzip realpath dirname basename tee; do
+    for prog in git cmp wget curl tar unzip realpath dirname basename tee mktemp; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
             install_block "$prog" || { err "unable to install required prog [$prog] this script depends on. abort."; exit 1; }
@@ -851,7 +851,7 @@ install_deps() {
     fi
 
     # sdkman:  # https://sdkman.io/
-    execute "curl -s 'https://get.sdkman.io' | bash"  # TODO depends whether dev on win or linux
+    execute "curl -s 'https://get.sdkman.io' | bash"  # TODO depends whether win or linux
 
     # TODO: following are not deps, are they?:
     # git-playback; install _either_ of these two (ie either from jianli or mmozuras):
@@ -1505,14 +1505,15 @@ install_own_builds() {
     #install_keepassxc
     #install_goforit
     #install_copyq
-    install_rambox
+    #install_rambox
+    install_franz
     install_ripgrep
     install_rebar
     install_fd
     install_lazygit
     #install_synergy  # currently installing from repo
     install_polybar
-    install_oracle_jdk
+    #install_oracle_jdk
 
     #install_dwm
     install_i3
@@ -1667,8 +1668,9 @@ switch_jdk_versions() {
 # $1 - git user
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
+# $4 - optional output file name; if given, downloaded file will be renamed to this
 fetch_release_from_git() {
-    local tmpdir file loc dl_url page
+    local tmpdir file loc dl_url page wget_param
 
     is_server && { report "we're server, skipping rambox installation."; return; }
 
@@ -1676,12 +1678,13 @@ fetch_release_from_git() {
     tmpdir="$(mktemp -d "release-from-git-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed"; return 1; }
-    dl_url="$(grep -Po '.*a href="\K.*'"$3"'(?=".*$)' <<< "$page")" || { err "parsing [$3] download link failed"; return 1; }
+    dl_url="$(grep -Po '.*a href="\K.*'"$3"'(?=".*$)' <<< "$page")" || { err "parsing [$3] download link from [$loc] content failed"; return 1; }
     [[ -n "$dl_url" && "$dl_url" != http* ]] && dl_url="https://github.com/$dl_url"  # convert to full url
     is_valid_url "$dl_url" || { err "[$dl_url] is not a valid download link"; return 1; }
 
-    report "fetching [$dl_url]"
-    execute "wget '$dl_url' -q --directory-prefix=$tmpdir" || { err "wgetting [$dl_url] failed."; return 1; }
+    report "fetching [$dl_url]..."
+    [[ -n "$4" ]] && wget_param="--output-document=$tmpdir/$4" || wget_param="--directory-prefix=$tmpdir"
+    execute "wget '$dl_url' -q $wget_param" || { err "wgetting [$dl_url] failed."; return 1; }
     file="$(find "$tmpdir" -type f)"
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
     echo "$file"
@@ -1690,43 +1693,71 @@ fetch_release_from_git() {
 }
 
 
-# TODO: consolidate .deb & bin installations from github releases page;
-install_rebar() {  # https://github.com/erlang/rebar3
-    local bin target
+# Fetch a .deb file from given github /releases page, and install it
+#
+# $1 - git user
+# $2 - git repo
+# $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
+install_deb_from_git() {
+    local deb
+
+    deb="$(fetch_release_from_git "$1" "$2" "$3")" || return 1
+    execute "sudo dpkg -i '$deb'" || { err "installing [$1/$2] failed"; return 1; }
+    execute "rm -rf -- '$deb'"
+}
+
+
+# Fetch a file from given github /releases page, and install the binary
+#
+# -d /target/dir    - dir to install pulled binary in, optional
+# -n binary_name    - what to name pulled binary to, optional
+# $1 - git user
+# $2 - git repo
+# $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
+install_bin_from_git() {
+    local bin target name OPTIND
 
     target="/usr/local/bin"
-    [[ -d "$target" ]] || { err "[$target] not a dir, can't install rebar"; return 1; }
+    while getopts "n:d:" opt; do
+        case "$opt" in
+            n) name="$OPTARG" ;;
+            d) target="$OPTARG" ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()"
+        esac
+    done
+    shift $((OPTIND-1))
 
-    bin="$(fetch_release_from_git erlang rebar3 rebar3)" || return 1
+    [[ -d "$target" ]] || { err "[$target] not a dir, can't install [$1/$2]"; return 1; }
+
+    bin="$(fetch_release_from_git "$1" "$2" "$3" "$name")" || return 1
     execute "chmod +x '$bin'" || return 1
     execute "sudo mv -- '$bin' '$target'" || { err "installing [$bin] in [$target] failed"; return 1; }
 }
 
 
-install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
-    local deb
+install_franz() {  # https://github.com/meetfranz/franz/blob/master/docs/linux.md
+    #install_block 'libx11-dev libxext-dev libxss-dev libxkbfile-dev'
+    install_bin_from_git -n franz meetfranz franz x86_64.AppImage
+}
 
-    deb="$(fetch_release_from_git BurntSushi ripgrep _amd64.deb)" || return 1
-    execute "sudo dpkg -i '$deb'" || { err "installing [$deb] failed"; return 1; }
-    execute "rm -rf -- '$deb'"
+
+install_rebar() {  # https://github.com/erlang/rebar3
+    install_bin_from_git erlang rebar3 rebar3
+}
+
+
+install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
+    install_deb_from_git BurntSushi ripgrep _amd64.deb
 }
 
 
 install_fd() {  # https://github.com/sharkdp/fd
-    local deb
-
-    deb="$(fetch_release_from_git sharkdp fd 'musl_[0-9.]+_amd64.deb')" || return 1
-    execute "sudo dpkg -i '$deb'" || { err "installing [$deb] failed"; return 1; }
-    execute "rm -rf -- '$deb'"
+    install_deb_from_git sharkdp fd 'musl_[0-9.]+_amd64.deb'
 }
 
 
 install_lazygit() {  # https://github.com/jesseduffield/lazygit
-    local binary
-
-    binary="$(fetch_release_from_git jesseduffield lazygit 'linux_amd64_v[0-9.]+')" || return 1
-    execute "chmod +x '$binary'" || return 1
-    execute "mv -- '$binary' $HOME/bin/lazygit" || { err "installing [$binary] failed"; return 1; }
+    install_bin_from_git -n lazygit -d "$HOME/bin" jesseduffield lazygit 'linux_amd64_v[0-9.]+'
 }
 
 
@@ -3280,6 +3311,7 @@ __choose_prog_to_build() {
         install_goforit
         install_copyq
         install_rambox
+        install_franz
         install_ripgrep
         install_rebar
         install_fd
