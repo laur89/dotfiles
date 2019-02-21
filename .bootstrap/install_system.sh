@@ -1668,7 +1668,8 @@ switch_jdk_versions() {
 #
 # $1 - git user
 # $2 - git repo
-# $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
+# $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src;
+#      note it matches 'til the very end of url;
 # $4 - optional output file name; if given, downloaded file will be renamed to this
 fetch_release_from_git() {
     local tmpdir file loc dl_url page wget_param
