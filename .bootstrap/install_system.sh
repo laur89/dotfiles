@@ -3908,7 +3908,25 @@ is_laptop() {
 #
 # @returns {bool}   true if we're running inside Windows.
 is_windows() {
-    grep -qE "(Microsoft|WSL)" /proc/version &>/dev/null
+    if [[ -z "$_IS_WIN" ]]; then
+        grep -qE "(Microsoft|WSL)" /proc/version &>/dev/null
+        readonly _IS_WIN=$?
+    fi
+
+    return $_IS_WIN
+}
+
+
+# Checks whether system is virtualized (including WSL)
+#
+# @returns {bool}   true if we're running in virt mode.
+is_virt() {
+    if [[ -z "$_IS_VIRT" ]]; then
+        grep -qE '^flags.*\s+hypervisor' /proc/cpuinfo &>/dev/null  # detects all virtualizations, including WSL
+        readonly _IS_VIRT=$?
+    fi
+
+    return $_IS_VIRT
 }
 
 
