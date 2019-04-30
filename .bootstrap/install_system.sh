@@ -3120,6 +3120,7 @@ install_from_repo() {
         charles-proxy
         docker.io
         docker-compose
+        python-docker
         docker-swarm
     )
 
