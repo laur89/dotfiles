@@ -14,7 +14,7 @@
 #---   Configuration  ---
 #------------------------
 readonly TMP_DIR='/tmp'
-readonly CLANG_LLVM_LOC='http://releases.llvm.org/6.0.0/clang+llvm-6.0.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html
+readonly CLANG_LLVM_LOC='http://releases.llvm.org/6.0.0/clang+llvm-6.0.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html;  https://apt.llvm.org/building-pkgs.php
 readonly I3_REPO_LOC='https://www.github.com/Airblader/i3'            # i3-gaps
 readonly I3_LOCK_LOC='https://github.com/PandorasFox/i3lock-color'    # i3lock-color
 readonly I3_LOCK_FANCY_LOC='https://github.com/meskarune/i3lock-fancy'    # i3lock-fancy
@@ -157,7 +157,7 @@ check_dependencies() {
 
     readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
-    for prog in git cmp wget curl tar unzip realpath dirname basename tee mktemp; do
+    for prog in git cmp wget curl tar unzip realpath dirname basename tee mktemp file; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
             install_block "$prog" || { err "unable to install required prog [$prog] this script depends on. abort."; exit 1; }
@@ -1512,6 +1512,7 @@ install_own_builds() {
     install_rebar
     install_fd
     install_lazygit
+    install_gitin
     #install_synergy  # currently installing from repo
     install_polybar
     #install_oracle_jdk
@@ -1665,6 +1666,10 @@ switch_jdk_versions() {
 
 
 # Fetch a file from given github /releases page, and return full path to the file.
+# Note we will automaticaly extract the asset if it's archived/compressed; pass -U
+# to skip that step.
+#
+# -U     - skip extracting if archive and pass compressed/tarred ball as-is.
 #
 # $1 - git user
 # $2 - git repo
@@ -1672,9 +1677,17 @@ switch_jdk_versions() {
 #      note it matches 'til the very end of url;
 # $4 - optional output file name; if given, downloaded file will be renamed to this
 fetch_release_from_git() {
-    local tmpdir file loc dl_url page wget_param
+    local opt noextract tmpdir file loc dl_url page OPTIND
 
     is_server && { report "we're server, skipping rambox installation."; return; }
+
+    while getopts "U" opt; do
+        case "$opt" in
+            U) readonly noextract=1 ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift $((OPTIND-1))
 
     readonly loc="https://github.com/$1/$2/releases/latest"
     tmpdir="$(mktemp -d "release-from-git-${1}-${2}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
@@ -1690,10 +1703,23 @@ fetch_release_from_git() {
     fi
 
     report "fetching [$dl_url]..."
-    [[ -n "$4" ]] && wget_param="--output-document=$tmpdir/$4" || wget_param="--directory-prefix=$tmpdir"
-    execute "wget '$dl_url' -q $wget_param" || { err "wgetting [$dl_url] failed."; return 1; }
+    execute "wget '$dl_url' -q --directory-prefix=$tmpdir" || { err "wgetting [$dl_url] failed."; return 1; }
     file="$(find "$tmpdir" -type f)"
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
+
+    if [[ "$noextract" -ne 1 ]] && grep -qiE "archive|compressed" <<< "$(file --brief "$file")"; then
+        execute "pushd -- $tmpdir" || return 1
+        extract "$file" || { err "couldn't extract [$file]"; popd; return 1; }
+        execute "rm -f -- '$file'" || { err; popd; return 1; }
+        file="$(find "$tmpdir" -type f)"
+        [[ -f "$file" ]] || { err "couldn't find single extracted/uncompressed file in [$tmpdir]"; popd; return 1; }
+        execute "popd"
+    fi
+
+    if [[ -n "$4" ]]; then
+        execute "mv -- '$file' '$tmpdir/$4'" || { err "renaming [$file] to [$tmpdir/$4] failed"; return 1; }
+        file="$tmpdir/$4"
+    fi
 
     # we're assuming here that installation succeeded from here on:
     test -f "$GIT_RLS_LOG" && sed -i "/^${1}-${2}:/d" "$GIT_RLS_LOG"
@@ -1726,14 +1752,14 @@ install_deb_from_git() {
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
 install_bin_from_git() {
-    local bin target name OPTIND
+    local opt bin target name OPTIND
 
     target="/usr/local/bin"
     while getopts "n:d:" opt; do
         case "$opt" in
             n) name="$OPTARG" ;;
             d) target="$OPTARG" ;;
-            *) fail "unexpected arg passed to ${FUNCNAME}()"
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift $((OPTIND-1))
@@ -1769,6 +1795,11 @@ install_fd() {  # https://github.com/sharkdp/fd
 
 install_lazygit() {  # https://github.com/jesseduffield/lazygit
     install_bin_from_git -n lazygit -d "$HOME/bin" jesseduffield lazygit 'linux_amd64_v[0-9.]+'
+}
+
+
+install_gitin() {  # https://github.com/isacikgoz/gitin
+    install_bin_from_git -n gitin -d "$HOME/bin" isacikgoz gitin '_linux_amd64.tar.gz'
 }
 
 
@@ -1915,11 +1946,11 @@ install_webdev() {
     fi
 
     # update npm:
-    execute "npm install npm@latest -g" && sleep 0.5
+    execute "npm install npm@latest -g" && sleep 0.2
 
     # install npm modules:  # TODO review what we want to install
     execute "npm install -g \
-        typescript jshint grunt-cli csslint \
+        typescript jshint grunt-cli csslint nwb \
     "
 
     # install ruby modules:          # sass: http://sass-lang.com/install
@@ -3328,6 +3359,7 @@ __choose_prog_to_build() {
         install_rebar
         install_fd
         install_lazygit
+        install_gitin
         install_synergy
         install_dwm
         install_i3

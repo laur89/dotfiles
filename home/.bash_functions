@@ -1889,6 +1889,7 @@ mkgit() {
         # find our namespaces:
         readonly gitlab_namespaces_json="$(curl -sL --insecure \
             --header "PRIVATE-TOKEN: $passwd" \
+            --max-time 5 --connect-timeout 2 \
             "https://${repo}/api/v3/namespaces?per_page=100")"
 
         [[ "$gitlab_namespaces_json" == '[{"'* ]] || { err "found namespaces curl reply isn't expected json array: $gitlab_namespaces_json" "$FUNCNAME"; return 1; }
@@ -1919,6 +1920,7 @@ mkgit() {
             'github.com')
                 readonly http_statuscode="$(curl -sL \
                     -w '%{http_code}' \
+                    --max-time 4 --connect-timeout 1 \
                     -u "$user:$passwd" \
                     https://api.github.com/user/repos \
                     -d "{ \"name\":\"$project_name\", \"private\":$is_private }" \
@@ -1928,6 +1930,7 @@ mkgit() {
                 # note: auth $user needs to be the one you actually log in with, user in url can/has to be the old username (layr)
                 readonly http_statuscode="$(curl -sL -X POST \
                     -w '%{http_code}' \
+                    --max-time 5 --connect-timeout 2 \
                     -H "Content-Type: application/json" \
                     -u "$user:$passwd" \
                     "https://api.bitbucket.org/2.0/repositories/$user/$project_name" \
@@ -1940,6 +1943,7 @@ mkgit() {
                 unset __select_namespace
                 readonly http_statuscode="$(curl -sL --insecure \
                     -w '%{http_code}' \
+                    --max-time 5 --connect-timeout 2 \
                     --header "PRIVATE-TOKEN: $passwd" \
                     -X POST "https://${repo}/api/v3/projects?name=${project_name}&namespace_id=${namespace_id}&visibility_level=$is_private" \
                     -o "$curl_output")"
@@ -2289,7 +2293,7 @@ gfrf() {
     pom_ver="$(grep -Pos -m 1 '^\s+<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
 
     if [[ -n "$pom_ver" ]]; then  # we're dealing with a maven project
-        # check tests _before_ tagging
+        # check tests _before_ tagging; TODO: do we want to run test as part of gfrf()?
         mvn clean install || { err "fix tests" "$FUNCNAME"; return 1; }
     fi
     git flow release finish -F -p "$tag" || { err "finishing git release failed." "$FUNCNAME"; return 1; }
@@ -2915,36 +2919,33 @@ g() {
 #
 # consider also https://github.com/spotify/docker-gc
 dcleanup() {
-    local usage opt containers images volumes
+    local usage opt
 
-    readonly usage="\n$FUNCNAME: clean up docker containers, volumes, images
+    readonly usage="\n$FUNCNAME: clean up docker containers, volumes, images, networks
 
-    Usage: $FUNCNAME  [-acivh]
+    Usage: $FUNCNAME  [-acivnh]
 
-        -a  full cleanup; same as -civ
+        -a  full cleanup (system prune)
         -c  remove exited containers
-        -i  remove dangling images
-        -v  remove dangling volumes
+        -i  remove dangling & unused images
+        -v  remove unused volumes
+        -n  remove unused networks
         -h  display this usage info"
 
     check_progs_installed docker || return 1
     [[ -z "$*" ]] && { echo -e "$usage"; return 1; }
 
-    while getopts "acivh" opt; do
+    while getopts "acivnh" opt; do
         case "$opt" in
-           a) containers=1
-              images=1
-              volumes=1
-              shift $((OPTIND-1))
+           a) docker system prune --all
                 ;;
-           c) containers=1
-              shift $((OPTIND-1))
+           c) docker container prune
                 ;;
-           i) images=1
-              shift $((OPTIND-1))
+           i) docker image prune --all
                 ;;
-           v) volumes=1
-              shift $((OPTIND-1))
+           v) docker volume prune
+                ;;
+           n) docker network prune
                 ;;
            h) echo -e "$usage"
               return 0
@@ -2952,23 +2953,6 @@ dcleanup() {
            *) echo -e "$usage"; return 1 ;;
         esac
     done
-
-    # TODO: don't report err status perhaps? might be ok, which also explains the 2>/dev/nulls;
-    if [[ "$containers" -eq 1 ]]; then
-        report "¡¡¡ make sure the containers you want to keep are running; otherwise you'll lose them !!!" "$FUNCNAME"
-        confirm "\ncontinue?" || return
-
-        docker rm -v $(docker ps --filter status=exited -q 2>/dev/null) 2>/dev/null || { err "something went wrong with removing exited containers." "$FUNCNAME"; }
-    fi
-
-    if [[ "$images" -eq 1 ]]; then
-        docker rmi $(docker images --filter dangling=true -q 2>/dev/null) 2>/dev/null || { err "something went wrong with removing dangling images." "$FUNCNAME"; }
-    fi
-
-    # ...and volumes (note docker volume api was introduced by ver 1.9)
-    if [[ "$volumes" -eq 1 ]]; then
-        docker volume rm $(docker volume ls -qf dangling=true) || { err "something went wrong with removing dangling volumes." "$FUNCNAME"; }
-    fi
 }
 
 
@@ -3015,7 +2999,7 @@ transfer() {
 
     # write to output to tmpfile because of progress bar
     readonly tmpfile=$(mktemp -t transfer_XXX.tmp) || { err "unable to create temp with mktemp" "$FUNCNAME"; return 1; }
-    curl --progress-bar --upload-file "$file" "https://transfer.sh/$(basename -- "$file")" >> "$tmpfile" || { err; return 1; }
+    curl --connect-timeout 2 --progress-bar --upload-file "$file" "https://transfer.sh/$(basename -- "$file")" >> "$tmpfile" || { err; return 1; }
     cat -- "$tmpfile"
     echo
     copy_to_clipboard "$(cat -- "$tmpfile")" && report "copied link to clipboard" "$FUNCNAME" || err "copying to clipboard failed" "$FUNCNAME"
@@ -3568,10 +3552,10 @@ fstash() {
         esac
     done
 
-    # copy last viewed stash id to clipboard:
-    [[ -z "$k" && -n "$stsh" ]] \
-        && copy_to_clipboard "$stsh" \
-        && echo && report " -> copied [$stsh] to clipboard" "$FUNCNAME"
+    # copy last viewed stash id to clipboard: (commented out for now, don't think i ever needed this)
+    #[[ -z "$k" && -n "$stsh" ]] \
+        #&& copy_to_clipboard "$stsh" \
+        #&& echo && report " -> copied [$stsh] to clipboard" "$FUNCNAME"
 }
 
 

@@ -43,6 +43,8 @@ if [ -z "$DISPLAY" ] && [ "$(tty)" == "/dev/tty1" ]; then
         #exec ssh-agent startx "$HOME/.xinitrc" "$__xsession_" # -- -logverbose 6
         exec startx "$HOME/.xinitrc" "$__xsession_" # -- -logverbose 6
     fi
+
+    unset __xsession_
 fi
 
 # provides automatic logout; for debugging puroposes:
