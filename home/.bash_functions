@@ -1303,6 +1303,7 @@ $FUNCNAME  [-e]  /dir_to_look_from/filename_to_grep
         fi
     fi
 
+    [[ -n "$srcdir" && "$srcdir" != */ ]] && srcdir+='/'  # add trailing slash if missing; required for gnu find & ls
     if [[ "$exact" -eq 1 ]]; then
         [[ "$src" == *\.\** ]] && { err "only use asterisks (*) for wildcards, not .*" "$FUNCNAME"; return 1; }
         find "${srcdir:-.}" -maxdepth 1 -mindepth 1 -name "$src" -printf '%f\n' | grep -iE --color=auto "$src|$"

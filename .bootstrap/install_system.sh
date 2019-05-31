@@ -1722,7 +1722,7 @@ fetch_release_from_git() {
     fi
 
     # we're assuming here that installation succeeded from here on:
-    test -f "$GIT_RLS_LOG" && sed -i "/^${1}-${2}:/d" "$GIT_RLS_LOG"
+    test -f "$GIT_RLS_LOG" && sed --follow-symlinks -i "/^${1}-${2}:/d" "$GIT_RLS_LOG"
     echo -e "${1}-${2}:\t$dl_url" >> "$GIT_RLS_LOG"
 
     echo "$file"
@@ -3408,6 +3408,7 @@ remind_manually_installed_progs() {
 
     declare -ar progs=(
         lazyman2
+        'jdk deps via sdkman'
     )
 
     for i in "${progs[@]}"; do
