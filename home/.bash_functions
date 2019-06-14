@@ -1247,7 +1247,8 @@ swap() {
     fi
 }
 
-# search for a file/dir by name from a dir.
+# search/list for a file/dir by name from a dir.
+# mnemonic: list-grep
 #
 lgrep() {
     local src srcdir usage exact OPTIND
@@ -1294,16 +1295,17 @@ $FUNCNAME  [-e]  /dir_to_look_from/filename_to_grep
         return 1;
     elif [[ -n "$srcdir" ]]; then
         if [[ ! -d "$srcdir" ]]; then
-            err "provided directory to list and grep from is not a directory. abort." "$FUNCNAME"
+            err "provided directory to list and grep from [$srcdir] is not a directory" "$FUNCNAME"
             echo -e "\n$usage"
             return 1
         elif [[ ! -r "$srcdir" ]]; then
             err "provided directory to list and grep from is not readable. abort." "$FUNCNAME"
             return 1
         fi
+
+        [[ "$srcdir" != */ ]] && srcdir+='/'  # add trailing slash if missing; required for gnu find & ls
     fi
 
-    [[ -n "$srcdir" && "$srcdir" != */ ]] && srcdir+='/'  # add trailing slash if missing; required for gnu find & ls
     if [[ "$exact" -eq 1 ]]; then
         [[ "$src" == *\.\** ]] && { err "only use asterisks (*) for wildcards, not .*" "$FUNCNAME"; return 1; }
         find "${srcdir:-.}" -maxdepth 1 -mindepth 1 -name "$src" -printf '%f\n' | grep -iE --color=auto "$src|$"
@@ -2115,7 +2117,11 @@ increment_version() {
 gffs() {
     local branch
 
-    readonly branch="$1"
+    branch="$1"
+
+    if [[ "$branch" =~ ^features?/[a-zA-Z_-]+$ ]]; then
+        branch="${branch##*/}"  # strip everything before last slash (slash included)
+    fi
 
     if [[ -z "$branch" ]]; then
         err "need to provide feature branch name to create/start" "$FUNCNAME"
@@ -3583,6 +3589,80 @@ d() {  # mnemonic: dir
     dir="$(fasd -Rdl "$@" | fzf -1 -0 --no-sort +m --exit-0)" && cd -- "$dir" || return 1
 }
 
+
+heapdump() {
+    local usage OPTIND opt pid mode
+
+    readonly usage="\n${FUNCNAME}: dump java process's heap and/or threads.
+    Usage: ${FUNCNAME}  [-h] [-t] <pid>
+        -h  only dump heap (skip thread dump)
+        -t  only dump threads (skip heap dump)
+"
+
+    while getopts "ht" opt; do
+        case "$opt" in
+           h) mode=heap
+              shift $((OPTIND-1))
+                ;;
+           t) mode=thread
+              shift $((OPTIND-1))
+                ;;
+           *) echo -e "$usage"; return 1 ;;
+        esac
+    done
+
+    pid="$1"
+
+    [[ "$#" -ne 1 ]] && { err "exactly one arg required: java process PID" "$FUNCNAME"; return 1; }
+    is_digit "$pid" || { err "need to provide PID of java process"; return 1; }
+
+    [[ "$mode" != thread ]] && report "dumping heap..." && { jcmd "$pid" GC.heap_dump "/tmp/${pid}-heap-dump.hprof" || return 1; }
+    [[ "$mode" != heap ]] && report "dumping threads..." && { jcmd "$pid" Thread.print > "/tmp/${pid}-thread-dump.jfr" || return 1; }
+    #jmap -dump:live,format=b,file=/tmp/dump.hprof 12587    #alternative headp dump using jmap
+    #jstack -f 5824  #alternative thread dump using jstack
+}
+
+
+tcpdumperino() {
+    local usage OPTIND opt file
+
+    readonly usage="\n${FUNCNAME}: monitor & dump TCP traffic of an interface.
+    Usage: ${FUNCNAME}  -f <outputfile>
+        -f  file where results should be dumped in
+"
+
+    while getopts "f:" opt; do
+        case "$opt" in
+           f) file="$OPTARG"
+              shift $((OPTIND-1))
+                ;;
+           *) echo -e "$usage"; return 1 ;;
+        esac
+    done
+
+    [[ -z "$file" ]] && { err "need to provide output file"; echo -e "$usage"; return 1; }
+    [[ -f "$file" ]] && { err "[$file] already exists"; return 1; }
+
+    if command -v dumpcap > /dev/null 2>&1; then
+        select_interface || return 1
+
+        # first get interface number as per dumpcap:
+        __SELECTED_ITEMS="$(dumpcap -D | grep -Po '^\d+(?=\.\s+'"$__SELECTED_ITEMS"'$)')" || return 1
+        report "dumping traffic using dumpcap... (Ctrl+c to stop)"
+        dumpcap -i "$__SELECTED_ITEMS" -w "$file"
+    elif command -v tcpdump > /dev/null 2>&1; then
+        select_interface || return 1
+
+        # we pass following options to tcpdump so result could be analyzed w/
+        # wireshark; from https://www.wireshark.org/docs/wsug_html_chunked/AppToolstcpdump.html
+        report "dumping traffic using tcpdump... (Ctrl+c to stop)"
+        tcpdump -i "$__SELECTED_ITEMS" -s 65535 -w "$file"
+    else
+        err "no program to dump TCP traffic with" "$FUNCNAME"; return 1
+    fi
+
+    report "output in [$file]"
+}
 
 ##############################################
 ## Colored Find                             ##
