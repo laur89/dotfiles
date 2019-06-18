@@ -3624,16 +3624,20 @@ heapdump() {
 
 
 tcpdumperino() {
-    local usage OPTIND opt file
+    local usage OPTIND opt file overwrite
 
     readonly usage="\n${FUNCNAME}: monitor & dump TCP traffic of an interface.
-    Usage: ${FUNCNAME}  -f <outputfile>
+    Usage: ${FUNCNAME}  [-o] -f <outputfile>
         -f  file where results should be dumped in
+        -o  allow overwriting <outputfile> if it already exists
 "
 
-    while getopts "f:" opt; do
+    while getopts "of:" opt; do
         case "$opt" in
            f) file="$OPTARG"
+              shift $((OPTIND-1))
+                ;;
+           o) overwrite=1
               shift $((OPTIND-1))
                 ;;
            *) echo -e "$usage"; return 1 ;;
@@ -3641,7 +3645,14 @@ tcpdumperino() {
     done
 
     [[ -z "$file" ]] && { err "need to provide output file"; echo -e "$usage"; return 1; }
-    [[ -f "$file" ]] && { err "[$file] already exists"; return 1; }
+    if [[ -f "$file" ]]; then
+        if [[ "$overwrite" -eq 1 ]]; then
+            rm -f -- "$file" || { err "removing [$file] failed"; return 1; }
+        else
+            err "[$file] already exists; (pass -o to automatically overwrite)"
+            return 1
+        fi
+    fi
 
     if command -v dumpcap > /dev/null 2>&1; then
         select_interface || return 1
