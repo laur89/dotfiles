@@ -1837,7 +1837,7 @@ mkgit() {
     readonly curl_output="/tmp/curl_create_repo_output_${RANDOM}.out"
 
     if [[ "$mainOptCounter" -gt 1 ]]; then
-        err "-g and -b flags are exclusive." "$FUNCNAME"
+        err "-g, -w and -b flags are exclusive." "$FUNCNAME"
         echo -e "$usage"
         return 1
     elif [[ "$mainOptCounter" -eq 0 ]]; then
@@ -1875,7 +1875,7 @@ mkgit() {
        return 1
     fi
 
-    readonly passwd="$(getnetrc "${user}@${repo}")"
+    passwd="$(getnetrc "${user}@${repo}")"
     if [[ "$?" -ne 0 || -z "$passwd" ]]; then
         err "getting password failed. abort." "$FUNCNAME"
         [[ "$newly_created_dir" -eq 1 ]] && rm -r -- "$dir"  # delete the dir we just created
@@ -1890,10 +1890,10 @@ mkgit() {
         # https://forum.gitlab.com/t/create-a-new-project-in-a-group-using-api/1552/2
         #
         # find our namespaces:
-        readonly gitlab_namespaces_json="$(curl -sL --insecure \
+        readonly gitlab_namespaces_json="$(curl --fail -sL --insecure \
             --header "PRIVATE-TOKEN: $passwd" \
             --max-time 5 --connect-timeout 2 \
-            "https://${repo}/api/v3/namespaces?per_page=100")"
+            "https://${repo}/api/v3/namespaces?per_page=300")"
 
         [[ "$gitlab_namespaces_json" == '[{"'* ]] || { err "found namespaces curl reply isn't expected json array: $gitlab_namespaces_json" "$FUNCNAME"; return 1; }
 
@@ -1910,7 +1910,7 @@ mkgit() {
         done <  <(echo "$gitlab_namespaces_json" | jq -r '.[] | .path,.id')
 
         readonly fzf_selection="${fzf_selection:0:$(( ${#fzf_selection} - 2 ))}"  # strip the trailing newline
-        namespace="$(echo -e "$fzf_selection" | fzf --exit-0)" || return 1
+        namespace="$(echo -e "$fzf_selection" | fzf --exit-0)" || return 1  # TODO: delegate to generic select_items()
         namespace_id="${namespace_to_id[$namespace]}"
         is_digit "$namespace_id" || { err "unable to find namespace id from name [$namespace]" "$FUNCNAME"; return 1; }
 
@@ -1921,7 +1921,7 @@ mkgit() {
     if ! git ls-remote "git@${repo}:${user}/${project_name}" &> /dev/null; then
         case "$repo" in
             'github.com')
-                readonly http_statuscode="$(curl -sL \
+                readonly http_statuscode="$(curl --fail -sL \
                     -w '%{http_code}' \
                     --max-time 4 --connect-timeout 1 \
                     -u "$user:$passwd" \
@@ -1931,7 +1931,7 @@ mkgit() {
                 ;;
             'bitbucket.org')
                 # note: auth $user needs to be the one you actually log in with, user in url can/has to be the old username (layr)
-                readonly http_statuscode="$(curl -sL -X POST \
+                readonly http_statuscode="$(curl --fail -sL -X POST \
                     -w '%{http_code}' \
                     --max-time 5 --connect-timeout 2 \
                     -H "Content-Type: application/json" \
@@ -1944,7 +1944,7 @@ mkgit() {
                 [[ "$is_private" == true ]] && is_private=0 || is_private=10  # 0 = private, 10 = internal, 20 = public
                 __select_namespace || { [[ "$newly_created_dir" -eq 1 ]] && rm -r -- "$dir"; unset __select_namespace; return 1; }  # delete the dir we just created
                 unset __select_namespace
-                readonly http_statuscode="$(curl -sL --insecure \
+                readonly http_statuscode="$(curl --fail -sL --insecure \
                     -w '%{http_code}' \
                     --max-time 5 --connect-timeout 2 \
                     --header "PRIVATE-TOKEN: $passwd" \
@@ -3006,7 +3006,7 @@ transfer() {
 
     # write to output to tmpfile because of progress bar
     readonly tmpfile=$(mktemp -t transfer_XXX.tmp) || { err "unable to create temp with mktemp" "$FUNCNAME"; return 1; }
-    curl --connect-timeout 2 --progress-bar --upload-file "$file" "https://transfer.sh/$(basename -- "$file")" >> "$tmpfile" || { err; return 1; }
+    curl --fail --connect-timeout 2 --progress-bar --upload-file "$file" "https://transfer.sh/$(basename -- "$file")" >> "$tmpfile" || { err; return 1; }
     cat -- "$tmpfile"
     echo
     copy_to_clipboard "$(cat -- "$tmpfile")" && report "copied link to clipboard" "$FUNCNAME" || err "copying to clipboard failed" "$FUNCNAME"

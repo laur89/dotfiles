@@ -1515,7 +1515,7 @@ install_own_builds() {
     install_gitin
     #install_synergy  # currently installing from repo
     install_polybar
-    #install_oracle_jdk
+    #install_oracle_jdk  # start using sdkman (or something similar)
 
     #install_dwm
     install_i3

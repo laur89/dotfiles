@@ -13,7 +13,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export BASE_DATA_DIR="/data"
     export COMMON_CASTLE="/data/progs/deps/homesick/repos/dotfiles"
 
-    export JAVA_HOME=/usr/local/jdk_link
+    #export JAVA_HOME=/usr/local/jdk_link  # superseded by sdkman
     export M2_HOME=$BASE_DATA_DIR/progs/maven/mvn_link
     export M2=$M2_HOME/bin
     export GRADLE_HOME=/usr/share/gradle
