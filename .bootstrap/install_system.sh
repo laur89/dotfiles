@@ -1271,23 +1271,23 @@ setup_additional_apt_keys_and_sources() {
 
     # mopidy: (from https://docs.mopidy.com/en/latest/installation/debian/):
     # mopidy key:
-    execute 'wget -q -O - http://apt.mopidy.com/mopidy.gpg | sudo apt-key add -'
+    execute 'wget -q -O - https://apt.mopidy.com/mopidy.gpg | sudo apt-key add -'
     # add mopidy source:
     execute 'sudo wget -q -O /etc/apt/sources.list.d/mopidy.list https://apt.mopidy.com/stretch.list'
 
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
-    execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys BBEBDCB318AD50EC6865090613B00F1FD2C19886 0DF731E45CE24F27EEEB1450EFDC8610341D9410'
+    execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 931FF8E79F0876134EDDBDCCA87FF9DF48BF1C90'
     execute 'echo deb http://repository.spotify.com stable non-free | sudo tee /etc/apt/sources.list.d/spotify.list > /dev/null'
 
-    # seafile: (from https://github.com/haiwen/seafile-user-manual/blob/master/en/desktop/install-on-linux.md#wiki-debian):
+    # seafile: (from https://help.seafile.com/en/syncing_client/install_linux_client.html#wiki-debian):
     execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 8756C4F765C9AC3CB6B85D62379CE192D401AB61'
     execute 'echo deb http://deb.seadrive.org stretch main | sudo tee /etc/apt/sources.list.d/seafile.list > /dev/null'
 
-    # mono: (from http://www.mono-project.com/download/#download-lin-debian):
+    # mono: (from https://www.mono-project.com/download/stable/#download-lin-debian):
     # later on installed by 'mono-complete' pkg
     execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF'
-    execute 'echo "deb http://download.mono-project.com/repo/debian stretch main" | sudo tee /etc/apt/sources.list.d/mono-official.list > /dev/null'
+    execute 'echo "deb https://download.mono-project.com/repo/debian stable-stretch main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list > /dev/null'
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
     execute 'wget -q -O - https://www.charlesproxy.com/packages/apt/PublicKey | sudo apt-key add -'
@@ -2996,6 +2996,8 @@ install_from_repo() {
 
     declare -ar block2_nonwin=(
         dnsutils
+        dnsmasq
+        resolvconf
         glances
         netdata
         wireshark
@@ -3016,6 +3018,7 @@ install_from_repo() {
 
     declare -ar block2=(
         jq
+        crudini
         htop
         iotop
         ncdu
@@ -3057,6 +3060,7 @@ install_from_repo() {
         pastebinit
         synergy
         keepassxc
+        gnupg
     )
 
 
@@ -3492,13 +3496,35 @@ setup_docker() {
 # puts networkManager to manage our network interfaces;
 # alternatively, you can remove your interface name from /etc/network/interfaces
 # (bottom) line; eg from 'iface wlan0 inet dhcp' to 'iface inet dhcp'
+#
+# make sure resolvconf pkg is installed for seamless resolv config updates & dnsmasq usage (as per https://unix.stackexchange.com/a/406724/47501)
 enable_network_manager() {
-    local net_manager_conf_file
+    local net_manager_conf_file dnsmasq_conf
 
     readonly net_manager_conf_file='/etc/NetworkManager/NetworkManager.conf'
+    readonly dnsmasq_conf='/etc/dnsmasq.conf'
 
     [[ -f "$net_manager_conf_file" ]] || { err "[$net_manager_conf_file] does not exist; are you using NetworkManager? if not, this config logic should be removed."; return 1; }
-    execute "sudo sed -i --follow-symlinks 's/^managed=false$/managed=true/' '$net_manager_conf_file'"
+    #execute "sudo sed -i --follow-symlinks 's/^managed=false$/managed=true/' '$net_manager_conf_file'"  # use crudini instead
+
+    sudo crudini --merge "$net_manager_conf_file" <<'EOF'
+[ifupdown]
+managed=true
+EOF
+
+    [[ $? -ne 0 ]] && { err "updating [$net_manager_conf_file] exited w/ failure"; return 1; }
+
+    # update dnsmasq conf:  TODO: refactor out from this fun?
+    # note: to check dnsmasq conf/performance, see
+    #     dig +short chaos txt hits.bind
+    #     dig +short chaos txt misses.bind
+    #     dig +short chaos txt cachesize.bind
+    [[ -f "$dnsmasq_conf" ]] || { err "[$dnsmasq_conf] does not exist"; return 1; }
+    execute "sudo sed -i --follow-symlinks '/^cache-size=.*$/d' '$dnsmasq_conf'"
+    execute "echo cache-size=10000 | sudo tee --append $dnsmasq_conf > /dev/null"
+
+    execute "sudo sed -i --follow-symlinks '/^local-ttl=.*$/d' '$dnsmasq_conf'"
+    execute "echo local-ttl=10 | sudo tee --append $dnsmasq_conf > /dev/null"
 }
 
 
