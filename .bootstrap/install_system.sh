@@ -932,7 +932,7 @@ install_deps() {
     #fi
 
     # laptop deps:
-    ! is_windows && is_laptop && _install_laptop_deps; unset _install_laptop_deps
+    is_native && is_laptop && _install_laptop_deps; unset _install_laptop_deps
 
 
     # install npm_modules:
@@ -1196,11 +1196,11 @@ setup_config_files() {
     #setup_ssh_config   # better stick to ~/.ssh/config, rite?  # TODO
     setup_hosts
     setup_systemd
-    is_windows || setup_udev
+    is_native && setup_udev
     setup_global_env_vars
     setup_netrc_perms
     setup_global_prompt
-    is_windows || swap_caps_lock_and_esc
+    is_native && swap_caps_lock_and_esc
 }
 
 
@@ -1432,7 +1432,7 @@ install_progs() {
     install_from_repo
     install_own_builds  # has to be after install_from_repo()
 
-    is_windows || install_nvidia
+    is_native && install_nvidia
 
     # TODO: delete?:
     #if [[ "$MODE" == work ]]; then
@@ -1519,7 +1519,7 @@ install_own_builds() {
 
     #install_dwm
     install_i3
-    is_windows || install_i3lock
+    is_native && install_i3lock
 }
 
 
@@ -2825,7 +2825,7 @@ install_fonts() {
         xbitmaps
     '
 
-    is_windows || install_block 'fontforge gucharmap'
+    is_native && install_block 'fontforge gucharmap'
 
     # https://github.com/ryanoasis/nerd-fonts#option-3-install-script
     install_nerd_fonts() {
@@ -3174,7 +3174,7 @@ install_from_repo() {
     )
 
     blocks=()
-    ! is_windows && blocks=(block1_nonwin block2_nonwin block3_nonwin block4_nonwin)
+    is_native && blocks=(block1_nonwin block2_nonwin block3_nonwin block4_nonwin)
     blocks+=(block1 block2 block3 block4)
 
     execute "sudo apt-get --yes update"
@@ -3189,7 +3189,7 @@ install_from_repo() {
 
 
     if [[ "$MODE" == work ]]; then
-        if ! is_windows; then
+        if is_native; then
             install_block '
                 remmina
                 samba-common-bin
@@ -3208,7 +3208,7 @@ install_from_repo() {
         # remmina is remote desktop for windows; rdesktop, remote vnc;
     fi
 
-    if ! is_windows && is_laptop; then
+    if is_native && is_laptop; then
         install_block pulseaudio-module-bluetooth
     fi
 }
@@ -3395,13 +3395,13 @@ full_install() {
     setup
 
     execute "sudo apt-get --yes update"  # needs to be first
-    is_windows || upgrade_kernel
+    is_windows || upgrade_kernel  # keep this check is_windows, not is_native;
     install_fonts
     install_progs
     post_install_progs_setup
     install_deps
-    is_windows || install_ssh_server_or_client
-    is_windows || install_nfs_server_or_client
+    is_native && install_ssh_server_or_client
+    is_native && install_nfs_server_or_client
     remind_manually_installed_progs
 }
 
@@ -3626,23 +3626,23 @@ setup_seafile_cli() {
 # pulled with homesick);
 post_install_progs_setup() {
 
-    is_windows || install_acpi_events   # has to be after install_progs(), so acpid is already insalled and events/ dir present;
-    is_windows || enable_network_manager
-    is_windows || install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present
-    is_windows || execute --ignore-errs "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
-    is_windows || execute "mopidy local scan"            # update mopidy library
-    is_windows || execute "sudo sensors-detect --auto"   # answer enter for default values (this is lm-sensors config)
+    is_native && install_acpi_events   # has to be after install_progs(), so acpid is already insalled and events/ dir present;
+    is_native && enable_network_manager
+    is_native && install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present
+    is_native && execute --ignore-errs "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
+    is_native && execute "mopidy local scan"            # update mopidy library
+    is_native && execute "sudo sensors-detect --auto"   # answer enter for default values (this is lm-sensors config)
     increase_inotify_watches_limit         # for intellij IDEA
-    is_windows || setup_docker
+    is_native && setup_docker
     setup_nvim
-    is_windows || execute "sudo adduser $USER wireshark"      # add user to wireshark group, so it could be run as non-root;
+    is_native && execute "sudo adduser $USER wireshark"      # add user to wireshark group, so it could be run as non-root;
                                                 # (implies wireshark is installed with allowing non-root users
                                                 # to capture packets - it asks this during installation);
     #execute "newgrp wireshark"                  # log us into the new group; !! will stop script execution
-    is_windows || execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
+    is_native && execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
     #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
-    is_windows || configure_ntp_for_work
-    is_windows || configure_pulseaudio  # TODO might be possible w/ windows
+    is_native && configure_ntp_for_work
+    is_native && configure_pulseaudio  # TODO might be possible w/ windows
     #setup_seafile_cli  # TODO https://github.com/haiwen/seafile/issues/1855 & https://github.com/haiwen/seafile/issues/1854
 }
 
@@ -3977,16 +3977,31 @@ is_windows() {
 }
 
 
-# Checks whether system is virtualized (including WSL)
+# Checks whether system is virtualized (including WSL); TODO: unsure if it detects WSL;
 #
 # @returns {bool}   true if we're running in virt mode.
 is_virt() {
     if [[ -z "$_IS_VIRT" ]]; then
+        [[ -f /proc/cpuinfo ]] || { err "/proc/cpuinfo not a file, cannot test virtualization"; return 2; }
         grep -qE '^flags.*\s+hypervisor' /proc/cpuinfo &>/dev/null  # detects all virtualizations, including WSL
         readonly _IS_VIRT=$?
     fi
 
     return $_IS_VIRT
+}
+
+
+# Checks whether we're running native, ie we're not running in
+# vbox, hyper-v, wsl et al.
+#
+# @returns {bool}   true if we're native.
+is_native() {
+    if [[ -z "$_IS_NATIVE" ]]; then
+        ! is_windows && ! is_virt
+        readonly _IS_NATIVE=$?
+    fi
+
+    return $_IS_NATIVE
 }
 
 
