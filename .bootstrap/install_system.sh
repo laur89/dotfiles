@@ -1059,7 +1059,9 @@ fetch_castles() {
     # !! if you change private repos, make sure you update PRIVATE_CASTLE definitions @ validate_and_init()!
     case "$MODE" in
         work)
+            export GIT_SSL_NO_VERIFY=1
             clone_or_link_castle "$(basename -- "$PRIVATE_CASTLE")" laliste git.nonprod.williamhill.plc || err "failed pulling work dotfiles; won't abort"
+            unset GIT_SSL_NO_VERIFY
             ;;
         personal)
             clone_or_link_castle "$(basename -- "$PRIVATE_CASTLE")" layr bitbucket.org || err "failed pulling personal dotfiles; won't abort"
