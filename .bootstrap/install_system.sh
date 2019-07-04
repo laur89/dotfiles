@@ -44,7 +44,6 @@ readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; e
                                                  # (script-related) configuration lies within.
 readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
 readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
-readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log"  # log of all installed debs/binaries from git releases/latest page
 
 readonly BUILD_DOCK='deb-build-box'              # name of the build container
 #------------------------
@@ -54,6 +53,7 @@ IS_SSH_SETUP=0       # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=''  # only select_items() *writes* into this one.
 MODE=''
 FULL_INSTALL=0                  # whether script is performing full install or not. 1 || 0
+GIT_RLS_LOG=''       # log of all installed debs/binaries from git releases/latest page; will be defined later on;
 declare -a PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
 declare -a PACKAGES_FAILED_TO_INSTALL=()
 LOGGING_LVL=0                   # execution logging level (full install mode logs everything);
@@ -1267,6 +1267,13 @@ setup() {
     verify_ssh_key
     execute "source $SHELL_ENVS"  # so we get our env vars after dotfiles are pulled in
 
+    [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG='/tmp/.git-rls-log.tmp'  # log of all installed debs/binaries from git releases/latest page
+
+    # we need to make sure our system clock is roughly right; otherwise stuff like apt-get might start failing:
+    #is_native || execute "rdate -s tick.greyware.com"
+    #is_native || execute "tlsdate -V -n -H encrypted.google.com"
+    update_clock
+
     setup_dirs  # has to come after $SHELL_ENVS sourcing so the env vars are in place
     setup_config_files
     setup_additional_apt_keys_and_sources
@@ -1275,6 +1282,22 @@ setup() {
 }
 
 
+update_clock() {
+    local remote_time diff
+
+    remote_time="$(curl --insecure -X HEAD --silent -I https://google.com/ 2>&1 \
+            | grep -i 'date:' | sed -e 's/date: //i' | date +%s)"
+
+    is_digit "$remote_time" || { err "found remote time was not digit: [$remote_time]"; return 1; }
+    diff="$(( $(date +%s) - remote_time ))"
+
+    if [[ "${diff#-}" -gt 30 ]]; then
+        execute "sudo date -s '$(date -d @$remote_time)'" || { err "setting system time failed"; return 1; }
+    fi
+}
+
+
+# note apt-key adv needs gnupg to be installed
 setup_additional_apt_keys_and_sources() {
 
     # mopidy: (from https://docs.mopidy.com/en/latest/installation/debian/):
@@ -1722,7 +1745,7 @@ fetch_release_from_git() {
         execute "popd"
     fi
 
-    if [[ -n "$4" ]]; then
+    if [[ -n "$4" && "$file" != "$tmpdir/$4" ]]; then
         execute "mv -- '$file' '$tmpdir/$4'" || { err "renaming [$file] to [$tmpdir/$4] failed"; return 1; }
         file="$tmpdir/$4"
     fi
@@ -1800,7 +1823,7 @@ install_fd() {  # https://github.com/sharkdp/fd
 
 
 install_lazygit() {  # https://github.com/jesseduffield/lazygit
-    install_bin_from_git -n lazygit -d "$HOME/bin" jesseduffield lazygit 'linux_amd64_v[0-9.]+'
+    install_bin_from_git -n lazygit -d "$HOME/bin" jesseduffield lazygit '_Linux_x86_64.tar.gz'
 }
 
 
