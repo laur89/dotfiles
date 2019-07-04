@@ -115,7 +115,6 @@ validate_and_init() {
             fi
 
             PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/work_dotfiles"
-            [[ "$FULL_INSTALL" -eq 1 ]] && NPM_PRFX+=' NODE_TLS_REJECT_UNAUTHORIZED=0'  # certs might've not been init'd yet;
             ;;
         personal)
             if [[ "$__ENV_VARS_LOADED_MARKER_VAR" == loaded ]] && __is_work; then
@@ -857,7 +856,7 @@ install_deps() {
 
 
     execute "/usr/bin/env python3 -m pip install --user --upgrade wheel"    # https://pypi.org/project/wheel/  (wheel is py packaging standard; TODO: as per https://stackoverflow.com/a/56504270/1803648, this should soon be history)
-    
+
     # TODO: following are not deps, are they?:
     # git-playback; install _either_ of these two (ie either from jianli or mmozuras):
     execute "/usr/bin/env python3 -m pip install --user --upgrade git-playback"   # https://github.com/jianli/git-playback
@@ -1272,6 +1271,7 @@ setup() {
     setup_config_files
     setup_additional_apt_keys_and_sources
     [[ "$FULL_INSTALL" -ne 1 ]] && post_install_progs_setup  # since with FULL_INSTALL=1, it'll get executed from other block
+    [[ "$FULL_INSTALL" -eq 1 && "$MODE" == work ]] && NPM_PRFX+=' NODE_TLS_REJECT_UNAUTHORIZED=0'  # certs might've not been init'd yet;
 }
 
 
@@ -1951,8 +1951,6 @@ install_webdev() {
         execute "nvm alias default stable" || err "setting [nvm default stable] failed"
     fi
 
-    # TODO: when already configured to use work npm server & certs haven't been installed,
-    # then _all_ npm installations will fail;
     # update npm:
     execute "$NPM_PRFX npm install npm@latest -g" && sleep 0.2
 
@@ -2977,6 +2975,7 @@ install_from_repo() {
         fail2ban
     )
 
+    # TODO: xorg needs to be pulled into non-win (but still has to be installed for virt!) block:
     declare -ar block1=(
         xorg
         x11-apps
@@ -3406,7 +3405,7 @@ full_install() {
     setup
 
     execute "sudo apt-get --yes update"  # needs to be first
-    is_windows || upgrade_kernel  # keep this check is_windows, not is_native;
+    is_windows || upgrade_kernel  # keep this check is_windows(), not is_native();
     install_fonts
     install_progs
     post_install_progs_setup
