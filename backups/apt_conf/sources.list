@@ -1,5 +1,5 @@
 #
-
+# see https://wiki.debian.org/DebianTesting
 # deb cdrom:[Debian GNU/Linux jessie-DI-b2 _Jessie_ - Official Snapshot amd64 NETINST Binary-1 20141003-18:31]/ jessie main
 
 #deb cdrom:[Debian GNU/Linux jessie-DI-b2 _Jessie_ - Official Snapshot amd64 NETINST Binary-1 20141003-18:31]/ jessie main

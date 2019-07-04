@@ -115,6 +115,7 @@ validate_and_init() {
             fi
 
             PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/work_dotfiles"
+            [[ "$FULL_INSTALL" -eq 1 ]] && NPM_PRFX+=' NODE_TLS_REJECT_UNAUTHORIZED=0'  # certs might've not been init'd yet;
             ;;
         personal)
             if [[ "$__ENV_VARS_LOADED_MARKER_VAR" == loaded ]] && __is_work; then
@@ -854,6 +855,8 @@ install_deps() {
     # sdkman:  # https://sdkman.io/
     execute "curl -s 'https://get.sdkman.io' | bash"  # TODO depends whether win or linux
 
+    execute "/usr/bin/env python3 -m pip install --user --upgrade wheel"    # https://pypi.org/project/wheel/  (wheel is py packaging standard; TODO: as per https://stackoverflow.com/a/56504270/1803648, this should soon be history)
+    
     # TODO: following are not deps, are they?:
     # git-playback; install _either_ of these two (ie either from jianli or mmozuras):
     execute "/usr/bin/env python3 -m pip install --user --upgrade git-playback"   # https://github.com/jianli/git-playback
@@ -939,12 +942,14 @@ install_deps() {
     # https://github.com/FredrikNoren/ungit
     # https://github.com/dominictarr/JSON.sh
     # https://github.com/sindresorhus/speed-test
+    # https://github.com/sindresorhus/fast-cli
     # https://github.com/riyadhalnur/weather-cli
     #
-    execute "npm install -g \
+    execute "$NPM_PRFX npm install -g \
         ungit \
         JSON.sh \
         speed-test \
+        fast-cli \
         weather-cli \
     "
 }
@@ -1948,10 +1953,10 @@ install_webdev() {
     # TODO: when already configured to use work npm server & certs haven't been installed,
     # then _all_ npm installations will fail;
     # update npm:
-    execute "npm install npm@latest -g" && sleep 0.2
+    execute "$NPM_PRFX npm install npm@latest -g" && sleep 0.2
 
     # install npm modules:  # TODO review what we want to install
-    execute "npm install -g \
+    execute "$NPM_PRFX npm install -g \
         nwb \
     "
 
@@ -2248,7 +2253,7 @@ install_i3lock() {
 }
 
 
-# https://github.com/Airblader/i3/wiki/Compiling-&-Installing
+# https://github.com/Airblader/i3/wiki/Building-from-source
 install_i3() {
     local tmpdir
 
@@ -2256,12 +2261,12 @@ install_i3() {
         local f
 
         f="$TMP_DIR/i3-patch-${RANDOM}.patch"
-        curl -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
+        curl --fail -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
         patch -p1 < "$f" || { err "applying window-icons.patch failed"; return 1; }
     }
 
     readonly tmpdir="$TMP_DIR/i3-gaps-build-${RANDOM}"
-    report "building i3-gaps..."
+    report "building i3-gaps... (note install_i3_deps() will be called in the end)"; sleep 2
 
     report "installing i3 build dependencies..."
     install_block '
@@ -2282,6 +2287,30 @@ install_i3() {
         libxcb-randr0-dev
         libxcb-xrm0
         libxcb-xrm-dev
+
+
+
+        gcc
+        make
+        dh-autoreconf
+        libxcb-keysyms1-dev
+        libpango1.0-dev
+        libxcb-util0-dev
+        xcb
+        libxcb1-dev
+        libxcb-icccm4-dev
+        libyajl-dev
+        libev-dev
+        libxcb-xkb-dev
+        libxcb-cursor-dev
+        libxkbcommon-dev
+        libxcb-xinerama0-dev
+        libxkbcommon-x11-dev
+        libstartup-notification0-dev
+        libxcb-randr0-dev
+        libxcb-xrm0
+        libxcb-xrm-dev
+        libxcb-shape0-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
     # clone the repository
@@ -2714,7 +2743,7 @@ install_YCM() {  # the quick-and-not-dirty install.py way
         python-dev
         python3-dev
     '
-    execute "npm install -g typescript"  # for js support
+    execute "$NPM_PRFX npm install -g typescript"  # for js support
 
     # install YCM
     execute "pushd -- $ycm_plugin_root" || return 1
@@ -2797,7 +2826,7 @@ install_YCM() {  # the quick-and-not-dirty install.py way
 
     ##     js:
     #execute "pushd $ycm_third_party_rootdir/tern_runtime" || return 1
-    #execute "npm install --production"
+    #execute "$NPM_PRFX npm install --production"
     #execute "popd"
 
     ##     go:
@@ -2943,7 +2972,6 @@ install_from_repo() {
     )
 
     declare -ar block1_nonwin=(
-        xorg
         alsa-utils
         pulseaudio
         pavucontrol
@@ -2969,10 +2997,10 @@ install_from_repo() {
     )
 
     declare -ar block1=(
-        ca-certificates
-        x11-session-manager
+        xorg
         x11-apps
         xinit
+        ca-certificates
         aptitude
         sudo
         dunst
@@ -3103,7 +3131,7 @@ install_from_repo() {
     )
 
     declare -ar block3=(
-        firefox
+        firefox/unstable
         chromium
         rxvt-unicode-256color
         seafile-gui
@@ -3415,6 +3443,7 @@ remind_manually_installed_progs() {
     declare -ar progs=(
         lazyman2
         'jdk deps via sdkman'
+        'any custom certs'
     )
 
     for i in "${progs[@]}"; do
@@ -3971,6 +4000,7 @@ is_laptop() {
 # @returns {bool}   true if we're running inside Windows.
 is_windows() {
     if [[ -z "$_IS_WIN" ]]; then
+        [[ -f /proc/version ]] || { err "/proc/version not a file, cannot test is_windows"; return 2; }
         grep -qE "(Microsoft|WSL)" /proc/version &>/dev/null
         readonly _IS_WIN=$?
     fi
