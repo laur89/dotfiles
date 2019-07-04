@@ -1283,15 +1283,16 @@ setup() {
 
 
 update_clock() {
-    local remote_time diff
+    local remote_time diff t
 
     remote_time="$(curl --insecure -X HEAD --silent -I https://google.com/ 2>&1 \
-            | grep -i 'date:' | sed -e 's/date: //i' | date +%s)"
+            | grep -i 'date:' | sed -e 's/date: //i' | { read -r t; date +%s -d "$t"; })"
 
     is_digit "$remote_time" || { err "found remote time was not digit: [$remote_time]"; return 1; }
     diff="$(( $(date +%s) - remote_time ))"
 
     if [[ "${diff#-}" -gt 30 ]]; then
+        report "system time diff to remote source is [$diff] - updating clock..."
         execute "sudo date -s '$(date -d @$remote_time)'" || { err "setting system time failed"; return 1; }
     fi
 }
