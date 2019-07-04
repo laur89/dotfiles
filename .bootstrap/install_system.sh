@@ -1681,8 +1681,6 @@ switch_jdk_versions() {
 fetch_release_from_git() {
     local opt noextract tmpdir file loc dl_url page OPTIND
 
-    is_server && { report "we're server, skipping rambox installation."; return; }
-
     while getopts "U" opt; do
         case "$opt" in
             U) readonly noextract=1 ;;
