@@ -35,7 +35,7 @@ readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u172-b11/a
                                                                           # jdk9: https://jdk9.java.net/  /  https://jdk9.java.net/download/
                                                                           # jdk10: http://www.oracle.com/technetwork/java/javase/downloads/jdk10-downloads-4416644.html
                                                                           # archive: http://www.oracle.com/technetwork/java/javase/archive-139210.html
-readonly SKYPE_LOC='http://www.skype.com/go/getskype-linux-deb'       # http://www.skype.com/en/download-skype/skype-for-computer/
+readonly SKYPE_LOC='http://www.skype.com/go/getskype-linux-deb'       # https://www.skype.com/en/get-skype/
 readonly JDK_LINK_LOC="/usr/local/jdk_link"      # symlink linking to currently active java installation
 readonly JDK_INSTALLATION_DIR="/usr/local/javas" # dir containing all the installed java versions
 readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
@@ -1906,7 +1906,7 @@ build_and_install_rambox() {  # https://github.com/saenzramiro/rambox
 
 
 install_skype() {  # https://wiki.debian.org/skype
-                   # https://www.skype.com/en/download-skype/skype-for-linux/downloading/?type=weblinux-deb
+                   # https://www.skype.com/en/get-skype/
     local skypeFile skype_downloads_dir
 
     is_server && { report "we're server, skipping skype installation."; return; }
@@ -1945,12 +1945,14 @@ install_webdev() {
         execute "nvm alias default stable" || err "setting [nvm default stable] failed"
     fi
 
+    # TODO: when already configured to use work npm server & certs haven't been installed,
+    # then _all_ npm installations will fail;
     # update npm:
     execute "npm install npm@latest -g" && sleep 0.2
 
     # install npm modules:  # TODO review what we want to install
     execute "npm install -g \
-        typescript jshint grunt-cli csslint nwb \
+        nwb \
     "
 
     # install ruby modules:          # sass: http://sass-lang.com/install
