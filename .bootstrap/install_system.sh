@@ -855,6 +855,7 @@ install_deps() {
     # sdkman:  # https://sdkman.io/
     execute "curl -s 'https://get.sdkman.io' | bash"  # TODO depends whether win or linux
 
+
     execute "/usr/bin/env python3 -m pip install --user --upgrade wheel"    # https://pypi.org/project/wheel/  (wheel is py packaging standard; TODO: as per https://stackoverflow.com/a/56504270/1803648, this should soon be history)
     
     # TODO: following are not deps, are they?:
@@ -2270,26 +2271,6 @@ install_i3() {
 
     report "installing i3 build dependencies..."
     install_block '
-        libxcb-keysyms1-dev
-        libpango1.0-dev
-        libxcb-util0-dev
-        xcb
-        libxcb1-dev
-        libxcb-icccm4-dev
-        libyajl-dev
-        libev-dev
-        libxcb-xkb-dev
-        libxcb-cursor-dev
-        libxkbcommon-dev
-        libxcb-xinerama0-dev
-        libxkbcommon-x11-dev
-        libstartup-notification0-dev
-        libxcb-randr0-dev
-        libxcb-xrm0
-        libxcb-xrm-dev
-
-
-
         gcc
         make
         dh-autoreconf

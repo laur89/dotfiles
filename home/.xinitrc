@@ -61,7 +61,7 @@ case "$input" in
         sxhkd &
         exec bspwm
         ;;
-    none | nil | console)
+    none | nil | console | terminal)
         if command -v uxterm; then
             exec uxterm
         else
