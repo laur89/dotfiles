@@ -157,7 +157,7 @@ check_dependencies() {
 
     readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
-    for prog in git cmp wget curl tar unzip realpath dirname basename tee mktemp file; do
+    for prog in git cmp wget curl tar unzip gnupg realpath dirname basename tee mktemp file; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
             install_block "$prog" || { err "unable to install required prog [$prog] this script depends on. abort."; exit 1; }
