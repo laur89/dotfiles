@@ -1293,7 +1293,7 @@ update_clock() {
 
     if [[ "${diff#-}" -gt 30 ]]; then
         report "system time diff to remote source is [$diff] - updating clock..."
-        execute "sudo date -s '$(date -d @$remote_time)'" || { err "setting system time failed"; return 1; }
+        execute "sudo date -s '$(date -d @$remote_time '+%Y-%m-%d %H:%M:%S')'" || { err "setting system time failed"; return 1; }
     fi
 }
 
@@ -3272,7 +3272,7 @@ install_nvidia() {
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
 install_block() {
-    local list_to_install extra_apt_params dry_run_failed exit_sig exit_sig_install_failed pkg
+    local list_to_install extra_apt_params dry_run_failed exit_sig exit_sig_install_failed pkg sig
 
     declare -ar list_to_install=( $1 )
     readonly extra_apt_params="$2"  # optional
@@ -3289,11 +3289,28 @@ install_block() {
             #packages_not_found+=( $pkg )
             #continue
         #fi
-        if execute "sudo apt-get -qq --dry-run --no-install-recommends install $extra_apt_params $pkg"; then
-            sleep 0.1
-            execute "sudo apt-get --yes install --no-install-recommends $extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
+        execute "sudo apt-get -qq --dry-run --no-install-recommends install $extra_apt_params $pkg"
+        sig=$?
+
+        #if [[ "$sig" -ne 0 ]]; then
+            #if [[ "$sig" -eq 100 ]]; then
+                #execute 'sudo apt-get --yes update'
+                #execute 'sudo apt-get --yes autoremove'
+            #fi
+        #fi
+
+        if [[ "$sig" -ne 0 ]]; then
+            execute 'sudo apt-get --yes update'
+            execute 'sudo apt-get --yes autoremove'
+
+            if execute "sudo apt-get -qq --dry-run --no-install-recommends install $extra_apt_params $pkg"; then
+                #sleep 0.1
+                execute "sudo apt-get --yes install --no-install-recommends $extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
+            else
+                dry_run_failed+=( $pkg )
+            fi
         else
-            dry_run_failed+=( $pkg )
+            execute "sudo apt-get --yes install --no-install-recommends $extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
         fi
     done
 
