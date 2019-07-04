@@ -28,7 +28,7 @@ case "$input" in
         #exec dbus-launch --sh-syntax --exit-with-session start_dwm
         ;;
     i3)
-        if is_windows; then
+        if is_native; then  # TODO: or is_windows()?
             i3 &
             #sleep 1
             source "$HOME/.common_startup"

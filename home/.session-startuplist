@@ -84,7 +84,7 @@ fi
     #xscreensaver -no-splash &
     #echo "Launching xscreensaver..."
 #fi
-if ! is_windows && ! is_proc_running xss-lock; then
+if is_native && ! is_proc_running xss-lock; then
     xset s 300
     xss-lock -- lock -n &   # lock here is i3lock-fancy
     # or, if you first want to do notif/screen dimmin, followed by lock:
@@ -97,7 +97,7 @@ if ! is_proc_running compton; then
     compton --config ~/.compton.conf --respect-prop-shadow --daemon
 fi
 
-if ! is_windows && ! is_proc_running syndaemon && is_laptop; then
+if is_native && ! is_proc_running syndaemon && is_laptop; then
     syndaemon -t -K -i 1.5 &
     echo "Launching syndaemon..."
 fi
@@ -134,6 +134,7 @@ if ! is_proc_running transmission_somethiNG_TODO && ! is_work; then
 fi
 
 # synergy:
+if is_native; then
 if is_laptop; then
     if ! is_proc_running synergyc; then
         echo "Launching syndergy client"
@@ -166,10 +167,11 @@ else    # is NOT laptop, assuming desktop
         fi
     fi
 fi
+fi
 
 ###############################
 # modify configs:
-if is_laptop && ! is_windows; then
+if is_laptop && is_native; then
     if [[ -e ~/.xscreensaver ]]; then
         ( sed \
             --follow-symlinks \

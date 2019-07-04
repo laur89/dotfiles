@@ -131,9 +131,6 @@ xset -b &
 
 
 
-# TODO: delete this?:
-#export DISPLAY=:0.0
-
 # See policykit käitati tavaliste DE-de puhul /etc/xdg/autostart/polkit-gnome....desktop-ist;
 # kui ei käivitanud, siis andis network-manager wireless võrku ühendamisel permission errori:
 # teine variant, kuidas soovitatakse NM permission errorist jagu saada:
@@ -254,7 +251,7 @@ for i in \
         /data/ \
             ; do
     if [[ ! -w "$i" ]]; then
-        err_display  "[$i] is not created or no write permissions granted. Do it!" "$_SELF" &
+        err_display  "[$i] is not created or no write permissions granted. Do it!" "$_SELF"
     fi
 done &
 
@@ -264,7 +261,7 @@ for i in \
         "$_PERSISTED_TMP" \
             ; do
     if [[ ! -d "$i" ]] && ! mkdir "$i"; then
-        err_display  "Tried to create required directory [$i] but mkdir failed." "$_SELF" &
+        err_display  "Tried to create required directory [$i] but mkdir failed." "$_SELF"
     fi
 done &
 
@@ -290,10 +287,11 @@ allowed_size=20   # Max size in MB
 check_max_allowed_size "$CUSTOM_LOGDIR" "$allowed_size"
 
 set_perms &
-if ! is_windows; then
+if is_native; then
     enableSmart &
     set_keyboard_layout &
     open_mpd_fifo &
 fi
 
 unset i x f m n SESSION_STARTFILE AUTOSTART _SELF allowed_size
+

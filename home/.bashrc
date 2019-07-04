@@ -317,6 +317,7 @@ _enter_dir() {
 }
 
 [[ -s "$NVM_DIR/nvm.sh" ]] && export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
+# TODO: call _enter_dir from here to make sure it's called at startup?
 ##########################################
 # fzf
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
