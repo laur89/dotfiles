@@ -2277,15 +2277,31 @@ install_i3lock() {
 
 
 # https://github.com/Airblader/i3/wiki/Building-from-source
+# see also https://github.com/maestrogerardo/i3-gaps-deb for debian pkg building logic
 install_i3() {
     local tmpdir
 
-    apply_patches() {
+    _apply_patches() {
         local f
 
         f="$TMP_DIR/i3-patch-${RANDOM}.patch"
-        curl --fail -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
+        #curl --fail -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
+        curl --fail -o "$f" 'https://gist.githubusercontent.com/laur89/2ed98dc0bebd904ef3b5155505204c29/raw/cc14d86f152a1223bb50a7ec23697345c7c90e4c/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
         patch -p1 < "$f" || { err "applying window-icons.patch failed"; return 1; }
+
+        curl --fail -o "$f" 'https://raw.githubusercontent.com/maestrogerardo/i3-gaps-deb/master/patches/0001-debian-Disable-sanitizers.patch' || { err "disable-sanitizers-patch downlaod failed"; return 1; }
+		patch --forward -r - -p1 < "$f" || { err "applying disable-sanitizers.patch failed"; return 1; }
+    }
+
+	# from https://github.com/maestrogerardo/i3-gaps-deb/blob/master/i3-gaps-deb
+	_fix_rules() {
+		report "Fix i3 debian/rules file..."
+		cat <<EOF >>debian/rules
+override_dh_install:
+override_dh_installdocs:
+override_dh_installman:
+	dh_install -O--parallel
+EOF
     }
 
     readonly tmpdir="$TMP_DIR/i3-gaps-build-${RANDOM}"
@@ -2316,30 +2332,43 @@ install_i3() {
         libxcb-shape0-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
+	# alternatively, install build-deps based on what's in debian/control:
+	mk-build-deps \
+			-t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends -qqy' \
+			-i -r debian/control || { err "automatic build-dep resolver failed w/ [$?]"; return 1; }
+
     # clone the repository
     execute "git clone $I3_REPO_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
-    apply_patches  # TODO: should we bail on error?
+    _apply_patches  # TODO: should we bail on error?
+    _fix_rules
+    execute 'debuild -us -uc -b' || return 1
 
-    # compile & install
-    execute 'autoreconf --force --install' || return 1
-    execute 'rm -rf build/' || return 1
-    execute 'mkdir -p build && pushd build/' || return 1
+    # TODO: deprecated, check-install based way:
+    ## compile & install
+    #execute 'autoreconf --force --install' || return 1
+    #execute 'rm -rf build/' || return 1
+    #execute 'mkdir -p build && pushd build/' || return 1
 
-    # Disabling sanitizers is important for release versions!
-    # The prefix and sysconfdir are, obviously, dependent on the distribution.
-    execute '../configure --prefix=/usr/local --sysconfdir=/etc --disable-sanitizers' || return 1
-    execute 'make'
-    create_deb_install_and_store i3-gaps
-    execute "popd"
+    ## Disabling sanitizers is important for release versions!
+    ## The prefix and sysconfdir are, obviously, dependent on the distribution.
+    #execute '../configure --prefix=/usr/local --sysconfdir=/etc --disable-sanitizers' || return 1
+    #execute 'make'
+    #create_deb_install_and_store i3-gaps
+    #execute "popd"
 
+    # --------------------------
     # install required perl modules (eg for i3-save-tree):
     execute "pushd AnyEvent-I3" || return 1
-    execute 'perl Makefile.PL'
-    execute 'make'
-    create_deb_install_and_store i3-anyevent
-    install_block "libjson-any-perl"
-    execute "popd"
+    build_deb i3-anyevent
+    exit 0
+
+    # TODO: deprecated, check-install based way:
+    #execute 'perl Makefile.PL'
+    #execute 'make'
+    #create_deb_install_and_store i3-anyevent
+    #install_block "libjson-any-perl"
+    #execute "popd"
 
 
     execute "popd"
@@ -2373,8 +2402,8 @@ install_i3_deps() {
 
 
 # the ./build.sh version
-# https://github.com/jaagr/polybar/wiki/Compiling
-# https://github.com/jaagr/polybar
+# https://github.com/polybar/polybar/wiki/Compiling
+# https://github.com/polybar/polybar
 install_polybar() {
     local tmpdir
 
@@ -2382,7 +2411,7 @@ install_polybar() {
 
     report "installing polybar build dependencies..."
 
-    # note: clang is installed because of  https://github.com/jaagr/polybar/issues/572
+    # note: clang is installed because of  https://github.com/polybar/polybar/issues/572
     install_block '
         clang
         cmake
@@ -2441,6 +2470,74 @@ install_dwm() {
     execute "sudo make clean install"
     execute "popd"
     return 0
+}
+
+
+# see https://wiki.debian.org/Packaging/Intro?action=show&redirect=IntroDebianPackaging
+# and https://vincent.bernat.ch/en/blog/2019-pragmatic-debian-packaging
+build_deb() {
+	local pkg_name
+
+    pkg_name="$1"
+
+	if ! [[ -d debian ]]; then
+		report "no debian/ in pwd, generating scaffolding..."
+		execute 'mkdir -- debian' || return 1
+
+        # create compat
+		execute 'echo 11 > debian/compat' || return 1  # compat 11 is from debian 9+
+
+        # create changelog
+		echo "$pkg_name (0.0-0) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- la.packager.eu <la@packager.eu>  $(date --rfc-email)
+" > debian/changelog || return 1
+
+        # create control
+        echo "Source: $pkg_name
+Maintainer: Laur Aliste <laur.aliste@packager.eu>
+
+Package: $pkg_name
+Architecture: any
+Description: custom-built $pkg_name package
+" > debian/control || return 1
+
+        # create rules
+		#printf '#!/usr/bin/make -f
+
+#DISTRIBUTION = $(shell grep -Po "^PRETTY_NAME=.*Linux\s+\K.*(?=\")" /etc/os-release)
+#VERSION = 0.0.1
+#PACKAGEVERSION = $(VERSION)-0~$(DISTRIBUTION)0
+
+#%%:
+	#dh $@
+
+#override_dh_auto_clean:
+#override_dh_auto_test:
+#override_dh_auto_build:
+#override_dh_auto_install:
+	#./configure --prefix=/usr
+	#make
+	#make install DESTDIR=debian/memcached
+
+#override_dh_gencontrol:
+	#dh_gencontrol -- -v$(PACKAGEVERSION)' > debian/rules || return 1
+		printf '#!/usr/bin/make -f
+
+DISTRIBUTION = $(shell grep -Po "^PRETTY_NAME=.*Linux\s+\K.*(?=\")" /etc/os-release)
+VERSION = 0.0.1
+PACKAGEVERSION = $(VERSION)-0~$(DISTRIBUTION)0
+
+%%:
+	dh $@
+
+override_dh_gencontrol:
+	dh_gencontrol -- -v$(PACKAGEVERSION)' > debian/rules || return 1
+    fi
+
+    execute 'debuild -us -uc -b' || return 1
 }
 
 
@@ -3066,6 +3163,8 @@ install_from_repo() {
         apt-file
         apt-show-versions
         apt-xapian-index
+        unattended-upgrades
+        apt-listchanges
         git
         tig
         git-flow
@@ -3090,6 +3189,8 @@ install_from_repo() {
         gtk2-engines-murrine
         gtk2-engines-pixbuf
         arc-theme
+        numix-gtk-theme
+        numix-icon-theme
         meld
         pastebinit
         synergy
