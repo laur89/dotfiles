@@ -22,19 +22,21 @@ steps separately apart from the full installation mode.
 1. Install Debian testing release netinstall (in reality, any Debian base distro
    should work fine).
     * can be found from https://www.debian.org/devel/debian-installer/
-2. wget https://github.com/laur89/dotfiles/raw/master/.bootstrap/install_system.sh
-2. or wget https://github.com/laur89/dotfiles/raw/develop/.bootstrap/install_system.sh
-   for develop.
-3. chmod +x install_system.sh
-4. install sudo, if not already installed:
+1. optionally preseed the installation:
+    * `hostname=myhostname domain=internal.yourdomain.tld debian-installer/allow_unauthenticated_ssl=true auto url=http(s)://webserver/path/preseed.cfg`
+1. wget https://github.com/laur89/dotfiles/raw/master/.bootstrap/install_system.sh
+    * or wget https://github.com/laur89/dotfiles/raw/develop/.bootstrap/install_system.sh
+      for develop branch.
+1. chmod +x install_system.sh
+1. install sudo, if not already installed:
     * su
     * apt-get install sudo
-5. add your user to /etc/sudoers file, by:
+1. add your user to /etc/sudoers file, by:
     * echo 'YOUR_USER ALL=(ALL) ALL' >> /etc/sudoers
     *   or:
     * adduser  YOUR_USERNAME  sudo    (and logout + login afterwards)
-6. sudo apt-get update
-7. execute script:
+1. sudo apt-get update
+1. execute script:
     * ./install_system.sh  personal|work
     * select the 'full-install' option.
 

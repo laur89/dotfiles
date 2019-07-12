@@ -2319,7 +2319,7 @@ install_i3() {
     # clone the repository
     execute "git clone $I3_REPO_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
-    apply_patches
+    apply_patches  # TODO: should we bail on error?
 
     # compile & install
     execute 'autoreconf --force --install' || return 1
@@ -3291,13 +3291,6 @@ install_block() {
         #fi
         execute "sudo apt-get -qq --dry-run --no-install-recommends install $extra_apt_params $pkg"
         sig=$?
-
-        #if [[ "$sig" -ne 0 ]]; then
-            #if [[ "$sig" -eq 100 ]]; then
-                #execute 'sudo apt-get --yes update'
-                #execute 'sudo apt-get --yes autoremove'
-            #fi
-        #fi
 
         if [[ "$sig" -ne 0 ]]; then
             execute 'sudo apt-get --yes update'
