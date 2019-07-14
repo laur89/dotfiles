@@ -23,21 +23,29 @@ steps separately apart from the full installation mode.
    should work fine).
     * can be found from https://www.debian.org/devel/debian-installer/
 1. optionally preseed the installation:
-    * `hostname=myhostname domain=internal.yourdomain.tld debian-installer/allow_unauthenticated_ssl=true auto url=http(s)://webserver/path/preseed.cfg`
+    * `hostname=myhostname domain=internal.yourdomain.tld
+      debian-installer/allow_unauthenticated_ssl=true
+      auto url=http(s)://webserver/path/preseed.cfg
+      passwd/root-password password r00tpass
+      passwd/root-password-again password r00tpass
+      passwd/user-fullname string Full Name
+      passwd/username string username
+      passwd/user-password password userpass
+      passwd/user-password-again password userpass`
 1. wget https://github.com/laur89/dotfiles/raw/master/.bootstrap/install_system.sh
-    * or wget https://github.com/laur89/dotfiles/raw/develop/.bootstrap/install_system.sh
+    * or `wget https://github.com/laur89/dotfiles/raw/develop/.bootstrap/install_system.sh`
       for develop branch.
-1. chmod +x install_system.sh
+1. `chmod +x install_system.sh`
 1. install sudo, if not already installed:
     * su
     * apt-get install sudo
 1. add your user to /etc/sudoers file, by:
-    * echo 'YOUR_USER ALL=(ALL) ALL' >> /etc/sudoers
+    * `echo 'YOUR_USER ALL=(ALL) ALL' >> /etc/sudoers`
     *   or:
-    * adduser  YOUR_USERNAME  sudo    (and logout + login afterwards)
+    * `adduser  YOUR_USERNAME  sudo`    (and logout + login afterwards)
 1. sudo apt-get update
 1. execute script:
-    * ./install_system.sh  personal|work
+    * `./install_system.sh  personal|work`
     * select the 'full-install' option.
 
 ### Single task:

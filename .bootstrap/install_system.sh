@@ -855,7 +855,7 @@ install_deps() {
     execute "curl -s 'https://get.sdkman.io' | bash"  # TODO depends whether win or linux
 
 
-    execute "/usr/bin/env python3 -m pip install --user --upgrade wheel"    # https://pypi.org/project/wheel/  (wheel is py packaging standard; TODO: as per https://stackoverflow.com/a/56504270/1803648, this should soon be history)
+    execute "/usr/bin/env python3 -m pip install --user --upgrade wheel"    # https://pypi.org/project/wheel/  (wheel is py packaging standard; TODO: as per https://stackoverflow.com/a/56504270/1803648, this pkg should soon be provided by default)
 
     # TODO: following are not deps, are they?:
     # git-playback; install _either_ of these two (ie either from jianli or mmozuras):
