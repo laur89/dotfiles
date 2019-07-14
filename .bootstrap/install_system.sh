@@ -2234,7 +2234,6 @@ install_i3lock() {
     install_block '
       autoconf
       automake
-      checkinstall
       libev-dev
       libxcb-composite0
       libxcb-composite0-dev
@@ -2254,20 +2253,19 @@ install_i3lock() {
       libxkbcommon-dev
       libcairo2-dev
       libxcb1-dev
-      libxcb-dpms0-dev
-      libev-dev' || { err 'failed to install i3lock build deps. abort.'; return 1; }
+      libxcb-dpms0-dev' || { err 'failed to install i3lock build deps. abort.'; return 1; }
 
     # clone the repository
     execute "git clone $I3_LOCK_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
 
     # compile & install
-    execute 'git tag -f "git-$(git rev-parse --short HEAD)"' || return 1
+    execute "git tag -f 'git-$(git rev-parse --short HEAD)'" || return 1
     execute 'autoreconf --install' || return 1
     execute './configure' || return 1
     execute 'make' || return 1
 
-    create_deb_install_and_store i3lock
+    create_deb_install_and_store i3lock  # TODO convert to non-checkinstall
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -2286,17 +2284,17 @@ install_i3() {
 
         f="$TMP_DIR/i3-patch-${RANDOM}.patch"
         #curl --fail -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
-        curl --fail -o "$f" 'https://gist.githubusercontent.com/laur89/2ed98dc0bebd904ef3b5155505204c29/raw/cc14d86f152a1223bb50a7ec23697345c7c90e4c/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
+        curl --fail -o "$f" 'https://gist.githubusercontent.com/laur89/2ed98dc0bebd904ef3b5155505204c29/raw/cc14d86f152a1223bb50a7ec23697345c7c90e4c/window-icons.patch' || { err "window-icons-patch downlaod failed"; return 1; }
         patch -p1 < "$f" || { err "applying window-icons.patch failed"; return 1; }
 
         curl --fail -o "$f" 'https://raw.githubusercontent.com/maestrogerardo/i3-gaps-deb/master/patches/0001-debian-Disable-sanitizers.patch' || { err "disable-sanitizers-patch downlaod failed"; return 1; }
-		patch --forward -r - -p1 < "$f" || { err "applying disable-sanitizers.patch failed"; return 1; }
+        patch --forward -r - -p1 < "$f" || { err "applying disable-sanitizers.patch failed"; return 1; }
     }
 
-	# from https://github.com/maestrogerardo/i3-gaps-deb/blob/master/i3-gaps-deb
-	_fix_rules() {
-		report "Fix i3 debian/rules file..."
-		cat <<EOF >>debian/rules
+    # from https://github.com/maestrogerardo/i3-gaps-deb/blob/master/i3-gaps-deb
+    _fix_rules() {
+        report "Fix i3 debian/rules file..."
+        cat <<EOF >>debian/rules
 override_dh_install:
 override_dh_installdocs:
 override_dh_installman:
@@ -2332,16 +2330,19 @@ EOF
         libxcb-shape0-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-	# alternatively, install build-deps based on what's in debian/control:
-	mk-build-deps \
-			-t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends -qqy' \
-			-i -r debian/control || { err "automatic build-dep resolver failed w/ [$?]"; return 1; }
 
     # clone the repository
     execute "git clone $I3_REPO_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
+
     _apply_patches  # TODO: should we bail on error?
     _fix_rules
+
+    # alternatively, install build-deps based on what's in debian/control:
+    mk-build-deps \
+            -t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends -qqy' \
+            -i -r debian/control || { err "automatic build-dep resolver failed w/ [$?]"; return 1; }
+
     execute 'debuild -us -uc -b' || return 1
 
     # TODO: deprecated, check-install based way:
@@ -2359,9 +2360,10 @@ EOF
 
     # --------------------------
     # install required perl modules (eg for i3-save-tree):
-    execute "pushd AnyEvent-I3" || return 1
-    build_deb i3-anyevent
-    exit 0
+    #execute "pushd AnyEvent-I3" || return 1
+    # TODO: libanyevent-i3-perl from repo?
+    #build_deb i3-anyevent
+    install_block 'libanyevent-i3-perl' # alternative to building it ourselves
 
     # TODO: deprecated, check-install based way:
     #execute 'perl Makefile.PL'
@@ -2369,7 +2371,7 @@ EOF
     #create_deb_install_and_store i3-anyevent
     #install_block "libjson-any-perl"
     #execute "popd"
-
+    # --------------------------
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -2439,7 +2441,7 @@ install_polybar() {
     execute "git clone --recursive $POLYBAR_REPO_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
     execute "./build.sh --auto --all-features --no-install" || return 1
-    create_deb_install_and_store polybar
+    create_deb_install_and_store polybar  # TODO: remove checkinstall
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -2476,26 +2478,27 @@ install_dwm() {
 # see https://wiki.debian.org/Packaging/Intro?action=show&redirect=IntroDebianPackaging
 # and https://vincent.bernat.ch/en/blog/2019-pragmatic-debian-packaging
 build_deb() {
-	local pkg_name
+    local pkg_name
 
     pkg_name="$1"
 
-	if ! [[ -d debian ]]; then
-		report "no debian/ in pwd, generating scaffolding..."
-		execute 'mkdir -- debian' || return 1
+    if ! [[ -d debian ]]; then
+        report "no debian/ in pwd, generating scaffolding..."
+        execute 'mkdir -- debian' || return 1
 
-        # create compat
-		execute 'echo 11 > debian/compat' || return 1  # compat 11 is from debian 9+
+        # create compat:
+        execute 'echo 11 > debian/compat' || return 1  # compat 11 is from debian 9+
 
-        # create changelog
-		echo "$pkg_name (0.0-0) UNRELEASED; urgency=medium
+        # create changelog:
+        echo "$pkg_name (0.0-0) UNRELEASED; urgency=medium
 
   * New upstream release
 
  -- la.packager.eu <la@packager.eu>  $(date --rfc-email)
 " > debian/changelog || return 1
+        # OR use dhc:  $ dch --create -v 0.0-0 --package $pkg_name
 
-        # create control
+        # create control:
         echo "Source: $pkg_name
 Maintainer: Laur Aliste <laur.aliste@packager.eu>
 
@@ -2504,8 +2507,8 @@ Architecture: any
 Description: custom-built $pkg_name package
 " > debian/control || return 1
 
-        # create rules
-		#printf '#!/usr/bin/make -f
+        # create rules:
+        #printf '#!/usr/bin/make -f
 
 #DISTRIBUTION = $(shell grep -Po "^PRETTY_NAME=.*Linux\s+\K.*(?=\")" /etc/os-release)
 #VERSION = 0.0.1
@@ -2524,19 +2527,25 @@ Description: custom-built $pkg_name package
 
 #override_dh_gencontrol:
 	#dh_gencontrol -- -v$(PACKAGEVERSION)' > debian/rules || return 1
-		printf '#!/usr/bin/make -f
+        printf '#!/usr/bin/make -f
 
-DISTRIBUTION = $(shell grep -Po "^PRETTY_NAME=.*Linux\s+\K.*(?=\")" /etc/os-release)
+#DISTRIBUTION = $(shell sed -n "s/^VERSION_CODENAME=//p" /etc/os-release)
+#DISTRIBUTION = $(shell grep -Po "^PRETTY_NAME=.*Linux\s+\K.*(?=\\")" /etc/os-release)
+DISTRIBUTION = testing
 VERSION = 0.0.1
 PACKAGEVERSION = $(VERSION)-0~$(DISTRIBUTION)0
 
 %%:
 	dh $@
 
+override_dh_auto_test:
+#override_dh_auto_configure:
+#	dh_auto_configure -- --prefix=/usr/local
 override_dh_gencontrol:
 	dh_gencontrol -- -v$(PACKAGEVERSION)' > debian/rules || return 1
     fi
 
+    # note built .deb will end up in a parent dir:
     execute 'debuild -us -uc -b' || return 1
 }
 
@@ -2808,7 +2817,7 @@ build_and_install_vim() {
 
     execute "make VIMRUNTIMEDIR=$expected_runtimedir" || { err 'vim make failed'; return 1; }
     #!(make sure rutimedir is correct; at this moment 74 was)
-    create_deb_install_and_store vim || { err; return 1; }
+    create_deb_install_and_store vim || { err; return 1; }  # TODO: remove checkinstall
 
     execute "popd"
     execute "sudo rm -rf -- $tmpdir"
@@ -3257,7 +3266,6 @@ install_from_repo() {
         exuberant-ctags
         shellcheck
         ranger
-        spacefm-gtk3
         screenfetch
         neofetch
         maim
@@ -3285,6 +3293,9 @@ install_from_repo() {
         copyq
         googler
     )
+    # old/deprecated block3:
+    #         spacefm-gtk3
+    #
 
     declare -ar block4_nonwin=(
         charles-proxy
@@ -3645,7 +3656,7 @@ setup_docker() {
 #
 # make sure resolvconf pkg is installed for seamless resolv config updates & dnsmasq usage (as per https://unix.stackexchange.com/a/406724/47501)
 enable_network_manager() {
-    local net_manager_conf_file dnsmasq_conf
+    local net_manager_conf_file dnsmasq_conf i
 
     readonly net_manager_conf_file='/etc/NetworkManager/NetworkManager.conf'
     readonly dnsmasq_conf='/etc/dnsmasq.conf'
@@ -3656,6 +3667,9 @@ enable_network_manager() {
     sudo crudini --merge "$net_manager_conf_file" <<'EOF'
 [ifupdown]
 managed=true
+
+[main]
+rc-manager=resolvconf
 EOF
 
     [[ $? -ne 0 ]] && { err "updating [$net_manager_conf_file] exited w/ failure"; return 1; }
@@ -3666,11 +3680,28 @@ EOF
     #     dig +short chaos txt misses.bind
     #     dig +short chaos txt cachesize.bind
     [[ -f "$dnsmasq_conf" ]] || { err "[$dnsmasq_conf] does not exist"; return 1; }
-    execute "sudo sed -i --follow-symlinks '/^cache-size=.*$/d' '$dnsmasq_conf'"
+    execute "sudo sed -i --follow-symlinks '/^cache-size=/d' '$dnsmasq_conf'"
     execute "echo cache-size=10000 | sudo tee --append $dnsmasq_conf > /dev/null"
 
-    execute "sudo sed -i --follow-symlinks '/^local-ttl=.*$/d' '$dnsmasq_conf'"
+    execute "sudo sed -i --follow-symlinks '/^local-ttl=/d' '$dnsmasq_conf'"
     execute "echo local-ttl=10 | sudo tee --append $dnsmasq_conf > /dev/null"
+
+    # lock dnsmasq to be exposed only to localhost:
+    execute "sudo sed -i --follow-symlinks '/^listen-address=/d' '$dnsmasq_conf'"
+    execute "echo listen-address=::1,127.0.0.1 | sudo tee --append $dnsmasq_conf > /dev/null"
+
+    # TODO: not sure about this bit:
+    #if [[ "$MODE" != work ]]; then
+        #execute "sudo sed -i --follow-symlinks '/^server=/d' '$dnsmasq_conf'"
+        #for i in 1.1.1.1   8.8.8.8; do
+            #execute "echo server=$i | sudo tee --append $dnsmasq_conf > /dev/null"
+        #done
+
+        ## no-resolv stops dnsmasq from reading /etc/resolv.conf, and makes it only rely on servers defined in $dnsmasq_conf
+        #if ! grep -q '^no-resolv$' "$dnsmasq_conf"; then
+            #execute "echo no-resolv | sudo tee --append $dnsmasq_conf > /dev/null"
+        #fi
+    #fi
 }
 
 
@@ -4431,7 +4462,7 @@ cleanup() {
     [[ "$__CLEANUP_EXECUTED_MARKER" -eq 1 ]] && return  # don't invoke more than once.
 
     # shut down the build container:
-    if [[ -n "$(docker ps -qa -f status=running -f name="$BUILD_DOCK" --format '{{.Names}}')" ]]; then
+    if command -v docker >/dev/null 2>&1 && [[ -n "$(docker ps -qa -f status=running -f name="$BUILD_DOCK" --format '{{.Names}}')" ]]; then
         execute "docker stop '$BUILD_DOCK'" || err "[cleanup] stopping build container [$BUILD_DOCK] failed"
     fi
 

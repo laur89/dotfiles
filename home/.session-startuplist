@@ -92,10 +92,10 @@ if is_native && ! is_proc_running xss-lock; then
     #xss-lock -n /home/laur/bri.sh -- lock -n
 fi
 
-if ! is_proc_running compton; then
-    echo "Launching compton..."
-    compton --config ~/.compton.conf --respect-prop-shadow --daemon
-fi
+#if ! is_proc_running compton; then
+    #echo "Launching compton..."
+    #compton --config ~/.compton.conf --respect-prop-shadow --daemon
+#fi
 
 if is_native && ! is_proc_running syndaemon && is_laptop; then
     syndaemon -t -K -i 1.5 &
