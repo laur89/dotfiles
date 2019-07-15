@@ -27,7 +27,7 @@ readonly RAMBOX_REPO_LOC='https://github.com/saenzramiro/rambox.git'  # closed s
 readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX - open password manager forked from keepass project
 readonly GOFORIT_REPO_LOC='https://github.com/mank319/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
-readonly SYNERGY_REPO_LOC='https://github.com/symless/synergy.git'    # synergy - share keyboard&mouse between computers on same LAN
+readonly SYNERGY_REPO_LOC='https://github.com/symless/synergy-core.git'    # synergy - share keyboard&mouse between computers on same LAN
 readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u172-b11/a58eab1ec242421181065cdc37240b08/jdk-8u172-linux-x64.tar.gz'
 #readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/10.0.1+10/fb4372174a714e6b8c52526dc134031e/jdk-10.0.1_linux-x64_bin.tar.gz'
                                                                           #       http://www.oracle.com/technetwork/java/javase/downloads/index.html
@@ -901,6 +901,7 @@ install_deps() {
         libgdbm-dev
     '
     execute 'curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-installer | bash'
+    # note rbenv-doctor can be ran to verify installation:  $ curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-doctor | bash
 
     # some py deps requred by scripts:
     execute "/usr/bin/env python3 -m pip install --user --upgrade exchangelib icalendar arrow"
@@ -1541,7 +1542,7 @@ install_own_builds() {
     #install_rambox
     install_franz
     install_ripgrep
-    install_rebar
+    #install_rebar
     install_fd
     install_lazygit
     install_gitin
@@ -1999,8 +2000,8 @@ install_webdev() {
 }
 
 
-# building instructions from https://github.com/symless/synergy/wiki/Compiling
-# TODO: latest built binaries also avail from https://github.com/symless/synergy/releases/latest
+# building instructions from https://github.com/symless/synergy-core/wiki/Compiling
+# TODO: latest built binaries also avail from https://symless.com/synergy/downloads
 install_synergy() {
     local tmpdir
 
@@ -2539,8 +2540,8 @@ PACKAGEVERSION = $(VERSION)-0~$(DISTRIBUTION)0
 	dh $@
 
 override_dh_auto_test:
-#override_dh_auto_configure:
-#	dh_auto_configure -- --prefix=/usr/local
+override_dh_auto_configure:
+	dh_auto_configure -- --prefix=/usr/local --disable-sanitizers
 override_dh_gencontrol:
 	dh_gencontrol -- -v$(PACKAGEVERSION)' > debian/rules || return 1
     fi

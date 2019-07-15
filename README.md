@@ -26,14 +26,14 @@ steps separately apart from the full installation mode.
       more specifically)
 1. optionally preseed the installation (`esc` when graphical menu appears)
     * `auto url=http(s)://webserver/path/preseed.cfg
-      hostname=myhostname domain=internal.yourdomain.tld
       debian-installer/allow_unauthenticated_ssl=true
-      passwd/root-password password r00tpass
-      passwd/root-password-again password r00tpass
-      passwd/user-fullname string Full Name
-      passwd/username string username
-      passwd/user-password password userpass
-      passwd/user-password-again password userpass`
+      hostname=myhostname domain=internal.yourdomain.tld
+      passwd/root-password=r00tpass
+      passwd/root-password-again=r00tpass
+      passwd/user-fullname='Full Name'
+      passwd/username=username
+      passwd/user-password=userpass
+      passwd/user-password-again=userpass`
 1. wget https://github.com/laur89/dotfiles/raw/master/.bootstrap/install_system.sh
     * or `wget https://github.com/laur89/dotfiles/raw/develop/.bootstrap/install_system.sh`
       for develop branch.
