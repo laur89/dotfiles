@@ -21,9 +21,27 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export KAFKA_HOME=/data/progs/kafka/kafka
 
     # add additional locations to $PATH:
-    export PATH=/usr/local/sbin:/usr/sbin:/sbin:$JAVA_HOME/bin:$M2:$BASE_DATA_DIR/dev/scripts/system:$BASE_DATA_DIR/dev/scripts/git:$HOME/bin:$GRADLE_HOME/bin:$PATH
-    # ruby env (rbenv):
-    export PATH="$HOME/.rbenv/bin:$PATH"
+    i=''
+    j=''
+    for i in \
+            /usr/local/sbin \
+            /usr/sbin \
+            /sbin \
+            "$JAVA_HOME/bin" \
+            "$M2" \
+            "$BASE_DATA_DIR/dev/scripts/system" \
+            "$BASE_DATA_DIR/dev/scripts/git" \
+            "$HOME/bin" \
+            "$HOME/.local/bin" \
+            "$GRADLE_HOME/bin"; do
+        if [[ -d "$i" && :$PATH: != *:"$i":* ]]; then
+            j+="$i:"
+        fi
+    done
+    [[ -n "$j" ]] && export PATH="${j}$PATH"
+    unset i j
+    # ruby env (rbenv):  # shouldn't be needed, as rbenv is already sourced from .bashrc
+    #export PATH="$HOME/.rbenv/bin:$PATH"
 
     # set path for global, but non-sudo, npm pacakges:  (https://stackoverflow.com/questions/10081293/install-npm-into-home-directory-with-distribution-nodejs-package-ubuntu/13021677#13021677)
     # note this also requires ~/.npmrc with 'prefix = ~/.npm-packages', which is not
@@ -38,8 +56,8 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     #NODE_PATH="$NPM_PACKAGES/lib/node_modules:$NODE_PATH"
 
 
-    export CUSTOM_LOGDIR="/var/log/custom_logs"
-    export PANEL_FIFO="/tmp/panel-fifo"  # for BSPWM
+    export CUSTOM_LOGDIR='/var/log/custom_logs'
+    export PANEL_FIFO='/tmp/panel-fifo'  # for BSPWM
 
     #export HGRCPATH="$HOME/.config/hg/hgrc"
     export PASSWORD_STORE_DIR="$HOME/.config/password-store"

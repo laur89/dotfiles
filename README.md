@@ -22,10 +22,12 @@ steps separately apart from the full installation mode.
 1. Install Debian testing release netinstall (in reality, any Debian base distro
    should work fine).
     * can be found from https://www.debian.org/devel/debian-installer/
-1. optionally preseed the installation:
-    * `hostname=myhostname domain=internal.yourdomain.tld
+    * (or https://cdimage.debian.org/cdimage/daily-builds/daily/arch-latest/amd64/iso-cd/
+      more specifically)
+1. optionally preseed the installation (`esc` when graphical menu appears)
+    * `auto url=http(s)://webserver/path/preseed.cfg
+      hostname=myhostname domain=internal.yourdomain.tld
       debian-installer/allow_unauthenticated_ssl=true
-      auto url=http(s)://webserver/path/preseed.cfg
       passwd/root-password password r00tpass
       passwd/root-password-again password r00tpass
       passwd/user-fullname string Full Name
