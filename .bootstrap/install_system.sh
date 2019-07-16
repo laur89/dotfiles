@@ -20,7 +20,7 @@ readonly I3_LOCK_LOC='https://github.com/PandorasFox/i3lock-color'    # i3lock-c
 readonly I3_LOCK_FANCY_LOC='https://github.com/meskarune/i3lock-fancy'    # i3lock-fancy
 readonly NERD_FONTS_REPO_LOC='https://github.com/ryanoasis/nerd-fonts'
 readonly PWRLINE_FONTS_REPO_LOC='https://github.com/powerline/fonts'
-readonly POLYBAR_REPO_LOC='https://github.com/jaagr/polybar'          # polybar
+readonly POLYBAR_REPO_LOC='https://github.com/polybar/polybar.git'    # polybar
 readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - yeah.
 readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
 readonly RAMBOX_REPO_LOC='https://github.com/saenzramiro/rambox.git'  # closed source franz alt.
@@ -157,13 +157,15 @@ check_dependencies() {
 
     readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
-    for prog in git cmp wget curl tar unzip gnupg realpath dirname basename tee mktemp file; do
+    for prog in git cmp wget curl tar unzip realpath dirname basename tee mktemp file; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
             install_block "$prog" || { err "unable to install required prog [$prog] this script depends on. abort."; exit 1; }
             report "...done"
         fi
     done
+
+    command -v gpg >/dev/null || install_block gnupg
 
     # TODO: need to create dev/ already here, since both dotfiles and private-common
     # either point to it, or point at something in it; not a good solution.
@@ -2222,12 +2224,10 @@ install_keepassx() {
 
 # https://github.com/PandorasFox/i3lock-color
 # this is a depency for i3lock-fancy.
-# TODO: fyi apt has i3lock-fancy; if it's new enough (newer some some 2016 build),
-# this could be deprecated
 install_i3lock() {
     local tmpdir
 
-    readonly tmpdir="$TMP_DIR/i3lock-build-${RANDOM}"
+    readonly tmpdir="$TMP_DIR/i3lock-build-${RANDOM}/build"
     report "building i3lock..."
 
     report "installing i3lock build dependencies..."
@@ -2259,14 +2259,15 @@ install_i3lock() {
     # clone the repository
     execute "git clone $I3_LOCK_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
-
-    # compile & install
     execute "git tag -f 'git-$(git rev-parse --short HEAD)'" || return 1
-    execute 'autoreconf --install' || return 1
-    execute './configure' || return 1
-    execute 'make' || return 1
+    build_deb i3lock-color
 
-    create_deb_install_and_store i3lock  # TODO convert to non-checkinstall
+    # old, checkinstall-compliant logic:
+    ## compile & install
+    #execute 'autoreconf --install' || return 1
+    #execute './configure' || return 1
+    #execute 'make' || return 1
+    #create_deb_install_and_store i3lock
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -2303,7 +2304,7 @@ override_dh_installman:
 EOF
     }
 
-    readonly tmpdir="$TMP_DIR/i3-gaps-build-${RANDOM}"
+    readonly tmpdir="$TMP_DIR/i3-gaps-build-${RANDOM}/build"
     report "building i3-gaps... (note install_i3_deps() will be called in the end)"; sleep 2
 
     report "installing i3 build dependencies..."
@@ -2340,9 +2341,9 @@ EOF
     _fix_rules
 
     # alternatively, install build-deps based on what's in debian/control:
-    mk-build-deps \
+    sudo mk-build-deps \
             -t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends -qqy' \
-            -i -r debian/control || { err "automatic build-dep resolver failed w/ [$?]"; return 1; }
+            -i -r debian/control || { err "automatic build-dep resolver for i3 failed w/ [$?]"; return 1; }
 
     execute 'debuild -us -uc -b' || return 1
 
@@ -2393,7 +2394,7 @@ install_i3_deps() {
     ##########################################
     # install i3-quickterm   # https://github.com/lbonn/i3-quickterm
     curl -o "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3-quickterm' \
-        && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-quickterm"
+            && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-quickterm"
 
 
     # create links of our own i3 scripts on $PATH:
@@ -2419,24 +2420,28 @@ install_polybar() {
         clang
         cmake
         cmake-data
+        pkg-config
+        python3-sphinx
         libcairo2-dev
         libxcb1-dev
-        libxcb-ewmh-dev
-        libxcb-icccm4-dev
-        libxcb-image0-dev
-        libxcb-randr0-dev
         libxcb-util0-dev
-        libxcb-xkb-dev
-        pkg-config
+        libxcb-randr0-dev
+        libxcb-composite0-dev
         python-xcbgen
         xcb-proto
+        libxcb-image0-dev
+        libxcb-ewmh-dev
+        libxcb-icccm4-dev
+
+        libxcb-xkb-dev
         libxcb-xrm-dev
         libxcb-cursor-dev
         libasound2-dev
         libpulse-dev
+        libjsoncpp-dev
         libmpdclient-dev
-        libiw-dev
         libcurl4-openssl-dev
+        libnl-genl-3-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
     execute "git clone --recursive $POLYBAR_REPO_LOC '$tmpdir'" || return 1
@@ -2478,8 +2483,10 @@ install_dwm() {
 
 # see https://wiki.debian.org/Packaging/Intro?action=show&redirect=IntroDebianPackaging
 # and https://vincent.bernat.ch/en/blog/2019-pragmatic-debian-packaging
+#
+# https://github.com/phusion/debian-packaging-for-the-modern-developer/tree/master/tutorial-1
 build_deb() {
-    local pkg_name
+    local pkg_name deb
 
     pkg_name="$1"
 
@@ -2548,6 +2555,11 @@ override_dh_gencontrol:
 
     # note built .deb will end up in a parent dir:
     execute 'debuild -us -uc -b' || return 1
+
+    # install:
+    deb="$(find ../ -mindepth 1 -maxdepth 1 -type f -name '*.deb')"
+    [[ -f "$deb" ]] || { err "couldn't find built [$pkg_name] .deb in parent dir"; return 1; }
+    execute "sudo dpkg -i '$deb'" || { err "installing built .deb [$deb] failed"; return 1; }
 }
 
 
@@ -3121,6 +3133,7 @@ install_from_repo() {
         dosfstools
         checkinstall
         build-essential
+        devscripts
         cmake
         ruby
         python3
@@ -3130,7 +3143,6 @@ install_from_repo() {
         python-dev
         python-flake8
         python3-flake8
-        devscripts
         curl
         lshw
     )
@@ -3411,12 +3423,12 @@ install_block() {
 
             if execute "sudo apt-get -qq --dry-run --no-install-recommends install $extra_apt_params $pkg"; then
                 #sleep 0.1
-                execute "sudo apt-get --yes install --no-install-recommends $extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
+                execute "sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install --no-install-recommends $extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
             else
                 dry_run_failed+=( $pkg )
             fi
         else
-            execute "sudo apt-get --yes install --no-install-recommends $extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
+            execute "sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install --no-install-recommends $extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
         fi
     done
 
