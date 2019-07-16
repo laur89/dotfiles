@@ -148,6 +148,11 @@ validate_and_init() {
 
     # keep-alive: update existing `sudo` time stamp
     while true; do sudo -n true; sleep 30; kill -0 "$$" || exit; done 2>/dev/null &
+
+    # we need to make sure our system clock is roughly right; otherwise stuff like apt-get might start failing:
+    #is_native || execute "rdate -s tick.greyware.com"
+    #is_native || execute "tlsdate -V -n -H encrypted.google.com"
+    update_clock
 }
 
 
@@ -1272,11 +1277,6 @@ setup() {
 
     [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG='/tmp/.git-rls-log.tmp'  # log of all installed debs/binaries from git releases/latest page
 
-    # we need to make sure our system clock is roughly right; otherwise stuff like apt-get might start failing:
-    #is_native || execute "rdate -s tick.greyware.com"
-    #is_native || execute "tlsdate -V -n -H encrypted.google.com"
-    update_clock
-
     setup_dirs  # has to come after $SHELL_ENVS sourcing so the env vars are in place
     setup_config_files
     setup_additional_apt_keys_and_sources
@@ -2285,8 +2285,8 @@ install_i3() {
         local f
 
         f="$TMP_DIR/i3-patch-${RANDOM}.patch"
-        #curl --fail -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "windows-icons-patch downlaod failed"; return 1; }
-        curl --fail -o "$f" 'https://gist.githubusercontent.com/laur89/2ed98dc0bebd904ef3b5155505204c29/raw/cc14d86f152a1223bb50a7ec23697345c7c90e4c/window-icons.patch' || { err "window-icons-patch downlaod failed"; return 1; }
+        #curl --fail -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "window-icons-patch downlaod failed"; return 1; }
+        curl -L -k --fail -o "$f" 'https://gist.githubusercontent.com/laur89/2ed98dc0bebd904ef3b5155505204c29/raw/cc14d86f152a1223bb50a7ec23697345c7c90e4c/window-icons.patch' || { err "window-icons-patch downlaod failed"; return 1; }
         patch -p1 < "$f" || { err "applying window-icons.patch failed"; return 1; }
 
         curl --fail -o "$f" 'https://raw.githubusercontent.com/maestrogerardo/i3-gaps-deb/master/patches/0001-debian-Disable-sanitizers.patch' || { err "disable-sanitizers-patch downlaod failed"; return 1; }
@@ -2341,11 +2341,14 @@ EOF
     _fix_rules
 
     # alternatively, install build-deps based on what's in debian/control:
-    sudo mk-build-deps \
-            -t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends -qqy' \
-            -i -r debian/control || { err "automatic build-dep resolver for i3 failed w/ [$?]"; return 1; }
+    # TODO: mk-build-deps is buggy - it depends on equivs which is not automatically pulled in
+    #sudo mk-build-deps \
+            #-t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends -qqy' \
+            #-i -r debian/control || { err "automatic build-dep resolver for i3 failed w/ [$?]"; return 1; }
 
     execute 'debuild -us -uc -b' || return 1
+    execute 'sudo dpkg -i ../i3-wm_*.deb'
+    execute 'sudo dpkg -i ../i3_*.deb'
 
     # TODO: deprecated, check-install based way:
     ## compile & install
@@ -2966,7 +2969,6 @@ install_fonts() {
     install_block '
         fonts-powerline
         ttf-dejavu
-        ttf-liberation
         ttf-mscorefonts-installer
         xfonts-terminus
         xfonts-75dpi
@@ -3129,7 +3131,6 @@ install_from_repo() {
         dunst
         rofi
         compton
-        gksu
         dosfstools
         checkinstall
         build-essential
@@ -3260,6 +3261,7 @@ install_from_repo() {
     declare -ar block3=(
         firefox/unstable
         chromium
+        chromium-sandbox
         rxvt-unicode-256color
         seafile-gui
         seafile-cli
@@ -3563,7 +3565,9 @@ full_install() {
 
     setup
 
-    execute "sudo apt-get --yes update"  # needs to be first
+    #execute "sudo apt-get --yes update"  # needs to be first
+    retry 2 "sudo apt-get --yes update" || err "apt-get update failed with $?"
+
     is_windows || upgrade_kernel  # keep this check is_windows(), not is_native();
     install_fonts
     install_progs

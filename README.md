@@ -30,7 +30,7 @@ steps separately apart from the full installation mode.
       hostname=myhostname domain=internal.yourdomain.tld
       passwd/root-password=r00tpass
       passwd/root-password-again=r00tpass
-      passwd/user-fullname='Full Name'
+      passwd/user-fullname="Full Name"
       passwd/username=username
       passwd/user-password=userpass
       passwd/user-password-again=userpass`
