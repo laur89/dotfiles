@@ -32,7 +32,7 @@ case "$input" in
             i3 &
             #sleep 1
             source "$HOME/.common_startup"
-        else
+        else  # both native & virt:
             source "$HOME/.common_startup"
             exec i3
         fi
@@ -69,7 +69,7 @@ case "$input" in
         fi
         ;;
     *)
-        exec "$DEFAULT_SESSION"
+        exec "$DEFAULT_SESSION"  # TODO: remove default, and keep looping?
         ;;
 esac
 
