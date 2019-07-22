@@ -470,8 +470,8 @@ exec --no-startup-id i3-cycle-focus.py --history 2
 bindsym $mod1+Tab exec --no-startup-id i3-cycle-focus.py --switch
 
 # start focus change listener scripts:
-exec --no-startup-id i3-cycle-exclude-tabs.py
-exec --no-startup-id i3-cycle-tabs.py
+exec_always --no-startup-id i3-cycle-exclude-tabs.py
+exec_always --no-startup-id i3-cycle-tabs.py
 
 # start i3expo daemon:
 exec --no-startup-id i3expod.py
