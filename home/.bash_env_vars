@@ -33,15 +33,14 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
             "$BASE_DATA_DIR/dev/scripts/git" \
             "$HOME/bin" \
             "$HOME/.local/bin" \
-            "$GRADLE_HOME/bin"; do
+            "$GRADLE_HOME/bin" \
+            "$HOME/.rbenv/bin"; do
         if [[ -d "$i" && :$PATH: != *:"$i":* ]]; then
             j+="$i:"
         fi
     done
     [[ -n "$j" ]] && export PATH="${j}$PATH"
     unset i j
-    # ruby env (rbenv):  # shouldn't be needed, as rbenv is already sourced from .bashrc
-    #export PATH="$HOME/.rbenv/bin:$PATH"
 
     # set path for global, but non-sudo, npm pacakges:  (https://stackoverflow.com/questions/10081293/install-npm-into-home-directory-with-distribution-nodejs-package-ubuntu/13021677#13021677)
     # note this also requires ~/.npmrc with 'prefix = ~/.npm-packages', which is not
