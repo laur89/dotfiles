@@ -53,7 +53,7 @@ IS_SSH_SETUP=0       # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=''  # only select_items() *writes* into this one.
 MODE=''
 FULL_INSTALL=0                  # whether script is performing full install or not. 1 || 0
-GIT_RLS_LOG=''       # log of all installed debs/binaries from git releases/latest page; will be defined later on;
+GIT_RLS_LOG=''       # log of all installed/fetched assets from git releases/latest page; will be defined later on;
 declare -a PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
 declare -a PACKAGES_FAILED_TO_INSTALL=()
 LOGGING_LVL=0                   # execution logging level (full install mode logs everything);
@@ -162,7 +162,7 @@ check_dependencies() {
 
     readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
-    for prog in git cmp wget curl tar unzip realpath dirname basename tee mktemp file; do
+    for prog in git cmp wget curl tar unzip atool realpath dirname basename tee mktemp file date; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
             install_block "$prog" || { err "unable to install required prog [$prog] this script depends on. abort."; exit 1; }
@@ -743,7 +743,7 @@ install_deps() {
 
                 report "installing rtlwifi_new for card [$rtl_driver]"
                 tmpdir="$TMP_DIR/realtek-driver-${RANDOM}"
-                execute "git clone $repo $tmpdir" || return 1
+                execute "git clone -j8 $repo $tmpdir" || return 1
                 execute "pushd $tmpdir" || return 1
                 execute "make clean" || return 1
 
@@ -1705,6 +1705,7 @@ switch_jdk_versions() {
 # to skip that step.
 #
 # -U     - skip extracting if archive and pass compressed/tarred ball as-is.
+# -s     - skip adding fetched asset in $GIT_RLS_LOG
 #
 # $1 - git user
 # $2 - git repo
@@ -1712,11 +1713,12 @@ switch_jdk_versions() {
 #      note it matches 'til the very end of url;
 # $4 - optional output file name; if given, downloaded file will be renamed to this
 fetch_release_from_git() {
-    local opt noextract tmpdir file loc dl_url page OPTIND
+    local opt noextract skipadd tmpdir file loc dl_url page OPTIND
 
-    while getopts "U" opt; do
+    while getopts "Us" opt; do
         case "$opt" in
             U) readonly noextract=1 ;;
+            s) readonly skipadd=1 ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -1725,18 +1727,18 @@ fetch_release_from_git() {
     readonly loc="https://github.com/$1/$2/releases/latest"
     tmpdir="$(mktemp -d "release-from-git-${1}-${2}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
-    page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed"; return 1; }
-    dl_url="$(grep -Po '.*a href="\K.*'"$3"'(?=".*$)' <<< "$page")" || { err "parsing [$3] download link from [$loc] content failed"; return 1; }
+    page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
+    dl_url="$(grep -Po '.*a href="\K/.*'"$3"'(?=")' <<< "$page")" || { err "parsing [$3] download link from [$loc] content failed"; return 1; }  # note we expect url to be relative; otherwise we could get collisions (like w/ polybar)
     [[ -n "$dl_url" && "$dl_url" != http* ]] && dl_url="https://github.com/$dl_url"  # convert to full url
     is_valid_url "$dl_url" || { err "[$dl_url] is not a valid download link"; return 1; }
 
-    if grep -q "$dl_url" "$GIT_RLS_LOG" 2>/dev/null; then
+    if [[ "$skipadd" -ne 1 ]] && grep -q "$dl_url" "$GIT_RLS_LOG" 2>/dev/null; then
         report "[$dl_url] already encountered, skipping installation..."
         return 2
     fi
 
     report "fetching [$dl_url]..."
-    execute "wget '$dl_url' -q --directory-prefix=$tmpdir" || { err "wgetting [$dl_url] failed."; return 1; }
+    execute "wget '$dl_url' -q --directory-prefix=$tmpdir" || { err "wgetting [$dl_url] failed with $?."; return 1; }
     file="$(find "$tmpdir" -type f)"
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
@@ -1754,9 +1756,11 @@ fetch_release_from_git() {
         file="$tmpdir/$4"
     fi
 
-    # we're assuming here that installation succeeded from here on:
-    test -f "$GIT_RLS_LOG" && sed --follow-symlinks -i "/^${1}-${2}:/d" "$GIT_RLS_LOG"
-    echo -e "${1}-${2}:\t$dl_url" >> "$GIT_RLS_LOG"
+    if [[ "$skipadd" -ne 1 ]]; then
+        # we're assuming here that installation succeeded from here on:
+        test -f "$GIT_RLS_LOG" && sed --follow-symlinks -i "/^${1}-${2}:/d" "$GIT_RLS_LOG"
+        echo -e "${1}-${2}:\t$dl_url" >> "$GIT_RLS_LOG"
+    fi
 
     echo "$file"
     return 0
@@ -1774,6 +1778,21 @@ install_deb_from_git() {
     deb="$(fetch_release_from_git "$1" "$2" "$3")" || return 1
     execute "sudo dpkg -i '$deb'" || { err "installing [$1/$2] failed"; return 1; }
     execute "rm -rf -- '$deb'"
+}
+
+
+# Fetch and extract a tarball from given github /releases page.
+# Note it'll be fetched and extracted into current $pwd.
+#
+# $1 - git user
+# $2 - git repo
+# $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
+fetch_extract_tarball_from_git() {
+    local tarball
+
+    tarball="$(fetch_release_from_git -U "$1" "$2" "$3")" || return $?
+    execute "aunpack '$tarball'" || { err "extracting [$tarball] failed w/ $?"; return 1; }
+    return 0
 }
 
 
@@ -1927,7 +1946,7 @@ build_and_install_rambox() {  # https://github.com/saenzramiro/rambox
         git
     ' || { err "rambox deps install_block failed" "$FUNCNAME"; return 1; }
     execute 'npm install electron-prebuilt -g' || return 1
-    execute "git clone $RAMBOX_REPO_LOC $tmpdir" || return 1
+    execute "git clone -j8 $RAMBOX_REPO_LOC $tmpdir" || return 1
     execute 'npm install' || { err "npm install failed" "$FUNCNAME"; return 1; }
     # TODO set up env.conf
     execute 'mv -- env-sample.js  env.js'
@@ -2025,7 +2044,7 @@ install_synergy() {
         fakeroot
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone $SYNERGY_REPO_LOC $tmpdir" || return 1
+    execute "git clone -j8 $SYNERGY_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
 
     execute "./hm.sh conf -g1"
@@ -2057,7 +2076,7 @@ install_copyq() {
         libxtst-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone $COPYQ_REPO_LOC $tmpdir" || return 1
+    execute "git clone -j8 $COPYQ_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
 
     execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .' || { err; popd; return 1; }
@@ -2099,7 +2118,7 @@ install_goforit() {
     readonly tmpdir="$TMP_DIR/goforit-build-${RANDOM}"
     report "building goforit..."
 
-    execute "git clone $GOFORIT_REPO_LOC $tmpdir" || return 1
+    execute "git clone -j8 $GOFORIT_REPO_LOC $tmpdir" || return 1
 
     execute "mkdir $tmpdir/build"
     execute "pushd $tmpdir/build" || return 1
@@ -2124,7 +2143,7 @@ build_and_install_keepassxc_TODO_container_edition() {
             libqt5x11extras5-dev qttools5-dev qttools5-dev-tools \
             libgcrypt20-dev zlib1g-dev libyubikey-dev libykpers-1-dev || return 1
 
-    bc_exe 'git clone https://github.com/keepassxreboot/keepassxc.git /tmp/kxc || exit 1
+    bc_exe 'git clone -j8 https://github.com/keepassxreboot/keepassxc.git /tmp/kxc || exit 1
             pushd /tmp/kxc || exit 1
 
             mkdir build
@@ -2207,7 +2226,7 @@ install_keepassx() {
         libxtst-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone $KEEPASS_REPO_LOC $tmpdir" || return 1
+    execute "git clone -j8 $KEEPASS_REPO_LOC $tmpdir" || return 1
 
     execute "mkdir $tmpdir/build"
     execute "pushd $tmpdir/build" || return 1
@@ -2257,7 +2276,7 @@ install_i3lock() {
       libxcb-dpms0-dev' || { err 'failed to install i3lock build deps. abort.'; return 1; }
 
     # clone the repository
-    execute "git clone $I3_LOCK_LOC '$tmpdir'" || return 1
+    execute "git clone -j8 $I3_LOCK_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
     execute "git tag -f 'git-$(git rev-parse --short HEAD)'" || return 1
     build_deb i3lock-color
@@ -2334,7 +2353,7 @@ EOF
 
 
     # clone the repository
-    execute "git clone $I3_REPO_LOC '$tmpdir'" || return 1
+    execute "git clone -j8 $I3_REPO_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
 
     _apply_patches  # TODO: should we bail on error?
@@ -2414,7 +2433,7 @@ install_i3_deps() {
 install_polybar() {
     local tmpdir
 
-    readonly tmpdir="$TMP_DIR/polybar-build-${RANDOM}"
+    tmpdir="$(mktemp -d "polybar-build-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$ mktemp"; return 1; }
 
     report "installing polybar build dependencies..."
 
@@ -2447,11 +2466,13 @@ install_polybar() {
         libnl-genl-3-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone --recursive $POLYBAR_REPO_LOC '$tmpdir'" || return 1
+    #execute "git clone --recursive -j8 $POLYBAR_REPO_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
+    fetch_extract_tarball_from_git polybar polybar '\d+\.\d+\.tar' || return 1
+    execute "pushd *" || return 1
     execute "./build.sh --auto --all-features --no-install" || return 1
     create_deb_install_and_store polybar  # TODO: remove checkinstall
-
+    execute "popd"
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
     return 0
@@ -2643,7 +2664,7 @@ setup_nvim() {
             #unzip
         #' || { err 'failed to install neovim build deps. abort.'; return 1; }
 
-        #execute "git clone $NVIM_REPO_LOC $tmpdir" || return 1
+        #execute "git clone -j8 $NVIM_REPO_LOC $tmpdir" || return 1
         #execute "pushd $tmpdir" || { err; return 1; }
 
         ## TODO: checkinstall fails with neovim (bug in checkinstall afaik):
@@ -2813,7 +2834,7 @@ build_and_install_vim() {
         libperl-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone $VIM_REPO_LOC $tmpdir" || return 1
+    execute "git clone -j8 $VIM_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
 
             #--enable-pythoninterp=yes \
@@ -3005,7 +3026,7 @@ install_fonts() {
 
         report "installing nerd-fonts..."
 
-        execute "git clone --recursive $NERD_FONTS_REPO_LOC '$tmpdir'" || return 1
+        execute "git clone --recursive -j8 $NERD_FONTS_REPO_LOC '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
         for i in "${fonts[@]}"; do
             execute --ignore-errs "./install.sh '$i'"
@@ -3023,7 +3044,7 @@ install_fonts() {
         readonly tmpdir="$TMP_DIR/powerline-fonts-${RANDOM}"
         report "installing powerline-fonts..."
 
-        execute "git clone --recursive $PWRLINE_FONTS_REPO_LOC '$tmpdir'" || return 1
+        execute "git clone --recursive -j8 $PWRLINE_FONTS_REPO_LOC '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
         execute "./install.sh" || return 1
 
@@ -3038,7 +3059,7 @@ install_fonts() {
 
         readonly tmpdir="$TMP_DIR/siji-font-$RANDOM"
 
-        execute "git clone https://github.com/stark/siji $tmpdir" || { err 'err cloning siji font'; return 1; }
+        execute "git clone -j8 https://github.com/stark/siji $tmpdir" || { err 'err cloning siji font'; return 1; }
         execute "pushd $tmpdir" || return 1
 
         execute "./install.sh" || { err "siji-font install.sh failed with $?"; return 1; }
@@ -3128,6 +3149,7 @@ install_from_repo() {
         ca-certificates
         aptitude
         sudo
+        libnotify-bin
         dunst
         rofi
         compton
@@ -3738,7 +3760,7 @@ install_gtk_numix() {
     report "installing numix build dependencies..."
     execute "gem install --user-install sass" || return 1
 
-    execute "git clone $theme_repo $tmpdir" || return 1
+    execute "git clone -j8 $theme_repo $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
 
     execute "make" || { err; popd; return 1; }
@@ -4414,7 +4436,7 @@ create_symlinks() {
 # Removes too old installations from given dir.
 #
 # @param {string}  src_dir                 directory where installations are kept
-# @param {string}  number_of_olds_to_keep  how many old vers should we keep?
+# @param {int}     number_of_olds_to_keep  how many old vers should we keep?
 clear_old_vers() {
     local src_dir number_of_olds_to_keep nodes i
 
