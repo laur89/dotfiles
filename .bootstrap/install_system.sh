@@ -904,7 +904,7 @@ install_deps() {
         zlib1g-dev
         libncurses5-dev
         libffi-dev
-        libgdbm3
+        libgdbm6
         libgdbm-dev
     '
     execute 'curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-installer | bash'
@@ -2280,6 +2280,7 @@ install_i3lock() {
     execute "pushd $tmpdir" || return 1
     execute "git tag -f 'git-$(git rev-parse --short HEAD)'" || return 1
     build_deb i3lock-color
+    execute 'sudo dpkg -i ../i3lock-color_*.deb'
 
     # old, checkinstall-compliant logic:
     ## compile & install
@@ -2510,7 +2511,15 @@ install_dwm() {
 #
 # https://github.com/phusion/debian-packaging-for-the-modern-developer/tree/master/tutorial-1
 build_deb() {
-    local pkg_name deb
+    local opt pkg_name configure_extra deb
+
+    while getopts "C:" opt; do
+        case "$opt" in
+            C) readonly configure_extra="$OPTARG" ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift $((OPTIND-1))
 
     pkg_name="$1"
 
@@ -2572,18 +2581,18 @@ PACKAGEVERSION = $(VERSION)-0~$(DISTRIBUTION)0
 
 override_dh_auto_test:
 override_dh_auto_configure:
-	dh_auto_configure -- --prefix=/usr/local --disable-sanitizers
+	dh_auto_configure -- %s --disable-sanitizers
 override_dh_gencontrol:
-	dh_gencontrol -- -v$(PACKAGEVERSION)' > debian/rules || return 1
+	dh_gencontrol -- -v$(PACKAGEVERSION)' "$configure_extra" > debian/rules || return 1
     fi
 
     # note built .deb will end up in a parent dir:
     execute 'debuild -us -uc -b' || return 1
 
-    # install:
-    deb="$(find ../ -mindepth 1 -maxdepth 1 -type f -name '*.deb')"
-    [[ -f "$deb" ]] || { err "couldn't find built [$pkg_name] .deb in parent dir"; return 1; }
-    execute "sudo dpkg -i '$deb'" || { err "installing built .deb [$deb] failed"; return 1; }
+    # install:  # can't install here, as we don't know which debs to select
+    #deb="$(find ../ -mindepth 1 -maxdepth 1 -type f -name '*.deb')"
+    #[[ -f "$deb" ]] || { err "couldn't find built [$pkg_name] .deb in parent dir"; return 1; }
+    #execute "sudo dpkg -i '$deb'" || { err "installing built .deb [$deb] failed"; return 1; }
 }
 
 
@@ -2989,9 +2998,7 @@ install_fonts() {
 
     install_block '
         fonts-powerline
-        ttf-dejavu
         ttf-mscorefonts-installer
-        xfonts-terminus
         xfonts-75dpi
         xfonts-75dpi-transcoded
         xfonts-100dpi
@@ -3020,8 +3027,6 @@ install_fonts() {
             InconsolataGo
             Inconsolata
             Iosevka
-            FontAwesome
-            Devicons
         )
 
         report "installing nerd-fonts..."
