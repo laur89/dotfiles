@@ -55,9 +55,11 @@ ffind() {
         [[ "$src" == '*' || "$src" == '.*' ]] && unset src  # TODO: verify this; what if we're searching for files starting with dot?
 
         if [[ -n "$src" ]]; then
-            find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} "$wildcard$src$wildcard" $extra_params $printFlag $quitFlag $deleteFlag 2>/dev/null
+            find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} \
+                "$wildcard$src$wildcard" $extra_params $printFlag $quitFlag $deleteFlag 2>/dev/null
         else
-            find $follow_links "${srcdir:-.}" $maxDepthParam $file_type $extra_params $printFlag $quitFlag $deleteFlag 2>/dev/null
+            find $follow_links "${srcdir:-.}" $maxDepthParam $file_type $extra_params \
+                $printFlag $quitFlag $deleteFlag 2>/dev/null
         fi
     }
 
