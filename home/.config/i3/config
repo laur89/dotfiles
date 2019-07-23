@@ -391,6 +391,21 @@ for_window [class="^i3expod\.py$"] fullscreen enable
 for_window [class="^jetbrains-.+"][window_type=dialog] focus
 for_window [instance="sun-awt-X11-XWindowPeer"] border pixel 0
 
+
+# for drawing specific icon for application:  (from https://gist.github.com/dmelliot/437924ff581f3f1edd59f44833be6cc6):
+#for_window [class="(?i)firefox"] title_format "<tt></tt><span foreground='#FF6611'>  </span><tt> </tt>%title"
+#for_window [class="(.*)terminal(.*)"] title_format "<tt></tt><span foreground='#00FF00' background='#000000'>  </span><tt> </tt>%title"
+#for_window [class="(.*)Chromium-browser(.*)"] title_format "<tt></tt><span foreground='#367dd0' background='#d9e5f4'>  </span><tt> </tt>%title"
+#for_window [class="Evolution"] title_format "<tt></tt><span foreground='#FFFFFF' >  </span><tt> </tt>%title"
+#for_window [title=".* Evolution"] title_format "<tt></tt><span foreground='#FFFFFF' >  </span><tt> </tt>%title"
+#for_window [class="Slack"] title_format "<tt></tt><span foreground='#FFFFFF' >  </span><tt> </tt>%title"
+#for_window [class="Signal"] title_format "<tt></tt><span background='#2090ea' foreground='#FFFFFF' >  </span><tt> </tt>%title"
+#for_window [class="VirtualBox Machine"] title_format "<tt></tt><span  background='#073624' foreground='#AAAAFF' >  </span><tt> </tt>%title"
+#for_window [class="VirtualBox Manager"] title_format "<tt></tt><span  background='#073642' foreground='#AAAAFF' >  </span><tt> </tt>%title"
+#for_window [class="libreoffice-writer"] title_format "<tt></tt><span  background='#073642' foreground='#adc5e7' >  </span><tt> </tt>%title"
+#for_window [class="libreoffice-calc"] title_format "<tt></tt><span  background='#073642' foreground='#add58a' >  </span><tt> </tt>%title"
+#for_window [class="libreoffice-impress"] title_format "<tt></tt><span background='#073642' foreground='#d07e7e' >  </span><tt> </tt>%title"
+
 # Starting apps on a specific workspace
 assign [class="^Tor Browser$"]           $w1
 assign [class="^Firefox$"]               $w1
