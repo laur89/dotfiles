@@ -3341,6 +3341,7 @@ install_from_repo() {
 
     declare -ar block4_nonwin=(
         charles-proxy
+        mitmproxy
         docker.io
         docker-compose
         python-docker

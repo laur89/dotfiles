@@ -931,7 +931,8 @@ ffstr() {
         [[ "$file_pattern" == '*' || "$file_pattern" == '.*' ]] && unset file_pattern
 
         if [[ -n "$file_pattern" ]]; then
-            find $follow_links ${dir:-.} $maxDepthParam -type f "${iname_arg:--name}" "${wildcard}${file_pattern}${wildcard}" -print0 2>/dev/null
+            # don't quote $iname_arg!:
+            find $follow_links ${dir:-.} $maxDepthParam -type f ${iname_arg:--name} "${wildcard}${file_pattern}${wildcard}" -print0 2>/dev/null
         else
             find $follow_links ${dir:-.} $maxDepthParam -type f -print0 2>/dev/null
         fi
