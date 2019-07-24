@@ -330,6 +330,8 @@ setup_apt() {
         [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it."; continue; }
         backup_original_and_copy_file --sudo "$file" "$apt_dir"
     done
+
+    retry 2 "sudo apt-get --yes update" || err "apt-get update failed with $?"
 }
 
 
@@ -1332,8 +1334,7 @@ setup_additional_apt_keys_and_sources() {
     execute 'curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -'
     execute 'echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list > /dev/null'
 
-    # update sources (will be done anyway on full install):
-    [[ "$FULL_INSTALL" -ne 1 ]] && execute 'sudo apt-get --yes update'
+    execute 'sudo apt-get --yes update'
 }
 
 
@@ -3592,9 +3593,6 @@ full_install() {
     readonly FULL_INSTALL=1
 
     setup
-
-    #execute "sudo apt-get --yes update"  # needs to be first
-    retry 2 "sudo apt-get --yes update" || err "apt-get update failed with $?"
 
     is_windows || upgrade_kernel  # keep this check is_windows(), not is_native();
     install_fonts
