@@ -2095,7 +2095,15 @@ install_copyq() {
 # runs checkinstall in current working dir, and copies the created
 # .deb file to $BASE_BUILDS_DIR/
 create_deb_install_and_store() {
-    local ver pkg_name
+    local opt cmd ver pkg_name
+
+    while getopts "C:" opt; do
+        case "$opt" in
+            C) readonly cmd="$OPTARG" ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift $((OPTIND-1))
 
     pkg_name="$1"
     ver="${2:-'0.0.1'}"  # OPTIONAL
@@ -2107,7 +2115,7 @@ create_deb_install_and_store() {
     execute "sudo checkinstall \
         -D --default --fstrans=no \
         --pkgname=$pkg_name --pkgversion=$ver \
-        --pakdir=$BASE_BUILDS_DIR" || { err "checkinstall run failed. abort."; return 1; }
+        --pakdir=$BASE_BUILDS_DIR $cmd" || { err "checkinstall run failed. abort."; return 1; }
 
     return 0
 }
@@ -2475,9 +2483,10 @@ install_polybar() {
     fetch_extract_tarball_from_git polybar polybar '\d+\.\d+\.tar' || return 1
     execute "pushd *" || return 1
     execute "./build.sh --auto --all-features --no-install" || return 1
+
+    execute "pushd build/" || return 1
     create_deb_install_and_store polybar  # TODO: note still using checkinstall
-    execute "popd"
-    execute "popd"
+    execute "popd; popd; popd"
     execute "sudo rm -rf -- '$tmpdir'"
     return 0
 }
