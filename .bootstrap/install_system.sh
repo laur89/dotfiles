@@ -2285,7 +2285,7 @@ install_i3lock() {
     execute 'sudo dpkg -i ../i3lock-color_*.deb'
 
     # old, checkinstall-compliant logic:
-    ## compile & install
+    ## compile & install:
     #execute 'autoreconf --install' || return 1
     #execute './configure' || return 1
     #execute 'make' || return 1
@@ -2475,7 +2475,7 @@ install_polybar() {
     fetch_extract_tarball_from_git polybar polybar '\d+\.\d+\.tar' || return 1
     execute "pushd *" || return 1
     execute "./build.sh --auto --all-features --no-install" || return 1
-    create_deb_install_and_store polybar  # TODO: remove checkinstall
+    create_deb_install_and_store polybar  # TODO: note still using checkinstall
     execute "popd"
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
