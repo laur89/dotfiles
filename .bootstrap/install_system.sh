@@ -379,12 +379,13 @@ backup_original_and_copy_file() {
     if $sudo test -e "$dest_dir/$filename" && ! $sudo cmp -s "$file" "$dest_dir/$filename"; then
         # collect older .orig files' suffixes and increment latest value for the new file:
         while IFS= read -r -d $'\0' i; do
-            old_suffixes+=("${i##*.}")
-        done < <(find -L "$dest_dir/" -maxdepth 1 -mindepth 1 -type f -name "${filename}.orig.*" -print0)
+            i="${i##*.}"
+            is_digit "$i" && old_suffixes+=("$i")
+        done < <(find -L "$dest_dir/" -maxdepth 1 -mindepth 1 -type f -regextype posix-extended -regex ".*/${filename}\.orig\.[0-9]+$" -print0)
 
         i=0
         if [[ ${#old_suffixes[@]} -gt 0 ]]; then
-            i="$(printf '%s\n' "${old_suffixes[@]}" | sort -rn | head -n1)"  # take largest (ie latest) suffix value
+            i="$(printf '%d\n' "${old_suffixes[@]}" | sort -rn | head -n1)"  # take largest (ie latest) suffix value
             (( i++ )) || { err "incrementing [$dest_dir/$filename] latest backup suffix [$i] failed; setting suffix to RANDOM"; i="$RANDOM"; }
         fi
 
@@ -4498,6 +4499,14 @@ is_single() {
     readonly s="$(tr -d '[:blank:]' <<< "$*")"  # make sure not to strip newlines
 
     [[ -n "$s" && "$(wc -l <<< "$s")" -eq 1 ]]
+}
+
+pushd() {
+    command pushd "$@" > /dev/null
+}
+
+popd() {
+    command popd "$@" > /dev/null
 }
 
 
