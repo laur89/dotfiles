@@ -2363,10 +2363,11 @@ EOF
     _fix_rules
 
     # alternatively, install build-deps based on what's in debian/control:
-    # TODO: mk-build-deps is buggy - it depends on equivs which is not automatically pulled in
-    #sudo mk-build-deps \
-            #-t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends -qqy' \
-            #-i -r debian/control || { err "automatic build-dep resolver for i3 failed w/ [$?]"; return 1; }
+    # (note mk-build-deps needs equivs pkg)
+    sudo mk-build-deps \
+            -t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends -qqy' \
+            -i -r debian/control || { err "automatic build-dep resolver for i3 failed w/ [$?]"; return 1; }
+    # alternatively, could also do $ sudo apt-get -y build-dep i3-wm
 
     execute 'debuild -us -uc -b' || return 1
     execute 'sudo dpkg -i ../i3-wm_*.deb'
@@ -2418,7 +2419,7 @@ install_i3_deps() {
     # or i3-quickterm is required;!
     ##########################################
     # install i3-quickterm   # https://github.com/lbonn/i3-quickterm
-    curl -o "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3-quickterm' \
+    curl --output "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3-quickterm' \
             && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-quickterm"
 
 
@@ -3164,6 +3165,7 @@ install_from_repo() {
         checkinstall
         build-essential
         devscripts
+        equivs
         cmake
         ruby
         python3
@@ -3234,6 +3236,7 @@ install_from_repo() {
         file-roller
         rar
         unrar
+        zip
         p7zip
         dos2unix
         qt4-qtconfig
@@ -3515,6 +3518,8 @@ choose_single_task() {
     else
         err "expected [$SHELL_ENVS] to exist; note that some configuration might be missing."
     fi
+
+    [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG='/tmp/.git-rls-log.tmp'  # log of all installed debs/binaries from git releases/latest page
 
     declare -ar choices=(
         setup
