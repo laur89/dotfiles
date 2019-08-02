@@ -2798,7 +2798,7 @@ __settz() {
 
     check_progs_installed timedatectl || return 1
     [[ -z "$tz" ]] && { err "provide a timezone to switch to (e.g. Europe/Madrid)." "${FUNCNAME[1]}"; return 1; }
-    [[ "$tz" =~ [a-zA-Z]+/[a-zA-Z]+ ]] || { err "invalid timezone format; has to be in a format like [Europe/Madrid]." "${FUNCNAME[1]}"; return 1; }
+    [[ "$tz" =~ [A-Z][a-z]+/[A-Z][a-z]+ ]] || { err "invalid timezone format; has to be in a format like [Europe/Madrid]." "${FUNCNAME[1]}"; return 1; }
 
     timedatectl set-timezone "$tz" || { err "setting tz to [$tz] failed (code $?)" "${FUNCNAME[1]}"; return 1; }
 }
@@ -2814,7 +2814,7 @@ killmenao() {
 ## Print window class ##
 ########################
 xclass() {
-    check_progs_installed xprop || return 1
+    check_progs_installed xprop awk || return 1
 
     xprop | awk '
     /^WM_CLASS/{sub(/.* =/, "instance:"); sub(/,/, "\nclass:"); print}

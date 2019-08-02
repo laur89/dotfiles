@@ -1544,7 +1544,8 @@ install_own_builds() {
     #install_goforit
     #install_copyq
     #install_rambox
-    install_franz
+    #install_franz
+    install_ferdi
     install_ripgrep
     #install_rebar
     install_fd
@@ -1708,6 +1709,8 @@ switch_jdk_versions() {
 #
 # -U     - skip extracting if archive and pass compressed/tarred ball as-is.
 # -s     - skip adding fetched asset in $GIT_RLS_LOG
+# -F     - $file output pattern to grep for in order to filter for specific
+#          single file from unpacked tarball.
 #
 # $1 - git user
 # $2 - git repo
@@ -1715,12 +1718,13 @@ switch_jdk_versions() {
 #      note it matches 'til the very end of url;
 # $4 - optional output file name; if given, downloaded file will be renamed to this
 fetch_release_from_git() {
-    local opt noextract skipadd tmpdir file loc dl_url page OPTIND
+    local opt noextract skipadd file_filter tmpdir file loc dl_url page OPTIND
 
-    while getopts "Us" opt; do
+    while getopts "UsF:" opt; do
         case "$opt" in
             U) readonly noextract=1 ;;
             s) readonly skipadd=1 ;;
+            F) readonly file_filter="$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -1754,6 +1758,7 @@ fetch_release_from_git() {
     fi
 
     if [[ -n "$4" && "$file" != "$tmpdir/$4" ]]; then
+    #if [[ -n "$4" && "$(basename -- "$file")" != "$4" ]]; then
         execute "mv -- '$file' '$tmpdir/$4'" || { err "renaming [$file] to [$tmpdir/$4] failed"; return 1; }
         file="$tmpdir/$4"
     fi
@@ -1829,6 +1834,12 @@ install_bin_from_git() {
 install_franz() {  # https://github.com/meetfranz/franz/blob/master/docs/linux.md
     #install_block 'libx11-dev libxext-dev libxss-dev libxkbfile-dev'
     install_bin_from_git -n franz meetfranz franz x86_64.AppImage
+}
+
+
+# Franz nag-less fork; found it from this franz thread: https://github.com/meetfranz/franz/issues/1167
+install_ferdi() {  # https://github.com/kytwb/ferdi
+    install_bin_from_git -n ferdi kytwb ferdi .AppImage
 }
 
 
@@ -2377,7 +2388,7 @@ EOF
             -i -r debian/control || { err "automatic build-dep resolver for i3 failed w/ [$?]"; return 1; }
     # alternatively, could also do $ sudo apt-get -y build-dep i3-wm
 
-    execute 'debuild -us -uc -b' || return 1
+    build_deb || return 1
     execute 'sudo dpkg -i ../i3-wm_*.deb'
     execute 'sudo dpkg -i ../i3_*.deb'
 
@@ -3574,6 +3585,7 @@ __choose_prog_to_build() {
         install_copyq
         install_rambox
         install_franz
+        install_ferdi
         install_ripgrep
         install_rebar
         install_fd
