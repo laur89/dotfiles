@@ -1752,7 +1752,16 @@ fetch_release_from_git() {
         execute "pushd -- $tmpdir" || return 1
         extract "$file" || { err "couldn't extract [$file]"; popd; return 1; }
         execute "rm -f -- '$file'" || { err; popd; return 1; }
-        file="$(find "$tmpdir" -type f)"
+
+        if [[ -n "$file_filter" ]]; then
+            while IFS= read -r -d $'\0' file; do
+                grep -q "$file_filter" <<< "$(file -iLb "$file")" && break
+                unset file
+            done < <(find "$tmpdir" -type f -print0)
+        else
+            file="$(find "$tmpdir" -type f)"
+        fi
+
         [[ -f "$file" ]] || { err "couldn't find single extracted/uncompressed file in [$tmpdir]"; popd; return 1; }
         execute "popd"
     fi
@@ -1825,7 +1834,7 @@ install_bin_from_git() {
 
     [[ -d "$target" ]] || { err "[$target] not a dir, can't install [$1/$2]"; return 1; }
 
-    bin="$(fetch_release_from_git "$1" "$2" "$3" "$name")" || return 1
+    bin="$(fetch_release_from_git -F 'application/x-executable' "$1" "$2" "$3" "$name")" || return 1
     execute "chmod +x '$bin'" || return 1
     execute "sudo mv -- '$bin' '$target'" || { err "installing [$bin] in [$target] failed"; return 1; }
 }
@@ -3154,6 +3163,7 @@ install_from_repo() {
         smartmontools
         pm-utils
         ntfs-3g
+        fuse
         fuseiso
         mono-complete
         erlang
