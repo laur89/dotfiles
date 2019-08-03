@@ -35,6 +35,7 @@ case "$input" in
         else  # both native & virt:
             source "$HOME/.common_startup"
             exec i3
+            #exec i3 --shmlog-size=26214400  # enable logging
         fi
         ;;
     kde)
