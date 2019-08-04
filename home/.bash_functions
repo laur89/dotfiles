@@ -743,16 +743,22 @@ aptclean() {
     fi
 
     sudo apt-get update
-    #sudo apt-get upgrade
 }
 
+
+# to remove obsolete packages:
+#   aptitude search '~o'
+#   aptitude purge '~o'
 upgrade() {
     sudo -s -- <<EOF
+        apt-get clean -y
         apt-get update
         apt-get upgrade -y
         apt-get dist-upgrade -y
+        #apt full-upgrade  # alternative to apt-get dist-upgrade
         apt-get autoremove -y
         apt-get autoclean -y
+        apt purge $(dpkg -l | awk '/^rc/ { print $2 }')  # nuke removed packages' configs
 EOF
 }
 
