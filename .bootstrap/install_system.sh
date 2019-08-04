@@ -3153,6 +3153,7 @@ install_from_repo() {
     declare -A extra_apt_params=(
     )
 
+    # consider apulse instead of pulseaudio
     declare -ar block1_nonwin=(
         alsa-utils
         pulseaudio
@@ -3174,10 +3175,14 @@ install_from_repo() {
         hardinfo
         inxi
         macchanger
-        ufw
-        gufw
+        nftables
+        firewalld
         fail2ban
     )
+    # old/deprecated block1_nonwin:
+    #    ufw - iptables frontend, debian now on nftables instead
+    #    gufw
+    #
 
     # TODO: xorg needs to be pulled into non-win (but still has to be installed for virt!) block:
     declare -ar block1=(
@@ -3228,6 +3233,8 @@ install_from_repo() {
         network-manager-openvpn-gnome
         gnome-disk-utility
         cups
+        cups-browsed
+        cups-filters
         system-config-printer
     )
 
@@ -3249,6 +3256,7 @@ install_from_repo() {
         apt-xapian-index
         unattended-upgrades
         apt-listchanges
+        debian-goodies
         git
         tig
         git-flow
@@ -3874,6 +3882,12 @@ setup_seafile_cli() {
 }
 
 
+# from  TODO find debian url for nftables
+enable_fw() {
+    execute 'sudo systemctl enable nftables.service'
+}
+
+
 # configs & settings that can/need to be installed  AFTER  the related programs have
 # been installed.
 #
@@ -3901,6 +3915,7 @@ post_install_progs_setup() {
     is_native && configure_ntp_for_work
     is_native && configure_pulseaudio  # TODO might be possible w/ windows
     #setup_seafile_cli  # TODO https://github.com/haiwen/seafile/issues/1855 & https://github.com/haiwen/seafile/issues/1854
+    is_native && enable_fw
 }
 
 
