@@ -1552,11 +1552,11 @@ install_own_builds() {
     install_lazygit
     install_gitin
     #install_synergy  # currently installing from repo
+    install_i3
     install_polybar
     #install_oracle_jdk  # start using sdkman (or something similar)
 
     #install_dwm
-    install_i3
     is_native && install_i3lock
 }
 
@@ -2336,7 +2336,7 @@ install_i3() {
 
         f="$TMP_DIR/i3-patch-${RANDOM}.patch"
         #curl --fail -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "window-icons-patch downlaod failed"; return 1; }
-        curl -L -k --fail -o "$f" 'https://gist.githubusercontent.com/laur89/2ed98dc0bebd904ef3b5155505204c29/raw/cc14d86f152a1223bb50a7ec23697345c7c90e4c/window-icons.patch' || { err "window-icons-patch downlaod failed"; return 1; }
+        curl --fail -o "$f" 'https://raw.githubusercontent.com/laur89/i3-extras/master/window-icons/window-icons.patch' || { err "window-icons-patch downlaod failed"; return 1; }
         patch -p1 < "$f" || { err "applying window-icons.patch failed"; return 1; }
 
         curl --fail -o "$f" 'https://raw.githubusercontent.com/maestrogerardo/i3-gaps-deb/master/patches/0001-debian-Disable-sanitizers.patch' || { err "disable-sanitizers-patch downlaod failed"; return 1; }

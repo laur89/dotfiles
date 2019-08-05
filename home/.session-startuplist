@@ -95,7 +95,8 @@ fi
 # note compton causes WSL (at least in VcXsrv) to fail
 if ! is_windows && ! is_proc_running compton; then
     echo "Launching compton..."
-    compton --config ~/.compton.conf --respect-prop-shadow --daemon
+    # note -b|--daemon option causes crashes/hangs with some drivers: (https://github.com/chjj/compton/issues/176)
+    compton --config ~/.compton.conf --respect-prop-shadow &  #--daemon
 fi
 
 if is_native && ! is_proc_running syndaemon && is_laptop; then
