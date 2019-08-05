@@ -3265,6 +3265,7 @@ install_from_repo() {
         gxmessage
         msmtp
         gnome-keyring
+        policykit-1-gnome
         seahorse
         gsimplecal
         khal
