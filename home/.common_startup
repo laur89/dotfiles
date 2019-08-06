@@ -287,9 +287,9 @@ allowed_size=20   # Max size in MB
 check_max_allowed_size "$CUSTOM_LOGDIR" "$allowed_size"
 
 set_perms &
+set_keyboard_layout &
 if is_native; then
     enableSmart &
-    set_keyboard_layout &
     open_mpd_fifo &
 fi
 
