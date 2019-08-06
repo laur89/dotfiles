@@ -28,7 +28,7 @@ fi
 ################################################
 # enables offline SMART checks on system drives. note that smart manual says these settings
 # should outlive reboots, but it's still good idea to make sure.
-function enableSmart() {
+function enable_smart() {
     local _disk_list _disk _status msg disk_check processed_disks_count
 
     processed_disks_count=0
@@ -95,6 +95,7 @@ set_keyboard_layout() {
     setxkbmap -option grp:alt_shift_toggle "$layouts" || { err_display "err setting keyboard layout(s) to [$layouts]" "$_SELF"; return 1; }
 }
 
+# mopidy->ncmpcpp visualizer issue thread: https://github.com/mopidy/mopidy/issues/775
 open_mpd_fifo() {
     local fifo
     readonly fifo='/tmp/mpd.fifo'
@@ -289,7 +290,7 @@ check_max_allowed_size "$CUSTOM_LOGDIR" "$allowed_size"
 set_perms &
 set_keyboard_layout &
 if is_native; then
-    enableSmart &
+    enable_smart &
     open_mpd_fifo &
 fi
 

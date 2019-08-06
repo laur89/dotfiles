@@ -313,6 +313,7 @@ setup_sudoers() {
 }
 
 
+# https://wiki.debian.org/UnattendedUpgrades for unattended-upgrades setup
 setup_apt() {
     local apt_dir file
 
@@ -329,6 +330,15 @@ setup_apt() {
 
         [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it."; continue; }
         backup_original_and_copy_file --sudo "$file" "$apt_dir"
+    done
+
+    for file in \
+            02periodic \
+                ; do
+        file="$COMMON_DOTFILES/backups/apt_conf/$file"
+
+        [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it."; continue; }
+        execute "sudo cp -- '$file' '$apt_dir/apt.conf.d'"
     done
 
     retry 2 "sudo apt-get --yes update" || err "apt-get update failed with $?"
