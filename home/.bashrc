@@ -291,9 +291,25 @@ fi
 unset fasd_cache
 ##########################################
 # nvm (node version manager):  (https://github.com/creationix/nvm#git-install)
-export NVM_DIR="$HOME/.nvm"  # do not change location, keep _real_ .nvm/ under ~
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" --no-use  # This loads nvm; note --no-use postpones using nvm until manually invoked
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+# note . nvm.sh makes new shell startup slow (https://github.com/nvm-sh/nvm/issues/1277);
+# that's why we need to work around this:
+# https://www.reddit.com/r/node/comments/4tg5jg/lazy_load_nvm_for_faster_shell_start/d5ib9fs/
+# https://gist.github.com/fl0w/07ce79bd44788f647deab307c94d6922
+declare -a __NODE_GLOBALS=($(find ~/.nvm/versions/node -maxdepth 3 -type l -wholename '*/bin/*' | xargs -n1 basename | sort | uniq))
+__NODE_GLOBALS+=(node nvm)
+
+# instead of using --no-use flag, load nvm lazily:
+_load_nvm() {
+    #export NVM_DIR=~/.nvm
+	export NVM_DIR="$HOME/.nvm"  # do not change location, keep _real_ .nvm/ under ~
+	[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+	[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+}
+
+for cmd in "${__NODE_GLOBALS[@]}"; do
+    eval "${cmd}(){ unset -f ${__NODE_GLOBALS[@]}; _load_nvm; unset _load_nvm __NODE_GLOBALS; ${cmd} \$@; }"
+done
+unset cmd
 
 #   from https://stackoverflow.com/a/50378304/1803648
 # Run 'nvm use' automatically every time there's
