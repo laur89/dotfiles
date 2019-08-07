@@ -200,7 +200,7 @@ check_dependencies() {
 setup_udev() {
     local udev_src udev_target file tmpfile
 
-    readonly udev_src="$PRIVATE_CASTLE/backups/udev"
+    readonly udev_src="$COMMON_PRIVATE_DOTFILES/backups/udev"
     readonly udev_target='/etc/udev/rules.d/'
     readonly tmpfile="$TMP_DIR/udev_setup-$RANDOM"
 
@@ -221,6 +221,7 @@ setup_udev() {
 }
 
 
+# TODO: shouldn't it be COMMON_PRIVATE_DOTFILES/backups?
 setup_systemd() {
     local sysd_src sysd_target file tmpfile
 
@@ -346,11 +347,12 @@ setup_apt() {
 
 
 setup_crontab() {
-    local cron_dir tmpfile file
+    local cron_dir weekly_crondir tmpfile file i
 
     readonly cron_dir="/etc/cron.d"  # where crontab will be installed at
     readonly tmpfile="$TMP_DIR/crontab"
     readonly file="$PRIVATE_CASTLE/backups/crontab"
+    readonly weekly_crondir='/etc/cron.weekly'
 
     if ! [[ -d "$cron_dir" ]]; then
         err "[$cron_dir] is not a dir; skipping crontab installation."
@@ -366,6 +368,23 @@ setup_crontab() {
         execute "rm -- '$tmpfile'"
     else
         err "expected configuration file at [$file] does not exist; won't install it."
+    fi
+
+    # install weekly scripts:
+    if ! [[ -d "$weekly_crondir" ]]; then
+        err "[$weekly_crondir] is not a dir; skipping weekly scripts installation."
+    else
+        for i in \
+                dnsmasq-hosts-update.sh \
+                    ; do
+            i="$BASE_DATA_DIR/dev/scripts/$i"
+            if ! [[ -f "$i" ]]; then
+                err "[$i] does not exist, can't dump in $weekly_crondir..."
+                continue
+            fi
+
+            create_link --sudo "$i" "${weekly_crondir}/"
+        done
     fi
 }
 
@@ -3759,9 +3778,9 @@ setup_docker() {
 enable_network_manager() {
     local nm_conf nm_conf_dir dnsmasq_conf dnsmasq_conf_dir i
 
-    readonly nm_conf="$PRIVATE_CASTLE/backups/networkmanager.conf"
+    readonly nm_conf="$COMMON_DOTFILES/backups/networkmanager.conf"
     readonly nm_conf_dir='/etc/NetworkManager/conf.d'
-    readonly dnsmasq_conf='$PRIVATE_CASTLE/backups/dnsmasq.conf'
+    readonly dnsmasq_conf="$COMMON_DOTFILES/backups/dnsmasq.conf"
     readonly dnsmasq_conf_dir='/etc/dnsmasq.d'
 
     [[ -d "$nm_conf_dir" ]] || { err "[$nm_conf_dir] does not exist; are you using NetworkManager? if not, this config logic should be removed."; return 1; }
@@ -4361,7 +4380,7 @@ function is_valid_url() {
 # second arg, the target, should end with a slash if a containing dir is meant to be
 # passed, not a literal path to the link-to-be-created.
 create_link() {
-    local src target filename sudo
+    local src target sudo
 
     [[ "$1" == -s || "$1" == --sudo ]] && { shift; readonly sudo=sudo; }
 
@@ -4369,9 +4388,12 @@ create_link() {
     target="$2"
 
     if [[ "$target" == */ ]] && $sudo test -d "$target"; then
-        filename="$(basename -- "$src")"
-        target="${target}$filename"
+        target="${target}$(basename -- "$src")"
     fi
+    #if $sudo test -d "$target"; then
+        #[[ "$target" != */ ]] && target+='/'
+        #target="${target}$(basename -- "$src")"
+    #fi
 
     $sudo test -h "$target" && execute "$sudo rm -- '$target'"  # only remove $target if it's already a symlink
     execute "$sudo ln -s -- '$src' '$target'"
