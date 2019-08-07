@@ -1288,7 +1288,9 @@ setup() {
     verify_ssh_key
     execute "source $SHELL_ENVS"  # so we get our env vars after dotfiles are pulled in
 
-    [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG='/tmp/.git-rls-log.tmp'  # log of all installed debs/binaries from git releases/latest page
+    if [[ -z "$GIT_RLS_LOG" ]]; then
+        [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG='/tmp/.git-rls-log.tmp'  # log of all installed debs/binaries from git releases/latest page
+    fi
 
     setup_dirs  # has to come after $SHELL_ENVS sourcing so the env vars are in place
     setup_config_files
@@ -2027,6 +2029,7 @@ install_webdev() {
     if ! command -v node >/dev/null 2>&1; then  # only proceed if node hasn't already been installed
         execute "nvm install stable" || err "installing nodejs 'stable' version failed"
         execute "nvm alias default stable" || err "setting [nvm default stable] failed"
+        execute "nvm use default" || err "[nvm use default] failed"
     fi
 
     # update npm:
@@ -3754,39 +3757,50 @@ setup_docker() {
 #
 # make sure resolvconf pkg is installed for seamless resolv config updates & dnsmasq usage (as per https://unix.stackexchange.com/a/406724/47501)
 enable_network_manager() {
-    local net_manager_conf_file dnsmasq_conf i
+    local nm_conf nm_conf_dir dnsmasq_conf dnsmasq_conf_dir i
 
-    readonly net_manager_conf_file='/etc/NetworkManager/NetworkManager.conf'
-    readonly dnsmasq_conf='/etc/dnsmasq.conf'
+    readonly nm_conf="$PRIVATE_CASTLE/backups/networkmanager.conf"
+    readonly nm_conf_dir='/etc/NetworkManager/conf.d'
+    readonly dnsmasq_conf='$PRIVATE_CASTLE/backups/dnsmasq.conf'
+    readonly dnsmasq_conf_dir='/etc/dnsmasq.d'
 
-    [[ -f "$net_manager_conf_file" ]] || { err "[$net_manager_conf_file] does not exist; are you using NetworkManager? if not, this config logic should be removed."; return 1; }
-    #execute "sudo sed -i --follow-symlinks 's/^managed=false$/managed=true/' '$net_manager_conf_file'"  # use crudini instead
+    [[ -d "$nm_conf_dir" ]] || { err "[$nm_conf_dir] does not exist; are you using NetworkManager? if not, this config logic should be removed."; return 1; }
+    [[ -f "$nm_conf" ]] || { err "[$nm_conf] does not exist; cannot update config"; return 1; }
+    execute "sudo cp -- '$nm_conf' '$nm_conf_dir'" || return 1
 
-    sudo crudini --merge "$net_manager_conf_file" <<'EOF'
-[ifupdown]
-managed=true
+    # old ver, directly updating /etc/NetworkManager/NetworkManager.conf:
+    #sudo crudini --merge "$net_manager_conf_file" <<'EOF'
+#[ifupdown]
+#managed=true
 
-[main]
-rc-manager=resolvconf
-EOF
+#[main]
+#dns=default
+#rc-manager=resolvconf
+#EOF
+    #[[ $? -ne 0 ]] && { err "updating [$net_manager_conf_file] exited w/ failure"; return 1; }
 
-    [[ $? -ne 0 ]] && { err "updating [$net_manager_conf_file] exited w/ failure"; return 1; }
 
     # update dnsmasq conf:  TODO: refactor out from this fun?
     # note: to check dnsmasq conf/performance, see
     #     dig +short chaos txt hits.bind
     #     dig +short chaos txt misses.bind
     #     dig +short chaos txt cachesize.bind
-    [[ -f "$dnsmasq_conf" ]] || { err "[$dnsmasq_conf] does not exist"; return 1; }
-    execute "sudo sed -i --follow-symlinks '/^cache-size=/d' '$dnsmasq_conf'"
-    execute "echo cache-size=10000 | sudo tee --append $dnsmasq_conf > /dev/null"
+    [[ -d "$dnsmasq_conf_dir" ]] || { err "[$dnsmasq_conf_dir] does not exist"; return 1; }
+    [[ -f "$dnsmasq_conf" ]] || { err "[$dnsmasq_conf] does not exist; cannot update config"; return 1; }
+    execute "sudo cp -- '$dnsmasq_conf' '$dnsmasq_conf_dir'" || return 1
 
-    execute "sudo sed -i --follow-symlinks '/^local-ttl=/d' '$dnsmasq_conf'"
-    execute "echo local-ttl=10 | sudo tee --append $dnsmasq_conf > /dev/null"
 
-    # lock dnsmasq to be exposed only to localhost:
-    execute "sudo sed -i --follow-symlinks '/^listen-address=/d' '$dnsmasq_conf'"
-    execute "echo listen-address=::1,127.0.0.1 | sudo tee --append $dnsmasq_conf > /dev/null"
+    # old ver, directly updating /etc/dnsmasq.conf:
+    #execute "sudo sed -i --follow-symlinks '/^cache-size=/d' '$dnsmasq_conf'"
+    #execute "echo cache-size=10000 | sudo tee --append $dnsmasq_conf > /dev/null"
+
+    #execute "sudo sed -i --follow-symlinks '/^local-ttl=/d' '$dnsmasq_conf'"
+    #execute "echo local-ttl=10 | sudo tee --append $dnsmasq_conf > /dev/null"
+
+    ## lock dnsmasq to be exposed only to localhost:
+    #execute "sudo sed -i --follow-symlinks '/^listen-address=/d' '$dnsmasq_conf'"
+    #execute "echo listen-address=::1,127.0.0.1 | sudo tee --append $dnsmasq_conf > /dev/null"
+
 
     # TODO: not sure about this bit:
     #if [[ "$MODE" != work ]]; then
