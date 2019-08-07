@@ -3383,7 +3383,6 @@ install_from_repo() {
         libxml2-utils
         pidgin
         weechat
-        gradle
         lxrandr
         arandr
         copyq
