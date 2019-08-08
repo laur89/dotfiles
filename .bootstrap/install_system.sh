@@ -294,7 +294,7 @@ setup_sudoers() {
     local sudoers_dest file tmpfile
 
     readonly sudoers_dest="/etc/sudoers.d"
-    readonly tmpfile="$TMP_DIR/sudoers"
+    readonly tmpfile="$TMP_DIR/sudoers-$RANDOM"
     readonly file="$COMMON_PRIVATE_DOTFILES/backups/sudoers"
 
     if ! [[ -d "$sudoers_dest" ]]; then
@@ -310,7 +310,7 @@ setup_sudoers() {
     execute "sudo chown root:root $tmpfile" || return 1
     execute "sudo chmod 0440 $tmpfile" || return 1
 
-    execute "sudo mv -f -- $tmpfile $sudoers_dest/" || return 1
+    execute "sudo mv -f -- $tmpfile $sudoers_dest/sudoers" || return 1
 }
 
 
@@ -2042,8 +2042,8 @@ install_skype() {  # https://wiki.debian.org/skype
 install_webdev() {
     is_server && { report "we're server, skipping webdev env installation."; return; }
 
-    # first get nvm (node version manager) :  # https://github.com/creationix/nvm#git-install
-    clone_or_pull_repo creationix nvm "$HOME/.nvm/"  # note repo dest needs to be exactly @ ~/.nvm
+    # first get nvm (node version manager) :  # https://github.com/nvm-sh/nvm#git-install
+    clone_or_pull_repo nvm-sh nvm "$HOME/.nvm/"  # note repo dest needs to be exactly @ ~/.nvm
     execute "source '$HOME/.nvm/nvm.sh'" || err "sourcing ~/.nvm/nvm.sh failed"
     if ! command -v node >/dev/null 2>&1; then  # only proceed if node hasn't already been installed
         execute "nvm install stable" || err "installing nodejs 'stable' version failed"
@@ -3591,6 +3591,7 @@ choose_single_task() {
     fi
 
     [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG='/tmp/.git-rls-log.tmp'  # log of all installed debs/binaries from git releases/latest page
+    command -v nvm >/dev/null && execute 'nvm use default'
 
     declare -ar choices=(
         setup

@@ -290,18 +290,17 @@ fi
 [[ -s "$fasd_cache" ]] && source "$fasd_cache"
 unset fasd_cache
 ##########################################
-# nvm (node version manager):  (https://github.com/creationix/nvm#git-install)
+# nvm (node version manager):  (https://github.com/nvm-sh/nvm#git-install)
 # note . nvm.sh makes new shell startup slow (https://github.com/nvm-sh/nvm/issues/1277);
 # that's why we need to work around this:
-# https://www.reddit.com/r/node/comments/4tg5jg/lazy_load_nvm_for_faster_shell_start/d5ib9fs/
-# https://gist.github.com/fl0w/07ce79bd44788f647deab307c94d6922
-declare -a __NODE_GLOBALS=($(find ~/.nvm/versions/node -maxdepth 3 -type l -wholename '*/bin/*' | xargs -n1 basename | sort | uniq))
+#   https://www.reddit.com/r/node/comments/4tg5jg/lazy_load_nvm_for_faster_shell_start/d5ib9fs/
+#   https://gist.github.com/fl0w/07ce79bd44788f647deab307c94d6922
+export NVM_DIR="$HOME/.nvm"  # do not change location, keep _non-linked_ .nvm/ under ~
+declare -a __NODE_GLOBALS=($(find "$NVM_DIR/versions/node/" -maxdepth 3 -mindepth 3 -type l -wholename '*/bin/*' | xargs -n1 basename | sort | uniq))
 __NODE_GLOBALS+=(node nvm)
 
 # instead of using --no-use flag, load nvm lazily:
 _load_nvm() {
-    #export NVM_DIR=~/.nvm
-	export NVM_DIR="$HOME/.nvm"  # do not change location, keep _real_ .nvm/ under ~
 	[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 	[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 }
