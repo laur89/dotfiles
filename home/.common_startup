@@ -143,7 +143,7 @@ xset -b &
 #ResultInactive=no
 #ResultActive=yes
 
-#dbus-update-activation-environment --systemd --all  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=842712
+dbus-update-activation-environment --systemd --all  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=842712 & https://wiki.archlinux.org/index.php/GNOME/Keyring#xinitrc_method
 #/usr/lib/polkit-gnome-authentication-agent-1 &
 /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
 

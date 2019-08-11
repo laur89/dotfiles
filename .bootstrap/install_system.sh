@@ -3248,6 +3248,7 @@ install_from_repo() {
 
     declare -ar block2_nonwin=(
         dnsutils
+        dnstracer
         dnsmasq
         resolvconf
         glances
@@ -3775,6 +3776,8 @@ setup_docker() {
 # (bottom) line; eg from 'iface wlan0 inet dhcp' to 'iface inet dhcp'
 #
 # make sure resolvconf pkg is installed for seamless resolv config updates & dnsmasq usage (as per https://unix.stackexchange.com/a/406724/47501)
+#
+# see also wiki.debian.org/NetworkManager
 enable_network_manager() {
     local nm_conf nm_conf_dir dnsmasq_conf dnsmasq_conf_dir i
 
