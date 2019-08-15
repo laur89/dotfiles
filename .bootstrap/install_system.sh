@@ -943,7 +943,7 @@ install_deps() {
     # note rbenv-doctor can be ran to verify installation:  $ curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-doctor | bash
 
     # some py deps requred by scripts:
-    execute "/usr/bin/env python3 -m pip install --user --upgrade exchangelib icalendar arrow"
+    execute "/usr/bin/env python3 -m pip install --user --upgrade exchangelib vobject icalendar arrow"
     # note: if exchangelib fails with something like
                 #In file included from src/kerberos.c:19:0:
                 #src/kerberosbasic.h:17:27: fatal error: gssapi/gssapi.h: No such file or directory
@@ -1346,7 +1346,8 @@ setup_additional_apt_keys_and_sources() {
 
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
-    execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 931FF8E79F0876134EDDBDCCA87FF9DF48BF1C90'
+    # note it's avail also as a snap: $snap install spotify
+    execute 'curl -sS https://download.spotify.com/debian/pubkey.gpg | sudo apt-key add -'
     execute 'echo deb http://repository.spotify.com stable non-free | sudo tee /etc/apt/sources.list.d/spotify.list > /dev/null'
 
     # seafile: (from https://help.seafile.com/en/syncing_client/install_linux_client.html#wiki-debian):

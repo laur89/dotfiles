@@ -21,3 +21,7 @@ video/*                  ; /usr/bin/mplayer %s                             ; cop
 text/calendar; ical-prettyprint.py %s; copiousoutput;  # see http://simonjbeaumont.com/posts/mutt-exchange/
 application/ics; ical-prettyprint.py %s; copiousoutput;
 
+# another calendar for importing into ikhal: (from https://github.com/pimutils/khal/issues/851):
+# note this one did not work: text/calendar; khal -a my_calendar import;
+#text/calendar; khal import -a work %s;
+
