@@ -21,7 +21,7 @@ bindsym $mod+c kill
 # Start dmenu:
 #bindsym $mod+d exec  dmenu_run -b -nf "#839496" -sb "#b58900" -sf "#002b36" -nb "#002b36" -fn "tewi-8"
 
-# Start Rofi:    https://davedavenport.github.io/rofi/
+# Start Rofi:
 bindsym $mod+space exec --no-startup-id rofi -show combi -combi-modi 'window#drun#run' \
 -modi combi#ssh -lines 15 -columns 2 -width 50 -separator-style "none" -sidebar-mode
 
@@ -289,7 +289,9 @@ bindsym Print exec --no-startup-id scrot -e 'mv $f ~/Pictures/screenshots' && no
 # note all bindings get translated by Group1 keymap (see https://i3wm.org/docs/userguide.html#keybindings)
 #bindsym $mod+p exec pcmanfm 
 #bindsym $mod+b exec firefox
-bindsym $mod+ü exec --no-startup-id copyq toggle
+
+# keycode 34 = ü on ee, [ on us keymap:
+bindcode Control+34 exec --no-startup-id copyq toggle
 
 ##################################
 ## Custom colors (from xresources):

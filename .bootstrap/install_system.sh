@@ -3320,6 +3320,7 @@ install_from_repo() {
         numix-gtk-theme
         numix-icon-theme
         meld
+        at-spi2-core
         pastebinit
         synergy
         keepassxc
@@ -3332,7 +3333,8 @@ install_from_repo() {
         #- !! gksu no moar recommended; pkexec advised; to use pkexec, you need to define its
         #     action in /usr/share/polkit-1/actions.
 
-        # socat for mopidy+ncmpcpp visualisation
+        # socat for mopidy+ncmpcpp visualisation;
+        # at-spi2-core is some gnome accessibility provider; without it some py apps (eg meld) complain;
 
     declare -ar block3_nonwin=(
         spotify-client
@@ -3691,6 +3693,7 @@ remind_manually_installed_progs() {
 
     declare -ar progs=(
         lazyman2
+        'intelliJ toolbox'
         'jdk deps via sdkman'
         'any custom certs'
     )
