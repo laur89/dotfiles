@@ -1342,7 +1342,7 @@ setup_additional_apt_keys_and_sources() {
     # mopidy key:
     execute 'wget -q -O - https://apt.mopidy.com/mopidy.gpg | sudo apt-key add -'
     # add mopidy source:
-    execute 'sudo wget -q -O /etc/apt/sources.list.d/mopidy.list https://apt.mopidy.com/stretch.list'
+    execute 'sudo wget -q -O /etc/apt/sources.list.d/mopidy.list https://apt.mopidy.com/buster.list'
 
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
@@ -1357,7 +1357,7 @@ setup_additional_apt_keys_and_sources() {
     # mono: (from https://www.mono-project.com/download/stable/#download-lin-debian):
     # later on installed by 'mono-complete' pkg
     execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF'
-    execute 'echo "deb https://download.mono-project.com/repo/debian stable-stretch main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list > /dev/null'
+    execute 'echo "deb https://download.mono-project.com/repo/debian stable-buster main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list > /dev/null'
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
     execute 'wget -q -O - https://www.charlesproxy.com/packages/apt/PublicKey | sudo apt-key add -'
@@ -3325,6 +3325,7 @@ install_from_repo() {
         synergy
         keepassxc
         gnupg
+        dirmngr
     )
 
 
