@@ -228,12 +228,6 @@
         noremap <leader>ve :edit $HOME/.config/nvim/init.vim<CR>
         noremap <leader>vs :source $HOME/.config/nvim/init.vim<CR>
 
-        " Yank(copy) to system clipboard (implies visual mode)
-        noremap <leader>y "+y
-
-        " Y -> yank from cursor to EOL (instead of same as yy)
-        noremap Y y$
-
         " Toggle text wrapping
         nmap <silent> <leader>w :set invwrap<CR>:set wrap?<CR>
 
@@ -329,6 +323,9 @@
         nnoremap <leader>P "+P
         vnoremap <leader>p "+p
         vnoremap <leader>P "+P
+
+        " Y -> yank from cursor to EOL (instead of same as yy)
+        noremap Y y$
 
         " execute current line in shell and replace it with output from the command:
         noremap Q !!$SHELL<CR>
@@ -500,8 +497,12 @@
         """ set binds to copy/paste to system clipboard: {{{
             " <C-c> for copy (in visual), <leader><C-v>(in normal) for paste:
             if has('unix')
-                vn <C-c> y:call system("xclip -i -selection clipboard", getreg("\""))<CR>:call system("xclip -i", getreg("\""))<CR>
-                no <leader><C-v> :call setreg("\"",system("xclip -o -selection clipboard"))<CR>p
+                " with xclip:
+                "vn <C-c> y:call system("xclip -i -selection clipboard", getreg("\""))<CR>:call system("xclip -i", getreg("\""))<CR>
+                "no <leader><C-v> :call setreg("\"",system("xclip -o -selection clipboard"))<CR>p
+                " with xsel:
+                vn <C-c> y:call system("xsel --input --clipboard", getreg("\""))<CR>:call system("xsel --input", getreg("\""))<CR>
+                no <leader><C-v> :call setreg("\"",system("xsel --output --clipboard"))<CR>p
             elseif has('mac')
                 vn <C-c> y:call system("pbcopy", getreg("\""))<CR>
                 no <leader><C-v> :call setreg("\"",system("pbpaste"))<CR>p

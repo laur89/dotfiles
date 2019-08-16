@@ -2575,6 +2575,8 @@ install_dwm() {
 # and https://vincent.bernat.ch/en/blog/2019-pragmatic-debian-packaging
 #
 # https://github.com/phusion/debian-packaging-for-the-modern-developer/tree/master/tutorial-1
+#
+# see also pbuilder, https://wiki.debian.org/SystemBuildTools
 build_deb() {
     local opt pkg_name configure_extra deb
 
@@ -3383,7 +3385,6 @@ install_from_repo() {
         imagemagick
         pinta
         xsel
-        xclip
         wmctrl
         xdotool
         exuberant-ctags

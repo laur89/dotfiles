@@ -168,8 +168,9 @@ set nocompatible " Must be the first line
 
     " yankring: hold copy of yanked elements:
     " alternative: yankstack
-    Plug 'vim-scripts/YankRing.vim'
     "Plug 'maxbrunsfeld/vim-yankstack'
+    Plug 'vim-scripts/YankRing.vim'
+    " another alternative: https://github.com/bfredl/nvim-miniyank
 
     " show location of the marks: (! requires compilation with +signs)
     " !!! deprecated by vim-signature?
