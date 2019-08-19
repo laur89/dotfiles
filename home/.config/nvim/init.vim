@@ -77,7 +77,7 @@ set nocompatible " Must be the first line
     Plug 'tpope/vim-surround'
 
     " Align your = etc.
-    Plug 'vim-scripts/Align'
+    Plug 'vim-scripts/Align'  " see also lion
 
     " Snippets like textmate
     "Plug 'MarcWeber/vim-addon-mw-utils' "vim-snipmate depends on this one
@@ -108,9 +108,9 @@ set nocompatible " Must be the first line
     "Plug 'majutsushi/tagbar'
 
     " Ctags generator/highlighter (note the vim-misc is dependency for it)
+    Plug 'ludovicchabant/vim-gutentags'  " alt: jsfaint/gen_tags.vim
     Plug 'xolox/vim-misc'
-    Plug 'xolox/vim-easytags' " alternative shoud be taginator?
-    Plug 'xolox/vim-session'
+    Plug 'xolox/vim-session'  " TODO: replace with tpope/vim-obsession?
     "Plug 'xolox/vim-notes'  " alternative: http://orgmode.org/
     Plug 'fmoralesc/vim-pad', { 'branch': 'devel' }   " alt to vim-notes
     Plug 'vim-pandoc/vim-pandoc'  " this and pandoc-syntax for vim-pad
@@ -118,7 +118,7 @@ set nocompatible " Must be the first line
     Plug 'jceb/vim-orgmode'  " text outlining (to use with note-taking plugins?)
 
     " Selfexplanatory...
-    Plug 'jlanzarotta/bufexplorer'
+    "Plug 'jlanzarotta/bufexplorer'
 
     " File browser
     Plug 'scrooloose/nerdtree', { 'on': ['NERDTreeToggle', 'NERDTreeFind'] }
@@ -138,7 +138,7 @@ set nocompatible " Must be the first line
     Plug 'Valloric/YouCompleteMe'
 
     " Go-lang/golang/go lang support:
-    Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
+    Plug 'fatih/vim-go', { 'for': 'go', 'do': ':GoUpdateBinaries' }
 
     " Scala
     Plug 'derekwyatt/vim-scala'
@@ -180,7 +180,7 @@ set nocompatible " Must be the first line
     Plug 'kshenoy/vim-signature'
 
     " camel case movements:
-    Plug 'bkad/CamelCaseMotion'  " TODO not configured
+    "Plug 'bkad/CamelCaseMotion'  " TODO not configured
 
     " typos:
     "Plug 'chip/vim-fat-finger'
@@ -198,8 +198,8 @@ set nocompatible " Must be the first line
     " alternative - greplace
     Plug 'dkprice/vim-easygrep'
 
-    " visual-star-search - search words selected in visual mode:
-    Plug 'bronson/vim-visual-star-search'  " TODO seek alternatives, doesn't appear to be working correctly anymore
+    " nicer in-buffer search with *; also clears highlight on cursor move
+    Plug 'junegunn/vim-slash'
 
     " manipulate on blocks based on their indentation:
     " use  vai  and vii
@@ -221,9 +221,6 @@ set nocompatible " Must be the first line
     " show search window as 'at match # out of # matches':
     Plug 'henrik/vim-indexed-search'
 
-    " tab completion in search:
-    Plug 'vim-scripts/SearchComplete' "TODO: currently doesn't work!
-
     " adds . (repeat) functionality to more complex commands instead of the native-only ones:
     Plug 'tpope/vim-repeat'
 
@@ -234,7 +231,7 @@ set nocompatible " Must be the first line
     Plug 'tpope/vim-eunuch'
 
     " async jobs
-    Plug 'tpope/vim-dispatch'
+    Plug 'tpope/vim-dispatch' " alt: skywind3000/asyncrun.vim
 
     " add :CopyPath and :CopyFileName commands
     Plug 'vim-scripts/copypath.vim'
@@ -259,7 +256,7 @@ set nocompatible " Must be the first line
     " universal text linking (here for orgmode hyperlink support) " vim-scripts/utl.vim
     Plug 'vim-scripts/utl.vim'
 
-    Plug 'PotatoesMaster/i3-vim-syntax'
+    Plug 'mboughaba/i3config.vim'
 
     Plug 'junegunn/fzf.vim'  " https://github.com/junegunn/fzf.vim
 
@@ -385,13 +382,17 @@ set nocompatible " Must be the first line
     let g:tagbar_left = 0
     let g:tagbar_width = 30
 
-    " vim-easytags:
-    set tags=./.tags;,~/.vimtags
-    let g:easytags_dynamic_files = 1 " search for project specific tags; relative to wd or buffer!
-    let g:easytags_by_filetype = '~/.config/nvim/tags' " TODO: how to use with jsctags?; also fyi -  dynamic_files takes precedence over this
-    let g:easytags_always_enabled = 1
-    let g:easytags_on_cursorhold = 1
-    let g:easytags_async = 1
+    " vim-easytags/gutentags (not sure if latter uses this set 'tags'):
+    "set tags=./.tags;,~/.vimtags
+    set statusline+=%{gutentags#statusline()}  " show when we're generating tags
+    let g:gutentags_trace=1  " debug
+    let g:gutentags_ctags_tagfile = '.tags'
+    let g:gutentags_resolve_symlinks=0
+    "let g:easytags_dynamic_files = 1 " search for project specific tags; relative to wd or buffer!
+    "let g:easytags_by_filetype = '~/.config/nvim/tags' " TODO: how to use with jsctags?; also fyi -  dynamic_files takes precedence over this
+    "let g:easytags_always_enabled = 1
+    "let g:easytags_on_cursorhold = 1
+    "let g:easytags_async = 1
     "let g:easytags_include_members = 1
     "let g:easytags_autorecurse = 1 "!!! makes stuff slooooow
     "let g:easytags_events = ['BufWritePost']
@@ -620,6 +621,8 @@ set nocompatible " Must be the first line
 " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 " fzf ripgrep  (from https://github.com/junegunn/fzf.vim)
+"   :Rg  - Start fzf with hidden preview window that can be enabled with "?" key
+"   :Rg! - Start fzf in fullscreen and display the preview window above
 if executable("rg")
     command! -bang -nargs=* Rg
           \ call fzf#vim#grep(
@@ -628,10 +631,13 @@ if executable("rg")
           \           : fzf#vim#with_preview('right:50%:hidden', '?'),
           \   <bang>0)
 
-    nnoremap <C-P> :Files<CR>
-    nnoremap <leader><C-P> :Buffers<CR>
-
     " additional rg-related additions:
     set grepprg=rg\ --vimgrep\ --no-heading
 endif
 
+nnoremap <C-P> :Buffers<CR>
+nnoremap <leader><C-P> :Files<CR>
+
+" Likewise, Files command with preview window:
+command! -bang -nargs=? -complete=dir Files
+    \ call fzf#vim#files(<q-args>, fzf#vim#with_preview(), <bang>0)

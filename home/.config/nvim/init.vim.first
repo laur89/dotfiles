@@ -497,10 +497,10 @@
         """ set binds to copy/paste to system clipboard: {{{
             " <C-c> for copy (in visual), <leader><C-v>(in normal) for paste:
             if has('unix')
-                " with xclip:
+                " -- with xclip:
                 "vn <C-c> y:call system("xclip -i -selection clipboard", getreg("\""))<CR>:call system("xclip -i", getreg("\""))<CR>
                 "no <leader><C-v> :call setreg("\"",system("xclip -o -selection clipboard"))<CR>p
-                " with xsel:
+                " -- with xsel:
                 vn <C-c> y:call system("xsel --input --clipboard", getreg("\""))<CR>:call system("xsel --input", getreg("\""))<CR>
                 no <leader><C-v> :call setreg("\"",system("xsel --output --clipboard"))<CR>p
             elseif has('mac')
