@@ -4,14 +4,16 @@
 
 sub on_sel_grab {
     my $query = $_[0]->selection;
-    open (my $pipe,'| /usr/bin/xclip -in -selection clipboard') or die;
+    #open (my $pipe,'| /usr/bin/xclip -in -selection clipboard') or die;
+    open (my $pipe,'| /usr/bin/xsel --input --clipboard') or die;
     print $pipe $query;
     close $pipe;
 }
 
 sub paste {
     my ($self) = @_;
-    my $content = `/usr/bin/xclip -loop 1 -out -selection clipboard` ;
+    #my $content = `/usr/bin/xclip -loop 1 -out -selection clipboard` ;
+    my $content = `/usr/bin/xsel --output --clipboard` ;
     $self->tt_write ($content);
 }
 
