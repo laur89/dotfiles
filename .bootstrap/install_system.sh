@@ -3125,7 +3125,7 @@ install_fonts() {
         return 0
     }
 
-    # https://github.com/stark/siji   (bitmap fonts icons)
+    # https://github.com/stark/siji   (bitmap font icons)
     install_siji() {
         local tmpdir
 
