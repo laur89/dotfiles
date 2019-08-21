@@ -1578,6 +1578,7 @@ install_own_builds() {
     #install_rambox
     #install_franz
     install_ferdi
+    install_slack_term
     install_ripgrep
     #install_rebar
     install_fd
@@ -1879,8 +1880,20 @@ install_franz() {  # https://github.com/meetfranz/franz/blob/master/docs/linux.m
 
 
 # Franz nag-less fork; found it from this franz thread: https://github.com/meetfranz/franz/issues/1167
+# might also consider open-source fork of rambox: https://github.com/TheGoddessInari/hamsket
 install_ferdi() {  # https://github.com/kytwb/ferdi
     install_bin_from_git -n ferdi kytwb ferdi .AppImage
+}
+
+
+install_lazyman() {  # https://github.com/StevensNJD4/LazyMan
+    true
+    #install_bin_from_git -n ferdi kytwb ferdi .AppImage
+}
+
+
+install_slack_term() {  # https://github.com/erroneousboat/slack-term
+    install_bin_from_git -n slack-term erroneousboat slack-term slack-term-linux-amd64
 }
 
 
@@ -2962,14 +2975,13 @@ install_YCM() {  # the quick-and-not-dirty install.py way
     install_block '
         build-essential
         cmake
-        python-dev
         python3-dev
     '
-    execute "$NPM_PRFX npm install -g typescript"  # for js support
+    #execute "$NPM_PRFX npm install -g typescript"  # for js support
 
     # install YCM
     execute "pushd -- $ycm_plugin_root" || return 1
-    execute --ignore-errs "python3 ./install.py --all" || return 1  # run with py3 because of https://github.com/Valloric/YouCompleteMe/issues/2136
+    execute --ignore-errs "python3 ./install.py --all" || return 1
     execute "popd"
 }
 
@@ -3643,6 +3655,7 @@ __choose_prog_to_build() {
         install_rambox
         install_franz
         install_ferdi
+        install_slack_term
         install_ripgrep
         install_rebar
         install_fd
