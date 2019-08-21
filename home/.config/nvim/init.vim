@@ -21,7 +21,7 @@ set nocompatible " Must be the first line
 
             " make directory for the persistent undo storage (not related to vim-plug)...
             silent !mkdir -p $HOME/.config/nvim/undo
-            " ...and for tags (used by vim-easytags):
+            " ...and for tags (used by vim-easytags): # TODO: remove once easytags has been nuked
             silent !mkdir -p $HOME/.config/nvim/tags
         endif
     """ }}}
@@ -135,7 +135,7 @@ set nocompatible " Must be the first line
     " supertab et al; needs compilation! read the docs!:
     " !!! ühed väidavad, et javaphp,js,html jaoks on neocomplete parem;
     " for neovim, consider Shougo/deoplete.nvim as alternative;
-    Plug 'Valloric/YouCompleteMe'
+    Plug 'ycm-core/YouCompleteMe'
 
     " Go-lang/golang/go lang support:
     Plug 'fatih/vim-go', { 'for': 'go', 'do': ':GoUpdateBinaries' }
@@ -260,8 +260,6 @@ set nocompatible " Must be the first line
 
     Plug 'junegunn/fzf.vim'  " https://github.com/junegunn/fzf.vim
 
-    " ctrl+w o   to zoom into a window and back:
-    "Plug 'drn/zoomwin-vim'  " TODO: atm only works with vim (not nvim; better use :tab split?)
     set rtp+=~/.fzf  "https://github.com/junegunn/fzf
 
 
@@ -385,7 +383,7 @@ set nocompatible " Must be the first line
     " vim-easytags/gutentags (not sure if latter uses this set 'tags'):
     "set tags=./.tags;,~/.vimtags
     set statusline+=%{gutentags#statusline()}  " show when we're generating tags
-    let g:gutentags_trace=1  " debug
+    "let g:gutentags_trace=1  " debug
     let g:gutentags_ctags_tagfile = '.tags'
     let g:gutentags_resolve_symlinks=0
     "let g:easytags_dynamic_files = 1 " search for project specific tags; relative to wd or buffer!

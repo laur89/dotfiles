@@ -116,15 +116,21 @@ fi
 ##########################################
 # shell opts:
 #override history size:
-export HISTSIZE=10000  # don't go -1 here: processing massive histfiles can be slow af
-export HISTFILESIZE=-1
+export HISTSIZE=  # blank for unlimited
+export HISTFILESIZE=  # blank for unlimited
 
 # ignore dups:
 #export HISTCONTROL=ignoredups
 export HISTCONTROL=ignoreboth
 export HISTIGNORE='ls:bg:fg:c:lt:lat:latr:ltr:fhd:fh*:history*'  # ignore commands from history
 export HISTTIMEFORMAT='%F %T '
-export PROMPT_COMMAND='history -a'  # save comand to history immediately, not after the session terminates
+
+# Change the file location because certain bash sessions truncate .bash_history file upon close.
+# http://superuser.com/questions/575479/bash-history-truncated-to-500-lines-on-each-login
+export HISTFILE=~/.bash_history_eternal
+# Force prompt to write history after every command.
+# http://superuser.com/questions/20900/bash-history-loss
+export PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 
 shopt -u mailwarn       # disable mail notification:
 shopt -s cdspell        # try to correct typos in path
