@@ -45,7 +45,9 @@ alias pycat='pcat'
 alias goo='googler'
 alias define='googler -n 4 define'
 alias py3='python3'
-alias dunc='ncdu'  # never remember it, if it starts w/ 'du', it'll be more likely to find
+alias dunc='ncdu'  # never remember it; if it starts w/ 'du', it'll be more likely to find
+alias tgo='tmux new -A -s' # start a new tmux session, or attach to it if already exists
+alias got='tgo'
 ##################################
 #alias clean_failed_mvn="$(find ~/.m2 -name *.lastUpdated -delete)"
 #alias amq="/data/progs/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"
