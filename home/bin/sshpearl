@@ -87,14 +87,13 @@ ssh_pearl() {
         unset _tmp_dir; for d in /tmp \$HOME; do [[ -w \"\$d\" ]] && { _tmp_dir=\"\$d\"; break; } done
         [[ -d \"\$_tmp_dir\" ]] || { echo >&2 \"couldn't find writable tempdirs on the server. Aborting.\"; exit 1; };
         for d in base64 gunzip mktemp; do command -v \$d >/dev/null 2>&1 || { echo >&2 \"pearl-ssh requires [\$d] to be installed on the server. Aborting.\"; exit 1; } done
-        PEARLSSH_HOME=\"\$(mktemp -d pearl-XXXXX -p \"\$_tmp_dir\")\";
-        PEARLSSH_BIN=\"\$(mktemp -d pearl-bin-XXXXX -p \"\$PEARLSSH_HOME\")\";
-        export PEARL_HOME=\"\$PEARLSSH_HOME\";
-        trap \"rm -rf \"\$PEARLSSH_HOME\"; exit\" EXIT HUP INT QUIT PIPE TERM KILL;
-        echo \"$rcScript\" | base64 -di | gunzip > \"\$PEARLSSH_HOME/bashrc\";
-        echo \"$inputrcScript\" | base64 -di | gunzip > \"\$PEARLSSH_HOME/inputrc\";
-        echo \"$vimrcScript\" | base64 -di | gunzip > \"\$PEARLSSH_HOME/vimrc\";
-        echo \"$tmux\" | base64 -di | gunzip > \"\$PEARLSSH_HOME/tmux.conf\";
+        export PEARL_HOME=\"\$(mktemp -d pearl-XXXXX -p \"\$_tmp_dir\")\";
+        PEARLSSH_BIN=\"\$(mktemp -d pearl-bin-XXXXX -p \"\$PEARL_HOME\")\";
+        trap \"rm -rf \"\$PEARL_HOME\"; exit\" EXIT HUP INT QUIT PIPE TERM KILL;
+        echo \"$rcScript\" | base64 -di | gunzip > \"\$PEARL_HOME/bashrc\";
+        echo \"$inputrcScript\" | base64 -di | gunzip > \"\$PEARL_HOME/inputrc\";
+        echo \"$vimrcScript\" | base64 -di | gunzip > \"\$PEARL_HOME/vimrc\";
+        echo \"$tmux\" | base64 -di | gunzip > \"\$PEARL_HOME/tmux.conf\";
         echo \"$self\" | base64 -di | gunzip > \"\$PEARLSSH_BIN/$SELF\";
         chmod -R +x \"\$PEARLSSH_BIN\";
         export PATH=\$PATH:\$PEARLSSH_BIN;
@@ -103,27 +102,27 @@ ssh_pearl() {
         # the ssh-ing depth, as in how deep in ssh-sessions are we:
         export _SSH_PEARL_DEPTH_DASHES=${_SSH_PEARL_DEPTH_DASHES}-
 
-        if ! grep -q 'pearl-ssh local function additions.*overrides' \"\$PEARLSSH_HOME/bashrc\"; then
-            echo -e \"# pearl-ssh local function additions/overrides:\\nunalias gosu tmux >/dev/null 2>&1\" >> \"\$PEARLSSH_HOME/bashrc\"
+        if ! grep -q 'pearl-ssh local function additions.*overrides' \"\$PEARL_HOME/bashrc\"; then
+            echo -e \"# pearl-ssh local function additions/overrides:\\nunalias gosu tmux >/dev/null 2>&1\" >> \"\$PEARL_HOME/bashrc\"
         fi
 
         # delete previous (as in the one inherited from the previous ssh session) gosu() function definition:
-        sed -i '/^gosu().*VIMINIT.*INPUTRC.*bash/d' \"\$PEARLSSH_HOME/bashrc\"
+        sed -i '/^gosu().*VIMINIT.*INPUTRC.*bash/d' \"\$PEARL_HOME/bashrc\"
         # enter new gosu() function def (keep on a single line!):
-        echo -e \"gosu() { sudo -E bash --rcfile \\\"\$PEARLSSH_HOME/bashrc\\\" -i $commands_opt; }\" >> \"\$PEARLSSH_HOME/bashrc\"
+        echo -e \"gosu() { sudo -E bash --rcfile \\\"\$PEARL_HOME/bashrc\\\" -i $commands_opt; }\" >> \"\$PEARL_HOME/bashrc\"
 
         # doctor tmux settings/configs:
-        sed -i '/^alias tmux=/d' \"\$PEARLSSH_HOME/bashrc\"
+        sed -i '/^alias tmux=/d' \"\$PEARL_HOME/bashrc\"
         # enter new tmux alias (keep on a single line!):
-        echo -e \"alias tmux='tmux -f \\\"\$PEARLSSH_HOME/tmux.conf\\\"'\" >> \"\$PEARLSSH_HOME/bashrc\"
-        sed -i '/^set .*default-command /d' \"\$PEARLSSH_HOME/tmux.conf\"
-        echo -e \"set -g default-command \\\"/bin/bash --rcfile '\$PEARLSSH_HOME/bashrc'\\\"\" >> \"\$PEARLSSH_HOME/tmux.conf\"
+        echo -e \"alias tmux='tmux -f \\\"\$PEARL_HOME/tmux.conf\\\"'\" >> \"\$PEARL_HOME/bashrc\"
+        sed -i '/^set .*default-command /d' \"\$PEARL_HOME/tmux.conf\"
+        echo -e \"set -g default-command \\\"/bin/bash --rcfile '\$PEARL_HOME/bashrc'\\\"\" >> \"\$PEARL_HOME/tmux.conf\"
 
-        export VIMINIT=\"let \\\$MYVIMRC='\$PEARLSSH_HOME/vimrc' | source \\\$MYVIMRC\"
-        export INPUTRC=\"\$PEARLSSH_HOME/inputrc\"
+        export VIMINIT=\"let \\\$MYVIMRC='\$PEARL_HOME/vimrc' | source \\\$MYVIMRC\"
+        export INPUTRC=\"\$PEARL_HOME/inputrc\"
 
         # entry:
-        bash --rcfile \"\$PEARLSSH_HOME/bashrc\" -i ${commands_opt};
+        bash --rcfile \"\$PEARL_HOME/bashrc\" -i ${commands_opt};
 
     "
     # use this to store gosu command in a var instead:
