@@ -84,11 +84,10 @@ ssh_pearl() {
     self="$(gzip < "$0" | base64)"
 
     cmd="
-        for tmpDir in /tmp \$HOME; do [[ -w \"\$tmpDir\" ]] && { foundTmpDir=\"\$tmpDir\"; break; } done
-        [[ -z \"\$foundTmpDir\" ]] && { echo >&2 \"couldn't find writable tempdirs on the server. Aborting.\"; exit 1; };
-        command -v base64 >/dev/null 2>&1 || { echo >&2 \"pearl-ssh requires base64 to be installed on the server. Aborting.\"; exit 1; };
-        command -v gunzip >/dev/null 2>&1 || { echo >&2 \"pearl-ssh requires gunzip to be installed on the server. Aborting.\"; exit 1; };
-        PEARLSSH_HOME=\"\$(mktemp -d pearl-XXXXX -p \"\$foundTmpDir\")\";
+        unset _tmp_dir; for d in /tmp \$HOME; do [[ -w \"\$d\" ]] && { _tmp_dir=\"\$d\"; break; } done
+        [[ -d \"\$_tmp_dir\" ]] || { echo >&2 \"couldn't find writable tempdirs on the server. Aborting.\"; exit 1; };
+        for d in base64 gunzip mktemp; do command -v \$d >/dev/null 2>&1 || { echo >&2 \"pearl-ssh requires [\$d] to be installed on the server. Aborting.\"; exit 1; } done
+        PEARLSSH_HOME=\"\$(mktemp -d pearl-XXXXX -p \"\$_tmp_dir\")\";
         PEARLSSH_BIN=\"\$(mktemp -d pearl-bin-XXXXX -p \"\$PEARLSSH_HOME\")\";
         export PEARL_HOME=\"\$PEARLSSH_HOME\";
         trap \"rm -rf \"\$PEARLSSH_HOME\"; exit\" EXIT HUP INT QUIT PIPE TERM KILL;
@@ -105,7 +104,7 @@ ssh_pearl() {
         export _SSH_PEARL_DEPTH_DASHES=${_SSH_PEARL_DEPTH_DASHES}-
 
         if ! grep -q 'pearl-ssh local function additions.*overrides' \"\$PEARLSSH_HOME/bashrc\"; then
-            echo -e \"# pearl-ssh local function additions/overrides:\\nunalias gosu tmux >/dev/null 2>/dev/null\" >> \"\$PEARLSSH_HOME/bashrc\"
+            echo -e \"# pearl-ssh local function additions/overrides:\\nunalias gosu tmux >/dev/null 2>&1\" >> \"\$PEARLSSH_HOME/bashrc\"
         fi
 
         # delete previous (as in the one inherited from the previous ssh session) gosu() function definition:
