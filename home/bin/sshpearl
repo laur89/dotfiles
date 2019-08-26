@@ -104,23 +104,27 @@ ssh_pearl() {
         # the ssh-ing depth, as in how deep in ssh-sessions are we:
         export _SSH_PEARL_DEPTH_DASHES=${_SSH_PEARL_DEPTH_DASHES}-
 
-        ## logic to provide going root with the same shell config:
         if ! grep -q 'pearl-ssh local function additions.*overrides' \"\$PEARLSSH_HOME/bashrc\"; then
-            echo -e \"# pearl-ssh local function additions/overrides:\\nunalias gosu >/dev/null 2>/dev/null\\nunalias tmux >/dev/null 2>/dev/null\" >> \"\$PEARLSSH_HOME/bashrc\"
+            echo -e \"# pearl-ssh local function additions/overrides:\\nunalias gosu tmux >/dev/null 2>/dev/null\" >> \"\$PEARLSSH_HOME/bashrc\"
         fi
 
         # delete previous (as in the one inherited from the previous ssh session) gosu() function definition:
         sed -i '/^gosu().*VIMINIT.*INPUTRC.*bash/d' \"\$PEARLSSH_HOME/bashrc\"
         # enter new gosu() function def (keep on a single line!):
-        echo -e \"gosu() { VIMINIT=\\\"let \\\\\\\$MYVIMRC='\$PEARLSSH_HOME/vimrc' | source \\\\\\\$MYVIMRC\\\" INPUTRC=\\\"\$PEARLSSH_HOME/inputrc\\\" sudo -E bash --rcfile \\\"\$PEARLSSH_HOME/bashrc\\\" -i $commands_opt; }\" >> \"\$PEARLSSH_HOME/bashrc\"
+        echo -e \"gosu() { sudo -E bash --rcfile \\\"\$PEARLSSH_HOME/bashrc\\\" -i $commands_opt; }\" >> \"\$PEARLSSH_HOME/bashrc\"
 
-        # delete previous (as in the one inherited from the previous ssh session) tmux definition:
+        # doctor tmux settings/configs:
         sed -i '/^alias tmux=/d' \"\$PEARLSSH_HOME/bashrc\"
         # enter new tmux alias (keep on a single line!):
         echo -e \"alias tmux='tmux -f \\\"\$PEARLSSH_HOME/tmux.conf\\\"'\" >> \"\$PEARLSSH_HOME/bashrc\"
+        sed -i '/^set .*default-command /d' \"\$PEARLSSH_HOME/tmux.conf\"
+        echo -e \"set -g default-command \\\"/bin/bash --rcfile '\$PEARLSSH_HOME/bashrc'\\\"\" >> \"\$PEARLSSH_HOME/tmux.conf\"
+
+        export VIMINIT=\"let \\\$MYVIMRC='\$PEARLSSH_HOME/vimrc' | source \\\$MYVIMRC\"
+        export INPUTRC=\"\$PEARLSSH_HOME/inputrc\"
 
         # entry:
-        VIMINIT=\"let \\\$MYVIMRC='\$PEARLSSH_HOME/vimrc' | source \\\$MYVIMRC\" INPUTRC=\"\$PEARLSSH_HOME/inputrc\" bash --rcfile \"\$PEARLSSH_HOME/bashrc\" -i ${commands_opt};
+        bash --rcfile \"\$PEARLSSH_HOME/bashrc\" -i ${commands_opt};
 
     "
     # use this to store gosu command in a var instead:
