@@ -27,9 +27,10 @@ fi
 ##############################################
 # start X; note the ssh-agent:
 #if [ -z "$DISPLAY" ] && [ -n "$XDG_VTNR" ] && [ "$XDG_VTNR" -eq 1 ]; then
-if [ -z "$DISPLAY" ] && [ "$(tty)" == "/dev/tty1" ]; then
+if [ -z "$DISPLAY" ] && [ "$(tty)" == '/dev/tty1' ]; then
     echo '============'
-    read -r -p 'Enter DE/WM: ' __xsession_
+    read -r -t 10 -p 'Enter DE/WM: ' __xsession_
+    if [ $? -gt 128 ]; then __xsession_=i3; fi  # read timed out, default to something
 
     if is_windows; then
         # we're not starting any servers, so need to define DISPLAY to connect to:
