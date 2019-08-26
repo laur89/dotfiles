@@ -3202,12 +3202,6 @@ install_from_repo() {
 
     # consider apulse instead of pulseaudio
     declare -ar block1_nonwin=(
-        alsa-utils
-        pulseaudio
-        pavucontrol
-        pulsemixer
-        pulseaudio-equalizer
-        pasystray
         smartmontools
         pm-utils
         ntfs-3g
@@ -3236,6 +3230,12 @@ install_from_repo() {
         xorg
         x11-apps
         xinit
+        alsa-utils
+        pulseaudio
+        pavucontrol
+        pulsemixer
+        pulseaudio-equalizer
+        pasystray
         ca-certificates
         aptitude
         sudo
@@ -3270,7 +3270,6 @@ install_from_repo() {
         netdata
         wireshark
         iptraf
-        ntp
         gdebi
         mercurial
         rsync
@@ -3294,6 +3293,7 @@ install_from_repo() {
         ncdu
         pydf
         nethogs
+        ntp
         tkremind
         remind
         tree
@@ -3435,10 +3435,6 @@ install_from_repo() {
     declare -ar block4_nonwin=(
         charles-proxy
         mitmproxy
-        docker.io
-        docker-compose
-        python-docker
-        docker-swarm
     )
 
     declare -ar block4=(
@@ -3447,12 +3443,18 @@ install_from_repo() {
         python3-pygments
         urlview
         silversearcher-ag
+        locate
         cowsay
         cowsay-off
         toilet
         lolcat
         figlet
         redshift
+        geoclue-2.0
+        docker.io
+        docker-compose
+        python-docker
+        docker-swarm
     )
 
     blocks=()
@@ -3709,7 +3711,7 @@ remind_manually_installed_progs() {
     declare -ar progs=(
         lazyman2
         'intelliJ toolbox'
-        'jdk deps via sdkman'
+        'sdkman - jdk, maven, gradle...'
         'any custom certs'
     )
 
@@ -3966,11 +3968,11 @@ post_install_progs_setup() {
     is_native && install_acpi_events   # has to be after install_progs(), so acpid is already insalled and events/ dir present;
     is_native && enable_network_manager
     is_native && install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present
-    is_native && execute --ignore-errs "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
+    #is_native && execute --ignore-errs "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
     is_native && execute "mopidy local scan"            # update mopidy library
     is_native && execute "sudo sensors-detect --auto"   # answer enter for default values (this is lm-sensors config)
     increase_inotify_watches_limit         # for intellij IDEA
-    is_native && setup_docker
+    setup_docker
     setup_nvim
     is_native && execute "sudo adduser $USER wireshark"      # add user to wireshark group, so it could be run as non-root;
                                                 # (implies wireshark is installed with allowing non-root users
@@ -3978,8 +3980,8 @@ post_install_progs_setup() {
     #execute "newgrp wireshark"                  # log us into the new group; !! will stop script execution
     is_native && execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
     #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
-    is_native && configure_ntp_for_work
-    is_native && configure_pulseaudio  # TODO might be possible w/ windows
+    configure_ntp_for_work  # TODO: confirm if ntp needed in WSL
+    configure_pulseaudio  # TODO see if works in WSL
     #setup_seafile_cli  # TODO https://github.com/haiwen/seafile/issues/1855 & https://github.com/haiwen/seafile/issues/1854
     is_native && enable_fw
 }
