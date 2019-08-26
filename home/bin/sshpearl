@@ -27,26 +27,20 @@
 
 readonly SELF="$(basename -- "$0")"
 
-function ssh_pearl() {
-    local self rcScript inputrcScript vimrcScript ssh_opts opt commands arg commands_opt cmd
+ssh_pearl() {
+    local self rcScript inputrcScript vimrcScript tmux ssh_opts opt commands arg commands_opt cmd
 
     declare -a commands=()
     declare -a ssh_opts=()
 
 
-    # strips empty lines & comments
-    #
-    function _process_rc_file() {
-        local file
-
-        readonly file="$1"
-        [[ -n "$file" && -f "$file" ]] || return 1
-        sed '/^\s*#/ d;/^\s*$/d' < "$file"
-        return 0
+    # strips empty lines & comments from input ($1) file
+    _process_rc_file() {
+        sed '/^\s*#/ d;/^\s*$/d' < "$1"
     }
 
     # pass rc files or directories containing rc files as separate arguments.
-    function _aggregate_scripts() {
+    _aggregate_scripts() {
         local node i
 
         # strip empty lines & comments:
@@ -67,8 +61,8 @@ function ssh_pearl() {
 
     for opt in "$@"; do
         case "$opt" in
-            --) shift ; break ;;
-            *) ssh_opts+=("$opt") ; shift ;;
+            --) shift; break ;;
+            *) ssh_opts+=("$opt"); shift ;;
         esac
     done
 
@@ -86,6 +80,7 @@ function ssh_pearl() {
     rcScript="$(_aggregate_scripts "$PEARL_HOME/bashrc" "$PEARL_HOME/bashrc.d" | gzip | base64)"
     inputrcScript="$(_aggregate_scripts "$PEARL_HOME/inputrc" "$PEARL_HOME/inputrc.d" | gzip | base64)"
     vimrcScript="$(_aggregate_scripts "$PEARL_HOME/vimrc" "$PEARL_HOME/vimrc.d" | gzip | base64)"
+    tmux="$(_aggregate_scripts "$PEARL_HOME/tmux.conf" "$PEARL_HOME/tmux.d" | gzip | base64)"
     self="$(gzip < "$0" | base64)"
 
     cmd="
@@ -97,10 +92,11 @@ function ssh_pearl() {
         PEARLSSH_BIN=\"\$(mktemp -d pearl-bin-XXXXX -p \"\$PEARLSSH_HOME\")\";
         export PEARL_HOME=\"\$PEARLSSH_HOME\";
         trap \"rm -rf \"\$PEARLSSH_HOME\"; exit\" EXIT HUP INT QUIT PIPE TERM KILL;
-        echo \"${rcScript}\" | base64 -di | gunzip > \"\${PEARLSSH_HOME}/bashrc\";
-        echo \"${inputrcScript}\" | base64 -di | gunzip > \"\${PEARLSSH_HOME}/inputrc\";
-        echo \"${vimrcScript}\" | base64 -di | gunzip > \"\${PEARLSSH_HOME}/vimrc\";
-        echo \"${self}\" | base64 -di | gunzip > \"\${PEARLSSH_BIN}/$SELF\";
+        echo \"$rcScript\" | base64 -di | gunzip > \"\$PEARLSSH_HOME/bashrc\";
+        echo \"$inputrcScript\" | base64 -di | gunzip > \"\$PEARLSSH_HOME/inputrc\";
+        echo \"$vimrcScript\" | base64 -di | gunzip > \"\$PEARLSSH_HOME/vimrc\";
+        echo \"$tmux\" | base64 -di | gunzip > \"\$PEARLSSH_HOME/tmux.conf\";
+        echo \"$self\" | base64 -di | gunzip > \"\$PEARLSSH_BIN/$SELF\";
         chmod -R +x \"\$PEARLSSH_BIN\";
         export PATH=\$PATH:\$PEARLSSH_BIN;
 
@@ -109,18 +105,22 @@ function ssh_pearl() {
         export _SSH_PEARL_DEPTH_DASHES=${_SSH_PEARL_DEPTH_DASHES}-
 
         ## logic to provide going root with the same shell config:
-        if ! grep -q 'pearl-ssh local function additions.*overrides' \"\${PEARLSSH_HOME}/bashrc\"; then
-            echo -e \"# pearl-ssh local function additions/overrides:\\nunalias gosu >/dev/null 2>/dev/null\" >> \"\${PEARLSSH_HOME}/bashrc\"
+        if ! grep -q 'pearl-ssh local function additions.*overrides' \"\$PEARLSSH_HOME/bashrc\"; then
+            echo -e \"# pearl-ssh local function additions/overrides:\\nunalias gosu >/dev/null 2>/dev/null\\nunalias tmux >/dev/null 2>/dev/null\" >> \"\$PEARLSSH_HOME/bashrc\"
         fi
 
         # delete previous (as in the one inherited from the previous ssh session) gosu() function definition:
-        sed -i '/^gosu().*VIMINIT.*INPUTRC.*bash/d' \"\${PEARLSSH_HOME}/bashrc\"
+        sed -i '/^gosu().*VIMINIT.*INPUTRC.*bash/d' \"\$PEARLSSH_HOME/bashrc\"
         # enter new gosu() function def (keep on a single line!):
-        echo -e \"gosu() { VIMINIT=\\\"let \\\\\\\$MYVIMRC='\${PEARLSSH_HOME}/vimrc' | source \\\\\\\$MYVIMRC\\\" INPUTRC=\\\"\${PEARLSSH_HOME}/inputrc\\\" sudo -E bash --rcfile \\\"\${PEARLSSH_HOME}/bashrc\\\" -i ${commands_opt}; }\" >> \"\${PEARLSSH_HOME}/bashrc\"
+        echo -e \"gosu() { VIMINIT=\\\"let \\\\\\\$MYVIMRC='\$PEARLSSH_HOME/vimrc' | source \\\\\\\$MYVIMRC\\\" INPUTRC=\\\"\$PEARLSSH_HOME/inputrc\\\" sudo -E bash --rcfile \\\"\$PEARLSSH_HOME/bashrc\\\" -i $commands_opt; }\" >> \"\$PEARLSSH_HOME/bashrc\"
+
+        # delete previous (as in the one inherited from the previous ssh session) tmux definition:
+        sed -i '/^alias tmux=/d' \"\$PEARLSSH_HOME/bashrc\"
+        # enter new tmux alias (keep on a single line!):
+        echo -e \"alias tmux='tmux -f \\\"\$PEARLSSH_HOME/tmux.conf\\\"'\" >> \"\$PEARLSSH_HOME/bashrc\"
 
         # entry:
-        VIMINIT=\"let \\\$MYVIMRC='\${PEARLSSH_HOME}/vimrc' | source \\\$MYVIMRC\" INPUTRC=\"\${PEARLSSH_HOME}/inputrc\" bash --rcfile \"\${PEARLSSH_HOME}/bashrc\" -i ${commands_opt};
-
+        VIMINIT=\"let \\\$MYVIMRC='\$PEARLSSH_HOME/vimrc' | source \\\$MYVIMRC\" INPUTRC=\"\$PEARLSSH_HOME/inputrc\" bash --rcfile \"\$PEARLSSH_HOME/bashrc\" -i ${commands_opt};
 
     "
     # use this to store gosu command in a var instead:
