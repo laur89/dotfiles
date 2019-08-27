@@ -76,7 +76,7 @@ ssh_pearl() {
     command -v base64 >/dev/null 2>&1 || { echo >&2 "pearl-ssh requires base64 to be installed locally. Aborting."; return 1; }
     command -v gzip >/dev/null 2>&1 || { echo >&2 "pearl-ssh requires gzip to be installed locally. Aborting."; return 1; }
 
-    [[ -z "$PEARL_HOME" ]] && PEARL_HOME=${HOME}/.config/pearl
+    [[ -z "$PEARL_HOME" ]] && PEARL_HOME=$HOME/.config/pearl
 
     rcScript="$(_aggregate_scripts "$PEARL_HOME/bashrc" "$PEARL_HOME/bashrc.d" | gzip | base64)"
     inputrcScript="$(_aggregate_scripts "$PEARL_HOME/inputrc" "$PEARL_HOME/inputrc.d" | gzip | base64)"
@@ -115,7 +115,7 @@ ssh_pearl() {
         # doctor tmux settings/configs:
         export _TMUX_RC=\"\$_tmp_dir/.laur_tmux_rc\";
         rm -rf -- \"\$_TMUX_RC\" 2>/dev/null; mkdir -- \"\$_TMUX_RC\";
-        [[ :\$PATH: != *:\"\$_TMUX_RC/bin\":* ]] && export PATH=\$PATH:\$_TMUX_RC/bin;
+        [[ :\$PATH: != *:\"\$_TMUX_RC/bin\":* ]] && export PATH=\$PATH:\$_TMUX_RC/bin;  # make sure to keep _TMUX_RC at the bottom of PATH
         sed -i '/^alias tmux=/d' \"\$PEARL_HOME/bashrc\"
         # enter new tmux alias (keep on a single line!):
         echo -e \"alias tmux='tmux -f \\\"\$PEARL_HOME/tmux.conf\\\"'\" >> \"\$PEARL_HOME/bashrc\"
@@ -134,6 +134,7 @@ ssh_pearl() {
     #gosu_myvar="eval VIMINIT=\"let \\\$MYVIMRC='/tmp/pearl-GEUUz/vimrc' | source \\\$MYVIMRC\" INPUTRC=\"/tmp/pearl-GEUUz/inputrc\" bash --rcfile /tmp/pearl-GEUUz/bashrc -i ;"
 
     env TERM=xterm-color ssh -t "${ssh_opts[@]}" -- "$cmd"
+    # TODO: start using here-strings: ssh otherhost << 'EOF'...
 }
 
 ssh_pearl "$@"

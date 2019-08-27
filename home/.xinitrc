@@ -6,7 +6,6 @@
 # Mul execute'ib siit DM või .profile
 ##################################
 
-DEFAULT_SESSION="i3"
 #export GTK2_RC_FILES="$HOME/.gtkrc-2.0" # seda vist pole vaja
 #if test -z "$DBUS_SESSION_BUS_ADDRESS"; then
 #    exec dbus-launch --sh-syntax --exit-with-session
@@ -70,7 +69,9 @@ case "$input" in
         fi
         ;;
     *)
-        exec "$DEFAULT_SESSION"  # TODO: remove default, and keep looping?
+        err "incorrect option [$input]"
+        sleep 2
+        exit 1
         ;;
 esac
 
