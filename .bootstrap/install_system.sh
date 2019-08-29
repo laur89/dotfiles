@@ -333,6 +333,7 @@ setup_apt() {
         backup_original_and_copy_file --sudo "$file" "$apt_dir"
     done
 
+    # copy to apt.conf.d/:
     for file in \
             02periodic \
                 ; do
@@ -3419,7 +3420,6 @@ install_from_repo() {
         neovim/unstable
         python-neovim/unstable
         python3-neovim/unstable
-        powerline
         libxml2-utils
         pidgin
         weechat
