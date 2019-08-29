@@ -100,7 +100,7 @@ if ! is_windows && ! is_proc_running compton; then
 fi
 
 if is_native && ! is_proc_running syndaemon && is_laptop; then
-    syndaemon -t -K -i 1.5 &
+    syndaemon -d -t -K -i 1.5
     echo "Launching syndaemon..."
 fi
 
@@ -111,13 +111,17 @@ fi
     fi
 ) &
 
-(
-    if ! is_proc_running urxvtd; then
-        urxvtd --fork -o -q
-    fi
-    sleep 2
+if ! is_proc_running urxvtd; then
+    urxvtd --fork -o -q
     urxvtc
-) &
+fi
+#(
+    #if ! is_proc_running urxvtd; then
+        #urxvtd --fork -o -q
+    #fi
+    #sleep 2
+    #urxvtc
+#) &
 
 # from https://www.roaringpenguin.com/wiki/index.php/Remind_use_case_1
 if ! is_proc_running remind; then
