@@ -90,6 +90,9 @@ ssh_pearl() {
         for d in base64 gunzip mktemp; do command -v \$d >/dev/null 2>&1 || { echo >&2 \"pearl-ssh requires [\$d] to be installed on the server. Aborting.\"; exit 1; } done
         export PEARL_HOME=\"\$(mktemp -d pearl-XXXXX -p \"\$_tmp_dir\")\";
         PEARLSSH_BIN=\"\$PEARL_HOME/bin\"; mkdir -- \"\$PEARLSSH_BIN\";
+        export _TMUX_RC=\"\$_tmp_dir/.laur_tmux_rc\";
+        rm -rf -- \"\$_TMUX_RC\" 2>/dev/null; mkdir -- \"\$_TMUX_RC\";
+
         trap \"rm -rf \"\$PEARL_HOME\"; exit\" EXIT HUP INT QUIT PIPE TERM KILL;
         echo \"$rcScript\" | base64 -di | gunzip > \"\$PEARL_HOME/bashrc\";
         echo \"$inputrcScript\" | base64 -di | gunzip > \"\$PEARL_HOME/inputrc\";
@@ -109,19 +112,20 @@ ssh_pearl() {
 
         # delete previous (as in the one inherited from the previous ssh session) gosu() function definition:
         sed -i '/^gosu().*VIMINIT.*INPUTRC.*bash/d' \"\$PEARL_HOME/bashrc\"
-        # enter new gosu() function def (keep on a single line!):
-        echo -e \"gosu() { sudo -E bash --rcfile \\\"\$PEARL_HOME/bashrc\\\" -i $commands_opt; }\" >> \"\$PEARL_HOME/bashrc\"
 
-        # doctor tmux settings/configs:
-        export _TMUX_RC=\"\$_tmp_dir/.laur_tmux_rc\";
-        rm -rf -- \"\$_TMUX_RC\" 2>/dev/null; mkdir -- \"\$_TMUX_RC\";
-        [[ :\$PATH: != *:\"\$_TMUX_RC/bin\":* ]] && export PATH=\$PATH:\$_TMUX_RC/bin;  # make sure to keep _TMUX_RC at the bottom of PATH
+
         sed -i '/^alias tmux=/d' \"\$PEARL_HOME/bashrc\"
         # enter new tmux alias (keep on a single line!):
-        echo -e \"alias tmux='tmux -f \\\"\$PEARL_HOME/tmux.conf\\\"'\" >> \"\$PEARL_HOME/bashrc\"
+        echo -e \"alias tmux='tmux -f \\\"\$_TMUX_RC/tmux.conf\\\"'\" >> \"\$PEARL_HOME/bashrc\"
+        sed -i '/^set .* default-command /d' \"\$PEARL_HOME/tmux.conf\"
+        echo -e \"set -g default-command \\\"VIMINIT='let \\\$MYVIMRC=\$_TMUX_RC/vimrc | source \\\$MYVIMRC' INPUTRC='\$_TMUX_RC/inputrc' /bin/bash --rcfile '\$_TMUX_RC/bashrc'\\\"\" >> \"\$PEARL_HOME/tmux.conf\"
         cp -rp -- \"\$PEARL_HOME\"/* \"\$_TMUX_RC/\"
-        sed -i '/^set .* default-command /d' \"\$_TMUX_RC/tmux.conf\"
-        echo -e \"set -g default-command \\\"VIMINIT='let \\\$MYVIMRC=\$_TMUX_RC/vimrc | source \\\$MYVIMRC' INPUTRC='\$_TMUX_RC/inputrc' /bin/bash --rcfile '\$_TMUX_RC/bashrc'\\\"\" >> \"\$_TMUX_RC/tmux.conf\"
+
+        # enter new gosu() function def (keep on a single line!):
+        for d in \$PEARL_HOME \$_TMUX_RC; do echo -e \"gosu() { sudo -E bash --rcfile \\\"\$d/bashrc\\\" -i $commands_opt; }\" >> \"\$d/bashrc\"; done
+
+        # doctor tmux settings/configs:
+        [[ :\$PATH: != *:\"\$_TMUX_RC/bin\":* ]] && export PATH=\$PATH:\$_TMUX_RC/bin;  # make sure to keep _TMUX_RC at the bottom of PATH
 
         export VIMINIT=\"let \\\$MYVIMRC='\$PEARL_HOME/vimrc' | source \\\$MYVIMRC\"
         export INPUTRC=\"\$PEARL_HOME/inputrc\"
@@ -134,7 +138,7 @@ ssh_pearl() {
     #gosu_myvar="eval VIMINIT=\"let \\\$MYVIMRC='/tmp/pearl-GEUUz/vimrc' | source \\\$MYVIMRC\" INPUTRC=\"/tmp/pearl-GEUUz/inputrc\" bash --rcfile /tmp/pearl-GEUUz/bashrc -i ;"
 
     env TERM=xterm-color ssh -t "${ssh_opts[@]}" -- "$cmd"
-    # TODO: start using here-strings: ssh otherhost << 'EOF'...
+    # TODO: start using here document: ssh otherhost << 'EOF'...
 }
 
 ssh_pearl "$@"
