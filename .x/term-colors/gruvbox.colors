@@ -1,4 +1,5 @@
 ! from https://github.com/morhetz/gruvbox-contrib/blob/master/urxvt256/gruvbox-urxvt256.xresources
+! note color definitions differ from dotfile to dotfile; consider also https://sunaku.github.io/gruvbox-terminal-color-scheme.html gruvbox
 ! -----------------------------------------------------------------------------
 ! File: gruvbox-urxvt256.xresources
 ! Description: Retro groove colorscheme generalized
@@ -38,7 +39,8 @@
 *.color248: #bdae93
 *.color250: #d5c4a1
 
-! from https://github.com/mohabaks/dotfiles/blob/master/colors/.colors/gruvbox
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! from https://github.com/mohabaks/dotfiles/blob/master/colors/.colors/gruvbox:
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! special
 *.foreground:   #ebdbb2
