@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 #
 # from https://github.com/samoshkin/tmux-config/blob/master/tmux/yank.sh
-# note it's really based on TODO
+# note it's really based on
+#   https://medium.com/free-code-camp/tmux-in-practice-integration-with-system-clipboard-bcd72c62ff7b
+#   and that's based on https://sunaku.github.io/tmux-yank-osc52.html
+#
 #
 # alternative: ssh port forwarding (with listener on host side): https://apple.stackexchange.com/a/258168
 #
