@@ -2,6 +2,7 @@
 ! excellent all-around dotfiles: https://github.com/mohabaks/dotfiles/
 ! another source of colors: http://terminal.sexy or http://www.xcolors.net/ or
 ! http://dotshare.it/category/terms/colors/
+! https://github.com/joshdick/onedark.vim
 ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 Xft.autohint: 0
 Xft.antialias: 1
@@ -15,7 +16,7 @@ Xft.lcdfilter: lcddefault
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-URxvt.perl-ext-common: default,clipboard,tabbedex,keyboard-select,vtwheel,matcher
+URxvt.perl-ext-common: default,clipboard,tabbedex,keyboard-select,vtwheel,matcher,xresources-256
 !URxvt.perl-lib: /your/folder/  ! only needed if you use a non-standard directory
 URxvt*geometry: 100x50
 ! comment the depth, otherwise w3m cant render images in urxvt:
