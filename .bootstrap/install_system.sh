@@ -1582,7 +1582,6 @@ install_own_builds() {
     install_slack_term
     install_ripgrep
     #install_rebar
-    install_fd
     install_lazygit
     install_gitin
     #install_synergy  # currently installing from repo
@@ -1908,6 +1907,7 @@ install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
 }
 
 
+# found as apt find-fd package;
 install_fd() {  # https://github.com/sharkdp/fd
     install_deb_from_git sharkdp fd 'musl_[0-9.]+_amd64.deb'
 }
@@ -3267,7 +3267,6 @@ install_from_repo() {
         dnstracer
         dnsmasq
         resolvconf
-        glances
         netdata
         wireshark
         iptraf
@@ -3290,6 +3289,7 @@ install_from_repo() {
         jq
         crudini
         htop
+        glances
         iotop
         ncdu
         pydf
@@ -3403,6 +3403,9 @@ install_from_repo() {
         exuberant-ctags
         shellcheck
         ranger
+        vifm
+        bat
+        fd-find
         screenfetch
         neofetch
         maim
@@ -3660,7 +3663,6 @@ __choose_prog_to_build() {
         install_slack_term
         install_ripgrep
         install_rebar
-        install_fd
         install_lazygit
         install_gitin
         install_synergy
