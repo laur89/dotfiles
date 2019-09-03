@@ -101,7 +101,8 @@ set nocompatible " Must be the first line
     " Awesome syntax checker.
     " REQUIREMENTS: See :h syntastic-intro
     " alternative: neomake
-    Plug 'vim-syntastic/syntastic'
+    "Plug 'vim-syntastic/syntastic'
+    Plug 'dense-analysis/ale'
 
     " Functions, class data etc.
     " REQUIREMENTS: (exuberant)-ctags
@@ -297,8 +298,8 @@ set nocompatible " Must be the first line
         set pastetoggle=<F6>
 
         " Syntastic - toggle error list. Probably should be toggleable.
-        noremap <silent><leader>lo :Errors<CR>
-        noremap <silent><leader>lc :lcl<CR>
+        "noremap <silent><leader>lo :Errors<CR>
+        "noremap <silent><leader>lc :lcl<CR>
 
         " NERDtree toggle:
         map <C-n> :NERDTreeToggle<CR>
@@ -483,38 +484,39 @@ set nocompatible " Must be the first line
 
 
     " Syntastic - This is largely up to your own usage, and override these
-    "             changes if be needed. This is merely an exemplification.
-    let g:syntastic_check_on_open = 1
-    let g:syntastic_enable_signs = 1
+    "             changes if be needed. This is merely an exemplification. {{{
+    "let g:syntastic_check_on_open = 1
+    "let g:syntastic_enable_signs = 1
 
-    let g:syntastic_c_checkers = ['gcc']
-    let g:syntastic_c_check_header = 1
-    let g:syntastic_c_auto_refresh_includes = 1
+    "let g:syntastic_c_checkers = ['gcc']
+    "let g:syntastic_c_check_header = 1
+    "let g:syntastic_c_auto_refresh_includes = 1
 
-    let g:syntastic_python_checkers = ['flake8', 'python']
-    let g:syntastic_bash_checkers = ['shellcheck']
-    let g:syntastic_sh_checkers = ['shellcheck', 'checkbashisms']
-    let g:syntastic_javascript_checkers = ['jshint']
-    let g:syntastic_css_checkers = ['csslint']
+    "let g:syntastic_python_checkers = ['flake8', 'python']
+    "let g:syntastic_bash_checkers = ['shellcheck']
+    "let g:syntastic_sh_checkers = ['shellcheck', 'checkbashisms']
+    "let g:syntastic_javascript_checkers = ['jshint']
+    "let g:syntastic_css_checkers = ['csslint']
 
-    let g:syntastic_cpp_check_header = 1
-    "let g:syntastic_cpp_compiler_options = ' -std=c++0x'
-    "
-    " note go in passive list, as vim-go is installed;
-    let g:syntastic_mode_map = {
-        \ 'mode': 'active',
-        \ 'passive_filetypes':
-            \ ['java','go'] }
-
+    "let g:syntastic_cpp_check_header = 1
+    ""let g:syntastic_cpp_compiler_options = ' -std=c++0x'
+    ""
+    "" note go in passive list, as vim-go is installed;
     "let g:syntastic_mode_map = {
-        "\ 'mode': 'passive',
-        "\ 'active_filetypes':
-            "\ ['c', 'cpp', 'perl', 'python'] }
+        "\ 'mode': 'active',
+        "\ 'passive_filetypes':
+            "\ ['java','go'] }
 
-    "let g:syntastic_mode_map = {
-        "\ 'mode': 'passive',
-        "\ 'active_filetypes': [],
-        "\ 'passive_filetypes': [] } }
+    ""let g:syntastic_mode_map = {
+        ""\ 'mode': 'passive',
+        ""\ 'active_filetypes':
+            ""\ ['c', 'cpp', 'perl', 'python'] }
+
+    ""let g:syntastic_mode_map = {
+        ""\ 'mode': 'passive',
+        ""\ 'active_filetypes': [],
+        ""\ 'passive_filetypes': [] } 
+    """ }}}
 
 
     " Session management options (vim-session):

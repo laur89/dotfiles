@@ -84,7 +84,7 @@ bindsym $mod+a focus parent
 bindsym $mod+d focus child
 
 # Initialize workspace
-#                        
+#                       
 set $w1   1:Surf
 set $w2   2:Code
 set $w3   3:Chat
@@ -94,7 +94,7 @@ set $w6   6:Read
 set $w7   7:Media
 set $w8   8:Misc
 
- 
+
 # Switch to workspace
 bindsym $mod+1 workspace $w1
 bindsym $mod+2 workspace $w2
@@ -179,7 +179,7 @@ mode "$resize" {
         bindsym Escape mode "default"
 }
 
-#  i3-gaps settings 
+#  i3-gaps settings
 #  More info visit: https://github.com/Airblader/i3
 
 # Smart borders (draw borders around container only if it is not
@@ -259,7 +259,7 @@ bindsym Control+mod1+Delete exec --no-startup-id /usr/local/bin/lock
  #     bindsym s exec --no-startup-id $Locker && systemctl suspend, mode "default"
  #     bindsym h exec --no-startup-id $Locker && systemctl hibernate,mode "default"
  #     bindsym r exec --no-startup-id systemctl reboot, mode "default"
- #     bindsym Shift+s exec --no-startup-id systemctl poweroff -i, mode "default"  
+ #     bindsym Shift+s exec --no-startup-id systemctl poweroff -i, mode "default"
 
  #     # back to normal: Enter or Escape
  #     bindsym Return mode "default"
@@ -287,7 +287,7 @@ bindsym Print exec --no-startup-id scrot -e 'mv $f ~/Pictures/screenshots' && no
 
 # My apps shortcut
 # note all bindings get translated by Group1 keymap (see https://i3wm.org/docs/userguide.html#keybindings)
-#bindsym $mod+p exec pcmanfm 
+#bindsym $mod+p exec pcmanfm
 #bindsym $mod+b exec firefox
 
 # keycode 34 = ü on ee, [ on us keymap:
@@ -318,19 +318,19 @@ bindcode Control+34 exec --no-startup-id copyq toggle
 
 #Start i3bar to display a workspace bar; this block cannot exist when using polybar
 #Uncomment to use the default i3bar status
-# bar {      
-#    
-#           status_command  $HOME/.local/bin/conkyi3.sh     
+# bar {
+#
+#           status_command  $HOME/.local/bin/conkyi3.sh
 #           position top
 #           font xft:tewi, FontAwesome 8
 #           strip_workspace_numbers yes
-#          
+#
 #           colors {
 #               separator          #161615
 #               background         #020202
 #               statusline         #111111
-#              
-#               # Bar colors       border    background    text 
+#
+#               # Bar colors       border    background    text
 #               focused_workspace  #07090d   #020202       #5E468C
 #               active_workspace   #07090d   #020202       #268bd2
 #               inactive_workspace #07090d   #020202       #899CA1
@@ -362,7 +362,7 @@ exec_always --no-startup-id flashfocus
 # # Start apps during startup
 #exec --no-startup-id nitrogen --restore  &
 #exec --no-startup-id conky -c $HOME/.config/i3/conkybar-top -d
-#exec --no-startup-id compton --config ~/.compton.conf -b 
+#exec --no-startup-id compton --config ~/.compton.conf -b
 #exec --no-startup-id dunst -config $HOME/.config/dunst/dunstrc
 #exec --no-startup-id xrdb -load -I$HOME ~/.Xresources
 #exec --no-startup-id . $HOME/.local/bin/urxvt_daemon &
@@ -466,15 +466,16 @@ bindsym $mod+Control+Shift+z exec --no-startup-id i3-scratch-marker.sh scratch_m
 #bindsym $mod+Shift+z sticky toggle
 
 # quake style terminal:
-# 1st ver, using urxvtq:
+# 1st ver, using urxvtq:--------
 for_window [instance="^scratchpad_urxvt_top$"] border pixel 1, floating enable, move position 0 px 0 px, resize set 100 ppt 40 ppt
 #bindsym $mod1+i exec urxvtq scratchpad_urxvt_top
-
+# ------------------------------
 # 2nd ver, using i3-quickterm:  TODO: when in multi-mon, find which one to use (ie this or urxvtq)
 # with prompt:
 #bindsym $mod1+i exec i3-quickterm
 # always pop standard shell, without the rofi menu:
 bindsym $mod1+i exec --no-startup-id i3-quickterm shell
+# ------------------------------
 
 # bind i3expo launcher:
 bindsym $mod1+e exec --no-startup-id killall -s SIGUSR1 i3expod.py
