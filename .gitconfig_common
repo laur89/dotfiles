@@ -20,7 +20,7 @@
     autocrlf = false
     safecrlf = true
     ;pager = less
-    pager = diff-so-fancy | less --tabs=4 -RFX
+    pager = diff-so-fancy | less --tabs=4 -RFXS
     preloadindex = true
 [pull]
     rebase = true
@@ -38,6 +38,7 @@
     ;tool = vd -f
 [pager]
     difftool = false
+    diff = diff-so-fancy | less --tabs=4 -RFXS --pattern '^(Date|added|deleted|modified): '
 [push]
     default = simple
 [alias]
@@ -103,6 +104,22 @@
     hotfix = hotfix/
     support = support/
     versiontag =
+
+; color bits from https://github.com/so-fancy/diff-so-fancy:
+[color]
+    ui = true
+[color "diff-highlight"]
+    oldNormal = red bold
+    oldHighlight = red bold 52
+    newNormal = green bold
+    newHighlight = green bold 22
+[color "diff"]
+    meta = 11
+    frag = magenta bold
+    commit = yellow bold
+    old = red bold
+    new = green bold
+    whitespace = red reverse
 
 ;;;;;;;;;;;;;;;;;;;
 ;;;; COMMANDSS ;;;;
