@@ -862,12 +862,17 @@ install_deps() {
     # diff-so-fancy - human-readable git diff:  # https://github.com/so-fancy/diff-so-fancy
     if execute "wget -O $TMP_DIR/d-s-f 'https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy'"; then
         git config core.pager | grep -q diff-so-fancy || err "git config core.pager not set for diff-so-fancy; configure it"
-        test -s $TMP_DIR/d-s-f && execute "mv -- $TMP_DIR/d-s-f $HOME/bin/diff-so-fancy; chmod +x $HOME/bin/diff-so-fancy" || err "fetched diff-so-fancy file is null"
+        test -s $TMP_DIR/d-s-f && execute "mv -- $TMP_DIR/d-s-f $HOME/bin/diff-so-fancy && chmod +x $HOME/bin/diff-so-fancy" || err "fetched diff-so-fancy file is null"
     else
         err "diff-so-fancy fetch failed"
     fi
 
-    # dynamic colors loader:
+    # forgit - fzf-fueled git tool:  # https://github.com/wfxr/forgit
+    if ! execute "wget -O $HOME/.forgit 'https://raw.githubusercontent.com/wfxr/forgit/master/forgit.plugin.zsh'"; then
+        err "forgit fetch failed"
+    fi
+
+    # dynamic colors loader: (TODO: deprecated by pywal right?)
     #clone_or_pull_repo "sos4nt" "dynamic-colors" "$BASE_DEPS_LOC"  # https://github.com/sos4nt/dynamic-colors
     #create_link "${BASE_DEPS_LOC}/dynamic-colors" "$HOME/.dynamic-colors"
     #create_link "${BASE_DEPS_LOC}/dynamic-colors/bin/dynamic-colors" "$HOME/bin/dynamic-colors"
