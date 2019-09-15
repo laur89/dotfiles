@@ -24,3 +24,6 @@
 
 # follow symlinks
 --follow
+
+# search hidden files
+--hidden

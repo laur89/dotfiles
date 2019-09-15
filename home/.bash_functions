@@ -3272,8 +3272,14 @@ cf() {
 # search for files with file content (showing preview)
 # find-in-file - usage: fif <searchTerm>
 fif() {
+  local preview_cmd
+
+  #preview_cmd='highlight -O ansi -l -- {}'
+  preview_cmd='bat -p --color always -- {}'
+
   [[ "$#" -ne 1 ]] && { err "Need exactly one param to search for!"; return 1; }
-  rg --files-with-matches --no-messages "$1" | fzf --preview "highlight -O ansi -l {} 2> /dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
+  rg --files-with-matches --no-messages "$1" \
+    | fzf --preview "$preview_cmd 2>/dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
 }
 
 
@@ -3360,15 +3366,13 @@ fh() {
 # fhd - history delete
 # search shell history commands and delete the selected ones.
 #
-# TODO: remove multi-select, as offset starts changing with first delete?
-#
 # Examples:
 #    fhd  ssh user server
 #    fhd  curl part-of-url
 fhd() {
-    local input offset_regex cmd ifs_old i
+    local q offset_regex cmd ifs_old i out
 
-    input="$*"
+    q="$*"
 
     readonly offset_regex='^\s*\K\d+(?=.*$)'
     check_progs_installed history || return 1
@@ -3382,25 +3386,24 @@ fhd() {
     }
 
     if command -v fzf > /dev/null 2>&1; then
-        # TODO: fzf needs to re-read history after each and every deletion event; no multis!
-        while read -r i; do
+		while out="$(history | fzf --no-sort --print-query --tac --query="$q" +m -e --exit-0)"; do
+			mapfile -t out <<< "$out"
+			q="${out[0]}"
+			i="${out[-1]}"
+			[[ -z "$i" ]] && return
             __delete_cmd "$i" || break
-        done < <(history | fzf --no-sort --tac --query="$input" --multi -e --exit-0 --select-1)
+		done
     else
-        input="${input// /.*}"  # build regex for grep
+        q="${q// /.*}"  # build regex for grep
         readonly ifs_old="$IFS"
         IFS=$'\n'
-        declare -ar cmd=( $(history | grep -iE --color=auto -- "$input") )
+        declare -ar cmd=( $(history | grep -iE --color=auto -- "$q") )
         IFS="$ifs_old"
 
         [[ -z "${cmd[*]}" ]] && { err "no matching entries found" "$FUNCNAME"; return 1; }
-        select_items "${cmd[@]}"
+        select_items --single "${cmd[@]}"
         [[ -z "${__SELECTED_ITEMS[*]}" ]] && { err "no entries selected" "$FUNCNAME"; return 1; }
-        #echo "woo: ${__SELECTED_ITEMS[@]}"
-
-        for i in "${__SELECTED_ITEMS[@]}"; do
-            __delete_cmd "$i" || break
-        done
+		__delete_cmd "${__SELECTED_ITEMS[*]}" || return $?
     fi
 
     # write the changes; otherwise deleted lines will reappear after terminal is closed (see https://unix.stackexchange.com/a/49216):
