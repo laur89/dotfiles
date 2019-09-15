@@ -3698,7 +3698,7 @@ fstash() {
 		--preview-window='top:70%'
     "
 	#stash_cmd="git stash list --pretty=format:'%C(red)%h%C(reset) - %C(dim yellow)(%C(bold magenta)%gd%C(dim yellow))%C(reset) %<(70,trunc)%s %C(green)(%cr) %C(bold blue)<%an>%C(reset)'"
-	stash_cmd="git stash list --color --pretty=format:'%C(red)%gd: %C(green)(%cr) %C(blue)%gs'"
+	stash_cmd="git stash list --color --pretty=format:'%C(red)%gd %C(green)(%cr) %C(blue)%gs'"
 
     while out="$(eval "$stash_cmd" | FZF_DEFAULT_OPTS="$opts" fzf)"; do
         mapfile -t out <<< "$out"

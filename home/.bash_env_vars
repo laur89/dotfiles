@@ -191,9 +191,10 @@ export FZF_DEFAULT_OPTS='--ansi --bind=alt-k:preview-up,alt-p:preview-up --bind=
 #export FZF_DEFAULT_OPTS='--ansi --color fg:-1,bg:-1,hl:230,fg+:3,bg+:233,hl+:229,info:150,prompt:110,spinner:150,pointer:167,marker:174'
 
 
-export FZF_DEFAULT_COMMAND='fd --hidden --follow --exclude .git'  # --type f
+export FZF_DEFAULT_COMMAND='fd --hidden --follow --exclude .git'  # --type f perhaps?
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"  # note --multi is already enabled for c+t
-export FZF_CTRL_C_COMMAND="$FZF_DEFAULT_COMMAND --type d --preview 'tree -C {} | head -200'"  # note everything after '--preview' is questionable
+export FZF_ALT_C_COMMAND="$FZF_DEFAULT_COMMAND --type d"
+export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200'"
 export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window down:3:wrap"  # show the longer history; helps if cmd line is extra long
 #export FZF_TMUX=1  # if you want to start fzf in a tmux pane
 
