@@ -3251,6 +3251,23 @@ vg() {
      "$EDITOR" "$file" +$line  # strong assumption on editor being n?vim
   fi
 }
+# note you might want to incorporate something from here into vg():
+fzf_grep_edit(){
+    local match file
+    if [[ $# == 0 ]]; then
+        echo 'Error: search term was not provided.'
+        return
+    fi
+    match=$(
+      rg --color=never --line-number "$1" |
+        fzf --no-multi --delimiter : \
+            --preview "bat --color=always --line-range {2}: {1}"
+      )
+    file=$(echo "$match" | cut -d':' -f1)
+    if [[ -f "$file" ]]; then
+        $EDITOR "$file" +$(echo "$match" | cut -d':' -f2)
+    fi
+}
 
 # cf - fuzzy cd from anywhere
 # ex: cf word1 word2 ... (even part of a file name)
@@ -3260,11 +3277,11 @@ cf() {
 
   file="$(locate -Ai -0 $@ | grep -z -vE '~$' | fzf --read0 -0 -1)"
 
-  if [[ -n $file ]]; then
-     if [[ -d $file ]]; then
-        cd -- $file
+  if [[ -n "$file" ]]; then
+     if [[ -d "$file" ]]; then
+        cd -- "$file"
      else
-        cd -- ${file:h}
+        cd -- "${file:h}"
      fi
   fi
 }
@@ -3283,7 +3300,7 @@ fif() {
 }
 
 
-# fkill - kill processes - list only the ones you can kill. Modified the earlier script.
+# fkill - kill processes - list only the ones you can kill. Modified the earlier script. (this 'earlier' bit is likely mindless copypasta)
 fkill() {
     local pid
     if [[ "$UID" -ne 0 ]]; then
@@ -3295,6 +3312,36 @@ fkill() {
     if [[ -n "$pid" ]]; then
         echo "$pid" | xargs kill -${1:-9}
     fi
+}
+
+
+# git pickaxe (git log -S opt) for searching for commit that caused specific string to (dis)appear in file;
+# see http://www.philandstuff.com/2014/02/09/git-pickaxe.html
+#
+# accepts the string query as first arg, and optional <path>(s) as 2nd+ args;
+# TODO: see how to provide regex to -S opt;
+faxe() {
+    local src dsf cmd opts
+
+    if [[ -z "$*" ]]; then
+        err 'Error: search term was not provided.'
+        return 1
+    fi
+
+    src="$1"; shift
+    hash diff-so-fancy &>/dev/null && dsf='|diff-so-fancy'
+    cmd="git show --color=always {1} -- $* $dsf"
+    opts="
+		$FZF_DEFAULT_OPTS
+		--ansi
+		--no-sort
+		--height 100%
+        +m --tiebreak=index --preview=\"git show --color=always --stat {1} -- $* $dsf\"
+        --bind=\"enter:execute($cmd |less --pattern='$src')\"
+    "
+    git log --color \
+        --pretty=format:'%C(red)%h %C(blue)[%cr]%C(reset) %s' \
+        -S "$src" -- "$@" | FZF_DEFAULT_OPTS="$opts" fzf
 }
 
 
