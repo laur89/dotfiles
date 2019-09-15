@@ -3239,36 +3239,6 @@ __writecmd() {
 }
 
 
-# fuzzy grep open via rg/ag with line number
-# TODO: deprecate? sounds like fif() is way better here
-vg() {
-  local file line
-
-  # ag command: ag --nobreak --noheading
-  read -r file line <<<"$(rg --no-heading -- "$*" | fzf -0 -1 | awk -F: '{print $1, $2}')"
-
-  if [[ -f "$file" ]]; then
-     "$EDITOR" "$file" +$line  # strong assumption on editor being n?vim
-  fi
-}
-# note you might want to incorporate something from here into vg():
-fzf_grep_edit(){
-    local match file
-    if [[ $# == 0 ]]; then
-        echo 'Error: search term was not provided.'
-        return
-    fi
-    match=$(
-      rg --color=never --line-number "$1" |
-        fzf --no-multi --delimiter : \
-            --preview "bat --color=always --line-range {2}: {1}"
-      )
-    file=$(echo "$match" | cut -d':' -f1)
-    if [[ -f "$file" ]]; then
-        $EDITOR "$file" +$(echo "$match" | cut -d':' -f2)
-    fi
-}
-
 # cf - fuzzy cd from anywhere
 # ex: cf word1 word2 ... (even part of a file name)
 # zsh autoload function
@@ -3297,6 +3267,27 @@ fif() {
   [[ "$#" -ne 1 ]] && { err "Need exactly one param to search for!"; return 1; }
   rg --files-with-matches --no-messages "$1" \
     | fzf --preview "$preview_cmd 2>/dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
+}
+
+
+# difference from fif() behavior is it lists the multiple results per file, and in
+# preview the match is in first line; whereas for fif(), all the results for any
+# given file are grouped under single entry in fzf;
+fzf_grep_edit(){
+    local match file
+    if [[ $# -eq 0 ]]; then
+        echo 'Error: search term was not provided.'
+        return 1
+    fi
+    match=$(
+      rg --color=never --line-number "$1" |
+        fzf --no-multi --delimiter : \
+            --preview "bat --color=always --line-range {2}: {1}"
+      )
+    file=$(echo "$match" | cut -d':' -f1)
+    if [[ -f "$file" ]]; then
+        ${EDITOR:-vim} "$file" +$(echo "$match" | cut -d':' -f2)
+    fi
 }
 
 
