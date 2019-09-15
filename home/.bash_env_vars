@@ -184,7 +184,7 @@ fi
 export _MARKPATH_DIR=.shell_jump_marks
 
 # FZF settings:  # https://github.com/sharkdp/fd
-export FZF_DEFAULT_OPTS='--ansi'  # note this is detrimental to fzf perf
+export FZF_DEFAULT_OPTS='--ansi --bind=alt-k:preview-up,alt-p:preview-up --bind=alt-j:preview-down,alt-n:preview-down --bind=ctrl-r:toggle-all --bind=alt-w:toggle-preview-wrap --bind=?:toggle-preview --bind=ctrl-z:toggle-sort'  # note ansi is detrimental to fzf perf
 export FZF_DEFAULT_COMMAND='fd --hidden --follow --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export FZF_CTRL_C_COMMAND="$FZF_DEFAULT_COMMAND --type d"

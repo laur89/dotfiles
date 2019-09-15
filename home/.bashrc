@@ -296,6 +296,9 @@ fi
 [[ -s "$fasd_cache" ]] && source "$fasd_cache"
 unset fasd_cache
 ##########################################
+# forgit  (https://github.com/wfxr/forgit)
+[[ -s "$HOME/.forgit" ]] && source "$HOME/.forgit"
+##########################################
 # nvm (node version manager):  (https://github.com/nvm-sh/nvm#git-install)
 # note . nvm.sh makes new shell startup slow (https://github.com/nvm-sh/nvm/issues/1277);
 # that's why we need to work around this:
