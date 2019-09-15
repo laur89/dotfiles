@@ -21,3 +21,6 @@
 
 # Suppress all error messages related to opening and reading files:
 --no-messages
+
+# follow symlinks
+--follow

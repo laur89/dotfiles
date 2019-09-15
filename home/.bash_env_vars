@@ -184,12 +184,54 @@ fi
 export _MARKPATH_DIR=.shell_jump_marks
 
 # FZF settings:  # https://github.com/sharkdp/fd
+# gruvbox (or any other --color cmd here) taken from https://github.com/junegunn/fzf/issues/1602#issuecomment-511663634
 export FZF_DEFAULT_OPTS='--ansi --bind=alt-k:preview-up,alt-p:preview-up --bind=alt-j:preview-down,alt-n:preview-down --bind=ctrl-r:toggle-all --bind=alt-w:toggle-preview-wrap --bind=?:toggle-preview --bind=ctrl-z:toggle-sort'  # note ansi is detrimental to fzf perf
-export FZF_DEFAULT_COMMAND='fd --hidden --follow --exclude .git'
-export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-export FZF_CTRL_C_COMMAND="$FZF_DEFAULT_COMMAND --type d"
+#export FZF_DEFAULT_OPTS='--ansi --color=bg+:#ebdbb2,bg:#fbf1c7,spinner:#9d0006,hl:#928374,fg:#3c3836,header:#928374,info:#427b58,pointer:#9d0006,marker:#9d0006,fg+:#3c3836,prompt:#9d0006,hl+:#9d0006'  # note this is detrimental to fzf perf
+#export FZF_DEFAULT_OPTS='--ansi --color fg:#D8DEE9,bg:#2E3440,hl:#A3BE8C,fg+:#D8DEE9,bg+:#434C5E,hl+:#A3BE8C,pointer:#BF616A,info:#4C566A,spinner:#4C566A,header:#4C566A,prompt:#81A1C1,marker:#EBCB8B'
+#export FZF_DEFAULT_OPTS='--ansi --color fg:-1,bg:-1,hl:230,fg+:3,bg+:233,hl+:229,info:150,prompt:110,spinner:150,pointer:167,marker:174'
+
+
+export FZF_DEFAULT_COMMAND='fd --hidden --follow --exclude .git'  # --type f
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"  # note --multi is already enabled for c+t
+export FZF_CTRL_C_COMMAND="$FZF_DEFAULT_COMMAND --type d --preview 'tree -C {} | head -200'"  # note everything after '--preview' is questionable
+export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window down:3:wrap"  # show the longer history; helps if cmd line is extra long
+#export FZF_TMUX=1  # if you want to start fzf in a tmux pane
 
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
+
+################## fzf-colors
+# from https://github.com/nicodebo/base16-fzf/blob/master/bash/base16-gruvbox-dark-pale.config
+# Base16 Gruvbox dark, pale
+# Author: Dawid Kurek (dawikur@gmail.com), morhetz (https://github.com/morhetz/gruvbox)
+
+#_gen_fzf_default_opts() {
+
+	#local color00='#262626'
+	#local color01='#3a3a3a'
+	#local color02='#4e4e4e'
+	#local color03='#8a8a8a'
+	#local color04='#949494'
+	#local color05='#dab997'
+	#local color06='#d5c4a1'
+	#local color07='#ebdbb2'
+	#local color08='#d75f5f'
+	#local color09='#ff8700'
+	#local color0A='#ffaf00'
+	#local color0B='#afaf00'
+	#local color0C='#85ad85'
+	#local color0D='#83adad'
+	#local color0E='#d485ad'
+	#local color0F='#d65d0e'
+
+	#export FZF_DEFAULT_OPTS+="
+	#--color=bg+:$color01,bg:$color00,spinner:$color0C,hl:$color0D
+	#--color=fg:$color04,header:$color0D,info:$color0A,pointer:$color0C
+	#--color=marker:$color0C,fg+:$color06,prompt:$color0A,hl+:$color0D
+	#"
+#}
+
+#_gen_fzf_default_opts; unset _gen_fzf_default_opts
+################## /fzf-colors
 
 # test whether the shell is interactive; if not, set missing env vars:
 # (as per http://www.tldp.org/LDP/abs/html/intandnonint.html)

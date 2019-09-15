@@ -3290,6 +3290,7 @@ install_from_repo() {
         system-config-printer
     )
 
+    # TODO: do we want ntp? on systemd systems we have systemd-timesyncd
     declare -ar block2=(
         jq
         crudini
