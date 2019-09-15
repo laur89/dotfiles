@@ -48,6 +48,15 @@ alias py3='python3'
 alias dunc='ncdu'  # never remember it; if it starts w/ 'du', it'll be more likely to find
 alias tgo='tmux new -A -s' # start a new tmux session, or attach to it if already exists
 alias got='tgo'
+# alternative to tgo, consider this:
+# $tm <sessname> to either create or attach, or $tm to search from avail sessions w/ fzf;
+#tm() {
+  #[[ -n "$TMUX" ]] && change="switch-client" || change="attach-session"
+  #if [ $1 ]; then
+     #tmux $change -t "$1" 2>/dev/null || (tmux new-session -d -s $1 && tmux $change -t "$1"); return
+  #fi
+  #session=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | fzf --exit-0) &&  tmux $change -t "$session" || echo "No sessions found."
+#}
 ##################################
 #alias clean_failed_mvn="$(find ~/.m2 -name *.lastUpdated -delete)"
 #alias amq="/data/progs/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"
