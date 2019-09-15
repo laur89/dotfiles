@@ -745,6 +745,12 @@ aptclean() {
     sudo apt-get update
 }
 
+aptlargest()  {
+    aptitude search --sort '~installsize' --display-format '%p %I' '~i' | head
+}
+
+aptbiggest() { aptlargest; }  # alias
+
 
 # to remove obsolete packages:
 #   aptitude search '~o'
@@ -3233,6 +3239,59 @@ __writecmd() {
 }
 
 
+# fuzzy grep open via rg/ag with line number
+# TODO: deprecate? sounds like fif() is way better here
+vg() {
+  local file line
+
+  # ag command: ag --nobreak --noheading
+  read -r file line <<<"$(rg --no-heading -- "$*" | fzf -0 -1 | awk -F: '{print $1, $2}')"
+
+  if [[ -f "$file" ]]; then
+     "$EDITOR" "$file" +$line  # strong assumption on editor being n?vim
+  fi
+}
+
+# cf - fuzzy cd from anywhere
+# ex: cf word1 word2 ... (even part of a file name)
+# zsh autoload function
+cf() {
+  local file
+
+  file="$(locate -Ai -0 $@ | grep -z -vE '~$' | fzf --read0 -0 -1)"
+
+  if [[ -n $file ]]; then
+     if [[ -d $file ]]; then
+        cd -- $file
+     else
+        cd -- ${file:h}
+     fi
+  fi
+}
+
+# search for files with file content (showing preview)
+# find-in-file - usage: fif <searchTerm>
+fif() {
+  [[ "$#" -ne 1 ]] && { err "Need exactly one param to search for!"; return 1; }
+  rg --files-with-matches --no-messages "$1" | fzf --preview "highlight -O ansi -l {} 2> /dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
+}
+
+
+# fkill - kill processes - list only the ones you can kill. Modified the earlier script.
+fkill() {
+    local pid
+    if [ "$UID" != "0" ]; then
+        pid=$(ps -f -u $UID | sed 1d | fzf -m | awk '{print $2}')
+    else
+        pid=$(ps -ef | sed 1d | fzf -m | awk '{print $2}')
+    fi
+
+    if [ "x$pid" != "x" ]; then
+        echo $pid | xargs kill -${1:-9}
+    fi
+}
+
+
 # fh - repeat history
 # note: no reason to use when fzf's ctrl+r mapping works;
 #
@@ -3252,12 +3311,13 @@ fh() {
     check_progs_installed history || return 1
 
     if command -v fzf > /dev/null 2>&1; then
-        # clean up history output, remove FUNCNAME, clean up multiple whitespace, sort unique:
+        # clean up history output, remove FUNCNAME, clean up multiple whitespace, print unique (w/o sorting):
+                #| sed -re 's/\s+$//' \   <- trailing whitespace removal
         out="$(history \
                 | grep -Po -- "$cleanup_regex" \
                 | grep -vE -- "^\s*$FUNCNAME\b" \
                 | sed -n '/.*/s/\s\+/ /gp' \
-                | sort -u \
+                | awk '!x[$0]++' \
                 | fzf --no-sort --tac --query="$input" --expect=ctrl-e,ctrl-d +m -e --exit-0)"
         mapfile -t out <<< "$out"
         readonly k="${out[0]}"
@@ -3300,6 +3360,8 @@ fh() {
 # fhd - history delete
 # search shell history commands and delete the selected ones.
 #
+# TODO: remove multi-select, as offset starts changing with first delete?
+#
 # Examples:
 #    fhd  ssh user server
 #    fhd  curl part-of-url
@@ -3316,12 +3378,13 @@ fhd() {
 
         line="$1"
         offset="$(grep -Po "$offset_regex" <<< "$line")"
-        history -d "$offset" || err "unable to delete history offset [$offset] for entry [$line]" "${FUNCNAME[1]}"
+        history -d "$offset" || { err "unable to delete history offset [$offset] for entry [$line]" "${FUNCNAME[1]}"; return 1; }
     }
 
     if command -v fzf > /dev/null 2>&1; then
+        # TODO: fzf needs to re-read history after each and every deletion event; no multis!
         while read -r i; do
-            __delete_cmd "$i"
+            __delete_cmd "$i" || break
         done < <(history | fzf --no-sort --tac --query="$input" --multi -e --exit-0 --select-1)
     else
         input="${input// /.*}"  # build regex for grep
@@ -3336,10 +3399,12 @@ fhd() {
         #echo "woo: ${__SELECTED_ITEMS[@]}"
 
         for i in "${__SELECTED_ITEMS[@]}"; do
-            __delete_cmd "$i"
+            __delete_cmd "$i" || break
         done
     fi
 
+    # write the changes; otherwise deleted lines will reappear after terminal is closed (see https://unix.stackexchange.com/a/49216):
+    history -w
     unset __delete_cmd
 }
 
@@ -3358,7 +3423,8 @@ fhd() {
 #}
 
 
-# fbr - checkout git branch (including remote branches)
+# fbr - checkout git branch (including remote branches);
+# see also fco()
 fbr() {
     local branches branch q
 
@@ -3392,7 +3458,7 @@ fco() {
     target=$(
         (echo "$tags"; echo "$branches") |
         fzf-tmux --exit-0 --select-1 --query="$q" -l30 -- --no-hscroll --ansi +m -d "\t" -n 2) || return
-    git checkout "$(echo "$target" | awk '{print $2}')"
+    git checkout "$(awk '{print $2}' <<< "$target")"
 }
 
 
@@ -3406,116 +3472,195 @@ fcoc() {
 
     commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&
             commit=$(echo "$commits" | fzf --select-1 --query="$q" --tac +s +m -e --exit-0) &&
-            git checkout "$(echo "$commit" | sed 's/ .*//')"
+            git checkout "$(sed 's/ .*//' <<< "$commit")"
 }
 
 
-# fcol - checkout git LOST commit (as in search for dangling commits)
-# good for recovering lost commits (including stashes)
+# fcol - checkout git LOST commit (as in search for dangling commits);
+# good for recovering lost commits (especially lost stashes);
+#
+# accepts number of paths to filter by as per usual.
 fcol() {
-    local commits sha q
+    local dsf sha_extract_cmd preview_cmd difftool_cmd opts
 
-    q="$*"
     check_progs_installed fzf git || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+    hash diff-so-fancy &>/dev/null && dsf='|diff-so-fancy'
+
+    sha_extract_cmd="grep -Po '^.*?\\\K[0-9a-f]+' <<< '{}'"
+    preview_cmd="i=\$($sha_extract_cmd) || exit; git show --stat --color=always \$i -- $*; echo -e '\\\n\\\n'; git diff \$i^..\$i -- $* $dsf"  # TODO: need to sort out range
+    difftool_cmd="$sha_extract_cmd |xargs -I% git difftool --dir-diff %^ % -- $*"
+    opts="
+		$FZF_DEFAULT_OPTS
+        +m --tiebreak=index --preview=\"$preview_cmd\"
+        --bind=\"enter:execute($difftool_cmd)\"
+		--bind=\"ctrl-t:execute(
+			source $_SCRIPTS_COMMONS;
+			i=\$($sha_extract_cmd)
+			copy_to_clipboard \\\"\$i\\\" \
+				&& { report \\\"sha is on clipboard\\\"; sleep 1; exit 0; } \
+				|| err \\\"unable to copy sha to clipboard. here it is:\\\n\$i\\\" && sleep 3
+		)\"
+
+		--exit-0
+		--no-sort
+		--tac
+		--ansi
+		--height='80%'
+		--preview-window='right:60%'
+    "
 
     #commits=$(git log --oneline --decorate --all --reverse $(git fsck --no-reflog | awk '/dangling commit/ {print $3}')) &&
-    commits=$(git log --pretty=format:"%h  %d [%s] on %cd by [%cn]; parents: [%p]" --abbrev-commit --decorate --all --reverse $(git fsck --no-reflog | awk '/dangling commit/ {print $3}')) &&
-            sha=$(echo "$commits" | fzf --select-1 --query="$q" --tac +s +m -e --exit-0) &&
-            __open_git_difftool_at_git_root "$(sed 's/ .*//' <<< "$sha")"
+    git log --color \
+        --pretty=format:'%C(red)%h %C(green)[%s]%C(reset) %C(blue)%cr%C(reset) by %C(yellow)%cn%C(reset); parents: %C(yellow)%p' \
+        --abbrev-commit --decorate --all --reverse \
+        $(git fsck --no-reflog | awk '/dangling commit/ {print $3}') -- $* | FZF_DEFAULT_OPTS="$opts" fzf
 }
 
 
 # helper function for navigating to repo root
 # prior to opening difftool; navigates back afterwards.
-__open_git_difftool_at_git_root() {
-    local cwd git_root commit
-    readonly commit="$1"
+#
+# TODO: deprecate; moving to git root is not necessary; i simply didn't understand <path> args;
+#__open_git_difftool_at_git_root() {
+    #local cwd git_root commit
+    #readonly commit="$1"
 
-    [[ -z "$commit" ]] && { err "need to provide commit sha"; return 1; }
-    cwd="$(realpath "$PWD")"
-    git_root="$(realpath "$(git rev-parse --show-toplevel)")" || { err "unable to find project root" "${FUNCNAME[1]}"; return 1; }
+    #[[ -z "$commit" ]] && { err "need to provide commit sha"; return 1; }
+    #cwd="$(realpath "$PWD")"
+    #git_root="$(realpath "$(git rev-parse --show-toplevel)")" || { err "unable to find project root" "${FUNCNAME[1]}"; return 1; }
 
-    [[ "$cwd" != "$git_root" ]] && pushd -- "$git_root" &> /dev/null  # git root
-    git difftool --dir-diff "$commit"^ "$commit"
-    [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back to starting dir
-}
+    #[[ "$cwd" != "$git_root" ]] && pushd -- "$git_root" &> /dev/null  # git root
+    #git difftool --dir-diff "$commit"^ "$commit"
+    #[[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back to starting dir
+#}
 
 
-# fshow - git commit diff browser
+# fshow - git commit diff browser; pass path(s) as optional args
 # - enter shows the changes of the commit
 # - ctrl-s lets you squash commits - select the *last* commit that should be squashed.
 # - ctrl-c generates the jira commit message.
 # - ctrl-u generates gitlab commit url.
+# - ctrl-t copies commit sha to clipboard.
 # - ctrl-b check the selected commit out.
 fshow() {
-    local q k out sha url
+    local q dsf k out sha sha_extract_cmd preview_cmd difftool_cmd opts git_log_cmd
 
-    q="$*"
+    hash diff-so-fancy &>/dev/null && dsf='|diff-so-fancy'
 
     check_progs_installed fzf git || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
     #git log -i --all --graph --source --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative |
-    while out=$(
-            git log --graph --color=always \
-                --format="%C(auto)%h%d %s %C(black)%C(bold)(%cr) %C(bold blue)<%an>%Creset" |
-                fzf --ansi --no-sort --reverse --tiebreak=index --bind=ctrl-z:toggle-sort --query="$q" --print-query \
-                    --expect=ctrl-s,ctrl-c,ctrl-u,ctrl-b --exit-0); do
-        mapfile -t out <<< "$out"
-        q="${out[0]}"
-        k="${out[1]}"
-        # note we also need to include git log's graph slashes, pipes and stars to the regex:
-        sha="$(echo "${out[-1]}" | grep -Po '^[|\ /\\*]+\s*\K[a-z0-9]+(?=.*$)')" || { err "unable to parse out commit sha" "$FUNCNAME"; return 1; }
-        [[ "$sha" =~ [a-z0-9]{7} ]] || { err "commit sha was [$sha]" "$FUNCNAME"; return 1; }
 
-        case "$k" in
-            'ctrl-s')
-                if [[ "$sha" == "$(git log -n 1 --pretty=format:%h HEAD)" ]]; then
-                    report "won't rebase on HEAD lol" "$FUNCNAME" && sleep 1.5 && continue
-                elif [[ -n "$q" ]]; then
-                    confirm "\nyou've filtered commits by query [$q]; still continue with rebase?" || continue
-                fi
+    # first let's navigate to repo (ie git) root:
+    #cwd="$(realpath "$PWD")"
+    #git_root="$(realpath "$(git rev-parse --show-toplevel)")" || { err "unable to find project root" "${FUNCNAME[1]}"; return 1; }
+    #[[ "$cwd" != "$git_root" ]] && pushd -- "$git_root" &> /dev/null
 
-                git rebase -i "$sha"~ && continue || return 1
-                ;;
-            'ctrl-c')
-                is_function generate_jira_commit_comment || { err "can't generate commit msg as dependency is missing" "$FUNCNAME"; return 1; }
-                generate_jira_commit_comment "$sha"
-                break
-                ;;
-            'ctrl-u')
-                is_function generate_git_commit_url || { err "can't generate git commit url as dependency is missing" "$FUNCNAME"; return 1; }
-                url="$(generate_git_commit_url "$sha")" || { err "creating commit url failed" "$FUNCNAME"; return 1; }
-                copy_to_clipboard "$url" \
-                    && { report "git commitcommit url on clipboard"; return 0; } \
-                    || err "unable to copy git commit url to clipboard. here it is:\n$url"
-                break
-                ;;
-            'ctrl-b')
-                git checkout "$sha"
-                break
-                ;;
-            *)
-                __open_git_difftool_at_git_root "$sha"
-                ;;
-        esac
-    done
+
+
+    # this from glo():
+    #sha_extract_cmd="echo {} | grep -Po '^[|\\\ /\\\\\\*]+\\\s*\\\K[a-f0-9]+'"
+    sha_extract_cmd="grep -Po '^.*?\\\K[0-9a-f]+' <<< '{}'"
+    #sha_extract_cmd="echo {} |grep -Eo '[a-f0-9]+' |head -1"  # default from forgit
+
+    #preview_cmd="$sha_extract_cmd |xargs -I% git show --color=always % $dsf"  # default from forgit
+    #preview_cmd="i=\$($sha_extract_cmd); test -z \$i && exit; p=\$(git cat-file -p \$i | grep -Po '^parent\\\s+\\\K.*' | head -1); git show --stat --color=always \$i; echo -e '\\\n\\\n'; git diff \$p..\$i $dsf"  # TODO: need to sort out range
+    #preview_cmd="i=\$($sha_extract_cmd) || exit; p=\$(git cat-file -p \$i | grep -Po '^parent\\\s+\\\K.*' | head -1); git show --stat --color=always \$i -- $*; echo -e '\\\n\\\n'; git diff \$p..\$i -- $* $dsf"  # TODO: need to sort out range
+    preview_cmd="i=\$($sha_extract_cmd) || exit; git show --stat --color=always \$i -- $*; echo -e '\\\n\\\n'; git diff \$i^..\$i -- $* $dsf"  # TODO: need to sort out range
+    difftool_cmd="$sha_extract_cmd |xargs -I% git difftool --dir-diff %^ % -- $*"
+    opts="
+		$FZF_DEFAULT_OPTS
+        +m --tiebreak=index --preview=\"$preview_cmd\"
+        --bind=\"enter:execute($difftool_cmd)\"
+        --bind=\"ctrl-y:execute-silent(echo {} |grep -Eo '[a-f0-9]+' | head -1 | tr -d '\n' |${FORGIT_COPY_CMD:-pbcopy})\"
+		--bind=\"ctrl-c:execute(
+			source $_SCRIPTS_COMMONS;
+			i=\$($sha_extract_cmd)
+			is_function generate_jira_commit_comment || { err \\\"can't generate commit msg as dependency is missing\\\" $FUNCNAME; sleep 1.5; exit 1; }
+			generate_jira_commit_comment \$i
+			exit
+		)\"
+		--bind=\"ctrl-u:execute(
+			source $_SCRIPTS_COMMONS;
+			i=\$($sha_extract_cmd)
+			is_function generate_git_commit_url || { err \\\"can't generate git commit url as dependency is missing\\\" $FUNCNAME; sleep 1.5; exit 1; }
+			url=\$(generate_git_commit_url \$i) || { err \\\"creating commit url failed\\\" $FUNCNAME; sleep 1.5; exit 1; }
+			copy_to_clipboard \\\"\$url\\\" \
+				&& { report \\\"git commit url on clipboard\\\"; sleep 1; exit 0; } \
+				|| err \\\"unable to copy git commit url to clipboard. here it is:\\\n\$url\\\" && sleep 4
+		)\"
+		--bind=\"ctrl-t:execute(
+			source $_SCRIPTS_COMMONS;
+			i=\$($sha_extract_cmd)
+			copy_to_clipboard \\\"\$i\\\" \
+				&& { report \\\"sha is on clipboard\\\"; sleep 1; exit 0; } \
+				|| err \\\"unable to copy sha to clipboard. here it is:\\\n\$i\\\" && sleep 3
+		)\"
+
+		--expect=ctrl-s,ctrl-b
+		--exit-0
+		--print-query
+		--no-sort
+		--reverse
+		--ansi
+		--height='80%'
+		--preview-window='right:60%'
+    "
+	git_log_cmd="git log --graph --color=always \
+                --format='%C(auto)%h%d %s %C(black)%C(bold)(%cr) %C(bold blue)<%an>%Creset' -- $*"
+
+    out="$(eval "$git_log_cmd" | FZF_DEFAULT_OPTS="$opts" fzf)"
+    #[[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back to starting dir
+
+	mapfile -t out <<< "$out"
+	q="${out[0]}"
+	k="${out[1]}"
+	[[ -z "$k" ]] && return 0  # got no --expect keypress event, exit
+
+	sha="$(grep -Po '^.*?\K[0-9a-f]{7}' <<< "${out[-1]}")" || { err "unable to parse out commit sha" "$FUNCNAME"; return 1; }
+
+	case "$k" in
+		'ctrl-s')
+			if [[ "$sha" == "$(git log -n 1 --pretty=format:%h HEAD)" ]]; then
+				report "won't rebase on HEAD lol" "$FUNCNAME" && return
+			elif [[ -n "$*" ]]; then
+				confirm "\nyou've filtered commits by path(s) [$*]; still continue with rebase?" || return
+			elif [[ -n "$q" ]]; then
+				confirm "\nyou've filtered commits by query [$q]; still continue with rebase?" || return
+			fi
+
+			git rebase -i "$sha"~
+			return $?
+			;;
+		'ctrl-b')
+			git checkout "$sha"
+			return $?
+			;;
+		*)
+			#__open_git_difftool_at_git_root "$sha"
+			err "unexpected key-combo [$k]"
+			return 1
+			;;
+	esac
 }
 
 
-# fsha - get git commit sha
+# fsha - get git commit sha; allows multiple selections
 # example usage: git rebase -i `fsha`
 fsha() {
-    local commits commit
+    local commits i
 
     check_progs_installed fzf git || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
-    commits=$(git log --color=always --pretty=oneline --abbrev-commit --reverse) &&
-    commit=$(echo "$commits" | fzf --tac +s +m -e --ansi --reverse --exit-0) &&
-    commit="${commit%% *}" &&
-    copy_to_clipboard "$commit" &&
-    report "copied commit sha [$commit] to clipboard" "$FUNCNAME"
+	while IFS= read -r -d $'\0' i; do
+		commits+=("${i%% *}")
+	done < <(git log --color=always --pretty=oneline --abbrev-commit --reverse | fzf --tac +s -m -e --ansi --reverse --exit-0 --print0)
+	#readarray -t -d $'\0' commits < <(git log --color=always --pretty=oneline --abbrev-commit --reverse | fzf --tac +s -m -e --ansi --reverse --exit-0 --print0| xargs -0 awk '{print $1;}' )
+
+	[[ ${#commits[@]} -eq 0 ]] && return 1
+    copy_to_clipboard "${commits[*]}" && report "copied commit sha(s) [${commits[*]}] to clipboard" "$FUNCNAME"
 }
 
 
@@ -3524,23 +3669,44 @@ fsha() {
 # - ctrl-d asks to drop the selected stash
 # - ctrl-a asks to apply (pop) the selected stash
 # - ctrl-b checks the stash out as a branch, for easier merging (TODO: not avail atm)
+#
+# note fstash accepts path(s) similar to fshow(); only that stash list command is
+# not affected by it, as git stash doesn't accept paths;
 fstash() {
-    local out q k stsh stash_name_regex stash_name
+    local dsf sha_extract_cmd preview_cmd difftool_cmd opts stash_cmd out q k stsh stash_name_regex stash_name
 
-    readonly stash_name_regex='^\s*(\S+\s+){7}\K(.*)'
+    readonly stash_name_regex='^\s*(\S+\s+){7}\K.*'
+    hash diff-so-fancy &>/dev/null && dsf='|diff-so-fancy'
 
     check_progs_installed fzf git || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
-    while out=$(
-            git stash list --pretty="%C(red)%gd %C(yellow)%h %>(14)%Cgreen%cr %C(blue)%gs" |
-                fzf --ansi --no-sort --query="$q" --print-query \
-                    --expect=ctrl-d,ctrl-b,ctrl-a --exit-0); do
+    #cmd="git stash show \$(echo {}| cut -d: -f1) --color=always --ext-diff $forgit_fancy"  # this to use with  --bind=\"enter:execute($cmd |LESS='-R' less
+    sha_extract_cmd="grep -Po '^\\\S+(?=:)' <<< '{}'"
+    preview_cmd="i=\$($sha_extract_cmd) || exit; git show --stat --color=always \$i -- $*; echo -e '\\\n\\\n'; git diff \$i^..\$i -- $* $dsf"  # TODO: need to sort out range
+    difftool_cmd="$sha_extract_cmd |xargs -I% git difftool --dir-diff %^ % -- $*"
+    opts="
+        $FZF_DEFAULT_OPTS
+        +m --tiebreak=index --preview=\"$preview_cmd\"
+        --bind=\"enter:execute($difftool_cmd)\"
+		--expect=ctrl-a,ctrl-d
+		--exit-0
+		--print-query
+		--no-sort
+		--ansi
+		--height='80%'
+		--preview-window='top:70%'
+    "
+	#stash_cmd="git stash list --pretty=format:'%C(red)%h%C(reset) - %C(dim yellow)(%C(bold magenta)%gd%C(dim yellow))%C(reset) %<(70,trunc)%s %C(green)(%cr) %C(bold blue)<%an>%C(reset)'"
+	stash_cmd="git stash list --color --pretty=format:'%C(red)%gd: %C(green)(%cr) %C(blue)%gs'"
+
+    while out="$(eval "$stash_cmd" | FZF_DEFAULT_OPTS="$opts" fzf)"; do
         mapfile -t out <<< "$out"
         q="${out[0]}"
         k="${out[1]}"
         stsh="${out[-1]}"
         stsh="${stsh%% *}"
+        [[ -z "$k" ]] && return 0  # got no --expect keypress event, exit
         [[ -z "$stsh" ]] && continue
 
         stash_name="$(echo "${out[-1]}" | grep -Po "$stash_name_regex")"  # name/description of the stash
@@ -3561,9 +3727,9 @@ fstash() {
                 git stash branch "stash-$sha" "$sha"
                 break;
                 ;;
-            *)  # default, ie diff view mode
-                #git stash show -p "$sha"
-                __open_git_difftool_at_git_root "$stsh"
+            *)
+                err "unexpected key-combo [$k]"
+                return 1
                 ;;
         esac
     done
