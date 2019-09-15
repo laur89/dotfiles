@@ -55,14 +55,14 @@ alias got='tgo'
 alias logout="pkill -TERM -u $(whoami) & sleep 5 && pkill -KILL -u $(whoami) && exit 0"
 #alias logout="pkill -u $USER"   # by default pkill sends SIGTERM signal
 #alias logout='kill -9 -1' # kill all processes *you* can kill
-alias grep="grep --color=auto"
+alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='grep -E --color=auto'
-alias c="clear"
-alias cp="cp -rp"
+alias c='clear'
+alias cp='cp -rp'
 alias dfh='df -h'
 #alias less="less -IRKFX" # handled by the $LESS env var
-alias ls="ls -h --color=auto --group-directories-first"
+alias ls='ls -h --color=auto --group-directories-first'
 alias ll='ls -l'
 alias lr='ls -lr'
 alias lsr='ls -lr'
@@ -84,7 +84,7 @@ alias ltra='ls -lAtr'
 alias latr='ls -lAtr'
 alias lart='ls -lAtr'
 #alias l='ls -CF'
-alias vdiff="vimdiff"
+alias vdiff='vimdiff'
 alias mkdir='mkdir -p'
 alias rmrf='rm -rf'
 alias psef='ps -ef'
@@ -104,9 +104,10 @@ alias t5='tree -L 5'
 
 #
 # hate the typos:
-alias mut="neomutt"
-alias utt="neomutt"
-alias mutt="neomutt"
+alias ehco='echo'
+alias mut='neomutt'
+alias utt='neomutt'
+alias mutt='neomutt'
 alias cim='nvim'
 alias vin='nvim'
 command -v vim > /dev/null 2>&1 || alias vim='nvim'  # yup
@@ -174,26 +175,26 @@ alias gpushall='is_git || err "not in a git repo" && { git push --tags && git ch
 # ------------------------------------
 
 # Get latest created container ID
-alias dl="docker ps -lq"
+alias dl='docker ps -lq'
 
 # Get container processes
-alias dps="docker ps"
+alias dps='docker ps'
 
 # Get processes included stop container
-alias dpa="docker ps -a"
+alias dpa='docker ps -a'
 alias dpsa='dpa'
 
 # Get images
-alias di="docker images"
+alias di='docker images'
 
 # Get container IP
-alias dip="docker inspect --format '{{ .NetworkSettings.IPAddress }}'"
+alias dip='docker inspect --format "{{ .NetworkSettings.IPAddress }}"'
 
 # Run deamonized container, e.g., $dkd base_image /bin/echo hello
-alias dkd="docker run -d -P"
+alias dkd='docker run -d -P'
 
 # Run interactive container, e.g., $dki base_image /bin/bash
-alias dki="docker run -i -t -P"
+alias dki='docker run -i -t -P'
 
 # Execute interactive container, e.g., $dex base /bin/bash
 # note: docker exec  runs command in an (already) RUNNING container
