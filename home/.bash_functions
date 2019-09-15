@@ -3487,7 +3487,7 @@ fcol() {
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
     hash diff-so-fancy &>/dev/null && dsf='|diff-so-fancy'
 
-    sha_extract_cmd="grep -Po '^.*?\\\K[0-9a-f]+' <<< '{}'"
+    sha_extract_cmd="grep -Po '^.*?\\\K[0-9a-f]+' <<< {}"
     preview_cmd="i=\$($sha_extract_cmd) || exit; git show --stat --color=always \$i -- $*; echo -e '\\\n\\\n'; git diff \$i^..\$i -- $* $dsf"  # TODO: need to sort out range
     difftool_cmd="$sha_extract_cmd |xargs -I% git difftool --dir-diff %^ % -- $*"
     opts="
@@ -3561,7 +3561,7 @@ fshow() {
 
     # this from glo():
     #sha_extract_cmd="echo {} | grep -Po '^[|\\\ /\\\\\\*]+\\\s*\\\K[a-f0-9]+'"
-    sha_extract_cmd="grep -Po '^.*?\\\K[0-9a-f]+' <<< '{}'"
+    sha_extract_cmd="grep -Po '^.*?\\\K[0-9a-f]+' <<< {}"
     #sha_extract_cmd="echo {} |grep -Eo '[a-f0-9]+' |head -1"  # default from forgit
 
     #preview_cmd="$sha_extract_cmd |xargs -I% git show --color=always % $dsf"  # default from forgit
@@ -3682,7 +3682,7 @@ fstash() {
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
     #cmd="git stash show \$(echo {}| cut -d: -f1) --color=always --ext-diff $forgit_fancy"  # this to use with  --bind=\"enter:execute($cmd |LESS='-R' less
-    sha_extract_cmd="grep -Po '^\\\S+(?=:)' <<< '{}'"
+    sha_extract_cmd="grep -Po '^\\\S+(?=:)' <<< {}"
     preview_cmd="i=\$($sha_extract_cmd) || exit; git show --stat --color=always \$i -- $*; echo -e '\\\n\\\n'; git diff \$i^..\$i -- $* $dsf"  # TODO: need to sort out range
     difftool_cmd="$sha_extract_cmd |xargs -I% git difftool --dir-diff %^ % -- $*"
     opts="
