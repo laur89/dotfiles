@@ -97,6 +97,7 @@ alias vdiff='vimdiff'
 alias mkdir='mkdir -p'
 alias rmrf='rm -rf'
 alias psef='ps -ef'
+# note -E is tricky; stuff like PROMPT_COMMAND might refer to functions not avail for root:
 alias gosu='sudo -E su'
 alias su='su --login'  # so env vars would be cleared
 alias lns='ln -s'

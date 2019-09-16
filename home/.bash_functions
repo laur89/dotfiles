@@ -2440,8 +2440,9 @@ fod() {
 
 
 # finds files/dirs and goes to containing dir (or same dir if found item is already a dir)
-#
 # mnemonic: file open go
+#
+# with fzf, $ goto <ctrl-t>   offers perhaps better results
 fog() {
     local opts default_depth matches i
 
@@ -2685,7 +2686,7 @@ __fo() {
 
     check_progs_installed file || return 1
 
-    if [[ -z "$@" ]]; then  # no params provided, meaning expect input via stdin
+    if [[ -z "$*" ]]; then  # no params provided, meaning expect input via stdin
         #while IFS= read -r -d $'\0' i; do  # TODO enable once fzf gets the --print0 option
         while read -r i; do  # TODO: add -t <sec>  for timeout in read?
             files+=("$i")
@@ -2699,7 +2700,7 @@ __fo() {
     # define filetype only by the first node:  # TODO: perhaps verify all nodes are of same type?
     readonly filetype="$(file -iLb -- "${files[0]}")" || { err "issues testing [${files[0]}] with \$ file cmd" "${FUNCNAME[1]}"; return 1; }
 
-    # report
+    # report files to be opened
     if [[ "$count" -eq 1 ]]; then
         report "opening [${files[*]}]" "${FUNCNAME[1]}"
     else
@@ -3259,14 +3260,39 @@ cf() {
 # search for files with file content (showing preview)
 # find-in-file - usage: fif <searchTerm>
 fif() {
-  local preview_cmd
+  local preview_cmd preview_cmd_full opts k out
 
   #preview_cmd='highlight -O ansi -l -- {}'
   preview_cmd='bat -p --color always -- {}'
+  preview_cmd_full="$preview_cmd 2>/dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
+  [[ $# -ne 1 ]] && { err "Need exactly one param to search for!"; return 1; }
 
-  [[ "$#" -ne 1 ]] && { err "Need exactly one param to search for!"; return 1; }
-  rg --files-with-matches --no-messages "$1" \
-    | fzf --preview "$preview_cmd 2>/dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$1' || rg --ignore-case --pretty --context 10 '$1' {}"
+    opts="
+        $FZF_DEFAULT_OPTS
+        -m --tiebreak=index --preview=\"$preview_cmd_full\"
+        --bind=\"enter:execute(${EDITOR:-vim} -- {})\"
+		--expect=ctrl-e
+		--exit-0
+		--no-sort
+		--ansi
+    "
+
+    out="$(rg --files-with-matches --no-messages "$1" | FZF_DEFAULT_OPTS="$opts" fzf)"
+	mapfile -t out <<< "$out"
+
+	k="${out[0]}"; unset out[0]
+	[[ -z "$k" ]] && return 0  # got no --expect keypress event, exit
+	[[ -z "${out[*]}" ]] && return 0  # no files selected
+
+	case "$k" in
+		'ctrl-e')
+			"${EDITOR:-vim}" -- "${out[@]}"
+			;;
+		*)
+			err "unexpected key-combo [$k]"
+			return 1
+			;;
+	esac
 }
 
 
