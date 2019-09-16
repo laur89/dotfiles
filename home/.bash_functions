@@ -3271,28 +3271,28 @@ fif() {
         $FZF_DEFAULT_OPTS
         -m --tiebreak=index --preview=\"$preview_cmd_full\"
         --bind=\"enter:execute(${EDITOR:-vim} -- {})\"
-		--expect=ctrl-e
-		--exit-0
-		--no-sort
-		--ansi
+        --expect=ctrl-e
+        --exit-0
+        --no-sort
+        --ansi
     "
 
     out="$(rg --files-with-matches --no-messages "$1" | FZF_DEFAULT_OPTS="$opts" fzf)"
-	mapfile -t out <<< "$out"
+    mapfile -t out <<< "$out"
 
-	k="${out[0]}"; unset out[0]
-	[[ -z "$k" ]] && return 0  # got no --expect keypress event, exit
-	[[ -z "${out[*]}" ]] && return 0  # no files selected
+    k="${out[0]}"; unset out[0]
+    [[ -z "$k" ]] && return 0  # got no --expect keypress event, exit
+    [[ -z "${out[*]}" ]] && return 0  # no files selected
 
-	case "$k" in
-		'ctrl-e')
-			"${EDITOR:-vim}" -- "${out[@]}"
-			;;
-		*)
-			err "unexpected key-combo [$k]"
-			return 1
-			;;
-	esac
+    case "$k" in
+        'ctrl-e')
+            "${EDITOR:-vim}" -- "${out[@]}"
+            ;;
+        *)
+            err "unexpected key-combo [$k]"
+            return 1
+            ;;
+    esac
 }
 
 
@@ -3349,10 +3349,10 @@ faxe() {
     hash diff-so-fancy &>/dev/null && dsf='|diff-so-fancy'
     cmd="git show --color=always {1} -- $* $dsf"
     opts="
-		$FZF_DEFAULT_OPTS
-		--ansi
-		--no-sort
-		--height 100%
+        $FZF_DEFAULT_OPTS
+        --ansi
+        --no-sort
+        --height 100%
         +m --tiebreak=index --preview=\"git show --color=always --stat {1} -- $* $dsf\"
         --bind=\"enter:execute($cmd |less --pattern='$src')\"
     "
@@ -3450,13 +3450,13 @@ fhd() {
     }
 
     if command -v fzf > /dev/null 2>&1; then
-		while out="$(history | fzf --no-sort --print-query --tac --query="$q" +m -e --exit-0)"; do
-			mapfile -t out <<< "$out"
-			q="${out[0]}"
-			i="${out[-1]}"
-			[[ -z "$i" ]] && return
+        while out="$(history | fzf --no-sort --print-query --tac --query="$q" +m -e --exit-0)"; do
+            mapfile -t out <<< "$out"
+            q="${out[0]}"
+            i="${out[-1]}"
+            [[ -z "$i" ]] && return
             __delete_cmd "$i" || break
-		done
+        done
     else
         q="${q// /.*}"  # build regex for grep
         readonly ifs_old="$IFS"
@@ -3467,7 +3467,7 @@ fhd() {
         [[ -z "${cmd[*]}" ]] && { err "no matching entries found" "$FUNCNAME"; return 1; }
         select_items --single "${cmd[@]}"
         [[ -z "${__SELECTED_ITEMS[*]}" ]] && { err "no entries selected" "$FUNCNAME"; return 1; }
-		__delete_cmd "${__SELECTED_ITEMS[*]}" || return $?
+        __delete_cmd "${__SELECTED_ITEMS[*]}" || return $?
     fi
 
     # write the changes; otherwise deleted lines will reappear after terminal is closed (see https://unix.stackexchange.com/a/49216):
@@ -3558,23 +3558,23 @@ fcol() {
     preview_cmd="i=\$($sha_extract_cmd) || exit; git show --stat --color=always \$i -- $*; echo -e '\\\n\\\n'; git diff \$i^..\$i -- $* $dsf"  # TODO: need to sort out range
     difftool_cmd="$sha_extract_cmd |xargs -I% git difftool --dir-diff %^ % -- $*"
     opts="
-		$FZF_DEFAULT_OPTS
+        $FZF_DEFAULT_OPTS
         +m --tiebreak=index --preview=\"$preview_cmd\"
         --bind=\"enter:execute($difftool_cmd)\"
-		--bind=\"ctrl-t:execute(
-			source $_SCRIPTS_COMMONS;
-			i=\$($sha_extract_cmd)
-			copy_to_clipboard \\\"\$i\\\" \
-				&& { report \\\"sha is on clipboard\\\"; sleep 1; exit 0; } \
-				|| err \\\"unable to copy sha to clipboard. here it is:\\\n\$i\\\" && sleep 3
-		)\"
+        --bind=\"ctrl-t:execute(
+            source $_SCRIPTS_COMMONS;
+            i=\$($sha_extract_cmd)
+            copy_to_clipboard \\\"\$i\\\" \
+                && { report \\\"sha is on clipboard\\\"; sleep 1; exit 0; } \
+                || err \\\"unable to copy sha to clipboard. here it is:\\\n\$i\\\" && sleep 3
+        )\"
 
-		--exit-0
-		--no-sort
-		--tac
-		--ansi
-		--height='80%'
-		--preview-window='right:60%'
+        --exit-0
+        --no-sort
+        --tac
+        --ansi
+        --height='80%'
+        --preview-window='right:60%'
     "
 
     #commits=$(git log --oneline --decorate --all --reverse $(git fsck --no-reflog | awk '/dangling commit/ {print $3}')) &&
@@ -3637,79 +3637,79 @@ fshow() {
     preview_cmd="i=\$($sha_extract_cmd) || exit; git show --stat --color=always \$i -- $*; echo -e '\\\n\\\n'; git diff \$i^..\$i -- $* $dsf"  # TODO: need to sort out range
     difftool_cmd="$sha_extract_cmd |xargs -I% git difftool --dir-diff %^ % -- $*"
     opts="
-		$FZF_DEFAULT_OPTS
+        $FZF_DEFAULT_OPTS
         +m --tiebreak=index --preview=\"$preview_cmd\"
         --bind=\"enter:execute($difftool_cmd)\"
         --bind=\"ctrl-y:execute-silent(echo {} |grep -Eo '[a-f0-9]+' | head -1 | tr -d '\n' |${FORGIT_COPY_CMD:-pbcopy})\"
-		--bind=\"ctrl-c:execute(
-			source $_SCRIPTS_COMMONS;
-			i=\$($sha_extract_cmd)
-			is_function generate_jira_commit_comment || { err \\\"can't generate commit msg as dependency is missing\\\" $FUNCNAME; sleep 1.5; exit 1; }
-			generate_jira_commit_comment \$i
-			exit
-		)\"
-		--bind=\"ctrl-u:execute(
-			source $_SCRIPTS_COMMONS;
-			i=\$($sha_extract_cmd)
-			is_function generate_git_commit_url || { err \\\"can't generate git commit url as dependency is missing\\\" $FUNCNAME; sleep 1.5; exit 1; }
-			url=\$(generate_git_commit_url \$i) || { err \\\"creating commit url failed\\\" $FUNCNAME; sleep 1.5; exit 1; }
-			copy_to_clipboard \\\"\$url\\\" \
-				&& { report \\\"git commit url on clipboard\\\"; sleep 1; exit 0; } \
-				|| err \\\"unable to copy git commit url to clipboard. here it is:\\\n\$url\\\" && sleep 4
-		)\"
-		--bind=\"ctrl-t:execute(
-			source $_SCRIPTS_COMMONS;
-			i=\$($sha_extract_cmd)
-			copy_to_clipboard \\\"\$i\\\" \
-				&& { report \\\"sha is on clipboard\\\"; sleep 1; exit 0; } \
-				|| err \\\"unable to copy sha to clipboard. here it is:\\\n\$i\\\" && sleep 3
-		)\"
+        --bind=\"ctrl-c:execute(
+            source $_SCRIPTS_COMMONS;
+            i=\$($sha_extract_cmd)
+            is_function generate_jira_commit_comment || { err \\\"can't generate commit msg as dependency is missing\\\" $FUNCNAME; sleep 1.5; exit 1; }
+            generate_jira_commit_comment \$i
+            exit
+        )\"
+        --bind=\"ctrl-u:execute(
+            source $_SCRIPTS_COMMONS;
+            i=\$($sha_extract_cmd)
+            is_function generate_git_commit_url || { err \\\"can't generate git commit url as dependency is missing\\\" $FUNCNAME; sleep 1.5; exit 1; }
+            url=\$(generate_git_commit_url \$i) || { err \\\"creating commit url failed\\\" $FUNCNAME; sleep 1.5; exit 1; }
+            copy_to_clipboard \\\"\$url\\\" \
+                && { report \\\"git commit url on clipboard\\\"; sleep 1; exit 0; } \
+                || err \\\"unable to copy git commit url to clipboard. here it is:\\\n\$url\\\" && sleep 4
+        )\"
+        --bind=\"ctrl-t:execute(
+            source $_SCRIPTS_COMMONS;
+            i=\$($sha_extract_cmd)
+            copy_to_clipboard \\\"\$i\\\" \
+                && { report \\\"sha is on clipboard\\\"; sleep 1; exit 0; } \
+                || err \\\"unable to copy sha to clipboard. here it is:\\\n\$i\\\" && sleep 3
+        )\"
 
-		--expect=ctrl-s,ctrl-b
-		--exit-0
-		--print-query
-		--no-sort
-		--reverse
-		--ansi
-		--height='80%'
-		--preview-window='right:60%'
+        --expect=ctrl-s,ctrl-b
+        --exit-0
+        --print-query
+        --no-sort
+        --reverse
+        --ansi
+        --height='80%'
+        --preview-window='right:60%'
     "
-	git_log_cmd="git log --graph --color=always \
+    git_log_cmd="git log --graph --color=always \
                 --format='%C(auto)%h%d %s %C(black)%C(bold)(%cr) %C(bold blue)<%an>%Creset' -- $*"
 
     out="$(eval "$git_log_cmd" | FZF_DEFAULT_OPTS="$opts" fzf)"
     #[[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back to starting dir
 
-	mapfile -t out <<< "$out"
-	q="${out[0]}"
-	k="${out[1]}"
-	[[ -z "$k" ]] && return 0  # got no --expect keypress event, exit
+    mapfile -t out <<< "$out"
+    q="${out[0]}"
+    k="${out[1]}"
+    [[ -z "$k" ]] && return 0  # got no --expect keypress event, exit
 
-	sha="$(grep -Po '^.*?\K[0-9a-f]{7}' <<< "${out[-1]}")" || { err "unable to parse out commit sha" "$FUNCNAME"; return 1; }
+    sha="$(grep -Po '^.*?\K[0-9a-f]{7}' <<< "${out[-1]}")" || { err "unable to parse out commit sha" "$FUNCNAME"; return 1; }
 
-	case "$k" in
-		'ctrl-s')
-			if [[ "$sha" == "$(git log -n 1 --pretty=format:%h HEAD)" ]]; then
-				report "won't rebase on HEAD lol" "$FUNCNAME" && return
-			elif [[ -n "$*" ]]; then
-				confirm "\nyou've filtered commits by path(s) [$*]; still continue with rebase?" || return
-			elif [[ -n "$q" ]]; then
-				confirm "\nyou've filtered commits by query [$q]; still continue with rebase?" || return
-			fi
+    case "$k" in
+        'ctrl-s')
+            if [[ "$sha" == "$(git log -n 1 --pretty=format:%h HEAD)" ]]; then
+                report "won't rebase on HEAD lol" "$FUNCNAME" && return
+            elif [[ -n "$*" ]]; then
+                confirm "\nyou've filtered commits by path(s) [$*]; still continue with rebase?" || return
+            elif [[ -n "$q" ]]; then
+                confirm "\nyou've filtered commits by query [$q]; still continue with rebase?" || return
+            fi
 
-			git rebase -i "$sha"~
-			return $?
-			;;
-		'ctrl-b')
-			git checkout "$sha"
-			return $?
-			;;
-		*)
-			#__open_git_difftool_at_git_root "$sha"
-			err "unexpected key-combo [$k]"
-			return 1
-			;;
-	esac
+            git rebase -i "$sha"~
+            return $?
+            ;;
+        'ctrl-b')
+            git checkout "$sha"
+            return $?
+            ;;
+        *)
+            #__open_git_difftool_at_git_root "$sha"
+            err "unexpected key-combo [$k]"
+            return 1
+            ;;
+    esac
 }
 
 
@@ -3721,12 +3721,12 @@ fsha() {
     check_progs_installed fzf git || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
-	while IFS= read -r -d $'\0' i; do
-		commits+=("${i%% *}")
-	done < <(git log --color=always --pretty=oneline --abbrev-commit --reverse | fzf --tac +s -m -e --ansi --reverse --exit-0 --print0)
-	#readarray -t -d $'\0' commits < <(git log --color=always --pretty=oneline --abbrev-commit --reverse | fzf --tac +s -m -e --ansi --reverse --exit-0 --print0| xargs -0 awk '{print $1;}' )
+    while IFS= read -r -d $'\0' i; do
+        commits+=("${i%% *}")
+    done < <(git log --color=always --pretty=oneline --abbrev-commit --reverse | fzf --tac +s -m -e --ansi --reverse --exit-0 --print0)
+    #readarray -t -d $'\0' commits < <(git log --color=always --pretty=oneline --abbrev-commit --reverse | fzf --tac +s -m -e --ansi --reverse --exit-0 --print0| xargs -0 awk '{print $1;}' )
 
-	[[ ${#commits[@]} -eq 0 ]] && return 1
+    [[ ${#commits[@]} -eq 0 ]] && return 1
     copy_to_clipboard "${commits[*]}" && report "copied commit sha(s) [${commits[*]}] to clipboard" "$FUNCNAME"
 }
 
@@ -3756,16 +3756,16 @@ fstash() {
         $FZF_DEFAULT_OPTS
         +m --tiebreak=index --preview=\"$preview_cmd\"
         --bind=\"enter:execute($difftool_cmd)\"
-		--expect=ctrl-a,ctrl-d
-		--exit-0
-		--print-query
-		--no-sort
-		--ansi
-		--height='80%'
-		--preview-window='top:70%'
+        --expect=ctrl-a,ctrl-d
+        --exit-0
+        --print-query
+        --no-sort
+        --ansi
+        --height='80%'
+        --preview-window='top:70%'
     "
-	#stash_cmd="git stash list --pretty=format:'%C(red)%h%C(reset) - %C(dim yellow)(%C(bold magenta)%gd%C(dim yellow))%C(reset) %<(70,trunc)%s %C(green)(%cr) %C(bold blue)<%an>%C(reset)'"
-	stash_cmd="git stash list --color --pretty=format:'%C(red)%gd %C(green)(%cr) %C(blue)%gs'"
+    #stash_cmd="git stash list --pretty=format:'%C(red)%h%C(reset) - %C(dim yellow)(%C(bold magenta)%gd%C(dim yellow))%C(reset) %<(70,trunc)%s %C(green)(%cr) %C(bold blue)<%an>%C(reset)'"
+    stash_cmd="git stash list --color --pretty=format:'%C(red)%gd %C(green)(%cr) %C(blue)%gs'"
 
     while out="$(eval "$stash_cmd" | FZF_DEFAULT_OPTS="$opts" fzf)"; do
         mapfile -t out <<< "$out"
