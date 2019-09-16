@@ -565,7 +565,7 @@ set nocompatible " Must be the first line
     " vim-notes
     let g:notes_directories = ['/data/Seafile/main/notes']
     let g:notes_suffix = '.note'
-    let g:notes_indexfile = '/data/Seafile/main/notes/.search_index'  " optional search index for :SearchNotes for accelerated searching
+    let g:notes_indexfile = '/data/Seafile/main/notes/.search_index'  " optional search index for :SearchNotes for accelerated searching; note this file grows huge!
     let g:notes_tagsindex = '/data/Seafile/main/notes/.tags_index'
     let g:notes_conceal_url = 0  " don't conceal URL protocols
 
@@ -592,10 +592,12 @@ set nocompatible " Must be the first line
     " nerdtree
     " close vim if the only window left open is nerdtree:
     autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+    let NERDTreeAutoDeleteBuffer = 1  " automatically delete buffer of file you just deleted;
+    "let NERDTreeQuitOnOpen = 1  " automatically close nerdtree after opening a file with it;
 
     " vim-gtfo
     " set shell to open with 'got' keycombo:
-    let g:gtfo#terminals = { 'unix' : 'urxvt -cd' }
+    let g:gtfo#terminals = { 'unix' : 'urxvtc -cd' }
 
     " vim-orgmode
     " conceal what can be concealed:
@@ -619,14 +621,14 @@ set nocompatible " Must be the first line
 " !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 " fzf ripgrep  (from https://github.com/junegunn/fzf.vim)
-"   :Rg  - Start fzf with hidden preview window that can be enabled with "?" key
+"   :Rg  - Start fzf with ~hidden~ preview window that can be toggled with "?" key
 "   :Rg! - Start fzf in fullscreen and display the preview window above
 if executable("rg")
     command! -bang -nargs=* Rg
           \ call fzf#vim#grep(
           \   'rg --column --line-number --no-heading --hidden --follow --color=always --ignore-case '.shellescape(<q-args>), 1,
           \   <bang>0 ? fzf#vim#with_preview('up:60%')
-          \           : fzf#vim#with_preview('right:50%:hidden', '?'),
+          \           : fzf#vim#with_preview('right:50%', '?'),
           \   <bang>0)
 
     " additional rg-related additions:
@@ -643,7 +645,7 @@ command! -bang -nargs=? -complete=dir Files
 
 """ automatically close terminal {{{
 "     close :term automatically, do not show 'process exited 0' message; from https://vi.stackexchange.com/a/17388
-"     TODO: should be removed once https://github.com/neovim/neovim/issues/4713 is implemented
+"     TODO: should/could be removed once https://github.com/neovim/neovim/issues/4713 is implemented
 
 " Get the exit status from a terminal buffer by looking for a line near the end
 " of the buffer with the format, '[Process exited ?]'.

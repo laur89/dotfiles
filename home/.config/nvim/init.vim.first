@@ -262,8 +262,8 @@
         nnoremap <F1> <nop>
         vnoremap <F1> <nop>
 
-        " Disable annoying ex mode (Q)
-        map Q <nop>
+        " Disable annoying ex mode (Q) (note we do have noremap Q below)
+        "map Q <nop>
 
         " This is totally awesome - remap jj to escape in insert mode.
         inoremap jj <Esc>
@@ -302,7 +302,7 @@
         nnoremap ; :
 
         " only write file when something changed.
-        "map :w :up
+        "map :w :update
 
         " Use CTRL-S for saving, also in Insert mode
         noremap <C-S>       :update<CR>
@@ -373,11 +373,11 @@
 
         nnoremap th  :tabfirst<CR>
         nnoremap tj  :tabnext<CR>
+        nnoremap tn  :tabnext<CR>
         nnoremap tk  :tabprev<CR>
         nnoremap tp  :tabprev<CR>
         nnoremap tl  :tablast<CR>
         nnoremap tt  :tabedit<CR>
-        nnoremap tn  :tabnext<CR>
         nnoremap tm  :tabm<Space> "tabmove
         nnoremap td  :tabclose<CR>
 
@@ -445,13 +445,13 @@
                 "(currently incative because of nerdtree binding)
             "nnoremap <leader>r :call NumberToggle()<CR>
 
-            "function! NumberToggle()
-                "if(&relativenumber == 1)
-                    "set number
-                "else
-                    "set relativenumber
-                "endif
-            "endfunction
+            function! NumberToggle()
+                if(&relativenumber == 1)
+                    set number
+                else
+                    set relativenumber
+                endif
+            endfunction
         """ }}}
 
         """ Remove multiple empty lines {{{
