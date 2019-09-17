@@ -752,7 +752,7 @@ install_deps() {
             execute "pushd $plugins_dir" || return 1
 
             for dir in *; do
-                if [[ -d "$dir" ]] && is_ssh_key_available; then
+                if [[ -d "$dir" ]]; then
                     execute "pushd $dir" || continue
                     is_git && execute "git pull"
                     execute "popd"
@@ -4106,7 +4106,7 @@ is_ssh_key_available() {
 check_connection() {
     local timeout ip
 
-    readonly timeout=5  # in seconds
+    readonly timeout=3  # in seconds
     readonly ip="google.com"
 
     # Check whether the client is connected to the internet:
