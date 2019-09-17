@@ -376,7 +376,7 @@ setup_crontab() {
         err "[$weekly_crondir] is not a dir; skipping weekly scripts installation."
     else
         for i in \
-                dnsmasq-hosts-update.sh \
+                dnsmasq-hosts-update \
                     ; do
             i="$BASE_DATA_DIR/dev/scripts/$i"
             if ! [[ -f "$i" ]]; then
@@ -1897,6 +1897,7 @@ install_lazyman() {  # https://github.com/StevensNJD4/LazyMan
 }
 
 
+# see also https://github.com/wee-slack/wee-slack/
 install_slack_term() {  # https://github.com/erroneousboat/slack-term
     install_bin_from_git -n slack-term erroneousboat slack-term slack-term-linux-amd64
 }
