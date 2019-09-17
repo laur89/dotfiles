@@ -206,11 +206,11 @@
     set ignorecase                                  " by default ignore case
     set nrformats+=alpha                            " incr/decr letters C-a/-x
     set shiftround                                  " be clever with tabs
-    set shiftwidth=4                                " default 8
+    set shiftwidth=4                                " size of indent; default 8
     set smartcase                                   " sensitive with uppercase
     set smarttab                                    " tab to 0,4,8 etc.
     set softtabstop=4                               " "tab" feels like <tab>
-    set tabstop=4                                   " replace <TAB> w/4 spaces
+    set tabstop=4                                   " <TAB> appears 4 spaces wide (but is still an actual tab char)
     set expandtab                                   " no real tabs
     """ Only auto-comment newline for block comments {{{
         augroup AutoBlockComment
@@ -317,7 +317,7 @@
         nnoremap  <leader>Y  "+yg_
         nnoremap  <leader>y  "+y
         nnoremap  <leader>yy  "+yy
-        
+
         " Paste from system clipboard (from https://www.reddit.com/r/neovim/comments/3fricd/easiest_way_to_copy_from_neovim_to_system/ctrru3b/)
         nnoremap <leader>p "+p
         nnoremap <leader>P "+P

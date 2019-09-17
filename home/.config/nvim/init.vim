@@ -234,9 +234,6 @@ set nocompatible " Must be the first line
     " async jobs
     Plug 'tpope/vim-dispatch' " alt: skywind3000/asyncrun.vim
 
-    " add :CopyPath and :CopyFileName commands
-    Plug 'vim-scripts/copypath.vim'
-
     " project specific vimrc:   # TODO: works with nvim?
     Plug 'LucHermitte/lh-vim-lib' " dependency for local_vimrc
     Plug 'LucHermitte/local_vimrc'
@@ -557,10 +554,6 @@ set nocompatible " Must be the first line
 
     " rainbow:
     let g:rainbow_active = 1
-
-    " copypath:
-    "copy file path or name to unnamed register as well:
-    let g:copypath_copy_to_unnamed_register = 1
 
     " Automatically remove preview window after autocomplete (mainly for clang_complete)
     augroup RemovePreview
