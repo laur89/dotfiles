@@ -1908,6 +1908,7 @@ install_rebar() {  # https://github.com/erlang/rebar3
 }
 
 
+# note there is a deb package now
 install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
     install_deb_from_git BurntSushi ripgrep _amd64.deb
 }

@@ -2023,29 +2023,25 @@ gito() {
 
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
-    __go_back() {
-        [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
-    }
-
     readonly git_root="$(git rev-parse --show-toplevel)" || { err "unable to find project root" "$FUNCNAME"; return 1; }
-    [[ "$cwd" != "$git_root" ]] && pushd "$git_root" &> /dev/null  # git root
 
     if [[ -n "$src" ]]; then
         if [[ "$src" == *\** && "$src" != *\.\** ]]; then
             err 'use .* as wildcards, not a single *' "$FUNCNAME"
-            __go_back
             return 1
         elif [[ "$(echo "$src" | tr -dc '.' | wc -m)" -lt "$(echo "$src" | tr -dc '*' | wc -m)" ]]; then
             err "nr of periods (.) was less than stars (*); are you misusing regex?" "$FUNCNAME"
-            __go_back
             return 1
         fi
     fi
 
+    # TODO: instead of cd-ing to repo root and running ls-files, you might
+    # want to use ls-tree (w/ --full-tree -r --full-name <branch/ref> maybe...)
     __git_ls_fun() {
-        git ls-files | grep -Ei -- "${src:-$}"
+        git ls-files --recurse-submodules | grep -Ei -- "${src:-$}"
     }
 
+    [[ "$cwd" != "$git_root" ]] && pushd "$git_root" &> /dev/null  # git root
     if ! command -v fzf > /dev/null 2>&1; then
         while read -r i; do
             matches+=("$i")
@@ -2054,13 +2050,13 @@ gito() {
         select_items "${matches[@]}"  # don't return here as we need to change wd to starting location;
         matches=("${__SELECTED_ITEMS[@]}")
     else
-        while read -r i; do
+        while IFS= read -r -d $'\0' i; do
             matches+=("$i")
-        done < <(__git_ls_fun | fzf --select-1 --multi --exit-0)
+        done < <(__git_ls_fun | fzf --select-1 --multi --exit-0 --print0)
     fi
 
-    __go_back
-    unset __git_ls_fun __go_back
+    [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
+    unset __git_ls_fun
     [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
 
     for ((i=0; i <= (( ${#matches[@]} - 1 )); i++)); do
@@ -3241,8 +3237,9 @@ __writecmd() {
 
 
 # cf - fuzzy cd from anywhere
-# ex: cf word1 word2 ... (even part of a file name)
-# zsh autoload function
+# ex: cf word1 word2 ... (even part of a file name); basically it'll be "match word1 AND word2..."
+#
+# note the usage of locate instead of find et al.
 cf() {
   local file
 
@@ -3252,7 +3249,7 @@ cf() {
      if [[ -d "$file" ]]; then
         cd -- "$file"
      else
-        cd -- "${file:h}"
+        cd -- "${file:h}"  # TODO: don't we want to use $goto here?
      fi
   fi
 }
@@ -3381,12 +3378,11 @@ fh() {
     check_progs_installed history || return 1
 
     if command -v fzf > /dev/null 2>&1; then
-        # clean up history output, remove FUNCNAME, clean up multiple whitespace, print unique (w/o sorting):
-                #| sed -re 's/\s+$//' \   <- trailing whitespace removal
+        # clean up history output, remove FUNCNAME, remove trailing whitespace & clean up multiple ws, print unique (w/o sorting):
         out="$(history \
                 | grep -Po -- "$cleanup_regex" \
                 | grep -vE -- "^\s*$FUNCNAME\b" \
-                | sed -n '/.*/s/\s\+/ /gp' \
+                | sed -n 's/\ *$//;/.*/s/\s\+/ /gp' \
                 | awk '!x[$0]++' \
                 | fzf --no-sort --tac --query="$input" --expect=ctrl-e,ctrl-d +m -e --exit-0)"
         mapfile -t out <<< "$out"
@@ -3413,7 +3409,7 @@ fh() {
         declare -ar cmd=( $(history \
                 | grep -Po -- "$cleanup_regex" \
                 | grep -vE -- "^\s*$FUNCNAME\b" \
-                | sed -n '/.*/s/\s\+/ /gp' \
+                | sed -n 's/\ *$//;/.*/s/\s\+/ /gp' \
                 | grep -iE --color=auto -- "$input" \
                 | sort -u
         ) )
