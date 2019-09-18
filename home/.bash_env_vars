@@ -68,7 +68,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
 
     # see https://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
     # NOTE:  make sure you know what you do; eg setting XDG_DATA_DIRS below effed up meld
-    #export XDG_CONFIG_HOME="/home/$USER/.config"
+    export XDG_CONFIG_HOME="/home/$USER/.config"
     #export XDG_DATA_HOME="/home/$USER/.local/share"
     #export XDG_DATA_DIR="/home/$USER/.local/share"
     #export XDG_DATA_DIRS="$XDG_DATA_DIR"
@@ -99,7 +99,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
 fi
 
 command -v nvim > /dev/null 2>&1 && export EDITOR=nvim || export EDITOR=vim
-export VISUAL=geany  # gvim doesn't play well with some stuff, eg crontab -e
+export VISUAL="$EDITOR"  # note gvim doesn't play well with some stuff, eg crontab -e
 export PAGER=less
 export BROWSER=/usr/bin/firefox
 export DEITY=
