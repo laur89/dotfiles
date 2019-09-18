@@ -3258,16 +3258,17 @@ cf() {
 # search for files with file content (showing preview)
 # find-in-file - usage: fif <searchPtrn> [fd opts...]
 #
-# example  $fif 'something.*infile' -t java 'filenamepattern'
+# example:
+#   $fif 'something.*infile' 'filenamepattern'
+#   $fif 'something.*infile' -e java 'javafilenameptrn'
 fif() {
-  local preview_cmd preview_cmd_full opts rg_opts k out ptrn i files
+  local preview_cmd preview_cmd_full opts rg_opts k out ptrn files
 
   ptrn="$1"; shift
-  declare -a files
 
   #preview_cmd='highlight -O ansi -l -- {}'
   preview_cmd='bat -p --color always -- {}'
-  preview_cmd_full="$preview_cmd 2>/dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 '$ptrn' || rg --ignore-case --pretty --context 10 '$ptrn' {}"
+  preview_cmd_full="$preview_cmd 2>/dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 -- '$ptrn' || rg --ignore-case --pretty --context 10 -- '$ptrn' {}"
   rg_opts='--files-with-matches --no-messages'
 
   if [[ -z "$ptrn" ]]; then
@@ -3275,23 +3276,22 @@ fif() {
       return 1
   fi
 
+  # remaining opts can only belong to fd:
   if [[ -n "$*" ]]; then
-    while IFS= read -r -d $'\0' i; do
-        files+=("$i")
-    done < <(fd --hidden --follow --type f --print0 "$@")
+    readarray -t -d $'\0' files < <(fd --hidden --follow --type f --print0 "$@")  # do not limit fd command w/ --
     [[ "${#files[@]}" -eq 0 ]] && { err "no files found with fd"; return 1; }
   fi
 
     # if fd was involved, feed the file targets found with it to rg:
     _rg_find() {
         if [[ "${#files[@]}" -eq 0 ]]; then
-            rg $rg_opts "$ptrn"
+            rg $rg_opts -- "$ptrn"
         else
-            rg $rg_opts "$ptrn" "${files[@]}"
+            rg $rg_opts -- "$ptrn" "${files[@]}"
         fi
     }
 
-    # note we enter:execute w/ visual, as (n)vim doesn't work due to
+    # note we do enter:execute w/ visual, as (n)vim doesn't work due to
     # fzf output being captured into $out:
     opts="
         $FZF_DEFAULT_OPTS
