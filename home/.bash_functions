@@ -3261,26 +3261,27 @@ cf() {
 # example:
 #   $fif 'something.*infile' 'filenamepattern'
 #   $fif 'something.*infile' -e java 'javafilenameptrn'
+#   $fif 'something.*infile' -e java -e js 'filenameptrn'  # search js & java files
 fif() {
-  local preview_cmd preview_cmd_full opts rg_opts k out ptrn files
+    local preview_cmd preview_cmd_full opts rg_opts k out ptrn files
 
-  ptrn="$1"; shift
+    ptrn="$1"; shift
 
-  #preview_cmd='highlight -O ansi -l -- {}'
-  preview_cmd='bat -p --color always -- {}'
-  preview_cmd_full="$preview_cmd 2>/dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 -- '$ptrn' || rg --ignore-case --pretty --context 10 -- '$ptrn' {}"
-  rg_opts='--files-with-matches --no-messages'
+    #preview_cmd='highlight -O ansi -l -- {}'
+    preview_cmd='bat -p --color always -- {}'
+    preview_cmd_full="$preview_cmd 2>/dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 -- '$ptrn' || rg --ignore-case --pretty --context 10 -- '$ptrn' {}"
+    rg_opts='--files-with-matches --no-messages'
 
-  if [[ -z "$ptrn" ]]; then
-      err "at least search pattern to search for required"
-      return 1
-  fi
+    if [[ -z "$ptrn" ]]; then
+        err "at least search pattern to search for required"
+        return 1
+    fi
 
-  # remaining opts can only belong to fd:
-  if [[ -n "$*" ]]; then
-    readarray -t -d $'\0' files < <(fd --hidden --follow --type f --print0 "$@")  # do not limit fd command w/ --
-    [[ "${#files[@]}" -eq 0 ]] && { err "no files found with fd"; return 1; }
-  fi
+    # remaining opts can only belong to fd:
+    if [[ -n "$*" ]]; then
+        readarray -t -d $'\0' files < <(fd --hidden --follow --type f --print0 "$@")  # do not limit fd command w/ --
+        [[ "${#files[@]}" -eq 0 ]] && { err "no files found with fd"; return 1; }
+    fi
 
     # if fd was involved, feed the file targets found with it to rg:
     _rg_find() {
@@ -3304,7 +3305,7 @@ fif() {
     "
     out="$(_rg_find | FZF_DEFAULT_OPTS="$opts" fzf)"  # note capturing output fricks up non-gui opening w/ --bind
     unset _rg_find
-    mapfile -t out <<< "$out"
+    readarray -t out <<< "$out"
 
     k="${out[0]}"; unset out[0]
     [[ -z "$k" ]] && return 0  # got no --expect keypress event, exit
@@ -3774,7 +3775,7 @@ fstash() {
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
 
     #cmd="git stash show \$(echo {}| cut -d: -f1) --color=always --ext-diff $forgit_fancy"  # this to use with  --bind=\"enter:execute($cmd |LESS='-R' less
-    sha_extract_cmd="grep -Po '^\\\S+(?=:)' <<< {}"
+    sha_extract_cmd="grep -Po '^\\\S+(?=)' <<< {}"
     preview_cmd="i=\$($sha_extract_cmd) || exit; git show --stat --color=always \$i -- $*; echo -e '\\\n\\\n'; git diff \$i^..\$i -- $* $dsf"  # TODO: need to sort out range
     difftool_cmd="$sha_extract_cmd |xargs -I% git difftool --dir-diff %^ % -- $*"
     opts="
