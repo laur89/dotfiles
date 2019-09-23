@@ -859,6 +859,10 @@ install_deps() {
     clone_or_pull_repo "juven" "maven-bash-completion" "$BASE_DEPS_LOC"  # https://github.com/juven/maven-bash-completion
     create_link "${BASE_DEPS_LOC}/maven-bash-completion" "$HOME/.maven-bash-completion"
 
+    # vifm filetype icons: https://github.com/cirala/vifm_devicons.git
+    clone_or_pull_repo "cirala" "vifm_devicons" "$BASE_DEPS_LOC"
+    create_link "${BASE_DEPS_LOC}/vifm_devicons" "$HOME/.vifm_devicons"
+
     # diff-so-fancy - human-readable git diff:  # https://github.com/so-fancy/diff-so-fancy
     if execute "wget -O $TMP_DIR/d-s-f 'https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy'"; then
         git config core.pager | grep -q diff-so-fancy || err "git config core.pager not set for diff-so-fancy; configure it"
@@ -3374,6 +3378,7 @@ install_from_repo() {
         audacity
         mplayer2
         gimp
+        inkscape
         xss-lock
         filezilla
         transmission
@@ -3394,6 +3399,7 @@ install_from_repo() {
         chromium
         chromium-sandbox
         rxvt-unicode-256color
+        colortest-python
         seafile-gui
         seafile-cli
         geany
