@@ -9,7 +9,7 @@ set nofollowlinks
 set sortnumbers  " natural sort of (version) numbers within text
 set undolevels=100
 set vimhelp
-"set norunexec  " run an executable file on Enter
+set norunexec  " do not run an executable file on Enter
 colorscheme gruvbox
 "set timefmt=%m/%d\ %H:%M
 set wildmenu  " show list of matches on tab completion
@@ -20,6 +20,7 @@ set smartcase
 "set nohlsearch  " don't highlight search results automatically
 set incsearch
 set scrolloff=4
+"set rulerformat="%=%2l-%S [%L] "
 windo normal zo  " show hidden files
 
 if !has('win')
@@ -169,6 +170,9 @@ nmap q ZQ
 " %D the other window directory name.
 " %m run the command in a menu window
 
+" !!command to run non-gui program (eg :!!ls -al %c) and !command for gui (:!gimp %c); i _think_;
+" also, !command runs commands in the current directory
+
 command! df df -h %m 2> /dev/null
 command! diff vim -d %f %F
 command! zip zip -r %f.zip %f
@@ -177,6 +181,7 @@ command! make !!make %a
 command! mkcd :mkdir %a | cd %a
 command! vgrep vim "+grep %a"
 command! reload :write | restart
+command! pack tar cvjf "%a.tar.bz2" -- %f
 
 " ------------------------------------------------------------------------------
 " hard-code (pre-set) some marks:
@@ -185,6 +190,10 @@ command! reload :write | restart
 
 mark b ~/bin/
 mark h ~/
+mark D ~/Downloads/
+mark d ~/Documents/
+mark p ~/Pictures/
+mark w ~/Pictures/wallpapers/
 
 " ------------------------------------------------------------------------------
 source ~/.vifm_devicons/SETUP
