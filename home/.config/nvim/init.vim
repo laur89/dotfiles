@@ -55,7 +55,7 @@ set nocompatible " Must be the first line
     " Glorious colorscheme
     "Plug 'nanotech/jellybeans.vim'
     "Plug 'mhinz/vim-janah'  " A dark colorscheme for Vim.
-    Plug 'morhetz/gruvbox'
+    Plug 'morhetz/gruvbox'  " TODO: consider changing to gruvbox-community/gruvbox
 
     " Super easy commenting, toggle comments etc
     Plug 'scrooloose/nerdcommenter'

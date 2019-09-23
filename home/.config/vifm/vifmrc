@@ -10,7 +10,7 @@ set sortnumbers  " natural sort of (version) numbers within text
 set undolevels=100
 set vimhelp
 "set norunexec  " run an executable file on Enter
-colorscheme luke
+colorscheme gruvbox
 "set timefmt=%m/%d\ %H:%M
 set wildmenu  " show list of matches on tab completion
 set wildstyle=popup
@@ -20,6 +20,7 @@ set smartcase
 "set nohlsearch  " don't highlight search results automatically
 set incsearch
 set scrolloff=4
+windo normal zo  " show hidden files
 
 if !has('win')
     set slowfs=curlftpfs
@@ -71,6 +72,7 @@ fileviewer *.csv sed "s/,,,,/,,-,,/g;s/,,/ /g" %c | column -t | sed "s/ - /  /g"
 
 " misc
 fileview */ tree %c -C -L 1 --dirsfirst
+fileview .*/ tree %c -C -L 1 --dirsfirst
 fileview ../ tree %c -C -L 1 --dirsfirst
 fileviewer *.html w3m -dump %c
 filextype *.html,*.htm firefox %f 2>/dev/null &
@@ -79,7 +81,9 @@ filextype *.html,*.htm firefox %f 2>/dev/null &
 filetype *.o nm %f | less
 
 " remaining files:
-" filetype * xdg-open
+filetype * xdg-open
+fileviewer * bat --color always --plain %c, echo "bat failed, baw :("
+fileviewer .* bat --color always --plain %c, echo "bat failed, baw :("
 " ------------------------------------------------------------------------------
 
 " What should be saved automatically between vifm sessions.  Drop "savedirs"
@@ -142,6 +146,10 @@ nnoremap ,w :set wrap!<cr>
 " Space to select item (similar to ranger)
 nmap <space> tj
 
+" visual mode should append selection by default, not replace existing one(s):
+nmap v av
+nmap V av
+
 " some shortcuts:
 map E :!$EDITOR %f<CR>
 map mkd :mkdir<space>
@@ -179,3 +187,4 @@ mark b ~/bin/
 mark h ~/
 
 " ------------------------------------------------------------------------------
+source ~/.vifm_devicons/SETUP
