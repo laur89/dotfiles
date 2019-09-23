@@ -1575,7 +1575,7 @@ extract() {
 }
 
 # to check included fonts: xlsfonts | grep fontname
-# list all installed fonts: fclist
+# list all installed fonts: fc-list
 fontreset() {
     local dir
 
