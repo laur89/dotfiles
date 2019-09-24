@@ -155,7 +155,7 @@ nmap V av
 map E :!$EDITOR %f<CR>
 map mkd :mkdir<space>
 
-nmap q ZQ
+"nmap q ZQ
 " ------------------------------------------------------------------------------
 
 " :com[mand][!] command_name action
