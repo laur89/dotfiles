@@ -1,6 +1,6 @@
 " gruvbox color scheme approximation for vifm
 
-" Reset all styles first
+" Reset all styles first:
 highlight clear
 
 highlight Border	cterm=none	ctermfg=235	ctermbg=default
@@ -17,7 +17,7 @@ highlight Selected	cterm=none	ctermfg=223	ctermbg=237
 
 highlight JobLine	cterm=bold	ctermfg=116	ctermbg=238
 highlight StatusLine	cterm=bold	ctermfg=144	ctermbg=236
-highlight ErrorMsg	cterm=bold	ctermfg=115	ctermbg=default
+highlight ErrorMsg	cterm=bold	ctermfg=167	ctermbg=default
 highlight WildMenu	cterm=bold	ctermfg=235	ctermbg=144
 highlight CmdLine	cterm=none	ctermfg=223	ctermbg=default
 
