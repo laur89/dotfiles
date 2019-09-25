@@ -1,0 +1,5 @@
+# from https://github.com/LukeSmithxyz/voidrice/blob/archi3/.local/share/applications/rss.desktop
+[Desktop Entry]
+Type=Application
+Name=RSS feed addition
+Exec=/usr/bin/env rssadd %U

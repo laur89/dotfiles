@@ -1,0 +1,5 @@
+# from https://github.com/LukeSmithxyz/voidrice/blob/archi3/.local/share/applications/torrent.desktop
+[Desktop Entry]
+Type=Application
+Name=Torrent
+Exec=/usr/bin/env transadd %U
