@@ -43,3 +43,6 @@ image/png=img.desktop;
 image/jpeg=img.desktop;
 image/gif=img.desktop;
 application/rss+xml=rss.desktop
+
+x-scheme-handler/jetbrains=jetbrains-toolbox.desktop
+
