@@ -920,7 +920,8 @@ install_deps() {
 
     # this needs apt-get install  python-imaging ?:
     execute "/usr/bin/env python3 -m pip install --user --upgrade img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
-    execute "/usr/bin/env python3 -m pip install --user --upgrade scdl"           # https://github.com/flyingrub/scdl (soundcloud downloader)
+    execute "/usr/bin/env python3 -m pip install --user --upgrade ueberzug"      # https://github.com/seebye/ueberzug  (display images in terminal)
+    execute "/usr/bin/env python3 -m pip install --user --upgrade scdl"          # https://github.com/flyingrub/scdl (soundcloud downloader)
     execute "/usr/bin/env python3 -m pip install --user --upgrade rtv"           # https://github.com/michael-lazar/rtv (reddit reader)
     execute "/usr/bin/env python3 -m pip install --user --upgrade tldr"          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
                                                                                       #   note its conf is in bash_env_vars
@@ -1381,7 +1382,7 @@ setup_additional_apt_keys_and_sources() {
 }
 
 
-# can also exec 'setxkbmap -option' caps:escape or use dconf-editor;
+# can also exec 'setxkbmap -option' caps:escape or use dconf-editor; also could use $loadkeys
 # or switch it via XKB options (see https://wiki.archlinux.org/index.php/Keyboard_configuration_in_Xorg)
 #
 # to see current active keyboard setting:    setxkbmap -print -verbose 10
@@ -3324,7 +3325,6 @@ install_from_repo() {
         git-cola
         zenity
         gxmessage
-        msmtp
         gnome-keyring
         policykit-1-gnome
         seahorse
@@ -3378,20 +3378,12 @@ install_from_repo() {
         audacity
         mplayer2
         gimp
-        inkscape
         xss-lock
         filezilla
         transmission
         transmission-remote-cli
         transmission-remote-gtk
         etckeeper
-        thunderbird
-        davmail
-        lightning
-        neomutt
-        notmuch
-        abook
-        isync
     )
 
     declare -ar block3=(
@@ -3411,6 +3403,7 @@ install_from_repo() {
         gthumb
         imagemagick
         pinta
+        inkscape
         xsel
         wmctrl
         xdotool
@@ -3424,6 +3417,7 @@ install_from_repo() {
         neofetch
         maim
         ffmpeg
+        ffmpegthumbnailer
         vokoscreen
         kazam
         screenkey
@@ -3444,6 +3438,14 @@ install_from_repo() {
         arandr
         copyq
         googler
+        msmtp
+        davmail
+        thunderbird
+        lightning
+        neomutt
+        notmuch
+        abook
+        isync
     )
     # old/deprecated block3:
     #         spacefm-gtk3
