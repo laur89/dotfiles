@@ -928,6 +928,7 @@ install_deps() {
     execute "/usr/bin/env python3 -m pip install --user --upgrade maybe"         # https://github.com/p-e-w/maybe (check what command would do)
     execute "/usr/bin/env python3 -m pip install --user --upgrade httpstat"       # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
     execute "/usr/bin/env python3 -m pip install --user --upgrade tendo"          # https://github.com/pycontribs/tendo  py utils, eg singleton (lockfile management)
+    execute "/usr/bin/env python3 -m pip install --user --upgrade awscli"         # https://docs.aws.amazon.com/en_pv/cli/latest/userguide/install-linux.html#install-linux-awscli
 
     # colorscheme generator:
     # see also complementing script @ https://github.com/dylanaraps/bin/blob/master/wal-set
@@ -1601,6 +1602,13 @@ install_own_builds() {
 
     #install_dwm
     is_native && install_i3lock
+    is_work && install_work_builds
+}
+
+
+install_work_builds() {
+    install_aws_okta
+    install_terraform
 }
 
 
@@ -1746,6 +1754,28 @@ switch_jdk_versions() {
 #}
 
 
+
+fetch_release_from_git() {
+    local loc id OPTIND args
+
+    args=()
+    while getopts "UsF:" opt; do
+        case "$opt" in
+            U) args+=("-U") ;;
+            s) args+=("-s") ;;
+            F) args+=("-F" "$OPTARG") ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift $((OPTIND-1))
+
+    loc="https://github.com/$1/$2/releases/latest"
+    id="github-$1-$2"
+
+    fetch_release_from_any "${args[@]}" -r -I "$id" "$loc" "$3" "$4"
+}
+
+
 # Fetch a file from given github /releases page, and return full path to the file.
 # Note we will automaticaly extract the asset if it's archived/compressed; pass -U
 # to skip that step.
@@ -1754,32 +1784,46 @@ switch_jdk_versions() {
 # -s     - skip adding fetched asset in $GIT_RLS_LOG
 # -F     - $file output pattern to grep for in order to filter for specific
 #          single file from unpacked tarball.
+# -I     - entity identifier (for logging/version tracking et al)
+# -r     - if href grep should be relative, ie start with / (note user should not prefix w/ / themselves)
 #
-# $1 - git user
-# $2 - git repo
-# $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src;
-#      note it matches 'til the very end of url;
-# $4 - optional output file name; if given, downloaded file will be renamed to this
-fetch_release_from_git() {
-    local opt noextract skipadd file_filter tmpdir file loc dl_url page OPTIND
+# $1 - url
+# $2 - build/file regex to be used (for grep -Po) to parse correct item from git /releases page src;
+#      note it matches 'til the very end of url (ie you should only provide the latter bit);
+# $3 - optional output file name; if given, downloaded file will be renamed to this
+fetch_release_from_any() {
+    local opt noextract skipadd file_filter id relative loc tmpdir file loc dl_url OPTIND
 
-    while getopts "UsF:" opt; do
+    while getopts "UsF:I:r" opt; do
         case "$opt" in
             U) readonly noextract=1 ;;
             s) readonly skipadd=1 ;;
             F) readonly file_filter="$OPTARG" ;;
+            I) readonly id="$OPTARG" ;;
+            r) readonly relative='TRUE' ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift $((OPTIND-1))
 
-    readonly loc="https://github.com/$1/$2/releases/latest"
-    tmpdir="$(mktemp -d "release-from-git-${1}-${2}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    _fetch_release_from_any() {
+        local grep_tail page dl_url domain
 
-    page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
-    dl_url="$(grep -Po '.*a href="\K/.*'"$3"'(?=")' <<< "$page")" || { err "parsing [$3] download link from [$loc] content failed"; return 1; }  # note we expect url to be relative; otherwise we could get collisions (like w/ polybar)
-    [[ -n "$dl_url" && "$dl_url" != http* ]] && dl_url="https://github.com/$dl_url"  # convert to full url
-    is_valid_url "$dl_url" || { err "[$dl_url] is not a valid download link"; return 1; }
+        grep_tail="$1"
+
+        page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
+        dl_url="$(grep -Po '.*a href="\K'"$grep_tail"'(?=")' <<< "$page")" || { err "parsing [$grep_tail] download link from [$loc] content failed"; return 1; }
+
+        domain="$(grep -Po '^https?://([^/]+)(?=)' <<< "$loc")"
+        [[ -n "$dl_url" && "$dl_url" == /* ]] && dl_url="${domain}$dl_url"  # convert to full url
+        is_valid_url "$dl_url" || { err "[$dl_url] is not a valid download link"; return 1; }
+        echo "$dl_url"
+    }
+
+    readonly loc="$1"
+    tmpdir="$(mktemp -d "release-from-external-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+
+    dl_url="$(_fetch_release_from_any "${relative:+/}.*$2")" || return 1  # note we're looking for relative url
 
     if [[ "$skipadd" -ne 1 ]] && grep -q "$dl_url" "$GIT_RLS_LOG" 2>/dev/null; then
         report "[$dl_url] already encountered, skipping installation..."
@@ -1793,7 +1837,7 @@ fetch_release_from_git() {
 
     if [[ "$noextract" -ne 1 ]] && grep -qiE "archive|compressed" <<< "$(file --brief "$file")"; then
         execute "pushd -- $tmpdir" || return 1
-        extract "$file" || { err "couldn't extract [$file]"; popd; return 1; }
+        aunpack --quiet "$file" || { err "couldn't extract [$file]"; popd; return 1; }
         execute "rm -f -- '$file'" || { err; popd; return 1; }
 
         if [[ -n "$file_filter" ]]; then
@@ -1809,16 +1853,16 @@ fetch_release_from_git() {
         execute "popd"
     fi
 
-    if [[ -n "$4" && "$file" != "$tmpdir/$4" ]]; then
-    #if [[ -n "$4" && "$(basename -- "$file")" != "$4" ]]; then
-        execute "mv -- '$file' '$tmpdir/$4'" || { err "renaming [$file] to [$tmpdir/$4] failed"; return 1; }
-        file="$tmpdir/$4"
+    if [[ -n "$3" && "$file" != "$tmpdir/$3" ]]; then
+    #if [[ -n "$3" && "$(basename -- "$file")" != "$3" ]]; then
+        execute "mv -- '$file' '$tmpdir/$3'" || { err "renaming [$file] to [$tmpdir/$3] failed"; return 1; }
+        file="$tmpdir/$3"
     fi
 
     if [[ "$skipadd" -ne 1 ]]; then
         # we're assuming here that installation succeeded from here on:
-        test -f "$GIT_RLS_LOG" && sed --follow-symlinks -i "/^${1}-${2}:/d" "$GIT_RLS_LOG"
-        echo -e "${1}-${2}:\t$dl_url" >> "$GIT_RLS_LOG"
+        test -f "$GIT_RLS_LOG" && sed --follow-symlinks -i "/^$id:/d" "$GIT_RLS_LOG"
+        echo -e "$id:\t$dl_url" >> "$GIT_RLS_LOG"
     fi
 
     echo "$file"
@@ -1850,7 +1894,7 @@ fetch_extract_tarball_from_git() {
     local tarball
 
     tarball="$(fetch_release_from_git -U "$1" "$2" "$3")" || return $?
-    execute "aunpack '$tarball'" || { err "extracting [$tarball] failed w/ $?"; return 1; }
+    execute "aunpack --quiet '$tarball'" || { err "extracting [$tarball] failed w/ $?"; return 1; }
     return 0
 }
 
@@ -1916,6 +1960,23 @@ install_rebar() {  # https://github.com/erlang/rebar3
 # note there is a deb package now
 install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
     install_deb_from_git BurntSushi ripgrep _amd64.deb
+}
+
+
+install_aws_okta() {  # https://github.com/segmentio/aws-okta
+    install_deb_from_git segmentio aws-okta _amd64.deb
+}
+
+
+install_terraform() {  # https://www.terraform.io/downloads.html
+    local bin target
+
+    target="/usr/local/bin"
+
+    bin="$(fetch_release_from_any -I "terraform" "https://www.terraform.io/downloads.html" "_linux_amd64.zip")" || return $?
+    execute "chmod +x '$bin'" || return 1
+    execute "sudo mv -- '$bin' '$target'" || { err "installing [$bin] in [$target] failed"; return 1; }
+    return 0
 }
 
 
@@ -3691,6 +3752,8 @@ __choose_prog_to_build() {
         install_skype
         install_altiris
         install_symantec_endpoint_security
+        install_aws_okta
+        install_terraform
     )
 
     report "what do you want to build/install?"
