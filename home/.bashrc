@@ -141,6 +141,7 @@ shopt -s globstar       # ** in pathname expansion will match all files and zero
 shopt -s autocd         # if you type dir name, it's interpreted as an argument to cd
 set -o vi               # needs to be added *before* fzf is sourced, otherwise fzf is screwed:
                         #     https://github.com/junegunn/fzf#key-bindings-for-command-line
+stty -ixon              # disable ctrl+s/ctrl+q;
 
 unset MAILCHECK         # avoid delays;
 ##########################################

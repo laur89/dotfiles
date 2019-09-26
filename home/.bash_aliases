@@ -68,7 +68,7 @@ alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='grep -E --color=auto'
 alias c='clear'
-alias cp='cp -rp'
+alias cp='cp -rp'  # TODO: add -i for overwrite prompt? what about scripts?
 alias dfh='df -h'
 #alias less="less -IRKFX" # handled by the $LESS env var
 alias ls='ls -h --color=auto --group-directories-first'

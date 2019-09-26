@@ -1,4 +1,5 @@
 " some conf from https://github.com/LukeSmithxyz/voidrice/blob/archi3/.config/vifm/vifmrc
+" also check out https://gitlab.com/dwt1/dotfiles/blob/master/.config%2Fvifm%2Fvifmrc (distrotube)
 " ------------------------------------------------------------------------------
 
 set vicmd=$EDITOR
