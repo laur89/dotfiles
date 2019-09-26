@@ -99,6 +99,7 @@ Channel gmail-trash
 ################################################
 
 IMAPAccount work
+Timeout 0
 Host localhost
 User laur.aliste@williamhill.com
 PassCmd "getnetrc laur.aliste@williamhill.com"
