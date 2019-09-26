@@ -904,14 +904,14 @@ install_deps() {
     execute "curl -s 'https://get.sdkman.io' | bash"  # TODO depends whether win or linux
 
 
-    execute "/usr/bin/env python3 -m pip install --user --upgrade wheel"    # https://pypi.org/project/wheel/  (wheel is py packaging standard; TODO: as per https://stackoverflow.com/a/56504270/1803648, this pkg should soon be provided by default)
+    py_install wheel    # https://pypi.org/project/wheel/  (wheel is py packaging standard; TODO: as per https://stackoverflow.com/a/56504270/1803648, this pkg should soon be provided by default)
 
     # TODO: following are not deps, are they?:
     # git-playback; install _either_ of these two (ie either from jianli or mmozuras):
-    execute "/usr/bin/env python3 -m pip install --user --upgrade git-playback"   # https://github.com/jianli/git-playback
+    py_install git-playback   # https://github.com/jianli/git-playback
 
     # whatportis: query applications' default port:
-    execute "/usr/bin/env python3 -m pip install --user --upgrade whatportis"     # https://github.com/ncrocfer/whatportis
+    py_install whatportis     # https://github.com/ncrocfer/whatportis
 
     # git-playback:   # https://github.com/mmozuras/git-playback
     #clone_or_pull_repo "mmozuras" "git-playback" "$BASE_DEPS_LOC"
@@ -919,20 +919,20 @@ install_deps() {
 
 
     # this needs apt-get install  python-imaging ?:
-    execute "/usr/bin/env python3 -m pip install --user --upgrade img2txt.py"    # https://github.com/hit9/img2txt  (for ranger)
-    execute "/usr/bin/env python3 -m pip install --user --upgrade ueberzug"      # https://github.com/seebye/ueberzug  (display images in terminal)
-    execute "/usr/bin/env python3 -m pip install --user --upgrade scdl"          # https://github.com/flyingrub/scdl (soundcloud downloader)
-    execute "/usr/bin/env python3 -m pip install --user --upgrade rtv"           # https://github.com/michael-lazar/rtv (reddit reader)
-    execute "/usr/bin/env python3 -m pip install --user --upgrade tldr"          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
+    py_install img2txt.py    # https://github.com/hit9/img2txt  (for ranger)
+    py_install ueberzug      # https://github.com/seebye/ueberzug  (display images in terminal)
+    py_install scdl          # https://github.com/flyingrub/scdl (soundcloud downloader)
+    py_install rtv           # https://github.com/michael-lazar/rtv (reddit reader)
+    py_install tldr          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
                                                                                       #   note its conf is in bash_env_vars
-    execute "/usr/bin/env python3 -m pip install --user --upgrade maybe"         # https://github.com/p-e-w/maybe (check what command would do)
-    execute "/usr/bin/env python3 -m pip install --user --upgrade httpstat"       # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
-    execute "/usr/bin/env python3 -m pip install --user --upgrade tendo"          # https://github.com/pycontribs/tendo  py utils, eg singleton (lockfile management)
-    execute "/usr/bin/env python3 -m pip install --user --upgrade awscli"         # https://docs.aws.amazon.com/en_pv/cli/latest/userguide/install-linux.html#install-linux-awscli
+    py_install maybe         # https://github.com/p-e-w/maybe (check what command would do)
+    py_install httpstat       # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
+    py_install tendo          # https://github.com/pycontribs/tendo  py utils, eg singleton (lockfile management)
+    py_install awscli         # https://docs.aws.amazon.com/en_pv/cli/latest/userguide/install-linux.html#install-linux-awscli
 
     # colorscheme generator:
     # see also complementing script @ https://github.com/dylanaraps/bin/blob/master/wal-set
-    execute "/usr/bin/env python3 -m pip install --user --upgrade pywal"          # https://github.com/dylanaraps/pywal/wiki/Installation
+    py_install pywal          # https://github.com/dylanaraps/pywal/wiki/Installation
 
     execute "gem install --user-install speed_read" # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
 
@@ -955,7 +955,7 @@ install_deps() {
     # note rbenv-doctor can be ran to verify installation:  $ curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-doctor | bash
 
     # some py deps requred by scripts:
-    execute "/usr/bin/env python3 -m pip install --user --upgrade exchangelib vobject icalendar arrow"
+    py_install exchangelib vobject icalendar arrow
     # note: if exchangelib fails with something like
                 #In file included from src/kerberos.c:19:0:
                 #src/kerberosbasic.h:17:27: fatal error: gssapi/gssapi.h: No such file or directory
@@ -975,7 +975,7 @@ install_deps() {
 
     # flashfocus - flash window when focus changes  https://github.com/fennerm/flashfocus
     install_block 'libxcb-render0-dev'
-    execute "/usr/bin/env python3 -m pip install --user --upgrade flashfocus"
+    py_install flashfocus
 
 
     # work deps:  # TODO remove block?
@@ -2557,11 +2557,16 @@ EOF
 }
 
 
+py_install() {
+    execute "/usr/bin/env python3 -m pip install --user --upgrade $*"
+}
+
+
 install_i3_deps() {
     local f
     f="$TMP_DIR/i3-dep-${RANDOM}"
 
-    execute "/usr/bin/env python3 -m pip install --user --upgrade i3ipc"  # https://github.com/acrisci/i3ipc-python
+    py_install i3ipc  # https://github.com/acrisci/i3ipc-python
 
     # TODO: depending on multimon performance, decide whether urxvtq is enough,
     # or i3-quickterm is required;!
