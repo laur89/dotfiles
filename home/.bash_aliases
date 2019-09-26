@@ -118,6 +118,7 @@ alias ehco='echo'
 alias mut='neomutt'
 alias utt='neomutt'
 alias mutt='neomutt'
+alias vifm='vifmrun'  # latter being our script
 alias cim='nvim'
 alias vin='nvim'
 command -v vim > /dev/null 2>&1 || alias vim='nvim'  # yup
