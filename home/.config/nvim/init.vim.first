@@ -129,7 +129,7 @@
     set lazyredraw                                  " redraw only when need to
 
     if !has('nvim') && !exists("$__REMOTE_SSH")
-        set viminfo+=n~/.config/nvim/viminfo
+        set viminfo+=n~/.config/nvim/viminfo  " TODO: this is wrong right, for nvim it's shada (~/.local/share/nvim/shada/main.shada by default)
     endif
 
 

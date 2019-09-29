@@ -852,7 +852,9 @@ install_deps() {
     execute "$HOME/.fzf/install --all" || err "could not install fzf"
 
     # fasd - shell navigator similar to autojump:
-    clone_or_pull_repo "clvv" "fasd" "$BASE_DEPS_LOC"  # https://github.com/clvv/fasd.git
+    # note we're using whjvenyl's fork instead of original clvv, as latter
+    # was last updated 2015 (orig: https://github.com/clvv/fasd.git)
+    clone_or_pull_repo "whjvenyl" "fasd" "$BASE_DEPS_LOC"  # https://github.com/whjvenyl/fasd
     create_link "${BASE_DEPS_LOC}/fasd/fasd" "$HOME/bin/fasd"
 
     # maven bash completion:
@@ -925,7 +927,7 @@ install_deps() {
     py_install rtv           # https://github.com/michael-lazar/rtv (reddit reader)
     py_install tldr          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
                                                                                       #   note its conf is in bash_env_vars
-    py_install maybe         # https://github.com/p-e-w/maybe (check what command would do)
+    #py_install maybe         # https://github.com/p-e-w/maybe (check what command would do)
     py_install httpstat       # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
     py_install tendo          # https://github.com/pycontribs/tendo  py utils, eg singleton (lockfile management)
     py_install awscli         # https://docs.aws.amazon.com/en_pv/cli/latest/userguide/install-linux.html#install-linux-awscli
@@ -935,6 +937,7 @@ install_deps() {
     py_install pywal          # https://github.com/dylanaraps/pywal/wiki/Installation
 
     execute "gem install --user-install speed_read" # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
+    execute "gem install --user-install gist"       # https://github.com/defunkt/gist  (pastebinit for gists)
 
     # rbenv & ruby-build:                               # https://github.com/rbenv/rbenv-installer
     #   ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki):
@@ -1599,6 +1602,7 @@ install_own_builds() {
     install_i3
     install_polybar
     #install_oracle_jdk  # start using sdkman (or something similar)
+    install_gruvbox_gtk_theme
 
     #install_dwm
     is_native && install_i3lock
@@ -3409,6 +3413,7 @@ install_from_repo() {
         lxappearance
         gtk2-engines-murrine
         gtk2-engines-pixbuf
+        gnome-themes-standard
         arc-theme
         numix-gtk-theme
         numix-icon-theme
@@ -3759,6 +3764,7 @@ __choose_prog_to_build() {
         install_symantec_endpoint_security
         install_aws_okta
         install_terraform
+        install_gruvbox_gtk_theme
     )
 
     report "what do you want to build/install?"
@@ -3973,6 +3979,11 @@ install_gtk_numix() {
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
     return 0
+}
+
+
+install_gruvbox_gtk_theme() {
+    clone_or_pull_repo "3ximus" "gruvbox-gtk" "$HOME/.themes"  # https://github.com/3ximus/gruvbox-gtk.git
 }
 
 

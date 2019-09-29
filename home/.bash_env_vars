@@ -268,12 +268,18 @@ if [[ "$-" != *i* && -n "$MAIN_SYSTEM_USER" ]]; then
         fi
         unset _DISP
     fi
+
+    _ID="$(id -u "$MAIN_SYSTEM_USER")"
+    _R_DIR="/run/user/$_ID"
     if [[ -z "$DBUS_SESSION_BUS_ADDRESS" ]]; then
-        _ID="$(id -u "$MAIN_SYSTEM_USER")"
-        _BUS="/run/user/$_ID/bus"
+        _BUS="$_R_DIR/bus"
         [[ "$_ID" =~ ^[0-9]+$ ]] && test -e "$_BUS" && export DBUS_SESSION_BUS_ADDRESS="unix:path=$_BUS"
-        unset _ID _BUS
+        unset _BUS
     fi
+    if [[ -z "$XDG_RUNTIME_DIR" ]]; then
+        test -e "$_R_DIR" && export XDG_RUNTIME_DIR="$_R_DIR"
+    fi
+    unset _ID _R_DIR
 fi
 
 # marker var used to detect whether env vars have been loaded:
