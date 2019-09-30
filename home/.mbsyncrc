@@ -6,12 +6,13 @@
 #    http://pragmaticemacs.com/emacs/migrating-from-offlineimap-to-mbsync-for-mu4e/
 ################################################
 #
-IMAPAccount personal
+IMAPAccount personal-acc
 # Address to connect to:
 Host imap.gmail.com
 User laur.aliste@gmail.com
 PassCmd "getnetrc laur.aliste@gmail.com"
-AuthMechs LOGIN
+# with gpg:  PassCmd "gpg2 -q --for-your-eyes-only --no-tty -d ~/.mailpass.gpg"
+#AuthMechs LOGIN
 # Use SSL:
 SSLType IMAPS
 SSLVersions TLSv1.2
@@ -24,7 +25,7 @@ SSLVersions TLSv1.2
 
 # the remote repository (aka proxy store):
 IMAPStore gmail-remote
-Account personal
+Account personal-acc
 
 # the local repository:
 MaildirStore gmail-local
@@ -32,6 +33,7 @@ MaildirStore gmail-local
 Path ~/mail/personal/
 Inbox ~/mail/personal/INBOX
 #Flatten .  # subdirs will be flattened onto root; this separator will separate levels
+SubFolders Verbatim
 
 # CONNECTIONS SPECIFY LINKS BETWEEN REMOTE AND LOCAL FOLDERS
 #
@@ -47,20 +49,21 @@ Master :gmail-remote:
 Slave :gmail-local:
 #Patterns "INBOX" "[Gmail]/Sent Mail" "[Gmail]/Drafts" "[Gmail]/Starred"  # <- use this if you're not using different channel per maildir
 Patterns * ![Gmail]* !Archives !bug-bash !twitter
+# automatically create missing mailboxes:
 Create Slave
 Expunge Both
 # Save the synchronization state files in the relevant directory:
 SyncState *
 
 Channel gmail-sent
-Master ":gmail-remote:[Gmail]/Sent Mail"
+Master :gmail-remote:"[Gmail]/Sent Mail"
 Slave :gmail-local:sent
 Create Slave
 Expunge Both
 SyncState *
 
 Channel gmail-archive
-Master ":gmail-remote:Archives"
+Master :gmail-remote:"Archives"
 #Master ":gmail-remote:[Gmail]/All Mail"
 Slave :gmail-local:archive
 Create Slave
@@ -68,14 +71,14 @@ Expunge Both
 SyncState *
 
 Channel gmail-trash
-Master ":gmail-remote:[Gmail]/Trash"
+Master :gmail-remote:"[Gmail]/Trash"
 Slave :gmail-local:trash
 Create Slave
 Expunge Both
 SyncState *
 
 Channel gmail-drafts
-Master ":gmail-remote:[Gmail]/Drafts"
+Master :gmail-remote:"[Gmail]/Drafts"
 Slave :gmail-local:drafts
 Create Slave
 Expunge Both
@@ -91,34 +94,38 @@ SyncState *
 Group personal
 Channel gmail-default
 Channel gmail-sent
-Channel gmail-drafts
 Channel gmail-archive
 Channel gmail-trash
+Channel gmail-drafts
 
 ################################################
 ################################################
 
-IMAPAccount work
+IMAPAccount work-acc
 Timeout 0
 Host localhost
 User laur.aliste@williamhill.com
 PassCmd "getnetrc laur.aliste@williamhill.com"
+# with gpg:  PassCmd "gpg2 -q --for-your-eyes-only --no-tty -d ~/.mailpass.gpg"
 AuthMechs LOGIN
 Port 1143
 # Do not use SSL:
 #UseIMAPS yes
 #RequireSSL no
 SSLType None
-CertificateFile /etc/ssl/certs/ca-certificates.crt
+#CertificateFile /etc/ssl/certs/ca-certificates.crt
 
 IMAPStore work-remote
-Account work
+Account work-acc
+# might be needed if you get "BAD Command" (see arch wiki on isync):
+#PipelineDepth 1
 
 MaildirStore work-local
 # The trailing "/" is important
 Path ~/mail/work/
 Inbox ~/mail/work/Inbox
 #Flatten .  # subdirs will be flattened onto root; this separator will separate levels
+SubFolders Verbatim
 
 Channel work-default
 Master :work-remote:
