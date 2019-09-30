@@ -87,16 +87,17 @@ set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh'
 # sidebar:
     set mail_check_stats=yes
     set sidebar_visible=yes
-    set sidebar_width   = 24
+    set sidebar_width   = 25
     set sidebar_format="%B%*  %S%?N?(%N)?%?F?[%F]?"
     set sidebar_indent_string=" "
-    #set sidebar_delim_chars="/"  # Delete everything up to the last / character
+    #set sidebar_component_depth=1  # Shorten mailbox names (truncate 1 subdirs)
+    #set sidebar_delim_chars="/"  # Delete everything up to the last or nth / character
   # and optionally:
     set sidebar_folder_indent=yes
     set sidebar_short_path=yes  # shorten mailbox names
-  color sidebar_new yellow default   # TODO verify it's still valid (ie after 1.7+)
+  color sidebar_new yellow default   # mailboxes containing new mail
+  #color sidebar_indicator default color17
   #color sidebar_new color221 color233
-  #set sidebar_delim   = ' │'  # deprecated as of 1.6 or 1.7 (when sidebar patch was merged into mutt pkg)
   #set sidebar_divider_char = '|'
 
 
@@ -125,7 +126,7 @@ set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh'
   #set date_format = "{}%"  # for dynamic date formatting
   #set date_format = "!%a %Y%m%d%H%M%S %Z"
   #set index_format = "%3C [%Z] %?X?A&-? %D %-15.15F %s"  # note the '%?X?A&-?' displays 'A' or '-' depending on presence of an attachment
-  set index_format = '/data/Seafile/main/Documents/comp/C-code/mutt-index-format "%9[%d.%m.%y]" "%9[%e.%b]" "%8[%a %H:%m]" "%[%H:%m]" "%3C [%Z] %?X?%2X& -? %%s %-20.20L %?M?+%-2M&   ? %s %> [%4c]asladfg" "%[%s]" |'
+  set index_format = '/home/laur/bin/mutt-index-format "%9[%d.%m.%y]" "%9[%e.%b]" "%8[%a %H:%m]" "%[%H:%m]" "%3C [%Z] %?X?%2X& -? %%s %-20.20L %?M?+%-2M&   ? %s %> [%4c]asladfg" "%[%s]" |'
   set alias_format = "%4n %t %-20a %r"
 #color status red default  # colors come from included file
 
@@ -153,7 +154,7 @@ hdr_order from: to: cc: date: subject:
 # When set, mutt will use the first virtual mailbox (see virtual-mailboxes) as a spoolfile:
 #set virtual_spoolfile=yes
 
-source ~/.mailboxes        # source virtual boxes
+source ~/.mailboxes        # source virtual boxes; (if not listed in sidebar, then look up macro for 'change-vfolder')
 
 # This variable allows you to customize the file browser display for virtual
 # folders to your personal taste.
@@ -177,6 +178,8 @@ set vfolder_format = "%6n(%6N) %f"
 #source ~/.mutt/colors/base16
 #source ~/.mutt/colors/vombat
 source ~/.mutt/colors/gruvbox
+#source ~/.mutt/colors/gruvbox_2
+#source ~/.mutt/colors/gruvbox_2_extended
 
 
 source ~/.mutt/bindings
