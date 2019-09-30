@@ -936,8 +936,8 @@ install_deps() {
     # see also complementing script @ https://github.com/dylanaraps/bin/blob/master/wal-set
     py_install pywal          # https://github.com/dylanaraps/pywal/wiki/Installation
 
-    execute "gem install --user-install speed_read" # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
-    execute "gem install --user-install gist"       # https://github.com/defunkt/gist  (pastebinit for gists)
+    rb_install speed_read  # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
+    rb_install gist        # https://github.com/defunkt/gist  (pastebinit for gists)
 
     # rbenv & ruby-build:                               # https://github.com/rbenv/rbenv-installer
     #   ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki):
@@ -984,9 +984,8 @@ install_deps() {
     # work deps:  # TODO remove block?
     #if [[ "$MODE" == work ]]; then
         ## cx toolbox/vagrant env deps:  # TODO: deprecate? at least try to find what is _really_ required.
-        #execute "gem install --user-install \
-            #puppet puppet-lint bundler nokogiri builder \
-        #"
+        #rb_install \
+            #puppet puppet-lint bundler nokogiri builder
     #fi
 
     # laptop deps:
@@ -2153,9 +2152,7 @@ install_webdev() {
 
     # install ruby modules:          # sass: http://sass-lang.com/install
     # TODO sass deprecated, use https://github.com/sass/dart-sass instead
-    #execute "gem install --user-install \
-        #sass \
-    #"
+    #rb_install sass
 
     # install yarn:  https://yarnpkg.com/en/docs/install#debian-stable
     execute "sudo apt-get --no-install-recommends --yes install yarn"
@@ -2163,7 +2160,7 @@ install_webdev() {
     # install rails:
     # this would install it globally; better install new local ver by
     # rbenv install <ver> && rbenv global <ver> && gem install rails
-    #execute 'gem install --user-install rails'
+    #rb_install rails
 }
 
 
@@ -2563,6 +2560,11 @@ EOF
 
 py_install() {
     execute "/usr/bin/env python3 -m pip install --user --upgrade $*"
+}
+
+
+rb_install() {
+    execute "gem install --user-install $*"
 }
 
 
@@ -3571,7 +3573,6 @@ install_from_repo() {
 
                 virtualbox
                 virtualbox-dkms
-                virtualbox-guest-dkms
             '
         fi
 
@@ -3580,6 +3581,10 @@ install_from_repo() {
         '
 
         # remmina is remote desktop for windows; rdesktop, remote vnc;
+    fi
+
+    if is_virtualbox; then
+        install_block 'virtualbox-guest-dkms virtualbox-guest-utils'
     fi
 
     if is_native && is_laptop; then
@@ -3967,7 +3972,7 @@ install_gtk_numix() {
 
     check_progs_installed  glib-compile-schemas  gdk-pixbuf-pixdata || { err "those need to be on path for numix build to succeed."; return 1; }
     report "installing numix build dependencies..."
-    execute "gem install --user-install sass" || return 1
+    rb_install sass || return 1
 
     execute "git clone -j8 $theme_repo $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
@@ -4076,6 +4081,7 @@ post_install_progs_setup() {
                                                 # to capture packets - it asks this during installation);
     #execute "newgrp wireshark"                  # log us into the new group; !! will stop script execution
     is_native && execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
+    is_virtualbox && execute "sudo adduser $USER vboxsf"      # add user to vboxsf group (to be able to access mounted shared folders);
     #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
     configure_ntp_for_work  # TODO: confirm if ntp needed in WSL
     configure_pulseaudio  # TODO see if works in WSL
@@ -4426,6 +4432,19 @@ is_virt() {
     fi
 
     return $_IS_VIRT
+}
+
+
+# Checks whether system is running in _virtualbox_ (not just in any virtualizatoin)
+#
+# @returns {bool}   true if we're running in a virtualbox vm
+is_virtualbox() {
+    if [[ -z "$_IS_VIRTUALBOX" ]]; then
+        lspci | grep -qi virtualbox
+        readonly _IS_VIRTUALBOX=$?
+    fi
+
+    return $_IS_VIRTUALBOX
 }
 
 
