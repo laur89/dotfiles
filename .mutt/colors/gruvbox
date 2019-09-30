@@ -1,6 +1,10 @@
 # vim: filetype=muttrc
 # file from https://github.com/tomauty/dotfiles/blob/master/mutt/.mutt/colors/gruvbox-256
 #
+# see also:
+#   - http://www.davep.org/mutt/muttrc/colours.html
+#   - http://www.guckes.net/Setup/mutt.color.body
+#
 # ###################################################
 # author: Tom Auty
 # site:   tomauty.cc
@@ -16,6 +20,7 @@ color attachment    color254        color0
 color search        color61         color0
 #color status        J_black         J_status
 color status        color254        color235
+#mono status bold  # TODO: bold not working?
 color indicator     color0         color136
 color tree          color136        color0                                    # arrow in threads
 
@@ -37,7 +42,7 @@ color index         color166        color0        "~E"                        # 
 color index         color33         color0        "~N"                        # new messages
 color index         color33         color0        "~O"                        # old messages
 color index         color61         color0        "~Q"                        # messages that have been replied to
-color index         color240        color0        "~R"                        # read messages
+color index         color244        color0        "~R"                        # read messages; looks like this is read msgs that have _no_ tags in index; belongs logically together with 'messages to me' below ("~R~p!~F")
 color index         color33         color0        "~U"                        # unread messages
 color index         color33         color0        "~U~$"                      # unread, unreferenced messages
 color index         color254        color0        "~v"                        # messages part of a collapsed thread
@@ -45,7 +50,7 @@ color index         color254        color0        "~P"                        # 
 color index         color37         color0        "~p!~F"                     # messages to me
 color index         color37         color0        "~N~p!~F"                   # new messages to me
 color index         color37         color0        "~U~p!~F"                   # unread messages to me
-color index         color240        color0        "~R~p!~F"                   # messages to me
+color index         color244        color0        "~R~p!~F"                   # messages to me; think that most _read_ msgs are colored this (except the ones without any tags (see above))
 color index         color160        color0        "~F"                        # flagged messages
 color index         color160        color0        "~F~p"                      # flagged messages to me
 color index         color160        color0        "~N~F"                      # new flagged messages
@@ -71,9 +76,10 @@ color index         color136        color160        "~v~(~D)"                   
 # message headers ------------------------------------------------------
 
 #color header        color240        color0        "^"
-color hdrdefault    color240        color0
+color hdrdefault    color243        color0
 color header        color254        color0        "^(From)"
 color header        color33         color0        "^(Subject)"
+#color header        color33         color0        "^(Subject)"  # TODO: bold not working?
 
 # body -----------------------------------------------------------------
 
@@ -86,7 +92,7 @@ color quoted4       color166        color0
 color signature     color240        color0
 color bold          color235        color0
 color underline     color235        color0
-color normal        color244        color0
+color normal        color250        color0  # body, sidebar divider line, default sidebar elements' color...
 #
 color body          color245        color0        "[;:][-o][)/(|]"    # emoticons
 color body          color245        color0        "[;:][)(|]"         # emoticons
@@ -108,8 +114,10 @@ mono  body          bold                            "^gpg: BAD signature from.*"
 
 # yes, an insance URL regex
 color body          color160        color0        "([a-z][a-z0-9+-]*://(((([a-z0-9_.!~*'();:&=+$,-]|%[0-9a-f][0-9a-f])*@)?((([a-z0-9]([a-z0-9-]*[a-z0-9])?)\\.)*([a-z]([a-z0-9-]*[a-z0-9])?)\\.?|[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)(:[0-9]+)?)|([a-z0-9_.!~*'()$,;:@&=+-]|%[0-9a-f][0-9a-f])+)(/([a-z0-9_.!~*'():@&=+$,-]|%[0-9a-f][0-9a-f])*(;([a-z0-9_.!~*'():@&=+$,-]|%[0-9a-f][0-9a-f])*)*(/([a-z0-9_.!~*'():@&=+$,-]|%[0-9a-f][0-9a-f])*(;([a-z0-9_.!~*'():@&=+$,-]|%[0-9a-f][0-9a-f])*)*)*)?(\\?([a-z0-9_.!~*'();/?:@&=+$,-]|%[0-9a-f][0-9a-f])*)?(#([a-z0-9_.!~*'();/?:@&=+$,-]|%[0-9a-f][0-9a-f])*)?|(www|ftp)\\.(([a-z0-9]([a-z0-9-]*[a-z0-9])?)\\.)*([a-z]([a-z0-9-]*[a-z0-9])?)\\.?(:[0-9]+)?(/([-a-z0-9_.!~*'():@&=+$,]|%[0-9a-f][0-9a-f])*(;([-a-z0-9_.!~*'():@&=+$,]|%[0-9a-f][0-9a-f])*)*(/([-a-z0-9_.!~*'():@&=+$,]|%[0-9a-f][0-9a-f])*(;([-a-z0-9_.!~*'():@&=+$,]|%[0-9a-f][0-9a-f])*)*)*)?(\\?([-a-z0-9_.!~*'();/?:@&=+$,]|%[0-9a-f][0-9a-f])*)?(#([-a-z0-9_.!~*'();/?:@&=+$,]|%[0-9a-f][0-9a-f])*)?)[^].,:;!)? \t\r\n<>\"]"
-# and a heavy handed email regex
-#color body          J_magent        color0        "((@(([0-9a-z-]+\\.)*[0-9a-z-]+\\.?|#[0-9]+|\\[[0-9]?[0-9]?[0-9]\\.[0-9]?[0-9]?[0-9]\\.[0-9]?[0-9]?[0-9]\\.[0-9]?[0-9]?[0-9]\\]),)*@(([0-9a-z-]+\\.)*[0-9a-z-]+\\.?|#[0-9]+|\\[[0-9]?[0-9]?[0-9]\\.[0-9]?[0-9]?[0-9]\\.[0-9]?[0-9]?[0-9]\\.[0-9]?[0-9]?[0-9]\\]):)?[0-9a-z_.+%$-]+@(([0-9a-z-]+\\.)*[0-9a-z-]+\\.?|#[0-9]+|\\[[0-2]?[0-9]?[0-9]\\.[0-2]?[0-9]?[0-9]\\.[0-2]?[0-9]?[0-9]\\.[0-2]?[0-9]?[0-9]\\])"
+# and a heavy handed email regex:
+#color body          color234        color0        "((@(([0-9a-z-]+\\.)*[0-9a-z-]+\\.?|#[0-9]+|\\[[0-9]?[0-9]?[0-9]\\.[0-9]?[0-9]?[0-9]\\.[0-9]?[0-9]?[0-9]\\.[0-9]?[0-9]?[0-9]\\]),)*@(([0-9a-z-]+\\.)*[0-9a-z-]+\\.?|#[0-9]+|\\[[0-9]?[0-9]?[0-9]\\.[0-9]?[0-9]?[0-9]\\.[0-9]?[0-9]?[0-9]\\.[0-9]?[0-9]?[0-9]\\]):)?[0-9a-z_.+%$-]+@(([0-9a-z-]+\\.)*[0-9a-z-]+\\.?|#[0-9]+|\\[[0-2]?[0-9]?[0-9]\\.[0-2]?[0-9]?[0-9]\\.[0-2]?[0-9]?[0-9]\\.[0-2]?[0-9]?[0-9]\\])"
+color body color208 color234 "mailto:[-a-z_0-9.]+@[-a-z_0-9.]+"
+color body color208 color234 "[-a-z_0-9.%$]+@[-a-z_0-9.]+\\.[-a-z][-a-z]+"
 
 # Various smilies and the like
 #color body          color230        color0        "<[Gg]>"                            # <g>
