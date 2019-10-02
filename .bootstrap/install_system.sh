@@ -2558,6 +2558,7 @@ EOF
 }
 
 
+# TODO: this installation method is dirty; consider https://github.com/pipxproject/pipx
 py_install() {
     execute "/usr/bin/env python3 -m pip install --user --upgrade $*"
 }
@@ -3402,6 +3403,7 @@ install_from_repo() {
         seahorse
         gsimplecal
         khal
+        vdirsyncer
         calcurse
         galculator
         atool
