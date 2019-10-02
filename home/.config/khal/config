@@ -4,6 +4,11 @@ color = dark cyan
 path = /data/.calendars/work
 type = calendar
 
+[[test]]
+color = dark cyan
+path = /tmp/khal_test_calendar
+type = calendar
+
 [locale]
 timeformat = %H:%M
 dateformat = %d/%m/%Y
@@ -14,7 +19,7 @@ longdatetimeformat = %d/%m/%Y %H:%M
 [default]
 highlight_event_days = True
 default_calendar = work
-#timedelta = 4d  # added later (wasn't present in ver 0.8.4)
+timedelta = 4d  # default timedelta to use for reporting, for example in _list_
 
 [highlight_days]
 multiple = light cyan  # as in if events from different calendars land on same date
