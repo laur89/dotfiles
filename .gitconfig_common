@@ -60,6 +60,7 @@
     co = checkout
     cp = cherry-pick
     rb = rebase
+    rbu = "!rb_upstream () { b=${1:-$(git rev-parse --abbrev-ref HEAD)}; git fetch upstream && git rebase upstream/$b; }; rb_upstream $1"
     fe = fetch --prune --tags
     pul = pull
     desc = describe
