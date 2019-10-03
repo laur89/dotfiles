@@ -60,8 +60,9 @@
     co = checkout
     cp = cherry-pick
     rb = rebase
+    rbo = "!rb_origin () { b=${1:-$(git rev-parse --abbrev-ref HEAD)}; git fetch origin && git rebase origin/$b; }; rb_origin $1"
     rbu = "!rb_upstream () { b=${1:-$(git rev-parse --abbrev-ref HEAD)}; git fetch upstream && git rebase upstream/$b; }; rb_upstream $1"
-    fe = fetch --prune --tags
+    fe = fetch --prune --tags --all
     pul = pull
     desc = describe
     lg = log -i --all --graph --source --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset'\n --abbrev-commit --date=relative
