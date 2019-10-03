@@ -3586,7 +3586,7 @@ install_from_repo() {
     fi
 
     if is_virtualbox; then
-        install_block 'virtualbox-guest-dkms virtualbox-guest-utils'
+        install_block 'virtualbox-guest-dkms virtualbox-guest-utils virtualbox-guest-x11'
     fi
 
     if is_native && is_laptop; then
@@ -4437,7 +4437,7 @@ is_virt() {
 }
 
 
-# Checks whether system is running in _virtualbox_ (not just in any virtualizatoin)
+# Checks whether system is running in _virtualbox_ (not just in any virtualization)
 #
 # @returns {bool}   true if we're running in a virtualbox vm
 is_virtualbox() {
