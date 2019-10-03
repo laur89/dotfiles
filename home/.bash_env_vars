@@ -5,6 +5,57 @@
 export MAIN_SYSTEM_USER=laur
 export DEFAULT_SSH_USER=laur
 
+# test whether the shell is interactive; if not, set missing env vars:
+# (as per http://www.tldp.org/LDP/abs/html/intandnonint.html)
+#if [[ -z "$DISPLAY" ]]; then
+#if ! [[ -t 0 || -p /dev/stdin ]]; then
+#if [[ ! -t 0 && ! -p /dev/stdin ]]; then
+#if [[ "$(tty)" == "/dev/tty1" ]]; then
+#if [[ "$-" != *i* ]] && [[ -z "$DISPLAY" ]]; then
+#if [ "$PS1" ] ; then # interactive shell
+#if [[ "$EUID" -eq 0 && -z "$DISPLAY" ]] || [[ "$-" != *i* ]]; then
+if [[ "$-" != *i* ]]; then
+
+#if ! shopt -q login_shell; then
+#if [[ "$(tty)" != "/dev/tty1" ]] && [[ \"\$(who | cut -d' ' -f1 | sort | uniq)\" == \"\$usr\" ]]; do
+
+    # find currently active user/id: (note 'type' _should_ be x11 || wayland, but seems to be 'tty' with xinitrc;
+    #for sessionid in $(loginctl list-sessions --no-legend | awk '{ print $1 }'); do
+        #loginctl show-session -p Id -p Name -p User -p State -p Type -p Remote $sessionid | sort
+    #done | awk -F= '/Name/ { name = $2 } /User/ { user = $2 } /State/ { state = $2 } /Type/ { type = $2 } /Remote/ { remote = $2 } /User/ && remote == "no" && state == "active" && (type == "tty" || type == "wayland") { print user, name }'
+
+    if [[ -z "$USER" ]]; then
+        u="$(whoami)"
+        [[ $? -eq 0 && -n "$u" && "$u" != root ]] && export USER="$u" && export MAIN_SYSTEM_USER="$u"  # TODO: do we want to define/override MAIN_SYSTEM_USER here?
+        unset u
+    fi
+
+    # try to extract our DISPLAY value from $(who) output
+    if [[ -z "$DISPLAY" ]]; then
+        _DISP="$(LANG= who -u | grep "^$MAIN_SYSTEM_USER\b" | grep -oP '\s+\(\K:[0-9](\.[0-9])?(?=\))' | sort -u)"
+        if [[ -z "$_DISP" || "$(wc -l <<< "$_DISP")" -ne 1 ]]; then
+            echo -e "\n\n    ERROR: couldn't find our \$DISPLAY from [$_DISP]\n\n"
+        else
+            export DISPLAY="$_DISP"
+        fi
+        unset _DISP
+    fi
+
+    _ID="$(id -u "$MAIN_SYSTEM_USER")"
+    _R_DIR="/run/user/$_ID"
+    if [[ -z "$DBUS_SESSION_BUS_ADDRESS" ]]; then
+        _BUS="$_R_DIR/bus"
+        [[ "$_ID" =~ ^[0-9]+$ ]] && test -e "$_BUS" && export DBUS_SESSION_BUS_ADDRESS="unix:path=$_BUS"
+        unset _BUS
+    fi
+    if [[ -z "$XDG_RUNTIME_DIR" ]]; then
+        test -e "$_R_DIR" && export XDG_RUNTIME_DIR="$_R_DIR"
+    fi
+    unset _ID _R_DIR
+fi
+
+
+
 # load local (ie non-ssh'ed) system's vars:
 if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # env vars to be loaded in local systems only (ie remote sessions should ignore this)
@@ -239,48 +290,6 @@ export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window down:3:wrap"  # sho
 # ripgrep env vars:
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
 
-# test whether the shell is interactive; if not, set missing env vars:
-# (as per http://www.tldp.org/LDP/abs/html/intandnonint.html)
-#if [[ -z "$DISPLAY" ]]; then
-#if ! [[ -t 0 || -p /dev/stdin ]]; then
-#if [[ ! -t 0 && ! -p /dev/stdin ]]; then
-#if [[ "$(tty)" == "/dev/tty1" ]]; then
-#if [[ "$-" != *i* ]] && [[ -z "$DISPLAY" ]]; then
-#if [ "$PS1" ] ; then # interactive shell
-#if [[ "$EUID" -eq 0 && -z "$DISPLAY" ]] || [[ "$-" != *i* ]]; then
-if [[ "$-" != *i* && -n "$MAIN_SYSTEM_USER" ]]; then
-
-#if ! shopt -q login_shell; then
-#if [[ "$(tty)" != "/dev/tty1" ]] && [[ \"\$(who | cut -d' ' -f1 | sort | uniq)\" == \"\$usr\" ]]; do
-
-    # find currently active user/id: (note 'type' _should_ be x11 || wayland, but seems to be 'tty' with xinitrc;
-    #for sessionid in $(loginctl list-sessions --no-legend | awk '{ print $1 }'); do
-        #loginctl show-session -p Id -p Name -p User -p State -p Type -p Remote $sessionid | sort
-    #done | awk -F= '/Name/ { name = $2 } /User/ { user = $2 } /State/ { state = $2 } /Type/ { type = $2 } /Remote/ { remote = $2 } /User/ && remote == "no" && state == "active" && (type == "tty" || type == "wayland") { print user, name }'
-
-    # try to extract our DISPLAY value from $(who) output
-    if [[ -z "$DISPLAY" ]]; then
-        _DISP="$(LANG= who -u | grep "^$MAIN_SYSTEM_USER\b" | grep -oP '\s+\(\K:[0-9](\.[0-9])?(?=\))' | sort -u)"
-        if [[ -z "$_DISP" || "$(wc -l <<< "$_DISP")" -ne 1 ]]; then
-            echo -e "\n\n    ERROR: couldn't find our \$DISPLAY from [$_DISP]\n\n"
-        else
-            export DISPLAY="$_DISP"
-        fi
-        unset _DISP
-    fi
-
-    _ID="$(id -u "$MAIN_SYSTEM_USER")"
-    _R_DIR="/run/user/$_ID"
-    if [[ -z "$DBUS_SESSION_BUS_ADDRESS" ]]; then
-        _BUS="$_R_DIR/bus"
-        [[ "$_ID" =~ ^[0-9]+$ ]] && test -e "$_BUS" && export DBUS_SESSION_BUS_ADDRESS="unix:path=$_BUS"
-        unset _BUS
-    fi
-    if [[ -z "$XDG_RUNTIME_DIR" ]]; then
-        test -e "$_R_DIR" && export XDG_RUNTIME_DIR="$_R_DIR"
-    fi
-    unset _ID _R_DIR
-fi
 
 # marker var used to detect whether env vars have been loaded:
 export __ENV_VARS_LOADED_MARKER_VAR=loaded
