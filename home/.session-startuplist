@@ -139,6 +139,11 @@ if ! is_proc_running transmission_somethiNG_TODO && ! is_work; then
     true
 fi
 
+if is_virtualbox; then
+    # as per https://askubuntu.com/a/1107875, VBoxClient gives us bidirectional clipboard:
+    is_proc_running VBoxClient || VBoxClient --clipboard  # add --draganddrop if needed
+fi
+
 # synergy:
 if is_native; then
 if is_laptop; then
@@ -154,7 +159,7 @@ if is_laptop; then
             echo "TODO"
         fi
 
-        set_keyboard_layout &   # otherwise using server's keyboard defaults to us map;
+        set_keyboard_layout &   # otherwise using server's keyboard defaults to 'us' map;
                                 # alternatively, on systemd, consider localectl
 
                                 # for permanent change:  dpkg-reconfigure keyboard-configuration
@@ -179,10 +184,9 @@ fi
 # modify configs:
 if is_laptop && is_native; then
     if [[ -e ~/.xscreensaver ]]; then
-        ( sed \
-            --follow-symlinks \
+        sed --follow-symlinks \
             -i '/^lockTimeout:/s/^lockTimeout:.*/lockTimeout:\t0:00:05/g' ~/.xscreensaver || \
-                err_display "unable to edit ~/.xscreensaver with sed" "$SELF"; ) &
+                    err_display "unable to edit ~/.xscreensaver with sed" "$SELF"
     else
         err_display "xscreensaver conf does not exist; if not using xscreensaver anymore, remove logic from [$SELF]"
     fi
