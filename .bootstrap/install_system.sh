@@ -4191,7 +4191,7 @@ _sanitize_ssh() {
         return 1
     fi
 
-    execute "chmod -R u=rwX,g=,o= -- $HOME/.ssh"
+    find -L "$HOME/.ssh" \( -type f -o -type d \) -exec chmod 'u=rwX,g=,o=' -- '{}' \+
     return $?
 }
 
