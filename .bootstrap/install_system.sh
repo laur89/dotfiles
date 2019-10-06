@@ -641,9 +641,6 @@ install_sshfs() {
         err "[$fuse_conf] appears not to contain config value \"user_allow_other\"; check manually."
     fi
 
-    # add us to the fuse group:
-    execute "sudo gpasswd -a $USER fuse"
-
     while true; do
         confirm "$(report "add ${prev_server_ip:+another }sshfs entry to fstab?")" || break
 
@@ -1371,7 +1368,8 @@ setup_additional_apt_keys_and_sources() {
     # mono: (from https://www.mono-project.com/download/stable/#download-lin-debian):
     # later on installed by 'mono-complete' pkg
     execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF'
-    execute 'echo "deb https://download.mono-project.com/repo/debian stable-buster main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list > /dev/null'
+    execute 'echo "deb https://download.mono-project.com/repo/debian stable-buster main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list > /dev/null'  # stable branch
+    #execute 'echo "deb https://download.mono-project.com/repo/debian preview-buster main" | sudo tee /etc/apt/sources.list.d/mono-official-preview.list > /dev/null' # preview branch
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
     execute 'wget -q -O - https://www.charlesproxy.com/packages/apt/PublicKey | sudo apt-key add -'
@@ -3291,9 +3289,6 @@ install_from_repo() {
         smartmontools
         pm-utils
         ntfs-3g
-        fuse
-        fuseiso
-        mono-complete
         erlang
         acpid
         lm-sensors
@@ -3343,9 +3338,15 @@ install_from_repo() {
         python-dev
         python-flake8
         python3-flake8
+        msbuild
+        mono-complete
         curl
         lshw
+        fuse
+        fuseiso
     )
+
+    # for .NET dev, consider also nuget pkg;
 
     declare -ar block2_nonwin=(
         dnsutils
@@ -3857,7 +3858,7 @@ setup_docker() {
 
     # see https://github.com/docker/for-linux/issues/58 (without it container exits with 139):
     add_kernel_option() {
-        local conf line param
+        local conf param line
         conf='/etc/default/grub'
         param='vsyscall=emulate'
 
@@ -4089,6 +4090,7 @@ post_install_progs_setup() {
     configure_pulseaudio  # TODO see if works in WSL
     #setup_seafile_cli  # TODO https://github.com/haiwen/seafile/issues/1855 & https://github.com/haiwen/seafile/issues/1854
     is_native && enable_fw
+    #execute "sudo adduser $USER fuse"  # not needed anymore?
 }
 
 
