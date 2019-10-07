@@ -101,24 +101,19 @@ ffind() {
            i)
               [[ "$iname_arg" != '-iname' ]] && caseOptCounter+=1
               iname_arg="-iname"
-              shift $((OPTIND-1))
                 ;;
            s)
               [[ "$force_case" -ne 1 ]] && caseOptCounter+=1
               unset iname_arg
               force_case=1
-              shift $((OPTIND-1))
                 ;;
            r) regex=1
-              shift $((OPTIND-1))
                 ;;
            e) exact=1
-              shift $((OPTIND-1))
                 ;;
            f | d | l)
               [[ "$file_type" != "-type $opt" ]] && let filetypeOptionCounter+=1
               file_type="-type $opt"
-              shift $((OPTIND-1))
                 ;;
            b) readonly filetype=1
               i='x-executable; charset=binary'
@@ -126,7 +121,6 @@ ffind() {
               file_type="-type f"
               extra_params='-executable'
               readonly filetype_regex="$i"
-              shift $((OPTIND-1))
                 ;;
            V) readonly filetype=1
               i='video/|audio/mp4'
@@ -134,21 +128,18 @@ ffind() {
               file_type="-type f"
               extra_params='-size +100M'  # search for min. x megs files, so mp4 wouldn't (likely) return audio files
               readonly filetype_regex="$i"
-              shift $((OPTIND-1))
                 ;;
            P) readonly filetype=1
               i='application/pdf; charset=binary'
               [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
               file_type="-type f"
               readonly filetype_regex="$i"
-              shift $((OPTIND-1))
                 ;;
            I) readonly filetype=1
               i='image/\w+; charset=binary'
               [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
               file_type="-type f"
               readonly filetype_regex="$i"
-              shift $((OPTIND-1))
                 ;;
            C)  # for doC
               # try keeping doc files' definitions in sync with the ones in __fo()
@@ -157,37 +148,31 @@ ffind() {
               [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
               file_type="-type f"
               readonly filetype=1
-              shift $((OPTIND-1))
 
               readonly filetype_regex="$i"
                 ;;
            L) follow_links="-L"
-              shift $((OPTIND-1))
                 ;;
            m) maxDepth="$OPTARG"
-              shift $((OPTIND-1))
                 ;;
            p) pathOpt=1
-              shift $((OPTIND-1))
                 ;;
            h) echo -e "$usage"
               [[ "$skip_msgs" -eq 1 ]] && return 9 || return 0
                 ;;
            q) quitFlag="-quit"
-              shift $((OPTIND-1))
                 ;;
            D) readonly delete=1     # to include nonempty dirs as well, run     find . -name "3" -type d -exec rm -rf {} +
               readonly deleteFlag='-delete'
-              shift $((OPTIND-1))
                 ;;
            0) printFlag='-print0'
-              shift $((OPTIND-1))
                 ;;
            *) echo -e "$usage"
               [[ "$skip_msgs" -eq 1 ]] && return 9 || return 1
                 ;;
         esac
     done
+    shift "$((OPTIND-1))"
 
     if [[ "$#" -eq 1 && -d "$1" && "$1" == */* ]]; then
         srcdir="$1"
@@ -371,13 +356,10 @@ __find_top_big_small_fun() {
            f | d)
               [[ "$file_type" != "-type $opt" ]] && let filetypeOptionCounter+=1
               file_type="-type $opt"
-              shift $((OPTIND-1))
                 ;;
            m) maxDepth="$OPTARG"
-              shift $((OPTIND-1))
                 ;;
            L) follow_links="-L"  # common for both find and du
-              shift $((OPTIND-1))
                 ;;
            h) echo -e "$usage"
               return 0
@@ -385,6 +367,7 @@ __find_top_big_small_fun() {
            *) echo -e "$usage"; return 1 ;;
         esac
     done
+    shift "$((OPTIND-1))"
 
 
     if [[ "$#" -gt 2 ]]; then
@@ -543,13 +526,10 @@ __find_bigger_smaller_common_fun() {
            f | d)
               [[ "$file_type" != "-type $opt" ]] && let filetypeOptionCounter+=1
               file_type="-type $opt"
-              shift $((OPTIND-1))
                 ;;
            m) maxDepth="$OPTARG"
-              shift $((OPTIND-1))
                 ;;
            L) follow_links="-L"  # common for both find and du
-              shift $((OPTIND-1))
                 ;;
            h) echo -e "$usage"
               return 0
@@ -559,6 +539,7 @@ __find_bigger_smaller_common_fun() {
                 ;;
         esac
     done
+    shift "$((OPTIND-1))"
 
     sizeArg="$1"
 
@@ -801,29 +782,22 @@ ffstr() {
               [[ "$iname_arg" != '-iname' ]] && caseOptCounter+=1
               iname_arg="-iname"
               grepcase=" -i "
-              shift $((OPTIND-1))
                 ;;
            s)
               [[ "$force_case" -ne 1 ]] && caseOptCounter+=1
               unset iname_arg grepcase
               force_case=1
-              shift $((OPTIND-1))
                 ;;
            r) regex=1
-              shift $((OPTIND-1))
                 ;;
            m) maxDepth="$OPTARG"
-              shift $((OPTIND-1))
                 ;;
            L) follow_links="-L"
-              shift $((OPTIND-1))
                 ;;
            c) collect_files=1
-              shift $((OPTIND-1))
                 ;;
            o) open_files=1
               collect_files=1  # so we can use the collected array
-              shift $((OPTIND-1))
                 ;;
            h) echo -e "$usage"
               return 0
@@ -833,6 +807,7 @@ ffstr() {
               ;;
         esac
     done
+    shift "$((OPTIND-1))"
 
     if [[ "$#" -eq 3 && ! -d "${@: -1}" ]]; then
         err "last arg can only be starting dir" "$FUNCNAME"
@@ -1105,18 +1080,14 @@ astr() {
            i)
               [[ "$grepcase" != ' -i ' ]] && caseOptCounter+=1
               grepcase=' -i '
-              shift $((OPTIND-1))
                 ;;
            s)
               [[ "$grepcase" != ' -s ' ]] && caseOptCounter+=1
               grepcase=' -s '
-              shift $((OPTIND-1))
                 ;;
            m) maxDepth="$OPTARG"
-              shift $((OPTIND-1))
                 ;;
            L) follow_links="--follow"
-              shift $((OPTIND-1))
                 ;;
            h) echo -e "$usage"
               return 0
@@ -1126,6 +1097,7 @@ astr() {
               ;;
         esac
     done
+    shift "$((OPTIND-1))"
 
     if [[ "$#" -eq 3 && ! -d "${@: -1}" ]]; then
         err "last arg can only be starting dir" "$FUNCNAME"
@@ -1285,13 +1257,13 @@ $FUNCNAME  [-e]  /dir_to_look_from/filename_to_grep
               return 0
               ;;
            e) exact=1
-              shift $((OPTIND-1))
               ;;
            *) echo -e "$usage";
               return 1
               ;;
         esac
     done
+    shift "$((OPTIND-1))"
 
     src="$1"
     srcdir="$2"
@@ -1681,13 +1653,13 @@ createUsbIso() {
               return 0
               ;;
            o) override_dev_partitioncheck=1
-              shift $((OPTIND-1))
               ;;
            *) echo -e "$usage";
               return 1
               ;;
         esac
     done
+    shift "$((OPTIND-1))"
 
     [[ "$#" -ne 2 ]] && { err "exactly 2 params required"; return 1; }
     for i in "$@"; do
@@ -1826,27 +1798,24 @@ mkgit() {
               namespace="$user"
               repo="github.com"
               let mainOptCounter+=1
-              shift $((OPTIND-1))
               ;;
            b) user="layr"  # TODO broken (at least for auth) as user has changed
               namespace="$user"
               repo="bitbucket.org"
               let mainOptCounter+=1
-              shift $((OPTIND-1))
               ;;
            w) user="laliste"
               repo="$(getnetrc "${user}@git.url.workplace")"
               let mainOptCounter+=1
-              shift $((OPTIND-1))
               ;;
            p) is_private=false
-              shift $((OPTIND-1))
               ;;
            *) echo -e "$usage";
               return 1
               ;;
         esac
     done
+    shift "$((OPTIND-1))"
 
     readonly dir="${1%/}"  # strip trailing slash
     readonly project_name="${2:-$dir}"  # default to dir name
@@ -2940,7 +2909,7 @@ g() {
 #
 # consider also https://github.com/spotify/docker-gc
 dcleanup() {
-    local usage opt
+    local usage opt OPTIND
 
     readonly usage="\n$FUNCNAME: clean up docker containers, volumes, images, networks
 
@@ -2974,6 +2943,7 @@ dcleanup() {
            *) echo -e "$usage"; return 1 ;;
         esac
     done
+    shift "$((OPTIND-1))"
 }
 
 
@@ -3873,14 +3843,13 @@ heapdump() {
     while getopts "ht" opt; do
         case "$opt" in
            h) mode=heap
-              shift $((OPTIND-1))
                 ;;
            t) mode=thread
-              shift $((OPTIND-1))
                 ;;
            *) echo -e "$usage"; return 1 ;;
         esac
     done
+    shift "$((OPTIND-1))"
 
     pid="$1"
 
@@ -3906,14 +3875,13 @@ tcpdumperino() {
     while getopts "of:" opt; do
         case "$opt" in
            f) file="$OPTARG"
-              shift $((OPTIND-1))
                 ;;
            o) overwrite=1
-              shift $((OPTIND-1))
                 ;;
            *) echo -e "$usage"; return 1 ;;
         esac
     done
+    shift "$((OPTIND-1))"
 
     [[ -z "$file" ]] && { err "need to provide output file"; echo -e "$usage"; return 1; }
     if [[ -f "$file" ]]; then
