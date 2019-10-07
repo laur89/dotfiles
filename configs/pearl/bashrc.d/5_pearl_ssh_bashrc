@@ -29,3 +29,31 @@ unset MAILCHECK
 # alias overrides:
 command -v nvim >/dev/null || alias nvim='vim'
 
+###########################
+if [[ -d "$HOME/.bash_env_vars_overrides" ]]; then
+    for i in $HOME/.bash_env_vars_overrides/*; do
+        [[ -f "$i" ]] && source "$i"
+    done
+
+    unset i
+fi
+
+###########################
+
+if [[ -d "$HOME/.bash_funs_overrides" ]]; then
+    for i in $HOME/.bash_funs_overrides/*; do
+        [[ -f "$i" ]] && source "$i"
+    done
+
+    unset i
+fi
+###########################
+
+# sys-specific aliases:
+if [[ -d "$HOME/.bash_aliases_overrides" ]]; then
+    for i in $HOME/.bash_aliases_overrides/*; do
+        [[ -f "$i" ]] && source "$i"
+    done
+
+    unset i
+fi
