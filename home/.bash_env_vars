@@ -54,6 +54,7 @@ if [[ "$-" != *i* ]]; then
     unset _ID _R_DIR
 fi
 
+[[ -z "$GID" && -n "$USER" ]] && export GID="$(id -g "$USER")"
 
 
 # load local (ie non-ssh'ed) system's vars:
