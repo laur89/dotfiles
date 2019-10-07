@@ -1353,7 +1353,9 @@ sanitize_ssh() {
         confirm  "\nthe node name you're about to ${FUNCNAME}() does not contain string [ssh]; still continue? (y/n)" || return 0
     fi
 
-    chmod -R u=rwX,g=,o= -- "$node";
+    [[ -d "$node" && "$node" != */ ]] && node+='/'
+    #chmod -R u=rwX,g=,o= -- "$node";  # with recursive opt set, symlink targets are not resolved by chmod
+    find -L "$node" \( -type f -o -type d \) -exec chmod 'u=rwX,g=,o=' -- '{}' \+
 }
 
 ssh_sanitize() { sanitize_ssh "$@"; }  # alias for sanitize_ssh
@@ -3269,6 +3271,7 @@ fif() {
 
     #preview_cmd='highlight -O ansi -l -- {}'
     preview_cmd='bat -p --color always -- {}'
+    # TODO: if ptrn contains backslashes (rgx), then _preview_ fails (but original search populating fzf input succeeds)
     preview_cmd_full="$preview_cmd 2>/dev/null | rg --colors 'match:bg:yellow' --ignore-case --pretty --context 10 -- '$ptrn' || rg --ignore-case --pretty --context 10 -- '$ptrn' {}"
     rg_opts='--files-with-matches --no-messages'
 
@@ -4022,7 +4025,12 @@ _completemarks() {
 complete -F _completemarks jj jum jmo
 
 ################################################
+# other shell completions:
+# use this if grep w/ perl regex not avail:
+#[[ -f ~/.ssh/config ]] && complete -o default -o nospace -W "$(grep -i -e '^host ' ~/.ssh/config | awk '{print substr($0, index($0,$2))}' ORS=' ')" sshpearl
+[[ -f ~/.ssh/config ]] && complete -o default -o nospace -W "$(grep -Poi '^host\s+\K\S+' ~/.ssh/config)" sshpearl
 
+################################################
 # marker function used to detect whether functions have been loaded into the shell:
 function __BASH_FUNS_LOADED_MARKER() { true; }
 
