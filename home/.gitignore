@@ -19,6 +19,8 @@ target/
 
 # vim
 .tags
+.tags.lock
+.tags.temp
 _vimrc_local.vim
 .ctrlp
 
