@@ -1329,6 +1329,7 @@ install_nm_dispatchers() {
 
 
 setup() {
+    local _cert
 
     setup_homesick || { err "homesick setup failed; as homesick is necessary, script will exit"; exit 1; }
     verify_ssh_key
@@ -1342,7 +1343,13 @@ setup() {
     setup_config_files
     setup_additional_apt_keys_and_sources
     [[ "$FULL_INSTALL" -ne 1 ]] && post_install_progs_setup  # since with FULL_INSTALL=1, it'll get executed from other block
-    [[ "$FULL_INSTALL" -eq 1 && "$MODE" == work ]] && NPM_PRFX+=' NODE_TLS_REJECT_UNAUTHORIZED=0'  # certs might've not been init'd yet;
+    if [[ "$FULL_INSTALL" -eq 1 && "$MODE" == work && -z "$NODE_EXTRA_CA_CERTS" ]]; then
+        NPM_PRFX+=' NODE_TLS_REJECT_UNAUTHORIZED=0'  # certs might've not been init'd yet; NODE_TLS_REJECT_UNAUTHORIZED not working, so far only '$npm config set strict-ssl' false has had any effect
+        _cert="$TMP_DIR/wh_${RANDOM}.crt"
+        curl -s --fail --connect-timeout 2 --max-time 2 --insecure --output "$_cert" \
+                https://git.nonprod.williamhill.plc/profiles/profile_wh_sslcerts/raw/master/files/wh_chain_sc1wnpresc03.crt \
+                && export NODE_EXTRA_CA_CERTS=$_cert
+    fi
 }
 
 
@@ -1350,9 +1357,9 @@ update_clock() {
     local remote_time diff t
 
     remote_time="$(curl --insecure -X HEAD --silent -I https://google.com/ 2>&1 \
-            | grep -i '^date:' | sed -e 's/date: //i' | { read -r t; date +%s -d "$t"; })"
+            | grep -ioP '^date:\s*\K.*' | { read -r t; date +%s -d "$t"; })"
 
-    is_digit "$remote_time" || { err "found remote time was not digit: [$remote_time]"; return 1; }
+    is_digit "$remote_time" || { err "resolved remote time was not digit: [$remote_time]"; return 1; }
     diff="$(( $(date +%s) - remote_time ))"
 
     if [[ "${diff#-}" -gt 30 ]]; then
