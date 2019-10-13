@@ -1059,8 +1059,18 @@ install_homesick() {
 
 
 # homeshick specifics
+#
+# pass   -H   flag to set up path to our githooks
 clone_or_link_castle() {
-    local castle user hub homesick_exe
+    local castle user hub homesick_exe opt OPTIND set_hooks
+
+    while getopts "H" opt; do
+        case "$opt" in
+            H) set_hooks=1 ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
 
     readonly castle="$1"
     readonly user="$2"
@@ -1093,6 +1103,12 @@ clone_or_link_castle() {
             execute "git remote set-url origin git@${hub}:$user/${castle}.git"
             execute "popd"
         fi
+
+        if [[ "$set_hooks" -eq 1 ]]; then
+            execute "pushd $BASE_HOMESICK_REPOS_LOC/$castle" || return 1
+            [[ -d .git ]] && execute 'git config core.hooksPath .githooks'
+            execute "popd"
+        fi
     fi
 
     # just in case verify whether our ssh keys got cloned in:
@@ -1106,43 +1122,43 @@ clone_or_link_castle() {
 fetch_castles() {
     local castle user hub
 
-    # common public castles:
-    clone_or_link_castle dotfiles laur89 github.com || { err "failed pulling public dotfiles; it's required!"; return 1; }
-
     # common private:
-    clone_or_link_castle private-common layr bitbucket.org || { err "failed pulling private dotfiles; it's required!"; return 1; }
+    clone_or_link_castle -H private-common layr bitbucket.org || { err "failed pulling private dotfiles; it's required!"; return 1; }
+
+    # common public castles:
+    clone_or_link_castle -H dotfiles laur89 github.com || { err "failed pulling public dotfiles; it's required!"; return 1; }
 
     # !! if you change private repos, make sure you update PRIVATE_CASTLE definitions @ validate_and_init()!
     case "$MODE" in
         work)
             export GIT_SSL_NO_VERIFY=1
-            clone_or_link_castle "$(basename -- "$PRIVATE_CASTLE")" laliste git.nonprod.williamhill.plc || err "failed pulling work dotfiles; won't abort"
+            clone_or_link_castle -H "$(basename -- "$PRIVATE_CASTLE")" laliste git.nonprod.williamhill.plc || err "failed pulling work dotfiles; won't abort"
             unset GIT_SSL_NO_VERIFY
             ;;
         personal)
-            clone_or_link_castle "$(basename -- "$PRIVATE_CASTLE")" layr bitbucket.org || err "failed pulling personal dotfiles; won't abort"
+            clone_or_link_castle -H "$(basename -- "$PRIVATE_CASTLE")" layr bitbucket.org || err "failed pulling personal dotfiles; won't abort"
             ;;
         *)
             err "unexpected \$MODE [$MODE]"; exit 1
             ;;
     esac
 
-    while true; do
-        if confirm "$(report 'want to clone another castle?')"; then
-            echo -e "enter git repo domain (eg [github.com], [bitbucket.org]):"
-            read -r hub
+    #while true; do
+        #if confirm "$(report 'want to clone another castle?')"; then
+            #echo -e "enter git repo domain (eg [github.com], [bitbucket.org]):"
+            #read -r hub
 
-            echo -e "enter username:"
-            read -r user
+            #echo -e "enter username:"
+            #read -r user
 
-            echo -e "enter castle name (repo name, eg [dotfiles]):"
-            read -r castle
+            #echo -e "enter castle name (repo name, eg [dotfiles]):"
+            #read -r castle
 
-            execute "clone_or_link_castle $castle $user $hub"
-        else
-            break
-        fi
-    done
+            #execute "clone_or_link_castle $castle $user $hub"
+        #else
+            #break
+        #fi
+    #done
 }
 
 
