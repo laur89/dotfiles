@@ -1791,7 +1791,7 @@ fetch_release_from_git() {
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
-    shift $((OPTIND-1))
+    shift "$((OPTIND-1))"
 
     loc="https://github.com/$1/$2/releases/latest"
     id="github-$1-$2"
@@ -1828,7 +1828,7 @@ fetch_release_from_any() {
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
-    shift $((OPTIND-1))
+    shift "$((OPTIND-1))"
 
     _fetch_release_from_any() {
         local grep_tail page dl_url domain
@@ -1941,7 +1941,7 @@ install_bin_from_git() {
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
-    shift $((OPTIND-1))
+    shift "$((OPTIND-1))"
 
     [[ -d "$target" ]] || { err "[$target] not a dir, can't install [$1/$2]"; return 1; }
 
@@ -2257,7 +2257,7 @@ install_copyq() {
 # runs checkinstall in current working dir, and copies the created
 # .deb file to $BASE_BUILDS_DIR/
 create_deb_install_and_store() {
-    local opt cmd ver pkg_name
+    local opt cmd ver pkg_name OPTIND
 
     while getopts "C:" opt; do
         case "$opt" in
@@ -2265,7 +2265,7 @@ create_deb_install_and_store() {
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
-    shift $((OPTIND-1))
+    shift "$((OPTIND-1))"
 
     pkg_name="$1"
     ver="${2:-'0.0.1'}"  # OPTIONAL
@@ -2698,7 +2698,7 @@ install_dwm() {
 #
 # see also pbuilder, https://wiki.debian.org/SystemBuildTools
 build_deb() {
-    local opt pkg_name configure_extra deb
+    local opt pkg_name configure_extra deb OPTIND
 
     while getopts "C:" opt; do
         case "$opt" in
@@ -2706,7 +2706,7 @@ build_deb() {
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
-    shift $((OPTIND-1))
+    shift "$((OPTIND-1))"
 
     pkg_name="$1"
 
