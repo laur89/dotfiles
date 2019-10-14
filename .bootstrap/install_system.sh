@@ -1220,19 +1220,18 @@ setup_global_env_vars() {
 }
 
 
-# netrc file has to be accessible only by its owner.
-setup_netrc_perms() {
-    local rc_loc perms
+# force private assets' (such as netrc) permissions private (only accessible by its owner);
+# note this list would be best kept in sync with files in our common post-checkout githook;
+setup_private_asset_perms() {
+    local i
 
-    readonly rc_loc="$HOME/.netrc"
-    readonly perms=600
-
-    if [[ -e "$rc_loc" ]]; then
-        execute "chmod $perms -- $(realpath -- "$rc_loc")" || err "setting [$rc_loc] perms failed"  # realpath, since we cannot change perms via symlink
-    else
-        err "expected to find [$rc_loc], but it doesn't exist. if you're not using netrc, better remove related logic from ${SELF}."
-        return 1
-    fi
+    for i in \
+            ~/.netrc \
+                ; do
+        [[ -e "$i" ]] || { err "expected to find [$i], but it doesn't exist; is it normal?"; continue; }
+        [[ -d "$i" && "$i" != */ ]] && i+='/'
+        find -L "$i" -maxdepth 25 \( -type f -o -type d \) -exec chmod 'u=rwX,g=,o=' -- '{}' \+
+    done
 }
 
 
@@ -1272,7 +1271,7 @@ setup_config_files() {
     setup_systemd
     is_native && setup_udev
     setup_global_env_vars
-    setup_netrc_perms
+    setup_private_asset_perms
     setup_global_prompt
     is_native && swap_caps_lock_and_esc
 }
@@ -4214,7 +4213,7 @@ _sanitize_ssh() {
         return 1
     fi
 
-    find -L "$HOME/.ssh" \( -type f -o -type d \) -exec chmod 'u=rwX,g=,o=' -- '{}' \+
+    find -L "$HOME/.ssh/" -maxdepth 25 \( -type f -o -type d \) -exec chmod 'u=rwX,g=,o=' -- '{}' \+
     return $?
 }
 
