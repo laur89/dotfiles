@@ -163,7 +163,7 @@ check_dependencies() {
 
     readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
-    for prog in git cmp wget curl tar unzip atool realpath dirname basename tee mktemp file date; do
+    for prog in git cmp wget curl tar unzip atool realpath dirname basename head tee mktemp file date; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
             install_block "$prog" || { err "unable to install required prog [$prog] this script depends on. abort."; exit 1; }
@@ -404,20 +404,21 @@ backup_original_and_copy_file() {
 
     $sudo test -d "$dest_dir" || { err "second arg [$dest_dir] was not a dir" "$FUNCNAME"; return 1; }
     [[ "$dest_dir" == *.d ]] && err "sure we want to be backing up in [$dest_dir]?" "$FUNCNAME"
-    declare -a old_suffixes
 
     # back up the destination file, if it already exists and differs from new content:
     if $sudo test -e "$dest_dir/$filename" && ! $sudo cmp -s "$file" "$dest_dir/$filename"; then
+        declare -a old_suffixes
+
         # collect older .orig files' suffixes and increment latest value for the new file:
         while IFS= read -r -d $'\0' i; do
             i="${i##*.}"
             is_digit "$i" && old_suffixes+=("$i")
-        done < <(find -L "$dest_dir/" -maxdepth 1 -mindepth 1 -type f -regextype posix-extended -regex ".*/${filename}\.orig\.[0-9]+$" -print0)
+        done < <($sudo find -L "$dest_dir/" -maxdepth 1 -mindepth 1 -type f -regextype posix-extended -regex ".*/${filename}\.orig\.[0-9]+$" -print0)
 
-        i=0
+        i=0  # default
         if [[ ${#old_suffixes[@]} -gt 0 ]]; then
             i="$(printf '%d\n' "${old_suffixes[@]}" | sort -rn | head -n1)"  # take largest (ie latest) suffix value
-            (( i++ )) || { err "incrementing [$dest_dir/$filename] latest backup suffix [$i] failed; setting suffix to RANDOM"; i="$RANDOM"; }
+            is_digit "$i" || { err "last found suffix was not digit: [$i]; setting suffix to RANDOM"; i="$RANDOM"; } && (( i++ ))  # note (( i++ )) errors if i=0, but it increments just fine
         fi
 
         execute "$sudo cp -- '$dest_dir/$filename' '$dest_dir/${filename}.orig.$i'"
@@ -427,6 +428,7 @@ backup_original_and_copy_file() {
 }
 
 
+# note the importance of optional trailing slash for $install_dir param;
 clone_or_pull_repo() {
     local user repo install_dir hub
 
@@ -684,7 +686,7 @@ install_sshfs() {
             if confirm "try to ssh-copy-id public key to [$server_ip]?"; then
                 # install public key on ssh server:
                 # TODO: shouldn't we employ $ssh_port here?
-                ssh-copy-id -i "${identity_file}.pub" ${remote_user}@${server_ip}
+                ssh-copy-id -i "${identity_file}.pub" ${remote_user}@${server_ip} || err "ssh-copy-id to [${remote_user}@${server_ip}] failed with $?"
             fi
         fi
 
