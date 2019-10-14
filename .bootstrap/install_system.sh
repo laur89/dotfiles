@@ -535,7 +535,7 @@ install_nfs_client() {
 
         if ! grep -q "${server_ip}:${nfs_share}.*${mountpoint}" "$fstab"; then
             report "adding [${server_ip}:$nfs_share] mounting to [$mountpoint] in $fstab"
-            execute "echo ${server_ip}:${nfs_share} ${mountpoint} nfs noauto,x-systemd.automount,_netdev,x-systemd.device-timeout=10,timeo=14,rsize=8192,wsize=8192 0 0 \
+            execute "echo ${server_ip}:${nfs_share} ${mountpoint} nfs noauto,x-systemd.automount,x-systemd.mount-timeout=10,_netdev,x-systemd.device-timeout=10,timeo=14,rsize=8192,wsize=8192 0 0 \
                     | sudo tee --append $fstab > /dev/null"
         else
             err "an nfs share entry for [${server_ip}:${nfs_share}] in $fstab already exists."
@@ -627,8 +627,7 @@ install_sshfs() {
     # entry has the 'allow_other' opt:
     if ! [[ -r "$fuse_conf" && -f "$fuse_conf" ]]; then
         err "[$fuse_conf] is not readable; cannot uncomment '#user_allow_other' prop in it."
-    elif grep -q '#user_allow_other' "$fuse_conf"; then
-        # hasn't been uncommented yet
+    elif grep -q '^#user_allow_other' "$fuse_conf"; then  # hasn't been uncommented yet
         execute "sudo sed -i --follow-symlinks 's/#user_allow_other/user_allow_other/g' $fuse_conf"
         [[ $? -ne 0 ]] && { err "uncommenting '#user_allow_other' in [$fuse_conf] failed"; return 2; }
     elif grep -q 'user_allow_other' "$fuse_conf"; then
@@ -659,7 +658,8 @@ install_sshfs() {
 
         if ! grep -q "${remote_user}@${server_ip}:${ssh_share}.*${mountpoint}" "$fstab"; then
             report "adding [${server_ip}:$ssh_share] mounting to [$mountpoint] in $fstab..."
-            execute "echo ${remote_user}@${server_ip}:${ssh_share} $mountpoint fuse.sshfs port=${ssh_port},noauto,x-systemd.automount,_netdev,users,idmap=user,IdentityFile=${identity_file},allow_other,reconnect 0 0 \
+            # TODO: you might want to add 'default_permissions,uid=USER_ID_N,gid=USER_GID_N' to the mix as per https://wiki.archlinux.org/index.php/SSHFS:
+            execute "echo ${remote_user}@${server_ip}:${ssh_share} $mountpoint fuse.sshfs port=${ssh_port},noauto,x-systemd.automount,_netdev,users,idmap=user,follow_symlinks,IdentityFile=${identity_file},allow_other,reconnect 0 0 \
                     | sudo tee --append $fstab > /dev/null"
 
             sel_ips_to_user["$server_ip"]="$remote_user"
@@ -689,6 +689,7 @@ install_sshfs() {
         fi
 
         # add $server_ip to root's known_hosts, if not already present:
+        check_progs_installed  ssh-keygen ssh-keyscan || { err "some necessary ssh tools not installed, check that out"; return 1; }
         if [[ -z "$(sudo ssh-keygen -F "$server_ip")" ]]; then
             execute "sudo ssh-keyscan -H '$server_ip' >> /root/.ssh/known_hosts" || err "adding host [$server_ip] to /root/.ssh/known_hosts failed"
         fi
