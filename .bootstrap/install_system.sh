@@ -138,6 +138,7 @@ validate_and_init() {
         IS_SSH_SETUP=1
     else
         report "ssh keys not present at the moment, be prepared to enter user & passwd for private git repos."
+        report "(unless they're pulled from elsewhere)"
         IS_SSH_SETUP=0
     fi
 
@@ -471,13 +472,11 @@ install_nfs_server() {
     while true; do
         confirm "$(report "add ${client_ip:+another }client IP for the exports list?")" || break
 
-        echo -e "enter client ip:"
-        read -r client_ip
+        read -r -p "enter client ip: " client_ip
 
         [[ "$client_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$client_ip]"; continue; }
 
-        echo -e "enter share to expose (leave blank to default to [$NFS_SERVER_SHARE]):"
-        read -r share
+        read -r -p "enter share to expose (leave blank to default to [$NFS_SERVER_SHARE]): " share
 
         share=${share:-"$NFS_SERVER_SHARE"}
         [[ "$share" != /* ]] && { err "share needs to be defined as full path."; continue; }
@@ -520,19 +519,16 @@ install_nfs_client() {
     while true; do
         confirm "$(report "add ${server_ip:+another }nfs server entry to fstab?")" || break
 
-        echo -e "enter server ip: ${prev_server_ip:+(leave blank to default to [$prev_server_ip])}"
-        read -r server_ip
+        read -r -p "enter server ip${prev_server_ip:+ (leave blank to default to [$prev_server_ip])}: " server_ip
         [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
         [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$server_ip]"; continue; }
 
-        echo -e "enter local mountpoint to mount nfs share to (leave blank to default to [$default_mountpoint]):"
-        read -r mountpoint
+        read -r -p "enter local mountpoint to mount nfs share to (leave blank to default to [$default_mountpoint]): " mountpoint
         [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
         list_contains "$mountpoint" "${used_mountpoints[*]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
         create_mountpoint "$mountpoint" || continue
 
-        echo -e "enter remote share to mount (leave blank to default to [$NFS_SERVER_SHARE]):"
-        read -r nfs_share
+        read -r -p "enter remote share to mount (leave blank to default to [$NFS_SERVER_SHARE]): " nfs_share
         [[ -z "$nfs_share" ]] && nfs_share="$NFS_SERVER_SHARE"
         list_contains "${server_ip}${nfs_share}" "${mounted_shares[*]}" && { report "selected [${server_ip}:${nfs_share}] has already been used for previous definition"; continue; }
         [[ "$nfs_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
@@ -598,9 +594,9 @@ create_mountpoint() {
 
     [[ -z "$mountpoint" ]] && { err "cannot pass empty mountpoint arg to $FUNCNAME"; return 1; }
 
-    [[ -d "$mountpoint" ]] || execute "sudo mkdir -- $mountpoint" || { err "couldn't create [$mountpoint]"; return 1; }
-    [[ -d "$mountpoint" ]] || { err "mountpoint [$mountpoint] is not a dir"; return 1; }
-    execute "sudo chmod 777 -- $mountpoint" || { err; return 1; }
+    [[ -d "$mountpoint" ]] || execute "sudo mkdir -p -- '$mountpoint'" || { err "couldn't create [$mountpoint]"; return 1; }
+    [[ -d "$mountpoint" ]] || { err "mountpoint [$mountpoint] is not a dir"; return 1; }  # sanity
+    execute "sudo chmod 777 -- '$mountpoint'" || { err; return 1; }
 
     return 0
 }
@@ -630,43 +626,39 @@ install_sshfs() {
     # note that 'user_allow_other' uncommenting makes sense only if our related fstab
     # entry has the 'allow_other' opt:
     if ! [[ -r "$fuse_conf" && -f "$fuse_conf" ]]; then
-        err "[$fuse_conf] is not readable; cannot uncomment \"\#user_allow_other\" prop in it."
+        err "[$fuse_conf] is not readable; cannot uncomment '#user_allow_other' prop in it."
     elif grep -q '#user_allow_other' "$fuse_conf"; then
         # hasn't been uncommented yet
         execute "sudo sed -i --follow-symlinks 's/#user_allow_other/user_allow_other/g' $fuse_conf"
-        [[ $? -ne 0 ]] && { err "uncommenting '#user_allow_other' in $fuse_conf failed"; return 2; }
+        [[ $? -ne 0 ]] && { err "uncommenting '#user_allow_other' in [$fuse_conf] failed"; return 2; }
     elif grep -q 'user_allow_other' "$fuse_conf"; then
         true  # do nothing; already uncommented, all good;
     else
-        err "[$fuse_conf] appears not to contain config value \"user_allow_other\"; check manually."
+        err "[$fuse_conf] appears not to contain config value 'user_allow_other'; check manually what's up; not aborting"
     fi
 
     while true; do
         confirm "$(report "add ${prev_server_ip:+another }sshfs entry to fstab?")" || break
 
-        echo -e "enter server ip: ${prev_server_ip:+(leave blank to default to [$prev_server_ip])}"
-        read -r server_ip
+        read -r -p "enter server ip${prev_server_ip:+ (leave blank to default to [$prev_server_ip])}: " server_ip
         [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
         [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$server_ip]"; continue; }
 
-        echo -e "enter remote user to log in as (leave blank to default to your local user, [$USER]):"
-        read -r remote_user
+        read -r -p "enter remote user to log in as (leave blank to default to your local user, [$USER]): " remote_user
         [[ -z "$remote_user" ]] && remote_user="$USER"
 
-        echo -e "enter local mountpoint to mount sshfs share to (leave blank to default to [$default_mountpoint]):"
-        read -r mountpoint
+        read -r -p "enter local mountpoint to mount sshfs share to (leave blank to default to [$default_mountpoint]): " mountpoint
         [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
         list_contains "$mountpoint" "${used_mountpoints[*]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
         create_mountpoint "$mountpoint" || continue
 
-        echo -e "enter remote share to mount (leave blank to default to [$SSH_SERVER_SHARE]):"
-        read -r ssh_share
+        read -r -p "enter remote share to mount (leave blank to default to [$SSH_SERVER_SHARE]): " ssh_share
         [[ -z "$ssh_share" ]] && ssh_share="$SSH_SERVER_SHARE"
         list_contains "${server_ip}${ssh_share}" "${mounted_shares[*]}" && { report "selected [${server_ip}:${ssh_share}] has already been used for previous definition"; continue; }
         [[ "$ssh_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
 
         if ! grep -q "${remote_user}@${server_ip}:${ssh_share}.*${mountpoint}" "$fstab"; then
-            report "adding [${server_ip}:$ssh_share] mounting to [$mountpoint] in $fstab"
+            report "adding [${server_ip}:$ssh_share] mounting to [$mountpoint] in $fstab..."
             execute "echo ${remote_user}@${server_ip}:${ssh_share} $mountpoint fuse.sshfs port=${ssh_port},noauto,x-systemd.automount,_netdev,users,idmap=user,IdentityFile=${identity_file},allow_other,reconnect 0 0 \
                     | sudo tee --append $fstab > /dev/null"
 
@@ -688,9 +680,10 @@ install_sshfs() {
         #report "testing ssh connection to ${remote_user}@${server_ip}..."
         #execute "sudo ssh -p ${ssh_port} -o ConnectTimeout=7 ${remote_user}@${server_ip} echo ok"
 
-        if confirm "try to ssh-copy-id public key to [$server_ip]?"; then
-            # install public key on ssh server:
-            if [[ -f "$identity_file" ]]; then
+        if [[ -f "${identity_file}.pub" ]]; then
+            if confirm "try to ssh-copy-id public key to [$server_ip]?"; then
+                # install public key on ssh server:
+                # TODO: shouldn't we employ $ssh_port here?
                 ssh-copy-id -i "${identity_file}.pub" ${remote_user}@${server_ip}
             fi
         fi
@@ -3702,12 +3695,12 @@ install_block() {
 choose_step() {
     report "what do you want to do?"
 
-    select_items "full-install single-task" 1
+    select_items 'full-install single-task' 1
 
     case "$__SELECTED_ITEMS" in
-        "full-install" ) full_install ;;
-        "single-task"  ) choose_single_task ;;
-        "") exit 0 ;;
+        'full-install' ) full_install ;;
+        'single-task'  ) choose_single_task ;;
+        '') exit 0 ;;
         *) err "unsupported choice [$__SELECTED_ITEMS]"
            exit 1
            ;;
@@ -3732,6 +3725,7 @@ choose_single_task() {
     [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG='/tmp/.git-rls-log.tmp'  # log of all installed debs/binaries from git releases/latest page
     command -v nvm >/dev/null && execute 'nvm use default'
 
+    # note choices need to be valid functions
     declare -ar choices=(
         setup
         setup_homesick
@@ -3754,7 +3748,6 @@ choose_single_task() {
     report "what do you want to do?"
 
     select_items "${choices[*]}" 1
-
     [[ -z "$__SELECTED_ITEMS" ]] && return
 
     $__SELECTED_ITEMS
@@ -3800,7 +3793,6 @@ __choose_prog_to_build() {
     report "what do you want to build/install?"
 
     select_items "${choices[*]}" 1
-
     [[ -z "$__SELECTED_ITEMS" ]] && return
     #prepare_build_container || { err "preparation of build container [$BUILD_DOCK] failed" "$FUNCNAME"; return 1; }
 
@@ -4130,8 +4122,8 @@ install_ssh_server_or_client() {
     done
 
     case "$__SELECTED_ITEMS" in
-        "server-side" ) install_ssh_server ;;
-        "client-side" ) install_sshfs ;;
+        'server-side' ) install_ssh_server ;;
+        'client-side' ) install_sshfs ;;
     esac
 }
 
@@ -4747,12 +4739,12 @@ function is_dir_empty() {
 # @param {digit}  arg   argument to check.
 #
 # @returns {bool}  true if argument is a valid (and non-negative) digit.
-function is_digit() {
+is_digit() {
     [[ "$*" =~ ^[0-9]+$ ]]
 }
 
 
-# Verifies given string is non-empty, non-whitespace-only and on single line.
+# Verifies given string is non-empty, non-whitespace-only and on a single line.
 #
 # @param {string}  s  string to validate.
 #
@@ -4770,7 +4762,7 @@ pushd() {
 }
 
 popd() {
-    command popd "$@" > /dev/null
+    command popd > /dev/null
 }
 
 
