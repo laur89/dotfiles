@@ -113,7 +113,7 @@ URxvt.tabbed.tab-fg:    0
 URxvt.tabbed.tab-bg:    9 
 
 ! autohide tabbar if only one tab:
-URxvt.tabbed.autohide: false
+URxvt.tabbed.autohide: true
 !URxvt.tabbed.new-button: true
 !URxvt.tabbed.title: no
 
