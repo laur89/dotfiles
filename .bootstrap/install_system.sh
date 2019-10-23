@@ -1407,18 +1407,20 @@ update_clock() {
 setup_additional_apt_keys_and_sources() {
 
     # mopidy: (from https://docs.mopidy.com/en/latest/installation/debian/):
-    # mopidy key:
     execute 'wget -q -O - https://apt.mopidy.com/mopidy.gpg | sudo apt-key add -'
-    # add mopidy source:
     execute 'sudo wget -q -O /etc/apt/sources.list.d/mopidy.list https://apt.mopidy.com/buster.list'
 
     # docker:  (from https://docs.docker.com/install/linux/docker-ce/debian/):
+    # note we have to use hard-coded stable codename instead of testing or testing codename,
+    # as https://download.docker.com/linux/debian/dists/ doesn't have 'em;
     execute 'curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -'
-    execute "sudo add-apt-repository \
-        'deb [arch=amd64] https://download.docker.com/linux/debian \
-        $(lsb_release -cs) \
-        stable'
-    "
+    #execute "sudo add-apt-repository \
+        #'deb [arch=amd64] https://download.docker.com/linux/debian \
+        #buster \
+        #stable'
+    #"
+    execute 'echo deb [arch=amd64] https://download.docker.com/linux/debian buster stable | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null'
+
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
     # note it's avail also as a snap: $snap install spotify
@@ -1445,7 +1447,7 @@ setup_additional_apt_keys_and_sources() {
 
     # kubectl:  (from https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-on-linux):
     execute 'curl -sS https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -'  # ! note it's google packages key, not specific to kubectl!
-    execute 'echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list > /dev/null'
+    execute 'echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null'
 
     execute 'sudo apt-get --yes update'
 }
@@ -2532,11 +2534,14 @@ install_i3() {
         local f
 
         f="$TMP_DIR/i3-patch-${RANDOM}.patch"
-        #curl --fail -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "window-icons-patch downlaod failed"; return 1; }
-        curl --fail -o "$f" 'https://raw.githubusercontent.com/laur89/i3-extras/master/window-icons/window-icons.patch' || { err "window-icons-patch downlaod failed"; return 1; }
+        #curl --fail -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "window-icons-patch download failed"; return 1; }
+        curl --fail -o "$f" 'https://raw.githubusercontent.com/laur89/i3-extras/master/window-icons/window-icons.patch' || { err "window-icons-patch download failed"; return 1; }
         patch -p1 < "$f" || { err "applying window-icons.patch failed"; return 1; }
 
-        curl --fail -o "$f" 'https://raw.githubusercontent.com/maestrogerardo/i3-gaps-deb/master/patches/0001-debian-Disable-sanitizers.patch' || { err "disable-sanitizers-patch downlaod failed"; return 1; }
+        curl --fail -o "$f" 'https://raw.githubusercontent.com/laur89/i3-extras/master/i3-v-h-split-label-swap.patch' || { err "i3-v-h-split-label-swap-patch download failed"; return 1; }
+        patch -p1 < "$f" || { err "applying i3-v-h-split-label-swap-patch failed"; return 1; }
+
+        curl --fail -o "$f" 'https://raw.githubusercontent.com/maestrogerardo/i3-gaps-deb/master/patches/0001-debian-Disable-sanitizers.patch' || { err "disable-sanitizers-patch download failed"; return 1; }
         patch --forward -r - -p1 < "$f" || { err "applying disable-sanitizers.patch failed"; return 1; }
     }
 
@@ -2551,7 +2556,7 @@ override_dh_installman:
 EOF
     }
 
-    readonly tmpdir="$TMP_DIR/i3-gaps-build-${RANDOM}/build"
+    tmpdir="$(mktemp -d "i3-gaps-build-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$ mktemp"; return 1; }
     report "building i3-gaps... (note install_i3_deps() will be called in the end)"; sleep 2
 
     report "installing i3 build dependencies..."
@@ -2581,8 +2586,10 @@ EOF
 
 
     # clone the repository
-    execute "git clone -j8 $I3_REPO_LOC '$tmpdir'" || return 1
+    #execute "git clone -j8 $I3_REPO_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
+    fetch_extract_tarball_from_git Airblader i3 '\d+\.tar\.bz2' || return 1
+    execute "pushd *" || return 1
 
     _apply_patches  # TODO: should we bail on error?
     _fix_rules
@@ -2626,7 +2633,7 @@ EOF
     #execute "popd"
     # --------------------------
 
-    execute "popd"
+    execute "popd; popd"
     execute "sudo rm -rf -- '$tmpdir'"
 
     install_i3_deps
