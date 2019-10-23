@@ -1373,6 +1373,13 @@ setup_additional_apt_keys_and_sources() {
     # add mopidy source:
     execute 'sudo wget -q -O /etc/apt/sources.list.d/mopidy.list https://apt.mopidy.com/buster.list'
 
+    # docker:  (from https://docs.docker.com/install/linux/docker-ce/debian/):
+    execute 'curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -'
+    execute "sudo add-apt-repository \
+		'deb [arch=amd64] https://download.docker.com/linux/debian \
+		$(lsb_release -cs) \
+		stable'
+    "
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
     # note it's avail also as a snap: $snap install spotify
@@ -1390,12 +1397,16 @@ setup_additional_apt_keys_and_sources() {
     #execute 'echo "deb https://download.mono-project.com/repo/debian preview-buster main" | sudo tee /etc/apt/sources.list.d/mono-official-preview.list > /dev/null' # preview branch
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
-    execute 'wget -q -O - https://www.charlesproxy.com/packages/apt/PublicKey | sudo apt-key add -'
-    execute 'echo deb https://www.charlesproxy.com/packages/apt/ charles-proxy main | sudo tee /etc/apt/sources.list.d/charles.list > /dev/null'
+    #execute 'wget -q -O - https://www.charlesproxy.com/packages/apt/PublicKey | sudo apt-key add -'
+    #execute 'echo deb https://www.charlesproxy.com/packages/apt/ charles-proxy main | sudo tee /etc/apt/sources.list.d/charles.list > /dev/null'
 
     # yarn:  (from https://yarnpkg.com/en/docs/install#debian-stable):
     execute 'curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -'
     execute 'echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list > /dev/null'
+
+    # kubectl:  (from https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-on-linux):
+    execute 'curl -sS https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -'  # ! note it's google packages key, not specific to kubectl!
+    execute 'echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list > /dev/null'
 
     execute 'sudo apt-get --yes update'
 }
@@ -1628,6 +1639,7 @@ install_own_builds() {
 install_work_builds() {
     install_aws_okta
     install_terraform
+    install_minikube
 }
 
 
@@ -1842,7 +1854,7 @@ fetch_release_from_any() {
     readonly loc="$1"
     tmpdir="$(mktemp -d "release-from-external-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
-    dl_url="$(_fetch_release_from_any "${relative:+/}.*$2")" || return 1  # note we're looking for relative url
+    dl_url="$(_fetch_release_from_any "${relative:+/}.*$2")" || return 1  # note we might be looking for a relative url
 
     if [[ "$skipadd" -ne 1 ]] && grep -q "$dl_url" "$GIT_RLS_LOG" 2>/dev/null; then
         report "[$dl_url] already encountered, skipping installation..."
@@ -1872,8 +1884,7 @@ fetch_release_from_any() {
         execute "popd"
     fi
 
-    if [[ -n "$3" && "$file" != "$tmpdir/$3" ]]; then
-    #if [[ -n "$3" && "$(basename -- "$file")" != "$3" ]]; then
+    if [[ -n "$3" && "$(basename -- "$file")" != "$3" ]]; then
         execute "mv -- '$file' '$tmpdir/$3'" || { err "renaming [$file] to [$tmpdir/$3] failed"; return 1; }
         file="$tmpdir/$3"
     fi
@@ -1996,6 +2007,12 @@ install_terraform() {  # https://www.terraform.io/downloads.html
     execute "chmod +x '$bin'" || return 1
     execute "sudo mv -- '$bin' '$target'" || { err "installing [$bin] in [$target] failed"; return 1; }
     return 0
+}
+
+
+# https://github.com/kubernetes/minikube
+install_minikube() {  # https://kubernetes.io/docs/tasks/tools/install-minikube/
+    install_deb_from_git kubernetes minikube 'minikube.*.deb'
 }
 
 
@@ -3297,7 +3314,7 @@ install_fonts() {
 # majority of packages get installed at this point;
 install_from_repo() {
     local block blocks block1 block2 block3 block4 extra_apt_params
-    local block1_nonwin block2_nonwin block3_nonwin block4_nonwin
+    local block1_nonwin block2_nonwin block3_nonwin
 
     declare -A extra_apt_params=(
     )
@@ -3545,11 +3562,6 @@ install_from_repo() {
     #         spacefm-gtk3
     #
 
-    declare -ar block4_nonwin=(
-        charles-proxy
-        mitmproxy
-    )
-
     declare -ar block4=(
         atool
         highlight
@@ -3564,14 +3576,19 @@ install_from_repo() {
         figlet
         redshift
         geoclue-2.0
-        docker.io
+        docker-ce
+        docker-ce-cli
+        containerd.io
         docker-compose
         python-docker
         docker-swarm
+        mitmproxy
     )
+    # old/deprecated block4:
+        #charles-proxy  (note it requires apt key)
 
     blocks=()
-    is_native && blocks=(block1_nonwin block2_nonwin block3_nonwin block4_nonwin)
+    is_native && blocks=(block1_nonwin block2_nonwin block3_nonwin)
     blocks+=(block1 block2 block3 block4)
 
     execute "sudo apt-get --yes update"
@@ -3599,6 +3616,7 @@ install_from_repo() {
 
         install_block '
             ruby-dev
+            kubectl
         '
 
         # remmina is remote desktop for windows; rdesktop, remote vnc;
@@ -3790,6 +3808,7 @@ __choose_prog_to_build() {
         install_symantec_endpoint_security
         install_aws_okta
         install_terraform
+        install_minikube
         install_gruvbox_gtk_theme
     )
 
@@ -4078,6 +4097,18 @@ enable_fw() {
 }
 
 
+# https://minikube.sigs.k8s.io/docs/reference/drivers/none/
+setup_minikube() {  # TODO: unfinished
+    true
+    #execute 'sudo minikube config set vm-driver none'  # make 'none' the default driver:
+	#execute 'minikube config set memory 4096'  # set default allocated memory (default is 2g i believe, see https://minikube.sigs.k8s.io/docs/start/linux/)
+
+    # TODO: consider these for starting:
+#CHANGE_MINIKUBE_NONE_USER=true sudo -E minikube start --vm-driver=none
+#sudo minikube start --extra-config=apiserver.service-node-port-range=80-32767 --vm-driver=none --apiserver-ips 127.0.0.1 --apiserver-name localhost
+}
+
+
 # configs & settings that can/need to be installed  AFTER  the related programs have
 # been installed.
 #
@@ -4108,6 +4139,9 @@ post_install_progs_setup() {
     #setup_seafile_cli  # TODO https://github.com/haiwen/seafile/issues/1855 & https://github.com/haiwen/seafile/issues/1854
     is_native && enable_fw
     #execute "sudo adduser $USER fuse"  # not needed anymore?
+
+    command -v kubectl >/dev/null && execute 'sudo kubectl completion bash > /etc/bash_completion.d/kubectl'  # add kubectl bash completion
+    command -v minikube >/dev/null && setup_minikube
 }
 
 
