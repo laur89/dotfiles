@@ -91,6 +91,7 @@ declare -A COLORS=(
     [OFF]=$'\033[0m'
     [BOLD]=$'\033[1m'
 )
+readonly NPMRC_BAK="/tmp/npmrc.bak.$RANDOM"
 #-----------------------
 #---    Functions    ---
 #-----------------------
@@ -1257,7 +1258,7 @@ setup_global_prompt() {
 # setup system config files (the ones not living under $HOME, ie not managed by homesick)
 # has to be invoked AFTER homeschick castles are cloned/pulled!
 #
-# note that this block overlaps logically a bit with post_install_progs_setup()
+# note that this block overlaps logically a bit with post_install_progs_setup() (not really tho, as p_i_p_s() requires specific progs to be installed beforehand)
 setup_config_files() {
 
     setup_apt
@@ -1362,8 +1363,6 @@ source_shell_conf() {
 
 
 setup() {
-    local _cert
-
     setup_homesick || { err "homesick setup failed; as homesick is necessary, script will exit"; exit 1; }
     verify_ssh_key
     source_shell_conf  # so we get our env vars after dotfiles are pulled in
@@ -1375,14 +1374,16 @@ setup() {
     setup_dirs  # has to come after $SHELL_ENVS sourcing so the env vars are in place
     setup_config_files
     setup_additional_apt_keys_and_sources
-    [[ "$FULL_INSTALL" -ne 1 ]] && post_install_progs_setup  # since with FULL_INSTALL=1, it'll get executed from other block
-    if [[ "$FULL_INSTALL" -eq 1 && "$MODE" == work && -z "$NODE_EXTRA_CA_CERTS" ]]; then
-        NPM_PRFX+=' NODE_TLS_REJECT_UNAUTHORIZED=0'  # certs might've not been init'd yet; NODE_TLS_REJECT_UNAUTHORIZED not working, so far only '$npm config set strict-ssl' false has had any effect
-        _cert="$TMP_DIR/wh_${RANDOM}.crt"
-        curl -s --fail --connect-timeout 2 --max-time 4 --insecure --output "$_cert" \
-                https://git.nonprod.williamhill.plc/profiles/profile_wh_sslcerts/raw/master/files/wh_chain_sc1wnpresc03.crt \
-                && export NODE_EXTRA_CA_CERTS=$_cert
-    fi
+
+    [[ "$MODE" == work && -s ~/.npmrc ]] && mv -- ~/.npmrc "$NPMRC_BAK"  # work npmrc might define private registry
+    # following npm hack is superseded by temporarily getting rid of ~/.npmrc above:
+    #if [[ "$FULL_INSTALL" -eq 1 && "$MODE" == work && -z "$NODE_EXTRA_CA_CERTS" ]]; then
+        #NPM_PRFX+=' NODE_TLS_REJECT_UNAUTHORIZED=0'  # certs might've not been init'd yet; NODE_TLS_REJECT_UNAUTHORIZED not working, so far only '$npm config set strict-ssl' false has had any effect
+        #local _cert="$TMP_DIR/wh_${RANDOM}.crt"
+        #curl -s --fail --connect-timeout 2 --max-time 4 --insecure --output "$_cert" \
+                #https://git.nonprod.williamhill.plc/profiles/profile_wh_sslcerts/raw/master/files/wh_chain_sc1wnpresc03.crt \
+                #&& export NODE_EXTRA_CA_CERTS=$_cert
+    #fi
 }
 
 
@@ -1587,6 +1588,8 @@ install_progs() {
         #install_altiris
         #install_symantec_endpoint_security
     #fi
+
+    post_install_progs_setup
 }
 
 
@@ -3880,7 +3883,6 @@ full_install() {
     is_windows || upgrade_kernel  # keep this check is_windows(), not is_native();
     install_fonts
     install_progs
-    post_install_progs_setup
     install_deps
     ! is_noninteractive && is_native && install_ssh_server_or_client
     ! is_noninteractive && is_native && install_nfs_server_or_client
@@ -3892,8 +3894,10 @@ full_install() {
 
 # quicker update than full_install() to be executed periodically
 quick_refresh() {
+    readonly FULL_INSTALL=2
+
+    setup
     install_progs  # TODO: consider replacing by only install_own_builds()
-    post_install_progs_setup
     install_deps
 }
 
@@ -4915,6 +4919,8 @@ popd() {
 
 cleanup() {
     [[ "$__CLEANUP_EXECUTED_MARKER" -eq 1 ]] && return  # don't invoke more than once.
+
+    [[ -s "$NPMRC_BAK" ]] && mv -- "$NPMRC_BAK" ~/.npmrc   # move back
 
     # shut down the build container:
     if command -v docker >/dev/null 2>&1 && [[ -n "$(docker ps -qa -f status=running -f name="$BUILD_DOCK" --format '{{.Names}}')" ]]; then
