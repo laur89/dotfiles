@@ -1324,15 +1324,49 @@ install_nm_dispatchers() {
 }
 
 
+source_shell_conf() {
+    local i
+
+    # source own functions and env vars:
+    if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
+        for i in \
+                "$SHELL_ENVS" \
+                    ; do  # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
+            if [[ -r "$i" ]]; then
+                source "$i"
+            fi
+        done
+
+        if [[ -d "$HOME/.bash_env_vars_overrides" ]]; then
+            for i in $HOME/.bash_env_vars_overrides/*; do
+                [[ -f "$i" ]] && source "$i"
+            done
+        fi
+
+        unset i
+    fi
+
+	if ! type __BASH_FUNS_LOADED_MARKER > /dev/null 2>&1; then
+        # skip common funs import - we don't need 'em, and might cause conflicts:
+		#[[ -r "$HOME/.bash_functions" ]] && source "$HOME/.bash_functions"
+
+		if [[ -d "$HOME/.bash_funs_overrides" ]]; then
+			for i in $HOME/.bash_funs_overrides/*; do
+				[[ -f "$i" ]] && source "$i"
+			done
+
+			unset i
+		fi
+	fi
+}
+
+
 setup() {
     local _cert
 
     setup_homesick || { err "homesick setup failed; as homesick is necessary, script will exit"; exit 1; }
     verify_ssh_key
-    execute "source $SHELL_ENVS"  # so we get our env vars after dotfiles are pulled in
-
-    # TODO: any danger in _always_ sourcing ~/.bashrc? if doing so, there's not much point in sourceing $SHELL_ENVS, as .bashrc would take care of it;
-    [[ "$FULL_INSTALL" -eq 1 && "$MODE" == work && -f "~/.bashrc" ]] && execute "source $HOME/.bashrc"  # to get work env vars/functions et al
+    source_shell_conf  # so we get our env vars after dotfiles are pulled in
 
     if [[ -z "$GIT_RLS_LOG" ]]; then
         [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG='/tmp/.git-rls-log.tmp'  # log of all installed debs/binaries from git releases/latest page
@@ -1401,8 +1435,8 @@ setup_additional_apt_keys_and_sources() {
     #execute 'echo "deb https://download.mono-project.com/repo/debian preview-buster main" | sudo tee /etc/apt/sources.list.d/mono-official-preview.list > /dev/null' # preview branch
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
-    #execute 'wget -q -O - https://www.charlesproxy.com/packages/apt/PublicKey | sudo apt-key add -'
-    #execute 'echo deb https://www.charlesproxy.com/packages/apt/ charles-proxy main | sudo tee /etc/apt/sources.list.d/charles.list > /dev/null'
+    execute 'wget -q -O - https://www.charlesproxy.com/packages/apt/PublicKey | sudo apt-key add -'
+    execute 'echo deb https://www.charlesproxy.com/packages/apt/ charles-proxy main | sudo tee /etc/apt/sources.list.d/charles.list > /dev/null'
 
     # yarn:  (from https://yarnpkg.com/en/docs/install#debian-stable):
     execute 'curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -'
@@ -3591,9 +3625,9 @@ install_from_repo() {
         python-docker
         docker-swarm
         mitmproxy
+        charles-proxy
     )
     # old/deprecated block4:
-        #charles-proxy  (note it requires apt key)
 
     blocks=()
     is_native && blocks=(block1_nonwin block2_nonwin block3_nonwin)
@@ -3730,7 +3764,7 @@ choose_step() {
        case "$FULL_INSTALL" in
            0) choose_single_task ;;
            1) full_install ;;
-           2) update ;;
+           2) quick_refresh ;;
            *) exit 1 ;;
        esac
     else
@@ -3738,7 +3772,7 @@ choose_step() {
        case "$__SELECTED_ITEMS" in
           'full-install' ) full_install ;;
           'single-task'  ) choose_single_task ;;
-          'update'       ) update ;;
+          'update'       ) quick_refresh ;;
           '') exit 0 ;;
           *) err "unsupported choice [$__SELECTED_ITEMS]"
               exit 1
@@ -3755,12 +3789,7 @@ choose_single_task() {
     LOGGING_LVL=1
     readonly FULL_INSTALL=0
 
-    # need to assume .bash_env_vars are there:
-    if [[ -f "$SHELL_ENVS" ]]; then
-        execute "source $SHELL_ENVS"
-    else
-        err "expected [$SHELL_ENVS] to exist; note that some configuration might be missing."
-    fi
+    source_shell_conf
 
     [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG='/tmp/.git-rls-log.tmp'  # log of all installed debs/binaries from git releases/latest page
     command -v nvm >/dev/null && execute 'nvm use default'
@@ -3862,7 +3891,7 @@ full_install() {
 
 
 # quicker update than full_install() to be executed periodically
-update() {
+quick_refresh() {
     install_progs  # TODO: consider replacing by only install_own_builds()
     post_install_progs_setup
     install_deps
@@ -4305,12 +4334,11 @@ _sanitize_ssh() {
     fi
 
     find -L "$HOME/.ssh/" -maxdepth 25 \( -type f -o -type d \) -exec chmod 'u=rwX,g=,o=' -- '{}' \+
-    return $?
 }
 
 
 is_ssh_key_available() {
-    [[ -f "$PRIVATE_KEY_LOC" ]] && return 0 || return 1
+    [[ -f "$PRIVATE_KEY_LOC" ]]
 }
 
 
@@ -4323,7 +4351,6 @@ check_connection() {
     # Check whether the client is connected to the internet:
     # TODO: keep '--no-check-certificate' by default?
     wget --no-check-certificate -q --spider --timeout=$timeout -- "$ip" > /dev/null 2>&1  # works in networks where ping is not allowed
-    return $?
 }
 
 
