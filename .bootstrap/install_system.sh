@@ -2556,7 +2556,7 @@ override_dh_installman:
 EOF
     }
 
-    tmpdir="$(mktemp -d "i3-gaps-build-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$ mktemp"; return 1; }
+    readonly tmpdir="$TMP_DIR/i3-gaps-build-${RANDOM}/build"
     report "building i3-gaps... (note install_i3_deps() will be called in the end)"; sleep 2
 
     report "installing i3 build dependencies..."
@@ -2586,10 +2586,8 @@ EOF
 
 
     # clone the repository
-    #execute "git clone -j8 $I3_REPO_LOC '$tmpdir'" || return 1
+    execute "git clone -j8 $I3_REPO_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
-    fetch_extract_tarball_from_git Airblader i3 '\d+\.tar\.bz2' || return 1
-    execute "pushd *" || return 1
 
     _apply_patches  # TODO: should we bail on error?
     _fix_rules
@@ -2633,7 +2631,7 @@ EOF
     #execute "popd"
     # --------------------------
 
-    execute "popd; popd"
+    execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
 
     install_i3_deps
