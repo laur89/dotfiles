@@ -48,7 +48,9 @@ alias py3='python3'
 alias dunc='ncdu'  # never remember it; if it starts w/ 'du', it'll be more likely to find
 alias tgo='tmux new -A -s' # start a new tmux session, or attach to it if already exists
 alias got='tgo'
-# alternative to tgo, consider this:
+
+alias mkstart='CHANGE_MINIKUBE_NONE_USER=true sudo -E minikube start --extra-config=apiserver.service-node-port-range=80-32767 --vm-driver=none --apiserver-ips 127.0.0.1 --apiserver-name localhost'
+
 # $tm <sessname> to either create or attach, or $tm to search from avail sessions w/ fzf;
 #tm() {
   #[[ -n "$TMUX" ]] && change="switch-client" || change="attach-session"

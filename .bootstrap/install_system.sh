@@ -52,13 +52,14 @@ readonly BUILD_DOCK='deb-build-box'              # name of the build container
 IS_SSH_SETUP=0       # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=''  # only select_items() *writes* into this one.
 MODE=''
-FULL_INSTALL=0                  # whether script is performing full install or not. 1 || 0
+FULL_INSTALL=''              # whether script is performing full install or not. will be defined as 1 || 0 || 2, needs to be first set to empty;
 GIT_RLS_LOG=''       # log of all installed/fetched assets from git releases/latest page; will be defined later on;
 declare -a PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
 declare -a PACKAGES_FAILED_TO_INSTALL=()
 LOGGING_LVL=0                   # execution logging level (full install mode logs everything);
                                 # don't set log level too soon; don't want to persist bullshit.
                                 # levels are currently 0, 1 and 10; 0 being no logging, 1 being the lowest (from lvl 1 to 9 only execute() errors are logged)
+NON_INTERACTIVE=0               # whether script's running non-attended
 EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%b-%y--%R).log" \
         || readonly EXECUTION_LOG="$HOME/installation-exe.log"  # do not create logfile here! otherwise cleanup()
                                                                 # picks it up and reports of its existence, opening
@@ -184,7 +185,7 @@ check_dependencies() {
             $BASE_DATA_DIR/dev \
                 ; do
         if ! [[ -d "$dir" ]]; then
-            if confirm "[$dir] mountpoint/dir does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
+            if confirm -d Y "[$dir] mountpoint/dir does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
                 execute "sudo mkdir '$dir'" || { err "unable to create [$dir] directory. abort."; exit 1; }
             else
                 err "expected [$dir] to be already-existing dir. abort"
@@ -1164,7 +1165,7 @@ verify_ssh_key() {
     [[ "$IS_SSH_SETUP" -eq 1 ]] && return 0
     err "expected ssh keys to be there after cloning repo(s), but weren't."
 
-    if confirm "do you wish to generate set of ssh keys?"; then
+    if confirm -d N "do you wish to generate set of ssh keys?"; then
         generate_key
     else
         return
@@ -1330,6 +1331,9 @@ setup() {
     verify_ssh_key
     execute "source $SHELL_ENVS"  # so we get our env vars after dotfiles are pulled in
 
+    # TODO: any danger in _always_ sourcing ~/.bashrc? if doing so, there's not much point in sourceing $SHELL_ENVS, as .bashrc would take care of it;
+    [[ "$FULL_INSTALL" -eq 1 && "$MODE" == work && -f "~/.bashrc" ]] && execute "source $HOME/.bashrc"  # to get work env vars/functions et al
+
     if [[ -z "$GIT_RLS_LOG" ]]; then
         [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG='/tmp/.git-rls-log.tmp'  # log of all installed debs/binaries from git releases/latest page
     fi
@@ -1341,7 +1345,7 @@ setup() {
     if [[ "$FULL_INSTALL" -eq 1 && "$MODE" == work && -z "$NODE_EXTRA_CA_CERTS" ]]; then
         NPM_PRFX+=' NODE_TLS_REJECT_UNAUTHORIZED=0'  # certs might've not been init'd yet; NODE_TLS_REJECT_UNAUTHORIZED not working, so far only '$npm config set strict-ssl' false has had any effect
         _cert="$TMP_DIR/wh_${RANDOM}.crt"
-        curl -s --fail --connect-timeout 2 --max-time 2 --insecure --output "$_cert" \
+        curl -s --fail --connect-timeout 2 --max-time 4 --insecure --output "$_cert" \
                 https://git.nonprod.williamhill.plc/profiles/profile_wh_sslcerts/raw/master/files/wh_chain_sc1wnpresc03.crt \
                 && export NODE_EXTRA_CA_CERTS=$_cert
     fi
@@ -1376,9 +1380,9 @@ setup_additional_apt_keys_and_sources() {
     # docker:  (from https://docs.docker.com/install/linux/docker-ce/debian/):
     execute 'curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -'
     execute "sudo add-apt-repository \
-		'deb [arch=amd64] https://download.docker.com/linux/debian \
-		$(lsb_release -cs) \
-		stable'
+        'deb [arch=amd64] https://download.docker.com/linux/debian \
+        $(lsb_release -cs) \
+        stable'
     "
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
@@ -1536,7 +1540,7 @@ install_progs() {
 
     execute "sudo apt-get --yes update"
 
-    #confirm "do you want to install our webdev lot?" && install_webdev
+    #confirm -d Y "do you want to install our webdev lot?" && install_webdev
     install_webdev
 
     install_from_repo
@@ -1584,22 +1588,24 @@ upgrade_kernel() {
 
     [[ -z "${kernels_list[*]}" ]] && { err "apt-cache search didn't find any kernel images. skipping kernel upgrade"; sleep 5; return 1; }
 
-    while true; do
-        echo
-        report "note kernel was just updated, but you can select different ver:"
-        report "select kernel to install: (select none to skip kernel change)\n"
-        select_items "${kernels_list[*]}" 1
+    if ! is_noninteractive; then
+       while true; do
+          echo
+          report "note kernel was just updated, but you can select different ver:"
+          report "select kernel to install: (select none to skip kernel change)\n"
+          select_items "${kernels_list[*]}" 1
 
-        if [[ -n "$__SELECTED_ITEMS" ]]; then
-            report "installing ${__SELECTED_ITEMS}..."
-            execute "sudo apt-get --yes install $__SELECTED_ITEMS"
-            break
-        else
-            confirm "no items were selected; skip kernel change?" && break
-        fi
-    done
+          if [[ -n "$__SELECTED_ITEMS" ]]; then
+             report "installing ${__SELECTED_ITEMS}..."
+             execute "sudo apt-get --yes install $__SELECTED_ITEMS"
+             break
+          else
+             confirm "no items were selected; skip kernel change?" && break
+          fi
+       done
 
-    unset __SELECTED_ITEMS
+       unset __SELECTED_ITEMS
+    fi
 }
 
 
@@ -1632,7 +1638,7 @@ install_own_builds() {
 
     #install_dwm
     is_native && install_i3lock
-    is_work && install_work_builds
+    [[ "$MODE" == work ]] && install_work_builds
 }
 
 
@@ -3319,7 +3325,6 @@ install_from_repo() {
     declare -A extra_apt_params=(
     )
 
-    # consider apulse instead of pulseaudio
     declare -ar block1_nonwin=(
         smartmontools
         pm-utils
@@ -3341,6 +3346,7 @@ install_from_repo() {
     #    gufw
     #
 
+    # consider apulse instead of pulseaudio;
     # TODO: xorg needs to be pulled into non-win (but still has to be installed for virt!) block:
     declare -ar block1=(
         xorg
@@ -3531,6 +3537,7 @@ install_from_repo() {
         ffmpegthumbnailer
         vokoscreen
         kazam
+        peek
         screenkey
         mediainfo
         screenruler
@@ -3597,7 +3604,7 @@ install_from_repo() {
         if [[ "$?" -ne 0 && "$?" -ne "$SOME_PACKAGE_IGNORED_EXIT_CODE" ]]; then
             err "one of the main-block installation failed. these are the packages that have failed to install so far:"
             echo -e "[${PACKAGES_FAILED_TO_INSTALL[*]}]"
-            confirm "continue with setup? answering no will exit script" || exit 1
+            confirm -d Y "continue with setup? answering no will exit script" || exit 1
         fi
     done
 
@@ -3641,11 +3648,13 @@ install_from_repo() {
 install_nvidia() {
     # TODO: consider  lspci -vnn | grep VGA | grep -i nvidia
     if sudo lshw | grep -iA 5 'display' | grep -iq 'vendor.*NVIDIA'; then
-        if confirm "we seem to have NVIDIA card; want to install nvidia drivers?"; then
+        if confirm -d N "we seem to have NVIDIA card; want to install nvidia drivers?"; then  # TODO: should we default to _not_ installing in non-interactive mode?
             report "installing NVIDIA drivers..."
             install_block 'nvidia-driver  nvidia-xconfig'
             #execute "sudo nvidia-xconfig"  # should not be required as of Stretch
             return $?
+        else
+            report "we chose not to install nvidia drivers..."
         fi
     else
         report "we don't have a nvidia card; skipping installing their drivers..."
@@ -3716,16 +3725,25 @@ install_block() {
 choose_step() {
     report "what do you want to do?"
 
-    select_items 'full-install single-task' 1
-
-    case "$__SELECTED_ITEMS" in
-        'full-install' ) full_install ;;
-        'single-task'  ) choose_single_task ;;
-        '') exit 0 ;;
-        *) err "unsupported choice [$__SELECTED_ITEMS]"
-           exit 1
-           ;;
-    esac
+    if [[ -n "$FULL_INSTALL" ]]; then
+       case "$FULL_INSTALL" in
+           0) choose_single_task ;;
+           1) full_install ;;
+           2) update ;;
+           *) exit 1 ;;
+       esac
+    else
+       select_items 'full-install single-task update' 1
+       case "$__SELECTED_ITEMS" in
+          'full-install' ) full_install ;;
+          'single-task'  ) choose_single_task ;;
+          'update'       ) update ;;
+          '') exit 0 ;;
+          *) err "unsupported choice [$__SELECTED_ITEMS]"
+              exit 1
+              ;;
+       esac
+    fi
 }
 
 
@@ -3834,9 +3852,31 @@ full_install() {
     install_progs
     post_install_progs_setup
     install_deps
-    is_native && install_ssh_server_or_client
-    is_native && install_nfs_server_or_client
+    ! is_noninteractive && is_native && install_ssh_server_or_client
+    ! is_noninteractive && is_native && install_nfs_server_or_client
+    [[ "$MODE" == work ]] && exe_work_funs
+
     remind_manually_installed_progs
+}
+
+
+# quicker update than full_install() to be executed periodically
+update() {
+    install_progs  # TODO: consider replacing by only install_own_builds()
+    post_install_progs_setup
+    install_deps
+}
+
+
+# execute work-defined shell functions, likely in ~/.bash_funs_overrides/;
+# note we seek functions by a pre-defined prefix;
+exe_work_funs() {
+    local f
+
+    while read -r f; do
+        is_function "$f" || continue
+        execute "$f"
+    done< <(declare -F | awk '{print $NF}' | grep '^w_')
 }
 
 
@@ -4101,7 +4141,7 @@ enable_fw() {
 setup_minikube() {  # TODO: unfinished
     true
     #execute 'sudo minikube config set vm-driver none'  # make 'none' the default driver:
-	#execute 'minikube config set memory 4096'  # set default allocated memory (default is 2g i believe, see https://minikube.sigs.k8s.io/docs/start/linux/)
+    #execute 'minikube config set memory 4096'  # set default allocated memory (default is 2g i believe, see https://minikube.sigs.k8s.io/docs/start/linux/)
 
     # TODO: consider these for starting:
 #CHANGE_MINIKUBE_NONE_USER=true sudo -E minikube start --vm-driver=none
@@ -4189,13 +4229,34 @@ install_nfs_server_or_client() {
 ###################
 
 confirm() {
-    local msg yno
+    local msg yno opt OPTIND default timeout
+
+    timeout=2  # default
+    while getopts "d:t:" opt; do
+        case "$opt" in
+           d)
+              default="$OPTARG"
+                ;;
+           t)
+              timeout="$OPTARG"
+                ;;
+           *) echo -e "$usage"; return 1 ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
 
     readonly msg=${1:+"\n$1"}
 
     while true; do
         [[ -n "$msg" ]] && echo -e "$msg"
-        read -r yno
+
+        if is_noninteractive; then
+            read -r -t "$timeout" yno
+            if [[ $? -gt 128 ]]; then yno="$default"; fi  # read timed out
+        else
+            read -r yno
+        fi
+
         case "$(echo "$yno" | tr '[:lower:]' '[:upper:]')" in
             Y | YES )
                 report "Ok, continuing..." "->";
@@ -4271,7 +4332,7 @@ generate_key() {
     readonly valid_mail_regex='^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+$'
 
     if is_ssh_key_available; then
-        confirm "key @ [$PRIVATE_KEY_LOC] already exists; still generate key?" || return 1
+        confirm -d N "key @ [$PRIVATE_KEY_LOC] already exists; still generate key?" || return 1
     fi
 
     if ! command -v ssh-keygen >/dev/null; then
@@ -4781,6 +4842,27 @@ is_digit() {
 }
 
 
+is_noninteractive() {
+    [[ "$NON_INTERACTIVE" -eq 1 ]]
+}
+
+
+# Checks whether the provided function name is actually a defined function.
+#
+# @param {string}   fun     name of the function whose validity to check.
+#
+# @returns {bool}    true, if provided function name is a valid function.
+is_function() {
+    local _type fun
+
+    readonly fun="$1"
+
+    _type="$(type -t -- "$fun" 2> /dev/null)"
+    [[ "$?" -eq 0 && "$_type" == function ]]
+}
+
+
+
 # Verifies given string is non-empty, non-whitespace-only and on a single line.
 #
 # @param {string}  s  string to validate.
@@ -4835,6 +4917,21 @@ cleanup() {
 #----------------------------
 #---  Script entry point  ---
 #----------------------------
+while getopts "NFSU" OPT_; do
+    case "$OPT_" in
+        N) NON_INTERACTIVE=1
+            ;;
+        F) FULL_INSTALL=1
+            ;;
+        S) FULL_INSTALL=0
+            ;;
+        U) FULL_INSTALL=2
+            ;;
+        *) echo -e "$usage"; exit 1 ;;
+    esac
+done
+shift "$((OPTIND-1))"; unset OPT_
+
 readonly MODE="$1"   # work | personal
 
 [[ "$EUID" -eq 0 ]] && { err "don't run as root."; exit 1; }
@@ -4858,4 +4955,3 @@ exit
 # in that case you probably need to change the device xfce4-volumed is controlling
 
 # TODOS:
-#  - install peek's appimage: https://github.com/phw/peek/releases
