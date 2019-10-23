@@ -4241,7 +4241,7 @@ confirm() {
            t)
               timeout="$OPTARG"
                 ;;
-           *) echo -e "$usage"; return 1 ;;
+           *) print_usage; return 1 ;;
         esac
     done
     shift "$((OPTIND-1))"
@@ -4928,7 +4928,7 @@ while getopts "NFSU" OPT_; do
             ;;
         U) FULL_INSTALL=2
             ;;
-        *) echo -e "$usage"; exit 1 ;;
+        *) print_usage; exit 1 ;;
     esac
 done
 shift "$((OPTIND-1))"; unset OPT_
