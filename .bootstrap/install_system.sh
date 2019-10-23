@@ -2007,10 +2007,10 @@ install_aws_okta() {  # https://github.com/segmentio/aws-okta
 install_terraform() {  # https://www.terraform.io/downloads.html
     local bin target
 
-    target="/usr/local/bin"
+    target='/usr/local/bin'
 
     bin="$(fetch_release_from_any -I "terraform" "https://www.terraform.io/downloads.html" "_linux_amd64.zip")" || return $?
-    execute "chmod +x '$bin'" || return 1
+    execute "chmod +x -- '$bin'" || return 1
     execute "sudo mv -- '$bin' '$target'" || { err "installing [$bin] in [$target] failed"; return 1; }
     return 0
 }
@@ -3372,6 +3372,7 @@ install_from_repo() {
         equivs
         cmake
         ruby
+        ipython3
         python3
         python3-dev
         python3-venv
