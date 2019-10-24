@@ -184,6 +184,7 @@ alias gpushall='is_git || err "not in a git repo" && { git push --tags && git ch
 # forgit aliases: (https://github.com/wfxr/forgit)
 alias gr='forgit::reset::head'  # git reset
 alias gR='forgit::restore'      # git co -- ...
+alias gin='gitin'
 
 # ------------------------------------
 # Docker alias and functions

@@ -3361,6 +3361,8 @@ faxe() {
         -S "$src" -- "$@" | FZF_DEFAULT_OPTS="$opts" fzf
 }
 
+fpickaxe() { faxe "$@"; }  # alias for faxe()
+
 
 # fh - repeat history
 # note: no reason to use when fzf's ctrl+r mapping works;
@@ -3997,6 +3999,7 @@ complete -F _completemarks jj jum jmo
 # use this if grep w/ perl regex not avail:
 #[[ -f ~/.ssh/config ]] && complete -o default -o nospace -W "$(grep -i -e '^host ' ~/.ssh/config | awk '{print substr($0, index($0,$2))}' ORS=' ')" sshpearl
 [[ -f ~/.ssh/config ]] && complete -o default -o nospace -W "$(grep -Poi '^host\s+\K\S+' ~/.ssh/config)" sshpearl
+is_function g && complete -o default -o nospace -W "$(ls -A1p | grep '/$' | sed 's/\/$//')" g  # autocomplete on directories
 
 ################################################
 # marker function used to detect whether functions have been loaded into the shell:

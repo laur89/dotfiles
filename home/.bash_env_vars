@@ -25,8 +25,7 @@ if [[ "$-" != *i* ]]; then
     #done | awk -F= '/Name/ { name = $2 } /User/ { user = $2 } /State/ { state = $2 } /Type/ { type = $2 } /Remote/ { remote = $2 } /User/ && remote == "no" && state == "active" && (type == "tty" || type == "wayland") { print user, name }'
 
     if [[ -z "$USER" ]]; then
-        u="$(whoami)"
-        [[ $? -eq 0 && -n "$u" && "$u" != root ]] && export USER="$u" && export MAIN_SYSTEM_USER="$u"  # TODO: do we want to define/override MAIN_SYSTEM_USER here?
+        u="$(whoami)" && [[ -n "$u" && "$u" != root ]] && { export USER="$u"; export MAIN_SYSTEM_USER="$u"; }  # TODO: do we want to define/override MAIN_SYSTEM_USER here?
         unset u
     fi
 
@@ -73,7 +72,6 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export KAFKA_HOME=/data/progs/kafka/kafka
 
     # add additional locations to $PATH:
-    i=''
     j=''
     for i in \
             /usr/local/sbin \
