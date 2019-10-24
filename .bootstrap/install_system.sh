@@ -51,7 +51,7 @@ readonly BUILD_DOCK='deb-build-box'              # name of the build container
 #------------------------
 IS_SSH_SETUP=0       # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=''  # only select_items() *writes* into this one.
-MODE=''
+MODE=''  # TODO: rename to PROFILE & rename FULL_INSTALL->MODE
 FULL_INSTALL=''              # whether script is performing full install or not. will be defined as 1 || 0 || 2, needs to be first set to empty;
 GIT_RLS_LOG=''       # log of all installed/fetched assets from git releases/latest page; will be defined later on;
 declare -a PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
@@ -91,7 +91,7 @@ declare -A COLORS=(
     [OFF]=$'\033[0m'
     [BOLD]=$'\033[1m'
 )
-readonly NPMRC_BAK="/tmp/npmrc.bak.$RANDOM"
+readonly NPMRC_BAK="$TMP_DIR/npmrc.bak.$RANDOM"
 #-----------------------
 #---    Functions    ---
 #-----------------------
@@ -100,7 +100,7 @@ readonly NPMRC_BAK="/tmp/npmrc.bak.$RANDOM"
 print_usage() {
 
     printf "${SELF}:  install/provision system.
-        usage: $SELF  work|personal
+        usage: $SELF [-NFSU]  work|personal
     "
 }
 
@@ -194,7 +194,7 @@ check_dependencies() {
             fi
         fi
 
-        execute "sudo chown $USER:$USER '$dir'" || { err "unable to change [$dir] ownership to [$USER:$USER]. abort."; exit 1; }
+        execute "sudo chown $USER:$USER -- '$dir'" || { err "unable to change [$dir] ownership to [$USER:$USER]. abort."; exit 1; }
         execute "sudo chmod $perms -- '$dir'" || { err "unable to change [$dir] permissions to [$perms]. abort."; exit 1; }
     done
 }
@@ -1368,7 +1368,7 @@ setup() {
     source_shell_conf  # so we get our env vars after dotfiles are pulled in
 
     if [[ -z "$GIT_RLS_LOG" ]]; then
-        [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG='/tmp/.git-rls-log.tmp'  # log of all installed debs/binaries from git releases/latest page
+        [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG="$TMP_DIR/.git-rls-log.tmp"  # log of all installed debs/binaries from git releases/latest page
     fi
 
     setup_dirs  # has to come after $SHELL_ENVS sourcing so the env vars are in place
@@ -3797,7 +3797,7 @@ choose_single_task() {
 
     source_shell_conf
 
-    [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG='/tmp/.git-rls-log.tmp'  # log of all installed debs/binaries from git releases/latest page
+    [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG="$TMP_DIR/.git-rls-log.tmp"  # log of all installed debs/binaries from git releases/latest page
     command -v nvm >/dev/null && execute 'nvm use default'
 
     # note choices need to be valid functions
