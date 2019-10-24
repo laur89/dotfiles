@@ -47,8 +47,8 @@ steps separately apart from the full installation mode.
     * `adduser  YOUR_USERNAME  sudo`    (and logout + login afterwards)
 1. sudo apt-get update
 1. execute script:
-    * `./install_system.sh  personal|work`
-    * select the 'full-install' option.
+    * `./install_system.sh -F personal|work`
+    * optionally pass `-N` option for non-interactive (ie standalone) mode
 
 ### Single task:
 
