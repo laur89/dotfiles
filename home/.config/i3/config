@@ -390,6 +390,10 @@ for_window [class="^vokoscreen$"] floating enable
 for_window [class="^Galculator$"] floating enable
 for_window [class="^i3expod\.py$"] fullscreen enable
 
+# some other per-app configs:
+#  we occupy first index; note 'scratch_mark' is a pre-set prefix used elsewhere in this config!:
+for_window [class="^keepassxc?$" title="^KeePassXC?$"] mark scratch_mark_0, move scratchpad
+
 # these two are from https://www.reddit.com/r/i3wm/comments/8gh4c0/working_fix_for_focusing_intellij_popups/
 # to solve intellij quirks:
 for_window [class="^jetbrains-.+"][window_type=dialog] focus
