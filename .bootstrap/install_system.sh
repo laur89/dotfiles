@@ -3911,10 +3911,19 @@ quick_refresh() {
 exe_work_funs() {
     local f
 
-    while read -r f; do
+    # version where we resolve & execute _all_ functions:
+    #while read -r f; do
+        #is_function "$f" || continue
+        #execute "$f"
+    #done< <(declare -F | awk '{print $NF}' | grep '^w_')
+
+    # another ver where we execute pre-defined set of funs:
+    for f in \
+            w_dl_cert \
+                ; do
         is_function "$f" || continue
         execute "$f"
-    done< <(declare -F | awk '{print $NF}' | grep '^w_')
+    done
 }
 
 
