@@ -1616,7 +1616,7 @@ upgrade_kernel() {
         sleep 5
     fi
 
-    [[ "$FULL_INSTALL" -eq 1 ]] && return  # don't ask for custom kernel ver when doing full install
+    [[ "$FULL_INSTALL" -ne 0 ]] && return  # only ask for custom kernel ver when we're in manual mode (single task)
 
     declare -a kernels_list=()
 
@@ -3899,6 +3899,7 @@ full_install() {
 
 # quicker update than full_install() to be executed periodically
 quick_refresh() {
+    LOGGING_LVL=1
     readonly FULL_INSTALL=2
 
     setup
