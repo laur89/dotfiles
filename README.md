@@ -61,6 +61,12 @@ It provides maintenance/management options, such as
 * installing the base package set
 * build and/or install software (such as vim, copyq, oracle jdk)
 
+### Update:
+
+This mode is to be ran periodically to build/install software; note it also includes
+non-standard sources, such as github releases/ pages, and being directly built from
+source.
+
 ### TODO
 
 1. delay homeshick repos' https->ssh change to later stages; otherwise
