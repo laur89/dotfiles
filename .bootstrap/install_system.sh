@@ -1616,7 +1616,7 @@ upgrade_kernel() {
         sleep 5
     fi
 
-    [[ "$FULL_INSTALL" -ne 0 ]] && return  # only ask for custom kernel ver when we're in manual mode (single task)
+    if is_noninteractive || [[ "$FULL_INSTALL" -ne 0 ]]; then return 0; fi  # only ask for custom kernel ver when we're in manual mode (single task), or we're in noninteractive node
 
     declare -a kernels_list=()
 
@@ -1627,24 +1627,22 @@ upgrade_kernel() {
 
     [[ -z "${kernels_list[*]}" ]] && { err "apt-cache search didn't find any kernel images. skipping kernel upgrade"; sleep 5; return 1; }
 
-    if ! is_noninteractive; then
-       while true; do
-          echo
-          report "note kernel was just updated, but you can select different ver:"
-          report "select kernel to install: (select none to skip kernel change)\n"
-          select_items "${kernels_list[*]}" 1
+    while true; do
+       echo
+       report "note kernel was just updated, but you can select different ver:"
+       report "select kernel to install: (select none to skip kernel change)\n"
+       select_items "${kernels_list[*]}" 1
 
-          if [[ -n "$__SELECTED_ITEMS" ]]; then
-             report "installing ${__SELECTED_ITEMS}..."
-             execute "sudo apt-get --yes install $__SELECTED_ITEMS"
-             break
-          else
-             confirm "no items were selected; skip kernel change?" && break
-          fi
-       done
+       if [[ -n "$__SELECTED_ITEMS" ]]; then
+          report "installing ${__SELECTED_ITEMS}..."
+          execute "sudo apt-get --yes install $__SELECTED_ITEMS"
+          break
+       else
+          confirm "no items were selected; skip kernel change?" && break
+       fi
+    done
 
-       unset __SELECTED_ITEMS
-    fi
+    unset __SELECTED_ITEMS
 }
 
 
