@@ -1666,6 +1666,7 @@ install_own_builds() {
     install_ripgrep
     #install_rebar
     install_lazygit
+    install_fd
     install_gitin
     #install_synergy  # currently installing from repo
     install_i3
@@ -2059,9 +2060,9 @@ install_minikube() {  # https://kubernetes.io/docs/tasks/tools/install-minikube/
 }
 
 
-# found as apt find-fd package;
+# found as apt fd-find package, but executable is named fdfind not fd!
 install_fd() {  # https://github.com/sharkdp/fd
-    install_deb_from_git sharkdp fd 'musl_[0-9.]+_amd64.deb'
+    install_deb_from_git sharkdp fd 'fd_[-0-9.]+_amd64.deb'
 }
 
 
@@ -3570,7 +3571,6 @@ install_from_repo() {
         ranger
         vifm
         bat
-        fd-find
         screenfetch
         neofetch
         maim
@@ -3848,6 +3848,7 @@ __choose_prog_to_build() {
         install_ripgrep
         install_rebar
         install_lazygit
+        install_fd
         install_gitin
         install_synergy
         install_dwm
@@ -4226,7 +4227,7 @@ post_install_progs_setup() {
     is_native && enable_fw
     #execute "sudo adduser $USER fuse"  # not needed anymore?
 
-    command -v kubectl >/dev/null && execute 'sudo kubectl completion bash > /etc/bash_completion.d/kubectl'  # add kubectl bash completion
+    command -v kubectl >/dev/null && execute 'kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl'  # add kubectl bash completion
     command -v minikube >/dev/null && setup_minikube
 }
 
