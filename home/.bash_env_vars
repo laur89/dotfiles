@@ -131,7 +131,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export POWERLINE_NO_SHELL_PROMPT=NOPE.jpeg
 
     # hostnames
-    export WORK_DESKTOP_HOSTNAME="WHOD5001556"
+    export WORK_DESKTOP_HOSTNAME="WH5001556"
     export WORK_LAPTOP_HOSTNAME="WH5005264"
     export PERSONAL_DESKTOP_HOSTNAME="aliste"
     export PERSONAL_LAPTOP_HOSTNAME="8570w"
