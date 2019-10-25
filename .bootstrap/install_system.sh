@@ -1393,12 +1393,12 @@ update_clock() {
     remote_time="$(curl --insecure -X HEAD --silent -I https://google.com/ 2>&1 \
             | grep -ioP '^date:\s*\K.*' | { read -r t; date +%s -d "$t"; })"
 
-    is_digit "$remote_time" || { err "resolved remote time was not digit: [$remote_time]"; return 1; }
+    is_digit "$remote_time" || { err "resolved remote time was not digit: [$remote_time]"; exit 1; }
     diff="$(( $(date +%s) - remote_time ))"
 
     if [[ "${diff#-}" -gt 30 ]]; then
         report "system time diff to remote source is [$diff] - updating clock..."
-        execute "sudo date -s '$(date -d @$remote_time '+%Y-%m-%d %H:%M:%S')'" || { err "setting system time failed"; return 1; }
+        execute "sudo date -s '$(date -d @$remote_time '+%Y-%m-%d %H:%M:%S')'" || { err "setting system time failed"; exit 1; }
     fi
 }
 
@@ -3764,8 +3764,6 @@ install_block() {
 
 
 choose_step() {
-    report "what do you want to do?"
-
     if [[ -n "$FULL_INSTALL" ]]; then
        case "$FULL_INSTALL" in
            0) choose_single_task ;;
@@ -3774,6 +3772,7 @@ choose_step() {
            *) exit 1 ;;
        esac
     else
+       report "what do you want to do?"
        select_items 'full-install single-task update' 1
        case "$__SELECTED_ITEMS" in
           'full-install' ) full_install ;;
