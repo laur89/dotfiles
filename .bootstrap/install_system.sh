@@ -155,7 +155,7 @@ validate_and_init() {
     # we need to make sure our system clock is roughly right; otherwise stuff like apt-get might start failing:
     #is_native || execute "rdate -s tick.greyware.com"
     #is_native || execute "tlsdate -V -n -H encrypted.google.com"
-    update_clock
+    update_clock || exit 1
 }
 
 
@@ -165,7 +165,7 @@ check_dependencies() {
 
     readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
-    for prog in git cmp wget curl tar unzip atool realpath dirname basename head tee mktemp file date; do
+    for prog in git cmp wc wget curl tar unzip atool realpath dirname basename head tee mktemp file date; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
             install_block "$prog" || { err "unable to install required prog [$prog] this script depends on. abort."; exit 1; }
@@ -1390,16 +1390,18 @@ setup() {
 update_clock() {
     local remote_time diff t
 
-    remote_time="$(curl --insecure -X HEAD --silent -I https://google.com/ 2>&1 \
+    remote_time="$(curl --fail --insecure -X HEAD --silent --head https://google.com/ 2>&1 \
             | grep -ioP '^date:\s*\K.*' | { read -r t; date +%s -d "$t"; })"
 
-    is_digit "$remote_time" || { err "resolved remote time was not digit: [$remote_time]"; exit 1; }
+    is_digit "$remote_time" || { err "resolved remote time was not digit: [$remote_time]"; return 1; }
     diff="$(( $(date +%s) - remote_time ))"
 
     if [[ "${diff#-}" -gt 30 ]]; then
         report "system time diff to remote source is [$diff] - updating clock..."
-        execute "sudo date -s '$(date -d @$remote_time '+%Y-%m-%d %H:%M:%S')'" || { err "setting system time failed"; exit 1; }
+        execute "sudo date -s '$(date -d @$remote_time '+%Y-%m-%d %H:%M:%S')'" || { err "setting system time failed w/ $?"; return 1; }
     fi
+
+    return 0
 }
 
 
@@ -3690,6 +3692,7 @@ install_nvidia() {
     # TODO: consider  lspci -vnn | grep VGA | grep -i nvidia
     if sudo lshw | grep -iA 5 'display' | grep -iq 'vendor.*NVIDIA'; then
         if confirm -d N "we seem to have NVIDIA card; want to install nvidia drivers?"; then  # TODO: should we default to _not_ installing in non-interactive mode?
+            # TODO: also install  nvidia-detect ?
             report "installing NVIDIA drivers..."
             install_block 'nvidia-driver  nvidia-xconfig'
             #execute "sudo nvidia-xconfig"  # should not be required as of Stretch
@@ -4747,7 +4750,7 @@ check_progs_installed() {
 
     # Check whether required programs are installed:
     for i in "$@"; do
-        if ! command -v -- "$i" >/dev/null; then
+        if ! cmd_avail "$i"; then
             progs_missing+=( "$i" )
         fi
     done
@@ -4761,6 +4764,16 @@ check_progs_installed() {
     fi
 
     return 0
+}
+
+
+# Checks whether _any_ of the passed programs are installed on the system.
+#
+# @param {string...}   list of programs whose existence to check. NOT a bash array!
+#
+# @returns {bool}  true if ANY of the passed programs is installed.
+cmd_avail() {
+    command -v -- "$@" > /dev/null 2>&1
 }
 
 
@@ -4917,7 +4930,6 @@ is_single() {
     local s
 
     readonly s="$(tr -d '[:blank:]' <<< "$*")"  # make sure not to strip newlines
-
     [[ -n "$s" && "$(wc -l <<< "$s")" -eq 1 ]]
 }
 
@@ -5002,3 +5014,4 @@ exit
 # in that case you probably need to change the device xfce4-volumed is controlling
 
 # TODOS:
+# if apt-get update fails, then we should fail script fast?
