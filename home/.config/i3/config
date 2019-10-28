@@ -110,6 +110,7 @@ bindsym $mod+Tab workspace back_and_forth
 bindsym $mod+Shift+Tab move container to workspace back_and_forth; workspace back_and_forth
 
 # Navigate workspaces next/previous:
+# note 'next_on_output' only only switches between wspaces available on active output/monitor;
 bindsym $mod+Ctrl+l workspace next_on_output
 bindsym $mod+Ctrl+h workspace prev_on_output
 
@@ -117,7 +118,7 @@ bindsym $mod+Ctrl+h workspace prev_on_output
 bindsym $mod+Ctrl+Shift+l move container to workspace next_on_output,workspace next_on_output
 bindsym $mod+Ctrl+Shift+h move container to workspace prev_on_output,workspace prev_on_output
 
-# Move container to next/prev screen:
+# Move container to next/prev screen:  # TODO: make mouse/active follow?
 bindsym $mod+Shift+period move container to output right
 bindsym $mod+Shift+comma move container to output left
 
@@ -392,7 +393,7 @@ for_window [class="^i3expod\.py$"] fullscreen enable
 
 # some other per-app configs:
 #  we occupy first index; note 'scratch_mark' is a pre-set prefix used elsewhere in this config!:
-for_window [class="^keepassxc?$" title="^KeePassXC?$"] mark scratch_mark_0, move scratchpad
+for_window [class="^keepassxc?$" title="^(\w+\.kdbx \[Locked\] - )?KeePassXC?$"] mark scratch_mark_0, move scratchpad
 
 # these two are from https://www.reddit.com/r/i3wm/comments/8gh4c0/working_fix_for_focusing_intellij_popups/
 # to solve intellij quirks:
@@ -478,6 +479,7 @@ for_window [instance="^scratchpad_urxvt_top$"] border pixel 1, floating enable, 
 # with prompt:
 #bindsym $mod1+i exec i3-quickterm
 # always pop standard shell, without the rofi menu:
+exec_always --no-startup-id i3-quickterm --daemon
 bindsym $mod1+i exec --no-startup-id i3-quickterm shell
 # ------------------------------
 
