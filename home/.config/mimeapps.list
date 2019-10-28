@@ -1,48 +1,42 @@
-#[Default Applications]
-#x-scheme-handler/http=userapp-Iceweasel-UPT6RX.desktop
-#x-scheme-handler/https=userapp-Iceweasel-UPT6RX.desktop
-#x-scheme-handler/ftp=userapp-Iceweasel-UPT6RX.desktop
-#x-scheme-handler/chrome=userapp-Iceweasel-UPT6RX.desktop
-#text/html=userapp-Iceweasel-UPT6RX.desktop
-#application/x-extension-htm=userapp-Iceweasel-UPT6RX.desktop
-#application/x-extension-html=userapp-Iceweasel-UPT6RX.desktop
-#application/x-extension-shtml=userapp-Iceweasel-UPT6RX.desktop
-#application/xhtml+xml=userapp-Iceweasel-UPT6RX.desktop
-#application/x-extension-xhtml=userapp-Iceweasel-UPT6RX.desktop
-#application/x-extension-xht=userapp-Iceweasel-UPT6RX.desktop
-#x-scheme-handler/mailto=userapp-Icedove-PFMSRX.desktop
-#message/rfc822=userapp-Icedove-PFMSRX.desktop
-#application/x-extension-eml=userapp-Icedove-PFMSRX.desktop
-#application/pdf=zathura-pdf-poppler.desktop;
-#
-#[Added Associations]
-#x-scheme-handler/http=userapp-Iceweasel-UPT6RX.desktop;
-#x-scheme-handler/https=userapp-Iceweasel-UPT6RX.desktop;
-#x-scheme-handler/ftp=userapp-Iceweasel-UPT6RX.desktop;
-#x-scheme-handler/chrome=userapp-Iceweasel-UPT6RX.desktop;
-#text/html=userapp-Iceweasel-UPT6RX.desktop;
-#application/x-extension-htm=userapp-Iceweasel-UPT6RX.desktop;
-#application/x-extension-html=userapp-Iceweasel-UPT6RX.desktop;
-#application/x-extension-shtml=userapp-Iceweasel-UPT6RX.desktop;
-#application/xhtml+xml=userapp-Iceweasel-UPT6RX.desktop;
-#application/x-extension-xhtml=userapp-Iceweasel-UPT6RX.desktop;
-#application/x-extension-xht=userapp-Iceweasel-UPT6RX.desktop;
-#x-scheme-handler/mailto=userapp-Icedove-PFMSRX.desktop;
-#message/rfc822=userapp-Icedove-PFMSRX.desktop;
-#application/x-extension-eml=userapp-Icedove-PFMSRX.desktop;
-#application/pdf=zathura-pdf-poppler.desktop;
-
-# this bunch is from Luke's repo (https://github.com/LukeSmithxyz/voidrice/blob/archi3/.config/mimeapps.list):
+# first bunch is from Luke's repo (https://github.com/LukeSmithxyz/voidrice/blob/archi3/.config/mimeapps.list):
 [Default Applications]
 x-scheme-handler/magnet=torrent.desktop;
 x-scheme-handler/mailto=mail.desktop;
 text/plain=text.desktop;
 text/x-shellscript=text.desktop;
 application/pdf=pdf.desktop;
+#application/pdf=zathura-pdf-poppler.desktop;
 image/png=img.desktop;
 image/jpeg=img.desktop;
 image/gif=img.desktop;
 application/rss+xml=rss.desktop
-
 x-scheme-handler/jetbrains=jetbrains-toolbox.desktop
+# from here, firefox added:
+x-scheme-handler/http=firefox.desktop
+x-scheme-handler/https=firefox.desktop
+x-scheme-handler/ftp=firefox.desktop
+x-scheme-handler/chrome=firefox.desktop
+text/html=firefox.desktop
+application/x-extension-htm=firefox.desktop
+application/x-extension-html=firefox.desktop
+application/x-extension-shtml=firefox.desktop
+application/xhtml+xml=firefox.desktop
+application/x-extension-xhtml=firefox.desktop
+application/x-extension-xht=firefox.desktop
+# /firefox
+
+# from here, firefox added:
+[Added Associations]
+x-scheme-handler/http=firefox.desktop;
+x-scheme-handler/https=firefox.desktop;
+x-scheme-handler/ftp=firefox.desktop;
+x-scheme-handler/chrome=firefox.desktop;
+text/html=firefox.desktop;
+application/x-extension-htm=firefox.desktop;
+application/x-extension-html=firefox.desktop;
+application/x-extension-shtml=firefox.desktop;
+application/xhtml+xml=firefox.desktop;
+application/x-extension-xhtml=firefox.desktop;
+application/x-extension-xht=firefox.desktop;
+# /firefox
 
