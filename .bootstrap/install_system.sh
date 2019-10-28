@@ -1679,6 +1679,7 @@ install_own_builds() {
 
     #install_dwm
     is_native && install_i3lock
+    is_native && install_i3lock_fancy
     [[ "$MODE" == work ]] && install_work_builds
 }
 
@@ -2527,6 +2528,36 @@ install_i3lock() {
 }
 
 
+install_i3lock_fancy() {
+    local tmpdir
+
+    readonly tmpdir="$TMP_DIR/i3lock-fancy-build-${RANDOM}/build"
+    report "building i3lock-fancy..."
+
+    # clone the repository
+    execute "git clone -j8 $I3_LOCK_FANCY_LOC '$tmpdir'" || return 1
+    execute "pushd $tmpdir" || return 1
+    #build_deb -D '--parallel' i3lock-fancy
+    #echo "got these: $(ls -lat ../*.deb)"
+    #exit
+    #execute 'sudo dpkg -i ../i3lock-fancy_*.deb'
+
+    # old, checkinstall-compliant logic:
+    ## compile & install:
+    #execute 'autoreconf --install' || return 1
+    #execute './configure' || return 1
+    #execute 'make' || return 1
+
+    # TODO: note this guy will already install it! the makefile of fancy is odd...
+    create_deb_install_and_store i3lock-fancy
+
+    execute "popd"
+    execute "sudo rm -rf -- '$tmpdir'"
+
+    return 0
+}
+
+
 # https://github.com/Airblader/i3/wiki/Building-from-source
 # see also https://github.com/maestrogerardo/i3-gaps-deb for debian pkg building logic
 install_i3() {
@@ -2760,11 +2791,12 @@ install_dwm() {
 #
 # see also pbuilder, https://wiki.debian.org/SystemBuildTools
 build_deb() {
-    local opt pkg_name configure_extra deb OPTIND
+    local opt pkg_name configure_extra dh_extra deb OPTIND
 
-    while getopts "C:" opt; do
+    while getopts "C:D:" opt; do
         case "$opt" in
             C) readonly configure_extra="$OPTARG" ;;
+            D) readonly dh_extra="$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2826,13 +2858,13 @@ VERSION = 0.0.1
 PACKAGEVERSION = $(VERSION)-0~$(DISTRIBUTION)0
 
 %%:
-	dh $@
+	dh $@ %s
 
 override_dh_auto_test:
 override_dh_auto_configure:
 	dh_auto_configure -- %s --disable-sanitizers
 override_dh_gencontrol:
-	dh_gencontrol -- -v$(PACKAGEVERSION)' "$configure_extra" > debian/rules || return 1
+	dh_gencontrol -- -v$(PACKAGEVERSION)' "$dh_extra" "$configure_extra" > debian/rules || return 1
     fi
 
     # note built .deb will end up in a parent dir:
@@ -3859,6 +3891,7 @@ __choose_prog_to_build() {
         install_i3
         install_i3_deps
         install_i3lock
+        install_i3lock_fancy
         install_polybar
         install_oracle_jdk
         install_skype
