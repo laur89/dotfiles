@@ -968,8 +968,9 @@ install_deps() {
     # depends on i3lock-color-git (see i3lock-fancy's github page)
     # TODO: fyi apt has i3lock-fancy; if it's new enough (newer some some 2016 build),
     # this could be deprecated
+    # TODO: can't just clone and link, have to install!
     clone_or_pull_repo "meskarune" "i3lock-fancy" "$BASE_DEPS_LOC"
-    create_link --sudo "${BASE_DEPS_LOC}/i3lock-fancy/lock" /usr/local/bin/
+    create_link --sudo "${BASE_DEPS_LOC}/i3lock-fancy/i3lock-fancy" /usr/local/bin/
 
     # flashfocus - flash window when focus changes  https://github.com/fennerm/flashfocus
     install_block 'libxcb-render0-dev'
@@ -4219,7 +4220,11 @@ post_install_progs_setup() {
     setup_nvim
     is_native && execute "sudo adduser $USER wireshark"      # add user to wireshark group, so it could be run as non-root;
                                                 # (implies wireshark is installed with allowing non-root users
-                                                # to capture packets - it asks this during installation);
+                                                # to capture packets - it asks this during installation); see https://code.wireshark.org/review/gitweb?p=wireshark.git;a=blob_plain;f=debian/README.Debian
+                                                # if wireshark is installed manually/interactively, then installer asks whether
+                                                # non-root users should be allowed to dump packets; this can later be reconfigured
+                                                # by running  $ sudo dpkg-reconfigure wireshark-common
+
     #execute "newgrp wireshark"                  # log us into the new group; !! will stop script execution
     is_native && execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
     is_virtualbox && execute "sudo adduser $USER vboxsf"      # add user to vboxsf group (to be able to access mounted shared folders);
