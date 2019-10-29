@@ -3720,6 +3720,10 @@ install_from_repo() {
 # in order to reinstall the dkms part, purge both nvidia-driver &
 # nvidia-xconfig, and then reinstall.
 #
+# Note if you see some flickering, it might be caused by compton and its settings.
+# eg based on info from https://github.com/chjj/compton/issues/152,
+# i set glx-swap-method to 1;
+#
 # https://wiki.debian.org/NvidiaGraphicsDrivers
 install_nvidia() {
     # TODO: consider  lspci -vnn | grep VGA | grep -i nvidia
