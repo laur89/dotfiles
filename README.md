@@ -41,10 +41,8 @@ steps separately apart from the full installation mode.
 1. install sudo, if not already installed:
     * su
     * apt-get install sudo
-1. add your user to /etc/sudoers file, by:
-    * `echo 'YOUR_USER ALL=(ALL) ALL' >> /etc/sudoers`
-    *   or:
-    * `adduser  YOUR_USERNAME  sudo`    (and logout + login afterwards)
+1. add your user to sudo group:
+    * `adduser  YOUR_USERNAME  sudo`    (and logout + login afterwards!)
 1. sudo apt-get update
 1. execute script:
     * `./install_system.sh -F personal|work`
