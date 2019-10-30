@@ -12,7 +12,7 @@
 
 SESSION_STARTFILE="$HOME/.session-startuplist"
 declare -a AUTOSTART=()
-_SELF=".common_startup"
+_SELF='.common_startup'
 ################################################
 
 #### ENTRY ####
@@ -30,7 +30,7 @@ fi
 ################################################
 # enables offline SMART checks on system drives. note that smart manual says these settings
 # should outlive reboots, but it's still good idea to make sure.
-function enable_smart() {
+enable_smart() {
     local _disk_list _disk _status msg disk_check processed_disks_count
 
     processed_disks_count=0
@@ -38,7 +38,7 @@ function enable_smart() {
 
     _disk_list="$(sudo smartctl --scan)"
     _status="$?"
-    _disk_list="$(echo "$_disk_list" | cut -d' ' -f1 | uniq | sort)"
+    _disk_list="$(echo "$_disk_list" | awk '{print $1}' | uniq | sort)"
 
     if [[ "$_status" -ne 0 ]]; then
         msg="smartctl --scan returned exit code [$_status]"
@@ -56,7 +56,7 @@ function enable_smart() {
 
     for _disk in $_disk_list; do
         disk_check="$(echo "$_disk" | sed 's/.*\///')"  # strip everything before last slash (included)
-        [[ -z "$disk_check" ]] && { err_display "something went wrong with cleaning cmartctl returned disk; continuing." "$_SELF"; continue; }
+        [[ -z "$disk_check" || "$disk_check" == */* ]] && { err_display "something went wrong with cleaning cmartctl returned disk; continuing." "$_SELF"; continue; }
 
         # sanity - check whether smartctl found disk is listed in /proc/partitions; if not, send error:
         if grep -Eq "\b${disk_check}\b" /proc/partitions; then
@@ -85,11 +85,6 @@ function enable_smart() {
     display_message "${_SELF}: enabled SMART for [$processed_disks_count] drives." $(( 10 * 1000 ))
 }
 
-set_perms() {
-    [[ -f "$HOME/.netrc" ]] && chmod 600 -- "$(realpath -- "$HOME/.netrc")"
-    [[ -d "$HOME/.ssh" ]] && chmod -R u=rwX,g=,o= -- "$(realpath -- "$HOME/.ssh")"  # sanitise ssh
-}
-
 set_keyboard_layout() {
     local layouts
     readonly layouts='ee,us'
@@ -110,10 +105,14 @@ open_mpd_fifo() {
 ################################################
 
 (
-    #xrandr --output DP-2 --auto --right-of DP-1 &
-    check_progs_installed detect_displays.sh && detect_displays.sh
+    #check_progs_installed detect_displays.sh && detect_displays.sh
     if is_work && ! is_laptop; then
-        check_progs_installed xrandr && xrandr --output DP-2 --rotate left
+        #check_progs_installed xrandr && xrandr --output DP-3 --rotate left
+        # this one works with nvidia drivers installed:
+        xrandr --output DP-7 --mode 1920x1200 --pos 3840x0 --rotate left --output DP-6 --off \
+            --output DP-5 --primary --mode 1920x1200 --pos 0x312 --rotate normal \
+            --output DP-4 --mode 1920x1200 --pos 1920x312 --rotate normal \
+            --output DP-3 --off --output DP-2 --off --output DP-1 --off --output DP-0 --off
     fi
 ) &
 
@@ -255,7 +254,7 @@ for i in \
     if [[ ! -w "$i" ]]; then
         err_display  "[$i] is not created or no write permissions granted. Do it!" "$_SELF"
     fi
-done &
+done
 
 # Create necessary directories if don't exist:
 for i in \
@@ -265,7 +264,7 @@ for i in \
     if [[ ! -d "$i" ]] && ! mkdir "$i"; then
         err_display  "Tried to create required directory [$i] but mkdir failed." "$_SELF"
     fi
-done &
+done
 
 # NOTE: after synaptic got phased out by libinput, this does not seem to be required
 # anomore. YMMV.
@@ -288,7 +287,6 @@ done &
 allowed_size=20   # Max size in MB
 check_max_allowed_size "$CUSTOM_LOGDIR" "$allowed_size"
 
-set_perms &
 set_keyboard_layout &
 if is_native; then
     enable_smart &
