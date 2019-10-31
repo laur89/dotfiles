@@ -1,11 +1,12 @@
 [calendars]
 [[work]]
-color = dark cyan
+#color = dark cyan
+color = light blue
 path = /data/.calendars/work
 type = calendar
 
 [[test]]
-color = dark cyan
+color = dark green
 path = /tmp/khal_test_calendar
 type = calendar
 
@@ -15,6 +16,7 @@ dateformat = %d/%m/%Y
 longdateformat = %d/%m/%Y
 datetimeformat = %d/%m/%Y %H:%M
 longdatetimeformat = %d/%m/%Y %H:%M
+firstweekday = 0
 
 [default]
 highlight_event_days = True
@@ -23,6 +25,9 @@ timedelta = 4d  # default timedelta to use for reporting, for example in _list_
 
 [highlight_days]
 multiple = light cyan  # as in if events from different calendars land on same date
+#method = bg
 
 [view]
 event_view_always_visible = True
+frame = color
+#theme = light
