@@ -8,6 +8,7 @@
 
 set $mod Mod4
 set $mod1 Mod1
+set $border 2
 
 #focus_follows_mouse no
 floating_modifier $mod1
@@ -347,7 +348,7 @@ font pango:Terminess Powerline 12px
 #for_window [class=".*"] title_format "<span font='tewi 8'> </span>"
 
 # default border size for new windows: (note 'pixel' instead of normal loses titlebar)
-default_border normal 2
+default_border normal $border
 
 
 #*************  My apps settings  *********************
@@ -389,7 +390,10 @@ for_window [class="^copyq$"] floating enable
 for_window [class="^keepassxc?$"] floating enable
 for_window [class="^vokoscreen$"] floating enable
 for_window [class="^Galculator$"] floating enable
+for_window [class="^XCalc$"] floating enable
+for_window [class="^Nvidia-settings$"] floating enable
 for_window [class="^i3expod\.py$"] fullscreen enable
+for_window [title="^_wm_float_no_titlebar$"] floating enable, border pixel $border, focus
 
 # some other per-app configs:
 #  we occupy first index; note 'scratch_mark' is a pre-set prefix used elsewhere in this config!:
@@ -500,5 +504,5 @@ exec_always --no-startup-id i3-cycle-exclude-tabs.py
 exec_always --no-startup-id i3-cycle-tabs.py
 
 # start i3expo daemon:
-exec --no-startup-id i3expod.py
+exec_always --no-startup-id i3expod.py
 

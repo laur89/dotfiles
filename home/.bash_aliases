@@ -70,6 +70,7 @@ alias fd="fd --hidden --exclude '.git'"
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='grep -E --color=auto'
+alias cal='ncal -bM'
 alias c='clear'
 alias cp='cp -rp'  # TODO: add -i for overwrite prompt? what about scripts?
 alias dfh='df -h'
