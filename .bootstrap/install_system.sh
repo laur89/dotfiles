@@ -1273,6 +1273,7 @@ setup_config_files() {
     setup_private_asset_perms
     setup_global_prompt
     is_native && swap_caps_lock_and_esc
+    is_native && override_locale_time
 }
 
 
@@ -1453,6 +1454,23 @@ setup_additional_apt_keys_and_sources() {
     execute 'echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null'
 
     execute 'sudo apt-get --yes update'
+}
+
+
+# see https://wiki.debian.org/Locale#First_day_of_week
+override_locale_time() {
+    local conf_file
+
+    readonly conf_file="/etc/default/locale"
+
+    [[ -f "$conf_file" ]] || { err "cannot override locale time: [$conf_file] does not exist; abort;"; return 1; }
+
+    # just in case delete all same definitions, regardless of its value:
+    execute "sudo sed -i --follow-symlinks '/^LC_TIME\s*=/d' '$conf_file'" || return 1
+    # consider also  LC_TIME="en_GB.UTF-8"
+    execute "echo 'LC_TIME=\"et_EE.UTF-8\"' | sudo tee --append $conf_file > /dev/null"
+
+    return 0
 }
 
 
@@ -4002,7 +4020,7 @@ increase_inotify_watches_limit() {
     grep -q "^$property = $value\$" "$sysctl_conf" && return  # value already set, nothing to do
 
     # just in case delete all same prop definitions, regardless of its value:
-    [[ -f "$sysctl_conf" ]] && execute "sudo sed -i --follow-symlinks '/^$property/d' \"$sysctl_conf\""
+    [[ -f "$sysctl_conf" ]] && execute "sudo sed -i --follow-symlinks '/^$property/d' '$sysctl_conf'"
 
     # increase inotify watches limit (for intellij idea):
     execute "echo $property = $value | sudo tee --append $sysctl_conf > /dev/null"
