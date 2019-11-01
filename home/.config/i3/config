@@ -19,6 +19,9 @@ bindsym $mod+Return exec urxvtc
 # Kill focused window
 bindsym $mod+c kill
 
+# leave fullscreen when pop-up window starts:
+#popup_during_fullscreen leave_fullscreen
+
 # Start dmenu:
 #bindsym $mod+d exec  dmenu_run -b -nf "#839496" -sb "#b58900" -sf "#002b36" -nb "#002b36" -fn "tewi-8"
 
@@ -58,10 +61,10 @@ bindsym $mod+Shift+Up    move up
 bindsym $mod+Shift+Right move right
 
 
-# Split in horizontal orientation
+# Split in horizontal orientation (note it's really vertical in vi terms)
 bindsym $mod+b split v
 
-# Split in vertical orientation
+# Split in vertical orientation (note it's really horizontal in vi terms)
 bindsym $mod+v split h
 
 # Enter fullscreen mode for the focused container; fullscreen toggle global for global
