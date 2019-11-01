@@ -1727,7 +1727,7 @@ bc_install() {
     local progs
 
     declare -ra progs=("$@")
-    bc_exe "apt-get --yes install ${progs[*]}" || return 1
+    bc_exe "DEBIAN_FRONTEND=noninteractive apt-get --yes install ${progs[*]}" || return 1
 }
 
 
@@ -1736,7 +1736,7 @@ prepare_build_container() {  # TODO container build env not used atm
         #execute "docker create -t --name '$BUILD_DOCK' debian:testing-slim" || return 1  # alternative to docker run
         execute "docker run -dit --name '$BUILD_DOCK' -v '$BASE_BUILDS_DIR:/out' debian:testing-slim" || return 1
         bc_exe "apt-get --yes update"
-        bc_install git checkinstall build-essential cmake g++ || return 1
+        bc_install git checkinstall build-essential devscripts equivs cmake || return 1
     fi
 
     if [[ -z "$(docker ps -qa -f status=running -f name="$BUILD_DOCK" --format '{{.Names}}')" ]]; then
@@ -2325,6 +2325,41 @@ install_synergy() {
     execute "popd;popd"
     execute "sudo rm -rf -- '$tmpdir'"
     return 0
+}
+
+build_and_install_synergy_TODO_container_edition() {
+
+    prepare_build_container || { err "preparation of build container [$BUILD_DOCK] failed" "$FUNCNAME"; return 1; }
+    bc_install \
+        build-essential \
+        qtcreator \
+        qtbase5-dev \
+        cmake \
+        xorg-dev \
+        libssl-dev \
+        libx11-dev \
+        libsodium-dev \
+        libgl1-mesa-glx \
+        libegl1-mesa \
+        libcurl4-openssl-dev \
+        libavahi-compat-libdnssd-dev \
+        qtdeclarative5-dev \
+        libqt5svg5-dev \
+        libsystemd-dev || return 1
+
+    bc_exe 'git clone -j8 https://github.com/symless/synergy-core.git /tmp/syn || exit 1
+            pushd /tmp/syn || exit 1
+            git checkout v2-dev || exit 1
+            export BOOST_ROOT="/home/$USER/boost"
+
+            mkdir build || exit 1
+            pushd build || exit 1
+            cmake .. || exit 1
+            make -j8 || exit 1
+            #checkinstall -D --default --fstrans=yes --pkgname=keepassxc --pkgversion=0.0.1 --install=no --pakdir=/out || exit 1
+
+            #popd
+            #rm -rf /tmp/syn || exit 1'
 }
 
 
@@ -3774,9 +3809,11 @@ install_from_repo() {
 # in order to reinstall the dkms part, purge both nvidia-driver &
 # nvidia-xconfig, and then reinstall.
 #
-# Note if you see some flickering, it might be caused by compton and its settings.
-# eg based on info from https://github.com/chjj/compton/issues/152,
-# i set glx-swap-method to 1;
+# - Note if you see some flickering, it might be caused by compton and its settings.
+#   eg based on info from https://github.com/chjj/compton/issues/152,
+#    set glx-swap-method to 1;
+# - also, you might want to select 'Force Full Composition Pipeline' from
+#   nvidia-settings -> x server Disp Conf -> Advanced... -> tick the box
 #
 # https://wiki.debian.org/NvidiaGraphicsDrivers
 install_nvidia() {
@@ -4339,6 +4376,10 @@ post_install_progs_setup() {
                                                 # if wireshark is installed manually/interactively, then installer asks whether
                                                 # non-root users should be allowed to dump packets; this can later be reconfigured
                                                 # by running  $ sudo dpkg-reconfigure wireshark-common
+                                                # TODO: in order to avoid this extra step, see how to preseed debconf database
+                                                # basically: install manually, then extract debconf stuff: $debconf-get-selections | grep wireshark
+                                                # then before auto-install, set it via :$ echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections
+                                                # see also https://unix.stackexchange.com/a/96227
 
     #execute "newgrp wireshark"                  # log us into the new group; !! will stop script execution
     is_native && execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
