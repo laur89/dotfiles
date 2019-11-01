@@ -1226,6 +1226,7 @@ setup_private_asset_perms() {
 
     for i in \
             ~/.netrc \
+            "$GNUPGHOME" \
                 ; do
         [[ -e "$i" ]] || { err "expected to find [$i], but it doesn't exist; is it normal?"; continue; }
         [[ -d "$i" && "$i" != */ ]] && i+='/'
@@ -2270,30 +2271,39 @@ install_synergy() {
 
     readonly tmpdir="$TMP_DIR/synergy-build-${RANDOM}"
 
-    report "building synergy"
-
     report "installing synergy build dependencies..."
     install_block '
         build-essential
+        qtcreator
+        qtbase5-dev
         cmake
-        libavahi-compat-libdnssd-dev
-        libcurl4-openssl-dev
-        libssl-dev
-        lintian
-        python
-        qt4-dev-tools
         xorg-dev
-        fakeroot
+        libssl-dev
+        libx11-dev
+        libsodium-dev
+        libgl1-mesa-glx
+        libegl1-mesa
+        libcurl4-openssl-dev
+        libavahi-compat-libdnssd-dev
+        qtdeclarative5-dev
+        libqt5svg5-dev
+        libsystemd-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
     execute "git clone -j8 $SYNERGY_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
+    execute "git checkout v2-dev" || return 1  # see https://github.com/symless/synergy-core/wiki/Getting-Started
+    export BOOST_ROOT="/home/$USER/boost"  # TODO: unsure if this is needed
 
-    execute "./hm.sh conf -g1"
-    execute "./hm.sh build"
+    report "building synergy"
+    execute "mkdir build" || return 1
+    execute "pushd build" || return 1
+    execute "cmake .." || { err "[cmake ..] for synergy failed w/ $?"; return 1; }
+    execute "make" || { err "[make] for synergy failed w/ $?"; return 1; }
+    build_deb  synergy  # TODO: unsure if has to be ran from build/ or root dir;
 
-    execute "popd"
-    execute "sudo rm -rf -- $tmpdir"
+    execute "popd;popd"
+    execute "sudo rm -rf -- '$tmpdir'"
     return 0
 }
 
@@ -4039,7 +4049,7 @@ increase_inotify_watches_limit() {
 setup_docker() {
 
     # see https://github.com/docker/for-linux/issues/58 (without it container exits with 139):
-    add_kernel_option() {
+    _add_kernel_option() {
         local conf param line
         conf='/etc/default/grub'
         param='vsyscall=emulate'
@@ -4060,9 +4070,9 @@ setup_docker() {
     execute "sudo adduser $USER docker"      # add user to docker group
     #execute "sudo gpasswd -a ${USER} docker"  # add user to docker group
     #execute "newgrp docker"  # log us into the new group; !! will stop script execution
-    add_kernel_option
+    _add_kernel_option
 
-    execute "sudo service docker restart"
+    execute "sudo service docker restart"  # TODO: we should only restart service if something was _really_ changed
 }
 
 
@@ -4243,6 +4253,25 @@ enable_fw() {
 }
 
 
+# change DefaultAuthType to None, so printer configuration wouldn't require basic auth
+setup_cups() {
+    local conf_file
+
+    readonly conf_file='/etc/cups/cupsd.conf'
+
+    [[ -f "$conf_file" ]] || { err "cannot configure cupsd: [$conf_file] does not exist; abort;"; return 1; }
+
+    if ! grep -q 'DefaultAuthType' "$conf_file"; then
+        err "[$conf_file] does not contain [DefaultAuthType], see what's what"
+        return 1
+    elif ! grep -Eq '^DefaultAuthType\s+None' "$conf_file"; then  # hasn't been changed yet
+        execute "sudo sed -i --follow-symlinks 's/^DefaultAuthType/#DefaultAuthType/g' $conf_file"  # comment out existing value
+        execute "echo 'DefaultAuthType None' | sudo tee --append '$conf_file' > /dev/null"
+        execute 'sudo service cups restart'
+    fi
+}
+
+
 # https://minikube.sigs.k8s.io/docs/reference/drivers/none/
 setup_minikube() {  # TODO: unfinished
     true
@@ -4288,6 +4317,7 @@ post_install_progs_setup() {
     configure_pulseaudio  # TODO see if works in WSL
     #setup_seafile_cli  # TODO https://github.com/haiwen/seafile/issues/1855 & https://github.com/haiwen/seafile/issues/1854
     is_native && enable_fw
+    is_native && setup_cups
     #execute "sudo adduser $USER fuse"  # not needed anymore?
 
     command -v kubectl >/dev/null && execute 'kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl'  # add kubectl bash completion
