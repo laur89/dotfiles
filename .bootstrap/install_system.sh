@@ -841,6 +841,10 @@ install_deps() {
     clone_or_pull_repo "ram-on" "imgurbash2" "$BASE_DEPS_LOC"  # https://github.com/ram-on/imgurbash2
     create_link "${BASE_DEPS_LOC}/imgurbash2/imgurbash2" "$HOME/bin/imgurbash2"
 
+    # imgur uploader 2:
+    clone_or_pull_repo "tangphillip" "Imgur-Uploader" "$BASE_DEPS_LOC"  # https://github.com/tangphillip/Imgur-Uploader
+    create_link "${BASE_DEPS_LOC}/Imgur-Uploader/imgur" "$HOME/bin/imgur-uploader"
+
     # fuzzy file finder/command completer etc:
     clone_or_pull_repo "junegunn" "fzf" "$BASE_DEPS_LOC"  # https://github.com/junegunn/fzf
     create_link "${BASE_DEPS_LOC}/fzf" "$HOME/.fzf"
@@ -1342,7 +1346,7 @@ source_shell_conf() {
         done
 
         if [[ -d "$HOME/.bash_env_vars_overrides" ]]; then
-            for i in $HOME/.bash_env_vars_overrides/*; do
+            for i in "$HOME/.bash_env_vars_overrides/"*; do
                 [[ -f "$i" ]] && source "$i"
             done
         fi
@@ -1350,18 +1354,18 @@ source_shell_conf() {
         unset i
     fi
 
-	if ! type __BASH_FUNS_LOADED_MARKER > /dev/null 2>&1; then
+    if ! type __BASH_FUNS_LOADED_MARKER > /dev/null 2>&1; then
         # skip common funs import - we don't need 'em, and might cause conflicts:
-		#[[ -r "$HOME/.bash_functions" ]] && source "$HOME/.bash_functions"
+        #[[ -r "$HOME/.bash_functions" ]] && source "$HOME/.bash_functions"
 
-		if [[ -d "$HOME/.bash_funs_overrides" ]]; then
-			for i in $HOME/.bash_funs_overrides/*; do
-				[[ -f "$i" ]] && source "$i"
-			done
+        if [[ -d "$HOME/.bash_funs_overrides" ]]; then
+            for i in "$HOME/.bash_funs_overrides/"*; do
+                [[ -f "$i" ]] && source "$i"
+            done
 
-			unset i
-		fi
-	fi
+            unset i
+       fi
+    fi
 }
 
 
@@ -2002,7 +2006,7 @@ fetch_extract_tarball_from_git() {
 # Fetch a file from given github /releases page, and install the binary
 #
 # -d /target/dir    - dir to install pulled binary in, optional
-# -n binary_name    - what to name pulled binary to, optional
+# -n binary_name    - what to name pulled binary to, optional; TODO: should it not be mandatory - otherwise filename changes w/ each new version?
 # $1 - git user
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
@@ -2052,7 +2056,7 @@ install_slack_term() {  # https://github.com/erroneousboat/slack-term
 
 
 install_rebar() {  # https://github.com/erlang/rebar3
-    install_bin_from_git erlang rebar3 rebar3
+    install_bin_from_git -n rebar3 erlang rebar3 rebar3
 }
 
 
@@ -2068,20 +2072,40 @@ install_aws_okta() {  # https://github.com/segmentio/aws-okta
 
 
 install_bloomrpc() {  # https://github.com/uw-labs/bloomrpc/releases
-    install_deb_from_git uw-labs bloomrpc _amd64.deb
+    #install_deb_from_git _amd64.deb  # deb pkg has unmet deps that aren't automatically installed
+    install_bin_from_git -n bloomrpc uw-labs bloomrpc x86_64.AppImage
 }
 
 
 install_postman() {  # https://learning.getpostman.com/docs/postman/launching-postman/installation-and-updates/
-    local tmpdir
+    local tmpdir dir dsk target
 
+    target="$BASE_PROGS_DIR/Postman"
     tmpdir="$(mktemp -d 'postman-tempdir-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     #curl --fail -OL 'https://dl.pstmn.io/download/channel/canary/linux_64' || { popd; return 1; }
     wget --directory-prefix=$tmpdir --content-disposition 'https://dl.pstmn.io/download/channel/canary/linux_64' || return 1
     execute "pushd -- '$tmpdir'" || return 1
     execute "aunpack --quiet *" || { err "extracting postman tarball failed w/ $?"; popd; rm -rf -- "$tmpdir"; return 1; }
     execute "popd"
+
+    dir="$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d)"
+    [[ -d "$dir" ]] || { err "couldn't find single extracted dir in [$tmpdir]"; return 1; }
+    [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }
+    execute "mv -- '$dir' '$target'" || return 1
     execute "rm -rf -- '$tmpdir'"
+
+    # install .desktop:
+    dsk="$HOME/.local/share/applications"
+    [[ -d "$dsk" ]] || { err "[$dsk] not a dir"; return 1; }
+    echo "[Desktop Entry]
+Encoding=UTF-8
+Name=PostmanCanary
+Exec=$target/PostmanCanary %U
+Icon=$target/app/resources/app/assets/icon.png
+Terminal=false
+Type=Application
+Categories=Development;
+" > "$dsk/PostmanCanary.desktop" || { err "unable to create Postman .desktop in [$dsk]"; return 1; }
 }
 
 
@@ -4323,9 +4347,10 @@ enable_fw() {
 
 # change DefaultAuthType to None, so printer configuration wouldn't require basic auth
 setup_cups() {
-    local conf_file
+    local conf_file conf2 group
 
     readonly conf_file='/etc/cups/cupsd.conf'
+    readonly conf2='/etc/cups/cups-files.conf'
 
     [[ -f "$conf_file" ]] || { err "cannot configure cupsd: [$conf_file] does not exist; abort;"; return 1; }
 
@@ -4337,6 +4362,15 @@ setup_cups() {
         execute "echo 'DefaultAuthType None' | sudo tee --append '$conf_file' > /dev/null"
         execute 'sudo service cups restart'
     fi
+
+    # add our user to a group so we're allowed to modify printers & whatnot:
+    #   see https://unix.stackexchange.com/questions/235477/cups-add-printer-page-returns-forbidden-on-web-interface
+    #   and https://ro-che.info/articles/2016-07-08-debugging-cups-forbidden-error
+    [[ -f "$conf2" ]] || { err "cannot configure our user for cups: [$conf2] does not exist; abort;"; return 1; }
+    group="$(grep ^SystemGroup "$conf2" | awk '{print $NF}')" || { err "grepping group from [$conf2] failed w/ $?"; return 1; }
+    is_single "$group" || { err "found SystemGroup in [$conf2] was unexpected: [$group]"; return 1; }
+    [[ "$group" == root || "$group" == sys ]] && { err "found SystemGroup is [$group] - verify we want to be added to that group"; return 1; }
+    execute "sudo adduser $USER $group"
 }
 
 
