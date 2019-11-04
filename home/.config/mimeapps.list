@@ -11,6 +11,7 @@ image/jpeg=img.desktop;
 image/gif=img.desktop;
 application/rss+xml=rss.desktop
 x-scheme-handler/jetbrains=jetbrains-toolbox.desktop
+x-scheme-handler/postman=PostmanCanary.desktop
 # from here, firefox added:
 x-scheme-handler/http=firefox.desktop
 x-scheme-handler/https=firefox.desktop
