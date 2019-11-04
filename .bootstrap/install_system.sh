@@ -1699,12 +1699,15 @@ install_own_builds() {
     #install_dwm
     is_native && install_i3lock
     is_native && install_i3lock_fancy
+    is_native && install_betterlockscreen
     [[ "$MODE" == work ]] && install_work_builds
 }
 
 
 install_work_builds() {
     install_aws_okta
+    install_bloomrpc
+    install_postman
     install_terraform
     install_minikube
 }
@@ -1749,7 +1752,7 @@ prepare_build_container() {  # TODO container build env not used atm
 install_oracle_jdk() {
     local tarball tmpdir dir
 
-    readonly tmpdir="$(mktemp -d "jdk-tempdir-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    tmpdir="$(mktemp -d "jdk-tempdir-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     report "fetcing [$ORACLE_JDK_LOC]"
     execute "pushd -- $tmpdir" || return 1
@@ -1819,7 +1822,7 @@ switch_jdk_versions() {
 
     #is_server && { report "we're server, skipping davmail installation."; return; }
 
-    #readonly tmpdir="$(mktemp -d "davmail-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    #tmpdir="$(mktemp -d "davmail-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     #readonly davmail_url='https://sourceforge.net/projects/davmail/files/latest/download?source=files'
     #readonly inst_loc="$BASE_PROGS_DIR/davmail"
 
@@ -1929,7 +1932,7 @@ fetch_release_from_any() {
     fi
 
     report "fetching [$dl_url]..."
-    execute "wget '$dl_url' -q --directory-prefix=$tmpdir" || { err "wgetting [$dl_url] failed with $?."; return 1; }
+    execute "wget --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?."; return 1; }
     file="$(find "$tmpdir" -type f)"
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
@@ -2039,7 +2042,6 @@ install_ferdi() {  # https://github.com/kytwb/ferdi
 
 install_lazyman() {  # https://github.com/StevensNJD4/LazyMan
     true
-    #install_bin_from_git -n ferdi kytwb ferdi .AppImage
 }
 
 
@@ -2062,6 +2064,24 @@ install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
 
 install_aws_okta() {  # https://github.com/segmentio/aws-okta
     install_deb_from_git segmentio aws-okta _amd64.deb
+}
+
+
+install_bloomrpc() {  # https://github.com/uw-labs/bloomrpc/releases
+    install_deb_from_git uw-labs bloomrpc _amd64.deb
+}
+
+
+install_postman() {  # https://learning.getpostman.com/docs/postman/launching-postman/installation-and-updates/
+    local tmpdir
+
+    tmpdir="$(mktemp -d 'postman-tempdir-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    #curl --fail -OL 'https://dl.pstmn.io/download/channel/canary/linux_64' || { popd; return 1; }
+    wget --directory-prefix=$tmpdir --content-disposition 'https://dl.pstmn.io/download/channel/canary/linux_64' || return 1
+    execute "pushd -- '$tmpdir'" || return 1
+    execute "aunpack --quiet *" || { err "extracting postman tarball failed w/ $?"; popd; rm -rf -- "$tmpdir"; return 1; }
+    execute "popd"
+    execute "rm -rf -- '$tmpdir'"
 }
 
 
@@ -2104,7 +2124,7 @@ install_rambox() {  # https://github.com/saenzramiro/rambox/wiki/Install-on-Linu
 
     is_server && { report "we're server, skipping rambox installation."; return; }
 
-    readonly tmpdir="$(mktemp -d "rambox-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    tmpdir="$(mktemp -d "rambox-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     readonly rambox_url='http://rambox.pro/#download'
     readonly inst_loc="$BASE_PROGS_DIR/rambox"
 
@@ -2149,7 +2169,7 @@ build_and_install_rambox() {  # https://github.com/saenzramiro/rambox
     is_server && { report "we're server, skipping rambox installation."; return; }
 
     readonly expected_sencha_loc="$HOME/bin/Sencha"
-    readonly tmpdir="$(mktemp -d "sencha-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    tmpdir="$(mktemp -d "sencha-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     is_x || { err "won't install rambox; need to be in graphical env for that."; return 1; }
 
@@ -2428,7 +2448,7 @@ install_keepassxc() {
 
     is_server && { report "we're server, skipping keepassxc installation."; return; }
 
-    readonly tmpdir="$(mktemp -d "keepassxc-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    tmpdir="$(mktemp -d "keepassxc-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     readonly kxc_url='https://keepassxc.org/download'
     readonly inst_loc="$BASE_PROGS_DIR/keepassxc"
 
@@ -2586,6 +2606,12 @@ install_i3lock_fancy() {
 }
 
 
+install_betterlockscreen() {  # https://github.com/pavanjadhaw/betterlockscreen
+    wget -O ~/bin/betterlockscreen "https://raw.githubusercontent.com/pavanjadhaw/betterlockscreen/master/betterlockscreen" || return 1
+    execute "chmod u+x ~/bin/betterlockscreen"
+}
+
+
 # https://github.com/Airblader/i3/wiki/Building-from-source
 # see also https://github.com/maestrogerardo/i3-gaps-deb for debian pkg building logic
 install_i3() {
@@ -2715,13 +2741,11 @@ install_i3_deps() {
     local f
     f="$TMP_DIR/i3-dep-${RANDOM}"
 
-    py_install i3ipc  # https://github.com/acrisci/i3ipc-python
+    py_install i3ipc  # https://github.com/altdesktop/i3ipc-python
 
-    # TODO: depending on multimon performance, decide whether urxvtq is enough,
-    # or i3-quickterm is required;!
-    ##########################################
     # install i3-quickterm   # https://github.com/lbonn/i3-quickterm
-    curl --output "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3-quickterm' \
+    #curl --output "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3-quickterm' \  # TODO: enable this one if/when PR is accepted
+    curl --output "$f" 'https://raw.githubusercontent.com/laur89/i3-quickterm/master/i3-quickterm' \
             && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-quickterm"
 
 
@@ -2922,7 +2946,7 @@ setup_nvim() {
 #install_neovim() {  # the AppImage version
     #local tmpdir nvim_confdir inst_loc nvim_url
 
-    #readonly tmpdir="$(mktemp -d "nvim-download-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    #tmpdir="$(mktemp -d "nvim-download-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     #readonly nvim_confdir="$HOME/.config/nvim"
     #readonly inst_loc="$BASE_PROGS_DIR/neovim"
     #nvim_url='https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage'
@@ -3229,7 +3253,7 @@ install_YCM() {  # the quick-and-not-dirty install.py way
     #function __fetch_libclang() {
         #local tmpdir tarball dir
 
-        #readonly tmpdir="$(mktemp -d "ycm-tempdir-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+        #tmpdir="$(mktemp -d "ycm-tempdir-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
         #readonly tarball="$(basename -- "$CLANG_LLVM_LOC")"
 
         #execute "pushd -- $tmpdir" || return 1
@@ -3529,6 +3553,7 @@ install_from_repo() {
         nethogs
         ntp
         tkremind
+        wyrd
         remind
         tree
         flashplugin-nonfree
@@ -3543,6 +3568,7 @@ install_from_repo() {
         tig
         git-flow
         git-cola
+        git-extras
         zenity
         gxmessage
         gnome-keyring
@@ -3924,12 +3950,15 @@ __choose_prog_to_build() {
         install_i3_deps
         install_i3lock
         install_i3lock_fancy
+        install_betterlockscreen
         install_polybar
         install_oracle_jdk
         install_skype
         install_altiris
         install_symantec_endpoint_security
         install_aws_okta
+        install_bloomrpc
+        install_postman
         install_terraform
         install_minikube
         install_gruvbox_gtk_theme
@@ -4005,11 +4034,13 @@ remind_manually_installed_progs() {
         'intelliJ toolbox'
         'sdkman - jdk, maven, gradle...'
         'any custom certs'
+        'ublock origin additional configs (est, social media, ...)'
+        'import keepass-xc browser plugin config'
     )
 
     for i in "${progs[@]}"; do
         if ! command -v "$i" >/dev/null; then
-            report "    don't forget to install [$i]"
+            report "    don't forget [$i]"
         fi
     done
 
