@@ -1395,12 +1395,13 @@ setup() {
 
 
 update_clock() {
-    local remote_time diff t
+    local src remote_time t diff
 
-    remote_time="$(curl --fail --insecure -X HEAD --silent --head https://google.com/ 2>&1 \
+    src='https://google.com/'
+    remote_time="$(curl --fail --insecure -X HEAD --silent --head "$src" 2>&1 \
             | grep -ioP '^date:\s*\K.*' | { read -r t; date +%s -d "$t"; })"
 
-    is_digit "$remote_time" || { err "resolved remote time was not digit: [$remote_time]"; return 1; }
+    is_digit "$remote_time" || { err "resolved remote [$src] time was not digit: [$remote_time]"; return 1; }
     diff="$(( $(date +%s) - remote_time ))"
 
     if [[ "${diff#-}" -gt 30 ]]; then
@@ -1699,6 +1700,7 @@ install_own_builds() {
     install_polybar
     #install_oracle_jdk  # start using sdkman (or something similar)
     install_gruvbox_gtk_theme
+    #install_weeslack
 
     #install_dwm
     is_native && install_i3lock
@@ -2072,6 +2074,7 @@ install_aws_okta() {  # https://github.com/segmentio/aws-okta
 
 
 install_bloomrpc() {  # https://github.com/uw-labs/bloomrpc/releases
+    # TODO: we may want to try fix deb installation similar to skype via   execute "sudo apt-get -f --yes install"
     #install_deb_from_git _amd64.deb  # deb pkg has unmet deps that aren't automatically installed
     install_bin_from_git -n bloomrpc uw-labs bloomrpc x86_64.AppImage
 }
@@ -2082,7 +2085,6 @@ install_postman() {  # https://learning.getpostman.com/docs/postman/launching-po
 
     target="$BASE_PROGS_DIR/Postman"
     tmpdir="$(mktemp -d 'postman-tempdir-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-    #curl --fail -OL 'https://dl.pstmn.io/download/channel/canary/linux_64' || { popd; return 1; }
     wget --directory-prefix=$tmpdir --content-disposition 'https://dl.pstmn.io/download/channel/canary/linux_64' || return 1
     execute "pushd -- '$tmpdir'" || return 1
     execute "aunpack --quiet *" || { err "extracting postman tarball failed w/ $?"; popd; rm -rf -- "$tmpdir"; return 1; }
@@ -2106,6 +2108,17 @@ Terminal=false
 Type=Application
 Categories=Development;
 " > "$dsk/PostmanCanary.desktop" || { err "unable to create Postman .desktop in [$dsk]"; return 1; }
+}
+
+
+install_weeslack() {  # https://github.com/wee-slack/wee-slack
+    install_block 'weechat-python python3-websocket' || return 1
+
+    execute "mkdir -p $HOME/.weechat/python/autoload" || return 1
+    execute 'pushd ~/.weechat/python' || return 1
+    execute 'curl -O https://raw.githubusercontent.com/wee-slack/wee-slack/master/wee_slack.py' || return 1
+    execute 'ln -s ../wee_slack.py autoload'  # in order to start wee-slack automatically when weechat starts
+    execute 'popd' || return 1
 }
 
 
@@ -4020,6 +4033,7 @@ __choose_prog_to_build() {
         install_aws_okta
         install_bloomrpc
         install_postman
+        install_weeslack
         install_terraform
         install_minikube
         install_gruvbox_gtk_theme
