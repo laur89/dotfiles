@@ -745,7 +745,8 @@ upgrade() {
         #apt full-upgrade  # alternative to apt-get dist-upgrade
         apt-get autoremove -y
         apt-get autoclean -y
-        apt purge $(dpkg -l | awk '/^rc/ { print $2 }')  # nuke removed packages' configs
+        # nuke removed packages' configs:
+        apt-get -y purge $(dpkg -l | awk '/^rc/ { print $2 }')
 EOF
 }
 
@@ -1357,7 +1358,7 @@ myip() {  # Get internal & external ip addies:
 
     connected_interface="$(find_connected_if)"  # note this returns only on own machines, not on remotes.
     external_ip="$(get_external_ip)" && {
-        echo -e "external:\t${external_ip:-"Not connected to the internet."}"
+        echo -e "external:\t${external_ip:-'Not connected to the internet.'}"
     }
 
     # TODO: enable this block once ip has universally replaced ifconfig
@@ -1377,7 +1378,7 @@ myip() {  # Get internal & external ip addies:
                 list_contains "$interface" "lo loopback" || interfaces+=" $interface "
             done < <(find "$if_dir" -maxdepth 1 -mindepth 1 -printf "%f\n")
         else  # take a blind guess
-            interfaces="eth0 eth1 eth2 eth3"
+            interfaces="eth0 eth1 eth2 eth3"  # TODO: configure for new standardized if names (https://www.freedesktop.org/software/systemd/man/systemd.net-naming-scheme.html)
             report "can't read interfaces from [$if_dir] [not a (readable) dir]; trying these interfaces: [$interfaces]" "$FUNCNAME"
         fi
 
@@ -1399,7 +1400,7 @@ whatsmyip() { myip; }  # alias for myip
 
 # !! lrzip might offer best compression when it comes to text: http://unix.stackexchange.com/questions/78262/which-file-compression-software-for-linux-offers-the-highest-size-reduction
 compress() {
-    local usage file type opt
+    local usage file type opt OPTIND
 
     file="$1"
     type="$2"
@@ -1765,7 +1766,7 @@ hw() {
             *) err "incorrect opt [$opt]"; return 1 ;;
         esac
     done
-    shift $((OPTIND-1))
+    shift "$((OPTIND-1))"
 
 
     check_progs_installed inxi || return 1
@@ -2829,6 +2830,7 @@ goto() {
 g() {
     local paths input i dir is_backing has_fzf
 
+    # TODO: support fd if avail?
     __find_fun() {
         local pattern dir iname_arg
         readonly pattern="$1"
@@ -2978,6 +2980,16 @@ keepsudo() {
 
 
 # transfer.sh alias - file sharing
+#
+# TODO: enable also encrypted upload:
+#    encrypt:
+#        cat /tmp/hello.txt|gpg -ac -o- | curl -X PUT --upload-file "-" https://transfer.sh/test.txt
+#    decrypt:
+#        curl https://transfer.sh/1lDau/test.txt | gpg -o- > /tmp/hello.txt
+#
+# TODO2: log the headers, as upload header response has deletion header 'X-Url-Delete'!
+# TODO3: optionally set max-downloads, max-days (to keep the file), also set by _request_ headers;
+#
 # see  https://github.com/dutchcoders/transfer.sh/
 transfer() {
     local tmpfile file
@@ -2988,8 +3000,8 @@ transfer() {
     [[ -e "$file" ]] || { err "[$file] does not exist." "$FUNCNAME"; return 1; }
     check_progs_installed curl || return 1
 
-    # write to output to tmpfile because of progress bar
-    readonly tmpfile=$(mktemp -t transfer_XXX.tmp) || { err "unable to create temp with mktemp" "$FUNCNAME"; return 1; }
+    # write to output to tmpfile because of progress bar  # TODO: wat, why? would bar be stored into var if we didn't use this pointeless file?
+    tmpfile=$(mktemp -t transfer_XXX.tmp) || { err "unable to create temp with mktemp" "$FUNCNAME"; return 1; }
     curl --fail --connect-timeout 2 --progress-bar --upload-file "$file" "https://transfer.sh/$(basename -- "$file")" >> "$tmpfile" || { err; return 1; }
     cat -- "$tmpfile"
     echo
@@ -3119,14 +3131,33 @@ ytconvert() {
 #
 # @returns {void}
 pubkey() {
-    local key contents
-    readonly key="$HOME/.ssh/id_rsa.pub"
+    local opt OPTIND contents o s
 
-    [[ -f "$key" ]] || { err "[$key] does not exist" "$FUNCNAME"; return 1; }
-    readonly contents="$(cat -- "$key")" || { err "cat-ing [$key] failed." "$FUNCNAME"; return 1; }
+    o=0
+    while getopts "sg" opt; do
+        case "$opt" in
+           s)
+              let o++
+              s=ssh
+              local key="$HOME/.ssh/id_rsa.pub"
+              [[ -f "$key" ]] || { err "[$key] does not exist" "$FUNCNAME"; return 1; }
+              contents="$(cat -- "$key")" || { err "cat-ing [$key] failed." "$FUNCNAME"; return 1; }
+              ;;
+           g)
+              let o++
+              s=gpg
+              contents="$(gpg --output - --armor --export "$USER")" || return 1
+              [[ "$contents" == *'nothing exported'* ]] && { err "cat-ing [$key] failed." "$FUNCNAME"; return 1; }
+              ;;
+           *) err "need to choose which public key to copy: -s & -g for ssh & gpg respectively"; return 1 ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
 
-    copy_to_clipboard "$contents" && report "copied pubkey to clipboard" "$FUNCNAME" || err "copying pubkey failed; here it is:\n$contents" "$FUNCNAME"
-    return $?
+    [[ "$o" -eq 0 ]] && { err "need to provide at least one option" "$FUNCNAME"; return 1; }
+    [[ "$o" -gt 1 ]] && { err "can provide at most one option" "$FUNCNAME"; return 1; }
+    [[ -z "$contents" ]] && { err "couldn't retrieve [$s] pubkey" "$FUNCNAME"; return 1; }
+    copy_to_clipboard "$contents" && report "copied [$s] pubkey to clipboard" "$FUNCNAME" || { err "copying [$s] pubkey failed; here it is:\n$contents" "$FUNCNAME"; return 1; }
 }
 
 
