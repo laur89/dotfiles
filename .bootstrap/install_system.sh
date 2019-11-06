@@ -554,6 +554,13 @@ install_nfs_client() {
 }
 
 
+# as for security, look:
+#  - https://linux-audit.com/audit-and-harden-your-ssh-configuration/
+#  - https://www.debian.org/doc/manuals/securing-debian-howto/
+#  - https://wiki.debian.org/SELinux/Setup
+#  - http://adeptus-mechanicus.com/codex/sudoctrl/sudoctrl.html
+#  - https://vincent.bernat.ch/en/blog/2017-linux-bridge-isolation
+#  - https://github.com/CISOfy/lynis - security audit script
 install_ssh_server() {
     local sshd_confdir config banner
 
