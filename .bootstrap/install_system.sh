@@ -1473,7 +1473,7 @@ override_locale_time() {
 
     # just in case delete all same definitions, regardless of its value:
     execute "sudo sed -i --follow-symlinks '/^LC_TIME\s*=/d' '$conf_file'" || return 1
-    # consider also  LC_TIME="en_GB.UTF-8"
+    # consider also  LC_TIME="en_GB.UTF-8"  # TODO: indeed, we likely do NOT want et_EE as default
     execute "echo 'LC_TIME=\"et_EE.UTF-8\"' | sudo tee --append $conf_file > /dev/null"
 
     return 0
@@ -4110,6 +4110,7 @@ remind_manually_installed_progs() {
         'sdkman - jdk, maven, gradle...'
         'any custom certs'
         'ublock origin additional configs (est, social media, ...)'
+        'ublock whitelist (should be saved somewhere)'
         'import keepass-xc browser plugin config'
     )
 
@@ -4127,7 +4128,7 @@ remind_manually_installed_progs() {
 increase_inotify_watches_limit() {
     local sysctl_dir sysctl_conf property value
 
-    readonly sysctl_dir="/etc/sysctl.d"
+    readonly sysctl_dir='/etc/sysctl.d'
     readonly sysctl_conf="${sysctl_dir}/60-jetbrains.conf"
     readonly property='fs.inotify.max_user_watches'
     readonly value=524288
