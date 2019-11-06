@@ -286,7 +286,6 @@ __check_for_change_and_compile_ssh_config() {
 }
 
 __check_for_change_and_compile_ssh_config &
-disown $!
 ##########################################
 # fasd init caching and loading:  (https://github.com/clvv/fasd)
 fasd_cache="$HOME/.fasd-init-bash.cache"
@@ -306,13 +305,14 @@ unset fasd_cache
 #   https://www.reddit.com/r/node/comments/4tg5jg/lazy_load_nvm_for_faster_shell_start/d5ib9fs/
 #   https://gist.github.com/fl0w/07ce79bd44788f647deab307c94d6922
 export NVM_DIR="$HOME/.nvm"  # do not change location, keep _non-linked_ .nvm/ under ~
-declare -a __NODE_GLOBALS=($(find "$NVM_DIR/versions/node/" -maxdepth 3 -mindepth 3 -type l -wholename '*/bin/*' | xargs -n1 basename | sort | uniq))
+#declare -a __NODE_GLOBALS=($(find "$NVM_DIR/versions/node/" -maxdepth 3 -mindepth 3 -type l -wholename '*/bin/*' | xargs -n1 basename | sort | uniq))
+declare -a __NODE_GLOBALS=($(find "$NVM_DIR/versions/node/"*/bin/ -maxdepth 1 -mindepth 1 -type l | xargs -n1 basename | sort | uniq))
 __NODE_GLOBALS+=(node nvm)
 
 # instead of using --no-use flag, load nvm lazily:
 _load_nvm() {
-	[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-	[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 }
 
 for cmd in "${__NODE_GLOBALS[@]}"; do
@@ -342,7 +342,7 @@ _enter_dir() {
 }
 
 [[ -s "$NVM_DIR/nvm.sh" ]] && export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
-# TODO: call _enter_dir from here to make sure it's called at startup?
+# TODO: call _enter_dir from here to make sure it's called at startup? why tho - unlikely we need node in ~
 ##########################################
 # fzf
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
@@ -354,12 +354,12 @@ _enter_dir() {
 # - The first argument to the function ($1) is the base path to start traversal
 # - See the source code (completion.{bash,zsh}) for the details.
 _fzf_compgen_path() {
-  fd --hidden --follow --exclude ".git" . "$1"
+  fd --hidden --follow --exclude '.git' . "$1"
 }
 
 # Use fd to generate the list for directory completion
 _fzf_compgen_dir() {
-  fd --type d --hidden --follow --exclude ".git" . "$1"
+  fd --type d --hidden --follow --exclude '.git' . "$1"
 }
 ##########################################
 # note following is added by script from https://get.sdkman.io/:
