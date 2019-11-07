@@ -1700,8 +1700,9 @@ install_own_builds() {
     install_ripgrep
     #install_rebar
     install_lazygit
+    install_lazydocker
+    #install_gitin
     install_fd
-    install_gitin
     #install_synergy  # currently installing from repo
     install_i3
     install_polybar
@@ -2158,6 +2159,12 @@ install_lazygit() {  # https://github.com/jesseduffield/lazygit
 }
 
 
+install_lazydocker() {  # https://github.com/jesseduffield/lazydocker
+    install_bin_from_git -n lazydocker -d "$HOME/bin" jesseduffield lazydocker '_Linux_x86_64.tar.gz'
+}
+
+
+# TODO: remove for lazygit?
 install_gitin() {  # https://github.com/isacikgoz/gitin
     install_bin_from_git -n gitin -d "$HOME/bin" isacikgoz gitin '_linux_amd64.tar.gz'
 }
@@ -2825,7 +2832,12 @@ install_i3_deps() {
     # install i3-quickterm   # https://github.com/lbonn/i3-quickterm
     #curl --output "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3-quickterm' \  # TODO: enable this one if/when PR is accepted
     curl --output "$f" 'https://raw.githubusercontent.com/laur89/i3-quickterm/master/i3-quickterm' \
-            && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-quickterm"
+            && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-quickterm" || err "installing i3-quickterm failed /w $?"
+
+
+    # install i3-cycle-windows   # https://github.com/DavsX/dotfiles/blob/master/bin/i3_cycle_windows
+    curl --output "$f" 'https://raw.githubusercontent.com/DavsX/dotfiles/master/bin/i3_cycle_windows' \
+            && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-cycle-windows" || err "installing i3-cycle-windows failed /w $?"
 
 
     # create links of our own i3 scripts on $PATH:
@@ -3526,7 +3538,7 @@ install_fonts() {
 # TODO: add udiskie?
 # majority of packages get installed at this point;
 install_from_repo() {
-    local block blocks block1 block2 block3 block4 extra_apt_params
+    local block blocks block1 block2 block3 block4 block5 extra_apt_params
     local block1_nonwin block2_nonwin block3_nonwin
 
     declare -A extra_apt_params=(
@@ -3630,10 +3642,11 @@ install_from_repo() {
         ncdu
         pydf
         nethogs
+        nload
         ntp
+        remind
         tkremind
         wyrd
-        remind
         tree
         flashplugin-nonfree
         synaptic
@@ -3803,9 +3816,15 @@ install_from_repo() {
     )
     # old/deprecated block4:
 
+
+    # some odd libraries
+    declare -ar block5=(
+        libjson-perl
+    )
+
     blocks=()
     is_native && blocks=(block1_nonwin block2_nonwin block3_nonwin)
-    blocks+=(block1 block2 block3 block4)
+    blocks+=(block1 block2 block3 block4 block5)
 
     execute "sudo apt-get --yes update"
     for block in "${blocks[@]}"; do
@@ -4023,6 +4042,7 @@ __choose_prog_to_build() {
         install_ripgrep
         install_rebar
         install_lazygit
+        install_lazydocker
         install_fd
         install_gitin
         install_synergy
