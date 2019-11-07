@@ -343,9 +343,66 @@ bindcode Control+34 exec --no-startup-id copyq toggle
 #          }
 # }
 
+
+#######################################################
+#THEME#
+# from https://github.com/a-schaefers/i3-wm-gruvbox-theme/blob/master/i3/config
+#######
+
+# set primary gruvbox colorscheme colors
+#set $bg #282828
+#set $red #cc241d
+#set $green #98971a
+#set $yellow #d79921
+#set $blue #458588
+#set $purple #b16286
+#set $aqua #689d68
+#set $gray #a89984
+#set $darkgray #1d2021
+
+
+#start of bar section (commented atm as not using blocks bar) {{{
+#bar {
+    #position bottom
+    #status_command i3blocks -c ~/.config/i3/i3blocks.conf
+    #colors {
+        ## bar background color
+        #background $bg
+        ## text color used for blocks that do not have a color specified.
+        #statusline $yellow
+        ## workspaces section
+        ##                    border  backgr. text
+        #focused_workspace    $aqua $aqua $darkgray
+        #inactive_workspace   $darkgray $darkgray $yellow
+        #active_workspace     $darkgray $darkgray $yellow
+        #urgent_workspace     $red $red $bg
+    #}
+#}
+# }}} end of bar section
+
+#start of window title bars & borders section {{{
+
+# green gruvbox
+# class                 border|backgr|text|indicator|child_border
+#client.focused          $green $green $darkgray $purple $darkgray
+#client.focused_inactive $darkgray $darkgray $yellow $purple $darkgray
+#client.unfocused        $darkgray $darkgray $yellow $purple $darkgray
+#client.urgent           $red $red $white $red $red
+
+# blue gruvbox
+# class                 border|backgr|text|indicator|child_border
+#client.focused          $blue $blue $darkgray $purple $darkgray
+#client.focused_inactive $darkgray $darkgray $yellow $purple $darkgray
+#client.unfocused        $darkgray $darkgray $yellow $purple $darkgray
+#client.urgent           $red $red $white $red $red
+
+# }}} end of window title bars & borders section
+#######################################################
+
 # Font for window titles. Will also be used by the bar unless a different font
 # is used in the bar {} block.
 font pango:Terminess Powerline 12px
+#font pango:Hack 8
 #font -*-terminus-*-*-*-*-12-*-*-*-*-*-*-13
 #for_window [class=".*"] title_format "<span font='tewi 8'> ➤ %title</span>"
 #for_window [class=".*"] title_format "<span font='tewi 8'> </span>"
@@ -479,13 +536,10 @@ bindsym $mod+Control+Shift+z exec --no-startup-id i3-scratch-marker.sh scratch_m
 
 # quake style terminal:
 # 1st ver, using urxvtq:--------
-for_window [instance="^scratchpad_urxvt_top$"] border pixel 1, floating enable, move position 0 px 0 px, resize set 100 ppt 40 ppt
+#for_window [instance="^scratchpad_urxvt_top$"] border pixel 1, floating enable, move position 0 px 0 px, resize set 100 ppt 40 ppt
 #bindsym $mod1+i exec urxvtq scratchpad_urxvt_top
 # ------------------------------
-# 2nd ver, using i3-quickterm:  TODO: when in multi-mon, find which one to use (ie this or urxvtq)
-# with prompt:
-#bindsym $mod1+i exec i3-quickterm
-# always pop standard shell, without the rofi menu:
+# 2nd ver, using i3-quickterm:
 exec_always --no-startup-id i3-quickterm --daemon
 bindsym $mod1+i exec --no-startup-id i3-quickterm shell
 # ------------------------------
@@ -499,7 +553,7 @@ bindsym $mod1+e exec --no-startup-id killall -s SIGUSR1 i3expod.py
 #exec --no-startup-id i3-focus-last-window.sh
 #bindsym $mod1+Tab [con_mark=^_last$] focus
 # another, py-based alt-tab alternative:
-exec --no-startup-id i3-cycle-focus.py --history 2
+exec_always --no-startup-id i3-cycle-focus.py --history 2
 bindsym $mod1+Tab exec --no-startup-id i3-cycle-focus.py --switch
 
 # start focus change listener scripts:
