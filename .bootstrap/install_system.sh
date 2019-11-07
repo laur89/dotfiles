@@ -126,6 +126,7 @@ validate_and_init() {
             PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/personal-dotfiles"
             ;;
         *)
+            err "unsupported MODE [$MODE]"
             print_usage
             exit 1 ;;
     esac
@@ -1404,7 +1405,7 @@ setup() {
 update_clock() {
     local src remote_time t diff
 
-    src='https://google.com/'
+    src='https://google.com/'  # external source whose http headers to extract time from
     remote_time="$(curl --fail --insecure -X HEAD --silent --head "$src" 2>&1 \
             | grep -ioP '^date:\s*\K.*' | { read -r t; date +%s -d "$t"; })"
 
@@ -1474,14 +1475,13 @@ setup_additional_apt_keys_and_sources() {
 override_locale_time() {
     local conf_file
 
-    readonly conf_file="/etc/default/locale"
+    readonly conf_file='/etc/default/locale'
 
     [[ -f "$conf_file" ]] || { err "cannot override locale time: [$conf_file] does not exist; abort;"; return 1; }
 
     # just in case delete all same definitions, regardless of its value:
     execute "sudo sed -i --follow-symlinks '/^LC_TIME\s*=/d' '$conf_file'" || return 1
-    # consider also  LC_TIME="en_GB.UTF-8"  # TODO: indeed, we likely do NOT want et_EE as default
-    execute "echo 'LC_TIME=\"et_EE.UTF-8\"' | sudo tee --append $conf_file > /dev/null"
+    execute "echo 'LC_TIME=\"en_GB.UTF-8\"' | sudo tee --append $conf_file > /dev/null"  # en-gb gives us 24h clock
 
     return 0
 }
@@ -1494,22 +1494,26 @@ override_locale_time() {
 swap_caps_lock_and_esc() {
     local conf_file
 
-    readonly conf_file="/usr/share/X11/xkb/symbols/pc"
+    readonly conf_file='/usr/share/X11/xkb/symbols/pc'
 
     [[ -f "$conf_file" ]] || { err "cannot swap esc<->caps: [$conf_file] does not exist; abort;"; return 1; }
 
     # map caps to esc:
     if ! grep -q 'key <ESC>.*Caps_Lock' "$conf_file"; then
         # hasn't been replaced yet
-        execute "sudo sed -i --follow-symlinks 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock        \]   \};/g' $conf_file"
-        [[ $? -ne 0 ]] && { err "replacing esc<->caps @ [$conf_file] failed"; return 2; }
+        if ! execute "sudo sed -i --follow-symlinks 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock        \]   \};/g' $conf_file"; then
+            err "replacing esc<->caps @ [$conf_file] failed"
+            return 2
+        fi
     fi
 
     # map esc to caps:
     if ! grep -q 'key <CAPS>.*Escape' "$conf_file"; then
         # hasn't been replaced yet
-        execute "sudo sed -i --follow-symlinks 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS> \{    \[ Escape     \]   \};/g' $conf_file"
-        [[ $? -ne 0 ]] && { err "replacing esc<->caps @ [$conf_file] failed"; return 2; }
+        if ! execute "sudo sed -i --follow-symlinks 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS> \{    \[ Escape     \]   \};/g' $conf_file"; then
+            err "replacing esc<->caps @ [$conf_file] failed"
+            return 2
+        fi
     fi
 
     return 0
@@ -2827,16 +2831,17 @@ install_i3_deps() {
     local f
     f="$TMP_DIR/i3-dep-${RANDOM}"
 
-    py_install i3ipc  # https://github.com/altdesktop/i3ipc-python
+    py_install i3ipc      # https://github.com/altdesktop/i3ipc-python
+    py_install rofi-tmux  # https://github.com/viniarck/rofi-tmux (note it includes i3 integration)
 
     # install i3-quickterm   # https://github.com/lbonn/i3-quickterm
     #curl --output "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3-quickterm' \  # TODO: enable this one if/when PR is accepted
-    curl --output "$f" 'https://raw.githubusercontent.com/laur89/i3-quickterm/master/i3-quickterm' \
+    curl --fail --output "$f" 'https://raw.githubusercontent.com/laur89/i3-quickterm/master/i3-quickterm' \
             && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-quickterm" || err "installing i3-quickterm failed /w $?"
 
 
     # install i3-cycle-windows   # https://github.com/DavsX/dotfiles/blob/master/bin/i3_cycle_windows
-    curl --output "$f" 'https://raw.githubusercontent.com/DavsX/dotfiles/master/bin/i3_cycle_windows' \
+    curl --fail --output "$f" 'https://raw.githubusercontent.com/DavsX/dotfiles/master/bin/i3_cycle_windows' \
             && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-cycle-windows" || err "installing i3-cycle-windows failed /w $?"
 
 
@@ -3666,6 +3671,7 @@ install_from_repo() {
         gnome-keyring
         policykit-1-gnome
         seahorse
+        libsecret-tools
         gsimplecal
         khal
         vdirsyncer
@@ -3716,7 +3722,7 @@ install_from_repo() {
         ncmpcpp
         ncmpc
         audacity
-        mplayer2
+        mpv
         gimp
         xss-lock
         filezilla
