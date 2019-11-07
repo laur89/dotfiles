@@ -1,3 +1,4 @@
+#set -x
 # ~/.bashrc: executed by bash(1) for non-login shells.
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
@@ -287,6 +288,24 @@ __check_for_change_and_compile_ssh_config() {
 
 __check_for_change_and_compile_ssh_config &
 ##########################################
+# fzf
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+
+# Replace default shell autocompeltes:  https://github.com/junegunn/fzf#settings
+####################
+# Use fd (https://github.com/sharkdp/fd) instead of the default find
+# command for listing path candidates.
+# - The first argument to the function ($1) is the base path to start traversal
+# - See the source code (completion.{bash,zsh}) for the details.
+_fzf_compgen_path() {
+  fd --hidden --follow --exclude '.git' . "$1"
+}
+
+# Use fd to generate the list for directory completion
+_fzf_compgen_dir() {
+  fd --type d --hidden --follow --exclude '.git' . "$1"
+}
+##########################################
 # fasd init caching and loading:  (https://github.com/clvv/fasd)
 fasd_cache="$HOME/.fasd-init-bash.cache"
 if command -v fasd > /dev/null && [[ "$(command -v fasd)" -nt "$fasd_cache" || ! -s "$fasd_cache" ]]; then
@@ -342,25 +361,7 @@ _enter_dir() {
 }
 
 [[ -s "$NVM_DIR/nvm.sh" ]] && export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
-# TODO: call _enter_dir from here to make sure it's called at startup? why tho - unlikely we need node in ~
-##########################################
-# fzf
-[ -f ~/.fzf.bash ] && source ~/.fzf.bash
-
-# Replace default shell autocompeltes:  https://github.com/junegunn/fzf#settings
-####################
-# Use fd (https://github.com/sharkdp/fd) instead of the default find
-# command for listing path candidates.
-# - The first argument to the function ($1) is the base path to start traversal
-# - See the source code (completion.{bash,zsh}) for the details.
-_fzf_compgen_path() {
-  fd --hidden --follow --exclude '.git' . "$1"
-}
-
-# Use fd to generate the list for directory completion
-_fzf_compgen_dir() {
-  fd --type d --hidden --follow --exclude '.git' . "$1"
-}
+# TODO: call _enter_dir from here to make sure it's called at startup?
 ##########################################
 # note following is added by script from https://get.sdkman.io/:
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
