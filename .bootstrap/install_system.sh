@@ -23,7 +23,7 @@ readonly PWRLINE_FONTS_REPO_LOC='https://github.com/powerline/fonts'
 readonly POLYBAR_REPO_LOC='https://github.com/polybar/polybar.git'    # polybar
 readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - yeah.
 readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
-readonly RAMBOX_REPO_LOC='https://github.com/saenzramiro/rambox.git'  # closed source franz alt.
+readonly RAMBOX_REPO_LOC='https://github.com/ramboxapp/community-edition.git'  # closed source franz alt.
 readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX - open password manager forked from keepass project
 readonly GOFORIT_REPO_LOC='https://github.com/mank319/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
@@ -182,8 +182,8 @@ check_dependencies() {
     #
     # verify required dirs are existing and have $perms perms:
     for dir in \
-            $BASE_DATA_DIR \
-            $BASE_DATA_DIR/dev \
+            "$BASE_DATA_DIR" \
+            "$BASE_DATA_DIR/dev" \
                 ; do
         if ! [[ -d "$dir" ]]; then
             if confirm -d Y "[$dir] mountpoint/dir does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
@@ -256,7 +256,7 @@ setup_hosts() {
     readonly tmpfile="$TMP_DIR/hosts"
     readonly file="$PRIVATE_CASTLE/backups/hosts"
 
-    function _extract_current_hostname_line() {
+    _extract_current_hostname_line() {
         local file current
 
         readonly file="$1"
@@ -2163,7 +2163,7 @@ install_gitin() {  # https://github.com/isacikgoz/gitin
 }
 
 
-install_rambox() {  # https://github.com/saenzramiro/rambox/wiki/Install-on-Linux
+install_rambox() {  # https://github.com/ramboxapp/community-edition/wiki/Install-on-Linux
     local tmpdir tarball rambox_url rambox_dl page dir ver inst_loc
 
     is_server && { report "we're server, skipping rambox installation."; return; }
@@ -2207,7 +2207,7 @@ install_rambox() {  # https://github.com/saenzramiro/rambox/wiki/Install-on-Linu
 
 
 # builds rambox from source  (atm not used, as using AppImage or tarball)
-build_and_install_rambox() {  # https://github.com/saenzramiro/rambox
+build_and_install_rambox() {  # https://github.com/ramboxapp/community-edition
     local expected_sencha_loc tmpdir
 
     is_server && { report "we're server, skipping rambox installation."; return; }
