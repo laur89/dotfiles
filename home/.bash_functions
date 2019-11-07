@@ -2644,8 +2644,8 @@ __fo() {
 
     editor="$EDITOR"
     image_viewer="sxiv"
-    video_player="mplayer"
-    file_mngr="ranger"
+    video_player="mpv"
+    file_mngr="vifm"
     pdf_viewer="zathura"
     office="libreoffice"
     image_editor="gimp"
@@ -2733,7 +2733,7 @@ __fo() {
         'inode/directory;'*)
             [[ "$count" -gt 1 ]] && { report "won't navigate to multiple dirs! select one please" "${FUNCNAME[1]}"; return 1; }
             check_progs_installed "$file_mngr" || return 1
-            "$file_mngr" -- "${files[0]}"
+            "$file_mngr" "${files[0]}"
             ;;
         'inode/x-empty; charset=binary')
             check_progs_installed "$editor" || return 1
