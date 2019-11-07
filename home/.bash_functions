@@ -761,7 +761,7 @@ ffstr() {
 
     caseOptCounter=0
     OPTIND=1
-    max_result_line_length=300      # max nr of characters per grep result line
+    max_result_line_length=300      # max nr of characters per grep result line; TODO: make it dynamic for current term window?
     defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) option selected;
 
     readonly usage="\n$FUNCNAME: find string in files. smartcase both for filename and search patterns.
@@ -4030,7 +4030,78 @@ complete -F _completemarks jj jum jmo
 # use this if grep w/ perl regex not avail:
 #[[ -f ~/.ssh/config ]] && complete -o default -o nospace -W "$(grep -i -e '^host ' ~/.ssh/config | awk '{print substr($0, index($0,$2))}' ORS=' ')" sshpearl
 [[ -f ~/.ssh/config ]] && complete -o default -o nospace -W "$(grep -Poi '^host\s+\K\S+' ~/.ssh/config)" sshpearl
-is_function g && complete -o default -o nospace -W "$(ls -A1p | grep '/$' | sed 's/\/$//')" g  # autocomplete on directories
+
+# $1 - name of the function whose args are completed
+# $2 - word being completed
+# $3 - word preceding the word being completed on the current command line
+#
+# TODO: curw definition too simple, eg with [g /data/ dev/ scripts/a] it'd be 'scripts/a' which is wrong - should be 'a' i think
+_complete_dirs_in_pwd() {
+    local curw wordlist d
+
+    #echo "1: [$1]"
+    #echo "2: [$2]"
+    #echo "3: [$3]"
+    #echo "curv: [${COMP_WORDS[*]}]"
+    curw=${COMP_WORDS[COMP_CWORD]}  # think it's the same as $2?
+    if [[ "$2" == */ ]]; then
+        d="$(build_comma_separated_list -s '/' "${COMP_WORDS[@]:1}")"
+        #curw=''
+    else
+        d="$(build_comma_separated_list -s '/' "${COMP_WORDS[@]:1:${#COMP_WORDS[@]}-2}")"
+        #curw="${2##*/}"
+    fi
+
+    [[ -z "$d" ]] && d='.'
+    #echo "d: [$d]"
+    [[ -d "$d" ]] || return 1
+    wordlist=$(find -L "$d" -mindepth 1 -maxdepth 1 -type d -printf "%f\n")
+    #[[ "${#wordlist[@]}" -eq 1 ]] && echo WAAAT && wordlist[0]="${wordlist[0]}/"
+    #echo "wlist: ${wordlist[*]} --end"
+    #[[ -z "${wordlist[*]}" ]] && wordlist=("$(printf %b '\u200b')")  # only if using -o nospace
+    #echo "cwd: [$curw]"
+    COMPREPLY=($(compgen -W '${wordlist[@]}' -- "$curw"))
+    return 0
+}
+is_function g && complete -o dirnames -o filenames -o nospace -F _complete_dirs_in_pwd g  # autocomplete on directories
+
+# TODO: here we try to introduce fuzzyness via find -iname {{{
+#_complete_dirs_in_pwd() {
+    #local curw wordlist d s
+
+    ##echo "1: [$1]"
+    ##echo "2: [$2]"
+    ##echo "3: [$3]"
+    ##echo "curv: [${COMP_WORDS[*]}]"
+    #curw=${COMP_WORDS[COMP_CWORD]}  # think it's the same as $2?
+    #if [[ "$2" == */ ]]; then
+        #d="$(build_comma_separated_list -s '/' "${COMP_WORDS[@]:1}")"
+    #[[ -z "$d" ]] && d='.'
+    ##echo "d: [$d]"
+    #[[ -d "$d" ]] || return 1
+        #wordlist=$(find -L "$d" -mindepth 1 -maxdepth 1 -type d -printf "%f\n")
+    #else
+        #d="$(build_comma_separated_list -s '/' "${COMP_WORDS[@]:1:${#COMP_WORDS[@]}-2}")"
+    #[[ -z "$d" ]] && d='.'
+    #[[ -d "$d" ]] || return 1
+    ##echo "d: [$d]"
+        #s="${COMP_WORDS[-1]}"
+    #echo "s: [${s##*/}]"
+        #wordlist=$(find -L "$d" -mindepth 1 -maxdepth 1 -type d -iname '*'"${s##*/}"'*' -printf '%f\n' )
+    ##echo "wlist: ${wordlist[*]} --end"
+    #fi
+    ##wordlist=$(find -L "$d" -mindepth 1 -maxdepth 1 -type d $s -printf "%f\n")
+    ##wordlist=$(find -L "$d" -mindepth 1 -maxdepth 1 -type d "${s[@]}" )
+    ##[[ "${#wordlist[@]}" -eq 1 ]] && echo WAAAT && wordlist[0]="${wordlist[0]}/"
+    ##echo "wlist: ${wordlist[*]} --end"
+    ##[[ -z "${wordlist[*]}" ]] && wordlist=("$(printf %b '\u200b')")  # only if using -o nospace
+    #COMPREPLY=($(compgen -W '${wordlist[@]}' -- "$curw"))
+    #return 0
+#}
+
+
+#is_function g && complete  -o nospace -F _complete_dirs_in_pwd g  # autocomplete on directories
+# }}}
 
 ################################################
 # marker function used to detect whether functions have been loaded into the shell:
