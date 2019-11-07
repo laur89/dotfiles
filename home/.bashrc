@@ -287,6 +287,7 @@ __check_for_change_and_compile_ssh_config() {
 }
 
 __check_for_change_and_compile_ssh_config &
+disown $!
 ##########################################
 # fzf
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
