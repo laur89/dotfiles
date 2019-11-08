@@ -1,9 +1,15 @@
-"see example at https://github.com/tridactyl/tridactyl/blob/master/.tridactylrc
+" see example at https://github.com/tridactyl/tridactyl/blob/master/.tridactylrc
 " to pull changes in, run :source
 """""""""""""""""""""""""""""""""""""""""""""""""""
 
 bind J tabnext
 bind K tabprev
 
+" decrease scroll; default is 10 lines:
+bind j scrollline 5
+bind k scrollline -5
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""
 " This will have to do until someone writes us a nice syntax file :)
 " vim: set filetype=vim:

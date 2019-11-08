@@ -1472,6 +1472,8 @@ setup_additional_apt_keys_and_sources() {
 
 
 # see https://wiki.debian.org/Locale#First_day_of_week
+# to add additional locales, follow same page from "Manually" title;
+# tl;dr: uncomment wanted locale in /etc/locale.gen and run $ locale-gen as root;
 override_locale_time() {
     local conf_file
 
