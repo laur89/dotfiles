@@ -3607,6 +3607,7 @@ install_from_repo() {
         msbuild
         mono-complete
         curl
+        httpie
         lshw
         fuse
         fuseiso
