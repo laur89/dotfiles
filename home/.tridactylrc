@@ -1,0 +1,9 @@
+"see example at https://github.com/tridactyl/tridactyl/blob/master/.tridactylrc
+" to pull changes in, run :source
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+bind J tabnext
+bind K tabprev
+
+" This will have to do until someone writes us a nice syntax file :)
+" vim: set filetype=vim:
