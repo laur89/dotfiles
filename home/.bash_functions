@@ -2694,7 +2694,7 @@ __fo() {
             ;;
         application/xml*)
             [[ "$count" -gt 1 ]] && { report "won't format multiple xml files! will just open them" "${FUNCNAME[1]}"; sleep 1.5; }
-            if [[ "$(wc -l < "${files[0]}")" -gt 2 || "$count" -gt 1 ]]; then  # note if more than 2 lines we also assume it's already formatted;
+            if [[ "$count" -gt 1 || "$(wc -l < "${files[0]}")" -gt 2 ]]; then  # note if more than 2 lines we also assume it's already formatted;
                 # assuming it's already formatted:
             check_progs_installed "$editor" || return 1
                 "$editor" -- "${files[@]}"
