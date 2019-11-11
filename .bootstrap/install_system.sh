@@ -1999,7 +1999,7 @@ install_deb_from_git() {
     local deb
 
     deb="$(fetch_release_from_git "$1" "$2" "$3")" || return 1
-    execute "sudo dpkg -i '$deb'" || { err "installing [$1/$2] failed"; return 1; }
+    execute "sudo apt install '$deb'" || { err "installing [$1/$2] failed w/ $?"; return 1; }
     execute "rm -rf -- '$deb'"
 }
 
@@ -2055,8 +2055,9 @@ install_franz() {  # https://github.com/meetfranz/franz/blob/master/docs/linux.m
 
 # Franz nag-less fork; found it from this franz thread: https://github.com/meetfranz/franz/issues/1167
 # might also consider open-source fork of rambox: https://github.com/TheGoddessInari/hamsket
-install_ferdi() {  # https://github.com/kytwb/ferdi
-    install_bin_from_git -n ferdi kytwb ferdi .AppImage
+install_ferdi() {  # https://github.com/getferdi/ferdi
+    #install_bin_from_git -n ferdi getferdi ferdi .AppImage
+    install_deb_from_git getferdi ferdi _amd64.deb
 }
 
 
@@ -2088,9 +2089,8 @@ install_aws_okta() {  # https://github.com/segmentio/aws-okta
 
 
 install_bloomrpc() {  # https://github.com/uw-labs/bloomrpc/releases
-    # TODO: we may want to try fix deb installation similar to skype via   execute "sudo apt-get -f --yes install"
-    #install_deb_from_git _amd64.deb  # deb pkg has unmet deps that aren't automatically installed
-    install_bin_from_git -n bloomrpc uw-labs bloomrpc x86_64.AppImage
+    install_deb_from_git uw-labs bloomrpc _amd64.deb  # TODO deb pkg has unmet deps that aren't automatically installed (similar to ferdi)
+    #install_bin_from_git -n bloomrpc uw-labs bloomrpc x86_64.AppImage
 }
 
 
