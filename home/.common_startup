@@ -22,8 +22,7 @@ if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
         source "$_SCRIPTS_COMMONS"
     else
         echo -e "\n    ERROR: common file [$_SCRIPTS_COMMONS] not found! Abort."
-        # do not exit!
-        #exit 1
+        #exit 1  # do not exit!
     fi
 fi
 
@@ -143,19 +142,19 @@ xset -b
 #ResultInactive=no
 #ResultActive=yes
 
-dbus-update-activation-environment --systemd --all  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=842712 & https://wiki.archlinux.org/index.php/GNOME/Keyring#xinitrc_method
+dbus-update-activation-environment --systemd --all || err_display "dbus-update-activation-environment failed w/ $?" "$_SELF"  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=842712 & https://wiki.archlinux.org/index.php/GNOME/Keyring#xinitrc_method
 #/usr/lib/polkit-gnome-authentication-agent-1 &
-/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &
+(/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 || err_display "polkit-gnome-auth-agent startup failed /w $?" "$_SELF";) &
 
 # keyring is tricky with i3; see https://wiki.archlinux.org/index.php/GNOME/Keyring#PAM_method & https://www.reddit.com/r/archlinux/comments/648dxp/using_gnomekeyring_with_i3/
-eval $(/usr/bin/gnome-keyring-daemon --start --components=gpg,pkcs11,secrets,ssh)
+eval $(/usr/bin/gnome-keyring-daemon --start --components=gpg,pkcs11,secrets,ssh) || err_display "gnome-keyring-daemon startup failed w/ $?" "$_SELF"
 #sleep 1  # TODO potential race condition here - dunst as root sometimes not picking up config
 export GNOME_KEYRING_CONTROL GNOME_KEYRING_PID GPG_AGENT_INFO SSH_AUTH_SOCK DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
 
 
 
 # Secondary autostart directory, nothing important started here so okay to skip in clean for minimal session
-if [[ -d $HOME/.config/autostart ]]; then
+if [[ -d "$HOME/.config/autostart" ]]; then
     for n in $HOME/.config/autostart/*; do
         m=$(cat "$n")
         case $m in
@@ -223,7 +222,7 @@ done
 if [[ -r "$SESSION_STARTFILE" ]]; then
     source "$SESSION_STARTFILE"
     # give some time before wm is launched:
-    sleep 1.5
+    sleep 2
 else
     if command -v rxvt-unicode; then
         rxvt-unicode &

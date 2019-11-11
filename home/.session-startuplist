@@ -171,7 +171,7 @@ else    # is NOT laptop, assuming desktop
         echo "Launching syndergy server"
 
         if is_work; then
-            synergys -f --no-tray --debug INFO --name work-desktop -c ~/synergy.conf --log $CUSTOM_LOGDIR/synergy_server.log --address :24800 &
+            synergys -f --no-tray --debug INFO --name work-desktop -c ~/synergy.conf --log "$CUSTOM_LOGDIR/synergy_server.log" --address :24800 &
             #/data/progs/custom_builds/synergy/bin/synergys -f --no-tray --debug INFO --name work-desktop -c ~/synergy.conf --log $CUSTOM_LOGDIR/synergy_server.log --address :24800 &
         else
             # TODO personal deskderp
