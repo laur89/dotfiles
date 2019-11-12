@@ -3,6 +3,7 @@ macro index ,i      "<change-folder>!<enter>"  "go to inbox"
 #macro index ,p      "<pipe-message>cat > ~/"   "save message as"
 macro index <space> "<collapse-thread>"        "[un]collapse thread"
 
+# TODO: notmuch-mutt should be deprecated, as neomutt includes notmuch patch integration
 macro index ,s "\
   <enter-command>\
     set my_old_wait_key=\$wait_key \
@@ -54,5 +55,9 @@ macro pager     U       |urlscan\r
 #macro pager     z       ":set wrap=0\r"
 #macro pager Z ":set wrap=80\r"
 
+#macro index A "<modify-labels>+archive -unread -inbox\\n" "Archive message"  # archive usin notmuch tags
 macro index c "<change-vfolder>?" "Change to vfolder overview"
+#bind index,pager + entire-thread "read entire thread of current msg"
 macro index \\\\ "<vfolder-from-query>" "Search mailbox"
+# toggle between mailboxes and virtual mailboxes:
+#bind index,pager ??? sidebar-toggle-virtual
