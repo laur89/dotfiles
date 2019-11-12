@@ -21,7 +21,8 @@ color search        color61         color0
 #color status        J_black         J_status
 color status        color254        color235
 #mono status bold  # TODO: bold not working?
-color indicator     color0         color136
+color indicator     color0         color136   # ie the cursor/selected line
+#set arrow_cursor   # instead of selecting/highlighting whole line under cursor, add a -> arrow in the beginninf of cursor line
 color tree          color136        color0                                    # arrow in threads
 
 # basic monocolor screen
