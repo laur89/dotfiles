@@ -971,7 +971,7 @@ __mem_cpu_most_common_fun(){
     is_digit "$num" && [[ "$num" -gt 0 ]] || { err "nr of processes to show needs to be a positive digit, but was [$num]" "${FUNCNAME[1]}"; return 1; }
     # note we should try use '--ppid 2 -N' flag to filter out kernel threads (see https://unix.stackexchange.com/questions/258448/is-there-any-way-to-hide-kernel-threads-from-ps-command-results)
     ps_out="$(ps -ax --no-headers -o $first_ps_col,$second_ps_col,args --sort -${first_ps_col},-${second_ps_col})" || { err "ps command failed" "$FUNCNAME"; return 1; }
-    ps_out="$(echo "$ps_out" | head -n $num)" || return 1
+    ps_out="$(head -n $num <<< "$ps_out")" || return 1
 
     # formats the default full ps output (some versions of ps don't offer --sort option)
     #
