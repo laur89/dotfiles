@@ -458,6 +458,7 @@ for_window [class="^Nvidia-settings$"] floating enable
 for_window [class="^i3expod\.py$"] fullscreen enable
 # charles splash:
 for_window [class="charles-gui-MainWithClassLoader$" title="^win"] floating enable, border pixel $border
+# our own invented title to force some wins (eg terminals) float with no titlebar:
 for_window [title="^_wm_float_no_titlebar$"] floating enable, border pixel $border, focus
 
 # some other per-app configs:
