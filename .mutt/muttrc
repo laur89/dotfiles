@@ -2,6 +2,8 @@
 # 
 # ref: http://durak.org/sean/pubs/software/mutt/reference.html
 #
+# see also http://www.davep.org/mutt/muttrc/
+#
 # main opts:
   set askcc  # ask for CC:
 unset confirmappend  # don't ask
@@ -153,6 +155,9 @@ hdr_order from: to: cc: date: subject:
 
 # When set, mutt will use the first virtual mailbox (see virtual-mailboxes) as a spoolfile:
 #set virtual_spoolfile=yes
+
+# note you might have issues because your own replies are missing from threads; in
+# that case, start using virtual boxes: https://www.reddit.com/r/commandline/comments/53dh17/mutt_getting_thread_replies_in_inbox/
 
 source ~/.mailboxes        # source virtual boxes; (if not listed in sidebar, then look up macro for 'change-vfolder')
 
