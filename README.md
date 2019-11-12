@@ -24,7 +24,7 @@ steps separately apart from the full installation mode.
     * can be found from https://www.debian.org/devel/debian-installer/
     * (or https://cdimage.debian.org/cdimage/daily-builds/daily/arch-latest/amd64/iso-cd/
       more specifically)
-    * Note: sometimes the daily images are broken, verify build is passing [here](https://d-i.debian.org/daily-images/daily-build-overview.html)
+    * *Note*: sometimes the daily images are broken, verify build is passing [here](https://d-i.debian.org/daily-images/daily-build-overview.html)
       before downloading.
     * If you're installing on a laptop/wifi and need firmware, you might be better
       off with these images:
@@ -34,15 +34,19 @@ steps separately apart from the full installation mode.
           ([shortcut](http://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/daily-builds/sid_d-i/current/amd64/iso-cd/firmware-testing-amd64-netinst.iso))
 
 1. optionally preseed the installation (`esc` when graphical menu appears)
-    * `auto url=http(s)://webserver/path/preseed.cfg
-      debian-installer/allow_unauthenticated_ssl=true
-      hostname=myhostname domain=internal.yourdomain.tld
-      passwd/root-password=r00tpass
-      passwd/root-password-again=r00tpass
-      passwd/user-fullname="Full Name"
-      passwd/username=username
-      passwd/user-password=userpass
-      passwd/user-password-again=userpass`
+
+```
+    auto url=http(s)://webserver/path/preseed.cfg
+    debian-installer/allow_unauthenticated_ssl=true
+    hostname=myhostname domain=internal.yourdomain.tld
+    passwd/root-password=r00tpass
+    passwd/root-password-again=r00tpass
+    passwd/user-fullname="Full Name"
+    passwd/username=username
+    passwd/user-password=userpass
+    passwd/user-password-again=userpass`
+```
+
 1. wget https://github.com/laur89/dotfiles/raw/master/.bootstrap/install_system.sh
     * or `wget https://github.com/laur89/dotfiles/raw/develop/.bootstrap/install_system.sh`
       for develop branch.
