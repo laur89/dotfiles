@@ -33,7 +33,7 @@ steps separately apart from the full installation mode.
           OR _daily_ sid (dunno, couldn't find daily testing): http://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/daily-builds/sid_d-i/current/amd64/iso-cd/
           ([shortcut](http://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/daily-builds/sid_d-i/current/amd64/iso-cd/firmware-testing-amd64-netinst.iso))
 
-1. optionally preseed the installation (`esc` when graphical menu appears)
+1. optionally preseed the installation (`esc` when graphical menu appears):
 
 ```
     auto url=http(s)://webserver/path/preseed.cfg
@@ -44,7 +44,7 @@ steps separately apart from the full installation mode.
     passwd/user-fullname="Full Name"
     passwd/username=username
     passwd/user-password=userpass
-    passwd/user-password-again=userpass`
+    passwd/user-password-again=userpass
 ```
 
 1. wget https://github.com/laur89/dotfiles/raw/master/.bootstrap/install_system.sh
@@ -55,7 +55,7 @@ steps separately apart from the full installation mode.
     * su
     * apt-get install sudo
 1. add your user to sudo group:
-    * `adduser  YOUR_USERNAME  sudo`    (and logout + login afterwards!)
+    * `/usr/sbin/adduser  YOUR_USERNAME  sudo`    (and logout + login afterwards!)
 1. sudo apt-get update
 1. execute script:
     * `./install_system.sh -F personal|work`
