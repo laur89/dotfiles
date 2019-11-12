@@ -26,6 +26,13 @@ steps separately apart from the full installation mode.
       more specifically)
     * Note: sometimes the daily images are broken, verify build is passing [here](https://d-i.debian.org/daily-images/daily-build-overview.html)
       before downloading.
+    * If you're installing on a laptop/wifi and need firmware, you might be better
+      off with these images:
+          http://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/weekly-builds/amd64/iso-cd/
+          ([shortcut](http://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/weekly-builds/amd64/iso-cd/firmware-testing-amd64-netinst.iso))
+          OR _daily_ sid (dunno, couldn't find daily testing): http://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/daily-builds/sid_d-i/current/amd64/iso-cd/
+          ([shortcut](http://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/daily-builds/sid_d-i/current/amd64/iso-cd/firmware-testing-amd64-netinst.iso))
+
 1. optionally preseed the installation (`esc` when graphical menu appears)
     * `auto url=http(s)://webserver/path/preseed.cfg
       debian-installer/allow_unauthenticated_ssl=true
