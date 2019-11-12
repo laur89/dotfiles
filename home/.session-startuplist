@@ -13,10 +13,11 @@ declare -a PROGS=(
     keepassxc
     copyq
     xfce4-volumed
-    mopidy
     redshift
     devmon
 )
+# (temporarily) deactivated:
+# mopidy
 
 # oldies:
     #"icedove"
