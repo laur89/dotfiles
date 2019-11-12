@@ -3616,12 +3616,7 @@ install_from_repo() {
     )
 
     # for .NET dev, consider also nuget pkg;
-
     declare -ar block2_nonwin=(
-        dnsutils
-        dnstracer
-        dnsmasq
-        resolvconf
         netdata
         wireshark
         iptraf
@@ -3630,8 +3625,6 @@ install_from_repo() {
         rsync
         gparted
         openvpn
-        network-manager
-        network-manager-gnome
         network-manager-openvpn-gnome
         gnome-disk-utility
         cups
@@ -3642,6 +3635,12 @@ install_from_repo() {
 
     # TODO: do we want ntp? on systemd systems we have systemd-timesyncd
     declare -ar block2=(
+        dnsutils
+        dnstracer
+        dnsmasq
+        resolvconf
+        network-manager
+        network-manager-gnome
         jq
         crudini
         htop
@@ -4447,7 +4446,7 @@ setup_minikube() {  # TODO: unfinished
 post_install_progs_setup() {
 
     is_native && install_acpi_events   # has to be after install_progs(), so acpid is already insalled and events/ dir present;
-    is_native && enable_network_manager
+    enable_network_manager
     is_native && install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present
     #is_native && execute --ignore-errs "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
     is_native && execute "mopidy local scan"            # update mopidy library
