@@ -975,15 +975,6 @@ install_deps() {
                 #error: command 'x86_64-linux-gnu-gcc' failed with exit status 1
     # you'd might wanna install  libkrb5-dev (or whatever ver avail at the time)   https://github.com/ecederstrand/exchangelib/issues/404
 
-
-    # i3lock-fancy                                      # https://github.com/meskarune/i3lock-fancy
-    # depends on i3lock-color-git (see i3lock-fancy's github page)
-    # TODO: fyi apt has i3lock-fancy; if it's new enough (newer some some 2016 build),
-    # this could be deprecated
-    # TODO: can't just clone and link, have to install!
-    clone_or_pull_repo "meskarune" "i3lock-fancy" "$BASE_DEPS_LOC"
-    create_link --sudo "${BASE_DEPS_LOC}/i3lock-fancy/i3lock-fancy" /usr/local/bin/
-
     # flashfocus - flash window when focus changes  https://github.com/fennerm/flashfocus
     install_block 'libxcb-render0-dev'
     py_install flashfocus
@@ -1718,7 +1709,7 @@ install_own_builds() {
 
     #install_dwm
     is_native && install_i3lock
-    is_native && install_i3lock_fancy
+    #is_native && install_i3lock_fancy
     is_native && install_betterlockscreen
     [[ "$MODE" == work ]] && install_work_builds
 }
@@ -2843,6 +2834,7 @@ install_i3_deps() {
 
 
     # install i3-cycle-windows   # https://github.com/DavsX/dotfiles/blob/master/bin/i3_cycle_windows
+    # this script defines a 'next' window, so we could bind it to someting like super+mouse_wheel;
     curl --fail --output "$f" 'https://raw.githubusercontent.com/DavsX/dotfiles/master/bin/i3_cycle_windows' \
             && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-cycle-windows" || err "installing i3-cycle-windows failed /w $?"
 
