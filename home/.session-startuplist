@@ -85,12 +85,26 @@ fi
     #xscreensaver -no-splash &
     #echo "Launching xscreensaver..."
 #fi
+# TODO: modify our delay_screensaver to also send $xset s reset (see manpage for exact cmd)
+# so it works also with xss, not only xscreensaver!
+#
+# for dimming ,see xrandr (https://unix.stackexchange.com/a/181501/47501)
 if is_native && ! is_proc_running xss-lock; then
+    #xss-lock -- lock -n &   # lock here is i3lock-fancy
+    #
+    # if you first want to do notif/screen dimmin, followed by lock:
+    # note with this you gotta provide dim command, otherwise your lock command will be
+    # executed after the first timeout, not second; if you don't care about dim delay,
+    # but only lock, then just give 'xset s <delay>' (ie /wo the second period);
+    # note if we do not start xss-lock, then dpms would kick in after 1st period;
+    #xset +dpms s 180 120
+
     xset s 300
-    xss-lock -- lock -n &   # lock here is i3lock-fancy
-    # or, if you first want to do notif/screen dimmin, followed by lock:
-    #xset s 300 310
-    #xss-lock -n /home/laur/bri.sh -- lock -n
+    #xss-lock -n /home/laur/bri.sh -- /data/progs/deps/homesick/repos/private-common/scripts/system/i3lock.sh &
+    xss-lock -- lock &  # note this should be kept in-sync with your wm keybinding
+
+    # turn screen off after 20min of idle:
+    #xset dpms 0 0 1200
 fi
 
 # note compton causes WSL (at least in VcXsrv) to fail
