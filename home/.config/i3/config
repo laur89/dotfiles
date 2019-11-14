@@ -254,7 +254,7 @@ mode "$mode_gaps_outer" {
 # workspace $w1 output LVDS1
 
 # Lock screen
-bindsym Control+mod1+Delete exec --no-startup-id /usr/local/bin/lock
+bindsym Control+mod1+l exec --no-startup-id lock
 # first switch to likely-unused ws to avoid typing passwd for the world:
 #bindsym Control+mod1+Delete exec --no-startup-id i3-msg workspace $w8 && /usr/local/bin/lock
 
