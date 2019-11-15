@@ -2827,7 +2827,7 @@ install_i3_deps() {
     f="$TMP_DIR/i3-dep-${RANDOM}"
 
     py_install i3ipc      # https://github.com/altdesktop/i3ipc-python
-    py_install rofi-tmux  # https://github.com/viniarck/rofi-tmux (note it includes i3 integration)
+    py_install rofi-tmux  # https://github.com/viniarck/rofi-tmux (note it includes i3 integration); aka rtf
 
     # install i3-quickterm   # https://github.com/lbonn/i3-quickterm
     #curl --output "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3-quickterm' \  # TODO: enable this one if/when PR is accepted
