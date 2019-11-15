@@ -1976,7 +1976,7 @@ fetch_release_from_any() {
         echo -e "$id:\t$dl_url" >> "$GIT_RLS_LOG"
     fi
 
-    echo "$file"
+    echo "$file"  # note returned should be indeed path, even if only relative (ie './xyz'), not cleaned, "pure" filename
     return 0
 }
 
@@ -1990,7 +1990,9 @@ install_deb_from_git() {
     local deb
 
     deb="$(fetch_release_from_git "$1" "$2" "$3")" || return 1
-    execute "sudo apt install '$deb'" || { err "installing [$1/$2] failed w/ $?"; return 1; }
+    # TODO: note apt doesn't have --yes option!
+    #execute "sudo apt install '$deb'" || { err "installing [$1/$2] failed w/ $?"; return 1; }
+    execute "sudo apt-get --yes install '$deb'" || { err "installing [$1/$2] failed w/ $?"; return 1; }
     execute "rm -rf -- '$deb'"
 }
 
