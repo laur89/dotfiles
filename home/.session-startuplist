@@ -157,7 +157,7 @@ fi
 
 if is_virtualbox; then
     # as per https://askubuntu.com/a/1107875, VBoxClient gives us bidirectional clipboard:
-    is_proc_running VBoxClient || VBoxClient --clipboard  # add --draganddrop if needed
+    is_proc_running 'VBoxClient.*clipboard' || VBoxClient --clipboard  # add --draganddrop if needed
 fi
 
 # synergy:
