@@ -1608,9 +1608,7 @@ install_progs() {
 
     execute "sudo apt-get --yes update"
 
-    #confirm -d Y "do you want to install our webdev lot?" && install_webdev
     install_webdev
-
     install_from_repo
     install_own_builds  # has to be after install_from_repo()
 
