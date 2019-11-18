@@ -1695,6 +1695,7 @@ install_own_builds() {
     install_ferdi
     install_slack_term
     install_ripgrep
+    install_vnote
     #install_rebar
     install_lazygit
     install_lazydocker
@@ -2084,6 +2085,15 @@ install_aws_okta() {  # https://github.com/segmentio/aws-okta
 install_bloomrpc() {  # https://github.com/uw-labs/bloomrpc/releases
     install_deb_from_git uw-labs bloomrpc _amd64.deb  # TODO deb pkg has unmet deps that aren't automatically installed (similar to ferdi)
     #install_bin_from_git -n bloomrpc uw-labs bloomrpc x86_64.AppImage
+}
+
+# other mentions:
+#   https://github.com/pbek/QOwnNotes  (also c++, qt-based like vnotes)
+#   https://github.com/laurent22/joplin/
+#   https://github.com/notable/notable/
+#   https://github.com/BoostIO/Boostnote
+install_vnote() {  # https://github.com/tamlok/vnote/releases
+    install_bin_from_git -n vnote tamlok vnote x86_64.AppImage
 }
 
 
@@ -2812,8 +2822,23 @@ EOF
 
 
 # TODO: this installation method is dirty; consider https://github.com/pipxproject/pipx
+#
+# pass -g opt to install from github; in that case 2 args are to be provided - user & repo,
+# and we can install one pkg at a time.
 py_install() {
-    execute "/usr/bin/env python3 -m pip install --user --upgrade $*"
+    local opt OPTIND github pkg
+
+    while getopts "g" opt; do
+        case "$opt" in
+            g) github=1 ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    pkg="$*"
+    [[ "$github" -eq 1 ]] && pkg="git+ssh://git@github.com/$1/$2.git"
+    execute "/usr/bin/env python3 -m pip install --user --upgrade $pkg"
 }
 
 
@@ -2827,7 +2852,8 @@ install_i3_deps() {
     f="$TMP_DIR/i3-dep-${RANDOM}"
 
     py_install i3ipc      # https://github.com/altdesktop/i3ipc-python
-    py_install rofi-tmux  # https://github.com/viniarck/rofi-tmux (note it includes i3 integration); aka rtf
+    py_install -g laur89 rofi-tmux  # https://github.com/laur89/rofi-tmux (note it includes i3 integration); aka rtf
+    #py_install rofi-tmux  # https://github.com/viniarck/rofi-tmux  # TODO use this as soon as/if our PR is accepted
 
     # install i3-quickterm   # https://github.com/lbonn/i3-quickterm
     #curl --output "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3-quickterm' \  # TODO: enable this one if/when PR is accepted
@@ -4061,6 +4087,7 @@ __choose_prog_to_build() {
         install_symantec_endpoint_security
         install_aws_okta
         install_bloomrpc
+        install_vnote
         install_postman
         install_weeslack
         install_terraform
