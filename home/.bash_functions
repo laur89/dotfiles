@@ -3979,6 +3979,7 @@ function jj {
 
 # mark:
 # pass '-o' as first arg to force overwrite existing target link
+# TODO: consider https://github.com/urbainvaes/fzf-marks
 function jm {
     local overwrite target
 
@@ -4040,11 +4041,13 @@ complete -F _completemarks jj jum jmo
 _complete_dirs_in_pwd() {
     local curw wordlist d
 
-    #echo "1: [$1]"
-    #echo "2: [$2]"
-    #echo "3: [$3]"
-    #echo "curv: [${COMP_WORDS[*]}]"
+    #err ''
+	#err "1: [$1]"  # always funcname
+	#err "2: [$2]"
+	#err "3: [$3]"  # last completed word? even if its not valid completion
+	#err "curv: [${COMP_WORDS[*]}]"
     curw=${COMP_WORDS[COMP_CWORD]}  # think it's the same as $2?
+    #err ''
     if [[ "$2" == */ ]]; then
         d="$(build_comma_separated_list -s '/' "${COMP_WORDS[@]:1}")"
         #curw=''
@@ -4052,9 +4055,30 @@ _complete_dirs_in_pwd() {
         d="$(build_comma_separated_list -s '/' "${COMP_WORDS[@]:1:${#COMP_WORDS[@]}-2}")"
         #curw="${2##*/}"
     fi
+    #err "d1: [$d]"
+
+    __go_up() {
+        local pattern dots i d
+
+        pattern="$*"  # guaranteed to start with minimum of 3 dots.
+        #err "pattern: [$pattern]"
+        dots="${pattern%%/*}"
+        for ((i=0; i <= (( ${#dots} - 2 )); i++)); do
+            d+='../'
+        done
+
+
+        #err "i: [$i]"
+        #[[ "$i" == "$pattern" ]] && unset i
+
+        #[[ "$pattern" =~ ^\.+/?$ ]] || i="$(sed 's/^[^/]*\///' <<< "$pattern")"  # .../foo/bar -> foo/bar
+        [[ "$pattern" == "$dots" || "$pattern" == "${dots}/" ]] && unset i || i="$(sed 's/^[^/]*\///' <<< "$pattern")"  # .../foo/bar -> foo/bar
+        echo "${d}$i"
+    }
 
     [[ -z "$d" ]] && d='.'
-    #echo "d: [$d]"
+    [[ "$d" =~ ^\.{3,} ]] && d="$(__go_up "$d")"
+    #err "dd: [$d]"
     [[ -d "$d" ]] || return 1
     wordlist=$(find -L "$d" -mindepth 1 -maxdepth 1 -type d -printf "%f\n")
     #[[ "${#wordlist[@]}" -eq 1 ]] && echo WAAAT && wordlist[0]="${wordlist[0]}/"
