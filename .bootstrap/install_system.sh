@@ -2821,6 +2821,9 @@ EOF
 
 # TODO: this installation method is dirty; consider https://github.com/pipxproject/pipx
 #
+# just fyi: to install local copy in dev mode:
+#      /usr/bin/env python3 -m pip install --user --upgrade --force-reinstall --editable .
+#
 # pass -g opt to install from github; in that case 2 args are to be provided - user & repo,
 # and we can install one pkg at a time.
 py_install() {
