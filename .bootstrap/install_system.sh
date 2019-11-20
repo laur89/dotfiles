@@ -3787,7 +3787,6 @@ install_from_repo() {
         ffmpeg
         ffmpegthumbnailer
         vokoscreen
-        kazam
         peek
         screenkey
         mediainfo
@@ -3818,6 +3817,7 @@ install_from_repo() {
     )
     # old/deprecated block3:
     #         spacefm-gtk3
+    #         kazam (doesn't play well w/ i3)
     #
 
     declare -ar block4=(
@@ -5282,4 +5282,6 @@ exit
 # in that case you probably need to change the device xfce4-volumed is controlling
 
 # TODOS:
-# if apt-get update fails, then we should fail script fast?
+# - if apt-get update fails, then we should fail script fast?
+# - provide -Q option for quick execution; eg skip massive font installation
+#   and other dependency builds;
