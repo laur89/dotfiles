@@ -2853,8 +2853,12 @@ install_i3_deps() {
     f="$TMP_DIR/i3-dep-${RANDOM}"
 
     py_install i3ipc      # https://github.com/altdesktop/i3ipc-python
-    py_install -g laur89 rofi-tmux  # https://github.com/laur89/rofi-tmux (note it includes i3 integration); aka rtf
-    #py_install rofi-tmux  # https://github.com/viniarck/rofi-tmux  # TODO use this as soon as/if our PR is accepted
+
+    # rofi-tmux:
+    #py_install rofi-tmux  # https://github.com/viniarck/rofi-tmux  # TODO use this as soon as/if our PR is accepted; or not, it's rather slow to start
+    #py_install -g laur89 rofi-tmux  # https://github.com/laur89/rofi-tmux (note it includes i3 integration); aka rtf;  this version is extension of the original
+    clone_or_pull_repo "laur89" "rofi-tmux" "$BASE_DEPS_LOC"
+    create_link "${BASE_DEPS_LOC}/rofi-tmux/rft/main.py" "$HOME/bin/rft"
 
     # install i3-quickterm   # https://github.com/lbonn/i3-quickterm
     #curl --output "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3-quickterm' \  # TODO: enable this one if/when PR is accepted
