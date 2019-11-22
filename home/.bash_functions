@@ -4039,53 +4039,90 @@ complete -F _completemarks jj jum jmo
 #
 # TODO: curw definition too simple, eg with [g /data/ dev/ scripts/a] it'd be 'scripts/a' which is wrong - should be 'a' i think
 _complete_dirs_in_pwd() {
-    local curw wordlist d
+    local curw wordlist d marker
 
-    #err ''
-	#err "1: [$1]"  # always funcname
-	#err "2: [$2]"
-	#err "3: [$3]"  # last completed word? even if its not valid completion
+
+    err ''
+	err "1: [$1]"  # always funcname
+	err "2: [$2]"
+	err "3: [$3]"  # last completed word? even if its not valid completion
 	#err "curv: [${COMP_WORDS[*]}]"
     curw=${COMP_WORDS[COMP_CWORD]}  # think it's the same as $2?
-    #err ''
-    if [[ "$2" == */ ]]; then
-        d="$(build_comma_separated_list -s '/' "${COMP_WORDS[@]:1}")"
-        #curw=''
-    else
-        d="$(build_comma_separated_list -s '/' "${COMP_WORDS[@]:1:${#COMP_WORDS[@]}-2}")"
-        #curw="${2##*/}"
-    fi
-    #err "d1: [$d]"
-
+    err ''
     __go_up() {
-        local pattern dots i d
+        local pattern dots i d OPTIND opt a
 
+        while getopts "dt" opt; do
+            case "$opt" in
+               d)
+                  a=d
+                    ;;
+               t) a=t
+                    ;;
+               *) echo -e "$usage"; return 1 ;;
+            esac
+        done
+        shift "$((OPTIND-1))"
         pattern="$*"  # guaranteed to start with minimum of 3 dots.
         #err "pattern: [$pattern]"
         dots="${pattern%%/*}"
         for ((i=0; i <= (( ${#dots} - 2 )); i++)); do
             d+='../'
         done
-
-
         #err "i: [$i]"
         #[[ "$i" == "$pattern" ]] && unset i
 
         #[[ "$pattern" =~ ^\.+/?$ ]] || i="$(sed 's/^[^/]*\///' <<< "$pattern")"  # .../foo/bar -> foo/bar
         [[ "$pattern" == "$dots" || "$pattern" == "${dots}/" ]] && unset i || i="$(sed 's/^[^/]*\///' <<< "$pattern")"  # .../foo/bar -> foo/bar
-        echo "${d}$i"
+
+        case "$a" in
+           d)
+              echo "${d}"
+                ;;
+           t) echo "$i"
+                ;;
+           *)
+              echo "${d}$i"
+                ;;
+        esac
     }
+
+    if [[ -z "$d" && "$2" =~ ^\.{3,} ]]; then
+        #d="$2"
+        d="$(__go_up -d "$2")"
+        #curw="$d"
+        curw="$(__go_up -t "$2")"
+        marker=1
+   #COMP_WORDS[COMP_CWORD]="$curw"  # think it's the same as $2?
+        #unset d
+    elif [[ "$2" == */ ]]; then
+        d="$(build_comma_separated_list -s '/' "${COMP_WORDS[@]:1}")"
+        #curw=''
+    # TODO: we should resolve dots already here?
+    else
+        d="$(build_comma_separated_list -s '/' "${COMP_WORDS[@]:1:${#COMP_WORDS[@]}-2}")"
+        #curw="${2##*/}"
+    fi
+    err "d1: [$d]"
+	err "curw: [$curw]"
+	err "all: [${COMP_WORDS[*]}]"
+
 
     [[ -z "$d" ]] && d='.'
     [[ "$d" =~ ^\.{3,} ]] && d="$(__go_up "$d")"
-    #err "dd: [$d]"
+    err "dd: [$d]"
     [[ -d "$d" ]] || return 1
-    wordlist=$(find -L "$d" -mindepth 1 -maxdepth 1 -type d -printf "%f\n")
+    [[ "$marker" -eq 1 ]] && marker="$d"
+    wordlist=$(find -L "$d" -mindepth 1 -maxdepth 1 -type d -printf "$marker%f\n")
+#for i in "${!wordlist[@]}"; do
+#wordlist[$i]="$d${wordlist[i]}"
+#done
     #[[ "${#wordlist[@]}" -eq 1 ]] && echo WAAAT && wordlist[0]="${wordlist[0]}/"
-    #echo "wlist: ${wordlist[*]} --end"
+    #report "wlist: ${wordlist[*]}"
     #[[ -z "${wordlist[*]}" ]] && wordlist=("$(printf %b '\u200b')")  # only if using -o nospace
     #echo "cwd: [$curw]"
-    COMPREPLY=($(compgen -W '${wordlist[@]}' -- "$curw"))
+    COMPREPLY=($(compgen -W '${wordlist[@]}' -- "$marker$curw"))
+    #report "comprelpy: [${COMPREPLY[*]}]"
     return 0
 }
 is_function g && complete -o dirnames -o filenames -o nospace -F _complete_dirs_in_pwd g  # autocomplete on directories
