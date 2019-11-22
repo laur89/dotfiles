@@ -77,3 +77,4 @@ _ReSharper*/
 .notes/  # vim-pad local notes dir
 *.min.js
 *.min.css
+__pycache__/
