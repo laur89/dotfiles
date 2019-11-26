@@ -73,6 +73,7 @@ alias egrep='grep -E --color=auto'
 alias cal='ncal -bM -A 1 -B 1'
 alias c='clear'
 alias cp='cp -rp'  # TODO: add -i for overwrite prompt? what about scripts?
+alias dig='dig +search'  # https://serverfault.com/questions/434581/why-can-host-and-nslookup-resolve-a-name-but-dig-cannot/899996
 alias dfh='df -h'
 #alias less="less -IRKFX" # handled by the $LESS env var
 alias ls='ls -h --color=auto --group-directories-first'
