@@ -166,7 +166,7 @@ check_dependencies() {
 
     readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
-    for prog in git cmp wc wget curl tar unzip atool realpath dirname basename head tee mktemp file date; do
+    for prog in git cmp wc wget curl tar unzip atool realpath dirname basename head tee mktemp file date alien; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
             install_block "$prog" || { err "unable to install required prog [$prog] this script depends on. abort."; exit 1; }
@@ -1720,6 +1720,7 @@ install_work_builds() {
     install_postman
     install_terraform
     install_minikube
+    #install_bluejeans
 }
 
 
@@ -2145,6 +2146,24 @@ install_terraform() {  # https://www.terraform.io/downloads.html
     bin="$(fetch_release_from_any -I "terraform" "https://www.terraform.io/downloads.html" "_linux_amd64.zip")" || return $?
     execute "chmod +x -- '$bin'" || return 1
     execute "sudo mv -- '$bin' '$target'" || { err "installing [$bin] in [$target] failed"; return 1; }
+    return 0
+}
+
+
+install_bluejeans() {  # https://www.bluejeans.com/downloads#desktop
+    local tmpdir rpm deb
+
+    rpm="$(fetch_release_from_any -I "terraform" "https://www.bluejeans.com/downloads#desktop" 'BlueJeans.rpm')" || return $?
+    execute "sudo alien --install --to-deb $rpm" || return 1
+
+    #tmpdir="$(mktemp -d "rambox-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    #execute "pushd -- $tmpdir" || return 1
+    #deb="$(find . -maxdepth 1 -mindepth 1 -type f -name '*.deb')"
+    #[[ -f "$deb" ]] || { err "couldn't find converted deb"; return 1; }
+    #execute "sudo apt-get --yes install '$deb'" || { err "installing [$deb] failed w/ $?"; return 1; }
+
+    #execute "popd"
+    #execute "sudo rm -rf -- '$tmpdir'"
     return 0
 }
 
@@ -4096,6 +4115,7 @@ __choose_prog_to_build() {
         install_postman
         install_weeslack
         install_terraform
+        install_bluejeans
         install_minikube
         install_gruvbox_gtk_theme
     )
