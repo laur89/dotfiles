@@ -1,5 +1,8 @@
 # sample file:
 # http://www.gnu.org/software/bash/manual/html_node/Sample-Init-File.html#Sample-Init-File
+#
+# consider also:
+#   https://unix.stackexchange.com/a/234037/47501
 #################################
 # vi mode:  # can't set vi-mode here, as it fucks up fzf; set it in .bashrc instead
 #set editing-mode vi
@@ -9,6 +12,11 @@ set keymap vi-command
 
 # Keymaps for when we're in insert (i.e., typing stuff in) mode
 set keymap vi-insert
+
+# Enable Readline waiting less for additional input when a key is pressed.
+# Otherwise eg exiting from insert mode will have a delay on prompt indicator:
+# (from https://unix.stackexchange.com/questions/318433/bash-urxvt-delay-after-esc-in-vi-mode)
+set keyseq-timeout 50
 
 # Ignore case on tab auto-completion
 set completion-ignore-case on
