@@ -2345,6 +2345,7 @@ install_webdev() {
     # install npm modules:  # TODO review what we want to install
     execute "$NPM_PRFX npm install -g \
         nwb \
+        @vue/cli \
     "
 
     # install ruby modules:          # sass: http://sass-lang.com/install
@@ -2857,7 +2858,7 @@ py_install() {
     shift "$((OPTIND-1))"
 
     pkg="$*"
-    [[ "$github" -eq 1 ]] && pkg="git+ssh://git@github.com/$1/$2.git"
+    [[ "$github" -eq 1 ]] && pkg="git+ssh://git@github.com/$1/$2.git"  # append @branch for a specific branch
     execute "/usr/bin/env python3 -m pip install --user --upgrade $pkg"
 }
 
