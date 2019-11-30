@@ -367,6 +367,13 @@ _enter_dir() {
 [[ -s "$NVM_DIR/nvm.sh" ]] && export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
 # TODO: call _enter_dir from here to make sure it's called at startup?
 ##########################################
+# generate .Xauth to be passed to (and used by) GUI docker containers:
+export XAUTH='/tmp/.docker.xauth'
+if [[ ! -s "$XAUTH" && -n "$DISPLAY" ]]; then  # TODO: also check for is_x()?
+    touch "$XAUTH"
+    xauth nlist "$DISPLAY" | sed -e 's/^..../ffff/' | xauth -f "$XAUTH" nmerge -
+fi
+##########################################
 # note following is added by script from https://get.sdkman.io/:
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"
