@@ -28,8 +28,10 @@ bindsym $mod+c kill
 # Start Rofi:
 bindsym $mod+space exec --no-startup-id rofi -show combi -combi-modi 'window#drun#run' \
 -modi combi#ssh -lines 15 -columns 2 -width 50 -separator-style "none" -sidebar-mode
+# rofi-tmux:
+bindsym $mod+Shift+space exec --no-startup-id rft sw
 
-# Change focus
+# Change focus (note 'nop' is read by our listener script(s))
 bindsym $mod+h nop
 bindsym $mod+j nop
 bindsym $mod+k nop
@@ -453,9 +455,12 @@ for_window [class="^copyq$"] floating enable
 for_window [class="^keepassxc?$"] floating enable
 for_window [class="^vokoscreen$"] floating enable
 for_window [class="^Galculator$"] floating enable
+for_window [class="^XEyes$"] floating enable
 for_window [class="^XCalc$"] floating enable
 for_window [class="^Nvidia-settings$"] floating enable
 for_window [class="^i3expod\.py$"] fullscreen enable
+# Rider splash:
+for_window [class="^java-lang-Thread$" instance="^java-lang-Thread$" title="^win"] floating enable, border pixel $border
 # charles splash:
 for_window [class="charles-gui-MainWithClassLoader$" title="^win"] floating enable, border pixel $border
 # our own invented title to force some wins (eg terminals) float with no titlebar:
