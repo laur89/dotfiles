@@ -2086,6 +2086,18 @@ install_bloomrpc() {  # https://github.com/uw-labs/bloomrpc/releases
     #install_bin_from_git -n bloomrpc uw-labs bloomrpc x86_64.AppImage
 }
 
+# db/database visualisation tool (for mysql/mariadb)
+install_dbeaver() {  # https://dbeaver.io/download/
+    local loc dest
+
+    readonly loc='https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb'
+    readonly dest="$TMP_DIR/dbeaver-$RANDOM.deb"
+
+    execute "wget -O '$dest' '$loc'" || { err "wgetting [$loc] failed."; return 1; }
+    execute "sudo apt-get --yes install '$dest'" || return 1
+    execute "rm -f -- '$dest'"
+}
+
 # other mentions:
 #   https://github.com/pbek/QOwnNotes  (also c++, qt-based like vnotes)
 #   https://github.com/laurent22/joplin/
@@ -4112,6 +4124,7 @@ __choose_prog_to_build() {
         install_symantec_endpoint_security
         install_aws_okta
         install_bloomrpc
+        install_dbeaver
         install_vnote
         install_postman
         install_weeslack
