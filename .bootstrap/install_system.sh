@@ -2098,7 +2098,7 @@ install_dbeaver() {  # https://dbeaver.io/download/
     execute "rm -f -- '$dest'"
 }
 
-# other mentions:
+# other mentions/alternatives:
 #   https://github.com/pbek/QOwnNotes  (also c++, qt-based like vnotes)
 #   https://github.com/laurent22/joplin/
 #   https://github.com/notable/notable/

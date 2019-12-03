@@ -40,6 +40,7 @@ bindsym $mod+period focus output right
 bindsym $mod+comma  focus output left
 
 bindsym $mod+button4 exec --no-startup-id i3-cycle-windows
+bindsym $mod1+button4 exec --no-startup-id i3-cycle-windows
 
 # Alternatively, you can use the cursor keys (note these are defaults):
 bindsym $mod+Left  focus left
@@ -473,6 +474,7 @@ for_window [class="^keepassxc?$" title="^(\w+\.kdbx \[Locked\] - )?KeePassXC?$"]
 # these two are from https://www.reddit.com/r/i3wm/comments/8gh4c0/working_fix_for_focusing_intellij_popups/
 # to solve intellij quirks:
 for_window [class="^jetbrains-.+"][window_type=dialog] focus
+for_window [class="^jetbrains-" title="^Import IntelliJ IDEA Settings From"] floating enable, focus
 for_window [instance="sun-awt-X11-XWindowPeer"] border pixel 0
 
 

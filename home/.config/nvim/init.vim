@@ -150,6 +150,9 @@ set nocompatible " Must be the first line
     " c# additions (mainly better syntax highlight):
     Plug 'OrangeT/vim-csharp'  " TODO: deprecate for omnisharp?
 
+    " typescript https://github.com/leafgarland/typescript-vim
+    Plug 'leafgarland/typescript-vim', { 'for': 'ts' }
+
     " Node.js:
     Plug 'moll/vim-node'
 
