@@ -142,7 +142,7 @@ set nocompatible " Must be the first line
     Plug 'fatih/vim-go', { 'for': 'go', 'do': ':GoUpdateBinaries' }
 
     " Scala
-    Plug 'derekwyatt/vim-scala'
+    Plug 'derekwyatt/vim-scala', { 'for': 'scala' }
 
     " C# support: (requires mono)    https://github.com/OmniSharp/omnisharp-vim
     "Plug 'OmniSharp/omnisharp-vim'  " using one provided by YCM
@@ -155,6 +155,9 @@ set nocompatible " Must be the first line
 
     " Node.js:
     Plug 'moll/vim-node'
+
+    " syntax highlight for vue components:  " https://github.com/posva/vim-vue
+    Plug 'posva/vim-vue', { 'for': 'vue' }
 
     " js beautifier:
     "Plug 'jsbeautify'
