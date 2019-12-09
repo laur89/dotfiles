@@ -116,7 +116,7 @@ ffind() {
               file_type="-type $opt"
                 ;;
            b) readonly filetype=1
-              i='x-executable; charset=binary'
+              i='x-.*-?executable; charset=binary'
               [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
               file_type="-type f"
               extra_params='-executable'
