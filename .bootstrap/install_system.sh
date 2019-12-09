@@ -2086,6 +2086,27 @@ install_bloomrpc() {  # https://github.com/uw-labs/bloomrpc/releases
     #install_bin_from_git -n bloomrpc uw-labs bloomrpc x86_64.AppImage
 }
 
+# if build fails, you might be able to salvage something by:
+#   sed -i 's/-Werror//g' Makefile
+install_grpc_cli() {  # https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md
+    local tmpdir f
+
+    tmpdir="$(mktemp -d 'grpc-cli-tempdir-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    execute "pushd -- '$tmpdir'" || return 1
+    execute "git clone -b '$(curl --fail -L https://grpc.io/release)' https://github.com/grpc/grpc" || return 1
+    execute 'pushd -- grpc' || return 1
+    execute 'git submodule update --init' || return 1
+
+    install_block 'libgflags-dev' || return 1
+    execute 'make -j8 grpc_cli' || return 1
+    f="$(find . -mindepth 1 -type f -name 'grpc_cli')"
+    [[ -f "$f" ]] || { err "couldn't find grpc_cli"; return 1; }
+    execute "mv -- '$f' '$BASE_BUILDS_DIR'" || return 1
+
+    execute "popd; popd" || return 1
+    execute "rm -rf -- '$tmpdir'"
+}
+
 # db/database visualisation tool (for mysql/mariadb)
 install_dbeaver() {  # https://dbeaver.io/download/
     local loc dest
@@ -3706,6 +3727,9 @@ install_from_repo() {
         ncdu
         pydf
         nethogs
+        tcpdump
+        tcpflow
+        ngrep
         nload
         ntp
         remind
@@ -4124,6 +4148,7 @@ __choose_prog_to_build() {
         install_symantec_endpoint_security
         install_aws_okta
         install_bloomrpc
+        install_grpc_cli
         install_dbeaver
         install_vnote
         install_postman
