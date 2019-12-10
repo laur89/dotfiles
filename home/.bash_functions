@@ -3865,36 +3865,70 @@ d() {  # mnemonic: dir
 }
 
 
-heapdump() {
-    local usage OPTIND opt pid mode
+# notes:
+# - using [kill -3 <pid>] for thread dump causes it to appear jvm's stdout;
+#   quite likely it'll be the jvm.log;
+javadump() {
+    local usage OPTIND opt pids pid mode i
 
     readonly usage="\n${FUNCNAME}: dump java process's heap and/or threads.
-    Usage: ${FUNCNAME}  [-h] [-t] <pid>
+    Usage: ${FUNCNAME}  [-ht] [pid] [pid2]...
         -h  only dump heap (skip thread dump)
         -t  only dump threads (skip heap dump)
 "
 
     while getopts "ht" opt; do
         case "$opt" in
-           h) mode=heap
+           h) mode=H
                 ;;
-           t) mode=thread
+           t) mode=T
                 ;;
            *) echo -e "$usage"; return 1 ;;
         esac
     done
     shift "$((OPTIND-1))"
 
-    pid="$1"
+    pids=("$@")
 
-    [[ "$#" -ne 1 ]] && { err "exactly one arg required: java process PID" "$FUNCNAME"; return 1; }
-    is_digit "$pid" || { err "need to provide PID of java process"; return 1; }
+    # if no pids provided, ask user to select:
+    if [[ "${#pids[@]}" -eq 0 ]]; then
+        unset opt; opt=()
+        while read -r i; do
+            [[ "$i" != *sun.tools.jcmd.JCmd* ]] && opt+=("$i")
+        done< <(jcmd -l)
+        [[ "${#opt[@]}" -eq 0 ]] && { err "no java processes as per jcmd"; return 1; }
 
-    [[ "$mode" != thread ]] && report "dumping heap..." && { jcmd "$pid" GC.heap_dump "/tmp/${pid}-heap-dump.hprof" || return 1; }
-    [[ "$mode" != heap ]] && report "dumping threads..." && { jcmd "$pid" Thread.print > "/tmp/${pid}-thread-dump.jfr" || return 1; }
-    #jmap -dump:live,format=b,file=/tmp/dump.hprof 12587    #alternative headp dump using jmap
-    #jstack -f 5824  #alternative thread dump using jstack
+        select_items "${opt[@]}"  # don't return here as we need to change wd to starting location;
+        [[ -z "${__SELECTED_ITEMS[*]}" ]] && { err "no process selected"; return 1; }
+        for i in "${__SELECTED_ITEMS[@]}"; do
+            pid="$(grep -Po '^\d+(?=)' <<< "$i")"
+            pids+=("$pid")
+        done
+        [[ "${#pids[@]}" -eq 0 ]] && { err "no pids selected"; return 1; }
+    fi
+
+    for pid in "${pids[@]}"; do
+        is_digit "$pid" || { err "at least one of the args was not a valid pid: [$pid]"; return 1; }
+    done
+
+    # TODO: heap_dump won't overwrite file! ask for deletion?
+    for pid in "${pids[@]}"; do  # do not parallelize!
+        i="$(ps -o user= -p "$pid")"
+        if [[ "$i" != "$USER" ]]; then
+            [[ "$EUID" -ne 0 ]] && { err "pid [$pid] is not owned by our user and we're not root to change to user [$i]"; return 1; }
+            [[ "$mode" != T ]] && report "dumping heap..." && { su -l "$i" -c "jcmd $pid GC.heap_dump '/tmp/${pid}-heap-dump.hprof'" || return 1; }
+            [[ "$mode" != H ]] && report "dumping threads..." && { su -l "$i" -c "jcmd $pid Thread.print" > "/tmp/${pid}-thread-dump.jfr" || return 1; }
+        else  # target process is owned by us
+            [[ "$mode" != T ]] && report "dumping heap..." && { jcmd "$pid" GC.heap_dump "/tmp/${pid}-heap-dump.hprof" || return 1; }
+            [[ "$mode" != H ]] && report "dumping threads..." && { jcmd "$pid" Thread.print > "/tmp/${pid}-thread-dump.jfr" || return 1; }
+            #jmap -dump:live,format=b,file=/tmp/dump.hprof 12587    #alternative headp dump using jmap
+            #jstack -f 5824  #alternative thread dump using jstack
+        fi
+    done
 }
+
+heapdump() { javadump -h "$@"; }
+threaddump() { javadump -t "$@"; }
 
 
 tcpdumperino() {
