@@ -2176,7 +2176,7 @@ install_terraform() {  # https://www.terraform.io/downloads.html
 
     target='/usr/local/bin'
 
-    bin="$(fetch_release_from_any -I "terraform" "https://www.terraform.io/downloads.html" "_linux_amd64.zip")" || return $?
+    bin="$(fetch_release_from_any -I "terraform" 'https://www.terraform.io/downloads.html' '_linux_amd64.zip')" || return $?
     execute "chmod +x -- '$bin'" || return 1
     execute "sudo mv -- '$bin' '$target'" || { err "installing [$bin] in [$target] failed"; return 1; }
     return 0
@@ -2228,19 +2228,10 @@ install_eclipse_mem_analyzer() {  # https://www.eclipse.org/mat/downloads.php
 
 
 install_bluejeans() {  # https://www.bluejeans.com/downloads#desktop
-    local tmpdir rpm deb
+    local rpm
 
-    rpm="$(fetch_release_from_any -I "terraform" "https://www.bluejeans.com/downloads#desktop" 'BlueJeans.rpm')" || return $?
-    execute "sudo alien --install --to-deb $rpm" || return 1
-
-    #tmpdir="$(mktemp -d "rambox-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-    #execute "pushd -- $tmpdir" || return 1
-    #deb="$(find . -maxdepth 1 -mindepth 1 -type f -name '*.deb')"
-    #[[ -f "$deb" ]] || { err "couldn't find converted deb"; return 1; }
-    #execute "sudo apt-get --yes install '$deb'" || { err "installing [$deb] failed w/ $?"; return 1; }
-
-    #execute "popd"
-    #execute "sudo rm -rf -- '$tmpdir'"
+    rpm="$(fetch_release_from_any -I "bluejeans" 'https://www.bluejeans.com/downloads#desktop' 'BlueJeans.rpm')" || return $?
+    execute "sudo alien --install --to-deb '$rpm'" || return 1
     return 0
 }
 
@@ -2392,7 +2383,7 @@ install_skype() {  # https://wiki.debian.org/skype
     fi
 
     execute "wget -O $skypeFile -- $SKYPE_LOC" || { err; return 1; }
-    execute "sudo dpkg -i $skypeFile"  #|| { err; return 1; }  # do not exit on err!
+    execute "sudo dpkg -i $skypeFile"  #|| { err; return 1; }  # do not exit on err!; TODO: instead of this install-and-fix, directly install file via apt-get?
     execute "sudo apt-get -f --yes install" || { err; return 1; }
 
     # store the .deb, just in case:
