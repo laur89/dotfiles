@@ -441,18 +441,16 @@ exec_always --no-startup-id flashfocus
 #for_window [class="^.*"] border pixel 2
 
 # Enable or disable floating
-for_window [class="Arandr"] floating enable
-for_window [class="Lxappearance"] floating enable
+for_window [class="^copyq$"] floating enable
+for_window [class="^Arandr$"] floating enable
+for_window [class="^Lxappearance"] floating enable
 for_window [class="Nitrogen"] floating enable
-for_window [class="Artha"] floating enable
-for_window [instance="dukto"] floating enable
 for_window [class="feh"] floating enable
 for_window [class="^Sxiv$"] floating enable
 for_window [window_role="Preferences"] floating enable
 for_window [window_type="dialog"] floating enable
 for_window [window_type="menu"] floating enable
-for_window [class="Pavucontrol"] floating enable
-for_window [class="^copyq$"] floating enable
+for_window [class="^Pavucontrol$"] floating enable
 for_window [class="^keepassxc?$"] floating enable
 for_window [class="^vokoscreen$"] floating enable
 for_window [class="^Galculator$"] floating enable
@@ -460,8 +458,11 @@ for_window [class="^XEyes$"] floating enable
 for_window [class="^XCalc$"] floating enable
 for_window [class="^Nvidia-settings$"] floating enable
 for_window [class="^i3expod\.py$"] fullscreen enable
+for_window [class="Artha"] floating enable
 # Rider splash:
-for_window [class="^java-lang-Thread$" instance="^java-lang-Thread$" title="^win"] floating enable, border pixel $border
+for_window [class="^java-lang-Thread$" instance="^java-lang-Thread$" title="^win0$"] floating enable, border pixel $border
+# Jetbrains IDEA splash:
+for_window [class="^jetbrains-idea$" instance="^jetbrains-idea$" title="^win0$"] floating enable, border pixel $border
 # charles splash:
 for_window [class="charles-gui-MainWithClassLoader$" title="^win"] floating enable, border pixel $border
 # our own invented title to force some wins (eg terminals) float with no titlebar:
@@ -474,8 +475,8 @@ for_window [class="^keepassxc?$" title="^(\w+\.kdbx \[Locked\] - )?KeePassXC?$"]
 # these two are from https://www.reddit.com/r/i3wm/comments/8gh4c0/working_fix_for_focusing_intellij_popups/
 # to solve intellij quirks:
 for_window [class="^jetbrains-.+"][window_type=dialog] focus
-for_window [class="^jetbrains-" title="^Import IntelliJ IDEA Settings From"] floating enable, focus
 for_window [instance="sun-awt-X11-XWindowPeer"] border pixel 0
+for_window [class="^jetbrains-" title="^Import .*Settings From"] floating enable, focus
 
 
 # for drawing specific icon for application:  (from https://gist.github.com/dmelliot/437924ff581f3f1edd59f44833be6cc6): {{{
