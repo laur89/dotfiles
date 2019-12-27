@@ -3890,6 +3890,7 @@ javadump() {
 
     pids=("$@")
 
+    check_progs_installed jcmd || return 1
     # if no pids provided, ask user to select:
     if [[ "${#pids[@]}" -eq 0 ]]; then
         unset opt; opt=()
