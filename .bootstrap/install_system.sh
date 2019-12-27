@@ -167,7 +167,7 @@ check_dependencies() {
 
     readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
 
-    for prog in git cmp wc wget curl tar unzip atool realpath dirname basename head tee mktemp file date alien; do
+    for prog in git cmp wc wget curl tar unzip atool realpath dirname basename head tee mktemp file date alien groups; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
             install_block "$prog" || { err "unable to install required prog [$prog] this script depends on. abort."; exit 1; }
@@ -4348,7 +4348,7 @@ setup_docker() {
         execute 'sudo update-grub'
     }
 
-    execute "sudo adduser $USER docker"      # add user to docker group
+    addgroup_if_missing docker               # add user to docker group
     #execute "sudo gpasswd -a ${USER} docker"  # add user to docker group
     #execute "newgrp docker"  # log us into the new group; !! will stop script execution
     _add_kernel_option
@@ -4536,30 +4536,43 @@ enable_fw() {
 
 # change DefaultAuthType to None, so printer configuration wouldn't require basic auth
 setup_cups() {
-    local conf_file conf2 group
+    local conf_file conf2 group should_restart
 
     readonly conf_file='/etc/cups/cupsd.conf'
     readonly conf2='/etc/cups/cups-files.conf'
+    should_restart=0
 
     [[ -f "$conf_file" ]] || { err "cannot configure cupsd: [$conf_file] does not exist; abort;"; return 1; }
 
+    # this bit (auth change/disabling) comes likely from https://serverfault.com/a/800901 or https://askubuntu.com/a/1142110
     if ! grep -q 'DefaultAuthType' "$conf_file"; then
         err "[$conf_file] does not contain [DefaultAuthType], see what's what"
         return 1
     elif ! grep -Eq '^DefaultAuthType\s+None' "$conf_file"; then  # hasn't been changed yet
         execute "sudo sed -i --follow-symlinks 's/^DefaultAuthType/#DefaultAuthType/g' $conf_file"  # comment out existing value
         execute "echo 'DefaultAuthType None' | sudo tee --append '$conf_file' > /dev/null"
-        execute 'sudo service cups restart'
+        should_restart=1
     fi
 
-    # add our user to a group so we're allowed to modify printers & whatnot:
-    #   see https://unix.stackexchange.com/questions/235477/cups-add-printer-page-returns-forbidden-on-web-interface
+    # add our user to a group so we're allowed to modify printers & whatnot: {{{
+    #   see https://unix.stackexchange.com/a/513983/47501
     #   and https://ro-che.info/articles/2016-07-08-debugging-cups-forbidden-error
     [[ -f "$conf2" ]] || { err "cannot configure our user for cups: [$conf2] does not exist; abort;"; return 1; }
     group="$(grep ^SystemGroup "$conf2" | awk '{print $NF}')" || { err "grepping group from [$conf2] failed w/ $?"; return 1; }
     is_single "$group" || { err "found SystemGroup in [$conf2] was unexpected: [$group]"; return 1; }
     [[ "$group" == root || "$group" == sys ]] && { err "found SystemGroup is [$group] - verify we want to be added to that group"; return 1; }
-    execute "sudo adduser $USER $group"
+    addgroup_if_missing "$group"
+    # }}}
+
+    [[ "$should_restart" -eq 1 ]] && execute 'sudo service cups restart'
+}
+
+
+addgroup_if_missing() {
+    local group
+    readonly group="$1"
+
+    groups "$USER" | grep -q "\b$group\b" || execute "sudo adduser $USER $group"
 }
 
 
@@ -4594,7 +4607,7 @@ post_install_progs_setup() {
     enable_unprivileged_containers_for_regular_users
     setup_docker
     setup_nvim
-    is_native && execute "sudo adduser $USER wireshark"      # add user to wireshark group, so it could be run as non-root;
+    is_native && addgroup_if_missing wireshark               # add user to wireshark group, so it could be run as non-root;
                                                 # (implies wireshark is installed with allowing non-root users
                                                 # to capture packets - it asks this during installation); see https://code.wireshark.org/review/gitweb?p=wireshark.git;a=blob_plain;f=debian/README.Debian
                                                 # if wireshark is installed manually/interactively, then installer asks whether
@@ -4606,15 +4619,15 @@ post_install_progs_setup() {
                                                 # see also https://unix.stackexchange.com/a/96227
 
     #execute "newgrp wireshark"                  # log us into the new group; !! will stop script execution
-    is_native && execute "sudo adduser $USER vboxusers"      # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
-    is_virtualbox && execute "sudo adduser $USER vboxsf"      # add user to vboxsf group (to be able to access mounted shared folders);
+    is_native && addgroup_if_missing vboxusers   # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
+    is_virtualbox && addgroup_if_missing vboxsf  # add user to vboxsf group (to be able to access mounted shared folders);
     #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
     configure_ntp_for_work  # TODO: confirm if ntp needed in WSL
     configure_pulseaudio  # TODO see if works in WSL
     #setup_seafile_cli  # TODO https://github.com/haiwen/seafile/issues/1855 & https://github.com/haiwen/seafile/issues/1854
     is_native && enable_fw
     is_native && setup_cups
-    #execute "sudo adduser $USER fuse"  # not needed anymore?
+    #addgroup_if_missing fuse  # not needed anymore?
 
     command -v kubectl >/dev/null && execute 'kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl'  # add kubectl bash completion
     command -v minikube >/dev/null && setup_minikube
@@ -4730,11 +4743,12 @@ report() {
     readonly caller_name="$2"  # OPTIONAL
 
     [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "OK LOG: ${caller_name:+[$caller_name]: }$msg" >> "$EXECUTION_LOG"
-    >&2 echo -e "${COLORS[YELLOW]}${caller_name:-"INFO"}:${COLORS[OFF]} ${msg:-"--info lvl message placeholder--"}"
+    >&2 echo -e "${COLORS[YELLOW]}${caller_name:-'INFO'}:${COLORS[OFF]} ${msg:-'--info lvl message placeholder--'}"
 }
 
 
 # issues when installing downloaded deb files (at least when they've already been installed beforehand?);
+# NOTE: unsure if this is really needed for our use-case;
 # see https://askubuntu.com/a/908825
 # see https://unix.stackexchange.com/questions/468807/strange-error-in-apt-get-download-bug
 sanitize_apt() {
@@ -4772,7 +4786,7 @@ check_connection() {
     local timeout ip
 
     readonly timeout=3  # in seconds
-    readonly ip="google.com"
+    readonly ip='google.com'
 
     # Check whether the client is connected to the internet:
     # TODO: keep '--no-check-certificate' by default?
