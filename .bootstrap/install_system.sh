@@ -64,6 +64,7 @@ EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%b-%y--%R).log" \
         || readonly EXECUTION_LOG="$HOME/installation-exe.log"  # do not create logfile here! otherwise cleanup()
                                                                 # picks it up and reports of its existence, opening
                                                                 # up for false positives.
+SYSCTL_CHANGED=0       # states whether sysctl config got changed
 
 #------------------------
 #--- Global Constants ---
@@ -943,6 +944,7 @@ install_deps() {
     # see also complementing script @ https://github.com/dylanaraps/bin/blob/master/wal-set
     py_install pywal          # https://github.com/dylanaraps/pywal/wiki/Installation
 
+    # consider also perl alternative @ https://github.com/pasky/speedread
     rb_install speed_read  # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
     rb_install gist        # https://github.com/defunkt/gist  (pastebinit for gists)
 
@@ -1976,6 +1978,7 @@ fetch_release_from_any() {
         echo -e "$id:\t$dl_url" >> "$GIT_RLS_LOG"
     fi
 
+    #sanitize_apt "$tmpdir"  # think this is not really needed...
     echo "$file"  # note returned should be indeed path, even if only relative (ie './xyz'), not cleaned, "pure" filename
     return 0
 }
@@ -2108,6 +2111,7 @@ install_grpc_cli() {  # https://github.com/grpc/grpc/blob/master/doc/command_lin
 }
 
 # db/database visualisation tool (for mysql/mariadb)
+# remember intellij idea also has a db tool!
 install_dbeaver() {  # https://dbeaver.io/download/
     local loc dest
 
@@ -4282,24 +4286,38 @@ remind_manually_installed_progs() {
 
 # as per    https://confluence.jetbrains.com/display/IDEADEV/Inotify+Watches+Limit
 increase_inotify_watches_limit() {
+    _sysctl_conf '60-jetbrains.conf' 'fs.inotify.max_user_watches' 524288
+}
+
+
+# as per    https://wiki.archlinux.org/index.php/Linux_Containers#Enable_support_to_run_unprivileged_containers_(optional)
+#
+# this is needed eg for electron v5+ to enable sandboxing; eg see
+#	https://github.com/electron/electron/issues/17972
+#	https://github.com/notable/notable/issues/792
+#	https://github.com/electron/electron/issues/16631
+enable_unprivileged_containers_for_regular_users() {
+    _sysctl_conf '70-enable-unprivileged-containers.conf' 'kernel.unprivileged_userns_clone' 1
+}
+
+_sysctl_conf() {
     local sysctl_dir sysctl_conf property value
 
     readonly sysctl_dir='/etc/sysctl.d'
-    readonly sysctl_conf="${sysctl_dir}/60-jetbrains.conf"
-    readonly property='fs.inotify.max_user_watches'
-    readonly value=524288
+    readonly sysctl_conf="${sysctl_dir}/$1"
+    readonly property="$2"
+    readonly value="$3"
 
-    [[ -d "$sysctl_dir" ]] || { err "[$sysctl_dir] is not a dir. can't increase inotify watches limit for IDEA"; return 1; }
-    grep -q "^$property = $value\$" "$sysctl_conf" && return  # value already set, nothing to do
+    [[ -d "$sysctl_dir" ]] || { err "[$sysctl_dir] is not a dir. can't change our sysctl value for [$1]"; return 1; }
+    grep -q "^$property\s*=\s*$value\$" "$sysctl_conf" && return  # value already set, nothing to do
 
     # just in case delete all same prop definitions, regardless of its value:
     [[ -f "$sysctl_conf" ]] && execute "sudo sed -i --follow-symlinks '/^$property/d' '$sysctl_conf'"
 
-    # increase inotify watches limit (for intellij idea):
     execute "echo $property = $value | sudo tee --append $sysctl_conf > /dev/null"
 
-    # apply the change:
-    execute "sudo sysctl -p --system"
+    # mark our sysctl config has changed:
+    SYSCTL_CHANGED=1
 }
 
 
@@ -4573,6 +4591,7 @@ post_install_progs_setup() {
     is_native && execute "mopidy local scan"            # update mopidy library
     is_native && execute "sudo sensors-detect --auto"   # answer enter for default values (this is lm-sensors config)
     increase_inotify_watches_limit         # for intellij IDEA
+    enable_unprivileged_containers_for_regular_users
     setup_docker
     setup_nvim
     is_native && execute "sudo adduser $USER wireshark"      # add user to wireshark group, so it could be run as non-root;
@@ -4599,6 +4618,8 @@ post_install_progs_setup() {
 
     command -v kubectl >/dev/null && execute 'kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl'  # add kubectl bash completion
     command -v minikube >/dev/null && setup_minikube
+
+    [[ "$SYSCTL_CHANGED" -eq 1 ]] && execute "sudo sysctl -p --system"
 }
 
 
@@ -4710,6 +4731,24 @@ report() {
 
     [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "OK LOG: ${caller_name:+[$caller_name]: }$msg" >> "$EXECUTION_LOG"
     >&2 echo -e "${COLORS[YELLOW]}${caller_name:-"INFO"}:${COLORS[OFF]} ${msg:-"--info lvl message placeholder--"}"
+}
+
+
+# issues when installing downloaded deb files (at least when they've already been installed beforehand?);
+# see https://askubuntu.com/a/908825
+# see https://unix.stackexchange.com/questions/468807/strange-error-in-apt-get-download-bug
+sanitize_apt() {
+    local target
+
+    target="$1"
+
+    if ! [[ -e "$target" ]]; then
+        err "tried to sanitize [$target] for apt, but it doesn't exist"
+        return 1
+    fi
+
+    execute "sudo chown -R _apt:root '$target'"
+    execute "sudo chmod -R 700 '$target'"
 }
 
 
