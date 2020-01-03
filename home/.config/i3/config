@@ -461,6 +461,7 @@ for_window [class="^i3expod\.py$"] fullscreen enable
 for_window [class="Artha"] floating enable
 for_window [class="^jetbrains-toolbox$"] floating enable
 for_window [class="^Nm-connection-editor$"] floating enable
+for_window [class="^System-config-printer.py$"] floating enable
 # Rider splash:
 for_window [class="^java-lang-Thread$" instance="^java-lang-Thread$" title="^win0$"] floating enable, border pixel $border
 # Jetbrains IDEA splash:
