@@ -272,11 +272,12 @@ __check_for_change_and_compile_ssh_config() {
 
     if [[ -d "$ssh_configdir" ]] && ! is_dir_empty "$ssh_configdir"; then
         cd "$ssh_configdir" || return 1  # move to $ssh_configdir, since we execute find relative to curr dir;
-        current_md5sum="$(find -L . -type f -exec md5sum {} \; | sort -k 34 | md5sum)" || { err "running find failed" "$FUNCNAME"; return 1; }
+        current_md5sum="$(find -L . -type f -exec md5sum {} \; | sort -k 34 | md5sum)" || { err 'running find failed' "$FUNCNAME"; return 1; }
 
         if [[ -e "$stored_md5sum" && "$(cat -- "$stored_md5sum")" != "$current_md5sum" ]] \
                 || ! [[ -e "$ssh_config" ]]; then
-            [[ -f "$ssh_config" ]] && mv -- "$ssh_config" "${ssh_config}.bak.$(date -Ins)"
+            # cat, not move ssh/config, as it's likely a symlink!
+            [[ -f "$ssh_config" ]] && cat -- "$ssh_config" > "${ssh_config}.bak.$(date -Ins)"
             cat -- "$ssh_configdir"/* > "$ssh_config"
             sanitize_ssh "$HOME/.ssh"
             modified=1
@@ -339,9 +340,9 @@ _load_nvm() {
 }
 
 for cmd in "${__NODE_GLOBALS[@]}"; do
-    eval "${cmd}(){ unset -f ${__NODE_GLOBALS[@]}; _load_nvm; unset _load_nvm __NODE_GLOBALS; ${cmd} \$@; }"
+    eval "function ${cmd}(){ unset -f ${__NODE_GLOBALS[*]}; _load_nvm; unset -f _load_nvm; ${cmd} \$@; }"
 done
-unset cmd
+unset cmd __NODE_GLOBALS
 
 #   from https://stackoverflow.com/a/50378304/1803648
 # Run 'nvm use' automatically every time there's

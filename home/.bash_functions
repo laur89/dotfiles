@@ -126,6 +126,7 @@ ffind() {
               i='video/|audio/mp4'
               [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
               file_type="-type f"
+              # TODO: should we set size param only if filetype is audio/mp4 (as there's ambiguity between audio & video)?
               extra_params='-size +100M'  # search for min. x megs files, so mp4 wouldn't (likely) return audio files
               readonly filetype_regex="$i"
                 ;;
@@ -2990,6 +2991,7 @@ keepsudo() {
 #
 # TODO2: log the headers, as upload header response has deletion header 'X-Url-Delete'!
 # TODO3: optionally set max-downloads, max-days (to keep the file), also set by _request_ headers;
+# TODO4: for alternative, see also http://ix.io/
 #
 # see  https://github.com/dutchcoders/transfer.sh/
 transfer() {

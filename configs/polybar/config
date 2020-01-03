@@ -74,7 +74,7 @@ font-1 = SauceCodePro Nerd Font:size=10;1
 
 
 [bar/top]
-;monitor = ${env:MONITOR:HDMI-1}
+monitor = ${env:MONITOR:HDMI-1}
 fixed-center = false
 inherit = bar/master
 modules-left = wm
@@ -488,6 +488,7 @@ type = internal/i3
 enable-click = true
 enable-scroll = false
 strip-wsnumbers = true
+pin-workspaces = true
 
 ws-icon-0 = 1:Surf;
 ws-icon-1 = 2:Code;
@@ -653,9 +654,9 @@ type = internal/i3
 format = <label-state> <label-mode>
 index-sort = true
 wrapping-scroll = false
+pin-workspaces = true
 
-; Only show workspaces on the same output as the bar
-;pin-workspaces = true
+; Only show workspaces on the same output as the bar:
 
 label-mode-padding = 2
 label-mode-foreground = #000

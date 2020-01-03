@@ -92,7 +92,7 @@ declare -A COLORS=(
     [OFF]=$'\033[0m'
     [BOLD]=$'\033[1m'
 )
-readonly NPMRC_BAK="$TMP_DIR/npmrc.bak.$RANDOM"
+readonly NPMRC_BAK="$TMP_DIR/npmrc.bak.$RANDOM"  # temp location where we _might_ move our npmrc to for the duration of this script;
 #-----------------------
 #---    Functions    ---
 #-----------------------
@@ -2403,7 +2403,7 @@ install_webdev() {
     is_server && { report "we're server, skipping webdev env installation."; return; }
 
     # first get nvm (node version manager) :  # https://github.com/nvm-sh/nvm#git-install
-    clone_or_pull_repo nvm-sh nvm "$HOME/.nvm/"  # note repo dest needs to be exactly @ ~/.nvm
+    clone_or_pull_repo nvm-sh nvm "$HOME/.nvm/"  # note repo dest needs to be exactly @ ~/.nvm, ie do not symlink
     execute "source '$HOME/.nvm/nvm.sh'" || err "sourcing ~/.nvm/nvm.sh failed"
     if ! command -v node >/dev/null 2>&1; then  # only proceed if node hasn't already been installed
         execute "nvm install stable" || err "installing nodejs 'stable' version failed"
@@ -5246,6 +5246,7 @@ copy_to_clipboard() {
     readonly input="$1"
 
     { command -v xsel >/dev/null 2>/dev/null && echo -n "$input" | xsel --clipboard; } \
+        || { command -v copyq >/dev/null 2>/dev/null && copyq add "$input" && copyq select 0; } \
         || { command -v xclip >/dev/null 2>/dev/null && echo -n "$input" | xclip -selection clipboard; } \
         || return 1
 
