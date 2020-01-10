@@ -2910,8 +2910,6 @@ g() {
 #############################
 
 # from http://stackoverflow.com/questions/32723111/how-to-remove-old-and-unused-docker-images
-#
-# consider also https://github.com/spotify/docker-gc
 dcleanup() {
     local usage opt OPTIND
 
@@ -3871,7 +3869,7 @@ d() {  # mnemonic: dir
 # - using [kill -3 <pid>] for thread dump causes it to appear jvm's stdout;
 #   quite likely it'll be the jvm.log;
 javadump() {
-    local usage OPTIND opt pids pid mode i
+    local usage OPTIND opt pids pid mode i tf hf
 
     readonly usage="\n${FUNCNAME}: dump java process's heap and/or threads.
     Usage: ${FUNCNAME}  [-ht] [pid] [pid2]...
@@ -3917,13 +3915,16 @@ javadump() {
     # TODO: heap_dump won't overwrite file! ask for deletion?
     for pid in "${pids[@]}"; do  # do not parallelize!
         i="$(ps -o user= -p "$pid")"
+        tf="/tmp/${pid}-thread-dump.jfr"
+        hf="/tmp/${pid}-heap-dump.hprof"
+
         if [[ "$i" != "$USER" ]]; then
             [[ "$EUID" -ne 0 ]] && { err "pid [$pid] is not owned by our user and we're not root to change to user [$i]"; return 1; }
-            [[ "$mode" != T ]] && report "dumping heap..." && { su -l "$i" -c "jcmd $pid GC.heap_dump '/tmp/${pid}-heap-dump.hprof'" || return 1; }
-            [[ "$mode" != H ]] && report "dumping threads..." && { su -l "$i" -c "jcmd $pid Thread.print" > "/tmp/${pid}-thread-dump.jfr" || return 1; }
+            [[ "$mode" != T ]] && report "dumping heap..." && { su -l "$i" -c "jcmd $pid GC.heap_dump '$hf'" || return 1; } && report "heapdump at [$hf]"
+            [[ "$mode" != H ]] && report "dumping threads..." && { su -l "$i" -c "jcmd $pid Thread.print" > "$tf" || return 1; } && report "thread dump at [$tf]"
         else  # target process is owned by us
-            [[ "$mode" != T ]] && report "dumping heap..." && { jcmd "$pid" GC.heap_dump "/tmp/${pid}-heap-dump.hprof" || return 1; }
-            [[ "$mode" != H ]] && report "dumping threads..." && { jcmd "$pid" Thread.print > "/tmp/${pid}-thread-dump.jfr" || return 1; }
+            [[ "$mode" != T ]] && report "dumping heap..." && { jcmd "$pid" GC.heap_dump "$hf" || return 1; } && report "heapdump at [$hf]"
+            [[ "$mode" != H ]] && report "dumping threads..." && { jcmd "$pid" Thread.print > "$tf" || return 1; } && report "thread dump at [$tf]"
             #jmap -dump:live,format=b,file=/tmp/dump.hprof 12587    #alternative headp dump using jmap
             #jstack -f 5824  #alternative thread dump using jstack
         fi
