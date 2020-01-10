@@ -1897,7 +1897,7 @@ fetch_release_from_git() {
 # -U     - skip extracting if archive and pass compressed/tarred ball as-is.
 # -s     - skip adding fetched asset in $GIT_RLS_LOG
 # -F     - $file output pattern to grep for in order to filter for specific
-#          single file from unpacked tarball.
+#          single file from unpacked tarball (meaning it's pointless when -U is given)
 # -I     - entity identifier (for logging/version tracking et al)
 # -r     - if href grep should be relative, ie start with / (note user should not prefix w/ / themselves)
 #
@@ -2003,14 +2003,38 @@ install_deb_from_git() {
 # Fetch and extract a tarball from given github /releases page.
 # Note it'll be fetched and extracted into current $pwd.
 #
+# pass   -S   flag to create tmp directory where extraction should happen; takes the
+#             tmpdir extraction requirement off the caller;
+#
 # $1 - git user
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
+#
+# @returns {string} path to root dir of extraction result, IF we found a single dir
+#                   in PWD.
 fetch_extract_tarball_from_git() {
-    local tarball
+    local opt i OPTIND standalone tmpdir
 
-    tarball="$(fetch_release_from_git -U "$1" "$2" "$3")" || return $?
-    execute "aunpack --quiet '$tarball'" || { err "extracting [$tarball] failed w/ $?"; return 1; }
+    while getopts "S" opt; do
+        case "$opt" in
+            S) standalone=1 ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    i="$(fetch_release_from_git -U "$1" "$2" "$3")" || return $?
+    if [[ "$standalone" == 1 ]]; then
+        tmpdir="$(mktemp -d "$1-$2-build-XXXXX" -p "$TMP_DIR")" || { err "unable to create tempdir with \$ mktemp"; return 1; }
+        execute "pushd -- $tmpdir" || return 1
+    fi
+
+    execute "aunpack --extract --quiet '$i'" > /dev/null || { err "extracting [$i] failed w/ $?"; [[ "$standalone" == 1 ]] && popd; return 1; }
+
+    i="$(find "$(pwd -P)" -mindepth 1 -maxdepth 1 -type d)"
+    [[ -d "$i" ]] && echo "$i"
+    [[ "$standalone" == 1 ]] && popd
+    # do NOT remove $tmpdir
     return 0
 }
 
@@ -2228,6 +2252,19 @@ install_eclipse_mem_analyzer() {  # https://www.eclipse.org/mat/downloads.php
     execute "mv -- '$file' '$target'" || return 1
     execute "rm -rf -- '$tmpdir'"
     create_link "$target/MemoryAnalyzer" "$HOME/bin/MemoryAnalyzer"
+}
+
+install_visualvm() {  # https://github.com/oracle/visualvm
+    local target dir
+
+    target="$BASE_PROGS_DIR/visualvm"
+
+    dir="$(fetch_extract_tarball_from_git -S oracle visualvm 'visualvm_[-0-9.]+\.zip')" || return 1
+    [[ -d "$dir" ]] || { err "couldn't find unpacked visualvm dir"; return 1; }
+
+    [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }
+    execute "mv -- '$dir' '$target'" || return 1
+    create_link "$target/bin/visualvm" "$HOME/bin/visualvm"
 }
 
 
@@ -4190,6 +4227,7 @@ __choose_prog_to_build() {
         install_grpc_cli
         install_dbeaver
         install_eclipse_mem_analyzer
+        install_visualvm
         install_vnote
         install_postman
         install_weeslack
