@@ -2147,6 +2147,13 @@ install_dbeaver() {  # https://dbeaver.io/download/
     execute "rm -f -- '$dest'"
 }
 
+
+# redis manager
+install_redis_desktop_mngr() {  # https://snapcraft.io/install/redis-desktop-manager/debian
+    snap_install redis-desktop-manager
+}
+
+
 # other mentions/alternatives:
 #   https://github.com/pbek/QOwnNotes  (also c++, qt-based like vnotes)
 #   https://github.com/laurent22/joplin/
@@ -2977,6 +2984,11 @@ rb_install() {
 }
 
 
+snap_install() {
+    execute "sudo snap install $*"
+}
+
+
 install_i3_deps() {
     local f
     f="$TMP_DIR/i3-dep-${RANDOM}"
@@ -3740,6 +3752,8 @@ install_from_repo() {
         pasystray
         ca-certificates
         aptitude
+        gdebi
+        snapd
         sudo
         libnotify-bin
         dunst
@@ -3774,8 +3788,6 @@ install_from_repo() {
         netdata
         wireshark
         iptraf
-        gdebi
-        mercurial
         rsync
         gparted
         openvpn
@@ -4226,6 +4238,7 @@ __choose_prog_to_build() {
         install_bloomrpc
         install_grpc_cli
         install_dbeaver
+        install_redis_desktop_mngr
         install_eclipse_mem_analyzer
         install_visualvm
         install_vnote
