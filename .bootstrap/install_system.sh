@@ -3820,6 +3820,7 @@ install_from_repo() {
         ngrep
         nload
         ntp
+        ncat
         remind
         tkremind
         wyrd
