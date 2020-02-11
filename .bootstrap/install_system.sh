@@ -4795,7 +4795,7 @@ report() {
     readonly caller_name="$2"  # OPTIONAL
 
     [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "OK LOG: ${caller_name:+[$caller_name]: }$msg" >> "$EXECUTION_LOG"
-    >&2 echo -e "${COLORS[YELLOW]}${caller_name:-'INFO'}:${COLORS[OFF]} ${msg:-'--info lvl message placeholder--'}"
+    >&2 echo -e "${COLORS[YELLOW]}${caller_name:-"INFO"}:${COLORS[OFF]} ${msg:-'--info lvl message placeholder--'}"
 }
 
 
