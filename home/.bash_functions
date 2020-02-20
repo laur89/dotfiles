@@ -1600,7 +1600,7 @@ up() {
 clock() {
     while true; do
         clear
-        printf "==========\n %s\n==========" "$(date +'%R:%S')"
+        printf "==========\n %s\n==========" "$(date '+%R:%S')"
         sleep 1
     done
 }
@@ -2286,7 +2286,8 @@ gfrf() {
 
     if [[ -n "$pom_ver" ]]; then  # we're dealing with a maven project
         # check tests _before_ tagging; TODO: do we want to run test as part of gfrf()?
-        mvn clean install || { err "fix tests" "$FUNCNAME"; return 1; }
+        #mvn clean install || { err "fix tests" "$FUNCNAME"; return 1; }
+        true  # TODO: should we run clean install here or not?
     fi
     git flow release finish -F -p "$tag" || { err "finishing git release failed." "$FUNCNAME"; return 1; }
     report "pushing tags..." "$FUNCNAME"
@@ -3869,7 +3870,7 @@ d() {  # mnemonic: dir
 # - using [kill -3 <pid>] for thread dump causes it to appear jvm's stdout;
 #   quite likely it'll be the jvm.log;
 javadump() {
-    local usage OPTIND opt pids pid mode i tf hf
+    local usage OPTIND opt pids pid mode i tf hf target_dir space
 
     readonly usage="\n${FUNCNAME}: dump java process's heap and/or threads.
     Usage: ${FUNCNAME}  [-ht] [pid] [pid2]...
@@ -3912,11 +3913,23 @@ javadump() {
         is_digit "$pid" || { err "at least one of the args was not a valid pid: [$pid]"; return 1; }
     done
 
+    # find target dir for heapdump; prefer location that has most free space left:
+    # TODO: can our user write to those destinations? perhaps add test -w "$i"?
+    space=0  # init
+    for i in /tmp /var/log; do
+        pid="$(space_left "$i")" || continue
+        if [[ -d "$i" && "$pid" -gt "$space" ]]; then
+            space="$pid"
+            target_dir="$i"
+        fi
+    done
+    unset pid i
+
     # TODO: heap_dump won't overwrite file! ask for deletion?
     for pid in "${pids[@]}"; do  # do not parallelize!
         i="$(ps -o user= -p "$pid")"
-        tf="/tmp/${pid}-thread-dump.jfr"
-        hf="/tmp/${pid}-heap-dump.hprof"
+        tf="$target_dir/${pid}-thread-dump.jfr"
+        hf="$target_dir/${pid}-heap-dump.hprof"
 
         if [[ "$i" != "$USER" ]]; then
             [[ "$EUID" -ne 0 ]] && { err "pid [$pid] is not owned by our user and we're not root to change to user [$i]"; return 1; }
