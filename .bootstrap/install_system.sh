@@ -945,7 +945,7 @@ install_deps() {
     py_install pywal          # https://github.com/dylanaraps/pywal/wiki/Installation
 
     # consider also perl alternative @ https://github.com/pasky/speedread
-    rb_install speed_read  # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
+    #rb_install speed_read  # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)  TODO: install appears to be timing out? or at least takes forever;
     rb_install gist        # https://github.com/defunkt/gist  (pastebinit for gists)
 
     # rbenv & ruby-build:                               # https://github.com/rbenv/rbenv-installer
@@ -1721,6 +1721,7 @@ install_work_builds() {
     install_bloomrpc
     install_postman
     install_terraform
+    install_terragrunt
     install_minikube
     #install_bluejeans
 }
@@ -2217,6 +2218,10 @@ install_terraform() {  # https://www.terraform.io/downloads.html
     return 0
 }
 
+install_terragrunt() {  # https://github.com/gruntwork-io/terragrunt/
+    install_bin_from_git -n terragrunt gruntwork-io terragrunt terragrunt_linux_amd64
+}
+
 # download mirrors:
 #   96 - UK
 #   1208 - france
@@ -2462,6 +2467,7 @@ install_webdev() {
     execute "$NPM_PRFX npm install -g \
         nwb \
         @vue/cli \
+        typescript \
     "
 
     # install ruby modules:          # sass: http://sass-lang.com/install
@@ -3494,7 +3500,6 @@ install_YCM() {  # the quick-and-not-dirty install.py way
         cmake
         python3-dev
     '
-    #execute "$NPM_PRFX npm install -g typescript"  # for js support
 
     # install YCM
     execute "pushd -- $ycm_plugin_root" || return 1
@@ -4246,6 +4251,7 @@ __choose_prog_to_build() {
         install_postman
         install_weeslack
         install_terraform
+        install_terragrunt
         install_bluejeans
         install_minikube
         install_gruvbox_gtk_theme
