@@ -15,6 +15,7 @@ while pgrep -u "$UID" -x polybar >/dev/null; do sleep 1; done
 ####### alternative, per-monitor launcher: (from https://github.com/kostarakonjac1331/dots2/blob/master/polybar/launch.sh)
 w="$(ls /sys/class/net/ | grep ^wl | awk 'NR==1{print $1}')"
 
+# note we pass env vars that are to be referenced in polybar config (WIRELESS/MONITOR...):
 #for m in $(polybar --list-monitors | cut -d":" -f1); do
 for m in $(xrandr --listmonitors | awk '/^ /{print $NF}'); do
     WIRELESS="$w" MONITOR="$m" polybar --reload top &

@@ -3591,6 +3591,7 @@ install_YCM() {  # the quick-and-not-dirty install.py way
 
 
 # consider also https://github.com/whitelynx/artwiz-fonts-wl
+# consider also https://github.com/slavfox/Cozette
 #
 install_fonts() {
     local dir
