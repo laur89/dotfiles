@@ -2149,6 +2149,20 @@ install_dbeaver() {  # https://dbeaver.io/download/
 }
 
 
+# perforce git mergetool, alternative to meld;
+# TODO: ver/url resolution unresolved, currenlty hard-coding version!
+install_p4merge() {  # https://www.perforce.com/downloads/visual-merge-tool
+    local loc dest
+
+    readonly loc='http://www.perforce.com/downloads/perforce/r19.2/bin.linux26x86_64/p4v.tgz'
+    readonly dest="$TMP_DIR/dbeaver-$RANDOM.deb"
+
+    execute "wget -O '$dest' '$loc'" || { err "wgetting [$loc] failed."; return 1; }
+    execute "sudo apt-get --yes install '$dest'" || return 1
+    execute "rm -f -- '$dest'"
+}
+
+
 # redis manager
 install_redis_desktop_mngr() {  # https://snapcraft.io/install/redis-desktop-manager/debian
     snap_install redis-desktop-manager
@@ -4245,6 +4259,7 @@ __choose_prog_to_build() {
         install_bloomrpc
         install_grpc_cli
         install_dbeaver
+        install_p4merge
         install_redis_desktop_mngr
         install_eclipse_mem_analyzer
         install_visualvm
