@@ -738,6 +738,9 @@ aptbiggest() { aptlargest; }  # alias
 #   aptitude search '~o'
 #   aptitude purge '~o'
 upgrade() {
+    local start
+    report "started at $(date)"
+    readonly start="$(date +%s)"
     sudo -s -- <<EOF
         apt-get clean -y
         apt-get update
@@ -749,7 +752,19 @@ upgrade() {
         # nuke removed packages' configs:
         apt-get -y purge $(dpkg -l | awk '/^rc/ { print $2 }')
 EOF
+
+    report "ended at $(date), completed in $(($(date +%s) - start)) sec"
 }
+
+
+update() {
+    local start
+    report "started at $(date)"
+    readonly start="$(date +%s)"
+    sudo apt-get update
+    report "ended at $(date), completed in $(($(date +%s) - start)) sec"
+}
+
 
 #  Find a pattern in a set of files and highlight them:
 #+ (needs a recent version of grep).
@@ -2896,6 +2911,16 @@ g() {
     command -v fzf > /dev/null 2>&1 && readonly has_fzf=1 || readonly has_fzf=0
 
     IFS='/' read -ra paths <<< "$input"
+    #echo "paths: [${paths[@]}]"
+
+    # clean paths:
+    # TODO: what if the first path element is '.'?
+    for i in "${!paths[@]}"; do
+        [[ -z "${paths[$i]}" || "${paths[$i]}" == . ]] && unset "paths[$i]"
+    done
+    [[ "${#paths[@]}" -eq 0 ]] && paths=('*')
+    #echo "cleaned paths: [${paths[@]}]"
+
     for i in "${paths[@]}"; do
         [[ -z "$dir" && "$i" =~ ^\.{3,}$ ]] && { __go_up "$i"; is_backing=0; continue; }
         [[ "$i" != '..' ]] && is_backing=0
@@ -3868,7 +3893,7 @@ d() {  # mnemonic: dir
 
 # notes:
 # - using [kill -3 <pid>] for thread dump causes it to appear jvm's stdout;
-#   quite likely it'll be the jvm.log;
+#   quite likely it'll be the jvm.log you've configured;
 javadump() {
     local usage OPTIND opt pids pid mode i tf hf target_dir space
 
@@ -3900,7 +3925,7 @@ javadump() {
         done< <(jcmd -l)
         [[ "${#opt[@]}" -eq 0 ]] && { err "no java processes as per jcmd"; return 1; }
 
-        select_items "${opt[@]}"  # don't return here as we need to change wd to starting location;
+        select_items "${opt[@]}"
         [[ -z "${__SELECTED_ITEMS[*]}" ]] && { err "no process selected"; return 1; }
         for i in "${__SELECTED_ITEMS[@]}"; do
             pid="$(grep -Po '^\d+(?=)' <<< "$i")"
@@ -4086,97 +4111,133 @@ complete -F _completemarks jj jum jmo
 
 # $1 - name of the function whose args are completed
 # $2 - word being completed
-# $3 - word preceding the word being completed on the current command line
+# $3 - word preceding the word being completed on the current command line, think it's same as ${COMP_WORDS[COMP_CWORD-1]}
 #
 # TODO: curw definition too simple, eg with [g /data/ dev/ scripts/a] it'd be 'scripts/a' which is wrong - should be 'a' i think
+#
+# OPEN ISSUES:
+# - (1) g .../private/ => looks like we should do both ^... expansion AND checking for $2 == */
+# - (2) g .. .. private i3../TAB <-- last bit is replaced if last element ends w/slash and we TAB-complete it;
+# - (3) g .../repos/dotfTAB <-- if we have more than 1 segment after prefix dots (ie repos/thensomething), it doesn't complete; similar to (1)? just 1) has less elements beforehand
+#          looks like we have a fix for this; it's just that it's the first word, not 2nd+
 _complete_dirs_in_pwd() {
-    local curw wordlist d marker
+    local curw wordlist d marker p i last
 
 
-    err ''
-	err "1: [$1]"  # always funcname
-	err "2: [$2]"
-	err "3: [$3]"  # last completed word? even if its not valid completion
-	#err "curv: [${COMP_WORDS[*]}]"
+    [[ "$DEBUG" -eq 1 ]] && err "1: [$1]"  # always funcname
+    [[ "$DEBUG" -eq 1 ]] && err "2: [$2]"  # think its what's on cml at the time you press tab, even if it gets completed immediately; separate last part, not entirety that's on CLI
+    [[ "$DEBUG" -eq 1 ]] && err "3: [$3]"  # last completed word? even if its not valid completion
     curw=${COMP_WORDS[COMP_CWORD]}  # think it's the same as $2?
-    err ''
-    __go_up() {
-        local pattern dots i d OPTIND opt a
 
-        while getopts "dt" opt; do
-            case "$opt" in
-               d)
-                  a=d
-                    ;;
-               t) a=t
-                    ;;
-               *) echo -e "$usage"; return 1 ;;
-            esac
-        done
-        shift "$((OPTIND-1))"
-        pattern="$*"  # guaranteed to start with minimum of 3 dots.
-        #err "pattern: [$pattern]"
-        dots="${pattern%%/*}"
+    __go_up() {
+        local dots i d
+
+        dots="$*"  # guaranteed to be _minimum_ of 3 dots.
+
         for ((i=0; i <= (( ${#dots} - 2 )); i++)); do
             d+='../'
         done
-        #err "i: [$i]"
-        #[[ "$i" == "$pattern" ]] && unset i
-
-        #[[ "$pattern" =~ ^\.+/?$ ]] || i="$(sed 's/^[^/]*\///' <<< "$pattern")"  # .../foo/bar -> foo/bar
-        [[ "$pattern" == "$dots" || "$pattern" == "${dots}/" ]] && unset i || i="$(sed 's/^[^/]*\///' <<< "$pattern")"  # .../foo/bar -> foo/bar
-
-        case "$a" in
-           d)
-              echo "${d}"
-                ;;
-           t) echo "$i"
-                ;;
-           *)
-              echo "${d}$i"
-                ;;
-        esac
+        echo "$d"
     }
 
-    if [[ -z "$d" && "$2" =~ ^\.{3,} ]]; then
-        #d="$2"
-        d="$(__go_up -d "$2")"
-        #curw="$d"
-        curw="$(__go_up -t "$2")"
-        marker=1
-   #COMP_WORDS[COMP_CWORD]="$curw"  # think it's the same as $2?
-        #unset d
-    elif [[ "$2" == */ ]]; then
-        d="$(build_comma_separated_list -s '/' "${COMP_WORDS[@]:1}")"
-        #curw=''
-    # TODO: we should resolve dots already here?
-    else
-        d="$(build_comma_separated_list -s '/' "${COMP_WORDS[@]:1:${#COMP_WORDS[@]}-2}")"
-        #curw="${2##*/}"
+
+    # defines global/outer $d
+    __define_d() {
+        local I input paths i
+
+        I="$1"
+        input=''
+        for i in "${COMP_WORDS[@]:1:${#COMP_WORDS[@]}-I}"; do
+            input+="$i"
+            [[ "$i" != */ ]] && input+='/'
+        done
+
+        [[ "$input" == /* ]] && { input="${input:1}"; d='/'; }
+        #[[ -z "$input" ]] && input='.'  # TODO  do we want this?
+
+        IFS='/' read -ra paths <<< "$input"
+
+        # clean paths:
+        # TODO: what if the first path element is '.'?
+        for i in "${!paths[@]}"; do
+            [[ -z "${paths[$i]}" || "${paths[$i]}" == . ]] && unset "paths[$i]"
+        done
+        #[[ "${#paths[@]}" -eq 0 ]] && paths=('.')  # TODO copyasta from elsewhere, confir mwe want this
+
+        for i in "${paths[@]}"; do
+            [[ -z "$d" && "$i" =~ ^\.{3,}$ ]] && { d="$(__go_up "$i")"; continue; }
+            [[ -n "$d" && "$d" != */ && "$i" != /* ]] && d+='/'
+            d+="$i"
+        done
+    }
+
+
+	[[ "$COMP_CWORD" -eq 1 && ! "$curw" =~ ^\.{3,} ]] && return 0
+
+	if [[ "$2" == */ ]]; then  # ie all's confirmed directory path i suppose? as in no completion needed
+			curw="$2\ " # need to reset $curw, aka $2, as it's now appended to our dir-path!; BUT it also nukes our arg? eg try [g /data/delme]*tab -> it nukes the arg!
+			COMPREPLY=($(compgen -W "$curw" -- "$curw"))
+			return 0
+
+    # TODO: if $2 is something like [ddddd/wwww], then we should extract and append ddddd part to our $d
+    # TODO2: we have issue: something like [g ... projects/ helm-charts/sb-]+TAB would replace all of last bit (helm-....) with completed [sb-...]
+    #        think we need to push to $all stack!< yes but stack still seems to get overwritten
+	#elif [[ "$COMP_CWORD" -gt 1 ]] && grep -qE '\S+/\S+' <<< "$curw"; then  # TODO: instead of supporting word1/word2, allow word1/word2/wordN?
+	elif grep -qE '\S+/\S+' <<< "$curw"; then  # TODO: instead of supporting word1/word2, allow word1/word2/wordN?
+
+		if [[ "$COMP_CWORD" -eq 1 ]]; then
+			# note we're guaranteed to start with dots
+			__define_d 0
+			d="${d%/*}/"
+			curw="${curw##*/}"  # everything after very last slash
+			marker="$d"
+			#report "d: [$d], curw: [$curw]"
+		else
+			__define_d 2
+
+			last="${curw##*/}"  # everything after very last slash
+			IFS='/' read -ra p <<< "${curw%/*}"  # split up everythhing before last slash
+
+			# clean paths:
+			for i in "${!p[@]}"; do
+				[[ -z "${p[$i]}" || "${p[$i]}" == . ]] && unset "p[$i]"
+			done
+
+			for i in "${p[@]}"; do
+				[[ "$i" != */ ]] && i+='/'
+				[[ "$d" != */ ]] && d+='/'
+				d+="$i"
+				marker+="$i"
+			done
+
+			curw="$last"
+		fi
+	else
+		__define_d 0
+	    if [[ -n "$2" ]]; then  # if we're currently trying to auto-complete something
+	    	curw="${d##*/}"  # everything after very last slash
+	    	d="${d%/*}"  # get everything before the very last slash
+	    	[[ "$d" != */ ]] && d+='/'
+                [[ "$COMP_CWORD" -eq 1 && "$2" =~ ^\.{3,} ]] && marker="$d"
+        fi
     fi
-    err "d1: [$d]"
-	err "curw: [$curw]"
-	err "all: [${COMP_WORDS[*]}]"
 
+    wordlist=$(find -L "${d:-.}" -mindepth 1 -maxdepth 1 -type d -printf "${marker}%f\n")
 
-    [[ -z "$d" ]] && d='.'
-    [[ "$d" =~ ^\.{3,} ]] && d="$(__go_up "$d")"
-    err "dd: [$d]"
-    [[ -d "$d" ]] || return 1
-    [[ "$marker" -eq 1 ]] && marker="$d"
-    wordlist=$(find -L "$d" -mindepth 1 -maxdepth 1 -type d -printf "$marker%f\n")
-#for i in "${!wordlist[@]}"; do
-#wordlist[$i]="$d${wordlist[i]}"
-#done
-    #[[ "${#wordlist[@]}" -eq 1 ]] && echo WAAAT && wordlist[0]="${wordlist[0]}/"
-    #report "wlist: ${wordlist[*]}"
-    #[[ -z "${wordlist[*]}" ]] && wordlist=("$(printf %b '\u200b')")  # only if using -o nospace
-    #echo "cwd: [$curw]"
-    COMPREPLY=($(compgen -W '${wordlist[@]}' -- "$marker$curw"))
+	# TODO: how to make sure our current dir's contents aren't offered
+ 	# in case target dir no longer has candidates? setting COMPREPLY here to
+	# empty val sort of works, but not ideal:
+	[[ -z "$wordlist" ]] && COMPREPLY=('') && return 0
+	#[[ -z "$wordlist" ]] && COMPREPLY=("$(echo -en '\0')") && return 0
+
+    # COMPREPLY is the output of completion attempt
+    COMPREPLY=($(compgen -W '${wordlist[@]}' -- "${marker}$curw"))
     #report "comprelpy: [${COMPREPLY[*]}]"
     return 0
 }
-is_function g && complete -o dirnames -o filenames -o nospace -F _complete_dirs_in_pwd g  # autocomplete on directories
+#is_function g && complete -o dirnames -o filenames -o nospace -F _complete_dirs_in_pwd g  # autocomplete on directories
+#is_function g && complete -o dirnames -o filenames -F _complete_dirs_in_pwd g  # autocomplete on directories
+is_function g && complete -o dirnames -F _complete_dirs_in_pwd g  # autocomplete on directories
 
 # TODO: here we try to introduce fuzzyness via find -iname {{{
 #_complete_dirs_in_pwd() {
