@@ -4112,14 +4112,6 @@ complete -F _completemarks jj jum jmo
 # $1 - name of the function whose args are completed
 # $2 - word being completed
 # $3 - word preceding the word being completed on the current command line, think it's same as ${COMP_WORDS[COMP_CWORD-1]}
-#
-# TODO: curw definition too simple, eg with [g /data/ dev/ scripts/a] it'd be 'scripts/a' which is wrong - should be 'a' i think
-#
-# OPEN ISSUES:
-# - (1) g .../private/ => looks like we should do both ^... expansion AND checking for $2 == */
-# - (2) g .. .. private i3../TAB <-- last bit is replaced if last element ends w/slash and we TAB-complete it;
-# - (3) g .../repos/dotfTAB <-- if we have more than 1 segment after prefix dots (ie repos/thensomething), it doesn't complete; similar to (1)? just 1) has less elements beforehand
-#          looks like we have a fix for this; it's just that it's the first word, not 2nd+
 _complete_dirs_in_pwd() {
     local curw wordlist d marker p i last
 
@@ -4152,20 +4144,22 @@ _complete_dirs_in_pwd() {
             [[ "$i" != */ ]] && input+='/'
         done
 
-        [[ "$input" == /* ]] && { input="${input:1}"; d='/'; }
+        if [[ "$input" == '~'* ]]; then
+            input="${HOME}${input:1}"
+        fi
+        if [[ "$input" == /* ]]; then
+            input="${input:1}"
+            d='/'
+        fi
         #[[ -z "$input" ]] && input='.'  # TODO  do we want this?
 
         IFS='/' read -ra paths <<< "$input"
 
-        # clean paths:
-        # TODO: what if the first path element is '.'?
-        for i in "${!paths[@]}"; do
-            [[ -z "${paths[$i]}" || "${paths[$i]}" == . ]] && unset "paths[$i]"
-        done
-        #[[ "${#paths[@]}" -eq 0 ]] && paths=('.')  # TODO copyasta from elsewhere, confir mwe want this
-
         for i in "${paths[@]}"; do
+            [[ -z "$i" || "$i" == . ]] && continue   # TODO: what if the first path element is '.'?
+
             [[ -z "$d" && "$i" =~ ^\.{3,}$ ]] && { d="$(__go_up "$i")"; continue; }
+            i="$(envsubst <<< "$i")"  # need to manually expand env vars
             [[ -n "$d" && "$d" != */ && "$i" != /* ]] && d+='/'
             d+="$i"
         done
@@ -4174,36 +4168,27 @@ _complete_dirs_in_pwd() {
 
 	[[ "$COMP_CWORD" -eq 1 && ! "$curw" =~ ^\.{3,} ]] && return 0
 
-	if [[ "$2" == */ ]]; then  # ie all's confirmed directory path i suppose? as in no completion needed
-			curw="$2\ " # need to reset $curw, aka $2, as it's now appended to our dir-path!; BUT it also nukes our arg? eg try [g /data/delme]*tab -> it nukes the arg!
+	if [[ "$2" == */ ]]; then  # ie all's confirmed directory path i suppose? as in no further completion needed here
+			curw="$2\ "
 			COMPREPLY=($(compgen -W "$curw" -- "$curw"))
 			return 0
 
-    # TODO: if $2 is something like [ddddd/wwww], then we should extract and append ddddd part to our $d
-    # TODO2: we have issue: something like [g ... projects/ helm-charts/sb-]+TAB would replace all of last bit (helm-....) with completed [sb-...]
-    #        think we need to push to $all stack!< yes but stack still seems to get overwritten
-	#elif [[ "$COMP_CWORD" -gt 1 ]] && grep -qE '\S+/\S+' <<< "$curw"; then  # TODO: instead of supporting word1/word2, allow word1/word2/wordN?
-	elif grep -qE '\S+/\S+' <<< "$curw"; then  # TODO: instead of supporting word1/word2, allow word1/word2/wordN?
+	elif grep -qE '\S+/\S+' <<< "$curw"; then
 
 		if [[ "$COMP_CWORD" -eq 1 ]]; then
-			# note we're guaranteed to start with dots
-			__define_d 0
+			__define_d 1
 			d="${d%/*}/"
 			curw="${curw##*/}"  # everything after very last slash
 			marker="$d"
-			#report "d: [$d], curw: [$curw]"
 		else
 			__define_d 2
 
 			last="${curw##*/}"  # everything after very last slash
-			IFS='/' read -ra p <<< "${curw%/*}"  # split up everythhing before last slash
-
-			# clean paths:
-			for i in "${!p[@]}"; do
-				[[ -z "${p[$i]}" || "${p[$i]}" == . ]] && unset "p[$i]"
-			done
+			IFS='/' read -ra p <<< "${curw%/*}"  # split up everything before last slash
 
 			for i in "${p[@]}"; do
+                [[ -z "$i" || "$i" == . ]] && continue   # TODO: what if the first path element is '.'?
+                i="$(envsubst <<< "$i")"  # need to manually expand env vars
 				[[ "$i" != */ ]] && i+='/'
 				[[ "$d" != */ ]] && d+='/'
 				d+="$i"
@@ -4213,7 +4198,7 @@ _complete_dirs_in_pwd() {
 			curw="$last"
 		fi
 	else
-		__define_d 0
+		__define_d 1
 	    if [[ -n "$2" ]]; then  # if we're currently trying to auto-complete something
 	    	curw="${d##*/}"  # everything after very last slash
 	    	d="${d%/*}"  # get everything before the very last slash
@@ -4228,7 +4213,6 @@ _complete_dirs_in_pwd() {
  	# in case target dir no longer has candidates? setting COMPREPLY here to
 	# empty val sort of works, but not ideal:
 	[[ -z "$wordlist" ]] && COMPREPLY=('') && return 0
-	#[[ -z "$wordlist" ]] && COMPREPLY=("$(echo -en '\0')") && return 0
 
     # COMPREPLY is the output of completion attempt
     COMPREPLY=($(compgen -W '${wordlist[@]}' -- "${marker}$curw"))
@@ -4237,7 +4221,7 @@ _complete_dirs_in_pwd() {
 }
 #is_function g && complete -o dirnames -o filenames -o nospace -F _complete_dirs_in_pwd g  # autocomplete on directories
 #is_function g && complete -o dirnames -o filenames -F _complete_dirs_in_pwd g  # autocomplete on directories
-is_function g && complete -o dirnames -F _complete_dirs_in_pwd g  # autocomplete on directories
+is_function g && complete -o dirnames -F _complete_dirs_in_pwd g
 
 # TODO: here we try to introduce fuzzyness via find -iname {{{
 #_complete_dirs_in_pwd() {
