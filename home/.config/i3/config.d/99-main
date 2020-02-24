@@ -105,6 +105,7 @@ set $w8   8:Misc
 
 
 # Switch to workspace
+# or: bindsym $mod+1 workspace number 1   ?
 bindsym $mod+1 workspace $w1
 bindsym $mod+2 workspace $w2
 bindsym $mod+3 workspace $w3
@@ -148,10 +149,10 @@ bindsym $mod+Shift+9 move container to workspace $w9
 bindsym $mod+Shift+0 move container to workspace $w10
 
 # Reload the configuration file ('config' for c mnemonic)
-bindsym $mod+Shift+c reload
+bindsym $mod+Shift+c exec $HOME/.config/i3/scripts/refresh-settings.sh; reload
 
 # Restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
-bindsym $mod+Shift+r restart
+bindsym $mod+Shift+r exec $HOME/.config/i3/scripts/refresh-settings.sh; restart
 
 # Resize window (you can also use the mouse for that)
 #set $resize <span background='blue'>resize</span>
