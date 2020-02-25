@@ -2971,6 +2971,7 @@ EOF
     execute "sudo rm -rf -- '$tmpdir'"
 
     install_i3_deps
+    install_i3_conf
     return 0
 }
 
@@ -3008,6 +3009,14 @@ snap_install() {
     execute "sudo snap install $*"
 }
 
+install_i3_conf() {
+    local conf
+
+    conf="$HOME/.config/i3/config"
+
+    py_install update-conf.py || { err "update-conf.py install failed"; return 1; }
+    update-conf.py -f "$conf" || { err "i3 config install failed w/ $?"; return 1; }
+}
 
 install_i3_deps() {
     local f
