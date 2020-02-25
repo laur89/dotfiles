@@ -27,6 +27,9 @@ case "$input" in
         #exec dbus-launch --sh-syntax --exit-with-session start_dwm
         ;;
     i3)
+        # generate our config:
+        update-conf.py -f "$HOME/.config/i3/config" || err "i3 config install failed w/ $?"
+
         if is_windows; then
             i3 &
             #sleep 1
