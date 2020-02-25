@@ -4113,7 +4113,7 @@ complete -F _completemarks jj jum jmo
 # $2 - word being completed
 # $3 - word preceding the word being completed on the current command line, think it's same as ${COMP_WORDS[COMP_CWORD-1]}
 _complete_dirs_in_pwd() {
-    local curw wordlist d marker p i last
+    local curw wordlist d marker p i
 
 
     [[ "$DEBUG" -eq 1 ]] && err "1: [$1]"  # always funcname
@@ -4166,9 +4166,10 @@ _complete_dirs_in_pwd() {
     }
 
 
-	[[ "$COMP_CWORD" -eq 1 && ! "$curw" =~ ^\.{3,} ]] && return 0
+	if [[ "$COMP_CWORD" -eq 1 && ! "$curw" =~ ^\.{3,} ]]; then
+        return 0  # if [^...] then those need to be expanded, hence no return
 
-	if [[ "$2" == */ ]]; then  # ie all's confirmed directory path i suppose? as in no further completion needed here
+	elif [[ "$2" == */ ]]; then  # ie all's confirmed directory path i suppose? as in no further completion needed here
 			curw="$2\ "
 			COMPREPLY=($(compgen -W "$curw" -- "$curw"))
 			return 0
@@ -4183,8 +4184,8 @@ _complete_dirs_in_pwd() {
 		else
 			__define_d 2
 
-			last="${curw##*/}"  # everything after very last slash
 			IFS='/' read -ra p <<< "${curw%/*}"  # split up everything before last slash
+			curw="${curw##*/}"  # everything after very last slash
 
 			for i in "${p[@]}"; do
                 [[ -z "$i" || "$i" == . ]] && continue   # TODO: what if the first path element is '.'?
@@ -4194,8 +4195,6 @@ _complete_dirs_in_pwd() {
 				d+="$i"
 				marker+="$i"
 			done
-
-			curw="$last"
 		fi
 	else
 		__define_d 1
