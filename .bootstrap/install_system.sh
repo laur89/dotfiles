@@ -163,19 +163,26 @@ validate_and_init() {
 
 # check dependencies required for this installation script
 check_dependencies() {
-    local dir prog perms
+    local dir prog perms exec_to_pkg
 
     readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
+    exec_to_pkg=(
+        [gpg]=gnupg
+    )
 
-    for prog in git cmp wc wget curl tar unzip atool realpath dirname basename head tee mktemp file date alien groups; do
+    for prog in \
+            git cmp wc wget curl tar unzip atool \
+            realpath dirname basename head tee \
+            gpg mktemp file date alien id \
+                ; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
+            [[ -n "${exec_to_pkg[$prog]}" ]] && prog=${exec_to_pkg[$prog]}
+
             install_block "$prog" || { err "unable to install required prog [$prog] this script depends on. abort."; exit 1; }
             report "...done"
         fi
     done
-
-    command -v gpg >/dev/null || install_block gnupg
 
     # TODO: need to create dev/ already here, since both dotfiles and private-common
     # either point to it, or point at something in it; not a good solution.
@@ -280,8 +287,8 @@ setup_hosts() {
 
     if [[ -f "$file" ]]; then
         [[ -f "$hosts_file_dest/hosts" ]] || { err "system hosts file is missing!"; return 1; }
-        readonly current_hostline="$(_extract_current_hostname_line $hosts_file_dest/hosts)" || return 1
-        execute "cp -- $file $tmpfile" || { err; return 1; }
+        current_hostline="$(_extract_current_hostname_line $hosts_file_dest/hosts)" || return 1
+        execute "cp -- '$file' '$tmpfile'" || { err; return 1; }
         execute "sed --follow-symlinks -i 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' $tmpfile" || { err; return 1; }
 
         backup_original_and_copy_file --sudo "$tmpfile" "$hosts_file_dest"
@@ -425,7 +432,7 @@ backup_original_and_copy_file() {
             is_digit "$i" || { err "last found suffix was not digit: [$i]; setting suffix to RANDOM"; i="$RANDOM"; } && (( i++ ))  # note (( i++ )) errors if i=0, but it increments just fine
         fi
 
-        execute "$sudo cp -- '$dest_dir/$filename' '$dest_dir/${filename}.orig.$i'"
+        execute "$sudo cp -- '$dest_dir/$filename' '$dest_dir/${filename}.orig.$i'"  # TODO: should we mv instead?
     fi
 
     execute "$sudo cp -- '$file' '$dest_dir'"
@@ -1395,10 +1402,13 @@ setup() {
 }
 
 
+# logic to pull current time from a pre-configured site, and set it as our system
+# clock time if ours deviates from it by some margin.
+# This is needed on vbox systems during install-time, the time can deviate quite a bit.
 update_clock() {
     local src remote_time t diff
 
-    src='https://google.com/'  # external source whose http headers to extract time from
+    src='https://www.google.com/'  # external source whose http headers to extract time from
     remote_time="$(curl --fail --insecure -X HEAD --silent --head "$src" 2>&1 \
             | grep -ioP '^date:\s*\K.*' | { read -r t; date +%s -d "$t"; })"
 
@@ -1407,6 +1417,7 @@ update_clock() {
 
     if [[ "${diff#-}" -gt 30 ]]; then
         report "system time diff to remote source is [$diff] - updating clock..."
+        # IIRC, input format to date -s here is important:
         execute "sudo date -s '$(date -d @$remote_time '+%Y-%m-%d %H:%M:%S')'" || { err "setting system time failed w/ $?"; return 1; }
     fi
 
@@ -1718,12 +1729,12 @@ install_own_builds() {
 
 install_work_builds() {
     install_aws_okta
-    install_bloomrpc
+    is_native && install_bloomrpc
     install_postman
     install_terraform
     install_terragrunt
     install_minikube
-    #install_bluejeans
+    is_native && install_bluejeans
 }
 
 
@@ -1891,14 +1902,15 @@ fetch_release_from_git() {
 }
 
 
-# Fetch a file from given github /releases page, and return full path to the file.
+# Fetch a file from a given page, and return full path to the file.
 # Note we will automaticaly extract the asset if it's archived/compressed; pass -U
 # to skip that step.
 #
 # -U     - skip extracting if archive and pass compressed/tarred ball as-is.
 # -s     - skip adding fetched asset in $GIT_RLS_LOG
 # -F     - $file output pattern to grep for in order to filter for specific
-#          single file from unpacked tarball (meaning it's pointless when -U is given)
+#          single file from unpacked tarball (meaning it's pointless when -U is given);
+#          as it stands, the _first_ file matching given filetype is returned, even if there were more.
 # -I     - entity identifier (for logging/version tracking et al)
 # -r     - if href grep should be relative, ie start with / (note user should not prefix w/ / themselves)
 #
@@ -1929,8 +1941,11 @@ fetch_release_from_any() {
         page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
         dl_url="$(grep -Po '.*a href="\K'"$grep_tail"'(?=")' <<< "$page")" || { err "parsing [$grep_tail] download link from [$loc] content failed"; return 1; }
 
-        domain="$(grep -Po '^https?://([^/]+)(?=)' <<< "$loc")"
-        [[ -n "$dl_url" && "$dl_url" == /* ]] && dl_url="${domain}$dl_url"  # convert to full url
+        if [[ -n "$dl_url" && "$dl_url" == /* ]]; then
+            domain="$(grep -Po '^https?://([^/]+)(?=)' <<< "$loc")"
+            dl_url="${domain}$dl_url"  # convert to full url
+        fi
+
         is_valid_url "$dl_url" || { err "[$dl_url] is not a valid download link"; return 1; }
         echo "$dl_url"
     }
@@ -1940,7 +1955,7 @@ fetch_release_from_any() {
 
     dl_url="$(_fetch_release_from_any "${relative:+/}.*$2")" || return 1  # note we might be looking for a relative url
 
-    if [[ "$skipadd" -ne 1 ]] && grep -q "$dl_url" "$GIT_RLS_LOG" 2>/dev/null; then
+    if [[ "$skipadd" -ne 1 ]] && grep -Fq "$dl_url" "$GIT_RLS_LOG" 2>/dev/null; then
         report "[$dl_url] already encountered, skipping installation..."
         return 2
     fi
@@ -1957,7 +1972,7 @@ fetch_release_from_any() {
 
         if [[ -n "$file_filter" ]]; then
             while IFS= read -r -d $'\0' file; do
-                grep -q "$file_filter" <<< "$(file -iLb "$file")" && break
+                grep -q "$file_filter" <<< "$(file -iLb "$file")" && break  # TODO: provide -E flag to grep?
                 unset file
             done < <(find "$tmpdir" -type f -print0)
         else
@@ -2050,7 +2065,7 @@ fetch_extract_tarball_from_git() {
 install_bin_from_git() {
     local opt bin target name OPTIND
 
-    target="/usr/local/bin"
+    target='/usr/local/bin'  # default
     while getopts "n:d:" opt; do
         case "$opt" in
             n) name="$OPTARG" ;;
@@ -2294,11 +2309,20 @@ install_visualvm() {  # https://github.com/oracle/visualvm
 }
 
 
-install_bluejeans() {  # https://www.bluejeans.com/downloads#desktop
+# see https://gist.github.com/johnduarte/15851f5bbe85884bc0b947a9d54b441b
+install_bluejeans_via_rpm() {  # https://www.bluejeans.com/downloads#desktop
     local rpm
 
     rpm="$(fetch_release_from_any -I "bluejeans" 'https://www.bluejeans.com/downloads#desktop' 'BlueJeans.rpm')" || return $?
     execute "sudo alien --install --to-deb '$rpm'" || return 1
+    return 0
+}
+
+install_bluejeans() {  # https://www.bluejeans.com/downloads#desktop
+    local deb
+
+    deb="$(fetch_release_from_any -I bluejeans 'https://www.bluejeans.com/downloads#desktop' 'BlueJeans.deb')" || return $?
+    execute "sudo apt-get --yes install '$deb'" || return 1
     return 0
 }
 
@@ -4355,6 +4379,7 @@ remind_manually_installed_progs() {
         'ublock origin additional configs (est, social media, ...)'
         'ublock whitelist (should be saved somewhere)'
         'import keepass-xc browser plugin config'
+        'install tridactyl native messenger/executable'
     )
 
     for i in "${progs[@]}"; do
@@ -4651,11 +4676,19 @@ setup_cups() {
 }
 
 
+# ff & extension configs
+setup_firefox() {
+
+    # install tridactyl native messenger:  https://github.com/tridactyl/tridactyl#extra-features
+    execute 'curl -fsSl https://raw.githubusercontent.com/tridactyl/tridactyl/master/native/install.sh -o /tmp/trinativeinstall.sh && bash /tmp/trinativeinstall.sh master'
+}
+
+
 addgroup_if_missing() {
     local group
     readonly group="$1"
 
-    groups "$USER" | grep -q "\b$group\b" || execute "sudo adduser $USER $group"
+    id -Gn "$USER" | grep -q "\b$group\b" || execute "sudo adduser $USER $group"
 }
 
 
@@ -4711,6 +4744,7 @@ post_install_progs_setup() {
     is_native && enable_fw
     is_native && setup_cups
     #addgroup_if_missing fuse  # not needed anymore?
+    setup_firefox
 
     command -v kubectl >/dev/null && execute 'kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl'  # add kubectl bash completion
     command -v minikube >/dev/null && setup_minikube
@@ -4869,7 +4903,7 @@ check_connection() {
     local timeout ip
 
     readonly timeout=3  # in seconds
-    readonly ip='google.com'
+    readonly ip='https://www.google.com'
 
     # Check whether the client is connected to the internet:
     # TODO: keep '--no-check-certificate' by default?
@@ -4897,7 +4931,7 @@ generate_key() {
         read -r mail
     done
 
-    execute "ssh-keygen -t rsa -b 4096 -C '$mail' -f $PRIVATE_KEY_LOC"
+    execute "ssh-keygen -t rsa -b 4096 -C '$mail' -f '$PRIVATE_KEY_LOC'"
 }
 
 
