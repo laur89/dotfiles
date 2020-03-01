@@ -51,8 +51,8 @@ readonly BUILD_DOCK='deb-build-box'              # name of the build container
 #------------------------
 IS_SSH_SETUP=0       # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=''  # only select_items() *writes* into this one.
-MODE=''  # TODO: rename to PROFILE & rename FULL_INSTALL->MODE
-FULL_INSTALL=''              # whether script is performing full install or not. will be defined as 1 || 0 || 2, needs to be first set to empty;
+PROFILE=''
+MODE=''              # which operation mode we're in; will be defined as 1 || 0 || 2, needs to be first set to empty;
 GIT_RLS_LOG=''       # log of all installed/fetched assets from git releases/latest page; will be defined later on;
 declare -a PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
 declare -a PACKAGES_FAILED_TO_INSTALL=()
@@ -111,23 +111,23 @@ validate_and_init() {
     # need to define PRIVATE_CASTLE here, as otherwise 'single-step' mode of this
     # script might fail. be sure the repo names are in sync with the repos actually
     # pulled in fetch_castles().
-    case "$MODE" in
+    case "$PROFILE" in
         work)
             if [[ "$__ENV_VARS_LOADED_MARKER_VAR" == loaded ]] && ! __is_work; then
-                confirm "you selected [${COLORS[RED]}${COLORS[BOLD]}$MODE${COLORS[OFF]}] mode on non-work machine; sure you want to continue?" || exit
+                confirm "you selected [${COLORS[RED]}${COLORS[BOLD]}$PROFILE${COLORS[OFF]}] profile on non-work machine; sure you want to continue?" || exit
             fi
 
             PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/work_dotfiles"
             ;;
         personal)
             if [[ "$__ENV_VARS_LOADED_MARKER_VAR" == loaded ]] && __is_work; then
-                confirm "you selected [${COLORS[RED]}${COLORS[BOLD]}$MODE${COLORS[OFF]}] mode on work machine; sure you want to continue?" || exit
+                confirm "you selected [${COLORS[RED]}${COLORS[BOLD]}$PROFILE${COLORS[OFF]}] profile on work machine; sure you want to continue?" || exit
             fi
 
             PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/personal-dotfiles"
             ;;
         *)
-            err "unsupported MODE [$MODE]"
+            err "unsupported PROFILE [$PROFILE]"
             print_usage
             exit 1 ;;
     esac
@@ -983,7 +983,7 @@ install_deps() {
 
 
     # work deps:  # TODO remove block?
-    #if [[ "$MODE" == work ]]; then
+    #if [[ "$PROFILE" == work ]]; then
         ## cx toolbox/vagrant env deps:  # TODO: deprecate? at least try to find what is _really_ required.
         #rb_install \
             #puppet puppet-lint bundler nokogiri builder
@@ -1133,7 +1133,7 @@ fetch_castles() {
     clone_or_link_castle -H dotfiles laur89 github.com || { err "failed pulling public dotfiles; it's required!"; return 1; }
 
     # !! if you change private repos, make sure you update PRIVATE_CASTLE definitions @ validate_and_init()!
-    case "$MODE" in
+    case "$PROFILE" in
         work)
             export GIT_SSL_NO_VERIFY=1
             clone_or_link_castle -H "$(basename -- "$PRIVATE_CASTLE")" laliste git.nonprod.williamhill.plc || err "failed pulling work dotfiles; won't abort"
@@ -1143,7 +1143,7 @@ fetch_castles() {
             clone_or_link_castle -H "$(basename -- "$PRIVATE_CASTLE")" layr bitbucket.org || err "failed pulling personal dotfiles; won't abort"
             ;;
         *)
-            err "unexpected \$MODE [$MODE]"; exit 1
+            err "unexpected \$PROFILE [$PROFILE]"; exit 1
             ;;
     esac
 
@@ -1383,9 +1383,9 @@ setup() {
     setup_config_files
     setup_additional_apt_keys_and_sources
 
-    [[ "$MODE" == work && -s ~/.npmrc ]] && mv -- ~/.npmrc "$NPMRC_BAK"  # work npmrc might define private registry
+    [[ "$PROFILE" == work && -s ~/.npmrc ]] && mv -- ~/.npmrc "$NPMRC_BAK"  # work npmrc might define private registry
     # following npm hack is superseded by temporarily getting rid of ~/.npmrc above:
-    #if [[ "$FULL_INSTALL" -eq 1 && "$MODE" == work && -z "$NODE_EXTRA_CA_CERTS" ]]; then
+    #if [[ "$MODE" -eq 1 && "$PROFILE" == work && -z "$NODE_EXTRA_CA_CERTS" ]]; then
         #NPM_PRFX+=' NODE_TLS_REJECT_UNAUTHORIZED=0'  # certs might've not been init'd yet; NODE_TLS_REJECT_UNAUTHORIZED not working, so far only '$npm config set strict-ssl' false has had any effect
         #local _cert="$TMP_DIR/wh_${RANDOM}.crt"
         #curl -s --fail --connect-timeout 2 --max-time 4 --insecure --output "$_cert" \
@@ -1522,7 +1522,7 @@ install_altiris() {
     # alt_loc from   https://williamhill.jira.com/wiki/display/TRAD/Developer+Machines :
     altiris_loc='https://williamhill.jira.com/wiki/download/attachments/21528849/altiris_install.sh'
 
-    [[ "$MODE" != work ]] && { err "won't install it in $MODE mode; only in work mode."; return 1; }
+    [[ "$PROFILE" != work ]] && { err "won't install it in [$PROFILE] profile; only in work profile."; return 1; }
 
     if ! command -v rpm >/dev/null; then
         install_block 'rpm' || return 1
@@ -1569,7 +1569,7 @@ install_symantec_endpoint_security() {
     sep_loc='https://williamhillorg-my.sharepoint.com/personal/leighhall_williamhill_co_uk/_layouts/15/guestaccess.aspx?guestaccesstoken=B5plVjedQluwT7BgUH50bG3rs99cJaCg6lckbkGdS6I%3d&docid=2_15a1ca98041134ad8b2e4d93286806892'
     jce_loc='http://download.oracle.com/otn-pub/java/jce/8/jce_policy-8.zip'
 
-    [[ "$MODE" != work ]] && { err "won't install it in [$MODE] mode; only in work mode."; return 1; }
+    [[ "$PROFILE" != work ]] && { err "won't install it in [$PROFILE] profile; only in work profile."; return 1; }
     [[ -d "$JDK_LINK_LOC" ]] || { err "expected [$JDK_LINK_LOC] to link to existing jdk installation."; return 1; }
 
     tmpdir="$(mktemp -d "symantec-endpoint-sec-tempdir-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$ mktemp"; return 1; }
@@ -1617,7 +1617,7 @@ install_progs() {
     is_native && install_nvidia
 
     # TODO: delete?:
-    #if [[ "$MODE" == work ]]; then
+    #if [[ "$PROFILE" == work ]]; then
         #install_altiris
         #install_symantec_endpoint_security
     #fi
@@ -1647,7 +1647,7 @@ upgrade_kernel() {
         sleep 5
     fi
 
-    if is_noninteractive || [[ "$FULL_INSTALL" -ne 0 ]]; then return 0; fi  # only ask for custom kernel ver when we're in manual mode (single task), or we're in noninteractive node
+    if is_noninteractive || [[ "$MODE" -ne 0 ]]; then return 0; fi  # only ask for custom kernel ver when we're in manual mode (single task), or we're in noninteractive node
 
     declare -a kernels_list=()
 
@@ -1712,7 +1712,7 @@ install_own_builds() {
     is_native && install_i3lock
     #is_native && install_i3lock_fancy
     is_native && install_betterlockscreen
-    [[ "$MODE" == work ]] && install_work_builds
+    [[ "$PROFILE" == work ]] && install_work_builds
 }
 
 
@@ -3225,7 +3225,7 @@ override_dh_gencontrol:
 setup_nvim() {
     nvim_post_install_configuration
 
-    if [[ "$FULL_INSTALL" -eq 1 ]]; then
+    if [[ "$MODE" -eq 1 ]]; then
         execute "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"  # no vim pls
         nvim +PlugInstall +qall
     fi
@@ -4044,7 +4044,7 @@ install_from_repo() {
     done
 
 
-    if [[ "$MODE" == work ]]; then
+    if [[ "$PROFILE" == work ]]; then
         if is_native; then
             install_block '
                 remmina
@@ -4165,14 +4165,14 @@ install_block() {
 
 
 choose_step() {
-    if [[ -n "$FULL_INSTALL" ]]; then
-       case "$FULL_INSTALL" in
+    if [[ -n "$MODE" ]]; then
+       case "$MODE" in
            0) choose_single_task ;;
            1) full_install ;;
            2) quick_refresh ;;
            *) exit 1 ;;
        esac
-    else
+    else  # mode not provided
        report "what do you want to do?"
        select_items 'full-install single-task update' 1
        case "$__SELECTED_ITEMS" in
@@ -4193,7 +4193,7 @@ choose_single_task() {
     local choices
 
     LOGGING_LVL=1
-    readonly FULL_INSTALL=0
+    readonly MODE=0
 
     source_shell_conf
 
@@ -4295,7 +4295,7 @@ __choose_prog_to_build() {
 full_install() {
 
     LOGGING_LVL=10
-    readonly FULL_INSTALL=1
+    readonly MODE=1
 
     setup
 
@@ -4305,7 +4305,7 @@ full_install() {
     install_deps
     ! is_noninteractive && is_native && install_ssh_server_or_client
     ! is_noninteractive && is_native && install_nfs_server_or_client
-    [[ "$MODE" == work ]] && exe_work_funs
+    [[ "$PROFILE" == work ]] && exe_work_funs
 
     remind_manually_installed_progs
 }
@@ -4314,7 +4314,7 @@ full_install() {
 # quicker update than full_install() to be executed periodically
 quick_refresh() {
     LOGGING_LVL=1
-    readonly FULL_INSTALL=2
+    readonly MODE=2
 
     setup
     install_progs  # TODO: consider replacing by only install_own_builds()
@@ -4363,7 +4363,7 @@ remind_manually_installed_progs() {
         fi
     done
 
-    [[ "$MODE" == work ]] && report "don't forget to install docker root CA"
+    [[ "$PROFILE" == work ]] && report "don't forget to install docker root CA"
 }
 
 
@@ -4503,7 +4503,7 @@ enable_network_manager() {
 
 
     # TODO: not sure about this bit:
-    #if [[ "$MODE" != work ]]; then
+    #if [[ "$PROFILE" != work ]]; then
         #execute "sudo sed -i --follow-symlinks '/^server=/d' '$dnsmasq_conf'"
         #for i in 1.1.1.1   8.8.8.8; do
             #execute "echo server=$i | sudo tee --append $dnsmasq_conf > /dev/null"
@@ -4560,7 +4560,7 @@ configure_ntp_for_work() {
                          'server gibntp02.prod.williamhill.plc'
                         )
 
-    [[ "$MODE" == work ]] || return
+    [[ "$PROFILE" == work ]] || return
     [[ -f "$conf" ]] || { err "[$conf] is not a valid file. is ntp installed?"; return 1; }
 
     for i in "${servers[@]}"; do
@@ -4682,7 +4682,7 @@ post_install_progs_setup() {
 
     is_native && install_acpi_events   # has to be after install_progs(), so acpid is already insalled and events/ dir present;
     enable_network_manager
-    is_native && install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present
+    is_native && install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present  # TODO: do we want to install these only on native systems?
     #is_native && execute --ignore-errs "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
     is_native && execute "mopidy local scan"            # update mopidy library
     is_native && execute "sudo sensors-detect --auto"   # answer enter for default values (this is lm-sensors config)
@@ -4897,7 +4897,7 @@ generate_key() {
         read -r mail
     done
 
-    execute "ssh-keygen -t rsa -b 4096 -C \"$mail\" -f $PRIVATE_KEY_LOC"
+    execute "ssh-keygen -t rsa -b 4096 -C '$mail' -f $PRIVATE_KEY_LOC"
 }
 
 
@@ -5204,7 +5204,7 @@ create_link() {
     #fi
 
     $sudo test -h "$target" && execute "$sudo rm -- '$target'"  # only remove $target if it's already a symlink
-    execute "$sudo ln -s -- '$src' '$target'"
+    execute "${sudo:+$sudo }ln -s -- '$src' '$target'"
 
     return 0
 }
@@ -5484,18 +5484,18 @@ while getopts "NFSU" OPT_; do
     case "$OPT_" in
         N) NON_INTERACTIVE=1
             ;;
-        F) FULL_INSTALL=1
+        F) MODE=1  # full install
             ;;
-        S) FULL_INSTALL=0
+        S) MODE=0  # single task
             ;;
-        U) FULL_INSTALL=2
+        U) MODE=2  # update/quick_refresh
             ;;
         *) print_usage; exit 1 ;;
     esac
 done
 shift "$((OPTIND-1))"; unset OPT_
 
-readonly MODE="$1"   # work | personal
+readonly PROFILE="$1"   # work | personal
 
 [[ "$EUID" -eq 0 ]] && { err "don't run as root."; exit 1; }
 trap "cleanup; exit" EXIT HUP INT QUIT PIPE TERM;
