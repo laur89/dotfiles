@@ -427,12 +427,12 @@ __find_top_big_small_fun() {
     report "seeking for top $itemsToShow $bigOrSmall files (in $du_size_unit units)...\n" "${FUNCNAME[1]}"
 
     if [[ "$du_size_unit" == B ]]; then
-        du_size_unit="--bytes"
+        du_size_unit='--bytes'
     else
         du_size_unit="--block-size=$du_size_unit"
     fi
 
-    if [[ "$file_type" == "-type f" ]]; then
+    if [[ "$file_type" == '-type f' ]]; then
         # optimization for files-only logic (ie no directories) to avoid expensive
         # calls to other programs (like awk and du).
 
@@ -441,7 +441,7 @@ __find_top_big_small_fun() {
                 head -$itemsToShow
 
     else  # covers both dirs only & dirs+files cases:
-        [[ "$file_type" != "-type d" ]] && readonly du_include_regular_files="--all"  # if not dirs only;
+        [[ "$file_type" != '-type d' ]] && readonly du_include_regular_files='--all'  # if not dirs only;
 
         # TODO: here, for top_big_small, consider for i in G M K for the du -h!:
         du $follow_links $du_include_regular_files $du_size_unit $duMaxDepthParam 2>/dev/null | \
@@ -530,7 +530,7 @@ __find_bigger_smaller_common_fun() {
                 ;;
            m) maxDepth="$OPTARG"
                 ;;
-           L) follow_links="-L"  # common for both find and du
+           L) follow_links='-L'  # common for both find and du
                 ;;
            h) echo -e "$usage"
               return 0
@@ -750,7 +750,9 @@ upgrade() {
         apt-get autoremove -y
         apt-get autoclean -y
         # nuke removed packages' configs:
-        apt-get -y purge $(dpkg -l | awk '/^rc/ { print $2 }')
+        __prgs_to_purge="$(dpkg -l | awk '/^rc/ { print $2 }')"
+        apt-get -y purge \$__prgs_to_purge
+        #apt-get -y purge $(dpkg -l | awk '/^rc/ { print $2 }')  <- doesn't work for some reason
 EOF
 
     report "ended at $(date), completed in $(($(date +%s) - start)) sec"
@@ -763,6 +765,15 @@ update() {
     readonly start="$(date +%s)"
     sudo apt-get update
     report "ended at $(date), completed in $(($(date +%s) - start)) sec"
+}
+
+
+# nuke SNAPSHOT versions from maven repo
+mvnclean() {
+    local m_repo
+    m_repo="$HOME/.m2/repository"
+    [[ -d "$m_repo" ]] || { err "maven repo [$m_repo] not a dir"; return 1; }
+    find "$m_repo" -name '*SNAPSHOT' -type d -print0 | xargs -0 rm -rf
 }
 
 
