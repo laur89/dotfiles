@@ -155,11 +155,6 @@ if ! is_proc_running transmission_somethiNG_TODO && ! is_work; then
     true
 fi
 
-if is_virtualbox; then
-    # as per https://askubuntu.com/a/1107875, VBoxClient gives us bidirectional clipboard:
-    is_proc_running 'VBoxClient.*clipboard' || VBoxClient --clipboard  # add --draganddrop if needed
-fi
-
 # synergy:
 if is_native; then
 if is_laptop; then

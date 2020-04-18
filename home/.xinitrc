@@ -37,7 +37,8 @@ case "$input" in
         else  # both native & virt:
             source "$HOME/.common_startup"
             exec i3
-            #exec i3 --shmlog-size=26214400  # enable logging
+            #exec i3 --shmlog-size=26214400  # enable logging; to enable logging on the fly, do:  i3-msg 'debuglog on; shmlog on; reload'
+            # to obtain log:     DISPLAY=:0 i3-dump-log
         fi
         ;;
     kde)

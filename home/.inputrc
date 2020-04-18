@@ -39,7 +39,7 @@ set output-meta on
 # a word, ask the user if he wants to see all of them
 set completion-query-items 150
 
-# add char to beginning of prompt indicating editing mode (: for fi comm, + for vi insert);
+# add char to beginning of prompt indicating editing mode (: for vi comm, + for vi insert mode);
 set show-mode-in-prompt on
 set vi-cmd-mode-string "\1\e[0;37m\2\342\224\224\342\224\200\342\224\200\342\225\274 \1\e[1;31m\2: \1\e[0m\2\1\e[2 q\2"
 set vi-ins-mode-string "\1\e[0;37m\2\342\224\224\342\224\200\342\224\200\342\225\274 \1\e[1;32m\2+ \1\e[0m\2\1\e[6 q\2"
