@@ -52,7 +52,7 @@ readonly BUILD_DOCK='deb-build-box'              # name of the build container
 IS_SSH_SETUP=0       # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=''  # only select_items() *writes* into this one.
 PROFILE=''
-MODE=''              # which operation mode we're in; will be defined as 1 || 0 || 2, needs to be first set to empty;
+MODE=''              # which operation mode we're in; will be defined as 1 || 0 || 2, needs to be first set to empty!
 GIT_RLS_LOG=''       # log of all installed/fetched assets from git releases/latest page; will be defined later on;
 declare -a PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
 declare -a PACKAGES_FAILED_TO_INSTALL=()
@@ -439,29 +439,29 @@ backup_original_and_copy_file() {
 }
 
 
-# note the importance of optional trailing slash for $install_dir param;
+# !! note the importance of optional trailing slash for $install_dir param;
 clone_or_pull_repo() {
     local user repo install_dir hub
 
     readonly user="$1"
     readonly repo="$2"
-    install_dir="$3"  # if has trailing / then $repo won't be appended
+    install_dir="$3"  # if has trailing / then $repo won't be appended, eg pass './' to clone to PWD
     readonly hub=${4:-'github.com'}  # OPTIONAL; defaults to github.com;
 
     [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
     [[ "$install_dir" != */ ]] && install_dir="${install_dir}/$repo"
 
-    if ! [[ -d "$install_dir" ]]; then
+    if ! [[ -d "$install_dir/.git" ]]; then
         execute "git clone --recursive -j8 https://$hub/$user/${repo}.git $install_dir" || return 1
 
         execute "pushd $install_dir" || return 1
-        execute "git remote set-url origin git@${hub}:$user/${repo}.git" || return 1
-        execute "git remote set-url --push origin git@${hub}:$user/${repo}.git" || return 1
+        execute "git remote set-url origin git@${hub}:$user/${repo}.git" || { popd; return 1; }
+        execute "git remote set-url --push origin git@${hub}:$user/${repo}.git" || { popd; return 1; }
         execute "popd"
     elif is_ssh_key_available; then
         execute "pushd $install_dir" || return 1
-        execute "git pull" || return 1
-        execute "git submodule update --init --recursive" || return 1  # make sure to pull submodules
+        execute "git pull" || { popd; return 1; }  # TODO: retry?
+        execute "git submodule update --init --recursive" || { popd; return 1; }  # make sure to pull submodules
         execute "popd"
     fi
 }
@@ -955,7 +955,7 @@ install_deps() {
     #rb_install speed_read  # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)  TODO: install appears to be timing out? or at least takes forever;
     rb_install gist        # https://github.com/defunkt/gist  (pastebinit for gists)
 
-    # rbenv & ruby-build:                               # https://github.com/rbenv/rbenv-installer
+    # rbenv & ruby-build: {                             # https://github.com/rbenv/rbenv-installer
     #   ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki):
     install_block '
         autoconf
@@ -972,8 +972,9 @@ install_deps() {
     '
     execute 'curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-installer | bash'
     # note rbenv-doctor can be ran to verify installation:  $ curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-doctor | bash
+    # }
 
-    # some py deps requred by scripts:
+    # some py deps requred by scripts:  # TODO: should we not install these via said scripts' requirements.txt file instead?
     py_install exchangelib vobject icalendar arrow
     # note: if exchangelib fails with something like
                 #In file included from src/kerberos.c:19:0:
@@ -1914,7 +1915,7 @@ fetch_release_from_git() {
 # -I     - entity identifier (for logging/version tracking et al)
 # -r     - if href grep should be relative, ie start with / (note user should not prefix w/ / themselves)
 #
-# $1 - url
+# $1 - url to extract the asset url from;
 # $2 - build/file regex to be used (for grep -Po) to parse correct item from git /releases page src;
 #      note it matches 'til the very end of url (ie you should only provide the latter bit);
 # $3 - optional output file name; if given, downloaded file will be renamed to this
@@ -1990,7 +1991,7 @@ fetch_release_from_any() {
 
     if [[ "$skipadd" -ne 1 ]]; then
         # we're assuming here that installation succeeded from here on:
-        test -f "$GIT_RLS_LOG" && sed --follow-symlinks -i "/^$id:/d" "$GIT_RLS_LOG"
+        [[ -f "$GIT_RLS_LOG" ]] && sed --follow-symlinks -i "/^$id:/d" "$GIT_RLS_LOG"
         echo -e "$id:\t$dl_url" >> "$GIT_RLS_LOG"
     fi
 
@@ -3052,6 +3053,7 @@ install_i3_deps() {
     #py_install rofi-tmux  # https://github.com/viniarck/rofi-tmux  # TODO use this as soon as/if our PR is accepted; or not, it's rather slow to start
     #py_install -g laur89 rofi-tmux  # https://github.com/laur89/rofi-tmux (note it includes i3 integration); aka rtf;  this version is extension of the original
     clone_or_pull_repo "laur89" "rofi-tmux" "$BASE_DEPS_LOC"
+    #execute "pip3 install --user -r ${BASE_DEPS_LOC}/rofi-tmux/requirements.txt"  # as we're not installing rft w/ pip, we need to manually install deps
     create_link "${BASE_DEPS_LOC}/rofi-tmux/rft/main.py" "$HOME/bin/rft"
 
     # install i3-quickterm   # https://github.com/lbonn/i3-quickterm
@@ -3640,6 +3642,9 @@ install_YCM() {  # the quick-and-not-dirty install.py way
 # consider also https://github.com/whitelynx/artwiz-fonts-wl
 # consider also https://github.com/slavfox/Cozette
 #
+# note pango 1.44+ drops FreeType support, thus losing support for traditional
+# BDF/PCF bitmap fonts; eg Terminess Powerline from powerline fonts.
+# consider patching yourself: https://www.reddit.com/r/archlinux/comments/f5ciqa/terminus_bitmap_font_with_powerline_symbols/fhyeuws/
 install_fonts() {
     local dir
 
@@ -3692,13 +3697,14 @@ install_fonts() {
     }
 
     # https://github.com/powerline/fonts
+    # note this is same as 'fonts-powerline' pkg
     install_powerline_fonts() {
         local tmpdir
 
         readonly tmpdir="$TMP_DIR/powerline-fonts-${RANDOM}"
         report "installing powerline-fonts..."
 
-        execute "git clone --recursive -j8 $PWRLINE_FONTS_REPO_LOC '$tmpdir'" || return 1
+        execute "git clone --depth=1 -j8 $PWRLINE_FONTS_REPO_LOC '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
         execute "./install.sh" || return 1
 
@@ -3735,7 +3741,7 @@ install_fonts() {
 
     enable_bitmap_rendering; unset enable_bitmap_rendering
     install_nerd_fonts; unset install_nerd_fonts
-    install_powerline_fonts; unset install_powerline_fonts
+    #install_powerline_fonts; unset install_powerline_fonts
     install_siji; unset install_siji
 
     # TODO: guess we can't use xset when xserver is not yet running:
@@ -3761,7 +3767,6 @@ install_fonts() {
 }
 
 
-# TODO: add udiskie?
 # majority of packages get installed at this point;
 install_from_repo() {
     local block blocks block1 block2 block3 block4 block5 extra_apt_params
@@ -3785,6 +3790,8 @@ install_from_repo() {
         nftables
         firewalld
         fail2ban
+        udisks2
+        udiskie
     )
     # old/deprecated block1_nonwin:
     #    ufw - iptables frontend, debian now on nftables instead
@@ -3878,7 +3885,6 @@ install_from_repo() {
         tkremind
         wyrd
         tree
-        flashplugin-nonfree
         synaptic
         apt-file
         apt-show-versions
@@ -3999,8 +4005,7 @@ install_from_repo() {
         w3m
         tmux
         neovim/unstable
-        python-neovim/unstable
-        python3-neovim/unstable
+        python3-pynvim/unstable
         libxml2-utils
         pidgin
         weechat
@@ -4089,11 +4094,53 @@ install_from_repo() {
     fi
 
     if is_virtualbox; then
-        install_block 'virtualbox-guest-dkms virtualbox-guest-utils virtualbox-guest-x11'
+        install_vbox_guest
     fi
 
     if is_native && is_laptop; then
         install_block pulseaudio-module-bluetooth
+    fi
+}
+
+# install/update the guest-utils/guest-additions.
+#
+# note it's preferrable to do it this way as opposed to installing
+# {virtualbox-guest-utils virtualbox-guest-x11} packages from apt, as additions
+# are rather related to vbox version, so better use the one that's shipped w/ it.
+#
+# make sure guest additions CD is inserted: @ host: Devices->Insert Guest Additions CD...
+#
+# see https://www.virtualbox.org/manual/ch04.html#additions-linux
+install_vbox_guest() {
+    local tmp_mount bin label
+
+    tmp_mount="$TMP_DIR/cdrom-mount-tmp-$RANDOM"
+    bin="$tmp_mount/VBoxLinuxAdditions.run"
+
+    is_virtualbox || return 0
+    install_block 'virtualbox-guest-dkms' || return 1
+
+    execute "mkdir $tmp_mount" || return 1
+    execute "sudo mount /dev/cdrom $tmp_mount" || { err "mounting /dev/cdrom to [$tmp_mount] failed w/ $?"; return 1; }
+    [[ -x "$bin" ]] || { err "[$bin] not a file"; return 1; }
+    label="$(grep --text -Po '^label=.\K.*(?="$)' "$bin")"  # or grep for 'INSTALLATION_VER'?
+
+    if is_single "$label"; then
+        if grep -Fq "$label" "$GIT_RLS_LOG" 2>/dev/null; then
+            report "[$label] already encountered, skipping installation..."
+            return 2
+        fi
+    else
+        err "found vbox additions ver was unexpected: [$label]; will continue w/ installation"
+    fi
+
+    # append '--nox11' if installing in non-gui system:
+    execute "sudo sh $bin"  # do not catch status, seems to always exit /w 2
+    execute "sudo umount $tmp_mount" || err "unmounting cdrom from [$tmp_mount] failed w/ $?"
+
+    if is_single "$label"; then
+        [[ -f "$GIT_RLS_LOG" ]] && sed --follow-symlinks -i "/^vbox-guest-additions:/d" "$GIT_RLS_LOG"
+        echo -e "vbox-guest-additions:\t$label" >> "$GIT_RLS_LOG"
     fi
 }
 
@@ -4304,6 +4351,7 @@ __choose_prog_to_build() {
         install_bluejeans
         install_minikube
         install_gruvbox_gtk_theme
+        install_vbox_guest
     )
 
     report "what do you want to build/install?"
@@ -4676,11 +4724,27 @@ setup_cups() {
 }
 
 
-# ff & extension configs
+# ff & extension configs/customisation
 setup_firefox() {
+    local conf_dir profile
+
+    conf_dir="$HOME/.mozilla/firefox"
 
     # install tridactyl native messenger:  https://github.com/tridactyl/tridactyl#extra-features
     execute 'curl -fsSl https://raw.githubusercontent.com/tridactyl/tridactyl/master/native/install.sh -o /tmp/trinativeinstall.sh && bash /tmp/trinativeinstall.sh master'
+
+
+    # install custom css/styling {  # see also https://github.com/MrOtherGuy/firefox-csshacks
+    [[ -d "$conf_dir" ]] || { err "[$conf_dir] not a dir"; return 1; }
+    profile="$(find "$conf_dir" -mindepth 1 -maxdepth 1 -type d -name '*default-release')"
+    [[ -d "$profile" ]] || { err "[$profile] not a dir"; return 1; }
+    [[ -d "$profile/chrome" ]] || execute "mkdir -- '$profile/chrome'" || return 1
+    execute "pushd $profile/chrome" || return 1
+    clone_or_pull_repo  MrOtherGuy  firefox-csshacks  './'
+
+
+    execute "popd"
+    # }
 }
 
 
