@@ -250,6 +250,11 @@ dbash() { docker exec -it $(docker ps -qf "name=$1") bash; }
 # docker (better use functions in bash_funtions.sh):
 #alias drmi='docker rmi $(docker images --filter "dangling=true" -q --no-trunc)'
 # ------------------------------------
+# AWS aliases
+alias aod='aws-okta exec dev --'
+alias aon='aws-okta exec nonprod --'
+alias aop='aws-okta exec prod --'
+# ------------------------------------
 
 
 # Directory navigation aliases:
