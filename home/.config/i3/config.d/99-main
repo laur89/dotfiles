@@ -463,10 +463,8 @@ for_window [class="Artha"] floating enable
 for_window [class="^jetbrains-toolbox$"] floating enable
 for_window [class="^Nm-connection-editor$"] floating enable
 for_window [class="^System-config-printer.py$"] floating enable
-# Rider splash:
-for_window [class="^java-lang-Thread$" instance="^java-lang-Thread$" title="^win0$"] floating enable, border pixel $border
-# Jetbrains IDEA splash:
-for_window [class="^jetbrains-idea$" instance="^jetbrains-idea$" title="^win0$"] floating enable, border pixel $border
+# Jetbrains splash (IDEA, Rider...):
+for_window [class="^jetbrains-" instance="^jetbrains-" title="^win0$"] floating enable, border pixel $border
 # charles splash:
 for_window [class="charles-gui-MainWithClassLoader$" title="^win"] floating enable, border pixel $border
 # our own invented title to force some wins (eg terminals) float with no titlebar:
