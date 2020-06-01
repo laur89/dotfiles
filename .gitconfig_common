@@ -22,6 +22,8 @@
     ;pager = less
     pager = diff-so-fancy | less --tabs=4 -RFXS
     preloadindex = true
+[rerere]
+    enabled = true
 [pull]
     rebase = true
 [rebase]
