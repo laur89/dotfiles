@@ -939,7 +939,7 @@ install_deps() {
     py_install img2txt.py    # https://github.com/hit9/img2txt  (for ranger)
     py_install ueberzug      # https://github.com/seebye/ueberzug  (display images in terminal)
     py_install scdl          # https://github.com/flyingrub/scdl (soundcloud downloader)
-    py_install rtv           # https://github.com/michael-lazar/rtv (reddit reader)
+    py_install rtv           # https://github.com/michael-lazar/rtv (reddit reader)  # TODO: active development has ceased
     py_install tldr          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
                                                                                       #   note its conf is in bash_env_vars
     #py_install maybe         # https://github.com/p-e-w/maybe (check what command would do)
@@ -1730,6 +1730,8 @@ install_own_builds() {
 
 install_work_builds() {
     install_aws_okta
+    install_saml2aws
+    install_sops
     is_native && install_bloomrpc
     install_postman
     install_terraform
@@ -2120,8 +2122,20 @@ install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
 }
 
 
+# note it's no longer actively maintained; consider replacing w/ https://github.com/Versent/saml2aws
+# tag: aws
 install_aws_okta() {  # https://github.com/segmentio/aws-okta
     install_deb_from_git segmentio aws-okta _amd64.deb
+}
+
+install_saml2aws() {  # https://github.com/Versent/saml2aws
+    install_bin_from_git -n saml2aws -d "$HOME/bin" Versent saml2aws '_linux_amd64.tar.gz'
+}
+
+# tool for managing secrets (SOPS: Secrets OPerationS)
+# tag: aws
+install_sops() {  # https://github.com/mozilla/sops
+    install_deb_from_git mozilla sops _amd64.deb
 }
 
 
@@ -3645,6 +3659,9 @@ install_YCM() {  # the quick-and-not-dirty install.py way
 # note pango 1.44+ drops FreeType support, thus losing support for traditional
 # BDF/PCF bitmap fonts; eg Terminess Powerline from powerline fonts.
 # consider patching yourself: https://www.reddit.com/r/archlinux/comments/f5ciqa/terminus_bitmap_font_with_powerline_symbols/fhyeuws/
+#
+# https://github.com/dse/bitmapfont2ttf/blob/master/bin/bitmapfont2ttf
+# https://gitlab.freedesktop.org/xorg/app/fonttosfnt
 install_fonts() {
     local dir
 
@@ -4336,6 +4353,8 @@ __choose_prog_to_build() {
         install_altiris
         install_symantec_endpoint_security
         install_aws_okta
+        install_saml2aws
+        install_sops
         install_bloomrpc
         install_grpc_cli
         install_dbeaver
@@ -4428,6 +4447,7 @@ remind_manually_installed_progs() {
         'ublock whitelist (should be saved somewhere)'
         'import keepass-xc browser plugin config'
         'install tridactyl native messenger/executable'
+        'setup default keyring via seahorse'
     )
 
     for i in "${progs[@]}"; do
