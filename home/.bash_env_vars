@@ -287,6 +287,7 @@ export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window down:3:wrap"  # sho
 # ripgrep env vars:
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
 
+#export AWS_OKTA_BACKEND=secret-service  # for aws-okta: https://github.com/segmentio/aws-okta
 
 # marker var used to detect whether env vars have been loaded:
 export __ENV_VARS_LOADED_MARKER_VAR=loaded

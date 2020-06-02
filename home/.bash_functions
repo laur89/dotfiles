@@ -739,8 +739,11 @@ aptbiggest() { aptlargest; }  # alias
 #   aptitude purge '~o'
 upgrade() {
     local start
+
+    sudo echo
     report "started at $(date)"
-    readonly start="$(date +%s)"
+    start="$(date +%s)"
+
     sudo -s -- <<EOF
         apt-get clean -y
         apt-get update
@@ -761,8 +764,11 @@ EOF
 
 update() {
     local start
+
+    sudo echo
     report "started at $(date)"
-    readonly start="$(date +%s)"
+    start="$(date +%s)"
+
     sudo apt-get update
     report "ended at $(date), completed in $(($(date +%s) - start)) sec"
 }
