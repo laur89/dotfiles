@@ -1731,6 +1731,7 @@ install_own_builds() {
 install_work_builds() {
     install_aws_okta
     install_saml2aws
+    install_k9s
     install_sops
     is_native && install_bloomrpc
     install_postman
@@ -2130,6 +2131,12 @@ install_aws_okta() {  # https://github.com/segmentio/aws-okta
 
 install_saml2aws() {  # https://github.com/Versent/saml2aws
     install_bin_from_git -n saml2aws -d "$HOME/bin" Versent saml2aws '_linux_amd64.tar.gz'
+}
+
+# kubernetes (k8s) cli management
+# tag: aws, k8s, kubernetes
+install_k9s() {  # https://github.com/derailed/k9s
+    install_bin_from_git -n k9s -d "$HOME/bin"  derailed  k9s  _Linux_x86_64.tar.gz
 }
 
 # tool for managing secrets (SOPS: Secrets OPerationS)
@@ -4354,6 +4361,7 @@ __choose_prog_to_build() {
         install_symantec_endpoint_security
         install_aws_okta
         install_saml2aws
+        install_k9s
         install_sops
         install_bloomrpc
         install_grpc_cli
