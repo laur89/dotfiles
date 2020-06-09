@@ -250,10 +250,15 @@ dbash() { docker exec -it $(docker ps -qf "name=$1") bash; }
 # docker (better use functions in bash_funtions.sh):
 #alias drmi='docker rmi $(docker images --filter "dangling=true" -q --no-trunc)'
 # ------------------------------------
-# AWS aliases
+# AWS aliases (for aws-okta):
 alias aod='aws-okta exec dev --'
 alias aon='aws-okta exec nonprod --'
 alias aop='aws-okta exec prod --'
+
+# ...and for saml2aws (which replaces/supersedes aws-okta):
+#alias aod='saml2aws exec --exec-profile dev --'
+#alias aon='saml2aws exec --exec-profile nonprod --'
+#alias aop='saml2aws exec --exec-profile prod --'
 # ------------------------------------
 
 

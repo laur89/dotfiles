@@ -3769,12 +3769,13 @@ install_fonts() {
         return 0
     }
 
+    # see  https://wiki.archlinux.org/index.php/Font_configuration#Disable_bitmap_fonts
     enable_bitmap_rendering() {
         local file
 
         readonly file='/etc/fonts/conf.d/70-no-bitmaps.conf'
 
-        [[ -f "$file" ]] || { err "[$file] does not exist; cannot enable bitmap font render"; return; }
+        [[ -f "$file" ]] || { report "[$file] does not exist; cannot enable bitmap font render"; return 0; }
         execute "sudo rm -- '$file'"
         return $?
     }
@@ -4161,7 +4162,7 @@ install_vbox_guest() {
     install_block 'virtualbox-guest-dkms' || return 1
 
     execute "mkdir $tmp_mount" || return 1
-    execute "sudo mount /dev/cdrom $tmp_mount" || { err "mounting /dev/cdrom to [$tmp_mount] failed w/ $?"; return 1; }
+    execute "sudo mount /dev/cdrom $tmp_mount" || { err "mounting guest-utils from /dev/cdrom to [$tmp_mount] failed w/ $? - is image mounted in vbox?"; return 1; }
     [[ -x "$bin" ]] || { err "[$bin] not a file"; return 1; }
     label="$(grep --text -Po '^label=.\K.*(?="$)' "$bin")"  # or grep for 'INSTALLATION_VER'?
 
