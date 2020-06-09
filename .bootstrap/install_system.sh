@@ -1116,6 +1116,7 @@ clone_or_link_castle() {
             execute "popd"
         fi
 
+        # note this assumes $castle repo has a .githooks symlink at its root that points to dir that contains the actual hooks!
         if [[ "$set_hooks" -eq 1 ]]; then
             execute "pushd $BASE_HOMESICK_REPOS_LOC/$castle" || { err "pushd failure - git hook installation failed!"; return 1; }
             execute 'git config core.hooksPath .githooks' || err "git hook installation failed!"
@@ -1936,7 +1937,7 @@ fetch_release_from_git() {
 # $1 - url to extract the asset url from;
 # $2 - build/file regex to be used (for grep -Po) to parse correct item from git /releases page src;
 #      note it matches 'til the very end of url (ie you should only provide the latter bit);
-# $3 - optional output file name; if given, downloaded file will be renamed to this
+# $3 - optional output file name; if given, downloaded file will be renamed to this; note name, not path!
 fetch_release_from_any() {
     local opt noextract skipadd file_filter id relative loc tmpdir file loc dl_url OPTIND
 
@@ -3780,7 +3781,7 @@ install_fonts() {
 
     enable_bitmap_rendering; unset enable_bitmap_rendering
     install_nerd_fonts; unset install_nerd_fonts
-    #install_powerline_fonts; unset install_powerline_fonts
+    #install_powerline_fonts; unset install_powerline_fonts  # commented out as we're installing it via apt
     install_siji; unset install_siji
 
     # TODO: guess we can't use xset when xserver is not yet running:
