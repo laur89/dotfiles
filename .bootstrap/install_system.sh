@@ -1144,7 +1144,22 @@ fetch_castles() {
     case "$PROFILE" in
         work)
             export GIT_SSL_NO_VERIFY=1
-            clone_or_link_castle -H "$(basename -- "$PRIVATE_CASTLE")" laliste git.nonprod.williamhill.plc || err "failed pulling work dotfiles; won't abort"
+            local host user repo u
+            host=git.nonprod.williamhill.plc
+            user=laliste
+            repo="$(basename -- "$PRIVATE_CASTLE")"
+            if clone_or_link_castle -H "$repo" "$user" "$host"; then
+                pushd "$PRIVATE_CASTLE"
+                for u in "git@$host:$user/$repo.git"  "git@github.com:laur89/work-dots-mirror.git"; do
+                    if ! grep -iq "pushurl.*$u" .git/config; then  # need if-check as 'set-url --add' is not idempotent
+                        git remote set-url --add --push origin "$u"
+                    fi
+                done
+                popd
+            else
+                err "failed pulling work dotfiles; won't abort"
+            fi
+
             unset GIT_SSL_NO_VERIFY
             ;;
         personal)
