@@ -1117,8 +1117,8 @@ clone_or_link_castle() {
         fi
 
         if [[ "$set_hooks" -eq 1 ]]; then
-            execute "pushd $BASE_HOMESICK_REPOS_LOC/$castle" || return 1
-            [[ -d .git ]] && execute 'git config core.hooksPath .githooks'
+            execute "pushd $BASE_HOMESICK_REPOS_LOC/$castle" || { err "pushd failure - git hook installation failed!"; return 1; }
+            execute 'git config core.hooksPath .githooks' || err "git hook installation failed!"
             execute "popd"
         fi
     fi
