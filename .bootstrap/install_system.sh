@@ -1748,6 +1748,9 @@ install_work_builds() {
     install_aws_okta
     install_saml2aws
     install_k9s
+    install_kops
+    install_kubectx
+    install_kube_ps1
     install_sops
     is_native && install_bloomrpc
     install_postman
@@ -2153,6 +2156,35 @@ install_saml2aws() {  # https://github.com/Versent/saml2aws
 # tag: aws, k8s, kubernetes
 install_k9s() {  # https://github.com/derailed/k9s
     install_bin_from_git -n k9s -d "$HOME/bin"  derailed  k9s  _Linux_x86_64.tar.gz
+}
+
+# kubernetes (k8s) operations - Production Grade K8s Installation, Upgrades, and Management
+# tag: aws, k8s, kubernetes
+# see also: kubebox,k9s,https://github.com/hjacobs/kube-ops-view
+install_kops() {  # https://github.com/kubernetes/kops/
+    install_bin_from_git -n kops -d "$HOME/bin"  kubernetes  kops  kops-linux-amd64
+}
+
+# kubectx - kubernetes contex swithcher
+# tag: aws, k8s, kubernetes
+install_kubectx() {  # https://github.com/ahmetb/kubectx
+	local COMPDIR
+
+    install_bin_from_git -n kubectx -d "$HOME/bin"  ahmetb  kubectx  kubectx.*_linux_x86_64
+    install_bin_from_git -n kubectx -d "$HOME/bin"  ahmetb  kubectx  kubens.*_linux_x86_64
+
+    # kubectc/kubens completion scripts: (note there's corresponding entry in ~/.bashrc)
+    clone_or_pull_repo "ahmetb" "kubectx" "$BASE_DEPS_LOC"
+	COMPDIR=$(pkg-config --variable=completionsdir bash-completion)
+    [[ -d "$COMPDIR" ]] || { err "[$COMPDIR] not a dir, cannot install kubectx shell completion"; return 1; }
+    create_link "${BASE_DEPS_LOC}/kubectx/completion/kubens.bash" "$COMPDIR/kubens"
+    create_link "${BASE_DEPS_LOC}/kubectx/completion/kubectx.bash" "$COMPDIR/kubectx"
+}
+
+# kube-ps1 - kubernets shell prompt
+# tag: aws, k8s, kubernetes
+install_kube_ps1() {  # https://github.com/jonmosco/kube-ps1
+    clone_or_pull_repo "jonmosco" "kube-ps1" "$BASE_DEPS_LOC"
 }
 
 # tool for managing secrets (SOPS: Secrets OPerationS)
@@ -3971,6 +4003,7 @@ install_from_repo() {
         keepassxc
         gnupg
         dirmngr
+        direnv
     )
 
 
@@ -4379,6 +4412,9 @@ __choose_prog_to_build() {
         install_aws_okta
         install_saml2aws
         install_k9s
+        install_kops
+        install_kubectx
+        install_kube_ps1
         install_sops
         install_bloomrpc
         install_grpc_cli

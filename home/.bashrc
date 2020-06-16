@@ -375,6 +375,12 @@ if [[ ! -s "$XAUTH" && -n "$DISPLAY" ]]; then  # TODO: also check for is_x()?
     xauth nlist "$DISPLAY" | sed -e 's/^..../ffff/' | xauth -f "$XAUTH" nmerge -
 fi
 ##########################################
+# kubectx and kubens bash completion:
+export PATH=${BASE_DEPS_LOC}/kubectx:$PATH
+##########################################
+# kubernetes/k8s shell prompt: (https://github.com/jonmosco/kube-ps1)
+source "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh"
+##########################################
 # NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
 ###-begin-npm-completion-###
 #
