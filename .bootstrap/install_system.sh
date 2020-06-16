@@ -1748,6 +1748,7 @@ install_work_builds() {
     install_aws_okta
     install_saml2aws
     install_k9s
+    install_popeye
     install_kops
     install_kubectx
     install_kube_ps1
@@ -2158,6 +2159,12 @@ install_k9s() {  # https://github.com/derailed/k9s
     install_bin_from_git -n k9s -d "$HOME/bin"  derailed  k9s  _Linux_x86_64.tar.gz
 }
 
+# kubernetes (k8s) config/resource sanitizer
+# tag: aws, k8s, kubernetes
+install_popeye() {  # https://github.com/derailed/popeye
+    install_bin_from_git -n popeye -d "$HOME/bin"  derailed  popeye  _Linux_x86_64.tar.gz
+}
+
 # kubernetes (k8s) operations - Production Grade K8s Installation, Upgrades, and Management
 # tag: aws, k8s, kubernetes
 # see also: kubebox,k9s,https://github.com/hjacobs/kube-ops-view
@@ -2383,7 +2390,7 @@ install_visualvm() {  # https://github.com/oracle/visualvm
 install_bluejeans_via_rpm() {  # https://www.bluejeans.com/downloads#desktop
     local rpm
 
-    rpm="$(fetch_release_from_any -I "bluejeans" 'https://www.bluejeans.com/downloads#desktop' 'BlueJeans.rpm')" || return $?
+    rpm="$(fetch_release_from_any -I bluejeans 'https://www.bluejeans.com/downloads#desktop' 'BlueJeans.rpm')" || return $?
     execute "sudo alien --install --to-deb '$rpm'" || return 1
     return 0
 }
@@ -2399,7 +2406,12 @@ install_bluejeans() {  # https://www.bluejeans.com/downloads#desktop
 
 # https://github.com/kubernetes/minikube
 install_minikube() {  # https://kubernetes.io/docs/tasks/tools/install-minikube/
-    install_deb_from_git kubernetes minikube 'minikube.*.deb'
+    # from github releases...:
+    install_deb_from_git kubernetes minikube 'minikube_\d+\.\d+.*_amd64.deb'
+
+    # ...or from k8s page:  (https://minikube.sigs.k8s.io/docs/start/):
+    #curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
+    #sudo dpkg -i minikube_latest_amd64.deb
 }
 
 
@@ -4412,6 +4424,7 @@ __choose_prog_to_build() {
         install_aws_okta
         install_saml2aws
         install_k9s
+        install_popeye
         install_kops
         install_kubectx
         install_kube_ps1
