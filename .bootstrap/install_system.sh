@@ -1749,6 +1749,7 @@ install_work_builds() {
     install_saml2aws
     install_k9s
     install_popeye
+    install_octant
     install_kops
     install_kubectx
     install_kube_ps1
@@ -2165,6 +2166,13 @@ install_popeye() {  # https://github.com/derailed/popeye
     install_bin_from_git -n popeye -d "$HOME/bin"  derailed  popeye  _Linux_x86_64.tar.gz
 }
 
+# kubernetes cluster analyzer for better comprehension (introspective tooling, cluster
+# navigation, object management)
+# tag: aws, k8s, kubernetes
+install_octant() {  # https://github.com/vmware-tanzu/octant
+    install_deb_from_git  vmware-tanzu  octant  _Linux-64bit.deb
+}
+
 # kubernetes (k8s) operations - Production Grade K8s Installation, Upgrades, and Management
 # tag: aws, k8s, kubernetes
 # see also: kubebox,k9s,https://github.com/hjacobs/kube-ops-view
@@ -2407,7 +2415,7 @@ install_bluejeans() {  # https://www.bluejeans.com/downloads#desktop
 # https://github.com/kubernetes/minikube
 install_minikube() {  # https://kubernetes.io/docs/tasks/tools/install-minikube/
     # from github releases...:
-    install_deb_from_git kubernetes minikube 'minikube_\d+\.\d+.*_amd64.deb'
+    install_deb_from_git kubernetes minikube 'minikube_[-0-9.]+.*_amd64.deb'
 
     # ...or from k8s page:  (https://minikube.sigs.k8s.io/docs/start/):
     #curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
@@ -4425,6 +4433,7 @@ __choose_prog_to_build() {
         install_saml2aws
         install_k9s
         install_popeye
+        install_octant
         install_kops
         install_kubectx
         install_kube_ps1
