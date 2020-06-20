@@ -2192,8 +2192,8 @@ install_kubectx() {  # https://github.com/ahmetb/kubectx
     clone_or_pull_repo "ahmetb" "kubectx" "$BASE_DEPS_LOC"
 	COMPDIR=$(pkg-config --variable=completionsdir bash-completion)
     [[ -d "$COMPDIR" ]] || { err "[$COMPDIR] not a dir, cannot install kubectx shell completion"; return 1; }
-    create_link "${BASE_DEPS_LOC}/kubectx/completion/kubens.bash" "$COMPDIR/kubens"
-    create_link "${BASE_DEPS_LOC}/kubectx/completion/kubectx.bash" "$COMPDIR/kubectx"
+    create_link --sudo "${BASE_DEPS_LOC}/kubectx/completion/kubens.bash" "$COMPDIR/kubens"
+    create_link --sudo "${BASE_DEPS_LOC}/kubectx/completion/kubectx.bash" "$COMPDIR/kubectx"
 }
 
 # kube-ps1 - kubernets shell prompt
@@ -2986,12 +2986,17 @@ install_i3() {
         f="$TMP_DIR/i3-patch-${RANDOM}.patch"
         #curl --fail -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "window-icons-patch download failed"; return 1; }
         curl --fail -o "$f" 'https://raw.githubusercontent.com/laur89/i3-extras/master/window-icons/window-icons.patch' || { err "window-icons-patch download failed"; return 1; }
+        report "patching window-icons..."
         patch -p1 < "$f" || { err "applying window-icons.patch failed"; return 1; }
 
         curl --fail -o "$f" 'https://raw.githubusercontent.com/laur89/i3-extras/master/i3-v-h-split-label-swap.patch' || { err "i3-v-h-split-label-swap-patch download failed"; return 1; }
+        report "patching v-h split label..."
         patch -p1 < "$f" || { err "applying i3-v-h-split-label-swap-patch failed"; return 1; }
 
-        curl --fail -o "$f" 'https://raw.githubusercontent.com/maestrogerardo/i3-gaps-deb/master/patches/0001-debian-Disable-sanitizers.patch' || { err "disable-sanitizers-patch download failed"; return 1; }
+        # TODO: fix back to maestrogerardo repo once my PR #23 is accepted:
+        #curl --fail -o "$f" 'https://raw.githubusercontent.com/maestrogerardo/i3-gaps-deb/master/patches/0001-debian-Disable-sanitizers.patch' || { err "disable-sanitizers-patch download failed"; return 1; }
+        curl --fail -o "$f" 'https://raw.githubusercontent.com/laur89/i3-gaps-deb/master/patches/0001-debian-Disable-sanitizers.patch' || { err "disable-sanitizers-patch download failed"; return 1; }
+        report "patching removal of debian sanitizers..."
         patch --forward -r - -p1 < "$f" || { err "applying disable-sanitizers.patch failed"; return 1; }
     }
 
