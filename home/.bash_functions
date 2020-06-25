@@ -755,8 +755,8 @@ upgrade() {
         # nuke removed packages' configs:
         __prgs_to_purge="$(dpkg -l | awk '/^rc/ { print $2 }')"
         apt-get -y purge \$__prgs_to_purge
-        #apt-get -y purge $(dpkg -l | awk '/^rc/ { print $2 }')  <- doesn't work for some reason
 EOF
+        #apt-get -y purge $(dpkg -l | awk '/^rc/ { print $2 }')  <- doesn't work for some reason (instead of the last line prior EOF)
 
     report "ended at $(date), completed in $(($(date +%s) - start)) sec"
 }
