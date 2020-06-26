@@ -4130,7 +4130,7 @@ complete -F _completemarks jj jum jmo
 # $2 - word being completed
 # $3 - word preceding the word being completed on the current command line, think it's same as ${COMP_WORDS[COMP_CWORD-1]}
 _complete_dirs_in_pwd() {
-    local curw wordlist d marker p i
+    local curw wordlist d prefix p i
 
 
     [[ "$DEBUG" -eq 1 ]] && err "1: [$1]"  # always funcname
@@ -4197,7 +4197,7 @@ _complete_dirs_in_pwd() {
             __define_d 1
             d="${d%/*}/"
             curw="${curw##*/}"  # everything after very last slash
-            marker="$d"
+            prefix="$d"
         else
             __define_d 2
 
@@ -4210,7 +4210,7 @@ _complete_dirs_in_pwd() {
                 [[ "$i" != */ ]] && i+='/'
                 [[ "$d" != */ ]] && d+='/'
                 d+="$i"
-                marker+="$i"
+                prefix+="$i"
             done
         fi
     else
@@ -4219,11 +4219,11 @@ _complete_dirs_in_pwd() {
             curw="${d##*/}"  # everything after very last slash
             d="${d%/*}"  # get everything before the very last slash
             [[ "$d" != */ ]] && d+='/'
-            [[ "$COMP_CWORD" -eq 1 && "$2" =~ ^\.{3,} ]] && marker="$d"  # expand the ...+ on command line if we're only completing that
+            [[ "$COMP_CWORD" -eq 1 && "$2" =~ ^\.{3,} ]] && prefix="$d"  # expand the ...+ on command line if we're only completing that
         fi
     fi
 
-    wordlist=$(find -L "${d:-.}" -mindepth 1 -maxdepth 1 -type d -printf "${marker}%f\n")
+    wordlist=$(find -L "${d:-.}" -mindepth 1 -maxdepth 1 -type d -printf "${prefix}%f\n")
 
     # TODO: how to make sure our current dir's contents aren't offered
     # in case target dir no longer has candidates? setting COMPREPLY here to
@@ -4231,7 +4231,7 @@ _complete_dirs_in_pwd() {
     [[ -z "$wordlist" ]] && COMPREPLY=('') && return 0
 
     # COMPREPLY is the output of completion attempt
-    COMPREPLY=($(compgen -W '${wordlist[@]}' -- "${marker}$curw"))
+    COMPREPLY=($(compgen -W '${wordlist[@]}' -- "${prefix}$curw"))
     #report "comprelpy: [${COMPREPLY[*]}]"
     return 0
 }
