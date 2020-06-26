@@ -4176,7 +4176,7 @@ _complete_dirs_in_pwd() {
             [[ -z "$i" || "$i" == . ]] && continue   # TODO: what if the first path element is '.'?
 
             [[ -z "$d" && "$i" =~ ^\.{3,}$ ]] && { d="$(__go_up "$i")"; continue; }
-            i="$(envsubst <<< "$i")"  # need to manually expand env vars
+            [[ "$i" == \$* ]] && i="$(envsubst <<< "$i")"  # need to manually expand env vars
             [[ -n "$d" && "$d" != */ && "$i" != /* ]] && d+='/'
             d+="$i"
         done
@@ -4184,7 +4184,7 @@ _complete_dirs_in_pwd() {
 
 
     if [[ "$COMP_CWORD" -eq 1 && ! "$curw" =~ ^\.{3,} ]]; then
-        return 0  # if [^...] then those need to be expanded, hence no return
+        return 0  # if [^...] then those need to be expanded, hence can't return here
 
     elif [[ "$2" == */ ]]; then  # ie all's confirmed directory path i suppose? as in no further completion needed here
         curw="$2\ "
@@ -4206,7 +4206,7 @@ _complete_dirs_in_pwd() {
 
             for i in "${p[@]}"; do
                 [[ -z "$i" || "$i" == . ]] && continue   # TODO: what if the first path element is '.'?
-                i="$(envsubst <<< "$i")"  # need to manually expand env vars
+                [[ "$i" == \$* ]] && i="$(envsubst <<< "$i")"  # need to manually expand env vars
                 [[ "$i" != */ ]] && i+='/'
                 [[ "$d" != */ ]] && d+='/'
                 d+="$i"
@@ -4219,7 +4219,7 @@ _complete_dirs_in_pwd() {
             curw="${d##*/}"  # everything after very last slash
             d="${d%/*}"  # get everything before the very last slash
             [[ "$d" != */ ]] && d+='/'
-            [[ "$COMP_CWORD" -eq 1 && "$2" =~ ^\.{3,} ]] && marker="$d"
+            [[ "$COMP_CWORD" -eq 1 && "$2" =~ ^\.{3,} ]] && marker="$d"  # expand the ...+ on command line if we're only completing that
         fi
     fi
 
