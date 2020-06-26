@@ -10,3 +10,6 @@ _FASD_RESOLVE_SYMLINKS=1
 # for backends manual see https://github.com/whjvenyl/fasd#backends
 # fasd backends to use; note 'native' is the default:
 _FASD_BACKENDS='native current recently-used viminfo'
+
+# force case insensitivity:
+_FASD_NOCASE=1
