@@ -955,6 +955,8 @@ install_deps() {
     #rb_install speed_read  # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)  TODO: install appears to be timing out? or at least takes forever;
     rb_install gist        # https://github.com/defunkt/gist  (pastebinit for gists)
 
+    py_install update-conf.py # https://github.com/rarylson/update-conf.py  (generate config files from conf.d dirs)
+
     # rbenv & ruby-build: {                             # https://github.com/rbenv/rbenv-installer
     #   ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki):
     install_block '
@@ -2183,14 +2185,14 @@ install_kops() {  # https://github.com/kubernetes/kops/
 # kubectx - kubernetes contex swithcher
 # tag: aws, k8s, kubernetes
 install_kubectx() {  # https://github.com/ahmetb/kubectx
-	local COMPDIR
+    local COMPDIR
 
     install_bin_from_git -n kubectx -d "$HOME/bin"  ahmetb  kubectx  kubectx.*_linux_x86_64
     install_bin_from_git -n kubectx -d "$HOME/bin"  ahmetb  kubectx  kubens.*_linux_x86_64
 
     # kubectc/kubens completion scripts: (note there's corresponding entry in ~/.bashrc)
     clone_or_pull_repo "ahmetb" "kubectx" "$BASE_DEPS_LOC"
-	COMPDIR=$(pkg-config --variable=completionsdir bash-completion)
+    COMPDIR=$(pkg-config --variable=completionsdir bash-completion)
     [[ -d "$COMPDIR" ]] || { err "[$COMPDIR] not a dir, cannot install kubectx shell completion"; return 1; }
     create_link --sudo "${BASE_DEPS_LOC}/kubectx/completion/kubens.bash" "$COMPDIR/kubens"
     create_link --sudo "${BASE_DEPS_LOC}/kubectx/completion/kubectx.bash" "$COMPDIR/kubectx"
@@ -2648,7 +2650,7 @@ install_synergy() {
     execute "pushd build" || return 1
     execute "cmake .." || { err "[cmake ..] for synergy failed w/ $?"; return 1; }
     execute "make" || { err "[make] for synergy failed w/ $?"; return 1; }
-    build_deb  synergy  # TODO: unsure if has to be ran from build/ or root dir;
+    build_deb  synergy || err "build_deb for synergy failed"  # TODO: unsure if has to be ran from build/ or root dir;
 
     execute "popd;popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -2922,7 +2924,7 @@ install_i3lock() {
     execute "git clone -j8 $I3_LOCK_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
     execute "git tag -f 'git-$(git rev-parse --short HEAD)'" || return 1
-    build_deb i3lock-color
+    build_deb i3lock-color || err "build_deb() for i3lock-color failed"
     execute 'sudo dpkg -i ../i3lock-color_*.deb'
 
     # old, checkinstall-compliant logic:
@@ -2948,7 +2950,7 @@ install_i3lock_fancy() {
     # clone the repository
     execute "git clone -j8 $I3_LOCK_FANCY_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
-    #build_deb -D '--parallel' i3lock-fancy
+    #build_deb -D '--parallel' i3lock-fancy || err "build_deb() for i3lock-fancy failed"
     #echo "got these: $(ls -lat ../*.deb)"
     #exit
     #execute 'sudo dpkg -i ../i3lock-fancy_*.deb'
@@ -3054,7 +3056,7 @@ EOF
             -i -r debian/control || { err "automatic build-dep resolver for i3 failed w/ [$?]"; return 1; }
     # alternatively, could also do $ sudo apt-get -y build-dep i3-wm
 
-    build_deb || return 1
+    build_deb || { err "build_deb() for i3 failed"; return 1; }
     execute 'sudo dpkg -i ../i3-wm_*.deb'
     execute 'sudo dpkg -i ../i3_*.deb'
 
@@ -3075,7 +3077,7 @@ EOF
     # install required perl modules (eg for i3-save-tree):
     #execute "pushd AnyEvent-I3" || return 1
     # TODO: libanyevent-i3-perl from repo?
-    #build_deb i3-anyevent
+    #build_deb i3-anyevent || err "build_deb() for i3-anyevent failed"
     install_block 'libanyevent-i3-perl' # alternative to building it ourselves
 
     # TODO: deprecated, check-install based way:
@@ -3131,7 +3133,7 @@ snap_install() {
 install_i3_conf() {
     local conf
 
-    conf="$HOME/.config/i3/config"
+    conf="$HOME/.config/i3/config"  # conf file _to be_ generated;
 
     py_install update-conf.py || { err "update-conf.py install failed"; return 1; }
     update-conf.py -f "$conf" || { err "i3 config install failed w/ $?"; return 1; }
@@ -4557,9 +4559,9 @@ increase_inotify_watches_limit() {
 # as per    https://wiki.archlinux.org/index.php/Linux_Containers#Enable_support_to_run_unprivileged_containers_(optional)
 #
 # this is needed eg for electron v5+ to enable sandboxing; eg see
-#	https://github.com/electron/electron/issues/17972
-#	https://github.com/notable/notable/issues/792
-#	https://github.com/electron/electron/issues/16631
+#    https://github.com/electron/electron/issues/17972
+#    https://github.com/notable/notable/issues/792
+#    https://github.com/electron/electron/issues/16631
 enable_unprivileged_containers_for_regular_users() {
     _sysctl_conf '70-enable-unprivileged-containers.conf' 'kernel.unprivileged_userns_clone' 1
 }
