@@ -4183,52 +4183,52 @@ _complete_dirs_in_pwd() {
     }
 
 
-	if [[ "$COMP_CWORD" -eq 1 && ! "$curw" =~ ^\.{3,} ]]; then
+    if [[ "$COMP_CWORD" -eq 1 && ! "$curw" =~ ^\.{3,} ]]; then
         return 0  # if [^...] then those need to be expanded, hence no return
 
-	elif [[ "$2" == */ ]]; then  # ie all's confirmed directory path i suppose? as in no further completion needed here
-			curw="$2\ "
-			COMPREPLY=($(compgen -W "$curw" -- "$curw"))
-			return 0
+    elif [[ "$2" == */ ]]; then  # ie all's confirmed directory path i suppose? as in no further completion needed here
+        curw="$2\ "
+        COMPREPLY=($(compgen -W "$curw" -- "$curw"))
+        return 0
 
-	elif grep -qE '\S+/\S+' <<< "$curw"; then
+    elif grep -qE '\S+/\S+' <<< "$curw"; then
 
-		if [[ "$COMP_CWORD" -eq 1 ]]; then
-			__define_d 1
-			d="${d%/*}/"
-			curw="${curw##*/}"  # everything after very last slash
-			marker="$d"
-		else
-			__define_d 2
+        if [[ "$COMP_CWORD" -eq 1 ]]; then
+            __define_d 1
+            d="${d%/*}/"
+            curw="${curw##*/}"  # everything after very last slash
+            marker="$d"
+        else
+            __define_d 2
 
-			IFS='/' read -ra p <<< "${curw%/*}"  # split up everything before last slash
-			curw="${curw##*/}"  # everything after very last slash
+            IFS='/' read -ra p <<< "${curw%/*}"  # split up everything before last slash
+            curw="${curw##*/}"  # everything after very last slash
 
-			for i in "${p[@]}"; do
+            for i in "${p[@]}"; do
                 [[ -z "$i" || "$i" == . ]] && continue   # TODO: what if the first path element is '.'?
                 i="$(envsubst <<< "$i")"  # need to manually expand env vars
-				[[ "$i" != */ ]] && i+='/'
-				[[ "$d" != */ ]] && d+='/'
-				d+="$i"
-				marker+="$i"
-			done
-		fi
-	else
-		__define_d 1
-	    if [[ -n "$2" ]]; then  # if we're currently trying to auto-complete something
-	    	curw="${d##*/}"  # everything after very last slash
-	    	d="${d%/*}"  # get everything before the very last slash
-	    	[[ "$d" != */ ]] && d+='/'
-                [[ "$COMP_CWORD" -eq 1 && "$2" =~ ^\.{3,} ]] && marker="$d"
+                [[ "$i" != */ ]] && i+='/'
+                [[ "$d" != */ ]] && d+='/'
+                d+="$i"
+                marker+="$i"
+            done
+        fi
+    else
+        __define_d 1
+        if [[ -n "$2" ]]; then  # if we're currently trying to auto-complete something
+            curw="${d##*/}"  # everything after very last slash
+            d="${d%/*}"  # get everything before the very last slash
+            [[ "$d" != */ ]] && d+='/'
+            [[ "$COMP_CWORD" -eq 1 && "$2" =~ ^\.{3,} ]] && marker="$d"
         fi
     fi
 
     wordlist=$(find -L "${d:-.}" -mindepth 1 -maxdepth 1 -type d -printf "${marker}%f\n")
 
-	# TODO: how to make sure our current dir's contents aren't offered
- 	# in case target dir no longer has candidates? setting COMPREPLY here to
-	# empty val sort of works, but not ideal:
-	[[ -z "$wordlist" ]] && COMPREPLY=('') && return 0
+    # TODO: how to make sure our current dir's contents aren't offered
+    # in case target dir no longer has candidates? setting COMPREPLY here to
+    # empty val sort of works, but not ideal:
+    [[ -z "$wordlist" ]] && COMPREPLY=('') && return 0
 
     # COMPREPLY is the output of completion attempt
     COMPREPLY=($(compgen -W '${wordlist[@]}' -- "${marker}$curw"))
