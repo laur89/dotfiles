@@ -367,9 +367,8 @@ _enter_dir() {
 }
 
 [[ -s "$NVM_DIR/nvm.sh" ]] && export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
-# TODO: call _enter_dir from here to make sure it's called at startup?
 ##########################################
-# generate .Xauth to be passed to (and used by) GUI docker containers:
+# generate .Xauth to be passed to (and used by) GUI docker gui containers:
 export XAUTH='/tmp/.docker.xauth'
 if [[ ! -s "$XAUTH" && -n "$DISPLAY" ]]; then  # TODO: also check for is_x()?
     touch "$XAUTH"
