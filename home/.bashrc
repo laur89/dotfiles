@@ -263,7 +263,7 @@ fi
 # compile .ssh/config
 ##########################################
 __check_for_change_and_compile_ssh_config() {
-    local stored_md5sum ssh_config ssh_configdir modified current_md5sum
+    local stored_md5sum ssh_config ssh_configdir modified current_md5sum stored_md5sum_exist
 
     readonly stored_md5sum="$_PERSISTED_TMP/.last_known_sshconfigdir_md5sum"
     readonly ssh_config="$HOME/.ssh/config"
@@ -272,9 +272,10 @@ __check_for_change_and_compile_ssh_config() {
 
     if [[ -d "$ssh_configdir" ]] && ! is_dir_empty "$ssh_configdir"; then
         cd "$ssh_configdir" || return 1  # move to $ssh_configdir, since we execute find relative to curr dir;
-        current_md5sum="$(find -L . -type f -exec md5sum {} \; | sort -k 34 | md5sum)" || { err 'running find failed' "$FUNCNAME"; return 1; }
+        current_md5sum="$(find -L . -type f -exec md5sum -- '{}' \+ | sort -k 34 | md5sum)" || { err 'md5summing configdir failed' "$FUNCNAME"; return 1; }
+        test -e "$stored_md5sum"; stored_md5sum_exist=$?
 
-        if [[ -e "$stored_md5sum" && "$(cat -- "$stored_md5sum")" != "$current_md5sum" ]] \
+        if [[ "$stored_md5sum_exist" -eq 0 && "$(cat -- "$stored_md5sum")" != "$current_md5sum" ]] \
                 || ! [[ -e "$ssh_config" ]]; then
             # cat, not move ssh/config, as it's likely a symlink!
             [[ -f "$ssh_config" ]] && cat -- "$ssh_config" > "${ssh_config}.bak.$(date -Ins)"
@@ -284,7 +285,7 @@ __check_for_change_and_compile_ssh_config() {
         fi
 
         # avoid pointless $stored_md5sum writing:
-        [[ "$modified" -eq 1 || ! -e "$stored_md5sum" ]] && echo "$current_md5sum" > "$stored_md5sum"
+        [[ "$modified" -eq 1 || "$stored_md5sum_exist" -ne 0 ]] && echo "$current_md5sum" > "$stored_md5sum"
     fi
 
     return 0
@@ -330,7 +331,7 @@ unset fasd_cache
 #   https://gist.github.com/fl0w/07ce79bd44788f647deab307c94d6922
 export NVM_DIR="$HOME/.nvm"  # do not change location, keep _non-linked_ .nvm/ under ~
 #declare -a __NODE_GLOBALS=($(find "$NVM_DIR/versions/node/" -maxdepth 3 -mindepth 3 -type l -wholename '*/bin/*' | xargs -n1 basename | sort | uniq))
-declare -a __NODE_GLOBALS=($(find "$NVM_DIR/versions/node/"*/bin/ -maxdepth 1 -mindepth 1 -type l | xargs -n1 basename | sort | uniq))
+mapfile -t __NODE_GLOBALS < <(find "$NVM_DIR/versions/node/"*/bin/ -maxdepth 1 -mindepth 1 -type l -print0 | xargs --null -n1 basename | sort | uniq)
 __NODE_GLOBALS+=(node nvm)
 
 # instead of using --no-use flag, load nvm lazily:
