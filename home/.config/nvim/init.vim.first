@@ -144,6 +144,15 @@
         endif
     """ }}}
 
+
+    """ set git editor & automatically close gitcommit nested buffer: {{{
+        if has('nvim')
+          let $GIT_EDITOR = 'nvr -cc split --remote-wait'
+          autocmd FileType gitcommit,gitrebase,gitconfig set bufhidden=delete
+        endif
+    """ }}}
+
+
     " autosave file if window loses focus:
     "au FocusLost * :wa
 
