@@ -46,6 +46,7 @@ readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
 readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
 readonly BUILD_DOCK='deb-build-box'              # name of the build container
+readonly DEB_STABLE=buster                   # current _stable_ release codename
 #------------------------
 #--- Global Variables ---
 #------------------------
@@ -1305,7 +1306,7 @@ setup_config_files() {
     setup_private_asset_perms
     setup_global_prompt
     is_native && swap_caps_lock_and_esc
-    is_native && override_locale_time
+    override_locale_time
 }
 
 
@@ -1449,7 +1450,7 @@ setup_additional_apt_keys_and_sources() {
 
     # mopidy: (from https://docs.mopidy.com/en/latest/installation/debian/):
     execute 'wget -q -O - https://apt.mopidy.com/mopidy.gpg | sudo apt-key add -'
-    execute 'sudo wget -q -O /etc/apt/sources.list.d/mopidy.list https://apt.mopidy.com/buster.list'
+    execute "sudo wget -q -O /etc/apt/sources.list.d/mopidy.list https://apt.mopidy.com/${DEB_STABLE}.list"
 
     # docker:  (from https://docs.docker.com/install/linux/docker-ce/debian/):
     # note we have to use hard-coded stable codename instead of testing or testing codename,
@@ -1457,10 +1458,10 @@ setup_additional_apt_keys_and_sources() {
     execute 'curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -'
     #execute "sudo add-apt-repository \
         #'deb [arch=amd64] https://download.docker.com/linux/debian \
-        #buster \
+        #$DEB_STABLE \
         #stable'
     #"
-    execute 'echo deb [arch=amd64] https://download.docker.com/linux/debian buster stable | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null'
+    execute "echo deb [arch=amd64] https://download.docker.com/linux/debian $DEB_STABLE stable | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null"
 
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
@@ -1468,15 +1469,16 @@ setup_additional_apt_keys_and_sources() {
     execute 'curl -sS https://download.spotify.com/debian/pubkey.gpg | sudo apt-key add -'
     execute 'echo deb http://repository.spotify.com stable non-free | sudo tee /etc/apt/sources.list.d/spotify.list > /dev/null'
 
-    # seafile: (from https://help.seafile.com/en/syncing_client/install_linux_client.html#wiki-debian):
-    execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 8756C4F765C9AC3CB6B85D62379CE192D401AB61'
-    execute 'echo deb http://deb.seadrive.org stretch main | sudo tee /etc/apt/sources.list.d/seafile.list > /dev/null'
+    # seafile-client: (from https://download.seafile.com/published/seafile-user-manual/syncing_client/install_linux_client.md):
+    #     seafile-drive instructions would be @ https://download.seafile.com/published/seafile-user-manual/drive_client/drive_client_for_linux.md
+    execute 'wget -O - https://linux-clients.seafile.com/seafile.key | sudo apt-key add -'
+    execute "echo 'deb [arch=amd64] http://linux-clients.seafile.com/seafile-deb/$DEB_STABLE/ stable main' > /etc/apt/sources.list.d/seafile.list"
 
     # mono: (from https://www.mono-project.com/download/stable/#download-lin-debian):
     # later on installed by 'mono-complete' pkg
     execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF'
-    execute 'echo "deb https://download.mono-project.com/repo/debian stable-buster main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list > /dev/null'  # stable branch
-    #execute 'echo "deb https://download.mono-project.com/repo/debian preview-buster main" | sudo tee /etc/apt/sources.list.d/mono-official-preview.list > /dev/null' # preview branch
+    execute "echo 'deb https://download.mono-project.com/repo/debian stable-$DEB_STABLE main' | sudo tee /etc/apt/sources.list.d/mono-official-stable.list > /dev/null"  # stable branch
+    #execute "echo 'deb https://download.mono-project.com/repo/debian preview-$DEB_STABLE main' | sudo tee /etc/apt/sources.list.d/mono-official-preview.list > /dev/null" # preview branch
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
     execute 'wget -q -O - https://www.charlesproxy.com/packages/apt/PublicKey | sudo apt-key add -'
@@ -3354,6 +3356,7 @@ setup_nvim() {
 
     # YCM installation AFTER the first nvim launch (nvim launch pulls in ycm plugin, among others)!
     install_YCM
+    py_install neovim-remote     # https://github.com/mhinz/neovim-remote
 }
 
 
