@@ -174,7 +174,7 @@ check_dependencies() {
     for prog in \
             git cmp wc wget curl tar unzip atool \
             realpath dirname basename head tee \
-            gpg mktemp file date alien id \
+            gpg mktemp file date alien id html2text \
                 ; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
@@ -1739,6 +1739,7 @@ install_own_builds() {
     #install_oracle_jdk  # start using sdkman (or something similar)
     install_gruvbox_gtk_theme
     #install_weeslack
+    install_veracrypt
 
     #install_dwm
     is_native && install_i3lock
@@ -1911,7 +1912,7 @@ switch_jdk_versions() {
 
 
 fetch_release_from_git() {
-    local loc id OPTIND args
+    local opt loc id OPTIND args
 
     args=()
     while getopts "UsF:" opt; do
@@ -1930,6 +1931,44 @@ fetch_release_from_git() {
     fetch_release_from_any "${args[@]}" -r -I "$id" "$loc" "$3" "$4"
 }
 
+resolve_dl_urls() {
+    local opt OPTIND multi loc grep_tail page dl_url urls domain u
+
+    while getopts "M" opt; do
+        case "$opt" in
+            M) multi=1 ;;  # ie multiple urls/results are allowed (but not required!)
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    loc="$1"
+    grep_tail="$2"
+
+    page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
+    dl_url="$(grep -Po '.*a href="\K'"$grep_tail"'(?=")' <<< "$page" | sort --unique)"
+
+    if [[ -z "$dl_url" ]]; then
+        err "no urls found from [$loc] for pattern [$grep_tail]"
+        return 1
+    elif [[ "$multi" -ne 1 ]] && ! is_single "$dl_url"; then
+        err "multiple urls found from [$loc] for pattern [$grep_tail], but expecting a single result"
+        return 1
+    fi
+
+    domain="$(grep -Po '^https?://([^/]+)(?=)' <<< "$loc")"
+    while IFS= read -r u; do
+        if [[ -n "$u" && "$u" == /* ]]; then
+            u="${domain}$u"  # convert to fully qualified url
+        fi
+
+        u="$(html2text -width 1000000 <<< "$u")"
+        is_valid_url "$u" || { err "[$u] is not a valid download link"; return 1; }
+        urls+="$u"$'\n'
+    done <<< "$dl_url"
+
+    echo "$urls"
+}
 
 # Fetch a file from a given page, and return full path to the file.
 # Note we will automaticaly extract the asset if it's archived/compressed; pass -U
@@ -1962,27 +2001,11 @@ fetch_release_from_any() {
     done
     shift "$((OPTIND-1))"
 
-    _fetch_release_from_any() {
-        local grep_tail page dl_url domain
-
-        grep_tail="$1"
-
-        page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
-        dl_url="$(grep -Po '.*a href="\K'"$grep_tail"'(?=")' <<< "$page")" || { err "parsing [$grep_tail] download link from [$loc] content failed"; return 1; }
-
-        if [[ -n "$dl_url" && "$dl_url" == /* ]]; then
-            domain="$(grep -Po '^https?://([^/]+)(?=)' <<< "$loc")"
-            dl_url="${domain}$dl_url"  # convert to full url
-        fi
-
-        is_valid_url "$dl_url" || { err "[$dl_url] is not a valid download link"; return 1; }
-        echo "$dl_url"
-    }
 
     readonly loc="$1"
     tmpdir="$(mktemp -d "release-from-external-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
-    dl_url="$(_fetch_release_from_any "${relative:+/}.*$2")" || return 1  # note we might be looking for a relative url
+    dl_url="$(resolve_dl_urls "$loc" "${relative:+/}.*$2")" || return 1  # note we might be looking for a relative url
 
     if [[ "$skipadd" -ne 1 ]] && grep -Fq "$dl_url" "$GIT_RLS_LOG" 2>/dev/null; then
         report "[$dl_url] already encountered, skipping installation..."
@@ -2019,8 +2042,7 @@ fetch_release_from_any() {
 
     if [[ "$skipadd" -ne 1 ]]; then
         # we're assuming here that installation succeeded from here on:
-        [[ -f "$GIT_RLS_LOG" ]] && sed --follow-symlinks -i "/^$id:/d" "$GIT_RLS_LOG"
-        echo -e "$id:\t$dl_url" >> "$GIT_RLS_LOG"
+        add_to_dl_log "$id" "$dl_url"
     fi
 
     #sanitize_apt "$tmpdir"  # think this is not really needed...
@@ -4243,8 +4265,7 @@ install_vbox_guest() {
     execute "sudo umount $tmp_mount" || err "unmounting cdrom from [$tmp_mount] failed w/ $?"
 
     if is_single "$label"; then
-        [[ -f "$GIT_RLS_LOG" ]] && sed --follow-symlinks -i "/^vbox-guest-additions:/d" "$GIT_RLS_LOG"
-        echo -e "vbox-guest-additions:\t$label" >> "$GIT_RLS_LOG"
+        add_to_dl_log "vbox-guest-additions" "$label"
     fi
 }
 
@@ -4463,6 +4484,7 @@ __choose_prog_to_build() {
         install_bluejeans
         install_minikube
         install_gruvbox_gtk_theme
+        install_veracrypt
         install_vbox_guest
     )
 
@@ -4736,6 +4758,50 @@ install_gruvbox_gtk_theme() {
     clone_or_pull_repo "3ximus" "gruvbox-gtk" "$HOME/.themes"  # https://github.com/3ximus/gruvbox-gtk.git
 }
 
+install_veracrypt() {
+    local tmpdir dl_urls u i vers dl_url ver_to_url file
+
+    dl_urls="$(resolve_dl_urls -M "https://www.veracrypt.fr/en/Downloads.html" '.*Debian-\d+-amd64.deb')" || return 1
+
+    vers=()
+    declare -A ver_to_url
+
+    while IFS= read -r u; do
+        grep -qi console <<< "$u" && continue  # we want GUI version, not console
+        i="$(grep -oP 'Debian-\K\d+(?=-amd64.deb$)' <<< "$u")"
+        if is_digit "$i"; then
+            vers+=("$i")
+            ver_to_url["$i"]="$u"
+        fi
+    done <<< "$dl_urls"
+
+
+    if [[ ${#vers[@]} -eq 0 ]]; then
+        err "no valid versions found from veracrypt dl urls"
+        return 1
+    fi
+
+    i="$(printf '%d\n' "${vers[@]}" | sort -rn | head -n1)"  # take largest (ie latest) version
+    is_digit "$i" || { err "latest found version was not digit: [$i]" return 1; }
+
+    dl_url=${ver_to_url[$i]}
+
+    if grep -Fq "$dl_url" "$GIT_RLS_LOG" 2>/dev/null; then
+        report "[$dl_url] already encountered, skipping installation..."
+        return 2
+    fi
+
+    tmpdir="$(mktemp -d "veracrypt-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    report "fetching [$dl_url]..."
+    execute "wget --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
+    file="$(find "$tmpdir" -type f)"
+    [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
+
+    execute "sudo apt-get --yes install '$file'" || { err "installing veracrypt failed w/ $?"; return 1; }
+
+    add_to_dl_log 'veracrypt' "$dl_url"
+}
+
 
 # add additional ntp servers
 configure_ntp_for_work() {
@@ -4967,6 +5033,16 @@ install_nfs_server_or_client() {
         "server-side" ) install_nfs_server ;;
         "client-side" ) install_nfs_client ;;
     esac
+}
+
+add_to_dl_log() {
+    local id url
+
+    id="$1"
+    url="$2"
+
+    [[ -f "$GIT_RLS_LOG" ]] && sed --follow-symlinks -i "/^$id:/d" "$GIT_RLS_LOG"
+    echo -e "${id}:\t$url" >> "$GIT_RLS_LOG"
 }
 
 ###################
