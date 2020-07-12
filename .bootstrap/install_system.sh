@@ -1473,7 +1473,7 @@ setup_additional_apt_keys_and_sources() {
     # seafile-client: (from https://download.seafile.com/published/seafile-user-manual/syncing_client/install_linux_client.md):
     #     seafile-drive instructions would be @ https://download.seafile.com/published/seafile-user-manual/drive_client/drive_client_for_linux.md
     execute 'wget -O - https://linux-clients.seafile.com/seafile.key | sudo apt-key add -'
-    execute "echo 'deb [arch=amd64] https://linux-clients.seafile.com/seafile-deb/$DEB_STABLE/ stable main' > /etc/apt/sources.list.d/seafile.list"
+    execute "echo 'deb [arch=amd64] https://linux-clients.seafile.com/seafile-deb/$DEB_STABLE/ stable main' | sudo tee /etc/apt/sources.list.d/seafile.list > /dev/null"
 
     # mono: (from https://www.mono-project.com/download/stable/#download-lin-debian):
     # later on installed by 'mono-complete' pkg
@@ -2151,6 +2151,10 @@ install_ferdi() {  # https://github.com/getferdi/ferdi
 }
 
 
+# TODO: looks like StevensNJD4/LazyMan is no more
+# maybe consider one of following:
+#  - https://github.com/tarkah/lazystream
+#  - https://github.com/actionbronson/LazyMan
 install_lazyman() {  # https://github.com/StevensNJD4/LazyMan
     true
 }
@@ -2167,7 +2171,6 @@ install_rebar() {  # https://github.com/erlang/rebar3
 }
 
 
-# note there is a deb package now
 install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
     install_deb_from_git BurntSushi ripgrep _amd64.deb
 }
@@ -4264,7 +4267,7 @@ install_vbox_guest() {
     install_block 'virtualbox-guest-dkms' || return 1
 
     execute "mkdir $tmp_mount" || return 1
-    execute "sudo mount /dev/cdrom $tmp_mount" || { err "mounting guest-utils from /dev/cdrom to [$tmp_mount] failed w/ $? - is image mounted in vbox?"; return 1; }
+    execute "sudo mount /dev/cdrom $tmp_mount" || { err "mounting guest-utils from /dev/cdrom to [$tmp_mount] failed w/ $? - is image mounted in vbox and in expected slot?"; return 1; }
     [[ -x "$bin" ]] || { err "[$bin] not a file"; return 1; }
     label="$(grep --text -Po '^label=.\K.*(?="$)' "$bin")"  # or grep for 'INSTALLATION_VER'?
 
