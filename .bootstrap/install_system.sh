@@ -1031,6 +1031,7 @@ setup_dirs() {
             $BASE_DATA_DIR/.calendars \
             $BASE_DATA_DIR/.calendars/work \
             $BASE_DATA_DIR/.rsync \
+            $BASE_DATA_DIR/.repos \
             $BASE_DATA_DIR/tmp \
             $BASE_DATA_DIR/vbox_vms \
             $BASE_PROGS_DIR \
@@ -1472,7 +1473,7 @@ setup_additional_apt_keys_and_sources() {
     # seafile-client: (from https://download.seafile.com/published/seafile-user-manual/syncing_client/install_linux_client.md):
     #     seafile-drive instructions would be @ https://download.seafile.com/published/seafile-user-manual/drive_client/drive_client_for_linux.md
     execute 'wget -O - https://linux-clients.seafile.com/seafile.key | sudo apt-key add -'
-    execute "echo 'deb [arch=amd64] http://linux-clients.seafile.com/seafile-deb/$DEB_STABLE/ stable main' > /etc/apt/sources.list.d/seafile.list"
+    execute "echo 'deb [arch=amd64] https://linux-clients.seafile.com/seafile-deb/$DEB_STABLE/ stable main' > /etc/apt/sources.list.d/seafile.list"
 
     # mono: (from https://www.mono-project.com/download/stable/#download-lin-debian):
     # later on installed by 'mono-complete' pkg
@@ -1752,10 +1753,11 @@ install_own_builds() {
 install_work_builds() {
     install_aws_okta
     install_saml2aws
+    install_aia
     install_k9s
     install_popeye
     install_octant
-    install_kops
+    #install_kops
     install_kubectx
     install_kube_ps1
     install_sops
@@ -2180,6 +2182,18 @@ install_saml2aws() {  # https://github.com/Versent/saml2aws
     install_bin_from_git -n saml2aws -d "$HOME/bin" Versent saml2aws '_linux_amd64.tar.gz'
 }
 
+# kubernetes aws-iam-authenticator (k8s)
+# tag: aws, k8s, kubernetes, auth
+# TODO: once we install full golang env, the we could also install it w/ go get command as described in github project page
+install_aia() {  # https://github.com/kubernetes-sigs/aws-iam-authenticator
+                 # https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html
+    local target
+
+    target="$HOME/bin/aws-iam-authenticator"
+    execute "curl -o '$target' https://amazon-eks.s3.us-west-2.amazonaws.com/1.16.8/2020-04-16/bin/linux/amd64/aws-iam-authenticator" || return 1
+    execute "chmod +x -- '$target'" || return 1
+}
+
 # kubernetes (k8s) cli management
 # tag: aws, k8s, kubernetes
 install_k9s() {  # https://github.com/derailed/k9s
@@ -2214,10 +2228,10 @@ install_kubectx() {  # https://github.com/ahmetb/kubectx
     install_bin_from_git -n kubectx -d "$HOME/bin"  ahmetb  kubectx  kubectx.*_linux_x86_64
     install_bin_from_git -n kubectx -d "$HOME/bin"  ahmetb  kubectx  kubens.*_linux_x86_64
 
-    # kubectc/kubens completion scripts: (note there's corresponding entry in ~/.bashrc)
+    # kubectx/kubens completion scripts: (note there's corresponding entry in ~/.bashrc)
     clone_or_pull_repo "ahmetb" "kubectx" "$BASE_DEPS_LOC"
     COMPDIR=$(pkg-config --variable=completionsdir bash-completion)
-    [[ -d "$COMPDIR" ]] || { err "[$COMPDIR] not a dir, cannot install kubectx shell completion"; return 1; }
+    [[ -d "$COMPDIR" ]] || { err "[$COMPDIR] not a dir, cannot install kube{ctx,ns} shell completion"; return 1; }
     create_link --sudo "${BASE_DEPS_LOC}/kubectx/completion/kubens.bash" "$COMPDIR/kubens"
     create_link --sudo "${BASE_DEPS_LOC}/kubectx/completion/kubectx.bash" "$COMPDIR/kubectx"
 }
@@ -2226,6 +2240,7 @@ install_kubectx() {  # https://github.com/ahmetb/kubectx
 # tag: aws, k8s, kubernetes
 install_kube_ps1() {  # https://github.com/jonmosco/kube-ps1
     clone_or_pull_repo "jonmosco" "kube-ps1" "$BASE_DEPS_LOC"
+    # note there's corresponding entry in ~/.bashrc
 }
 
 # tool for managing secrets (SOPS: Secrets OPerationS)
@@ -4462,6 +4477,7 @@ __choose_prog_to_build() {
         install_symantec_endpoint_security
         install_aws_okta
         install_saml2aws
+        install_aia
         install_k9s
         install_popeye
         install_octant
