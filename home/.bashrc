@@ -48,12 +48,12 @@ esac
 
 if [ -n "$force_color_prompt" ]; then
     if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-	# We have color support; assume it's compliant with Ecma-48
-	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
-	# a case would tend to support setf rather than setaf.)
-	color_prompt=yes
+    # We have color support; assume it's compliant with Ecma-48
+    # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+    # a case would tend to support setf rather than setaf.)
+    color_prompt=yes
     else
-	color_prompt=
+    color_prompt=
     fi
 fi
 
@@ -89,6 +89,8 @@ if [ -x /usr/bin/dircolors ]; then
     #alias egrep='egrep --color=auto'
 fi
 
+# colored GCC warnings and errors
+export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 
 # Alias definitions.
 # You may want to put all your additions into a separate file like
@@ -376,10 +378,10 @@ if [[ ! -s "$XAUTH" && -n "$DISPLAY" ]]; then  # TODO: also check for is_x()?
 fi
 ##########################################
 # kubectx and kubens bash completion:
-export PATH=${BASE_DEPS_LOC}/kubectx:$PATH
+[[ :$PATH: != *:"${BASE_DEPS_LOC}/kubectx":* ]] && export PATH="${BASE_DEPS_LOC}/kubectx:$PATH"
 ##########################################
 # kubernetes/k8s shell prompt: (https://github.com/jonmosco/kube-ps1)
-source "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh"
+test -f "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh" && source "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh"
 ##########################################
 # NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
 ###-begin-npm-completion-###
@@ -442,6 +444,23 @@ elif type compctl &>/dev/null; then
   compctl -K _npm_completion npm
 fi
 ###-end-npm-completion-###
+##########################################
+# single nvim instance per tmux _window_  (from https://www.reddit.com/r/neovim/comments/aex45u/integrating_nvr_and_tmux_to_use_a_single_tmux_per/)
+if [[ -n "$TMUX" ]]; then
+    export NVIM_LISTEN_ADDRESS="/tmp/nvim_${USER}"
+fi
+
+nvr() {
+    if [[ -n "$TMUX" ]]; then
+        local pane_id
+        pane_id=$(tmux list-panes -F '#{pane_id} #{pane_current_command}' | grep nvim | cut -f1 -d' ' | head -n1)
+        if [[ $pane_id ]]; then
+            tmux select-pane -t "$pane_id"
+        fi
+    fi
+
+    command nvr -s "$@"
+}
 ##########################################
 # note following is added by script from https://get.sdkman.io/:
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
