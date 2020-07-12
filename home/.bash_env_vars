@@ -66,6 +66,9 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export BASE_DEPS_LOC="$BASE_PROGS_DIR/deps"             # hosting stuff like homeshick, bash-git-prompt...
     export COMMON_CASTLE="/data/progs/deps/homesick/repos/dotfiles"
 
+    # golang stuff:
+    export GOPATH=/data/.repos/go  # .repos/ will likely also contain m2 repo
+
     #export JAVA_HOME=/usr/local/jdk_link  # superseded by sdkman
     #export M2_HOME=$BASE_DATA_DIR/progs/maven/mvn_link
     #export M2=$M2_HOME/bin
@@ -84,7 +87,10 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
             "$HOME/bin" \
             "$HOME/.local/bin" \
             "$GRADLE_HOME/bin" \
-            "$HOME/.rbenv/bin"; do
+            "$HOME/.rbenv/bin" \
+            /usr/local/go/bin \
+            "$GOPATH/bin" \
+                ; do
         if [[ -d "$i" && :$PATH: != *:"$i":* ]]; then
             j+="$i:"
         fi
