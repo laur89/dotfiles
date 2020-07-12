@@ -1754,6 +1754,7 @@ install_work_builds() {
     install_aws_okta
     install_saml2aws
     install_aia
+    install_kustomize
     install_k9s
     install_popeye
     install_octant
@@ -2184,14 +2185,15 @@ install_saml2aws() {  # https://github.com/Versent/saml2aws
 
 # kubernetes aws-iam-authenticator (k8s)
 # tag: aws, k8s, kubernetes, auth
-# TODO: once we install full golang env, the we could also install it w/ go get command as described in github project page
+                          # https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html
 install_aia() {  # https://github.com/kubernetes-sigs/aws-iam-authenticator
-                 # https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html
-    local target
+    install_bin_from_git -n aws-iam-authenticator -d "$HOME/bin" kubernetes-sigs aws-iam-authenticator _linux_amd64
+}
 
-    target="$HOME/bin/aws-iam-authenticator"
-    execute "curl -o '$target' https://amazon-eks.s3.us-west-2.amazonaws.com/1.16.8/2020-04-16/bin/linux/amd64/aws-iam-authenticator" || return 1
-    execute "chmod +x -- '$target'" || return 1
+# kubernetes configuration customizer
+# tag: aws, k8s, kubernetes, kubernetes-config, k8s-config
+install_kustomize() {  # https://github.com/kubernetes-sigs/kustomize
+    install_bin_from_git -n kustomize -d "$HOME/bin" kubernetes-sigs kustomize _linux_amd64.tar.gz
 }
 
 # kubernetes (k8s) cli management
@@ -4478,6 +4480,7 @@ __choose_prog_to_build() {
         install_aws_okta
         install_saml2aws
         install_aia
+        install_kustomize
         install_k9s
         install_popeye
         install_octant
