@@ -16,6 +16,7 @@
 [core]
     excludesfile = /home/laur/.gitignore
     editor = nvim
+    ;editor = nvr --remote-wait-silent
     ;autocrlf = input
     autocrlf = false
     safecrlf = true
