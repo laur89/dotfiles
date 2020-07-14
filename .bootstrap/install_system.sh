@@ -35,7 +35,7 @@ readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u172-b11/a
                                                                           # jdk9: https://jdk9.java.net/  /  https://jdk9.java.net/download/
                                                                           # jdk10: http://www.oracle.com/technetwork/java/javase/downloads/jdk10-downloads-4416644.html
                                                                           # archive: http://www.oracle.com/technetwork/java/javase/archive-139210.html
-readonly SKYPE_LOC='http://www.skype.com/go/getskype-linux-deb'       # https://www.skype.com/en/get-skype/
+readonly SKYPE_LOC='https://go.skype.com/skypeforlinux-64.deb'       # https://www.skype.com/en/get-skype/
 readonly JDK_LINK_LOC="/usr/local/jdk_link"      # symlink linking to currently active java installation
 readonly JDK_INSTALLATION_DIR="/usr/local/javas" # dir containing all the installed java versions
 readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
@@ -46,15 +46,18 @@ readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
 readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
 readonly BUILD_DOCK='deb-build-box'              # name of the build container
-readonly DEB_STABLE=buster                   # current _stable_ release codename
+readonly DEB_STABLE=buster                   # current _stable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
+
 #------------------------
 #--- Global Variables ---
 #------------------------
 IS_SSH_SETUP=0       # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=''  # only select_items() *writes* into this one.
-PROFILE=''
+PROFILE=''           # work || personal
 MODE=''              # which operation mode we're in; will be defined as 1 || 0 || 2, needs to be first set to empty!
-GIT_RLS_LOG=''       # log of all installed/fetched assets from git releases/latest page; will be defined later on;
+ALLOW_OFFLINE=0      # whether script is allowed to run when we're offline
+CONNECTED=0          # are we connected to the web? 1 || 0
+GIT_RLS_LOG=''       # log of all installed/fetched assets from git releases/latest page; will be defined later on at init;
 declare -a PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
 declare -a PACKAGES_FAILED_TO_INSTALL=()
 LOGGING_LVL=0                   # execution logging level (full install mode logs everything);
@@ -109,6 +112,9 @@ print_usage() {
 
 validate_and_init() {
 
+    check_connection && CONNECTED=1 || CONNECTED=0
+    [[ "$CONNECTED" -eq 0 && "$ALLOW_OFFLINE" -ne 1 ]] && { err "no internet connection. abort."; exit 1; }
+
     # need to define PRIVATE_CASTLE here, as otherwise 'single-step' mode of this
     # script might fail. be sure the repo names are in sync with the repos actually
     # pulled in fetch_castles().
@@ -132,8 +138,6 @@ validate_and_init() {
             print_usage
             exit 1 ;;
     esac
-
-    check_connection || { err "no internet connection. abort."; exit 1; }
 
     report "private castle defined as [$PRIVATE_CASTLE]"
 
@@ -781,6 +785,8 @@ install_deps() {
         __install_wifi_driver() {
             local wifi_info rtl_driver
 
+            # TODO: entirety of this function needs a review
+            # TODO: lwfinger/rtlwifi_new repo doesn't exist, looks like each device has its own repo now, ie old repo was split up?
             __install_rtlwifi_new() {  # custom driver installation, pulling from github
                 local repo tmpdir
 
@@ -793,7 +799,7 @@ install_deps() {
                 execute "make clean" || return 1
 
                 #create_deb_install_and_store realtek-wifi-github  # doesn't work with checkinstall
-                execute "sudo make install"
+                execute "sudo make install" || err "[$rtl_driver] realtek wifi driver make install failed"
 
                 execute "popd"
                 execute "sudo rm -rf -- $tmpdir"
@@ -806,6 +812,11 @@ install_deps() {
                 report "we have intel wifi; installing intel drivers..."
                 install_block "firmware-iwlwifi"
             elif grep -iq 'vendor.*Realtek' <<< "$wifi_info"; then
+                # TODO: delete these 2 lines once __install_rtlwifi_new() has been reviewed&updated:
+                err "lwfinger github-hosted driver logic is out-dated in our script, have to abort until we've updated it :("
+                return 1
+
+
                 report "we have realtek wifi; installing realtek drivers..."
                 rtl_driver="$(grep -Poi '\s+driver=\Krtl\w+(?=\s+\S+)' <<< "$(sudo lshw -C network)")"
                 is_single "$rtl_driver" || { err "realtek driver from lshw output was [$rtl_driver]"; return 1; }
@@ -822,7 +833,7 @@ install_deps() {
                 execute "sudo modprobe -r $rtl_driver" || { err "unable removing modprobe [$rtl_driver]"; return 1; }
                 execute "sudo modprobe $rtl_driver" || { err "unable adding modprobe [$rtl_driver]; make sure secure boot is turned off in BIOS"; return 1; }
             else
-                err "can't detect Intel nor Realtek wifi; what card do you have?"
+                err "can't detect Intel nor Realtek wifi; whose card do we have?"
             fi
         }
 
@@ -1095,7 +1106,7 @@ clone_or_link_castle() {
     readonly homesick_exe="$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick"
 
     [[ -z "$castle" || -z "$user" || -z "$hub" ]] && { err "either user, repo or castle name were missing"; sleep 2; return 1; }
-    [[ -e "$homesick_exe" ]] || { err "expected to see homesick script @ [$homesick_exe], but didn't. skipping cloning|linking castle [$castle]"; return 1; }
+    [[ -x "$homesick_exe" ]] || { err "expected to see homesick script @ [$homesick_exe], but didn't. skipping cloning/linking castle [$castle]"; return 1; }
 
     if [[ -d "$BASE_HOMESICK_REPOS_LOC/$castle" ]]; then
         if is_ssh_key_available; then
@@ -1282,11 +1293,6 @@ setup_global_prompt() {
     # just in case delete previous global PS1 def:
     execute "sudo sed -i --follow-symlinks '/^PS1=.*# own_def_marker$/d' \"$global_bashrc\""
     execute "echo '$ps1' | sudo tee --append $global_bashrc > /dev/null"
-
-    #if ! sudo grep -q '^PS1=.*# own_def_marker$' $global_bashrc; then
-        ## PS1 hasn't been defined yet:
-        #execute "echo '$ps1' | sudo tee --append $global_bashrc > /dev/null"
-    #fi
 }
 
 
@@ -1398,14 +1404,19 @@ source_shell_conf() {
 }
 
 
+setup_install_log_file() {
+    if [[ -z "$GIT_RLS_LOG" ]]; then
+        [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG="$TMP_DIR/.git-rls-log.tmp"  # log of all installed debs/binaries from git releases/latest page
+    fi
+}
+
+
 setup() {
     setup_homesick || { err "homesick setup failed; as homesick is necessary, script will exit"; exit 1; }
     verify_ssh_key
     source_shell_conf  # so we get our env vars after dotfiles are pulled in
 
-    if [[ -z "$GIT_RLS_LOG" ]]; then
-        [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG="$TMP_DIR/.git-rls-log.tmp"  # log of all installed debs/binaries from git releases/latest page
-    fi
+    setup_install_log_file
 
     setup_dirs  # has to come after $SHELL_ENVS sourcing so the env vars are in place
     setup_config_files
@@ -1427,17 +1438,23 @@ setup() {
 # clock time if ours deviates from it by some margin.
 # This is needed on vbox systems during install-time, the time can deviate quite a bit.
 update_clock() {
-    local src remote_time t diff
+    local src remote_time diff
 
     src='https://www.google.com/'  # external source whose http headers to extract time from
-    remote_time="$(curl --fail --insecure -X HEAD --silent --head "$src" 2>&1 \
-            | grep -ioP '^date:\s*\K.*' | { read -r t; date +%s -d "$t"; })"
+
+    if [[ "$CONNECTED" -eq 0 ]]; then
+        report "we're note connected to net, skipping $FUNCNAME()..."
+        return 0
+    fi
+
+    remote_time="$(curl --connect-timeout 2 --max-time 2 --fail --insecure -X HEAD --silent --head "$src" 2>&1 \
+            | grep -ioP '^date:\s*\K.*' | { read -r t; [[ -z "$t" ]] && return 1; date +%s -d "$t"; })"
 
     is_digit "$remote_time" || { err "resolved remote [$src] time was not digit: [$remote_time]"; return 1; }
     diff="$(( $(date +%s) - remote_time ))"
 
     if [[ "${diff#-}" -gt 30 ]]; then
-        report "system time diff to remote source is [$diff] - updating clock..."
+        report "system time diff to remote source is [${diff}s] - updating clock..."
         # IIRC, input format to date -s here is important:
         execute "sudo date -s '$(date -d @$remote_time '+%Y-%m-%d %H:%M:%S')'" || { err "setting system time failed w/ $?"; return 1; }
     fi
@@ -1939,7 +1956,7 @@ resolve_dl_urls() {
 
     while getopts "M" opt; do
         case "$opt" in
-            M) multi=1 ;;  # ie multiple urls/results are allowed (but not required!)
+            M) multi=1 ;;  # ie multiple newline-separated urls/results are allowed (but not required!)
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -1983,12 +2000,12 @@ resolve_dl_urls() {
 #          single file from unpacked tarball (meaning it's pointless when -U is given);
 #          as it stands, the _first_ file matching given filetype is returned, even if there were more.
 # -I     - entity identifier (for logging/version tracking et al)
-# -r     - if href grep should be relative, ie start with / (note user should not prefix w/ / themselves)
+# -r     - if href grep should be relative, ie start with / (note user should not prefix w/ '/' themselves)
 #
 # $1 - url to extract the asset url from;
 # $2 - build/file regex to be used (for grep -Po) to parse correct item from git /releases page src;
 #      note it matches 'til the very end of url (ie you should only provide the latter bit);
-# $3 - optional output file name; if given, downloaded file will be renamed to this; note name, not path!
+# $3 - optional output file name; if given, downloaded file will be renamed to this; note name only, not including path!
 fetch_release_from_any() {
     local opt noextract skipadd file_filter id relative loc tmpdir file loc dl_url OPTIND
 
@@ -2325,7 +2342,11 @@ install_vnote() {  # https://github.com/tamlok/vnote/releases
 }
 
 
-install_postman() {  # https://learning.getpostman.com/docs/postman/launching-postman/installation-and-updates/
+# https://www.postman.com/downloads/canary/
+#
+# note postman is also available as a snap;
+# TODO: find a way to resolve the versioned URL to track it in our git-releases logfile;
+install_postman() {  # https://learning.postman.com/docs/getting-started/installation-and-updates/#installing-postman-on-linux
     local tmpdir dir dsk target
 
     target="$BASE_PROGS_DIR/Postman"
@@ -2337,7 +2358,7 @@ install_postman() {  # https://learning.getpostman.com/docs/postman/launching-po
 
     dir="$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d)"
     [[ -d "$dir" ]] || { err "couldn't find single extracted dir in [$tmpdir]"; return 1; }
-    [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }
+    [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }  # rm previous installation
     execute "mv -- '$dir' '$target'" || return 1
     execute "rm -rf -- '$tmpdir'"
 
@@ -2391,6 +2412,8 @@ install_terragrunt() {  # https://github.com/gruntwork-io/terragrunt/
 #   1099 - czech
 #   1190 - germany
 #   17   - germany2
+#   1045 - germany3
+#   1260 - denmark
 #
 install_eclipse_mem_analyzer() {  # https://www.eclipse.org/mat/downloads.php
     local tmpdir target loc page dl_url file mirror
@@ -2406,7 +2429,7 @@ install_eclipse_mem_analyzer() {  # https://www.eclipse.org/mat/downloads.php
     loc+="&mirror_id=$mirror"
     # now need to parse link again from the download page...
     page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
-    dl_url="$(grep -Po 'If the download doesn.t start.*a href="\K.*(?=")' <<< "$page")" || { err "parsing final download link from [$loc] content failed"; return 1; }
+    dl_url="$(grep -Poi 'If the download doesn.t start.*a href="\K.*(?=")' <<< "$page")" || { err "parsing final download link from [$loc] content failed"; return 1; }
     is_valid_url "$dl_url" || { err "[$dl_url] is not a valid download link"; return 1; }
 
     report "fetching [$dl_url]..."
@@ -2491,6 +2514,7 @@ install_gitin() {  # https://github.com/isacikgoz/gitin
 }
 
 
+# TODO: logic needs to be updated; think nowadays it's on a snap?
 install_rambox() {  # https://github.com/ramboxapp/community-edition/wiki/Install-on-Linux
     local tmpdir tarball rambox_url rambox_dl page dir ver inst_loc
 
@@ -2534,65 +2558,7 @@ install_rambox() {  # https://github.com/ramboxapp/community-edition/wiki/Instal
 }
 
 
-# builds rambox from source  (atm not used, as using AppImage or tarball)
-build_and_install_rambox() {  # https://github.com/ramboxapp/community-edition
-    local expected_sencha_loc tmpdir
-
-    is_server && { report "we're server, skipping rambox installation."; return; }
-
-    readonly expected_sencha_loc="$HOME/bin/Sencha"
-    tmpdir="$(mktemp -d "sencha-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-
-    is_x || { err "won't install rambox; need to be in graphical env for that."; return 1; }
-
-    function __fetch_and_install_sencha() {
-        local zip sencha_url sencha_dl page installer
-
-        readonly sencha_url='https://www.sencha.com/products/extjs/cmd-download/'
-
-        page="$(wget "$sencha_url" -q -O -)" || { err "wgetting [$sencha_url] failed"; return 1; }
-        sencha_dl="$(grep -Po '.*a id=.link_linux_64.*href="\K.*(?=".*$)' <<< "$page")" || { err "parsing sencha download link failed"; return 1; }
-        is_valid_url "$sencha_dl" || { err "[$sencha_dl] is not a valid download link"; return 1; }
-
-        report "fetching [$sencha_dl]"
-        execute "wget '$sencha_dl'" || { err "wgetting [$sencha_dl] failed."; return 1; }
-        zip="$(basename -- "$sencha_dl")"
-        extract "$zip" || { err "extracting [$zip] failed."; return 1; }
-        execute "rm -- '$zip'" || { err "removing [$zip] failed"; return 1; }
-        installer="$(find . -mindepth 1 -maxdepth 1 -type f)"
-        [[ -f "$installer" ]] || { err "couldn't find unpacked sencha installer"; return 1; }
-        execute "$installer" || { err "executing [$installer] failed."; return 1; }
-        rm -r -- * || { err "[$tmpdir] cleanup failed;"; return 1; }
-
-        return 0
-    }
-
-    execute "pushd -- $tmpdir" || return 1
-
-    report "setting up rambox"
-    if [[ ! -d "$expected_sencha_loc" ]] || confirm "sencha found @ [$expected_sencha_loc]; want to fetch latest anyways?"; then
-        __fetch_and_install_sencha || { err "fetching or installing sencha failed"; return 1; }
-    fi
-    [[ -d "$expected_sencha_loc" ]] || { err "couldn't find sencha @ [$expected_sencha_loc]"; return 1; }
-
-    # install deps
-    install_block '
-        nodejs-legacy
-        npm
-        git
-    ' || { err "rambox deps install_block failed" "$FUNCNAME"; return 1; }
-    execute 'npm install electron-prebuilt -g' || return 1
-    execute "git clone -j8 $RAMBOX_REPO_LOC $tmpdir" || return 1
-    execute 'npm install' || { err "npm install failed" "$FUNCNAME"; return 1; }
-    # TODO set up env.conf
-    execute 'mv -- env-sample.js  env.js'
-    execute 'npm run sencha:compile' || { err "sencha:compile failed"; return 1; }
-
-    execute "popd"
-    execute "sudo rm -rf -- '$tmpdir'"
-}
-
-
+# note skype is also available as a snap;
 install_skype() {  # https://wiki.debian.org/skype
                    # https://www.skype.com/en/get-skype/
     local skypeFile skype_downloads_dir
@@ -2601,20 +2567,17 @@ install_skype() {  # https://wiki.debian.org/skype
     readonly skypeFile="$TMP_DIR/skype-install.deb"
     readonly skype_downloads_dir="$BASE_DATA_DIR/Downloads/skype_dl"
 
-    report "setting up skype"
+    #report "setting up skype"
 
-    if is_64_bit; then
-        execute "sudo dpkg --add-architecture i386"
-        execute "sudo apt-get --yes update"
-        execute "sudo apt-get -f --yes install"
-    fi
+    #if is_64_bit; then
+        #execute "sudo dpkg --add-architecture i386"
+        #execute "sudo apt-get --yes update"
+        #execute "sudo apt-get -f --yes install"
+    #fi
 
     execute "wget -O $skypeFile -- $SKYPE_LOC" || { err; return 1; }
     execute "sudo dpkg -i $skypeFile"  #|| { err; return 1; }  # do not exit on err!; TODO: instead of this install-and-fix, directly install file via apt-get?
-    execute "sudo apt-get -f --yes install" || { err; return 1; }
-
-    # store the .deb, just in case:
-    execute "mv $skypeFile $BASE_BUILDS_DIR"
+    #execute "sudo apt-get -f --yes install" || { err; return 1; }
 
     # create target dir for skype file transfers;
     # ! needs to be configured in skype!
@@ -4412,8 +4375,9 @@ choose_single_task() {
     readonly MODE=0
 
     source_shell_conf
+    setup_install_log_file
 
-    [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG="$TMP_DIR/.git-rls-log.tmp"  # log of all installed debs/binaries from git releases/latest page
+
     command -v nvm >/dev/null && execute 'nvm use default'
 
     # note choices need to be valid functions
@@ -4962,10 +4926,6 @@ setup_minikube() {  # TODO: unfinished
     true
     #execute 'sudo minikube config set vm-driver none'  # make 'none' the default driver:
     #execute 'minikube config set memory 4096'  # set default allocated memory (default is 2g i believe, see https://minikube.sigs.k8s.io/docs/start/linux/)
-
-    # TODO: consider these for starting:
-#CHANGE_MINIKUBE_NONE_USER=true sudo -E minikube start --vm-driver=none
-#sudo minikube start --extra-config=apiserver.service-node-port-range=80-32767 --vm-driver=none --apiserver-ips 127.0.0.1 --apiserver-name localhost
 }
 
 
@@ -5458,7 +5418,7 @@ is_git() {
 # Checks whether we're in graphical environment.
 #
 # @returns {bool}  true, if we're currently in graphical env.
-function is_x() {
+is_x() {
     local exit_code
 
     if command -v xset > /dev/null 2>&1; then
@@ -5481,7 +5441,7 @@ function is_x() {
 # @param {string}  url   url which validity to test.
 #
 # @returns {bool}  true, if provided url was a valid url.
-function is_valid_url() {
+is_valid_url() {
     local url regex
 
     readonly url="$1"
@@ -5693,7 +5653,7 @@ clear_old_vers() {
 # @param {string}  dir   directory whose emptiness to test.
 #
 # @returns {bool}  true, if directory IS empty.
-function is_dir_empty() {
+is_dir_empty() {
     local dir
 
     readonly dir="$1"
@@ -5742,7 +5702,7 @@ is_function() {
 is_single() {
     local s
 
-    readonly s="$(tr -d '[:blank:]' <<< "$*")"  # make sure not to strip newlines
+    readonly s="$(tr -d '[:blank:]' <<< "$*")"  # make sure not to strip newlines!
     [[ -n "$s" && "$(wc -l <<< "$s")" -eq 1 ]]
 }
 
@@ -5789,7 +5749,7 @@ cleanup() {
 #----------------------------
 #---  Script entry point  ---
 #----------------------------
-while getopts "NFSU" OPT_; do
+while getopts "NFSUO" OPT_; do
     case "$OPT_" in
         N) NON_INTERACTIVE=1
             ;;
@@ -5798,6 +5758,8 @@ while getopts "NFSU" OPT_; do
         S) MODE=0  # single task
             ;;
         U) MODE=2  # update/quick_refresh
+            ;;
+        O) ALLOW_OFFLINE=1  # allow running offline
             ;;
         *) print_usage; exit 1 ;;
     esac
