@@ -31,26 +31,26 @@ if [[ "$-" != *i* ]]; then
 
     # try to extract our DISPLAY value from $(who) output
     if [[ -z "$DISPLAY" ]]; then
-        _DISP="$(LANG= who -u | grep "^$MAIN_SYSTEM_USER\b" | grep -oP '\s+\(\K:[0-9](\.[0-9])?(?=\))' | sort -u)"
-        if [[ -z "$_DISP" || "$(wc -l <<< "$_DISP")" -ne 1 ]]; then
-            echo -e "\n\n    ERROR: couldn't find our \$DISPLAY from [$_DISP]\n\n"  # eg during 1st installation this err is expected
+        _disp="$(LANG= who -u | grep "^$MAIN_SYSTEM_USER\b" | grep -oP '\s+\(\K:[0-9](\.[0-9])?(?=\))' | sort -u)"
+        if [[ -z "$_disp" || "$(wc -l <<< "$_disp")" -ne 1 ]]; then
+            echo -e "\n\n    ERROR: couldn't find our \$DISPLAY from [$_disp]\n\n"  # eg during 1st installation this err is expected
         else
-            export DISPLAY="$_DISP"
+            export DISPLAY="$_disp"
         fi
-        unset _DISP
+        unset _disp
     fi
 
-    _ID="$(id -u "$MAIN_SYSTEM_USER")"
-    _R_DIR="/run/user/$_ID"
+    _id="$(id -u "$MAIN_SYSTEM_USER")"
+    _r_dir="/run/user/$_id"
     if [[ -z "$DBUS_SESSION_BUS_ADDRESS" ]]; then
-        _BUS="$_R_DIR/bus"
-        [[ "$_ID" =~ ^[0-9]+$ ]] && test -e "$_BUS" && export DBUS_SESSION_BUS_ADDRESS="unix:path=$_BUS"
-        unset _BUS
+        _bus="$_r_dir/bus"
+        [[ "$_id" =~ ^[0-9]+$ ]] && test -e "$_bus" && export DBUS_SESSION_BUS_ADDRESS="unix:path=$_bus"
+        unset _bus
     fi
     if [[ -z "$XDG_RUNTIME_DIR" ]]; then
-        test -e "$_R_DIR" && export XDG_RUNTIME_DIR="$_R_DIR"
+        test -e "$_r_dir" && export XDG_RUNTIME_DIR="$_r_dir"
     fi
-    unset _ID _R_DIR
+    unset _id _r_dir
 fi
 
 [[ -z "$GID" && -n "$USER" ]] && export GID="$(id -g "$USER")"
@@ -67,8 +67,9 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export COMMON_CASTLE="/data/progs/deps/homesick/repos/dotfiles"
 
     # golang stuff:
-    export GOPATH=/data/.repos/go  # .repos/ will likely also contain m2 repo
+    export GOPATH=/data/.repos/go  # .repos/ will likely contain stuff like m2, go, etc repos...
 
+    # note JAVA_X env vars are managed by sdkman; unsure about M2* ones tho;
     #export JAVA_HOME=/usr/local/jdk_link  # superseded by sdkman
     #export M2_HOME=$BASE_DATA_DIR/progs/maven/mvn_link
     #export M2=$M2_HOME/bin
@@ -76,7 +77,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
 
     export KAFKA_HOME=/data/progs/kafka/kafka
 
-    # add additional locations to $PATH:
+    # add additional locations to PATH if not already present:
     j=''
     for i in \
             /usr/local/sbin \
@@ -91,7 +92,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
             /usr/local/go/bin \
             "$GOPATH/bin" \
                 ; do
-        if [[ -d "$i" && :$PATH: != *:"$i":* ]]; then
+        if [[ :$PATH: != *:"$i":* && -d "$i" ]]; then
             j+="$i:"
         fi
     done

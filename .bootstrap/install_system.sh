@@ -1447,7 +1447,7 @@ update_clock() {
         return 0
     fi
 
-    remote_time="$(curl --connect-timeout 2 --max-time 2 --fail --insecure -X HEAD --silent --head "$src" 2>&1 \
+    remote_time="$(curl --connect-timeout 2 --max-time 2 --fail --insecure --silent --head "$src" 2>&1 \
             | grep -ioP '^date:\s*\K.*' | { read -r t; [[ -z "$t" ]] && return 1; date +%s -d "$t"; })"
 
     is_digit "$remote_time" || { err "resolved remote [$src] time was not digit: [$remote_time]"; return 1; }
@@ -4547,7 +4547,7 @@ remind_manually_installed_progs() {
         'ublock origin additional configs (est, social media, ...)'
         'ublock whitelist (should be saved somewhere)'
         'import keepass-xc browser plugin config'
-        'install tridactyl native messenger/executable'
+        'install tridactyl native messenger/executable (:installnative)'
         'setup default keyring via seahorse'
     )
 
@@ -4568,6 +4568,7 @@ increase_inotify_watches_limit() {
 
 
 # as per    https://wiki.archlinux.org/index.php/Linux_Containers#Enable_support_to_run_unprivileged_containers_(optional)
+# i _think_ this issue popped up w/ after 'Franz' or 'notable' started using electron v5+
 #
 # this is needed eg for electron v5+ to enable sandboxing; eg see
 #    https://github.com/electron/electron/issues/17972

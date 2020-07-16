@@ -5,6 +5,7 @@
 # Executed by startx (run your window manager from here) or DM;
 # Mul execute'ib siit DM või .profile
 ##################################
+# TODO: for autologin, see 'getty autologin', eg https://unix.stackexchange.com/questions/42359/how-can-i-autologin-to-desktop-with-systemd
 
 #export GTK2_RC_FILES="$HOME/.gtkrc-2.0" # seda vist pole vaja
 #if test -z "$DBUS_SESSION_BUS_ADDRESS"; then
