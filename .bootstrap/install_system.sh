@@ -1167,7 +1167,7 @@ fetch_castles() {
             if clone_or_link_castle -H "$repo" "$user" "$host"; then
                 pushd "$PRIVATE_CASTLE"
                 for u in "git@$host:$user/$repo.git"  "git@github.com:laur89/work-dots-mirror.git"; do
-                    if ! grep -iq "pushurl.*$u" .git/config; then  # need if-check as 'set-url --add' is not idempotent
+                    if ! grep -iq "pushurl.*$u" .git/config; then  # need if-check as 'set-url --add' is not idempotent; TODO: create ticket for git?
                         git remote set-url --add --push origin "$u"
                     fi
                 done
@@ -3028,8 +3028,8 @@ install_i3() {
 
     _apply_patches() {
         local f
-
         f="$TMP_DIR/i3-patch-${RANDOM}.patch"
+
         #curl --fail -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "window-icons-patch download failed"; return 1; }
         curl --fail -o "$f" 'https://raw.githubusercontent.com/laur89/i3-extras/master/window-icons/window-icons.patch' || { err "window-icons-patch download failed"; return 1; }
         report "patching window-icons..."

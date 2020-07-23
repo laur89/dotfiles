@@ -91,6 +91,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
             "$HOME/.rbenv/bin" \
             /usr/local/go/bin \
             "$GOPATH/bin" \
+            "${KREW_ROOT:-$HOME/.krew}/bin" \
                 ; do
         if [[ :$PATH: != *:"$i":* && -d "$i" ]]; then
             j+="$i:"
@@ -297,6 +298,23 @@ export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window down:3:wrap"  # sho
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
 
 #export AWS_OKTA_BACKEND=secret-service  # for aws-okta: https://github.com/segmentio/aws-okta
+
+
+# convenience funtion, so scripts who source env_vars file (ie this file) can
+# simply call it, instead of including the same block in each file themselves.
+_load_common() {
+# import common:
+    if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
+        if [[ -r "$_SCRIPTS_COMMONS" ]]; then
+            source "$_SCRIPTS_COMMONS"
+        else
+            echo -e "\n    ERROR: common file [$_SCRIPTS_COMMONS] not found! Abort."
+            return 1
+        fi
+    fi
+
+    return 0
+}
 
 # marker var used to detect whether env vars have been loaded:
 export __ENV_VARS_LOADED_MARKER_VAR=loaded
