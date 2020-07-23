@@ -2028,10 +2028,7 @@ fetch_release_from_any() {
 
     dl_url="$(resolve_dl_urls "$loc" "${relative:+/}.*$2")" || return 1  # note we might be looking for a relative url
 
-    if [[ "$skipadd" -ne 1 ]] && grep -Fq "$dl_url" "$GIT_RLS_LOG" 2>/dev/null; then
-        report "[$dl_url] already encountered, skipping installation..."
-        return 2
-    fi
+    [[ "$skipadd" -ne 1 ]] && is_installed "$dl_url" && return 2
 
     report "fetching [$dl_url]..."
     execute "wget --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
@@ -2197,7 +2194,8 @@ install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
 # note it's no longer actively maintained; consider replacing w/ https://github.com/Versent/saml2aws
 # tag: aws
 install_aws_okta() {  # https://github.com/segmentio/aws-okta
-    install_deb_from_git segmentio aws-okta _amd64.deb
+    #install_deb_from_git segmentio aws-okta _amd64.deb  # TODO: deb no longer released?
+    install_bin_from_git -n aws-okta -d "$HOME/bin" segmentio aws-okta linux-amd64
 }
 
 install_saml2aws() {  # https://github.com/Versent/saml2aws
@@ -2227,7 +2225,11 @@ install_k9s() {  # https://github.com/derailed/k9s
 # tag: aws, k8s, kubernetes, kubectl
 # installation instructions: https://krew.sigs.k8s.io/docs/user-guide/setup/install/
 install_krew() {  # https://github.com/kubernetes-sigs/krew
-    local tmpdir KREW
+    local dl_url tmpdir KREW
+
+    # resolve url to track the actual version installed:
+    dl_url="$(resolve_dl_urls "https://github.com/kubernetes-sigs/krew/releases/latest" '.*krew.yaml')" || return 1
+    is_installed "$dl_url" && return 2
 
     tmpdir="$(mktemp -d 'krew-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     execute "pushd -- '$tmpdir'" || return 1
@@ -2241,6 +2243,8 @@ install_krew() {  # https://github.com/kubernetes-sigs/krew
 
     execute "popd" || return 1
     execute "rm -rf -- '$tmpdir'"
+
+    add_to_dl_log "github-kubernetes-sigs-krew" "$dl_url"
 }
 
 # kubernetes (k8s) config/resource sanitizer
@@ -4016,10 +4020,11 @@ install_from_repo() {
         ncdu
         pydf
         nethogs
+        etherape
+        nload
         tcpdump
         tcpflow
         ngrep
-        nload
         ntp
         ncat
         remind
@@ -4807,10 +4812,7 @@ install_veracrypt() {
 
     dl_url=${ver_to_url[$i]}
 
-    if grep -Fq "$dl_url" "$GIT_RLS_LOG" 2>/dev/null; then
-        report "[$dl_url] already encountered, skipping installation..."
-        return 2
-    fi
+    is_installed "$dl_url" && return 2
 
     tmpdir="$(mktemp -d "veracrypt-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     report "fetching [$dl_url]..."
@@ -5060,6 +5062,20 @@ add_to_dl_log() {
 
     [[ -f "$GIT_RLS_LOG" ]] && sed --follow-symlinks -i "/^$id:/d" "$GIT_RLS_LOG"
     echo -e "${id}:\t$url" >> "$GIT_RLS_LOG"
+}
+
+
+is_installed() {
+    local dl_url
+
+    dl_url="$1"
+
+    if grep -Fq "$dl_url" "$GIT_RLS_LOG" 2>/dev/null; then
+        report "[$dl_url] already encountered, skipping installation..."
+        return 0
+    fi
+
+    return 1
 }
 
 ###################
