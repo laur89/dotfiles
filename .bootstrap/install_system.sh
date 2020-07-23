@@ -16,7 +16,7 @@
 readonly TMP_DIR='/tmp'
 readonly CLANG_LLVM_LOC='http://releases.llvm.org/6.0.0/clang+llvm-6.0.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html;  https://apt.llvm.org/building-pkgs.php
 readonly I3_REPO_LOC='https://www.github.com/Airblader/i3'            # i3-gaps
-readonly I3_LOCK_LOC='https://github.com/PandorasFox/i3lock-color'    # i3lock-color
+readonly I3_LOCK_LOC='https://github.com/Raymo111/i3lock-color'       # i3lock-color
 readonly I3_LOCK_FANCY_LOC='https://github.com/meskarune/i3lock-fancy'    # i3lock-fancy
 readonly NERD_FONTS_REPO_LOC='https://github.com/ryanoasis/nerd-fonts'
 readonly PWRLINE_FONTS_REPO_LOC='https://github.com/powerline/fonts'
@@ -1773,6 +1773,7 @@ install_work_builds() {
     install_aia
     install_kustomize
     install_k9s
+    install_krew
     install_popeye
     install_octant
     #install_kops
@@ -2222,6 +2223,26 @@ install_k9s() {  # https://github.com/derailed/k9s
     install_bin_from_git -n k9s -d "$HOME/bin"  derailed  k9s  _Linux_x86_64.tar.gz
 }
 
+# krew (kubectl plugins package manager)
+# tag: aws, k8s, kubernetes, kubectl
+# installation instructions: https://krew.sigs.k8s.io/docs/user-guide/setup/install/
+install_krew() {  # https://github.com/kubernetes-sigs/krew
+    local tmpdir KREW
+
+    tmpdir="$(mktemp -d 'krew-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    execute "pushd -- '$tmpdir'" || return 1
+
+    curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew.{tar.gz,yaml}" || { err "krew download failed w/ $?"; popd; return 1; }
+    tar zxvf krew.tar.gz || { err "krew untarring failed w/ $?"; popd; return 1; }
+    KREW=./krew-"$(uname | tr '[:upper:]' '[:lower:]')_amd64"
+    test -x "$KREW" || { err "krew executable [$KREW] not found"; popd; return 1; }
+    "$KREW" install --manifest=krew.yaml --archive=krew.tar.gz || { err "krew install failed w/ $?"; popd; return 1; }
+    "$KREW" update || err "[krew update] failed w/ [$?]"
+
+    execute "popd" || return 1
+    execute "rm -rf -- '$tmpdir'"
+}
+
 # kubernetes (k8s) config/resource sanitizer
 # tag: aws, k8s, kubernetes
 install_popeye() {  # https://github.com/derailed/popeye
@@ -2313,12 +2334,12 @@ install_dbeaver() {  # https://dbeaver.io/download/
 
 
 # perforce git mergetool, alternative to meld;
-# TODO: ver/url resolution unresolved, currenlty hard-coding version!
+# TODO: ver/url resolution unresolved, currenlty hard-coding version/url!
 install_p4merge() {  # https://www.perforce.com/downloads/visual-merge-tool
     local loc dest
 
-    readonly loc='http://www.perforce.com/downloads/perforce/r19.2/bin.linux26x86_64/p4v.tgz'
-    readonly dest="$TMP_DIR/dbeaver-$RANDOM.deb"
+    readonly loc='http://www.perforce.com/downloads/perforce/r20.1/bin.linux26x86_64/p4v.tgz'
+    readonly dest="$TMP_DIR/p4merge-$RANDOM.deb"
 
     execute "wget -O '$dest' '$loc'" || { err "wgetting [$loc] failed."; return 1; }
     execute "sudo apt-get --yes install '$dest'" || return 1
@@ -2764,17 +2785,29 @@ create_deb_install_and_store() {
 
 
 # building instructions from https://github.com/mank319/Go-For-It
+# also https://github.com/mank319/Go-For-It/issues/143 specifically for debian/buster
+# TODO: flatpak is avail for it
 install_goforit() {
     local tmpdir
 
     readonly tmpdir="$TMP_DIR/goforit-build-${RANDOM}"
     report "building goforit..."
 
+    report "installing goforit build dependencies..."
+    install_block '
+        valac
+        cmake
+        intltool
+        libgtk-3-dev
+        libglib2.0-dev
+    ' || { err 'failed to install build deps. abort.'; return 1; }
+
+
     execute "git clone -j8 $GOFORIT_REPO_LOC $tmpdir" || return 1
 
     execute "mkdir $tmpdir/build"
     execute "pushd $tmpdir/build" || return 1
-    execute 'cmake ..' || { err; popd; return 1; }
+    execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..' || { err; popd; return 1; }
     execute "make" || { err; popd; return 1; }
 
     create_deb_install_and_store goforit
@@ -2893,7 +2926,7 @@ install_keepassx() {
 }
 
 
-# https://github.com/PandorasFox/i3lock-color
+# https://github.com/Raymo111/i3lock-color
 # this is a depency for i3lock-fancy.
 install_i3lock() {
     local tmpdir
@@ -4449,6 +4482,7 @@ __choose_prog_to_build() {
         install_aia
         install_kustomize
         install_k9s
+        install_krew
         install_popeye
         install_octant
         install_kops
@@ -5793,3 +5827,6 @@ exit
 # - if apt-get update fails, then we should fail script fast?
 # - provide -Q option for quick execution; eg skip massive font installation
 #   and other dependency builds;
+#
+# GAMES:
+# - flightgear/unstable
