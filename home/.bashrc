@@ -136,6 +136,7 @@ export HISTTIMEFORMAT='%F %T '
 export HISTFILE=~/.bash_history_eternal
 # Force prompt to write history after every command.
 # http://superuser.com/questions/20900/bash-history-loss
+#export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"  <-- makes every command slow if our histfile is massive!
 export PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 
 shopt -u mailwarn       # disable mail notification:
@@ -156,12 +157,12 @@ unset MAILCHECK         # avoid delays;
 
 if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
     for i in \
-            $HOME/.bash_env_vars \
+            "$HOME/.bash_env_vars" \
                 ; do  # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
         if [[ -r "$i" ]]; then
             source "$i"
         #else
-            #echo -e "file \"$i\" to be sourced does not exist or is not readable!"
+            #echo -e "file [$i] to be sourced does not exist or is not readable!"
         fi
     done
 
@@ -447,10 +448,10 @@ elif type compctl &>/dev/null; then
   compctl -K _npm_completion npm
 fi
 ###-end-npm-completion-###
-##########################################
+########################################## nvr
 # single nvim instance per tmux _window_  (from https://www.reddit.com/r/neovim/comments/aex45u/integrating_nvr_and_tmux_to_use_a_single_tmux_per/)
 if [[ -n "$TMUX" ]]; then
-    export NVIM_LISTEN_ADDRESS="/tmp/nvim_${USER}"
+    export NVIM_LISTEN_ADDRESS="/tmp/.nvim_${USER}"
 fi
 
 nvr() {
@@ -464,7 +465,20 @@ nvr() {
 
     command nvr -s "$@"
 }
-##########################################
+
+# alternatively, single nvim per tmux _session_:
+n_vr() {
+  if [[ -n "$TMUX" ]]; then
+    local ids window_id pane_id
+    ids="$(tmux list-panes -a -F '#{pane_current_command} #{window_id} #{pane_id}' | awk '/^nvim / {print $2" "$3; exit}')"
+    window_id="$ids[(w)1]"
+    pane_id="$ids[(w)2]"
+    [[ -n "$window_id" && -n "$pane_id" ]] && tmux select-window -t "$window_id" && tmux select-pane -t "$pane_id"
+  fi
+
+  command nvr -s "$@"
+}
+########################################## sdkman
 # note following is added by script from https://get.sdkman.io/:
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
 export SDKMAN_DIR="$HOME/.sdkman"
