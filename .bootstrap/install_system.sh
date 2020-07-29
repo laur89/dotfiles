@@ -2035,15 +2035,15 @@ fetch_release_from_any() {
     file="$(find "$tmpdir" -type f)"
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
+    # TODO: support recursive extraction?
     if [[ "$noextract" -ne 1 ]] && grep -qiE "archive|compressed" <<< "$(file --brief "$file")"; then
         execute "pushd -- $tmpdir" || return 1
-        aunpack --quiet "$file" || { err "couldn't extract [$file]"; popd; return 1; }
+        execute "aunpack --quiet '$file'" || { err "couldn't extract [$file]"; popd; return 1; }
         execute "rm -f -- '$file'" || { err; popd; return 1; }
 
         if [[ -n "$file_filter" ]]; then
             while IFS= read -r -d $'\0' file; do
-                grep -q "$file_filter" <<< "$(file -iLb "$file")" && break  # TODO: provide -E flag to grep?
-                unset file
+                grep -q "$file_filter" <<< "$(file -iLb "$file")" && break || unset file  # TODO: provide -E flag to grep?
             done < <(find "$tmpdir" -type f -print0)
         else
             file="$(find "$tmpdir" -type f)"
@@ -4268,21 +4268,18 @@ install_vbox_guest() {
     install_block 'virtualbox-guest-dkms' || return 1
 
     execute "mkdir $tmp_mount" || return 1
-    execute "sudo mount /dev/cdrom $tmp_mount" || { err "mounting guest-utils from /dev/cdrom to [$tmp_mount] failed w/ $? - is image mounted in vbox and in expected slot?"; return 1; }
+    execute "sudo mount /dev/cdrom $tmp_mount" || { err "mounting guest-utils from /dev/cdrom to [$tmp_mount] failed w/ $? - is image mounted in vbox and in expected (likely first) slot?"; return 1; }
     [[ -x "$bin" ]] || { err "[$bin] not a file"; return 1; }
     label="$(grep --text -Po '^label=.\K.*(?="$)' "$bin")"  # or grep for 'INSTALLATION_VER'?
 
-    if is_single "$label"; then
-        if grep -Fq "$label" "$GIT_RLS_LOG" 2>/dev/null; then
-            report "[$label] already encountered, skipping installation..."
-            return 2
-        fi
-    else
+    if ! is_single "$label"; then
         err "found vbox additions ver was unexpected: [$label]; will continue w/ installation"
+    elif is_installed "$label"; then
+        return 2
     fi
 
     # append '--nox11' if installing in non-gui system:
-    execute "sudo sh $bin"  # do not catch status, seems to always exit /w 2
+    execute "sudo sh $bin"  # !! do not catch status, seems to always exit /w 2
     execute "sudo umount $tmp_mount" || err "unmounting cdrom from [$tmp_mount] failed w/ $?"
 
     if is_single "$label"; then
@@ -4822,7 +4819,7 @@ install_veracrypt() {
 
     execute "sudo apt-get --yes install '$file'" || { err "installing veracrypt failed w/ $?"; return 1; }
 
-    add_to_dl_log 'veracrypt' "$dl_url"
+    add_to_dl_log  veracrypt "$dl_url"
 }
 
 
