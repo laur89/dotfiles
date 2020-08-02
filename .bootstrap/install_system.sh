@@ -1118,7 +1118,7 @@ clone_or_link_castle() {
 
         execute "$homesick_exe link $castle" || { err "linking castle [$castle] failed with $?"; return 1; }  # TODO: should we exit here?
     else
-        report "cloning ${castle}..."
+        report "cloning castle ${castle}..."
         if is_ssh_key_available; then
             retry 3 "$homesick_exe clone git@${hub}:$user/${castle}.git" || { err "cloning castle [$castle] failed with $?"; return 1; }
         else
@@ -1236,7 +1236,7 @@ setup_homesick() {
     # just in case check if any of the castles are still tracking https instead of ssh:
     readonly https_castles="$($BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick list | grep '\bhttps://\b')"
     if [[ -n "$https_castles" ]]; then
-        report "fyi, these homesick castles are for some reason still tracking https remotes:"
+        err "fyi, these homesick castles are for some reason still tracking https remotes:"
         report "$https_castles"
     fi
 }
@@ -1279,20 +1279,40 @@ setup_private_asset_perms() {
 }
 
 
-setup_global_prompt() {
+setup_global_bashrc() {
     local global_bashrc ps1
 
-    readonly global_bashrc="/etc/bash.bashrc"
+    readonly global_bashrc='/etc/bash.bashrc'
     readonly ps1='PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} -eq 0 ]]; then echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033\[\033[0;31m\]\h"; else echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h"; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # own_def_marker'
 
     if ! sudo test -f $global_bashrc; then
-        err "[$global_bashrc] doesn't exist; cannot add PS1 (prompt) definition to it!"
+        err "[$global_bashrc] doesn't exist; cannot modify it!"
         return 1
     fi
 
-    # just in case delete previous global PS1 def:
-    execute "sudo sed -i --follow-symlinks '/^PS1=.*# own_def_marker$/d' \"$global_bashrc\""
+    ## setup prompt:
+    # just in case first delete previous global PS1 def:
+    execute "sudo sed -i --follow-symlinks '/^PS1=.*# own_def_marker$/d' '$global_bashrc'"
     execute "echo '$ps1' | sudo tee --append $global_bashrc > /dev/null"
+
+    ## add the script init function for convenience/global access:
+    sudo grep -q 'global_init_marker$' "$global_bashrc" || cat <<EOF | sudo tee --append "$global_bashrc"
+_init() {  # global_init_marker
+    if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != loaded ]]; then
+        USER_ENVS=/etc/.bash_env_vars
+
+        if [[ -r "$USER_ENVS" ]]; then
+            source "$USER_ENVS"
+        else
+            echo -e "\n    ERROR: env vars file [$USER_ENVS] not found! Abort."
+            return 1
+        fi
+    fi
+
+   _load_common || return 1
+}
+
+EOF
 }
 
 
@@ -1311,14 +1331,14 @@ setup_config_files() {
     is_native && setup_udev
     setup_global_env_vars
     setup_private_asset_perms
-    setup_global_prompt
+    setup_global_bashrc
     is_native && swap_caps_lock_and_esc
     override_locale_time
 }
 
 
 install_acpi_events() {
-    local event_file  system_acpi_eventdir  src_eventfiles_dir
+    local f  system_acpi_eventdir  src_eventfiles_dir
 
     readonly system_acpi_eventdir="/etc/acpi/events"
     readonly src_eventfiles_dir="$COMMON_DOTFILES/backups/acpi_event_triggers"
@@ -1329,11 +1349,13 @@ install_acpi_events() {
     elif ! [[ -d "$src_eventfiles_dir" ]]; then
         err "[$src_eventfiles_dir] dir does not exist; acpi event triggers won't be installed (since trigger files cannot be found)"
         return 1
+    elif is_dir_empty "$src_eventfiles_dir"; then
+        return 0
     fi
 
-    for event_file in $src_eventfiles_dir/* ; do
-        if [[ -f "$event_file" ]]; then
-            execute "sudo cp -- $event_file $system_acpi_eventdir"
+    for f in "$src_eventfiles_dir"/* ; do
+        if [[ -f "$f" ]]; then
+            execute "sudo cp -- '$f' $system_acpi_eventdir"
         fi
     done
 
@@ -4625,9 +4647,8 @@ _sysctl_conf() {
     [[ -d "$sysctl_dir" ]] || { err "[$sysctl_dir] is not a dir. can't change our sysctl value for [$1]"; return 1; }
     grep -q "^$property\s*=\s*$value\$" "$sysctl_conf" && return  # value already set, nothing to do
 
-    # just in case delete all same prop definitions, regardless of its value:
-    [[ -f "$sysctl_conf" ]] && execute "sudo sed -i --follow-symlinks '/^$property/d' '$sysctl_conf'"
-
+    # delete all same prop definitions, regardless of its value:
+    [[ -f "$sysctl_conf" ]] && execute "sudo sed -i --follow-symlinks '/^${property}\s*=/d' '$sysctl_conf'"
     execute "echo $property = $value | sudo tee --append $sysctl_conf > /dev/null"
 
     # mark our sysctl config has changed:
