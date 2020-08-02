@@ -54,7 +54,7 @@ alias got='tgo'
 # note following uses the 'none' driver, now effectively superseded by 'docker' driver:   # https://minikube.sigs.k8s.io/docs/drivers/none/
 #alias mkstart='CHANGE_MINIKUBE_NONE_USER=true sudo -E minikube start --driver=none --extra-config=apiserver.service-node-port-range=80-32767 --apiserver-ips 127.0.0.1 --apiserver-name localhost'
 # ...and this is using docker driver:
-alias mkstart='minikube start --driver=docker --extra-config=apiserver.service-node-port-range=80-32767 --apiserver-ips 127.0.0.1 --apiserver-name localhost'
+alias mkstart='minikube start --driver=docker'
 
 # $tm <sessname> to either create or attach, or $tm to search from avail sessions w/ fzf;
 #tm() {

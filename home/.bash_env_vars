@@ -69,6 +69,9 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # golang stuff:
     export GOPATH=/data/.repos/go  # .repos/ will likely contain stuff like m2, go, etc repos...
 
+    # kubectl configs:
+    export KUBECONFIG="${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config:$HOME/.kube/work-config"
+
     # note JAVA_X env vars are managed by sdkman; unsure about M2* ones tho;
     #export JAVA_HOME=/usr/local/jdk_link  # superseded by sdkman
     #export M2_HOME=$BASE_DATA_DIR/progs/maven/mvn_link

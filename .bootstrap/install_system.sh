@@ -450,7 +450,7 @@ clone_or_pull_repo() {
 
     readonly user="$1"
     readonly repo="$2"
-    install_dir="$3"  # if has trailing / then $repo won't be appended, eg pass './' to clone to PWD
+    install_dir="$3"  # if has trailing / then $repo won't be appended, eg pass './' to clone to $PWD
     readonly hub=${4:-'github.com'}  # OPTIONAL; defaults to github.com;
 
     [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
@@ -475,7 +475,7 @@ clone_or_pull_repo() {
 install_nfs_server() {
     local nfs_conf client_ip share
 
-    readonly nfs_conf="/etc/exports"
+    readonly nfs_conf='/etc/exports'
 
     confirm "wish to install & configure nfs server?" || return 1
     is_laptop && ! confirm "you're on laptop; sure you wish to install nfs server?" && return 1
@@ -2291,6 +2291,8 @@ install_kops() {  # https://github.com/kubernetes/kops/
 
 # kubectx - kubernetes contex swithcher
 # tag: aws, k8s, kubernetes
+#
+# TODO: consider replacing installation by using krew? note that likely won't install shell completion though;
 install_kubectx() {  # https://github.com/ahmetb/kubectx
     local COMPDIR
 
@@ -4910,7 +4912,8 @@ enable_fw() {
 }
 
 
-# change DefaultAuthType to None, so printer configuration wouldn't require basic auth
+# - change DefaultAuthType to None, so printer configuration wouldn't require basic auth;
+# - add our user to necessary group (most likely 'lpadmin') so we can add/delete printers;
 setup_cups() {
     local conf_file conf2 group should_restart
 
