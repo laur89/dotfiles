@@ -21,7 +21,8 @@
     autocrlf = false
     safecrlf = true
     ;pager = less
-    pager = diff-so-fancy | less --tabs=4 -RFXS
+    ;pager = diff-so-fancy | less --tabs=4 -RFXS
+    pager = less --tabs=4 -RFX
     preloadindex = true
 [rerere]
     enabled = true
@@ -42,6 +43,8 @@
 [pager]
     difftool = false
     diff = diff-so-fancy | less --tabs=4 -RFXS --pattern '^(Date|added|deleted|modified): '
+[interactive]
+    diffFilter = diff-so-facy --patch-mode
 [push]
     default = simple
 [alias]
