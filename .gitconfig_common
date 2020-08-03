@@ -36,6 +36,7 @@
 [diff]
     tool = meld
     renames = true
+    colorMoved = default
     ;tool = vimdiff
 ;[multidiff]
     ; see http://www.xenomachina.com/2012/02/multi-diff-with-vim-andor-git.html
