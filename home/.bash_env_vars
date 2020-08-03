@@ -155,6 +155,9 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export _WIRELESS_IF="/tmp/wireless_interfaces.dat"
     export _TRUSTED_CON_MARKER="/tmp/connected_trusted_NW.dat"
 
+    # which diff-so-fancy (git differ) executable to use; referenced eg by some functions in ~/.bash_functions:
+    export _DSF='delta'  # alternatively: diff-so-fancy
+
     export _MAX_STARTING_VOL_FOR_EARPHONES=70
     export _PROJECTS_DIR="$HOME/dev/projects"
 fi

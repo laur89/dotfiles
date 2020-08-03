@@ -3421,7 +3421,7 @@ faxe() {
     fi
 
     src="$1"; shift
-    hash diff-so-fancy &>/dev/null && dsf='|diff-so-fancy'
+    hash "$_DSF" &>/dev/null && dsf="|$_DSF"
     cmd="git show --color=always {1} -- $* $dsf"
     opts="
         $FZF_DEFAULT_OPTS
@@ -3628,7 +3628,7 @@ fcol() {
 
     check_progs_installed fzf git || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
-    hash diff-so-fancy &>/dev/null && dsf='|diff-so-fancy'
+    hash "$_DSF" &>/dev/null && dsf="|$_DSF"
 
     sha_extract_cmd="grep -Po '^.*?\\\K[0-9a-f]+' <<< {}"
     preview_cmd="i=\$($sha_extract_cmd) || exit; git show --stat --color=always \$i -- $*; echo -e '\\\n\\\n'; git diff \$i^..\$i -- $* $dsf"  # TODO: need to sort out range
@@ -3689,7 +3689,7 @@ fcol() {
 fshow() {
     local q dsf k out sha sha_extract_cmd preview_cmd difftool_cmd opts git_log_cmd
 
-    hash diff-so-fancy &>/dev/null && dsf='|diff-so-fancy'
+    hash "$_DSF" &>/dev/null && dsf="|$_DSF"
 
     check_progs_installed fzf git || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
@@ -3819,7 +3819,7 @@ fstash() {
     local dsf sha_extract_cmd preview_cmd difftool_cmd opts stash_cmd out q k stsh stash_name_regex stash_name
 
     readonly stash_name_regex='^\s*(\S+\s+){7}\K.*'
-    hash diff-so-fancy &>/dev/null && dsf='|diff-so-fancy'
+    hash "$_DSF" &>/dev/null && dsf="|$_DSF"
 
     check_progs_installed fzf git || return 1
     is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
