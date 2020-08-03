@@ -457,7 +457,7 @@ clone_or_pull_repo() {
     [[ "$install_dir" != */ ]] && install_dir="${install_dir}/$repo"
 
     if ! [[ -d "$install_dir/.git" ]]; then
-        execute "git clone --recursive -j8 https://$hub/$user/${repo}.git $install_dir" || return 1
+        execute "git clone --recursive -j8 https://$hub/$user/${repo}.git '$install_dir'" || return 1
 
         execute "pushd $install_dir" || return 1
         execute "git remote set-url origin git@${hub}:$user/${repo}.git" || { popd; return 1; }
@@ -2278,6 +2278,8 @@ install_popeye() {  # https://github.com/derailed/popeye
 # kubernetes cluster analyzer for better comprehension (introspective tooling, cluster
 # navigation, object management)
 # tag: aws, k8s, kubernetes
+#
+# see also https://github.com/spekt8/spekt8
 install_octant() {  # https://github.com/vmware-tanzu/octant
     install_deb_from_git  vmware-tanzu  octant  _Linux-64bit.deb
 }
@@ -2285,6 +2287,8 @@ install_octant() {  # https://github.com/vmware-tanzu/octant
 # kubernetes (k8s) operations - Production Grade K8s Installation, Upgrades, and Management
 # tag: aws, k8s, kubernetes
 # see also: kubebox,k9s,https://github.com/hjacobs/kube-ops-view
+#
+# for usecase, see https://medium.com/bench-engineering/deploying-kubernetes-clusters-with-kops-and-terraform-832b89250e8e
 install_kops() {  # https://github.com/kubernetes/kops/
     install_bin_from_git -n kops -d "$HOME/bin"  kubernetes  kops  kops-linux-amd64
 }
@@ -4900,7 +4904,7 @@ setup_seafile_cli() {
     local confdir datadir
 
     readonly confdir="$HOME/.config/ccnet"
-    readonly datadir='/data/Seafile'
+    readonly datadir="$BASE_DATA_DIR/Seafile"
 
     [[ -d "$datadir" ]] || { err "[$datadir] is not a valid dir; please set up via gui first" "$FUNCNAME"; return 1; }
 }
@@ -5350,6 +5354,7 @@ remove_items_from_list() {
 }
 
 
+# deprecated by aunpack?
 extract() {
     local file
 

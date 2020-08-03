@@ -61,13 +61,13 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # env vars to be loaded in local systems only (ie remote sessions should ignore this)
     # needs to be in same dir as the sourcing env vars file.
 
-    export BASE_DATA_DIR="/data"
+    export BASE_DATA_DIR='/data'
     export BASE_PROGS_DIR="$BASE_DATA_DIR/progs"
     export BASE_DEPS_LOC="$BASE_PROGS_DIR/deps"             # hosting stuff like homeshick, bash-git-prompt...
-    export COMMON_CASTLE="/data/progs/deps/homesick/repos/dotfiles"
+    export COMMON_CASTLE="$BASE_DATA_DIR/progs/deps/homesick/repos/dotfiles"
 
     # golang stuff:
-    export GOPATH=/data/.repos/go  # .repos/ will likely contain stuff like m2, go, etc repos...
+    export GOPATH="$BASE_DATA_DIR/.repos/go"  # .repos/ will likely contain stuff like m2, go, etc repos...
 
     # kubectl configs:
     export KUBECONFIG="${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config:$HOME/.kube/work-config"
@@ -78,7 +78,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     #export M2=$M2_HOME/bin
     #export GRADLE_HOME=/usr/share/gradle
 
-    export KAFKA_HOME=/data/progs/kafka/kafka
+    export KAFKA_HOME=$BASE_DATA_DIR/progs/kafka/kafka
 
     # add additional locations to PATH if not already present:
     j=''

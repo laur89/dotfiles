@@ -62,7 +62,7 @@ if [ "$color_prompt" = yes ]; then
     # prompt w/o show-vi-prompt:
     #PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
     # prompt w/ show-vi-prompt:
-    PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n"
+    PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\$(kube_ps1)\n"
 else
     PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
 fi
@@ -137,7 +137,7 @@ export HISTFILE=~/.bash_history_eternal
 # Force prompt to write history after every command.
 # http://superuser.com/questions/20900/bash-history-loss
 #export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"  <-- makes every command slow if our histfile is massive!
-export PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
+[[ ";${PROMPT_COMMAND};" != *";history -a;"* ]] && export PROMPT_COMMAND="history -a;$PROMPT_COMMAND"
 
 shopt -u mailwarn       # disable mail notification:
 shopt -s cdspell        # try to correct typos in path
@@ -214,13 +214,23 @@ fi
 ##########################################
 # prompt: ################################
 # if using bash-git-prompt; ...
-GIT_PROMPT_START="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ "${EUID}" -eq 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]"
-#GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
+
+# add lazy-loaded/dynamic extra content to git-prompt, eg kube-ps1:
+# !! note this guy's only called/shown when we're in git repo !!
+#prompt_callback() {  # function called by bash-git-prompt for additional dynamic content
+#    echo -n " $(kube_ps1)"
+#}
+
+#GIT_PROMPT_START="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ "${EUID}" -eq 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\$(kube_ps1)"
+[[ "$PS1" != *'\n' ]] && GIT_PROMPT_START="$PS1" || GIT_PROMPT_START="${PS1:0:$(( ${#PS1} - 2 ))}"   # note we strip the trailing newline
+
+#GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # this would be used if we didn't show vi mode in inputrc
 GIT_PROMPT_END='\n'  # used when we're showing vi mode in prompt (expects counterpart/extra config in inputrc)
 if [[ -f "$HOME/.bash-git-prompt/gitprompt.sh" ]]; then
     GIT_PROMPT_ONLY_IN_REPO=1
     source "$HOME/.bash-git-prompt/gitprompt.sh"
 fi
+
 # ...and prompt without the bash-git-prompt would be:
 #   PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
 #
@@ -337,7 +347,7 @@ unset fasd_cache
 #   https://gist.github.com/fl0w/07ce79bd44788f647deab307c94d6922
 export NVM_DIR="$HOME/.nvm"  # do not change location, keep _non-linked_ .nvm/ under ~
 #declare -a __NODE_GLOBALS=($(find "$NVM_DIR/versions/node/" -maxdepth 3 -mindepth 3 -type l -wholename '*/bin/*' | xargs -n1 basename | sort | uniq))
-mapfile -t __NODE_GLOBALS < <(find "$NVM_DIR/versions/node/"*/bin/ -maxdepth 1 -mindepth 1 -type l -print0 | xargs --null -n1 basename | sort | uniq)
+mapfile -t __NODE_GLOBALS < <(find "$NVM_DIR/versions/node/"*/bin/ -maxdepth 1 -mindepth 1 -type l -print0 | xargs --null -n1 basename | sort --unique)
 __NODE_GLOBALS+=(node nvm)
 
 # instead of using --no-use flag, load nvm lazily:
@@ -347,7 +357,7 @@ _load_nvm() {
 }
 
 for cmd in "${__NODE_GLOBALS[@]}"; do
-    eval "function ${cmd}(){ unset -f ${__NODE_GLOBALS[*]}; _load_nvm; unset -f _load_nvm; ${cmd} \$@; }"
+    eval "function ${cmd}(){ unset -f ${__NODE_GLOBALS[*]}; _load_nvm; unset -f _load_nvm; ${cmd} \"\$@\"; }"
 done
 unset cmd __NODE_GLOBALS
 
@@ -372,7 +382,7 @@ _enter_dir() {
     PREV_PWD="$d"
 }
 
-[[ -s "$NVM_DIR/nvm.sh" ]] && export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
+[[ -s "$NVM_DIR/nvm.sh" && ";${PROMPT_COMMAND};" != *";_enter_dir;"* ]] && export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
 ##########################################
 # generate .Xauth to be passed to (and used by) GUI docker gui containers:
 export XAUTH='/tmp/.docker.xauth'
@@ -385,6 +395,10 @@ fi
 [[ :$PATH: != *:"${BASE_DEPS_LOC}/kubectx":* ]] && export PATH="${BASE_DEPS_LOC}/kubectx:$PATH"
 ##########################################
 # kubernetes/k8s shell prompt: (https://github.com/jonmosco/kube-ps1)
+KUBE_PS1_PREFIX=$'\342\224\200[' # note no need to provide color here, can use the default set by prompt
+KUBE_PS1_SUFFIX=$'\033[0;37m]'
+KUBE_PS1_SYMBOL_USE_IMG=true
+#KUBE_PS1_SYMBOL_DEFAULT=$'\u2388'
 test -f "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh" && source "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh"
 ##########################################
 # NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
