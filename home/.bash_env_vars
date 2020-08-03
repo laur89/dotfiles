@@ -95,6 +95,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
             /usr/local/go/bin \
             "$GOPATH/bin" \
             "${KREW_ROOT:-$HOME/.krew}/bin" \
+            "${BASE_DEPS_LOC}/git-fuzzy/bin" \
                 ; do
         if [[ :$PATH: != *:"$i":* && -d "$i" ]]; then
             j+="$i:"

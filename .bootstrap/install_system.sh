@@ -892,7 +892,11 @@ install_deps() {
     clone_or_pull_repo "cirala" "vifm_devicons" "$BASE_DEPS_LOC"
     create_link "${BASE_DEPS_LOC}/vifm_devicons" "$HOME/.vifm_devicons"
 
+    # git-fuzzy (yet another git fzf tool)   # https://github.com/bigH/git-fuzzy
+    clone_or_pull_repo "bigH" "git-fuzzy" "$BASE_DEPS_LOC"
+
     # diff-so-fancy - human-readable git diff:  # https://github.com/so-fancy/diff-so-fancy
+    # note: alternative would be https://github.com/dandavison/delta
     if execute "wget -O $TMP_DIR/d-s-f 'https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy'"; then
         git config core.pager | grep -q diff-so-fancy || err "git config core.pager not set for diff-so-fancy; configure it"
         test -s $TMP_DIR/d-s-f && execute "mv -- $TMP_DIR/d-s-f $HOME/bin/diff-so-fancy && chmod +x $HOME/bin/diff-so-fancy" || err "fetched diff-so-fancy file is null"
@@ -1772,6 +1776,7 @@ install_own_builds() {
     install_lazygit
     install_lazydocker
     #install_gitin
+    install_delta
     install_fd
     #install_synergy  # currently installing from repo
     install_i3
@@ -2564,6 +2569,13 @@ install_lazydocker() {  # https://github.com/jesseduffield/lazydocker
 # TODO: remove for lazygit?
 install_gitin() {  # https://github.com/isacikgoz/gitin
     install_bin_from_git -n gitin -d "$HOME/bin" isacikgoz gitin '_linux_amd64.tar.gz'
+}
+
+
+# pretty git diff pager, similar to diff-so-fancy
+# note: alternative would be diff-so-fancy (dsf)
+install_delta() {  # https://github.com/dandavison/delta
+    install_deb_from_git  dandavison  delta  'git-delta_.*_amd64.deb'
 }
 
 
@@ -4495,6 +4507,7 @@ __choose_prog_to_build() {
         install_lazydocker
         install_fd
         install_gitin
+        install_delta
         install_synergy
         install_dwm
         install_i3
