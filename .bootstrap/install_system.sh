@@ -897,8 +897,9 @@ install_deps() {
 
     # diff-so-fancy - human-readable git diff:  # https://github.com/so-fancy/diff-so-fancy
     # note: alternative would be https://github.com/dandavison/delta
+    # either of those need manual setup in our gitconfig;
     if execute "wget -O $TMP_DIR/d-s-f 'https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy'"; then
-        git config core.pager | grep -q diff-so-fancy || err "git config core.pager not set for diff-so-fancy; configure it"
+        #git config core.pager | grep -q diff-so-fancy || err "git config core.pager not set for diff-so-fancy; configure it"
         test -s $TMP_DIR/d-s-f && execute "mv -- $TMP_DIR/d-s-f $HOME/bin/diff-so-fancy && chmod +x $HOME/bin/diff-so-fancy" || err "fetched diff-so-fancy file is null"
     else
         err "diff-so-fancy fetch failed"
@@ -1543,6 +1544,9 @@ setup_additional_apt_keys_and_sources() {
 # see https://wiki.debian.org/Locale#First_day_of_week
 # to add additional locales, follow same page from "Manually" title;
 # tl;dr: uncomment wanted locale in /etc/locale.gen and run $ locale-gen as root;
+#
+# TODO: instead of modifying locale file, perhaps would be better to do it via  'sudo -E update-locale LANG=en_CA.UTF-8'?
+#       eg see how this guy does it: https://github.com/nhooyr/dotfiles/blob/b513f244b1dd088b741d62377b787bfb3b13e2da/debian/init.sh#L101
 override_locale_time() {
     local conf_file
 
@@ -1778,6 +1782,7 @@ install_own_builds() {
     #install_gitin
     install_delta
     install_fd
+    install_exa
     #install_synergy  # currently installing from repo
     install_i3
     install_polybar
@@ -2070,7 +2075,7 @@ fetch_release_from_any() {
 
         if [[ -n "$file_filter" ]]; then
             while IFS= read -r -d $'\0' file; do
-                grep -q "$file_filter" <<< "$(file -iLb "$file")" && break || unset file  # TODO: provide -E flag to grep?
+                grep -Eq "$file_filter" <<< "$(file -iLb "$file")" && break || unset file
             done < <(find "$tmpdir" -type f -print0)
         else
             file="$(find "$tmpdir" -type f)"
@@ -2173,7 +2178,8 @@ install_bin_from_git() {
 
     [[ -d "$target" ]] || { err "[$target] not a dir, can't install [$1/$2]"; return 1; }
 
-    bin="$(fetch_release_from_git -F 'application/x-executable' "$1" "$2" "$3" "$name")" || return 1
+    # note: some of (think rust?) binaries' mime is 'application/x-sharedlib', not /x-executable
+    bin="$(fetch_release_from_git -F 'application/x-(sharedlib|executable)' "$1" "$2" "$3" "$name")" || return 1
     execute "chmod +x '$bin'" || return 1
     execute "sudo mv -- '$bin' '$target'" || { err "installing [$bin] in [$target] failed"; return 1; }
 }
@@ -2553,6 +2559,13 @@ install_minikube() {  # https://kubernetes.io/docs/tasks/tools/install-minikube/
 # found as apt fd-find package, but executable is named fdfind not fd!
 install_fd() {  # https://github.com/sharkdp/fd
     install_deb_from_git sharkdp fd 'fd_[-0-9.]+_amd64.deb'
+}
+
+
+# modern ls replacement written in rust
+# TODO: project dead? see https://github.com/ogham/exa/issues/621
+install_exa() {  # https://github.com/ogham/exa
+    install_bin_from_git -n exa -d "$HOME/bin"  ogham  exa 'exa-linux-x86_64-.*.zip'
 }
 
 
@@ -4506,6 +4519,7 @@ __choose_prog_to_build() {
         install_lazygit
         install_lazydocker
         install_fd
+        install_exa
         install_gitin
         install_delta
         install_synergy
