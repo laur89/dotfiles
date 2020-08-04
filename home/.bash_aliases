@@ -82,6 +82,7 @@ alias scp='scp -rp'
 alias dig='dig +search'  # https://serverfault.com/questions/434581/why-can-host-and-nslookup-resolve-a-name-but-dig-cannot/899996
 alias dfh='df -h'
 #alias less="less -IRKFX" # handled by the $LESS env var
+###############################
 alias ls='ls -h --color=auto --group-directories-first'
 alias ll='ls -l'
 alias lr='ls -lr'
@@ -104,6 +105,11 @@ alias ltra='ls -lAtr'
 alias latr='ls -lAtr'
 alias lart='ls -lAtr'
 #alias l='ls -CF'
+############################### /ls
+alias exa='exa --color=auto --group-directories-first'
+alias elt='exa -lr'  # note we provide reversal flag to match 'ls -lt'; guess sorting directions differ?
+alias eltr='exa -l'  # note we omit reversal flag to match 'ls -ltr'; guess sorting directions differ?
+############################### /exa
 alias vdiff='vimdiff'
 alias mkdir='mkdir -p'
 alias rmrf='rm -rf'
