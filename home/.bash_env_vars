@@ -121,8 +121,9 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export PANEL_FIFO='/tmp/panel-fifo'  # for BSPWM
 
     #export HGRCPATH="$HOME/.config/hg/hgrc"
-    export PASSWORD_STORE_DIR="$HOME/.config/password-store"
-    export GNUPGHOME="$HOME/.config/gnupg"
+    export PASSWORD_STORE_DIR="$HOME/.config/password-store"  # used by pass?
+    export GNUPGHOME="$HOME/.gnupg"
+    export GPGKEY=515503C58074FAB0  # key-id of our default key
 
     # Update RC file locations for apps that don't support XDG:
     #export GTK2_RC_FILES="$HOME/.config/gtk-2.0/gtkrc"
