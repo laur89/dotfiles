@@ -400,7 +400,7 @@ KUBE_PS1_PREFIX=$'\342\224\200[' # note no need to provide color here, can use t
 KUBE_PS1_SUFFIX=$'\033[0;37m]'
 KUBE_PS1_SYMBOL_USE_IMG=true
 #KUBE_PS1_SYMBOL_DEFAULT=$'\u2388'
-test -f "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh" && source "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh"
+[[ -f "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh" ]] && source "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh" && kubeoff  # note we default to kubeoff
 ##########################################
 # NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
 ###-begin-npm-completion-###
