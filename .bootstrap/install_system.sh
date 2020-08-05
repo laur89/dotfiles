@@ -899,7 +899,6 @@ install_deps() {
     # note: alternative would be https://github.com/dandavison/delta
     # either of those need manual setup in our gitconfig;
     if execute "wget -O $TMP_DIR/d-s-f 'https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy'"; then
-        #git config core.pager | grep -q diff-so-fancy || err "git config core.pager not set for diff-so-fancy; configure it"
         test -s $TMP_DIR/d-s-f && execute "mv -- $TMP_DIR/d-s-f $HOME/bin/diff-so-fancy && chmod +x $HOME/bin/diff-so-fancy" || err "fetched diff-so-fancy file is null"
     else
         err "diff-so-fancy fetch failed"

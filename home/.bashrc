@@ -60,7 +60,7 @@ fi
 if [ "$color_prompt" = yes ]; then
     #PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
     # prompt w/o show-vi-prompt:
-    #PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
+    #PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\$(kube_ps1)\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
     # prompt w/ show-vi-prompt:
     PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\$(kube_ps1)\n"
 else
@@ -216,19 +216,18 @@ fi
 # prompt: ################################
 # if using bash-git-prompt; ...
 
-# add lazy-loaded/dynamic extra content to git-prompt, eg kube-ps1:
-# !! note this guy's only called/shown when we're in git repo !!
-#prompt_callback() {  # function called by bash-git-prompt for additional dynamic content
-#    echo -n " $(kube_ps1)"
-#}
-
-#GIT_PROMPT_START="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ "${EUID}" -eq 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\$(kube_ps1)"
-[[ "$PS1" != *'\n' ]] && GIT_PROMPT_START="$PS1" || GIT_PROMPT_START="${PS1:0:$(( ${#PS1} - 2 ))}"   # note we strip the trailing newline
-
-#GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # this would be used if we didn't show vi mode in inputrc
-GIT_PROMPT_END='\n'  # used when we're showing vi mode in prompt (expects counterpart/extra config in inputrc)
 if [[ -f "$HOME/.bash-git-prompt/gitprompt.sh" ]]; then
-    GIT_PROMPT_ONLY_IN_REPO=1
+    # add lazy-loaded/dynamic extra content to git-prompt, eg kube-ps1:
+    # !! note this guy's only called/shown when we're in git repo !!
+    #prompt_callback() {  # function called by bash-git-prompt for additional dynamic content
+    #    echo -n " $(kube_ps1)"
+    #}
+
+    [[ "$PS1" != *'\n' ]] && GIT_PROMPT_START="$PS1" || GIT_PROMPT_START="${PS1:0:$(( ${#PS1} - 2 ))}"   # note we strip the trailing newline
+    #GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # this would be used if we didn't show vi mode in inputrc
+    GIT_PROMPT_END='\n'  # used when we're showing vi mode in prompt (expects counterpart/extra config in inputrc)
+    GIT_PROMPT_ONLY_IN_REPO=1  # show prompt only if in git repo; if !=1, then eg prompt_callback() gets called&shown everywhere, not only in repos
+    #GIT_PROMPT_THEME=Solarized  # list all w/  git_prompt_list_themes
     source "$HOME/.bash-git-prompt/gitprompt.sh"
 fi
 
@@ -393,6 +392,7 @@ if [[ ! -s "$XAUTH" && -n "$DISPLAY" ]]; then  # TODO: also check for is_x()?
 fi
 ##########################################
 # kubectx and kubens bash completion:
+# TODO: migrate to bash_env_vars?
 [[ :$PATH: != *:"${BASE_DEPS_LOC}/kubectx":* ]] && export PATH="${BASE_DEPS_LOC}/kubectx:$PATH"
 ##########################################
 # kubernetes/k8s shell prompt: (https://github.com/jonmosco/kube-ps1)
