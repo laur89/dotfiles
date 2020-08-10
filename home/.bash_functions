@@ -3190,18 +3190,18 @@ pubkey() {
            g)
               let o++
               s=gpg
-              contents="$(gpg --output - --armor --export "$USER")" || return 1
-              [[ "$contents" == *'nothing exported'* ]] && { err "cat-ing [$key] failed." "$FUNCNAME"; return 1; }
+              contents="$(gpg --output - --armor --export "${GPGKEY:-$USER}")" || { err "retrieving gpg pubkey failed." "$FUNCNAME"; return 1; }
               ;;
            *) err "need to choose which public key to copy: -s & -g for ssh & gpg respectively"; return 1 ;;
         esac
     done
     shift "$((OPTIND-1))"
 
-    [[ "$o" -eq 0 ]] && { err "need to provide at least one option" "$FUNCNAME"; return 1; }
+    [[ "$o" -eq 0 ]] && { err "need to choose which public key to copy: -s & -g for ssh & gpg respectively" "$FUNCNAME"; return 1; }
     [[ "$o" -gt 1 ]] && { err "can provide at most one option" "$FUNCNAME"; return 1; }
     [[ -z "$contents" ]] && { err "couldn't retrieve [$s] pubkey" "$FUNCNAME"; return 1; }
     copy_to_clipboard "$contents" && report "copied [$s] pubkey to clipboard" "$FUNCNAME" || { err "copying [$s] pubkey failed; here it is:\n$contents" "$FUNCNAME"; return 1; }
+    return 0
 }
 
 

@@ -572,7 +572,7 @@ bindsym $mod1+e exec --no-startup-id killall -s SIGUSR1 i3expod.py
 #exec --no-startup-id i3-focus-last-window.sh
 #bindsym $mod1+Tab [con_mark=^_last$] focus
 # another, py-based alt-tab alternative:
-exec_always --no-startup-id i3-cycle-focus.py --history 2
+exec_always --no-startup-id i3-cycle-focus.py --ignore-floating --history 2
 bindsym $mod1+Tab exec --no-startup-id i3-cycle-focus.py --switch
 
 # start focus change listener scripts:

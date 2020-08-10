@@ -610,6 +610,14 @@ set nocompatible " Must be the first line
     let g:org_aggressive_conceal = 1
     " indent body text:
     let g:org_indent = 1
+
+    " vim-rooter
+    " stop echoing project root dir:
+    let g:rooter_silent_chdir = 1
+    " resolve symlinks:
+    let g:rooter_resolve_links = 1
+    " change to file's dir if we're dealing w/ non-project file (similar to autochdir):
+    let g:rooter_change_directory_for_non_project_files = 'current'
 """ }}}
 
 """ Local ending config, will overwrite anything above. Generally use this. {{{{

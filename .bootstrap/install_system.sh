@@ -457,7 +457,7 @@ clone_or_pull_repo() {
     [[ "$install_dir" != */ ]] && install_dir="${install_dir}/$repo"
 
     if ! [[ -d "$install_dir/.git" ]]; then
-        execute "git clone --recursive -j8 https://$hub/$user/${repo}.git '$install_dir'" || return 1
+        execute "git clone --recursive -j8 https://$hub/$user/${repo}.git '$install_dir'" || { err "cloning [$hub/$user/$repo] failed w/ $?"; return 1; }
 
         execute "pushd $install_dir" || return 1
         execute "git remote set-url origin git@${hub}:$user/${repo}.git" || { popd; return 1; }
@@ -465,7 +465,7 @@ clone_or_pull_repo() {
         execute "popd"
     elif is_ssh_key_available; then
         execute "pushd $install_dir" || return 1
-        execute "git pull" || { popd; return 1; }  # TODO: retry?
+        execute "git pull" || { err "git pull for [$hub/$user/$repo] failed w/ $?"; popd; return 1; }  # TODO: retry?
         execute "git submodule update --init --recursive" || { popd; return 1; }  # make sure to pull submodules
         execute "popd"
     fi
@@ -2314,7 +2314,7 @@ install_kubectx() {  # https://github.com/ahmetb/kubectx
     install_bin_from_git -n kubectx -d "$HOME/bin"  ahmetb  kubectx  kubens.*_linux_x86_64
 
     # kubectx/kubens completion scripts: (note there's corresponding entry in ~/.bashrc)
-    clone_or_pull_repo "ahmetb" "kubectx" "$BASE_DEPS_LOC"
+    clone_or_pull_repo "ahmetb" "kubectx" "$BASE_DEPS_LOC" || return 1
     COMPDIR=$(pkg-config --variable=completionsdir bash-completion)
     [[ -d "$COMPDIR" ]] || { err "[$COMPDIR] not a dir, cannot install kube{ctx,ns} shell completion"; return 1; }
     create_link --sudo "${BASE_DEPS_LOC}/kubectx/completion/kubens.bash" "$COMPDIR/kubens"
