@@ -853,6 +853,7 @@ install_deps() {
     }
 
     # bash-git-prompt:
+    # alternatively consider https://github.com/starship/starship
     clone_or_pull_repo "magicmonty" "bash-git-prompt" "$BASE_DEPS_LOC"
     create_link "${BASE_DEPS_LOC}/bash-git-prompt" "$HOME/.bash-git-prompt"
 
@@ -1302,13 +1303,13 @@ setup_global_bashrc() {
     ## add the script init function for convenience/global access:
     sudo grep -q 'global_init_marker$' "$global_bashrc" || cat <<EOF | sudo tee --append "$global_bashrc"
 _init() {  # global_init_marker
-    if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != loaded ]]; then
+    if [[ "\$__ENV_VARS_LOADED_MARKER_VAR" != loaded ]]; then
         USER_ENVS=/etc/.bash_env_vars
 
-        if [[ -r "$USER_ENVS" ]]; then
-            source "$USER_ENVS"
+        if [[ -r "\$USER_ENVS" ]]; then
+            source "\$USER_ENVS"
         else
-            echo -e "\n    ERROR: env vars file [$USER_ENVS] not found! Abort."
+            echo -e "\n    ERROR: env vars file [\$USER_ENVS] not found! Abort."
             return 1
         fi
     fi
@@ -1490,6 +1491,8 @@ update_clock() {
 
 
 # note apt-key adv needs gnupg to be installed
+# TODO: apt-key is deprecated! no idea what to replace it with at this stage; see
+#  https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=968148
 setup_additional_apt_keys_and_sources() {
 
     # mopidy: (from https://docs.mopidy.com/en/latest/installation/debian/):
