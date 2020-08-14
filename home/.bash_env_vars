@@ -323,6 +323,7 @@ _load_common() {
 
     return 0
 }
+export -f _load_common
 
 # marker var used to detect whether env vars have been loaded:
 export __ENV_VARS_LOADED_MARKER_VAR=loaded

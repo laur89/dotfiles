@@ -211,6 +211,8 @@ fi
 # bash-git-prompt conf:
 # see provide'ib promptile git repo info; override'ib üleval defineeritud PS1 (põmst sama asjaga kui olen ümber modinud)
 # (modi repo asub @ https://github.com/magicmonty/bash-git-prompt)
+#
+# alternatively consider https://github.com/starship/starship
 
 ##########################################
 # prompt: ################################
