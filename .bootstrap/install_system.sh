@@ -179,6 +179,7 @@ check_dependencies() {
             git cmp wc wget curl tar unzip atool \
             realpath dirname basename head tee \
             gpg mktemp file date alien id html2text \
+            pwd \
                 ; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
@@ -2411,26 +2412,36 @@ install_vnote() {  # https://github.com/tamlok/vnote/releases
 # https://www.postman.com/downloads/canary/
 #
 # note postman is also available as a snap;
-# TODO: find a way to resolve the versioned URL to track it in our git-releases logfile;
 install_postman() {  # https://learning.postman.com/docs/getting-started/installation-and-updates/#installing-postman-on-linux
-    local tmpdir dir dsk target
+    local url label tmpdir dir dsk target
+
+    url='https://dl.pstmn.io/download/channel/canary/linux_64'
+    label="$(curl -Ls --head -o /dev/stdout "$url" | grep -iPo '^content-disposition:.*filename=\K.*tar.gz')"
+
+    if ! is_single "$label"; then
+        err "found postman ver was unexpected: [$label]; will continue w/ installation"
+    elif is_installed "$label"; then
+        return 2
+    fi
 
     target="$BASE_PROGS_DIR/Postman"
     tmpdir="$(mktemp -d 'postman-tempdir-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-    wget --directory-prefix=$tmpdir --content-disposition 'https://dl.pstmn.io/download/channel/canary/linux_64' || return 1
+    wget --directory-prefix=$tmpdir --content-disposition "$url" || return 1
     execute "pushd -- '$tmpdir'" || return 1
     execute "aunpack --quiet *" || { err "extracting postman tarball failed w/ $?"; popd; rm -rf -- "$tmpdir"; return 1; }
     execute "popd"
 
     dir="$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d)"
     [[ -d "$dir" ]] || { err "couldn't find single extracted dir in [$tmpdir]"; return 1; }
-    [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }  # rm previous installation
+    [[ -d "$target" ]] && { execute "sudo rm -rf -- '$target'" || return 1; }  # rm previous installation
     execute "mv -- '$dir' '$target'" || return 1
     execute "rm -rf -- '$tmpdir'"
 
+    is_single "$label" && add_to_dl_log "postman-canary" "$label"
+
     # install .desktop:
     dsk="$HOME/.local/share/applications"
-    [[ -d "$dsk" ]] || { err "[$dsk] not a dir"; return 1; }
+    [[ -d "$dsk" ]] || { err "[$dsk] not a dir, cannot install postman .desktop entry"; return 1; }
     echo "[Desktop Entry]
 Encoding=UTF-8
 Name=PostmanCanary
@@ -5292,7 +5303,10 @@ execute() {
     readonly exit_sig=$?
 
     if [[ "$exit_sig" -ne 0 && "$ignore_errs" -ne 1 ]]; then
-        [[ "$LOGGING_LVL" -ge 1 ]] && echo -e "    ERR CMD: [$cmd] (exited with code [$exit_sig])" >> "$EXECUTION_LOG"
+        if [[ "$LOGGING_LVL" -ge 1 ]]; then
+            echo -e "    ERR CMD: [$cmd] (exit code [$exit_sig])" >> "$EXECUTION_LOG"
+            echo -e "        LOC: [$(pwd -P)]" >> "$EXECUTION_LOG"
+        fi
         return $exit_sig
     fi
 
