@@ -2130,12 +2130,12 @@ install_deb_from_git() {
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
 #
-# @returns {string} path to root dir of extraction result, IF we found a single dir
-#                   in PWD.
+# @returns {string} path to root dir of extraction result, IF we found a
+#                   _single_ dir in PWD.
 fetch_extract_tarball_from_git() {
     local opt i OPTIND standalone tmpdir
 
-    while getopts "S" opt; do
+    while getopts 'S' opt; do
         case "$opt" in
             S) standalone=1 ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
@@ -2152,8 +2152,8 @@ fetch_extract_tarball_from_git() {
     execute "aunpack --extract --quiet '$i'" > /dev/null || { err "extracting [$i] failed w/ $?"; [[ "$standalone" == 1 ]] && popd; return 1; }
 
     i="$(find "$(pwd -P)" -mindepth 1 -maxdepth 1 -type d)"
-    [[ -d "$i" ]] && echo "$i"
     [[ "$standalone" == 1 ]] && popd
+    [[ -d "$i" ]] && echo "$i"
     # do NOT remove $tmpdir
     return 0
 }
@@ -3288,8 +3288,6 @@ install_i3_deps() {
 install_polybar() {
     local tmpdir
 
-    tmpdir="$(mktemp -d "polybar-build-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$ mktemp"; return 1; }
-
     report "installing polybar build dependencies..."
 
     # note: clang is installed because of  https://github.com/polybar/polybar/issues/572
@@ -3322,14 +3320,15 @@ install_polybar() {
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
     #execute "git clone --recursive -j8 $POLYBAR_REPO_LOC '$tmpdir'" || return 1
+    tmpdir="$(fetch_extract_tarball_from_git -S polybar polybar '\d+\.\d+\.tar')" || return 1
+    [[ -d "$tmpdir" ]] || { err "the expected unpacked polybar dir was not valid: [$tmpdir]"; return 1; }
     execute "pushd $tmpdir" || return 1
-    fetch_extract_tarball_from_git polybar polybar '\d+\.\d+\.tar' || return 1
-    execute "pushd *" || return 1
     execute "./build.sh --auto --all-features --no-install" || return 1
 
     execute "pushd build/" || return 1
     create_deb_install_and_store polybar  # TODO: note still using checkinstall
-    execute "popd; popd; popd"
+
+    execute "popd; popd"
     execute "sudo rm -rf -- '$tmpdir'"
     return 0
 }
@@ -5294,7 +5293,7 @@ execute() {
     local cmd exit_sig ignore_errs
 
     [[ "$1" == -i || "$1" == --ignore-errs ]] && { shift; readonly ignore_errs=1; } || readonly ignore_errs=0
-    readonly cmd="$1"
+    readonly cmd="$(sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' <<< "$1")"  # trim leading-trailing whitespace
 
     >&2 echo -e "${COLORS[GREEN]}-->${COLORS[OFF]} executing [${COLORS[YELLOW]}${cmd}${COLORS[OFF]}]"
     # TODO: collect and log command execution stderr?
