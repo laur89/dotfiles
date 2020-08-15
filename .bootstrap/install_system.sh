@@ -2014,9 +2014,7 @@ resolve_dl_urls() {
 
     domain="$(grep -Po '^https?://([^/]+)(?=)' <<< "$loc")"
     while IFS= read -r u; do
-        if [[ -n "$u" && "$u" == /* ]]; then
-            u="${domain}$u"  # convert to fully qualified url
-        fi
+        [[ "$u" == /* ]] && u="${domain}$u"  # convert to fully qualified url
 
         u="$(html2text -width 1000000 <<< "$u")"
         is_valid_url "$u" || { err "[$u] is not a valid download link"; return 1; }
@@ -2368,7 +2366,7 @@ install_grpc_cli() {  # https://github.com/grpc/grpc/blob/master/doc/command_lin
 # db/database visualisation tool (for mysql/mariadb)
 # remember intellij idea also has a db tool!
 install_dbeaver() {  # https://dbeaver.io/download/
-    local loc dest url file
+    local loc dest url
 
     readonly loc='https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb'
     url="$(curl -Ls --head -o /dev/stdout "$loc" | grep -iPo '^location:\s*\K.*.deb')"
@@ -2392,15 +2390,29 @@ install_dbeaver() {  # https://dbeaver.io/download/
 
 # perforce git mergetool, alternative to meld;
 # TODO: ver/url resolution unresolved, currenlty hard-coding version/url!
+#
+# TODO: generalize this path - dl tarball, unpack under $BASE_PROGS_DIR; eg Postman uses same pattern
 install_p4merge() {  # https://www.perforce.com/downloads/visual-merge-tool
-    local loc dest
+    local loc target tmpdir dir
 
     readonly loc='http://www.perforce.com/downloads/perforce/r20.1/bin.linux26x86_64/p4v.tgz'
-    readonly dest="$TMP_DIR/p4merge-$RANDOM.deb"
+    readonly target="$BASE_PROGS_DIR/p4merge"
+    is_installed "$loc" && return 2
 
-    execute "wget -O '$dest' '$loc'" || { err "wgetting [$loc] failed."; return 1; }
-    execute "sudo apt-get --yes install '$dest'" || return 1
-    execute "rm -f -- '$dest'"
+    tmpdir="$(mktemp -d 'p4merge-tempdir-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+
+    execute "wget --content-disposition -q --directory-prefix=$tmpdir '$loc'" || { err "wgetting [$loc] failed with $?"; return 1; }
+    execute "pushd -- $tmpdir" || return 1
+    execute "aunpack --quiet *" || { err "extracting p4merge tarball failed w/ $?"; popd; return 1; }
+    execute "popd"
+
+    dir="$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d)"
+    [[ -d "$dir" ]] || { err "couldn't find single extracted dir in [$tmpdir]"; return 1; }
+    [[ -d "$target" ]] && { execute "sudo rm -rf -- '$target'" || return 1; }  # rm previous installation
+    execute "mv -- '$dir' '$target'" || return 1
+    execute "rm -rf -- '$tmpdir'"
+
+    add_to_dl_log "p4merge" "$loc"
 }
 
 
@@ -2439,7 +2451,7 @@ install_postman() {  # https://learning.postman.com/docs/getting-started/install
     tmpdir="$(mktemp -d 'postman-tempdir-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     wget --directory-prefix=$tmpdir --content-disposition "$url" || return 1
     execute "pushd -- '$tmpdir'" || return 1
-    execute "aunpack --quiet *" || { err "extracting postman tarball failed w/ $?"; popd; rm -rf -- "$tmpdir"; return 1; }
+    execute "aunpack --quiet *" || { err "extracting postman tarball failed w/ $?"; popd; return 1; }
     execute "popd"
 
     dir="$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d)"
@@ -4858,10 +4870,12 @@ install_gruvbox_gtk_theme() {
     clone_or_pull_repo "3ximus" "gruvbox-gtk" "$HOME/.themes"  # https://github.com/3ximus/gruvbox-gtk.git
 }
 
+
+# also consider the generic installer instead of .deb, eg https://launchpad.net/veracrypt/trunk/1.24-update7/+download/veracrypt-1.24-Update7-setup.tar.bz2
 install_veracrypt() {
     local tmpdir dl_urls u i vers dl_url ver_to_url file
 
-    dl_urls="$(resolve_dl_urls -M "https://www.veracrypt.fr/en/Downloads.html" '.*Debian-\d+-amd64.deb')" || return 1
+    dl_urls="$(resolve_dl_urls -M 'https://www.veracrypt.fr/en/Downloads.html' '.*Debian-\d+-amd64.deb')" || return 1
 
     vers=()
     declare -A ver_to_url
