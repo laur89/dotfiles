@@ -2368,14 +2368,25 @@ install_grpc_cli() {  # https://github.com/grpc/grpc/blob/master/doc/command_lin
 # db/database visualisation tool (for mysql/mariadb)
 # remember intellij idea also has a db tool!
 install_dbeaver() {  # https://dbeaver.io/download/
-    local loc dest
+    local loc dest url file
 
     readonly loc='https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb'
-    readonly dest="$TMP_DIR/dbeaver-$RANDOM.deb"
+    url="$(curl -Ls --head -o /dev/stdout "$loc" | grep -iPo '^location:\s*\K.*.deb')"
 
-    execute "wget -O '$dest' '$loc'" || { err "wgetting [$loc] failed."; return 1; }
+    if ! is_valid_url "$url"; then
+        err "found dbeaver url is improper: [$url]; aborting"
+        return 1
+    elif is_installed "$url"; then
+        return 2
+    fi
+
+    dest="$TMP_DIR/$(basename -- "$url")"
+    #execute "wget --content-disposition -q --directory-prefix=$TMP_DIR '$url'" || { err "wgetting [$url] failed with $?"; return 1; }
+    execute "wget -O '$dest' '$url'" || { err "wgetting [$url] failed."; return 1; }
     execute "sudo apt-get --yes install '$dest'" || return 1
     execute "rm -f -- '$dest'"
+
+    add_to_dl_log "dbeaver" "$url"
 }
 
 
@@ -3323,7 +3334,7 @@ install_polybar() {
     tmpdir="$(fetch_extract_tarball_from_git -S polybar polybar '\d+\.\d+\.tar')" || return 1
     [[ -d "$tmpdir" ]] || { err "the expected unpacked polybar dir was not valid: [$tmpdir]"; return 1; }
     execute "pushd $tmpdir" || return 1
-    execute "./build.sh --auto --all-features --no-install" || return 1
+    execute "./build.sh --auto --all-features --no-install" || { popd; return 1; }
 
     execute "pushd build/" || return 1
     create_deb_install_and_store polybar  # TODO: note still using checkinstall
