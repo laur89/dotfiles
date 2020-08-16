@@ -43,6 +43,7 @@ alias equalizer='qpaeq'  # qpaeq = pulseaudio-equalizer
 alias firefox='GTK_THEME=Arc-Darker firefox'  # Arc-Dark renders some elements in firefox unreadable (https://github.com/horst3180/arc-theme/issues/714)
 alias pcat='pygmentize -f terminal256 -O style=native -g'  # syntax highlighter with python3-pygments
 alias pycat='pcat'
+alias googler='googler --lang en'
 alias goo='googler'
 alias define='googler -n 4 define'
 alias py3='python3'
@@ -50,6 +51,7 @@ alias dunc='ncdu'  # never remember it; if it starts w/ 'du', it'll be more like
 alias tgo='tmux new -A -s' # start a new tmux session, or attach to it if already exists
 alias ngo='nvim --listen /tmp/nvim_$USER' # start the _main_/master nvim process, listening on given socket; that socket will be used by nvr (neovim-remote)
 alias got='tgo'
+alias gist='gist --private --copy'
 
 # note following uses the 'none' driver, now effectively superseded by 'docker' driver:   # https://minikube.sigs.k8s.io/docs/drivers/none/
 #alias mkstart='CHANGE_MINIKUBE_NONE_USER=true sudo -E minikube start --driver=none --extra-config=apiserver.service-node-port-range=80-32767 --apiserver-ips 127.0.0.1 --apiserver-name localhost'

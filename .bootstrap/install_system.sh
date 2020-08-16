@@ -970,7 +970,7 @@ install_deps() {
     py_install pywal          # https://github.com/dylanaraps/pywal/wiki/Installation
 
     # consider also perl alternative @ https://github.com/pasky/speedread
-    #rb_install speed_read  # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)  TODO: install appears to be timing out? or at least takes forever;
+    rb_install speed_read  # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
     rb_install gist        # https://github.com/defunkt/gist  (pastebinit for gists)
 
     py_install update-conf.py # https://github.com/rarylson/update-conf.py  (generate config files from conf.d dirs)
@@ -3781,7 +3781,7 @@ install_YCM() {  # the quick-and-not-dirty install.py way
 
     # install YCM
     execute "pushd -- $ycm_plugin_root" || return 1
-    execute --ignore-errs "python3 ./install.py --all" || return 1
+    execute --ignore-errs "python3 ./install.py --all" || { popd; return 1; }
     execute "popd"
 }
 

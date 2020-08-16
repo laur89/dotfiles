@@ -32,10 +32,10 @@ if [[ "$-" != *i* ]]; then
     # try to extract our DISPLAY value from $(who) output
     if [[ -z "$DISPLAY" ]]; then
         _disp="$(LANG= who -u | grep "^$MAIN_SYSTEM_USER\b" | grep -oP '\s+\(\K:[0-9](\.[0-9])?(?=\))' | sort -u)"
-        if [[ -z "$_disp" || "$(wc -l <<< "$_disp")" -ne 1 ]]; then
-            echo -e "\n\n    ERROR: couldn't find our \$DISPLAY from [$_disp]\n\n"  # eg during 1st installation this err is expected
-        else
+        if [[ -n "$_disp" && "$(wc -l <<< "$_disp")" -eq 1 ]]; then
             export DISPLAY="$_disp"
+        else
+            echo -e "\n\n    ERROR: couldn't find our \$DISPLAY from [$_disp]\n\n"  # eg during 1st installation this err is expected
         fi
         unset _disp
     fi
