@@ -1745,7 +1745,7 @@ upgrade_kernel() {
        echo
        report "note kernel was just updated, but you can select different ver:"
        report "select kernel to install: (select none to skip kernel change)\n"
-       select_items "${kernels_list[*]}" 1
+       select_items -s "${kernels_list[@]}"
 
        if [[ -n "$__SELECTED_ITEMS" ]]; then
           report "installing ${__SELECTED_ITEMS}..."
@@ -1897,11 +1897,11 @@ switch_jdk_versions() {
     local avail_javas active_java
 
     [[ -d "$JDK_INSTALLATION_DIR" ]] || { err "[$JDK_INSTALLATION_DIR] does not exist. abort."; return 1; }
-    readonly avail_javas="$(find "$JDK_INSTALLATION_DIR" -mindepth 1 -maxdepth 1 -type d)"
-    [[ $? -ne 0 || -z "$avail_javas" ]] && { err "discovered no java installations @ [$JDK_INSTALLATION_DIR]"; return 1; }
+    readarray -d '' avail_javas < <(find "$JDK_INSTALLATION_DIR" -mindepth 1 -maxdepth 1 -type d -print0)
+    [[ $? -ne 0 || -z "${avail_javas[*]}" ]] && { err "discovered no java installations @ [$JDK_INSTALLATION_DIR]"; return 1; }
     if [[ -h "$JDK_LINK_LOC" ]]; then
         active_java="$(realpath -- "$JDK_LINK_LOC")"
-        if [[ "$avail_javas" == "$active_java" ]]; then
+        if [[ "${avail_javas[*]}" == "$active_java" ]]; then
             report "only one active jdk installation, [$active_java] is available, and that is already linked by [$JDK_LINK_LOC]"
             return 0
         fi
@@ -1912,7 +1912,7 @@ switch_jdk_versions() {
     while true; do
         [[ -n "$active_java" ]] && echo && report "current active java: [$active_java]\n"
         report "select java ver to use (select none to skip the change)\n"
-        select_items "$avail_javas" 1
+        select_items -s "${avail_javas[@]}"
 
         if [[ -n "$__SELECTED_ITEMS" ]]; then
             [[ -d "$__SELECTED_ITEMS" ]] || { err "[$__SELECTED_ITEMS] is not a valid dir; try again."; continue; }
@@ -4476,7 +4476,7 @@ choose_step() {
        esac
     else  # mode not provided
        report "what do you want to do?"
-       select_items 'full-install single-task update' 1
+       select_items -s full-install single-task update
        case "$__SELECTED_ITEMS" in
           'full-install' ) full_install ;;
           'single-task'  ) choose_single_task ;;
@@ -4525,7 +4525,7 @@ choose_single_task() {
 
     report "what do you want to do?"
 
-    select_items "${choices[*]}" 1
+    select_items -s "${choices[@]}"
     [[ -z "$__SELECTED_ITEMS" ]] && return
 
     $__SELECTED_ITEMS
@@ -4602,7 +4602,7 @@ __choose_prog_to_build() {
 
     report "what do you want to build/install?"
 
-    select_items "${choices[*]}" 1
+    select_items -s "${choices[@]}"
     [[ -z "$__SELECTED_ITEMS" ]] && return
     #prepare_build_container || { err "preparation of build container [$BUILD_DOCK] failed" "$FUNCNAME"; return 1; }
 
@@ -5108,7 +5108,7 @@ install_ssh_server_or_client() {
     report "installing ssh. what do you want to do?"
 
     while true; do
-        select_items "client-side server-side" 1
+        select_items -s client-side server-side
 
         if [[ -n "$__SELECTED_ITEMS" ]]; then
             break
@@ -5128,7 +5128,7 @@ install_nfs_server_or_client() {
     report "installing nfs. what do you want to do?"
 
     while true; do
-        select_items "client-side server-side" 1
+        select_items -s client-side server-side
 
         if [[ -n "$__SELECTED_ITEMS" ]]; then
             break
@@ -5339,67 +5339,87 @@ execute() {
 }
 
 
+# Provides an interface user can select items with. Pass '-s' or '--single'
+# as first element to force single item selection only.
+#
+# @param {string...}     options  list of options user can choose from.
+#
+# @returns {bool}  false if no items were selected or single empty selection was passed.
+#                  doesn't return selected values, but defines global __SELECTED_ITEMS
+#                  array that contains list of user selected items.
+#
+# original version stolen from http://serverfault.com/a/298312
 select_items() {
-    local DMENU nr_of_dmenu_vertical_lines dmenurc options options_dmenu
-    local i prompt msg choices num is_single_selection selections
+    local options is_single_selection
 
-    # original version stolen from http://serverfault.com/a/298312
-    declare -ar options=( $1 )
-    readonly is_single_selection="$2"
+    __SELECTED_ITEMS=()  # reset
+    [[ "$1" == -s || "$1" == --single ]] && { shift; readonly is_single_selection=1; } || readonly is_single_selection=0
+    declare -a options=("$@")
 
-    readonly dmenurc="$HOME/.dmenurc"
-    readonly nr_of_dmenu_vertical_lines=40
-    declare -a selections=()
-
-    [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
-
-    function __menu() {
-        local i
-
-        echo -e "\n---------------------"
-        echo "Available options:"
-        for i in "${!options[@]}"; do
-            printf '%3d%s) %s\n' "$((i+1))" "${choices[i]:- }" "${options[i]}"
-        done
-        [[ "$msg" ]] && echo "$msg"; :
-    }
-
-    if [[ "$is_single_selection" -eq 1 ]]; then
-        if is_x && command -v dmenu > /dev/null 2>&1; then
-            for i in "${options[@]}"; do
-                options_dmenu+="$i\n"
-            done
-            __SELECTED_ITEMS="$(echo -e "$options_dmenu" | $DMENU -l $nr_of_dmenu_vertical_lines -p 'select item')"
-            return
-        fi
-        readonly prompt="Check an option, only 1 item can be selected (again to uncheck, ENTER when done): "
-    else
-        readonly prompt="Check an option, multiple items allowed (again to uncheck, ENTER when done): "
+    if [[ -z "${options[*]}" ]]; then
+        return 1
+    elif [[ "${#options[@]}" -eq 1 && -n "${options[*]}" ]]; then
+        __SELECTED_ITEMS+=("${options[0]}")
+        return 0
     fi
 
-    while __menu && read -rp "$prompt" num && [[ "$num" ]]; do
-        [[ "$num" != *[![:digit:]]* ]] &&
-        (( num > 0 && num <= ${#options[@]} )) ||
-        { msg="Invalid option: $num"; continue; }
-        ((num--)); msg="${options[num]} was ${choices[num]:+un}checked"
+    if command -v fzf > /dev/null 2>&1; then
+        local opts out
 
-        if [[ "$is_single_selection" -eq 1 ]]; then
-            # un-select others to enforce single item only:
-            for i in "${!choices[@]}"; do
-                [[ "$i" -ne "$num" ]] && choices[i]=''
-            done
-        fi
+        opts="$FZF_DEFAULT_OPTS "
+        [[ "$is_single_selection" -eq 1 ]] && opts+=' --no-multi ' || opts+=' --multi '
 
-        [[ "${choices[num]}" ]] && choices[num]='' || choices[num]='+'
-    done
+        out="$(printf "%s\n" "${options[@]}" | FZF_DEFAULT_OPTS="$opts" fzf)" || return 1
+        mapfile -t __SELECTED_ITEMS <<< "$out"
+    else  # bash-only selection prompt
+        local i prompt msg choices num
 
-    for i in "${!options[@]}"; do
-        [[ -n "${choices[i]}" ]] && selections+=( ${options[i]} )
-    done
+        declare -a choices
 
-    __SELECTED_ITEMS="${selections[*]}"
+		__menu() {
+			local i
 
-    unset __menu  # to keep the inner function really an inner one (ie private).
+			echo -e "\n---------------------"
+			echo "${COLORS[BOLD]}Available options:${COLORS[OFF]}"
+
+			#for i in "${!options[@]}"; do
+			for ((i = (( ${#options[@]} - 1 )) ; i >= 0 ; i--)); do
+				printf '%3d%s) %s\n' "$((i+1))" "${choices[i]:- }" "${choices[i]:+${COLORS[BOLD]}}${options[i]}${COLORS[OFF]}"
+			done
+			[[ "$msg" ]] && echo "$msg"; :
+		}
+
+		if [[ "$is_single_selection" -eq 1 ]]; then
+			readonly prompt="Check an option, only 1 item can be selected (again to uncheck, ENTER when done): "
+		else
+			readonly prompt="Check an option, multiple items allowed (again to uncheck, ENTER when done): "
+		fi
+
+		while __menu && read -rp "$prompt" num && [[ "$num" ]]; do
+			[[ "$num" != *[![:digit:]]* ]] &&
+			(( num > 0 && num <= ${#options[@]} )) ||
+			{ msg="${COLORS[RED]}Invalid option: ${COLORS[BOLD]}${num}${COLORS[OFF]}"; continue; }
+			((num--)); msg="[${COLORS[YELLOW]}${COLORS[BOLD]}${options[num]}${COLORS[OFF]}] was ${choices[num]:+un}checked"
+
+			if [[ "$is_single_selection" -eq 1 ]]; then
+				# un-select others to enforce single item only:
+				for i in "${!choices[@]}"; do
+					[[ "$i" -ne "$num" ]] && choices[i]=''
+				done
+			fi
+
+			[[ "${choices[num]}" ]] && choices[num]='' || choices[num]="${COLORS[PURPLE]}${COLORS[BOLD]}>${COLORS[OFF]}"
+		done
+
+		# collect the selections:
+		for i in "${!options[@]}"; do
+			[[ -n "${choices[i]}" ]] && __SELECTED_ITEMS+=( "${options[i]}" )
+		done
+
+		unset __menu  # to keep the inner function really an inner one (ie private).
+    fi
+
+    [[ "${#__SELECTED_ITEMS[@]}" -eq 0 ]] && return 1 || return 0
 }
 
 
