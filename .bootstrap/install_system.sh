@@ -4475,16 +4475,15 @@ choose_step() {
            *) exit 1 ;;
        esac
     else  # mode not provided
-       report "what do you want to do?"
-       select_items -s full-install single-task update
+       select_items -s -h 'what do you want to do' full-install single-task update
        case "$__SELECTED_ITEMS" in
           'full-install' ) full_install ;;
           'single-task'  ) choose_single_task ;;
           'update'       ) quick_refresh ;;
-          '') exit 0 ;;
+          ''             ) exit 0 ;;
           *) err "unsupported choice [$__SELECTED_ITEMS]"
-              exit 1
-              ;;
+             exit 1
+             ;;
        esac
     fi
 }
@@ -4523,9 +4522,7 @@ choose_single_task() {
         __choose_prog_to_build
     )
 
-    report "what do you want to do?"
-
-    select_items -s "${choices[@]}"
+    select_items -s -h 'what do you want to do' "${choices[@]}"
     [[ -z "$__SELECTED_ITEMS" ]] && return
 
     $__SELECTED_ITEMS
@@ -5105,10 +5102,8 @@ post_install_progs_setup() {
 
 
 install_ssh_server_or_client() {
-    report "installing ssh. what do you want to do?"
-
     while true; do
-        select_items -s client-side server-side
+        select_items -s -h 'installing ssh. what do you want to do' client-side server-side
 
         if [[ -n "$__SELECTED_ITEMS" ]]; then
             break
@@ -5125,10 +5120,8 @@ install_ssh_server_or_client() {
 
 
 install_nfs_server_or_client() {
-    report "installing nfs. what do you want to do?"
-
     while true; do
-        select_items -s client-side server-side
+        select_items -s -h 'installing nfs. what do you want to do' client-side server-side
 
         if [[ -n "$__SELECTED_ITEMS" ]]; then
             break
@@ -5138,8 +5131,8 @@ install_nfs_server_or_client() {
     done
 
     case "$__SELECTED_ITEMS" in
-        "server-side" ) install_nfs_server ;;
-        "client-side" ) install_nfs_client ;;
+        'server-side' ) install_nfs_server ;;
+        'client-side' ) install_nfs_client ;;
     esac
 }
 
@@ -5339,8 +5332,11 @@ execute() {
 }
 
 
-# Provides an interface user can select items with. Pass '-s' or '--single'
-# as first element to force single item selection only.
+# Provides an interface user can select items with.
+#
+# Opts:
+#    s - force single item selection; by default multiples can be selected;
+#    h - header/topic to print next to list of options to choose from;
 #
 # @param {string...}     options  list of options user can choose from.
 #
@@ -5350,15 +5346,30 @@ execute() {
 #
 # original version stolen from http://serverfault.com/a/298312
 select_items() {
-    local options is_single_selection
+    local opt OPTIND options is_single_selection hdr
+
+	is_single_selection=0
+	hdr='Available options:'  # default if not given
+
+    while getopts 'sh:' opt; do
+        case "$opt" in
+           s) is_single_selection=1
+                ;;
+           h) hdr="$OPTARG"
+                ;;
+           *) echo -e "unexpected opt [$opt] passed to $FUNCNAME"; return 1 ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
 
     __SELECTED_ITEMS=()  # reset
-    [[ "$1" == -s || "$1" == --single ]] && { shift; readonly is_single_selection=1; } || readonly is_single_selection=0
     declare -a options=("$@")
+    [[ "$hdr" != *: ]] && hdr+=':'
+    hdr="${COLORS[BLUE]}${COLORS[BOLD]}${hdr}${COLORS[OFF]}"
 
     if [[ -z "${options[*]}" ]]; then
         return 1
-    elif [[ "${#options[@]}" -eq 1 && -n "${options[*]}" ]]; then
+    elif [[ "${#options[@]}" -eq 1 ]]; then
         __SELECTED_ITEMS+=("${options[0]}")
         return 0
     fi
@@ -5366,7 +5377,7 @@ select_items() {
     if command -v fzf > /dev/null 2>&1; then
         local opts out
 
-        opts="$FZF_DEFAULT_OPTS "
+        opts="$FZF_DEFAULT_OPTS --header '$hdr' "
         [[ "$is_single_selection" -eq 1 ]] && opts+=' --no-multi ' || opts+=' --multi '
 
         out="$(printf "%s\n" "${options[@]}" | FZF_DEFAULT_OPTS="$opts" fzf)" || return 1
@@ -5380,7 +5391,7 @@ select_items() {
 			local i
 
 			echo -e "\n---------------------"
-			echo "${COLORS[BOLD]}Available options:${COLORS[OFF]}"
+			echo "$hdr"
 
 			#for i in "${!options[@]}"; do
 			for ((i = (( ${#options[@]} - 1 )) ; i >= 0 ; i--)); do

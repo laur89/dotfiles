@@ -25,7 +25,10 @@
 # Suppress all error messages related to opening and reading files:
 --no-messages
 
-# follow symlinks
+# follow symlinks.
+# note when searching from top level (eg from / or /data), then consider
+# --no-follow, otherwise you get loads of duplicates, as all the symlinks
+# are followed and their results printed out.
 --follow
 
 # search hidden files

@@ -2118,7 +2118,7 @@ increment_version() {
         echo custom)
     ) ) || { err; return 1; }
 
-    select_items --single "${vers[@]}"
+    select_items -s "${vers[@]}"
 
     if [[ "$__SELECTED_ITEMS" == custom ]]; then
         read -rp 'enter version: ' ver
@@ -2470,7 +2470,7 @@ fog() {
             matches+=("$i")
         done < <(ffind --_skip_msgs "$opts" "$@")
 
-        select_items --single "${matches[@]}" || return 1
+        select_items -s "${matches[@]}" || return 1
         matches=("${__SELECTED_ITEMS[@]}")
     else
         while read -r i; do
@@ -2896,7 +2896,7 @@ g() {
                 matches+=("$i")
             done < <(__find_fun "$pattern" "$start_dir")
 
-            select_items --single "${matches[@]}" || return 1
+            select_items -s "${matches[@]}" || return 1
             dir="${__SELECTED_ITEMS[*]}"
         else
             dir="$(__find_fun "$pattern" "$start_dir" | fzf --select-1 --read0 --exit-0)" || return 1
@@ -3496,7 +3496,7 @@ fh() {
         IFS="$ifs_old"
 
         [[ -z "${cmd[*]}" ]] && { err "no matching entries found" "$FUNCNAME"; return 1; }
-        select_items --single "${cmd[@]}"
+        select_items -s "${cmd[@]}"
         [[ -n "${__SELECTED_ITEMS[*]}" ]] && ${__SELECTED_ITEMS[@]}
         #echo "woo: ${__SELECTED_ITEMS[@]}"
     fi
@@ -3541,7 +3541,7 @@ fhd() {
         IFS="$ifs_old"
 
         [[ -z "${cmd[*]}" ]] && { err "no matching entries found" "$FUNCNAME"; return 1; }
-        select_items --single "${cmd[@]}"
+        select_items -s "${cmd[@]}"
         [[ -z "${__SELECTED_ITEMS[*]}" ]] && { err "no entries selected" "$FUNCNAME"; return 1; }
         __delete_cmd "${__SELECTED_ITEMS[*]}" || return $?
     fi
