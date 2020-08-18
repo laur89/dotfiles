@@ -3186,10 +3186,10 @@ EOF
     # (note mk-build-deps needs equivs pkg)
     sudo mk-build-deps \
             -t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends -qqy' \
-            -i -r debian/control || { err "automatic build-dep resolver for i3 failed w/ [$?]"; return 1; }
+            -i -r debian/control || { err "automatic build-dep resolver for i3 failed w/ [$?]"; popd; return 1; }
     # alternatively, could also do $ sudo apt-get -y build-dep i3-wm
 
-    build_deb || { err "build_deb() for i3 failed"; return 1; }
+    build_deb || { err "build_deb() for i3 failed"; popd; return 1; }
     execute 'sudo dpkg -i ../i3-wm_*.deb'
     execute 'sudo dpkg -i ../i3_*.deb'
 

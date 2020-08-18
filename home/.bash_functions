@@ -3920,6 +3920,7 @@ javadump() {
         -t  only dump threads (skip heap dump)
 "
 
+    # TODO: maybe replace -h w/ -H, as -h is generally help?
     while getopts "ht" opt; do
         case "$opt" in
            h) mode=H
@@ -4156,7 +4157,6 @@ _complete_dirs_in_pwd() {
         local I input paths i
 
         I="$1"
-        input=''
         for i in "${COMP_WORDS[@]:1:${#COMP_WORDS[@]}-I}"; do
             input+="$i"
             [[ "$i" != */ ]] && input+='/'
