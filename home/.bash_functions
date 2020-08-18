@@ -2111,10 +2111,9 @@ increment_version() {
     ver="$1"
 
     declare -a vers=( $(sort -u < <(
-        __increment_version_build "$ver";
-        __increment_version_up_to_point_10 "$ver";
         __increment_version_next_major_or_minor "$ver" 0;
         __increment_version_next_major_or_minor "$ver" 1;
+        __increment_version_next_major_or_minor "$ver" 2;
         echo custom)
     ) ) || { err; return 1; }
 
@@ -2266,10 +2265,9 @@ gfrs() {
     last_tag="$(get_git_last_tag)" || { err "problems finding latest tag. this was found as latest tag: [$last_tag]" "$FUNCNAME"; unset last_tag; }
     if [[ -n "$last_tag" ]]; then  # tag exists
         expected_tags=( $(sort -u < <(
-            __increment_version_build "$last_tag";
-            __increment_version_up_to_point_10 "$last_tag";
             __increment_version_next_major_or_minor "$last_tag" 0;
             __increment_version_next_major_or_minor "$last_tag" 1;
+            __increment_version_next_major_or_minor "$last_tag" 2;
             echo "$pom_wo_postfix";
             )
         ) ) || { err "something blew up" "$FUNCNAME"; return 1; }
