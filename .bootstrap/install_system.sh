@@ -2422,11 +2422,12 @@ install_redis_desktop_mngr() {  # https://snapcraft.io/install/redis-desktop-man
 }
 
 
-# other mentions/alternatives:
+# other noting alternatives:
 #   https://github.com/pbek/QOwnNotes  (also c++, qt-based like vnotes)
 #   https://github.com/laurent22/joplin/
 #   https://github.com/notable/notable/
 #   https://github.com/BoostIO/Boostnote
+#   https://github.com/zadam/trilium  (also hostable as a server)
 install_vnote() {  # https://github.com/tamlok/vnote/releases
     install_bin_from_git -n vnote tamlok vnote x86_64.AppImage
 }
