@@ -768,7 +768,7 @@ install_deps() {
             # update all the tmux plugins, including the plugin manager itself:
             execute "pushd $plugins_dir" || return 1
 
-            for dir in *; do
+            for dir in ./*; do
                 if [[ -d "$dir" ]]; then
                     execute "pushd $dir" || continue
                     is_git && execute "git pull"
@@ -2116,7 +2116,7 @@ install_deb_from_git() {
     # TODO: note apt doesn't have --yes option!
     #execute "sudo apt install '$deb'" || { err "installing [$1/$2] failed w/ $?"; return 1; }
     execute "sudo apt-get --yes install '$deb'" || { err "installing [$1/$2] failed w/ $?"; return 1; }
-    execute "rm -rf -- '$deb'"
+    execute "rm -f -- '$deb'"
 }
 
 
@@ -2344,14 +2344,18 @@ install_bloomrpc() {  # https://github.com/uw-labs/bloomrpc/releases
     #install_bin_from_git -n bloomrpc uw-labs bloomrpc x86_64.AppImage
 }
 
-# if build fails, you might be able to salvage something by:
+# if build fails, you might be able to salvage something by doing:
 #   sed -i 's/-Werror//g' Makefile
 install_grpc_cli() {  # https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md
-    local tmpdir f
+    local ver label tmpdir f
+
+    ver="$(curl --fail -L https://grpc.io/release)"
+    label="grpc-cli-$ver"
+    is_installed "$label" && return 2
 
     tmpdir="$(mktemp -d 'grpc-cli-tempdir-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     execute "pushd -- '$tmpdir'" || return 1
-    execute "git clone -b '$(curl --fail -L https://grpc.io/release)' https://github.com/grpc/grpc" || return 1
+    execute "git clone -b '$ver' https://github.com/grpc/grpc" || return 1
     execute 'pushd -- grpc' || return 1
     execute 'git submodule update --init' || return 1
 
@@ -2360,6 +2364,8 @@ install_grpc_cli() {  # https://github.com/grpc/grpc/blob/master/doc/command_lin
     f="$(find . -mindepth 1 -type f -name 'grpc_cli')"
     [[ -f "$f" ]] || { err "couldn't find grpc_cli"; return 1; }
     execute "mv -- '$f' '$BASE_BUILDS_DIR'" || return 1
+
+    add_to_dl_log "grpc-cli" "$label"
 
     execute "popd; popd" || return 1
     execute "rm -rf -- '$tmpdir'"
@@ -2405,7 +2411,7 @@ install_p4merge() {  # https://www.perforce.com/downloads/visual-merge-tool
 
     execute "wget --content-disposition -q --directory-prefix=$tmpdir '$loc'" || { err "wgetting [$loc] failed with $?"; return 1; }
     execute "pushd -- $tmpdir" || return 1
-    execute "aunpack --quiet *" || { err "extracting p4merge tarball failed w/ $?"; popd; return 1; }
+    execute "aunpack --quiet ./*" || { err "extracting p4merge tarball failed w/ $?"; popd; return 1; }
     execute "popd"
 
     dir="$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d)"
@@ -2454,7 +2460,7 @@ install_postman() {  # https://learning.postman.com/docs/getting-started/install
     tmpdir="$(mktemp -d 'postman-tempdir-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     wget --directory-prefix=$tmpdir --content-disposition "$url" || return 1
     execute "pushd -- '$tmpdir'" || return 1
-    execute "aunpack --quiet *" || { err "extracting postman tarball failed w/ $?"; popd; return 1; }
+    execute "aunpack --quiet ./*" || { err "extracting postman tarball failed w/ $?"; popd; return 1; }
     execute "popd"
 
     dir="$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d)"
@@ -3987,7 +3993,7 @@ install_fonts() {
     #execute "pushd ~/.fonts" || return 1
 
     ## also install fonts in sub-dirs:
-    #for dir in * ; do
+    #for dir in ./* ; do
         #if [[ -d "$dir" ]]; then
             #execute "pushd $dir" || return 1
             #execute "xset +fp $PWD"
