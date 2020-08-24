@@ -1329,6 +1329,7 @@ EOF
 # note that this block overlaps logically a bit with post_install_progs_setup() (not really tho, as p_i_p_s() requires specific progs to be installed beforehand)
 setup_config_files() {
 
+    setup_swappiness
     setup_apt
     setup_crontab
     setup_sudoers
@@ -5056,6 +5057,18 @@ setup_minikube() {  # TODO: unfinished
 }
 
 
+setup_swappiness() {
+    local target current
+
+    readonly target=0
+    current="$(cat /proc/sys/vm/swappiness)"
+    is_digit "$current" || { err "couldn't find current swappiness value, not a digit: [$current]"; return 1; }
+    [[ "$target" -eq "$current" ]] && return 0
+
+    _sysctl_conf '50-swappiness.conf' 'vm.swappiness' "$target"
+}
+
+
 # configs & settings that can/need to be installed  AFTER  the related programs have
 # been installed.
 #
@@ -5100,8 +5113,6 @@ post_install_progs_setup() {
 
     command -v kubectl >/dev/null && execute 'kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl'  # add kubectl bash completion
     command -v minikube >/dev/null && setup_minikube
-
-    [[ "$SYSCTL_CHANGED" -eq 1 ]] && execute "sudo sysctl -p --system"
 }
 
 
@@ -5953,6 +5964,8 @@ trap "cleanup; exit" EXIT HUP INT QUIT PIPE TERM;
 validate_and_init
 check_dependencies
 choose_step
+
+[[ "$SYSCTL_CHANGED" -eq 1 ]] && execute "sudo sysctl -p --system"
 
 exit
 
