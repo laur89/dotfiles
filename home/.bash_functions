@@ -4175,7 +4175,7 @@ complete -F _completemarks jj jum jmo
 # other shell completions:
 # use this if grep w/ perl regex not avail:
 #[[ -f ~/.ssh/config ]] && complete -o default -o nospace -W "$(grep -i -e '^host ' ~/.ssh/config | awk '{print substr($0, index($0,$2))}' ORS=' ')" sshpearl
-[[ -f ~/.ssh/config ]] && complete -o default -o nospace -W "$(grep -Poi '^host\s+\K\S+' ~/.ssh/config)" sshpearl
+[[ -f ~/.ssh/config ]] && complete -o default -o nospace -W "$(grep -Poi '^host\s+\K\S+' ~/.ssh/config | grep -vFx '*')" sshpearl
 
 # $1 - name of the function whose args are completed
 # $2 - word being completed

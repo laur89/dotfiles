@@ -1095,7 +1095,7 @@ install_homesick() {
 #
 # pass   -H   flag to set up path to our githooks
 clone_or_link_castle() {
-    local castle user hub homesick_exe opt OPTIND set_hooks
+    local castle user hub homesick_exe opt OPTIND set_hooks batch
 
     while getopts "H" opt; do
         case "$opt" in
@@ -1113,16 +1113,17 @@ clone_or_link_castle() {
 
     [[ -z "$castle" || -z "$user" || -z "$hub" ]] && { err "either user, repo or castle name were missing"; sleep 2; return 1; }
     [[ -x "$homesick_exe" ]] || { err "expected to see homesick script @ [$homesick_exe], but didn't. skipping cloning/linking castle [$castle]"; return 1; }
+    is_noninteractive && batch=' --batch'
 
     if [[ -d "$BASE_HOMESICK_REPOS_LOC/$castle" ]]; then
         if is_ssh_key_available; then
             report "[$castle] already exists; pulling & linking"
-            retry 3 "$homesick_exe pull $castle" || { err "pulling castle [$castle] failed with $?"; return 1; }  # TODO: should we exit here?
+            retry 3 "${homesick_exe}$batch pull $castle" || { err "pulling castle [$castle] failed with $?"; return 1; }  # TODO: should we exit here?
         else
             report "[$castle] already exists; linking..."
         fi
 
-        execute "$homesick_exe link $castle" || { err "linking castle [$castle] failed with $?"; return 1; }  # TODO: should we exit here?
+        execute "${homesick_exe}$batch link $castle" || { err "linking castle [$castle] failed with $?"; return 1; }  # TODO: should we exit here?
     else
         report "cloning castle ${castle}..."
         if is_ssh_key_available; then
@@ -2369,7 +2370,7 @@ install_dbeaver() {  # https://dbeaver.io/download/
     local loc dest url
 
     readonly loc='https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb'
-    url="$(curl -Ls --head -o /dev/stdout "$loc" | grep -iPo '^location:\s*\K.*.deb')"
+    url="$(curl -Ls --head -o /dev/stdout "$loc" | grep -iPo '^location:\s*\K\S+')"
 
     if ! is_valid_url "$url"; then
         err "found dbeaver url is improper: [$url]; aborting"
