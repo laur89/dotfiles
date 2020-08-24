@@ -2843,6 +2843,55 @@ goto() {
     [[ -d "$*" ]] && { cd -- "$*"; } || cd -- "$(dirname -- "$(realpath -- "$*")")";
 }
 
+
+# calculate md5sum of all files recursively from current PWD/given dir
+#
+# consider also py package 'checksumdir'
+# https://unix.stackexchange.com/a/35834/47501
+sumtree() {
+    local usage OPTIND opt usage dir
+
+    readonly usage="\n${FUNCNAME}: get cumulative md5 sum of all files of either
+    given directory, or current dir (default)
+    Usage: ${FUNCNAME}  [-h]  [directory]
+        -h  show this help\n"
+
+    while getopts "h" opt; do
+        case "$opt" in
+           h) echo -e "$usage"; return 0 ;;
+           *) echo -e "$usage"; return 1 ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    readonly dir="$1"
+    [[ "$#" -gt 1 ]] && { err "max 1 arg - a directory - allowed"; return 1; }
+
+    check_progs_installed find md5sum || return 1
+
+    if [[ -n "$dir" ]]; then
+        [[ -d "$dir" ]] || { err "directory [$dir] not a valid dir"; return 1; }
+        pushd "$dir" || return 1  # cd to dir in order to take relative paths
+    fi
+
+    if command -v parallel > /dev/null 2>&1; then
+        find . -type f | parallel -k -n 100 md5sum {} | sort -k 2 | md5sum  # speeds up a bit, as it decreases number of calls to md5sum
+    else
+        find . -type f -exec md5sum {} \; | sort -k 2 | md5sum
+    fi
+
+    #find . -type f -exec md5sum {} \; | cut -d" " -f1 | sort | md5sum  # ignore file names; note we can also bake parallel in here as above
+
+    # if you care also about metadata (ownership, perms), use tar:
+    #tar -cf - ./ | md5sum
+
+
+    # use md5deep instead:
+    #md5deep -r -l -j0 . | md5sum  # follows symlinks by default?
+
+    [[ -n "$dir" ]] && popd
+}
+
 # cd-s to directory by partial match; if multiple matches, opens input via fzf. smartcase.
 #
 #
