@@ -4075,6 +4075,8 @@ install_from_repo() {
         lshw
         fuse
         fuseiso
+        parallel
+        md5deep
     )
 
     # for .NET dev, consider also nuget pkg;
