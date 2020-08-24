@@ -2871,7 +2871,7 @@ sumtree() {
 
     if [[ -n "$dir" ]]; then
         [[ -d "$dir" ]] || { err "directory [$dir] not a valid dir"; return 1; }
-        pushd "$dir" || return 1  # cd to dir in order to take relative paths
+        pushd "$dir" &> /dev/null || return 1  # cd to dir in order to take relative paths
     fi
 
     if command -v parallel > /dev/null 2>&1; then
@@ -2880,17 +2880,19 @@ sumtree() {
         find . -type f -exec md5sum {} \; | sort -k 2 | md5sum
     fi
 
-    #find . -type f -exec md5sum {} \; | cut -d" " -f1 | sort | md5sum  # ignore file names; note we can also bake parallel in here as above
+    # to ignore file names; note we could also bake parallel in this command as above
+    #find . -type f -exec md5sum {} \; | cut -d" " -f1 | sort | md5sum
 
     # if you care also about metadata (ownership, perms), use tar:
     #tar -cf - ./ | md5sum
 
+    # md5deep alternative:
+    #md5deep -r -l -j0 . | md5sum  # follows symlinks by default!
 
-    # use md5deep instead:
-    #md5deep -r -l -j0 . | md5sum  # follows symlinks by default?
-
-    [[ -n "$dir" ]] && popd
+    [[ -n "$dir" ]] && popd &> /dev/null
 }
+
+sumdir() { sumtree "$@"; }
 
 # cd-s to directory by partial match; if multiple matches, opens input via fzf. smartcase.
 #
