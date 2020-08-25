@@ -2893,6 +2893,7 @@ sumtree() {
 }
 
 sumdir() { sumtree "$@"; }
+dirsum() { sumtree "$@"; }
 
 # cd-s to directory by partial match; if multiple matches, opens input via fzf. smartcase.
 #
