@@ -1368,7 +1368,7 @@ sanitize_ssh() {
 ssh_sanitize() { sanitize_ssh "$@"; }  # alias for sanitize_ssh
 
 myip() {  # Get internal & external ip addies:
-    local connected_interface interfaces if_dir interface external_ip
+    local connected_interface interfaces if_dir interface
 
     if_dir="/sys/class/net"
 
@@ -1387,13 +1387,17 @@ myip() {  # Get internal & external ip addies:
         fi
 
         [[ -z "$ip" && "$__REMOTE_SSH" -eq 1 ]] && return  # probaby the interface was not found
-        echo -e "${ip:-"Not connected"}\t@ $interface"
+        echo -e "${COLORS[YELLOW]}${ip:-"Not connected"}${COLORS[OFF]}\t@ $interface"
+    }
+
+    __show_ext() {
+        local external_ip
+        external_ip="$(get_external_ip)" && {
+            echo -e "external:\t${COLORS[YELLOW]}${external_ip:-'Not connected to the internet.'}${COLORS[OFF]}"
+        }
     }
 
     connected_interface="$(find_connected_if)"  # note this returns only on own machines, not on remotes.
-    external_ip="$(get_external_ip)" && {
-        echo -e "external:\t${external_ip:-'Not connected to the internet.'}"
-    }
 
     # TODO: enable this block once ip has universally replaced ifconfig
     #command -v ip > /dev/null 2>&1 || {  # don't use check_progs_installed because of its verbosity
@@ -1403,8 +1407,6 @@ myip() {  # Get internal & external ip addies:
 
     if [[ -n "$connected_interface" ]]; then
         __get_internal_ip_for_if "$connected_interface"
-        unset __get_internal_ip_for_if
-        return 0
     elif [[ "$__REMOTE_SSH" -eq 1 ]]; then
         if [[ -d "$if_dir" && -r "$if_dir" ]]; then
             while IFS= read -r interface; do
@@ -1416,18 +1418,17 @@ myip() {  # Get internal & external ip addies:
             report "can't read interfaces from [$if_dir] [not a (readable) dir]; trying these interfaces: [$interfaces]" "$FUNCNAME"
         fi
 
-        [[ -z "$interfaces" ]] && return 1
-
-        for interface in $interfaces; do
-            __get_internal_ip_for_if "$interface"
-        done
-
-        unset __get_internal_ip_for_if
-        return 0
+        if [[ -n "$interfaces" ]]; then
+            for interface in $interfaces; do
+                __get_internal_ip_for_if "$interface"
+            done
+        fi
+    else
+        err "internal network not connected? (at least nothing was returned by find_connected_if())"
     fi
 
-    echo "Not connected (at least nothing was returned by find_connected_if())"
-    unset __get_internal_ip_for_if
+    __show_ext
+    unset __get_internal_ip_for_if __show_ext
 }
 
 whatsmyip() { myip; }  # alias for myip
