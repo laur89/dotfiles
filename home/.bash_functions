@@ -1370,8 +1370,6 @@ ssh_sanitize() { sanitize_ssh "$@"; }  # alias for sanitize_ssh
 myip() {  # Get internal & external ip addies:
     local connected_interface interfaces if_dir interface
 
-    if_dir="/sys/class/net"
-
     __get_internal_ip_for_if() {
         local interface ip
 
@@ -1408,10 +1406,12 @@ myip() {  # Get internal & external ip addies:
     if [[ -n "$connected_interface" ]]; then
         __get_internal_ip_for_if "$connected_interface"
     elif [[ "$__REMOTE_SSH" -eq 1 ]]; then
+        if_dir="/sys/class/net"
+
         if [[ -d "$if_dir" && -r "$if_dir" ]]; then
             while IFS= read -r interface; do
                 # filter out blacklisted interfaces:
-                list_contains "$interface" "lo loopback" || interfaces+=" $interface "
+                list_contains "$interface" lo loopback || interfaces+=" $interface "
             done < <(find "$if_dir" -maxdepth 1 -mindepth 1 -printf "%f\n")
         else  # take a blind guess
             interfaces="eth0 eth1 eth2 eth3"  # TODO: configure for new standardized if names (https://www.freedesktop.org/software/systemd/man/systemd.net-naming-scheme.html)
@@ -2276,7 +2276,7 @@ gfrs() {
         expected_tags=("$pom_wo_postfix")  # no biggie if pom_wo_postfix is null
     fi
 
-    if [[ -n "${expected_tags[*]}" ]] && ! list_contains "$tag" "${expected_tags[*]}"; then
+    if [[ -n "${expected_tags[*]}" ]] && ! list_contains "$tag" "${expected_tags[@]}"; then
         confirm "tag [${COLORS[GREEN]}${COLORS[BOLD]}${tag}${COLORS[OFF]}] is not of expected increment\n   (expected one of  $(build_comma_separated_list "${expected_tags[@]}"))\n\ncontinue anyways?" || return
     fi
 

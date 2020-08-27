@@ -544,12 +544,12 @@ install_nfs_client() {
 
         read -r -p "enter local mountpoint to mount nfs share to (leave blank to default to [$default_mountpoint]): " mountpoint
         [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
-        list_contains "$mountpoint" "${used_mountpoints[*]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
+        list_contains "$mountpoint" "${used_mountpoints[@]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
         create_mountpoint "$mountpoint" || continue
 
         read -r -p "enter remote share to mount (leave blank to default to [$NFS_SERVER_SHARE]): " nfs_share
         [[ -z "$nfs_share" ]] && nfs_share="$NFS_SERVER_SHARE"
-        list_contains "${server_ip}${nfs_share}" "${mounted_shares[*]}" && { report "selected [${server_ip}:${nfs_share}] has already been used for previous definition"; continue; }
+        list_contains "${server_ip}${nfs_share}" "${mounted_shares[@]}" && { report "selected [${server_ip}:${nfs_share}] has already been used for previous definition"; continue; }
         [[ "$nfs_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
 
         if ! grep -q "${server_ip}:${nfs_share}.*${mountpoint}" "$fstab"; then
@@ -674,12 +674,12 @@ install_sshfs() {
 
         read -r -p "enter local mountpoint to mount sshfs share to (leave blank to default to [$default_mountpoint]): " mountpoint
         [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
-        list_contains "$mountpoint" "${used_mountpoints[*]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
+        list_contains "$mountpoint" "${used_mountpoints[@]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
         create_mountpoint "$mountpoint" || continue
 
         read -r -p "enter remote share to mount (leave blank to default to [$SSH_SERVER_SHARE]): " ssh_share
         [[ -z "$ssh_share" ]] && ssh_share="$SSH_SERVER_SHARE"
-        list_contains "${server_ip}${ssh_share}" "${mounted_shares[*]}" && { report "selected [${server_ip}:${ssh_share}] has already been used for previous definition"; continue; }
+        list_contains "${server_ip}${ssh_share}" "${mounted_shares[@]}" && { report "selected [${server_ip}:${ssh_share}] has already been used for previous definition"; continue; }
         [[ "$ssh_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
 
         if ! grep -q "${remote_user}@${server_ip}:${ssh_share}.*${mountpoint}" "$fstab"; then
@@ -5685,18 +5685,18 @@ __is_work() {
 # Checks whether the element is contained in an array/list.
 #
 # @param {string}        element to check.
-# @param {string list}   string list to check passed element in. NOT a bash array!
+# @param {string...}     string list to check passed element in
 #
 # @returns {bool}  true if array contains the element.
 list_contains() {
     local array element i
 
-    readonly element="$1"
-    declare -ar array=( $2 )
+    readonly element="$1"; shift
+    declare -ar array=("$@")
 
-    [[ "$#" -ne 2 ]] && { err "exactly 2 args required" "$FUNCNAME"; return 1; }
+    [[ "$#" -lt 2 ]] && { err "at least 2 args required" "$FUNCNAME"; return 1; }
     #[[ -z "$element" ]]    && { err "element to check can't be empty string." "$FUNCNAME"; return 1; }  # it can!
-    [[ -z "${array[@]}" ]] && { err "array/list to check from can't be empty." "$FUNCNAME"; return 1; }
+    [[ -z "${array[*]}" ]] && { err "array/list to check from can't be empty." "$FUNCNAME"; return 1; }
 
     for i in "${array[@]}"; do
         [[ "$i" == "$element" ]] && return 0
