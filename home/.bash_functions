@@ -1368,7 +1368,7 @@ sanitize_ssh() {
 ssh_sanitize() { sanitize_ssh "$@"; }  # alias for sanitize_ssh
 
 myip() {  # Get internal & external ip addies:
-    local connected_interface interfaces if_dir interface
+    local connected_interface interfaces interface external_ip
 
     __get_internal_ip_for_if() {
         local interface ip
@@ -1381,54 +1381,44 @@ myip() {  # Get internal & external ip addies:
         elif [[ -x /sbin/ifconfig ]]; then
             ip="$(/sbin/ifconfig "$interface" | awk '/inet / {print $2}' | sed -e s/addr://)"  # TODO deprecated
         else
-            err "nothing to find interface IP with" "$FUNCNAME"; return 1
+            err "nothing to find interface IP with" "$FUNCNAME"
+            return 1
         fi
 
         [[ -z "$ip" && "$__REMOTE_SSH" -eq 1 ]] && return  # probaby the interface was not found
-        echo -e "${COLORS[YELLOW]}${ip:-"Not connected"}${COLORS[OFF]}\t@ $interface"
-    }
-
-    __show_ext() {
-        local external_ip
-        external_ip="$(get_external_ip)" && {
-            echo -e "external:\t${COLORS[YELLOW]}${external_ip:-'Not connected to the internet.'}${COLORS[OFF]}"
-        }
+        echo -e "${COLORS[YELLOW]}${ip:-${COLORS[RED]}Not connected}${COLORS[OFF]}\t@ $interface"
     }
 
     connected_interface="$(find_connected_if)"  # note this returns only on own machines, not on remotes.
 
-    # TODO: enable this block once ip has universally replaced ifconfig
-    #command -v ip > /dev/null 2>&1 || {  # don't use check_progs_installed because of its verbosity
-        #err "can't check internal ip as ip appears not to be installed." "$FUNCNAME"
-        #return 1
-    #}
-
     if [[ -n "$connected_interface" ]]; then
-        __get_internal_ip_for_if "$connected_interface"
-    elif [[ "$__REMOTE_SSH" -eq 1 ]]; then
-        if_dir="/sys/class/net"
-
-        if [[ -d "$if_dir" && -r "$if_dir" ]]; then
-            while IFS= read -r interface; do
-                # filter out blacklisted interfaces:
-                list_contains "$interface" lo loopback || interfaces+=" $interface "
-            done < <(find "$if_dir" -maxdepth 1 -mindepth 1 -printf "%f\n")
-        else  # take a blind guess
-            interfaces="eth0 eth1 eth2 eth3"  # TODO: configure for new standardized if names (https://www.freedesktop.org/software/systemd/man/systemd.net-naming-scheme.html)
-            report "can't read interfaces from [$if_dir] [not a (readable) dir]; trying these interfaces: [$interfaces]" "$FUNCNAME"
-        fi
-
-        if [[ -n "$interfaces" ]]; then
-            for interface in $interfaces; do
-                __get_internal_ip_for_if "$interface"
-            done
-        fi
+        interfaces=("$connected_interface")
     else
-        err "internal network not connected? (at least nothing was returned by find_connected_if())"
+        read -ra interfaces < <(list_interfaces)
     fi
 
-    __show_ext
-    unset __get_internal_ip_for_if __show_ext
+    #list_contains "$interface" lo loopback || interfaces+=("$interface")  # TODO: atm we're not filtering out loopback; does list_interfaces do that?
+
+    if [[ "$__REMOTE_SSH" -eq 1 && -z "${interfaces[*]}" ]]; then
+        # take a blind guess
+        interfaces=(eth0 eth1 eth2 eth3 enp0s3)  # TODO: configure for new standardized if names (https://www.freedesktop.org/software/systemd/man/systemd.net-naming-scheme.html)
+        report "can't resolve network interfaces; trying these interfaces: [${interfaces[*]}]" "$FUNCNAME"
+    fi
+
+    if [[ -n "${interfaces[*]}" ]]; then
+        for interface in "${interfaces[@]}"; do
+            __get_internal_ip_for_if "$interface"
+        done
+    else
+        err "internal network not connected? (no network interface could be resolved)"
+    fi
+
+    unset __get_internal_ip_for_if
+
+    # finally, try to solve our external address:
+    external_ip="$(get_external_ip)" && {
+        echo -e "external:\t${COLORS[YELLOW]}${external_ip:-${COLORS[RED]}Not connected to the internet}${COLORS[OFF]}"
+    }
 }
 
 whatsmyip() { myip; }  # alias for myip
