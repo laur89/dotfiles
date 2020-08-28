@@ -25,11 +25,33 @@ ffind() {
     local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter skip_msgs
     local quitFlag filetype_regex extra_params matches i delete deleteFlag printFlag filetypeCounter
 
+    # parallel will pipe find output into this one
     __filter_for_filetype() {
+        local input filetype
+
+        #while IFS= read -r -d $'\0' input; do
+		while read -r input; do
+            #report "DEBUG: input [$input]"
+			filetype="${input##*::::::}"
+            #report "DEBUG: ft [${filetype}]"
+            #report "DEBUG: clean ft [${filetype#"${filetype%%[![:space:]]*}"}]"
+            #report "DEBUG: file [${input%%::::::*}]"
+            if [[ "${filetype#"${filetype%%[![:space:]]*}"}" =~ $filetype_regex ]]; then
+                if [[ "$skip_msgs" -eq 1 ]]; then
+                    printf '%s\0' "${input%%::::::*}"
+                else
+                    # grep is for coloring only, otherwise we could just echo:
+                    grep -iE --color=auto -- "$src|$" <<< "${input%%::::::*}"
+                fi
+            fi
+        done
+    }
+
+    # our old implementation; called when 'parallel' not installed
+    __filter_for_filetype_no_parallel() {
         local filetype index
 
-        [[ -z "${matches[*]}" ]] && return 1
-        [[ -z "$filetype_regex" ]] && { err "[\$filetype_regex] not defined." "$FUNCNAME"; return 1; }
+        [[ "${#matches[@]}" -eq 0 ]] && return 1
         index=0
 
         while IFS= read -r filetype; do
@@ -43,7 +65,6 @@ ffind() {
             fi
 
             let index++
-        # TODO: what's max args for file? maybe consider using 'parallel' to split massive calls out?
         done < <(file -iLb --print0 -- "${matches[@]}" || { err_display "file cmd returned [$?] @ $FUNCNAME" "${FUNCNAME[1]}"; return 1; })
     }
 
@@ -97,7 +118,6 @@ ffind() {
     filetypeOptionCounter=0
     caseOptCounter=0
     filetypeCounter=0
-    declare -a matches=()
 
     while getopts "m:isrefdlbLDqphVPIC0" opt; do
         case "$opt" in
@@ -295,11 +315,21 @@ ffind() {
 
     if [[ "$filetype" -eq 1 ]]; then
         printFlag='-print0'
-        while IFS= read -r -d $'\0' i; do
-            matches+=( "$i" )
-        done < <(__find_fun "$src")
+        [[ -z "$filetype_regex" ]] && { err "[\$filetype_regex] not defined." "$FUNCNAME"; return 1; }
 
-        __filter_for_filetype
+        if command -v parallel > /dev/null 2>&1; then
+            __find_fun "$src" | parallel --null -k -n 1000 file --no-buffer --separator :::::: -iL --print0 -- {} | __filter_for_filetype
+        else
+            declare -a matches=()
+            while IFS= read -r -d $'\0' i; do
+                matches+=("$i")
+            done < <(__find_fun "$src")
+
+            __filter_for_filetype_no_parallel
+
+            # or altinatively, for one $file call per node:  # TODO: file not accepting input from stdin?
+            #__find_fun "$src" | file --no-buffer --separator :::::: -iL --print0 | __filter_for_filetype
+        fi
     elif [[ "$skip_msgs" -eq 1 ]]; then
         __find_fun "$src"
     else
@@ -307,7 +337,7 @@ ffind() {
         __find_fun "$src" | grep -iE --color=auto -- "$src|$"
     fi
 
-    unset __filter_for_filetype __find_fun
+    unset __filter_for_filetype __filter_for_filetype_no_parallel __find_fun
 }
 
 # Find a file with a pattern in name (inside wd);
@@ -317,7 +347,9 @@ ffind() {
 #}
 
 ffindproc() {
+    [[ "$#" -ne 1 ]] && { err "exactly one arg (process name to search) allowed" "$FUNCNAME"; return 1; }
     [[ -z "$1" ]] && { err "process name required" "$FUNCNAME"; return 1; }
+
     # last grep for re-coloring:
     ps -ef | grep -v '\bgrep\b' | grep -i --color=auto -- "$1"
 
@@ -2876,9 +2908,9 @@ sumtree() {
     fi
 
     if command -v parallel > /dev/null 2>&1; then
-        find . -type f | parallel -k -n 100 md5sum {} | sort -k 2 | md5sum  # speeds up a bit, as it decreases number of calls to md5sum
+        find . -type f | parallel -k -n 100 md5sum -- {} | sort -k 2 | md5sum  # speeds up a bit, as it decreases number of calls to md5sum
     else
-        find . -type f -exec md5sum {} \; | sort -k 2 | md5sum
+        find . -type f -exec md5sum -- {} \; | sort -k 2 | md5sum
     fi
 
     # to ignore file names; note we could also bake parallel in this command as above
