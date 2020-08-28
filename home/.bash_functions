@@ -116,6 +116,9 @@ ffind() {
         -P  search for pdf files
         -I  search for image files
         -C  search for doc files (word, excel, opendocument...; NO pdf)
+        -t  <filetype>   file mime to search for; note this is similar to [b,V,P,I,C]
+            options, only that this one allows you to provide the mime regex.
+            note this is processed by bash regex.
         -L  follow symlinks
         -D  delete found nodes  (won't delete nonempty dirs!)
         -q  provide find the -quit flag (exit on first found item)
@@ -130,7 +133,7 @@ ffind() {
     caseOptCounter=0
     filetypeCounter=0
 
-    while getopts "m:isrefdlbLDqphVPIC0Y" opt; do
+    while getopts "m:isrefdlbLDqphVPICt:0Y" opt; do
         case "$opt" in
            i)
               [[ "$iname_arg" != '-iname' ]] && caseOptCounter+=1
@@ -182,6 +185,14 @@ ffind() {
               i='application/msword; charset=binary|application/.*opendocument.*; charset=binary|application/.*ms-office; charset=binary|application/.*ms-excel; charset=binary'
               [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
               file_type="-type f"
+              readonly filetype=1
+
+              readonly filetype_regex="$i"
+                ;;
+           t)  # for mime/file Type
+              i="$OPTARG"
+              [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
+              file_type='-type f'  # TODO: is this fine? what if we, for whatever the reason, search for dir? or some other type (if it's possible?)
               readonly filetype=1
 
               readonly filetype_regex="$i"
@@ -335,7 +346,7 @@ ffind() {
         [[ "$dry_run" -eq 1 ]] && report "filetype rgx: [$filetype_regex]"
 
         if command -v parallel > /dev/null 2>&1; then
-            __find_fun "$src" | parallel --null -k -n 1000 file --no-buffer --separator :::::: -iL --print0 -- {} | __filter_for_filetype
+            __find_fun "$src" | parallel --null -k -n 1000 -- file --no-buffer --separator :::::: -iL --print0 -- {} | __filter_for_filetype
         else
             declare -a matches=()
             while IFS= read -r -d $'\0' i; do
