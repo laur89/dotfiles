@@ -23,20 +23,20 @@ fi
 ffind() {
     local src srcdir iname_arg opt usage OPTIND file_type filetypeOptionCounter exact filetype follow_links
     local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter skip_msgs
-    local quitFlag filetype_regex extra_params matches i delete deleteFlag printFlag filetypeCounter
+    local quitFlag filetype_regex extra_params matches i delete deleteFlag printFlag filetypeCounter dry_run
 
-    # parallel will pipe find output into this one
+    # parallel will pipe file output into this one
     __filter_for_filetype() {
         local input filetype
 
         #while IFS= read -r -d $'\0' input; do
-		while read -r input; do
+        while read -r input; do
             #report "DEBUG: input [$input]"
-			filetype="${input##*::::::}"
-            #report "DEBUG: ft [${filetype}]"
+            filetype="${input##*::::::}"
+            #report "DEBUG: ft [$filetype]"
             #report "DEBUG: clean ft [${filetype#"${filetype%%[![:space:]]*}"}]"
             #report "DEBUG: file [${input%%::::::*}]"
-            if [[ "${filetype#"${filetype%%[![:space:]]*}"}" =~ $filetype_regex ]]; then
+            if [[ "${filetype#"${filetype%%[![:space:]]*}"}" =~ $filetype_regex ]]; then  # note we strip leading whitespace from filetype
                 if [[ "$skip_msgs" -eq 1 ]]; then
                     printf '%s\0' "${input%%::::::*}"
                 else
@@ -79,11 +79,21 @@ ffind() {
         [[ "$src" == '*' || "$src" == '.*' ]] && unset src  # TODO: verify this; what if we're searching for files starting with dot (ie should we unset if src=.*)
 
         if [[ -n "$src" ]]; then
-            find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} \
-                "$wildcard$src$wildcard" $extra_params $printFlag $quitFlag $deleteFlag 2>/dev/null
+            if [[ "$dry_run" -eq 1 ]]; then
+                report "find $follow_links \"${srcdir:-.}\" $maxDepthParam $file_type ${iname_arg:--name} \"$wildcard$src$wildcard\" $extra_params $printFlag $quitFlag $deleteFlag 2>/dev/null"
+                return 0
+            else
+                find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} \
+                    "$wildcard$src$wildcard" $extra_params $printFlag $quitFlag $deleteFlag 2>/dev/null
+            fi
         else
-            find $follow_links "${srcdir:-.}" $maxDepthParam $file_type $extra_params \
-                $printFlag $quitFlag $deleteFlag 2>/dev/null
+            if [[ "$dry_run" -eq 1 ]]; then
+                report "find $follow_links \"${srcdir:-.}\" $maxDepthParam $file_type $extra_params $printFlag $quitFlag $deleteFlag 2>/dev/null"
+                return 0
+            else
+                find $follow_links "${srcdir:-.}" $maxDepthParam $file_type $extra_params \
+                    $printFlag $quitFlag $deleteFlag 2>/dev/null
+            fi
         fi
     }
 
@@ -113,13 +123,14 @@ ffind() {
         -e  search for exact filename, not for a partial (wildcards can still be used)
         -p  expand the pattern search for path as well (adds the -path option);
             might want to consider regex, that also searches across the whole path;
-        -0  null-terminated output."
+        -0  null-terminated output;
+        -Y  dry-run, only print find command that would be executed"
 
     filetypeOptionCounter=0
     caseOptCounter=0
     filetypeCounter=0
 
-    while getopts "m:isrefdlbLDqphVPIC0" opt; do
+    while getopts "m:isrefdlbLDqphVPIC0Y" opt; do
         case "$opt" in
            i)
               [[ "$iname_arg" != '-iname' ]] && caseOptCounter+=1
@@ -191,6 +202,8 @@ ffind() {
                 ;;
            0) printFlag='-print0'
                 ;;
+           Y) readonly dry_run=1
+                ;;
            *) echo -e "$usage"
               [[ "$skip_msgs" -eq 1 ]] && return 9 || return 1
                 ;;
@@ -238,9 +251,12 @@ ffind() {
         err "-D and filetype (eg -V) flags are exclusive." "$FUNCNAME"  # because find executes before filetype filter
         echo -e "$usage"
         return 1
-    elif [[ "$delete" -eq 1 && -z "$src" ]] && ! confirm "wish to delete ALL nodes? note you haven't defined filename pattern to search, so everything gets returned."; then
+    elif [[ "$delete" -eq 1 && -n "$quitFlag" ]]; then
+        err "-q & -D flags together make no sense"
+        return 1
+    elif [[ "$delete" -eq 1 && -z "$src" && "$dry_run" -ne 1 ]] && ! confirm "wish to delete ALL nodes? note you haven't defined filename pattern to search, so everything gets returned."; then
         return
-    elif [[ "$delete" -eq 1 && -n "$src" ]] && ! confirm "wish to delete nodes that match [${COLORS[RED]}${src}${COLORS[OFF]}]?"; then
+    elif [[ "$delete" -eq 1 && -n "$src" && "$dry_run" -ne 1 ]] && ! confirm "wish to delete nodes that match [${COLORS[RED]}${src}${COLORS[OFF]}]?"; then
         return
     fi
 
@@ -308,7 +324,7 @@ ffind() {
     fi
 
     if [[ "$pathOpt" -eq 1 ]]; then
-        [[ -n "$iname_arg" ]] && iname_arg='-iwholename' || iname_arg='-path'  # as per man page, -ipath is deprecated
+        [[ -n "$iname_arg" ]] && iname_arg='-iwholename' || iname_arg='-path'  # as per man page, -ipath is deprecated; TODO: is it? note '-wholename' is GNU-specific, '-path' is posix
     elif [[ "$regex" -eq 1 ]]; then
         iname_arg="-regextype posix-extended -${iname_arg:+i}regex"
     fi
@@ -316,6 +332,7 @@ ffind() {
     if [[ "$filetype" -eq 1 ]]; then
         printFlag='-print0'
         [[ -z "$filetype_regex" ]] && { err "[\$filetype_regex] not defined." "$FUNCNAME"; return 1; }
+        [[ "$dry_run" -eq 1 ]] && report "filetype rgx: [$filetype_regex]"
 
         if command -v parallel > /dev/null 2>&1; then
             __find_fun "$src" | parallel --null -k -n 1000 file --no-buffer --separator :::::: -iL --print0 -- {} | __filter_for_filetype
