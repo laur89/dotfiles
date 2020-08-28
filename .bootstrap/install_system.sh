@@ -473,6 +473,8 @@ clone_or_pull_repo() {
 }
 
 
+# tip: run "exportfs -v" to show all exported nfs shares
+# loads of mounting examples also @ https://help.ubuntu.com/community/Fstab
 install_nfs_server() {
     local nfs_conf client_ip share
 
@@ -493,7 +495,7 @@ install_nfs_server() {
 
         read -r -p "enter client ip: " client_ip
 
-        [[ "$client_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$client_ip]"; continue; }
+        is_valid_ip "$client_ip" || { err "not a valid ip: [$client_ip]"; continue; }
 
         read -r -p "enter share to expose (leave blank to default to [$NFS_SERVER_SHARE]): " share
 
@@ -540,7 +542,7 @@ install_nfs_client() {
 
         read -r -p "enter server ip${prev_server_ip:+ (leave blank to default to [$prev_server_ip])}: " server_ip
         [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
-        [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$server_ip]"; continue; }
+        is_valid_ip "$server_ip" || { err "not a valid ip: [$server_ip]"; continue; }
 
         read -r -p "enter local mountpoint to mount nfs share to (leave blank to default to [$default_mountpoint]): " mountpoint
         [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
@@ -667,7 +669,7 @@ install_sshfs() {
 
         read -r -p "enter server ip${prev_server_ip:+ (leave blank to default to [$prev_server_ip])}: " server_ip
         [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
-        [[ "$server_ip" =~ ^[0-9.]+$ ]] || { err "not a valid ip: [$server_ip]"; continue; }
+        is_valid_ip "$server_ip" || { err "not a valid ip: [$server_ip]"; continue; }
 
         read -r -p "enter remote user to log in as (leave blank to default to your local user, [$USER]): " remote_user
         [[ -z "$remote_user" ]] && remote_user="$USER"
@@ -5645,6 +5647,29 @@ is_valid_url() {
     readonly regex='(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
 
     [[ "$url" =~ $regex ]] && return 0 || return 1
+}
+
+
+# Checks whether given IP is a valid ipv4.
+# from https://stackoverflow.com/a/13777424
+#
+# @param {string}  ip   ip which validity to test.
+#
+# @returns {bool}  true, if provided IP was a valid ipv4.
+is_valid_ip() {
+    local ip
+
+    ip="$1"
+
+    if [[ "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        readarray -t -d '.' ip <<< "$ip"
+
+        [[ ${ip[0]} -le 255 && ${ip[1]} -le 255 \
+            && ${ip[2]} -le 255 && ${ip[3]} -le 255 ]]
+        return $?
+    fi
+
+    return 1
 }
 
 
