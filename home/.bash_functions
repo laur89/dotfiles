@@ -37,22 +37,25 @@ ffind() {
                 if [[ "$skip_msgs" -eq 1 ]]; then
                     printf '%s\0' "${matches[index]}"
                 else
-                    # trailing grep is for coloring only:
-                    echo "${matches[index]}" | grep -iE --color=auto -- "$src|$"
+                    # grep is for coloring only, otherwise we could just echo:
+                    grep -iE --color=auto -- "$src|$" <<< "${matches[index]}"
                 fi
             fi
 
             let index++
+        # TODO: what's max args for file? maybe consider using 'parallel' to split massive calls out?
         done < <(file -iLb --print0 -- "${matches[@]}" || { err_display "file cmd returned [$?] @ $FUNCNAME" "${FUNCNAME[1]}"; return 1; })
     }
 
     __find_fun() {
-        local wildcard
+        local src wildcard
+
+        src="$1"  # we're passing this because otherwise if in outer shell $src was defined and we do 'unset src' below, that outer shell definition would be used! think it's because this sub-fun is called in subshell
 
         # note exact and regex are mutually exclusive
         [[ "$exact" -eq 1 ]] || wildcard='*'
         [[ "$regex" -eq 1 ]] && wildcard='.*'
-        [[ "$src" == '*' || "$src" == '.*' ]] && unset src  # TODO: verify this; what if we're searching for files starting with dot?
+        [[ "$src" == '*' || "$src" == '.*' ]] && unset src  # TODO: verify this; what if we're searching for files starting with dot (ie should we unset if src=.*)
 
         if [[ -n "$src" ]]; then
             find $follow_links "${srcdir:-.}" $maxDepthParam $file_type ${iname_arg:--name} \
@@ -195,7 +198,7 @@ ffind() {
         err "searching for multiple different filetypes not supported." "$FUNCNAME"
         echo -e "$usage"
         return 1
-    elif [[ "$filetypeOptionCounter" -ge 1 && "$filetype" -eq 1 && "$file_type" != "-type f" ]]; then
+    elif [[ "$filetypeOptionCounter" -ge 1 && "$filetype" -eq 1 && "$file_type" != '-type f' ]]; then
         err "-d, -l and filetype (eg -V) flags are exclusive." "$FUNCNAME"
         echo -e "$usage"
         return 1
@@ -222,7 +225,7 @@ ffind() {
     fi
 
 
-    if [[ "$follow_links" == "-L" && "$file_type" == "-type l" && "$skip_msgs" -ne 1 ]]; then
+    if [[ "$follow_links" == '-L' && "$file_type" == '-type l' && "$skip_msgs" -ne 1 ]]; then
         report "if both -l and -L flags are set, then ONLY the broken links are being searched.\n" "$FUNCNAME"
         sleep 2
     fi
@@ -285,7 +288,7 @@ ffind() {
     fi
 
     if [[ "$pathOpt" -eq 1 ]]; then
-        [[ -n "$iname_arg" ]] && iname_arg="-iwholename" || iname_arg="-path"  # as per man page, -ipath is deprecated
+        [[ -n "$iname_arg" ]] && iname_arg='-iwholename' || iname_arg='-path'  # as per man page, -ipath is deprecated
     elif [[ "$regex" -eq 1 ]]; then
         iname_arg="-regextype posix-extended -${iname_arg:+i}regex"
     fi
@@ -294,14 +297,14 @@ ffind() {
         printFlag='-print0'
         while IFS= read -r -d $'\0' i; do
             matches+=( "$i" )
-        done < <(__find_fun)
+        done < <(__find_fun "$src")
 
         __filter_for_filetype
     elif [[ "$skip_msgs" -eq 1 ]]; then
-        __find_fun
+        __find_fun "$src"
     else
         # trailing grep is for coloring only:
-        __find_fun | grep -iE --color=auto -- "$src|$"
+        __find_fun "$src" | grep -iE --color=auto -- "$src|$"
     fi
 
     unset __filter_for_filetype __find_fun
@@ -940,8 +943,9 @@ ffstr() {
         #grep -E${follow_links} --color=always -sn ${grepcase} -- "$pattern"
 
     __find_fun() {
-        local wildcard
+        local file_pattern wildcard
 
+        file_pattern="$1"
         wildcard='*'
 
         # note exact and regex are mutually exclusive
@@ -949,7 +953,7 @@ ffstr() {
             wildcard='.*'
             iname_arg="-regextype posix-extended -${iname_arg:+i}regex"
         fi
-        [[ "$file_pattern" == '*' || "$file_pattern" == '.*' ]] && unset file_pattern
+        [[ "$file_pattern" == '*' || "$file_pattern" == '.*' ]] && unset file_pattern  # what if we're searching for file starting with dot? (ie should we unset if file_pattern=.*)
 
         if [[ -n "$file_pattern" ]]; then
             # don't quote $iname_arg!:
@@ -964,19 +968,19 @@ ffstr() {
         _FOUND_FILES=()
         while IFS= read -r -d $'\0' i; do
             _FOUND_FILES+=("$i")
-        done < <(__find_fun | xargs -0 grep -Esl --null --color=never ${grepcase} -- "$pattern")
+        done < <(__find_fun "$file_pattern" | xargs -0 grep -Esl --null --color=never ${grepcase} -- "$pattern")
 
         report "found ${#_FOUND_FILES[@]} files containing [$pattern]; stored in \$_FOUND_FILES global array." "$FUNCNAME"
         [[ "${#_FOUND_FILES[@]}" -eq 0 ]] && return 1
 
         [[ "$open_files" -eq 1 ]] && __fo "${_FOUND_FILES[@]}"
     else
-        __find_fun | \
+        __find_fun "$file_pattern" | \
             xargs -0 grep -Esn --color=always --with-filename -m 1 ${grepcase} -- "$pattern" | \
             cut -c 1-$max_result_line_length | \
             more
             #less
-        #__find_fun | \
+        #__find_fun "$file_pattern" | \
             #xargs -P10 -n20 -0 grep --line-buffered -Esn --color=always --with-filename -m 1 $grepcase -- "$pattern" | \
             #cut -c 1-$max_result_line_length | \
             #more
@@ -1329,8 +1333,12 @@ $FUNCNAME  [-e]  /dir_to_look_from/filename_to_grep
     fi
 
     if [[ "$exact" -eq 1 ]]; then
-        [[ "$src" == *\.\** ]] && { err "only use asterisks (*) for wildcards, not .*" "$FUNCNAME"; return 1; }
-        find "${srcdir:-.}" -maxdepth 1 -mindepth 1 -name "$src" -printf '%f\n' | grep -iE --color=auto "$src|$"
+        [[ "$src" == *\.\** ]] && { err "fyi only use asterisks (*) for wildcards, not .*" "$FUNCNAME"; return 1; }  # this is because of find
+        #src="$(ls -lhA "${srcdir:-.}" | awk '{ print $9 }' | grep -i -- "^$src$")" # ! note it assumes filename is listed in 9th column in ls output; what about spaces in filenames?
+        src="$(find "${srcdir:-.}" -maxdepth 1 -mindepth 1 -name "$src" -printf '%f\n' -quit)"  # note we only allow single item!
+
+        #ls -lhA "${srcdir:-.}" | grep -E -- "^(\S+\s+){8}$src$" | grep --color=auto -F -- "$src"  # ! note it assumes filename is listed in 9+th column in ls output
+        ls -lhA "${srcdir:-.}" | grep --color=auto -F -- "$src"
     else
         ls -lhA "${srcdir:-.}" | grep --color=auto -i -- "$src"
         #find "${srcdir:-.}" -maxdepth 1 -mindepth 1 -iname '*'"$src"'*' -printf '%f\n' | grep -iE --color=auto "$src|$"
@@ -1345,9 +1353,11 @@ sanitize() {
 
     [[ -z "$*" ]] && { err "provide a file/dir name plz." "$FUNCNAME"; return 1; }
     for i in "$@"; do
-        [[ ! -e "$i" ]] && { err "[$i] does not exist." "$FUNCNAME"; return 1; }
+        [[ ! -e "$i" ]] && { err "[$i] does not exist; no permissions were changed" "$FUNCNAME"; return 1; }
     done
-    chmod -R u=rwX,g=rX,o= -- "$@";
+
+    #chmod -R u=rwX,g=rX,o= -- "$@";  # symlink targets are not resolved by chmod!
+    find -L "$@" \( -type f -o -type d \) -exec chmod 'u=rwX,g=rX,o=' -- '{}' \+
 }
 
 # TODO: stop accepting args and hardcode to ~/.ssh?
@@ -1405,7 +1415,7 @@ myip() {  # Get internal & external ip addies:
         report "can't resolve network interfaces; trying these interfaces: [${interfaces[*]}]" "$FUNCNAME"
     fi
 
-    if [[ -n "${interfaces[*]}" ]]; then
+    if [[ "${#interfaces[@]}" -gt 0 ]]; then
         for interface in "${interfaces[@]}"; do
             __get_internal_ip_for_if "$interface"
         done
