@@ -25,7 +25,7 @@ ffind() {
     local maxDepth maxDepthParam pathOpt regex defMaxDeptWithFollowLinks force_case caseOptCounter skip_msgs
     local quitFlag filetype_regex extra_params matches i delete deleteFlag printFlag filetypeCounter dry_run
 
-    # parallel will pipe file output into this one
+    # parallel will pipe file output in here
     __filter_for_filetype() {
         local input filetype
 
@@ -111,6 +111,7 @@ ffind() {
         -f  search for regular files
         -d  search for directories
         -l  search for symbolic links
+        -x  search for executable files
         -b  search for executable binaries
         -V  search for video files
         -P  search for pdf files
@@ -129,18 +130,36 @@ ffind() {
         -0  null-terminated output;
         -Y  dry-run, only print find command that would be executed"
 
+    __set_file_type() {
+        local t="$1"
+
+        if [[ "$file_type" != "-type $t" ]]; then
+            let filetypeOptionCounter+=1
+            file_type="-type $t"
+        fi
+    }
+
+    __set_file_rgx() {
+        local r="$1"
+
+        if [[ "$filetype_regex" != "$r" ]]; then
+            let filetypeCounter+=1
+            filetype_regex="$r"
+        fi
+    }
+
     filetypeOptionCounter=0
     caseOptCounter=0
     filetypeCounter=0
 
-    while getopts "m:isrefdlbLDqphVPICt:0Y" opt; do
+    while getopts "m:isrefdlxbLDqphVPICt:0Y" opt; do
         case "$opt" in
            i)
-              [[ "$iname_arg" != '-iname' ]] && caseOptCounter+=1
-              iname_arg="-iname"
+              [[ "$iname_arg" != '-iname' ]] && let caseOptCounter+=1
+              iname_arg='-iname'
                 ;;
            s)
-              [[ "$force_case" -ne 1 ]] && caseOptCounter+=1
+              [[ "$force_case" -ne 1 ]] && let caseOptCounter+=1
               unset iname_arg
               force_case=1
                 ;;
@@ -148,65 +167,53 @@ ffind() {
                 ;;
            e) exact=1
                 ;;
-           f | d | l)
-              [[ "$file_type" != "-type $opt" ]] && let filetypeOptionCounter+=1
-              file_type="-type $opt"
+           f | d | l) __set_file_type "$opt" ;;
+           x)
+              __set_file_type f
+              extra_params='-executable'
                 ;;
            b) readonly filetype=1
-              i='x-.*-?executable; charset=binary'
-              [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
-              file_type="-type f"
+              __set_file_rgx 'x-.*-?executable; charset=binary'
+              __set_file_type f
               extra_params='-executable'
-              readonly filetype_regex="$i"
                 ;;
            V) readonly filetype=1
-              i='video/|audio/mp4'
-              [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
-              file_type="-type f"
+              __set_file_rgx 'video/|audio/mp4'
+              __set_file_type f
               # TODO: should we set size param only if filetype is audio/mp4 (as there's ambiguity between audio & video)?
               extra_params='-size +100M'  # search for min. x megs files, so mp4 wouldn't (likely) return audio files
-              readonly filetype_regex="$i"
                 ;;
            P) readonly filetype=1
-              i='application/pdf; charset=binary'
-              [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
-              file_type="-type f"
-              readonly filetype_regex="$i"
+              __set_file_rgx 'application/pdf; charset=binary'
+              __set_file_type f
                 ;;
            I) readonly filetype=1
-              i='image/\w+; charset=binary'
-              [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
-              file_type="-type f"
-              readonly filetype_regex="$i"
+              __set_file_rgx 'image/\w+; charset=binary'
+              __set_file_type f
                 ;;
            C)  # for doC
               # try keeping doc files' definitions in sync with the ones in __fo()
               # no linebreaks in regex!
-              i='application/msword; charset=binary|application/.*opendocument.*; charset=binary|application/.*ms-office; charset=binary|application/.*ms-excel; charset=binary'
-              [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
-              file_type="-type f"
+              __set_file_rgx 'application/msword; charset=binary|application/.*opendocument.*; charset=binary|application/.*ms-office; charset=binary|application/.*ms-excel; charset=binary'
+              __set_file_type f
               readonly filetype=1
-
-              readonly filetype_regex="$i"
                 ;;
            t)  # for mime/file Type
-              i="$OPTARG"
-              [[ "$filetype_regex" != "$i" ]] && filetypeCounter+=1
-              file_type='-type f'  # TODO: is this fine? what if we, for whatever the reason, search for dir? or some other type (if it's possible?)
+              __set_file_rgx "$OPTARG"
+              __set_file_type f  # TODO: is this fine? what if we, for whatever the reason, search for dir? or some other type (if it's possible?)
               readonly filetype=1
-
-              readonly filetype_regex="$i"
                 ;;
-           L) follow_links="-L"
+           L) follow_links='-L'
                 ;;
            m) maxDepth="$OPTARG"
                 ;;
            p) pathOpt=1
                 ;;
            h) echo -e "$usage"
+              unset __set_file_type __set_file_rgx
               [[ "$skip_msgs" -eq 1 ]] && return 9 || return 0
                 ;;
-           q) quitFlag="-quit"
+           q) quitFlag='-quit'
                 ;;
            D) readonly delete=1     # to include nonempty dirs as well, run     find . -name "3" -type d -exec rm -rf {} +
               readonly deleteFlag='-delete'
@@ -216,11 +223,14 @@ ffind() {
            Y) readonly dry_run=1
                 ;;
            *) echo -e "$usage"
+              unset __set_file_type __set_file_rgx
               [[ "$skip_msgs" -eq 1 ]] && return 9 || return 1
                 ;;
         esac
     done
     shift "$((OPTIND-1))"
+
+    unset __set_file_type __set_file_rgx
 
     if [[ "$#" -eq 1 && -d "$1" && "$1" == */* ]]; then
         srcdir="$1"
@@ -282,7 +292,7 @@ ffind() {
     # as find doesn't support smart case, provide it yourself:
     elif [[ "$(tolowercase "$src")" == "$src" ]]; then
         # provided pattern was lowercase, make it case insensitive:
-        iname_arg="-iname"
+        iname_arg='-iname'
     fi
 
 
@@ -876,12 +886,12 @@ ffstr() {
     while getopts "isrm:Lcoh" opt; do
         case "$opt" in
            i)
-              [[ "$iname_arg" != '-iname' ]] && caseOptCounter+=1
+              [[ "$iname_arg" != '-iname' ]] && let caseOptCounter+=1
               iname_arg="-iname"
               grepcase=" -i "
                 ;;
            s)
-              [[ "$force_case" -ne 1 ]] && caseOptCounter+=1
+              [[ "$force_case" -ne 1 ]] && let caseOptCounter+=1
               unset iname_arg grepcase
               force_case=1
                 ;;
@@ -1177,11 +1187,11 @@ astr() {
     while getopts "isLhm:" opt; do
         case "$opt" in
            i)
-              [[ "$grepcase" != ' -i ' ]] && caseOptCounter+=1
+              [[ "$grepcase" != ' -i ' ]] && let caseOptCounter+=1
               grepcase=' -i '
                 ;;
            s)
-              [[ "$grepcase" != ' -s ' ]] && caseOptCounter+=1
+              [[ "$grepcase" != ' -s ' ]] && let caseOptCounter+=1
               grepcase=' -s '
                 ;;
            m) maxDepth="$OPTARG"
