@@ -2946,9 +2946,9 @@ sumtree() {
     fi
 
     if command -v parallel > /dev/null 2>&1; then
-        find . -type f | parallel -k -n 100 md5sum -- {} | sort -k 2 | md5sum  # speeds up a bit, as it decreases number of calls to md5sum
+        find . -type f | parallel -k -n 100 md5sum -- {} | sort -k 2 | md5sum | cut -d' ' -f 1  # speeds up a bit, as it decreases number of calls to md5sum
     else
-        find . -type f -exec md5sum -- {} \; | sort -k 2 | md5sum
+        find . -type f -exec md5sum -- {} \; | sort -k 2 | md5sum | cut -d' ' -f 1
     fi
 
     # to ignore file names; note we could also bake parallel in this command as above
@@ -2965,6 +2965,44 @@ sumtree() {
 
 sumdir() { sumtree "$@"; }
 dirsum() { sumtree "$@"; }
+
+
+# Checks if given two nodes have same checksums.
+#
+# @param {string}  a  first node
+# @param {string}  b  second node
+#
+# @returns {bool}  true if nodes are the same, else false
+is_same() {
+    local a b asum bsum
+
+    a="$1"
+    b="$2"
+
+    if [[ "$#" -ne 2 ]]; then
+        err "exactly 2 nodes whose equality to compare required"
+        return 1
+    elif ! [[ -e "$a" && -e "$b" ]]; then
+        err "either or both of the arguments do not exist"
+        return 1
+    elif [[ -f "$a" && ! -f "$b" ]] || [[ -d "$a" && ! -d "$b" ]]; then
+        err "both nodes needs to be of same type (comparing file to dir makes no sense)"
+        return 1
+    fi
+
+    if [[ -f "$a" ]]; then
+        asum="$(md5sum -- "$a" | cut -d' ' -f 1)" || { err "md5suming [$a] failed with $?"; return 1; }
+        bsum="$(md5sum -- "$b" | cut -d' ' -f 1)" || { err "md5suming [$b] failed with $?"; return 1; }
+    elif [[ -d "$a" ]]; then
+        asum="$(sumtree -- "$a" | cut -d' ' -f 1)" || { err "sumtreeing [$a] failed with $?"; return 1; }
+        bsum="$(sumtree -- "$b" | cut -d' ' -f 1)" || { err "sumtreeing [$b] failed with $?"; return 1; }
+    else
+        err "unsupported filetype provided - only files & dirs allowed"
+        return 1
+    fi
+
+    [[ "$asum" == "$bsum" ]]
+}
 
 # cd-s to directory by partial match; if multiple matches, opens input via fzf. smartcase.
 #
