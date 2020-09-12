@@ -165,7 +165,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
 fi
 
 command -v nvim > /dev/null 2>&1 && export EDITOR=nvim || export EDITOR=vim
-export VISUAL="$EDITOR"  # note gvim doesn't play well with some stuff, eg crontab -e
+export VISUAL="$EDITOR"  # note gvim doesn't play well with some stuff, eg with 'crontab -e';
 export PAGER=less
 export BROWSER=/usr/bin/firefox
 export DEITY=

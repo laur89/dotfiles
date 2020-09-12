@@ -1,5 +1,7 @@
 // from https://wiki.debian.org/UnattendedUpgrades
 // to be placed in /etc/apt/apt.conf.d
+//
+// to manually debug the config, run $ sudo unattended-upgrade -d
 ///////////////////////////////////////////////////////////
 // Control parameters for cron jobs by /etc/cron.daily/apt-compat //
 

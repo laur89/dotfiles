@@ -890,7 +890,12 @@ install_deps() {
 
     # maven bash completion:
     clone_or_pull_repo "juven" "maven-bash-completion" "$BASE_DEPS_LOC"  # https://github.com/juven/maven-bash-completion
-    create_link "${BASE_DEPS_LOC}/maven-bash-completion" "$HOME/.maven-bash-completion"
+    create_link "${BASE_DEPS_LOC}/maven-bash-completion/bash_completion.bash" "$HOME/.bash_completion.d/maven-completion.bash"
+
+    # gradle bash completion:  # https://github.com/gradle/gradle-completion/blob/master/README.md#installation-for-bash-32
+    #curl -LA gradle-completion https://edub.me/gradle-completion-bash -o $HOME/.bash_completion.d/
+    clone_or_pull_repo "gradle" "gradle-completion" "$BASE_DEPS_LOC"
+    create_link "${BASE_DEPS_LOC}/gradle-completion/gradle-completion.bash" "$HOME/.bash_completion.d/"
 
     # vifm filetype icons: https://github.com/cirala/vifm_devicons.git
     clone_or_pull_repo "cirala" "vifm_devicons" "$BASE_DEPS_LOC"
@@ -1046,6 +1051,7 @@ setup_dirs() {
     # create dirs:
     for dir in \
             $HOME/bin \
+            $HOME/.bash_completion.d \
             $HOME/.npm-packages \
             $BASE_DATA_DIR/.calendars \
             $BASE_DATA_DIR/.calendars/work \
@@ -1710,6 +1716,11 @@ install_progs() {
     #fi
 
     post_install_progs_setup
+}
+
+
+install_games() {
+    snap_install xonotic
 }
 
 
@@ -4532,6 +4543,7 @@ choose_single_task() {
         install_from_repo
         install_ssh_server_or_client
         install_nfs_server_or_client
+        install_games
         __choose_prog_to_build
     )
 
@@ -4630,6 +4642,7 @@ full_install() {
     is_windows || upgrade_kernel  # keep this check is_windows(), not is_native();
     install_fonts
     install_progs
+    is_native && install_games  # TODO: move this step to install_progs()?
     install_deps
     ! is_noninteractive && is_native && install_ssh_server_or_client
     ! is_noninteractive && is_native && install_nfs_server_or_client

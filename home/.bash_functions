@@ -4010,14 +4010,13 @@ e() {  # mnemonic: edit
     local file
 
     check_progs_installed fasd fzf "$EDITOR" || return 1
-
     file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)" && $EDITOR -- "$file" || return 1
 }
 
 
 # select recent dir with fasd and cd into
 #
-# note: d clashes with fasd alias; make sure you remove that one (in generated cache)
+# !!note: d clashes with fasd alias; make sure you remove that one (in generated cache, likely in $HOME)
 d() {  # mnemonic: dir
     local dir
 
@@ -4078,10 +4077,10 @@ javadump() {
     done
 
     # find target dir for heapdump; prefer location that has most free space left:
-    # TODO: can our user write to those destinations? perhaps add test -w "$i"?
+    # TODO: can our user write to those destinations? perhaps add test -w "$i"? then again, which user to test?
     space=0  # init
     for i in /tmp /var/log; do
-        pid="$(space_left "$i")" || continue
+        pid="$(space_left "$i")" || continue  # note we're just reusing the $pid arg
         if [[ -d "$i" && "$pid" -gt "$space" ]]; then
             space="$pid"
             target_dir="$i"

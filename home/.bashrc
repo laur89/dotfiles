@@ -261,7 +261,12 @@ fi
 
 ##########################################
 # maven-bash-completion:
-[[ -e "$HOME/.maven-bash-completion/bash_completion.bash" ]] && source "$HOME/.maven-bash-completion/bash_completion.bash"
+[[ -e "$HOME/.bash_completion.d/maven-completion.bash" ]] && source "$HOME/.bash_completion.d/maven-completion.bash"
+
+##########################################
+# gradle bash completion:
+[[ -e "$HOME/.bash_completion.d/gradle-completion.bash" ]] && source "$HOME/.bash_completion.d/gradle-completion.bash"
+#export GRADLE_COMPLETION_UNQUALIFIED_TASKS="true"
 
 ##########################################
 # dynamic colors:
