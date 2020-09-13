@@ -2967,41 +2967,57 @@ sumdir() { sumtree "$@"; }
 dirsum() { sumtree "$@"; }
 
 
-# Checks if given two nodes have same checksums.
+# Checks if given two or more nodes have same checksums.
 #
-# @param {string}  a  first node
-# @param {string}  b  second node
+# @param {file...}   list of files/dirs whose equality to check.
 #
 # @returns {bool}  true if nodes are the same, else false
 is_same() {
-    local a b asum bsum
+    local first sum benchmark_sum n t
 
-    a="$1"
-    b="$2"
-
-    if [[ "$#" -ne 2 ]]; then
-        err "exactly 2 nodes whose equality to compare required"
-        return 1
-    elif ! [[ -e "$a" && -e "$b" ]]; then
-        err "either or both of the arguments do not exist"
-        return 1
-    elif [[ -f "$a" && ! -f "$b" ]] || [[ -d "$a" && ! -d "$b" ]]; then
-        err "both nodes needs to be of same type (comparing file to dir makes no sense)"
+    if [[ "$#" -le 1 ]]; then
+        err "at least 2 nodes whose equality to compare required"
         return 1
     fi
 
-    if [[ -f "$a" ]]; then
-        asum="$(md5sum -- "$a" | cut -d' ' -f 1)" || { err "md5suming [$a] failed with $?"; return 1; }
-        bsum="$(md5sum -- "$b" | cut -d' ' -f 1)" || { err "md5suming [$b] failed with $?"; return 1; }
-    elif [[ -d "$a" ]]; then
-        asum="$(sumtree -- "$a" | cut -d' ' -f 1)" || { err "sumtreeing [$a] failed with $?"; return 1; }
-        bsum="$(sumtree -- "$b" | cut -d' ' -f 1)" || { err "sumtreeing [$b] failed with $?"; return 1; }
-    else
-        err "unsupported filetype provided - only files & dirs allowed"
-        return 1
-    fi
+    first=1
+    for n in "$@"; do
+        if [[ ! -e "$n" ]]; then
+            err "[$n] does not exist, abort"; return 1
+        elif [[ "$n" == / ]]; then
+            err "do not pass / as a node"; return 1
+        fi
 
-    [[ "$asum" == "$bsum" ]]
+        if [[ "$first" -eq 1 ]]; then
+            if [[ -f "$n" ]]; then
+                readonly t=f
+            elif [[ -d "$n" ]]; then
+                readonly t=d
+            else
+                err "only dirs and files supported"; return 1
+            fi
+        else
+            if [[ "$t" == f && ! -f "$n" ]] || [[ "$t" == d && ! -d "$n" ]]; then
+                err "all passed nodes need to be of same type"; return 1
+            fi
+        fi
+
+        first=0
+    done
+
+    first=1
+    for n in "$@"; do
+        if [[ "$t" == f ]]; then
+            sum="$(md5sum -- "$n" | cut -d' ' -f 1)" || { err "md5suming [$n] failed with $?"; return 1; }
+        else
+            sum="$(sumtree -- "$n" | cut -d' ' -f 1)" || { err "sumtreeing [$n] failed with $?"; return 1; }
+        fi
+
+        [[ "$first" -eq 0 && "$sum" != "$benchmark_sum" ]] && return 1
+        benchmark_sum="$sum"
+
+        first=0
+    done
 }
 
 # cd-s to directory by partial match; if multiple matches, opens input via fzf. smartcase.
