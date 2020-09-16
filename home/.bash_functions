@@ -121,6 +121,7 @@ ffind() {
             options, only that this one allows you to provide the mime regex.
             note this is processed by bash regex.
         -L  follow symlinks
+        -B  do not cross filesystem boundaries
         -D  delete found nodes  (won't delete nonempty dirs!)
         -q  provide find the -quit flag (exit on first found item)
         -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;
@@ -152,7 +153,7 @@ ffind() {
     caseOptCounter=0
     filetypeCounter=0
 
-    while getopts "m:isrefdlxbLDqphVPICt:0Y" opt; do
+    while getopts "m:isrefdlxbLBDqphVPICt:0Y" opt; do
         case "$opt" in
            i)
               [[ "$iname_arg" != '-iname' ]] && let caseOptCounter+=1
@@ -170,18 +171,18 @@ ffind() {
            f | d | l) __set_file_type "$opt" ;;
            x)
               __set_file_type f
-              extra_params='-executable'
+              extra_params+=' -executable'
                 ;;
            b) readonly filetype=1
               __set_file_rgx 'x-.*-?executable; charset=binary'
               __set_file_type f
-              extra_params='-executable'
+              extra_params+=' -executable'
                 ;;
            V) readonly filetype=1
               __set_file_rgx 'video/|audio/mp4'
               __set_file_type f
               # TODO: should we set size param only if filetype is audio/mp4 (as there's ambiguity between audio & video)?
-              extra_params='-size +100M'  # search for min. x megs files, so mp4 wouldn't (likely) return audio files
+              extra_params+=' -size +100M'  # search for min. x megs files, so mp4 wouldn't (likely) return audio files
                 ;;
            P) readonly filetype=1
               __set_file_rgx 'application/pdf; charset=binary'
@@ -204,6 +205,8 @@ ffind() {
               readonly filetype=1
                 ;;
            L) follow_links='-L'
+                ;;
+           B) extra_params+=' -mount'
                 ;;
            m) maxDepth="$OPTARG"
                 ;;
@@ -398,7 +401,7 @@ ffindproc() {
 # find top X biggest or smallest nodes:
 __find_top_big_small_fun() {
     local usage opt OPTIND itemsToShow file_type maxDepthParam maxDepth follow_links reverse du_size_unit
-    local bigOrSmall du_include_regular_files duMaxDepthParam filetypeOptionCounter i
+    local bigOrSmall du_include_regular_files duMaxDepthParam filetypeOptionCounter i fs_boundary
 
     du_size_unit="$1"  # default unit provided by the invoker (can be overridden)
     bigOrSmall="$2"
@@ -408,10 +411,11 @@ __find_top_big_small_fun() {
     filetypeOptionCounter=0
 
     usage="\n${FUNCNAME[1]}: find top $bigOrSmall nodes from current dir.\nif node type not specified, defaults to searching for everything.\n
-    Usage: ${FUNCNAME[1]}  [-f] [-d] [-L] [-m depth]  [nr_of_top_items_to_show]  [block_size_unit]
+    Usage: ${FUNCNAME[1]}  [-f] [-d] [-L] [-B] [-m depth]  [nr_of_top_items_to_show]  [block_size_unit]
         -f  search only for regular files
         -d  search only for directories
         -L  follow/dereference symlinks
+        -B  do not cross filesystem boundaries
         -m<digit>   max depth to descend; unlimited by default.
 
         note that optional  args [nr_of_top_items_to_show]  and  [block_size_unit]  can be
@@ -425,7 +429,7 @@ __find_top_big_small_fun() {
                                    in kilos; descend up to 3 levels from current dir.
 "
 
-    while getopts "m:fdLh" opt; do
+    while getopts "m:fdLBh" opt; do
         case "$opt" in
            f | d)
               [[ "$file_type" != "-type $opt" ]] && let filetypeOptionCounter+=1
@@ -433,7 +437,9 @@ __find_top_big_small_fun() {
                 ;;
            m) maxDepth="$OPTARG"
                 ;;
-           L) follow_links="-L"  # common for both find and du
+           L) follow_links='-L'  # common for both find and du
+                ;;
+           B) fs_boundary='--one-file-system'  # this is du's param
                 ;;
            h) echo -e "$usage"
               return 0
@@ -509,7 +515,8 @@ __find_top_big_small_fun() {
         # optimization for files-only logic (ie no directories) to avoid expensive
         # calls to other programs (like awk and du).
 
-        find $follow_links . -mindepth 1 $maxDepthParam $file_type -exec du -a "$du_size_unit" '{}' +  2>/dev/null | \
+        [[ -n "$fs_boundary" ]] && fs_boundary='-mount'
+        find $follow_links . -mindepth 1 $maxDepthParam $file_type $fs_boundary -exec du -a "$du_size_unit" '{}' +  2>/dev/null | \
                 sort -n $reverse | \
                 head -$itemsToShow
 
@@ -517,7 +524,7 @@ __find_top_big_small_fun() {
         [[ "$file_type" != '-type d' ]] && readonly du_include_regular_files='--all'  # if not dirs only;
 
         # TODO: here, for top_big_small, consider for i in G M K for the du -h!:
-        du $follow_links $du_include_regular_files $du_size_unit $duMaxDepthParam 2>/dev/null | \
+        du $follow_links $du_include_regular_files $du_size_unit $duMaxDepthParam $fs_boundary 2>/dev/null | \
                 sort -n $reverse | \
                 head -$itemsToShow
 
@@ -563,6 +570,7 @@ ffindtopsmall() {
 __find_bigger_smaller_common_fun() {
     local usage opt OPTIND file_type maxDepthParam maxDepth follow_links reverse du_size_unit biggerOrSmaller sizeArg
     local du_include_regular_files duMaxDepthParam plusOrMinus filetypeOptionCounter sizeArgLastChar du_blk_sz find_size_unit
+    local fs_boundary
 
     du_size_unit="$1"     # default unit provided by the invoker
     biggerOrSmaller="$2"  # denotes whether larger or smaller than X size units were queried
@@ -577,7 +585,7 @@ __find_bigger_smaller_common_fun() {
     fi
 
     usage="\n${FUNCNAME[1]}: find nodes $biggerOrSmaller than X $du_size_unit from current dir.\nif node type not specified, defaults to searching for everything.\n
-    Usage: ${FUNCNAME[1]}  [-f] [-d] [-L] [-m depth]  base_size_in_[du_size_unit]
+    Usage: ${FUNCNAME[1]}  [-f] [-d] [-L] [-B] [-m depth]  base_size_in_[du_size_unit]
 
         the [du_size_unit] can be any of [KMGTPEZYB]; if not provided, defaults to $du_size_unit.
         ('B' is for bytes; KB, MB etc for base 1000 not supported)
@@ -585,6 +593,7 @@ __find_bigger_smaller_common_fun() {
         -f  search only for regular files
         -d  search only for directories
         -L  follow/dereference symlinks
+        -B  do not cross filesystem boundaries
         -m<digit>   max depth to descend; unlimited by default.
 
         examples:
@@ -595,7 +604,7 @@ __find_bigger_smaller_common_fun() {
                                         descend up to 3 levels from current dir.
 "
 
-    while getopts "m:fdLh" opt; do
+    while getopts "m:fdLBh" opt; do
         case "$opt" in
            f | d)
               [[ "$file_type" != "-type $opt" ]] && let filetypeOptionCounter+=1
@@ -604,6 +613,8 @@ __find_bigger_smaller_common_fun() {
            m) maxDepth="$OPTARG"
                 ;;
            L) follow_links='-L'  # common for both find and du
+                ;;
+           B) fs_boundary='--one-file-system'  # this is du's param
                 ;;
            h) echo -e "$usage"
               return 0
@@ -714,6 +725,8 @@ __find_bigger_smaller_common_fun() {
             find_size_unit=k  # kilobytes unit for find
         fi
 
+        [[ -n "$fs_boundary" ]] && fs_boundary='-mount'
+
 
         # old version using find's printf:
         # find's printf:
@@ -725,7 +738,7 @@ __find_bigger_smaller_common_fun() {
 
         find $follow_links . -mindepth 1 $maxDepthParam \
             -size ${plusOrMinus}${sizeArg}${find_size_unit} \
-            $file_type \
+            $file_type $fs_boundary \
             -exec du -a "$du_blk_sz" '{}' +  2>/dev/null | \
             sort -n $reverse
 
@@ -750,10 +763,10 @@ __find_bigger_smaller_common_fun() {
             unset du_size_unit  # with bytes, --threshold arg doesn't need a unit
         fi
 
-        [[ "$file_type" != "-type d" ]] && readonly du_include_regular_files="--all"  # if not dirs only;
+        [[ "$file_type" != '-type d' ]] && readonly du_include_regular_files='--all'  # if not dirs only;
 
         du $follow_links $du_include_regular_files $du_blk_sz $duMaxDepthParam \
-                --threshold=${plusOrMinus}${sizeArg}${du_size_unit} 2>/dev/null | \
+                --threshold=${plusOrMinus}${sizeArg}${du_size_unit} $fs_boundary 2>/dev/null | \
                 sort -n $reverse
     fi
 }
@@ -2915,7 +2928,8 @@ goto() {
 }
 
 
-# calculate md5sum of all files recursively from current PWD/given dir
+# calculate md5sum of all files recursively from current PWD/given dir;
+# note filenames are also taken into account!
 #
 # consider also py package 'checksumdir'
 # https://unix.stackexchange.com/a/35834/47501
@@ -2990,6 +3004,7 @@ is_same() {
 
         if [[ "$first" -eq 1 ]]; then
             if [[ -f "$n" ]]; then
+                check_progs_installed md5sum || return 1
                 readonly t=f
             elif [[ -d "$n" ]]; then
                 readonly t=d
@@ -3009,15 +3024,19 @@ is_same() {
     for n in "$@"; do
         if [[ "$t" == f ]]; then
             sum="$(md5sum -- "$n" | cut -d' ' -f 1)" || { err "md5suming [$n] failed with $?"; return 1; }
-        else
+        else  # we're comparing directories
             sum="$(sumtree -- "$n" | cut -d' ' -f 1)" || { err "sumtreeing [$n] failed with $?"; return 1; }
         fi
+
+        [[ -z "$sum" ]] && { err "empty checksum for [$n]"; return 1; }
 
         [[ "$first" -eq 0 && "$sum" != "$benchmark_sum" ]] && return 1
         benchmark_sum="$sum"
 
         first=0
     done
+
+    return 0
 }
 
 # cd-s to directory by partial match; if multiple matches, opens input via fzf. smartcase.
@@ -3197,6 +3216,24 @@ keepsudo() {
 }
 
 
+# reload new mountpoints in fstab w/o reboot.
+# from https://unix.stackexchange.com/a/577321
+fstab_reload() {
+    report "reload mountpoints in fstab; sudo needed"
+
+    sudo systemctl daemon-reload || { err "systemctl daemon-reload failed w/ $?"; return 1; }
+    #sudo systemctl restart remote-fs.target  # to reload a remote mount, eg NFS
+    #sudo systemctl restart local-fs.target  # to reload a local mount
+    sudo systemctl restart remote-fs.target local-fs.target  # both local & remote
+}
+
+
+# select mountpoint(s) to unmount
+fumount() {
+    umountall.sh -s
+}
+
+
 # transfer.sh alias - file sharing
 #
 # TODO: enable also encrypted upload:
@@ -3294,6 +3331,7 @@ mkgif() {
     readonly output='/tmp/output.gif'
     readonly optimized='/tmp/output_optimized.gif'
 
+    [[ "$#" -ne 1 ]] && { err "exactly one arg expected"; return 1; }
     [[ -z "$input_file" ]] && { err "video file to convert to gif required as a param." "$FUNCNAME"; return 1; }
     [[ -f "$input_file" ]] || { err "[$input_file] is not a file" "$FUNCNAME"; return 1; }
     check_progs_installed ffmpeg
@@ -3387,6 +3425,7 @@ pubkey() {
 
 
 # fd - cd to selected directory
+# note renamed to fdd, because fd is a binary
 fdd() {  # 'fd' conflicts with https://github.com/sharkdp/fd
     local dir src
 
@@ -3398,7 +3437,7 @@ fdd() {  # 'fd' conflicts with https://github.com/sharkdp/fd
 }
 
 
-# fda - same as fd(), but includes hidden directories;
+# fda - same as fd/fdd(), but includes hidden directories;
 # kinda same as `cd **<Tab>`
 fda() {
     local dir src
@@ -3775,7 +3814,7 @@ fco() {
         sort -u          | awk '{print "\x1b[34;1mbranch\x1b[m\t" $1}') || return
     target=$(
         (echo "$tags"; echo "$branches") |
-        fzf-tmux --exit-0 --select-1 --query="$q" -l30 -- --no-hscroll --ansi +m -d "\t" -n 2) || return
+        fzf-tmux -l30 -- --query="$q" --exit-0 --select-1 --no-hscroll --ansi +m -d "\t" -n 2) || return
     git checkout "$(awk '{print $2}' <<< "$target")"
 }
 
