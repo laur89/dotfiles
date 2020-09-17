@@ -1284,8 +1284,12 @@ setup_private_asset_perms() {
     local i
 
     for i in \
+            ~/.ssh \
             ~/.netrc \
             "$GNUPGHOME" \
+            ~/.gist \
+            ~/.bash_history \
+            ~/.bash_history_eternal \
                 ; do
         [[ -e "$i" ]] || { err "expected to find [$i], but it doesn't exist; is it normal?"; continue; }
         [[ -d "$i" && "$i" != */ ]] && i+='/'
@@ -1314,17 +1318,28 @@ setup_global_bashrc() {
     sudo grep -q 'global_init_marker$' "$global_bashrc" || cat <<EOF | sudo tee --append "$global_bashrc"
 _init() {  # global_init_marker
     if [[ "\$__ENV_VARS_LOADED_MARKER_VAR" != loaded ]]; then
-        USER_ENVS=/etc/.bash_env_vars
+        user_envs=/etc/.bash_env_vars
 
-        if [[ -r "\$USER_ENVS" ]]; then
-            source "\$USER_ENVS"
+        if [[ -r "\$user_envs" ]]; then
+            source "\$user_envs"
         else
-            echo -e "\n    ERROR: env vars file [\$USER_ENVS] not found! Abort."
+            echo -e "\n    ERROR: env vars file [\$user_envs] not found! Abort."
+            return 1
+        fi
+        unset user_envs
+    fi
+
+    # import common:
+    if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
+        if [[ -r "\$_SCRIPTS_COMMONS" ]]; then
+            source "\$_SCRIPTS_COMMONS"
+        else
+            echo -e "\n    ERROR: common file [\$_SCRIPTS_COMMONS] not found! Abort."
             return 1
         fi
     fi
 
-   _load_common || return 1
+    return 0
 }
 
 EOF
@@ -4527,7 +4542,7 @@ choose_single_task() {
     command -v nvm >/dev/null && execute 'nvm use default'
 
     # note choices need to be valid functions
-    declare -ar choices=(
+    declare -a choices=(
         setup
         setup_homesick
 
@@ -4546,6 +4561,10 @@ choose_single_task() {
         install_games
         __choose_prog_to_build
     )
+
+    if is_virtualbox; then
+        choices+=(install_vbox_guest)
+    fi
 
     select_items -s -h 'what do you want to do' "${choices[@]}"
     [[ -z "$__SELECTED_ITEMS" ]] && return
