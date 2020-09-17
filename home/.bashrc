@@ -122,22 +122,57 @@ fi
 ##########################################
 # shell opts:
 #override history size:
-export HISTSIZE=  # blank for unlimited
-export HISTFILESIZE=  # blank for unlimited
+#export HISTSIZE=  # blank for unlimited
+#export HISTFILESIZE=  # blank for unlimited
+export HISTSIZE=10000  # don't go -1 here: processing massive histfiles can be slow af
+export HISTFILESIZE=50000
 
 # ignore dups:
 #export HISTCONTROL=ignoredups
-export HISTCONTROL=ignoreboth
-export HISTIGNORE='ls:bg:fg:c:lt:lat:latr:ltr:fhd:fh*:history*'  # ignore commands from history
+export HISTCONTROL=ignoreboth:erasedups
+#export HISTIGNORE='ls:bg:fg:c:lt:lat:latr:ltr:fhd:fh*:history*'  # ignore commands from history
+export HISTIGNORE='?:??:fhd:history'  # ignore commands from history
 export HISTTIMEFORMAT='%F %T '
+
+# ---------------------------------------
+# nuke non-consecutive dupes:
+# from https://debian-administration.org/article/543/Bash_eternal_history#comment_19
+# WIP
+# TODO: what if HISTTIMEFORMAT is set, making hist entries 2 lines long?
+_dedup() {
+    local temp
+    temp="/tmp/${RANDOM}-bash-hist-dupd"
+
+    [[ -f "$1" ]] || return;
+    #awk ' !x[$0]++' "$1" > "$temp" || return 1  			  # keeps first repeated value
+    tac "$1" | awk '!x[$0]++' | tac > "$temp" || return 1     # keep the last repeated value
+    cp -- "$temp" "$1"
+    # -----------------------
+	# OR:
+
+    # cleanup to follow if histfile entry is on 2 lines (one being timestamp):
+	#awk '!x[$0]++' ~/.bash_history_eternal | grep -Ev '^#[0-9]{10}$' > /tmp/bash_hist_dedup_tmp || return 1
+	grep -Ev '^#[0-9]{10}$' ~/.bash_history_eternal | sort -u > /tmp/bash_hist_dedup_tmp || return 1
+    tac ~/.bash_history_eternal | grep -f /tmp/bash_hist_dedup_tmp -Fx --max-count=1 -B 1 | tac > "$temp" || return 1
+    cp -- "$temp" "$1"
+}
+
+#echo "Remove duplicate entries in $HISTFILE"
+#wc -l "$HISTFILE"
+#_dedup "$HISTFILE"
+#wc -l "$HISTFILE"
+# ---------------------------------------
 
 # Change the file location because certain bash sessions truncate .bash_history file upon close.
 # http://superuser.com/questions/575479/bash-history-truncated-to-500-lines-on-each-login
-export HISTFILE=~/.bash_history_eternal
+export HISTFILE=~/.bash_history
 # Force prompt to write history after every command.
 # http://superuser.com/questions/20900/bash-history-loss
+# see also this comment: https://unix.stackexchange.com/a/419779/47501
+#
 #export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"  <-- makes every command slow if our histfile is massive!
-[[ ";${PROMPT_COMMAND};" != *";history -a;"* ]] && export PROMPT_COMMAND="history -a;$PROMPT_COMMAND"
+# note the eternal history bit is from https://debian-administration.org/article/543/Bash_eternal_history
+[[ ";${PROMPT_COMMAND};" != *";history -a;"* ]] && export PROMPT_COMMAND="history -a;$PROMPT_COMMAND"';echo $$ $USER "$(history 1)" >> ~/.bash_history_eternal'
 
 shopt -u mailwarn       # disable mail notification:
 shopt -s cdspell        # try to correct typos in path
@@ -147,6 +182,8 @@ shopt -s hostcomplete   # try to autocomplete hostnames
 shopt -s huponexit      # send SIGHUP on when interactive login shell exits
 shopt -s globstar       # ** in pathname expansion will match all files and zero or more directories and subdirs
 shopt -s autocd         # if you type dir name, it's interpreted as an argument to cd
+shopt -s cmdhist        # bash attempts to save all lines of a multi-line command in same history entry;
+shopt -s lithist        # if cmdhist is enabled, then multiline commands are saved in history with embedded newlines rather than using semicolon separators;
 set -o vi               # needs to be added *before* fzf is sourced, otherwise fzf is screwed:
                         #     https://github.com/junegunn/fzf#key-bindings-for-command-line
 stty -ixon              # disable ctrl+s/ctrl+q;
@@ -489,7 +526,7 @@ nvr() {
 }
 
 # alternatively, single nvim per tmux _session_:
-n_vr() {
+nvr2() {
   if [[ -n "$TMUX" ]]; then
     local ids window_id pane_id
     ids="$(tmux list-panes -a -F '#{pane_current_command} #{window_id} #{pane_id}' | awk '/^nvim / {print $2" "$3; exit}')"
