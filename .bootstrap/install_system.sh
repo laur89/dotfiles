@@ -1288,7 +1288,7 @@ setup_private_asset_perms() {
             ~/.netrc \
             "$GNUPGHOME" \
             ~/.gist \
-            ~/.bash_history \
+            ~/.bash_hist \
             ~/.bash_history_eternal \
                 ; do
         [[ -e "$i" ]] || { err "expected to find [$i], but it doesn't exist; is it normal?"; continue; }
@@ -1304,7 +1304,7 @@ setup_global_bashrc() {
     readonly global_bashrc='/etc/bash.bashrc'
     readonly ps1='PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} -eq 0 ]]; then echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033\[\033[0;31m\]\h"; else echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h"; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # own_def_marker'
 
-    if ! sudo test -f $global_bashrc; then
+    if ! sudo test -f "$global_bashrc"; then
         err "[$global_bashrc] doesn't exist; cannot modify it!"
         return 1
     fi

@@ -141,20 +141,22 @@ export HISTTIMEFORMAT='%F %T '
 # TODO: what if HISTTIMEFORMAT is set, making hist entries 2 lines long?
 _dedup() {
     local temp
-    temp="/tmp/${RANDOM}-bash-hist-dupd"
+    temp="/tmp/.${RANDOM}-bash-hist-dupd"
 
     [[ -f "$1" ]] || return;
-    #awk ' !x[$0]++' "$1" > "$temp" || return 1  			  # keeps first repeated value
+    #awk ' !x[$0]++' "$1" > "$temp" || return 1               # keeps first repeated value
     tac "$1" | awk '!x[$0]++' | tac > "$temp" || return 1     # keep the last repeated value
-    cp -- "$temp" "$1"
+    mv -- "$temp" "$1"
     # -----------------------
-	# OR:
+    # OR:
 
+    local ptrns
+    ptrns="/tmp/.${RANDOM}-bash-hist-grep-ptrns"
     # cleanup to follow if histfile entry is on 2 lines (one being timestamp):
-	#awk '!x[$0]++' ~/.bash_history_eternal | grep -Ev '^#[0-9]{10}$' > /tmp/bash_hist_dedup_tmp || return 1
-	grep -Ev '^#[0-9]{10}$' ~/.bash_history_eternal | sort -u > /tmp/bash_hist_dedup_tmp || return 1
-    tac ~/.bash_history_eternal | grep -f /tmp/bash_hist_dedup_tmp -Fx --max-count=1 -B 1 | tac > "$temp" || return 1
-    cp -- "$temp" "$1"
+    #awk '!x[$0]++' ~/.bash_history_eternal | grep -Ev '^#[0-9]{10}$' > "$ptrns" || return 1
+    grep -Ev '^#[0-9]{10}$' ~/.bash_history_eternal | sort -u > "$ptrns" || return 1
+    tac ~/.bash_history_eternal | grep -f "$ptrns" -Fx --max-count=1 -B 1 | tac > "$temp" || return 1
+    mv -- "$temp" "$1"
 }
 
 #echo "Remove duplicate entries in $HISTFILE"
@@ -165,14 +167,14 @@ _dedup() {
 
 # Change the file location because certain bash sessions truncate .bash_history file upon close.
 # http://superuser.com/questions/575479/bash-history-truncated-to-500-lines-on-each-login
-export HISTFILE=~/.bash_history
+export HISTFILE=~/.bash_hist
 # Force prompt to write history after every command.
 # http://superuser.com/questions/20900/bash-history-loss
 # see also this comment: https://unix.stackexchange.com/a/419779/47501
 #
 #export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"  <-- makes every command slow if our histfile is massive!
 # note the eternal history bit is from https://debian-administration.org/article/543/Bash_eternal_history
-[[ ";${PROMPT_COMMAND};" != *";history -a;"* ]] && export PROMPT_COMMAND="history -a;$PROMPT_COMMAND"';echo $$ $USER "$(history 1)" >> ~/.bash_history_eternal'
+[[ ";${PROMPT_COMMAND};" != *';history -a;'* ]] && export PROMPT_COMMAND="history -a;$PROMPT_COMMAND"'echo $$ $USER "$(history 1)" >> ~/.bash_history_eternal'
 
 shopt -u mailwarn       # disable mail notification:
 shopt -s cdspell        # try to correct typos in path
@@ -242,8 +244,10 @@ if [[ -d "$HOME/.bash_aliases_overrides" ]]; then
 fi
 
 # source homeshick:
-[[ -e "$HOME/.homesick/repos/homeshick" ]] && source "$HOME/.homesick/repos/homeshick/homeshick.sh"
-[[ -e "$HOME/.homesick/repos/homeshick" ]] && source "$HOME/.homesick/repos/homeshick/completions/homeshick-completion.bash"
+if [[ -e "$HOME/.homesick/repos/homeshick" ]]; then
+    source "$HOME/.homesick/repos/homeshick/homeshick.sh"
+    source "$HOME/.homesick/repos/homeshick/completions/homeshick-completion.bash"
+fi
 
 # bash-git-prompt conf:
 # see provide'ib promptile git repo info; override'ib üleval defineeritud PS1 (põmst sama asjaga kui olen ümber modinud)
