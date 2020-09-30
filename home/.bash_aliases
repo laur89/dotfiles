@@ -216,7 +216,7 @@ alias dl='docker ps -lq'
 alias dps='docker ps'
 
 # Get processes included stop container
-alias dpa='docker ps -a'
+alias dpa='docker ps --all'
 alias dpsa='dpa'
 
 # Get images
@@ -234,30 +234,30 @@ alias dki='docker run -i -t -P'
 # Execute interactive container, e.g., $dex base /bin/bash
 # note: docker exec  runs command in an (already) RUNNING container
 #alias dex="docker exec -i -t"
-dex() { docker exec -it $(docker ps -qf "name=$1") "${@:2}"; }
+dex() { docker exec -it $(docker ps --no-trunc -qf "name=$1") "${@:2}"; }
 
 # Stop all containers
-dstop() { docker stop $(docker ps -aq); }
+dstop() { docker stop $(docker ps --no-trunc -aq); }
 
 # Remove all containers
-drm() { docker rm $(docker ps -aq); }
+drm() { docker rm $(docker ps --no-trunc -aq); }
 # TODO: rename drm() to drma(), and use drm() to delete specific containers only?
 
 # Stop & remove all containers
-alias drmf='docker stop $(docker ps -aq) && docker rm $(docker ps -aq)'
+alias drmf='docker stop $(docker ps --no-trunc -aq) && docker rm $(docker ps --no-trunc -aq)'
 
 # Remove all images
 dri() { docker rmi $(docker images -q); }
 alias drmi='dri'
 
 # Dockerfile build, e.g., $dbu tcnksm/test
-dbu() { docker build -t=$1 .; }
+dbu() { docker build --tag="$1" .; }
 
 # Show all alias related docker
 dalias() { alias | grep 'docker' | sed "s/^\([^=]*\)=\(.*\)/\1 => \2/"| sed "s/['|\']//g" | sort; }
 
 # Bash into running container
-dbash() { docker exec -it $(docker ps -qf "name=$1") bash; }
+dbash() { docker exec -it $(docker ps --no-trunc -qf "name=$1") bash -l; }
 
 # docker (better use functions in bash_funtions.sh):
 #alias drmi='docker rmi $(docker images --filter "dangling=true" -q --no-trunc)'
