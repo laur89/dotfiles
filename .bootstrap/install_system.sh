@@ -1540,7 +1540,7 @@ setup_additional_apt_keys_and_sources() {
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
     # note it's avail also as a snap: $snap install spotify
-    execute 'curl -sS https://download.spotify.com/debian/pubkey.gpg | sudo apt-key add -'
+    execute 'curl -sS https://download.spotify.com/debian/pubkey_0D811D58.gpg | sudo apt-key add -'
     execute 'echo deb http://repository.spotify.com stable non-free | sudo tee /etc/apt/sources.list.d/spotify.list > /dev/null'
 
     # seafile-client: (from https://download.seafile.com/published/seafile-user-manual/syncing_client/install_linux_client.md):
