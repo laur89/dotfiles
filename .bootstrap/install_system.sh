@@ -4118,8 +4118,7 @@ install_from_repo() {
         python3-venv
         python3-pip
         python-dev
-        python-flake8
-        python3-flake8
+        flake8
         msbuild
         mono-complete
         curl
@@ -4337,7 +4336,6 @@ install_from_repo() {
         docker-ce-cli
         containerd.io
         docker-compose
-        python-docker
         docker-swarm
         mitmproxy
         charles-proxy
