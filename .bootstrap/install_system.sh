@@ -75,9 +75,9 @@ SYSCTL_CHANGED=0       # states whether sysctl config got changed
 #------------------------
 readonly BASE_DATA_DIR="/data"  # try to keep this value in sync with equivalent defined in $SHELL_ENVS;
 readonly BASE_PROGS_DIR="$BASE_DATA_DIR/progs"
-readonly BASE_DEPS_LOC="$BASE_PROGS_DIR/deps"             # hosting stuff like homeshick, bash-git-prompt...
+readonly BASE_DEPS_LOC="$BASE_PROGS_DIR/deps"             # hosting stuff like ~homeshick~, bash-git-prompt...
 readonly BASE_BUILDS_DIR="$BASE_PROGS_DIR/custom_builds"  # hosts our built progs and/or their .deb packages;
-readonly BASE_HOMESICK_REPOS_LOC="$BASE_DEPS_LOC/homesick/repos"
+readonly BASE_HOMESICK_REPOS_LOC="$HOME/.homesick/repos"  # keep real location in $HOME! otherwise some apparmor whitelisting won't work (eg for msmtp)
 readonly COMMON_DOTFILES="$BASE_HOMESICK_REPOS_LOC/dotfiles"
 readonly COMMON_PRIVATE_DOTFILES="$BASE_HOMESICK_REPOS_LOC/private-common"
 readonly SOME_PACKAGE_IGNORED_EXIT_CODE=199
@@ -311,7 +311,7 @@ setup_hosts() {
 setup_sudoers() {
     local sudoers_dest file tmpfile
 
-    readonly sudoers_dest="/etc/sudoers.d"
+    readonly sudoers_dest='/etc/sudoers.d'
     readonly tmpfile="$TMP_DIR/sudoers-$RANDOM"
     readonly file="$COMMON_PRIVATE_DOTFILES/backups/sudoers"
 
@@ -368,7 +368,7 @@ setup_apt() {
 setup_crontab() {
     local cron_dir weekly_crondir tmpfile file i
 
-    readonly cron_dir="/etc/cron.d"  # where crontab will be installed at
+    readonly cron_dir='/etc/cron.d'  # where crontab will be installed at
     readonly tmpfile="$TMP_DIR/crontab"
     readonly file="$PRIVATE_CASTLE/backups/crontab"
     readonly weekly_crondir='/etc/cron.weekly'
@@ -452,7 +452,7 @@ clone_or_pull_repo() {
     readonly user="$1"
     readonly repo="$2"
     install_dir="$3"  # if has trailing / then $repo won't be appended, eg pass './' to clone to $PWD
-    readonly hub=${4:-'github.com'}  # OPTIONAL; defaults to github.com;
+    readonly hub=${4:-github.com}  # OPTIONAL; defaults to github.com;
 
     [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
     [[ "$install_dir" != */ ]] && install_dir="${install_dir}/$repo"
@@ -885,6 +885,7 @@ install_deps() {
     # fasd - shell navigator similar to autojump:
     # note we're using whjvenyl's fork instead of original clvv, as latter
     # was last updated 2015 (orig: https://github.com/clvv/fasd.git)
+    # TODO: consider https://github.com/ajeetdsouza/zoxide instead
     clone_or_pull_repo "whjvenyl" "fasd" "$BASE_DEPS_LOC"  # https://github.com/whjvenyl/fasd
     create_link "${BASE_DEPS_LOC}/fasd/fasd" "$HOME/bin/fasd"
 
@@ -1093,9 +1094,6 @@ setup_dirs() {
 install_homesick() {
 
     clone_or_pull_repo "andsens" "homeshick" "$BASE_HOMESICK_REPOS_LOC" || return 1
-
-    # add the link, since homeshick is not installed in its default location (which is $HOME):
-    create_link "$BASE_DEPS_LOC/homesick" "$HOME/.homesick" || return 1
 }
 
 
@@ -1286,6 +1284,7 @@ setup_private_asset_perms() {
     for i in \
             ~/.ssh \
             ~/.netrc \
+            ~/.msmtprc \
             "$GNUPGHOME" \
             ~/.gist \
             ~/.bash_hist \
@@ -1298,10 +1297,12 @@ setup_private_asset_perms() {
 }
 
 
+# TODO!!!! global _init() function still not accessible! needs solving!
 setup_global_bashrc() {
-    local global_bashrc ps1
+    local global_bashrc global_profile ps1
 
     readonly global_bashrc='/etc/bash.bashrc'
+    readonly global_profile='/etc/profile'
     readonly ps1='PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} -eq 0 ]]; then echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033\[\033[0;31m\]\h"; else echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h"; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # own_def_marker'
 
     if ! sudo test -f "$global_bashrc"; then
@@ -1806,6 +1807,7 @@ install_own_builds() {
     #install_rambox
     #install_franz
     install_ferdi
+    install_zoxide
     install_slack_term
     install_ripgrep
     install_vnote
@@ -2239,6 +2241,12 @@ install_lazyman() {  # https://github.com/StevensNJD4/LazyMan
 }
 
 
+# fasd-alike alternative
+install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
+    install_bin_from_git -n zoxide ajeetdsouza zoxide 'zoxide-x86_64-unknown-linux-gnu'
+}
+
+
 # see also https://github.com/wee-slack/wee-slack/
 install_slack_term() {  # https://github.com/erroneousboat/slack-term
     install_bin_from_git -n slack-term erroneousboat slack-term slack-term-linux-amd64
@@ -2472,6 +2480,7 @@ install_vnote() {  # https://github.com/tamlok/vnote/releases
 # https://www.postman.com/downloads/canary/
 #
 # note postman is also available as a snap;
+# TODO: consider ARC (advanced rest clinet) instead: https://install.advancedrestclient.com/install
 install_postman() {  # https://learning.postman.com/docs/getting-started/installation-and-updates/#installing-postman-on-linux
     local url label tmpdir dir dsk target
 
@@ -2511,6 +2520,12 @@ Terminal=false
 Type=Application
 Categories=Development;
 " > "$dsk/PostmanCanary.desktop" || { err "unable to create Postman .desktop in [$dsk]"; return 1; }
+}
+
+
+# https://github.com/advanced-rest-client/arc-electron/releases/latest
+install_arc() {
+    install_deb_from_git advanced-rest-client arc-electron '-amd64.deb'
 }
 
 
@@ -2642,6 +2657,7 @@ install_exa() {  # https://github.com/ogham/exa
 }
 
 
+# TODO: consider https://github.com/extrawurst/gitui  instead
 install_lazygit() {  # https://github.com/jesseduffield/lazygit
     install_bin_from_git -n lazygit -d "$HOME/bin" jesseduffield lazygit '_Linux_x86_64.tar.gz'
 }
@@ -2899,7 +2915,7 @@ create_deb_install_and_store() {
     shift "$((OPTIND-1))"
 
     pkg_name="$1"
-    ver="${2:-'0.0.1'}"  # OPTIONAL
+    ver="${2:-0.0.1}"  # OPTIONAL
 
     check_progs_installed checkinstall || return 1
     report "creating .deb and installing with checkinstall..."
@@ -4181,6 +4197,7 @@ install_from_repo() {
         vdirsyncer
         calcurse
         galculator
+        bcal
         atool
         file-roller
         rar
@@ -4239,6 +4256,7 @@ install_from_repo() {
 
     declare -ar block3=(
         firefox/unstable
+        buku
         chromium
         chromium-sandbox
         rxvt-unicode-256color
@@ -4589,6 +4607,7 @@ __choose_prog_to_build() {
         install_rambox
         install_franz
         install_ferdi
+        install_zoxide
         install_slack_term
         install_ripgrep
         install_rebar
@@ -5248,7 +5267,7 @@ confirm() {
             read -r yno
         fi
 
-        case "$(echo "$yno" | tr '[:lower:]' '[:upper:]')" in
+        case "$(tr '[:lower:]' '[:upper:]' <<< "$yno")" in
             Y | YES )
                 report "Ok, continuing..." "->";
                 return 0
@@ -5283,7 +5302,7 @@ report() {
     readonly caller_name="$2"  # OPTIONAL
 
     [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "OK LOG: ${caller_name:+[$caller_name]: }$msg" >> "$EXECUTION_LOG"
-    >&2 echo -e "${COLORS[YELLOW]}${caller_name:-"INFO"}:${COLORS[OFF]} ${msg:-'--info lvl message placeholder--'}"
+    >&2 echo -e "${COLORS[YELLOW]}${caller_name:-"INFO"}:${COLORS[OFF]} ${msg:---info lvl message placeholder--}"
 }
 
 
@@ -6043,6 +6062,9 @@ exit
     #defaults.timer.card 1
 # in that case you probably need to change the device xfce4-volumed is controlling
 
+# common debugging:
+#   sudo dmesg | grep -i apparmor | grep -i denied  <- shows if some stuff is blocked by apparmor (eg we had this issue with msmtp if .msmtprc was under /data, not somewhere under $HOME)
+
 # TODOS:
 # - if apt-get update fails, then we should fail script fast?
 # - provide -Q option for quick execution; eg skip massive font installation
@@ -6050,3 +6072,10 @@ exit
 #
 # GAMES:
 # - flightgear/unstable
+#
+# UTILS:
+# - for another bandwidth monitor, see https://github.com/tgraf/bmon
+#
+# vifm alternatives:
+#  - https://github.com/jarun/nnn
+#  - https://github.com/dylanaraps/fff - bash file mngr
