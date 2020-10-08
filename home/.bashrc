@@ -399,6 +399,11 @@ fi
 [[ -s "$fasd_cache" ]] && source "$fasd_cache"
 unset fasd_cache
 ##########################################
+# zoxide settings:  (https://github.com/ajeetdsouza/zoxide)
+#export _ZO_DATA_DIR="$BASE_DATA_DIR/.zoxide"
+export _ZO_RESOLVE_SYMLINKS=1
+command -v zoxide > /dev/null && eval "$(zoxide init bash)"
+##########################################
 # forgit  (https://github.com/wfxr/forgit)
 [[ -s "$HOME/.forgit" ]] && source "$HOME/.forgit"
 ##########################################
