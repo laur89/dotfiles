@@ -139,6 +139,7 @@ export HISTTIMEFORMAT='%F %T '
 # from https://debian-administration.org/article/543/Bash_eternal_history#comment_19
 # WIP
 # TODO: what if HISTTIMEFORMAT is set, making hist entries 2 lines long?
+# TODO: dedup should perhaps be called w/ nice of 19!!!
 _dedup() {
     local temp
     temp="/tmp/.${RANDOM}-bash-hist-dupd"
@@ -258,10 +259,12 @@ if [[ -d "$HOME/.bash_aliases_overrides" ]]; then
 fi
 
 # source homeshick:
-if [[ -e "$HOME/.homesick/repos/homeshick" ]]; then
-    source "$HOME/.homesick/repos/homeshick/homeshick.sh"
-    source "$HOME/.homesick/repos/homeshick/completions/homeshick-completion.bash"
+_homes="$HOME/.homesick/repos/homeshick"
+if [[ -e "$_homes" ]]; then
+    source "$_homes/homeshick.sh"
+    source "$_homes/completions/homeshick-completion.bash"
 fi
+unset _homes
 
 # bash-git-prompt conf:
 # see provide'ib promptile git repo info; override'ib üleval defineeritud PS1 (põmst sama asjaga kui olen ümber modinud)
@@ -306,7 +309,7 @@ command -v rbenv >/dev/null 2>/dev/null && eval "$(rbenv init -)"
 # note this needs to exec after rbenv has set the version!
 if command -v ruby >/dev/null && command -v gem >/dev/null; then
     _rb_pth="$(ruby -r rubygems -e 'puts Gem.user_dir')/bin"
-    [[ :$PATH: != *:"$_rb_pth":* ]] && export PATH="$_rb_pth:$PATH"
+    [[ "$_rb_pth" != /bin && :$PATH: != *:"$_rb_pth":* ]] && export PATH="$_rb_pth:$PATH"
     unset _rb_pth
 fi
 
@@ -392,11 +395,13 @@ _fzf_compgen_dir() {
 ##########################################
 # fasd init caching and loading:  (https://github.com/clvv/fasd)
 fasd_cache="$HOME/.fasd-init-bash.cache"
-if command -v fasd > /dev/null && [[ "$(command -v fasd)" -nt "$fasd_cache" || ! -s "$fasd_cache" ]]; then
-    fasd --init posix-alias bash-hook bash-ccomp bash-ccomp-install >| "$fasd_cache"
-fi
+if command -v fasd > /dev/null; then
+    if [[ ! -s "$fasd_cache" || "$(command -v fasd)" -nt "$fasd_cache" ]]; then
+        fasd --init posix-alias bash-hook bash-ccomp bash-ccomp-install >| "$fasd_cache"
+    fi
 
-[[ -s "$fasd_cache" ]] && source "$fasd_cache"
+    [[ -s "$fasd_cache" ]] && source "$fasd_cache"
+fi
 unset fasd_cache
 ##########################################
 # zoxide settings:  (https://github.com/ajeetdsouza/zoxide)
