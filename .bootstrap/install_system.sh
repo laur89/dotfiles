@@ -982,6 +982,7 @@ install_deps() {
     rb_install gist        # https://github.com/defunkt/gist  (pastebinit for gists)
 
     py_install update-conf.py # https://github.com/rarylson/update-conf.py  (generate config files from conf.d dirs)
+    py_install starred     # https://github.com/maguowei/starred  - create list of your github starts
 
     # rbenv & ruby-build: {                             # https://github.com/rbenv/rbenv-installer
     #   ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki):
@@ -1255,23 +1256,23 @@ setup_homesick() {
 }
 
 
-# creates symlink of our personal '.bash_env_vars' to /etc
-setup_global_env_vars() {
-    local global_env_var_loc real_file_locations file
+setup_global_shell_links() {
+    local global_dir real_file_locations file
 
     declare -ar real_file_locations=(
         "$SHELL_ENVS"
+        "$HOME/.global-bash-init"
     )
-    readonly global_env_var_loc='/etc'  # so our env vars would have user-agnostic location as well;
-                                        # that location will be used by various scripts.
+    readonly global_dir='/etc'  # so our env vars would have user-agnostic location as well;
+                                # that location will be used by various scripts.
 
     for file in "${real_file_locations[@]}"; do
         if ! [[ -f "$file" ]]; then
-            err "[$file] does not exist. can't link it to ${global_env_var_loc}/"
+            err "[$file] does not exist. can't link it to ${global_dir}/"
             continue
         fi
 
-        create_link --sudo "$file" "${global_env_var_loc}/"
+        create_link --sudo "$file" "${global_dir}/"
     done
 }
 
@@ -1297,13 +1298,15 @@ setup_private_asset_perms() {
 }
 
 
-# TODO!!!! global _init() function still not accessible! needs solving!
-setup_global_bashrc() {
+# sets:
+# - global PS1
+# - _init() definition for convenienve in scripts
+setup_global_bash_settings() {
     local global_bashrc global_profile ps1
 
     readonly global_bashrc='/etc/bash.bashrc'
     readonly global_profile='/etc/profile'
-    readonly ps1='PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} -eq 0 ]]; then echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033\[\033[0;31m\]\h"; else echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h"; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # own_def_marker'
+    readonly ps1='PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} -eq 0 ]]; then echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033\[\033[0;31m\]\h"; else echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h"; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # own-ps1-def-marker'
 
     if ! sudo test -f "$global_bashrc"; then
         err "[$global_bashrc] doesn't exist; cannot modify it!"
@@ -1312,38 +1315,14 @@ setup_global_bashrc() {
 
     ## setup prompt:
     # just in case first delete previous global PS1 def:
-    execute "sudo sed -i --follow-symlinks '/^PS1=.*# own_def_marker$/d' '$global_bashrc'"
+    execute "sudo sed -i --follow-symlinks '/^PS1=.*# own-ps1-def-marker$/d' '$global_bashrc'"
     execute "echo '$ps1' | sudo tee --append $global_bashrc > /dev/null"
 
-    ## add the script init function for convenience/global access:
-    sudo grep -q 'global_init_marker$' "$global_bashrc" || cat <<EOF | sudo tee --append "$global_bashrc"
-_init() {  # global_init_marker
-    if [[ "\$__ENV_VARS_LOADED_MARKER_VAR" != loaded ]]; then
-        user_envs=/etc/.bash_env_vars
-
-        if [[ -r "\$user_envs" ]]; then
-            source "\$user_envs"
-        else
-            echo -e "\n    ERROR: env vars file [\$user_envs] not found! Abort."
-            return 1
-        fi
-        unset user_envs
-    fi
-
-    # import common:
-    if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
-        if [[ -r "\$_SCRIPTS_COMMONS" ]]; then
-            source "\$_SCRIPTS_COMMONS"
-        else
-            echo -e "\n    ERROR: common file [\$_SCRIPTS_COMMONS] not found! Abort."
-            return 1
-        fi
-    fi
-
-    return 0
-}
-
-EOF
+    ## add the script _init() function for convenience/global access: (idea from https://www.reddit.com/r/bash/comments/jb6n65/is_there_a_file_that_all_shell_sessions_source/g8up3wi)
+    # note this one only covers _interactive_ shells...:
+    grep -q 'global_init_marker$' "$global_bashrc" || execute "echo 'source /etc/.global-bash-init  # global_init_marker' | sudo tee --append $global_bashrc > /dev/null"
+    # ...and this one only covers _non-interactive_ shells (note cron still isn't covered!)
+    grep -q 'global_init_marker$' "$global_profile" || execute "echo 'export BASH_ENV=/etc/.global-bash-init  # global_init_marker' | sudo tee --append $global_profile > /dev/null"
 }
 
 
@@ -1361,9 +1340,9 @@ setup_config_files() {
     setup_hosts
     setup_systemd
     is_native && setup_udev
-    setup_global_env_vars
+    setup_global_shell_links
     setup_private_asset_perms
-    setup_global_bashrc
+    setup_global_bash_settings
     is_native && swap_caps_lock_and_esc
     override_locale_time
 }
@@ -2472,8 +2451,8 @@ install_redis_desktop_mngr() {  # https://snapcraft.io/install/redis-desktop-man
 #   https://github.com/notable/notable/
 #   https://github.com/BoostIO/Boostnote
 #   https://github.com/zadam/trilium  (also hostable as a server)
-install_vnote() {  # https://github.com/tamlok/vnote/releases
-    install_bin_from_git -n vnote tamlok vnote x86_64.AppImage
+install_vnote() {  # https://github.com/vnotex/vnote/releases
+    install_bin_from_git -n vnote vnotex vnote x86_64.AppImage
 }
 
 
@@ -2481,6 +2460,7 @@ install_vnote() {  # https://github.com/tamlok/vnote/releases
 #
 # note postman is also available as a snap;
 # TODO: consider ARC (advanced rest clinet) instead: https://install.advancedrestclient.com/install
+# TODO: also consider Insomnia: https://github.com/Kong/insomnia
 install_postman() {  # https://learning.postman.com/docs/getting-started/installation-and-updates/#installing-postman-on-linux
     local url label tmpdir dir dsk target
 
