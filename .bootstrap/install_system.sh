@@ -4976,7 +4976,7 @@ configure_ntp_for_work() {
 }
 
 
-# configure pulseaudio/equalizer
+# configure pulseaudio - enable additional modules (eg equalizer, bt...)
 #
 # see https://wiki.debian.org/PulseAudio#Dynamically_enable.2Fdisable
 # to dynamically enable/disable pulseaudio;
@@ -4991,7 +4991,7 @@ configure_pulseaudio() {
     # make bluetooth (headset) device connection possible:
     # http://askubuntu.com/questions/801404/bluetooth-connection-failed-blueman-bluez-errors-dbusfailederror-protocol-no
     # https://zach-adams.com/2014/07/bluetooth-audio-sink-stream-setup-failed/
-    is_laptop && conf_lines+=('load-module module-bluetooth-discover')
+    is_laptop && is_native && conf_lines+=('load-module module-bluetooth-discover')
 
     [[ -f "$conf" ]] || { err "[$conf] is not a valid file."; return 1; }
 
@@ -5656,7 +5656,7 @@ is_native() {
 
 
 is_64_bit() {
-    [[ "$(uname -m)" == x86_64 ]] && return 0 || return 1
+    [[ "$(uname -m)" == x86_64 ]]
 }
 
 
