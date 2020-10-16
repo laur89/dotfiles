@@ -4541,6 +4541,8 @@ choose_single_task() {
     declare -a choices=(
         setup
         setup_homesick
+        init_seafile_cli
+        setup_seafile_cli
 
         generate_key
         switch_jdk_versions
@@ -5003,13 +5005,41 @@ configure_pulseaudio() {
 }
 
 
+# https://download.seafile.com/published/seafile-user-manual/syncing_client/linux-cli.md
+#
+# useful commands:
+#  - seaf-cli list  -> info about synced libraries
+#  - seaf-cli list-remote
+init_seafile_cli() {
+    local ccnet_conf parent_dir
+
+    readonly ccnet_conf="$HOME/.ccnet"
+    readonly parent_dir="$BASE_DATA_DIR"
+
+    [[ -d "$parent_dir" ]] || { err "[$parent_dir] is not a valid dir, abort" "$FUNCNAME"; return 1; }
+    [[ -f "$ccnet_conf/seafile.ini" && -d "$(cat "$ccnet_conf/seafile.ini")" ]] && return 0  # everything seems set, no need to init
+
+    seaf-cli init -c "$ccnet_conf" -d "$parent_dir" || { err "[seaf-cli init] failed w/ $?"; return 1; }
+}
+
+
 setup_seafile_cli() {
-    local confdir datadir
+    local ccnet_conf parent_dir libs lib user passwd
 
-    readonly confdir="$HOME/.config/ccnet"
-    readonly datadir="$BASE_DATA_DIR/Seafile"
+    readonly ccnet_conf="$HOME/.ccnet"
+    readonly parent_dir="$BASE_DATA_DIR"
+    readonly libs=(main)
 
-    [[ -d "$datadir" ]] || { err "[$datadir] is not a valid dir; please set up via gui first" "$FUNCNAME"; return 1; }
+    is_noninteractive && { err "do not exec $FUNCNAME() as non-interactive"; return 1; }
+    [[ -f "$ccnet_conf/seafile.ini" && -d "$(cat "$ccnet_conf/seafile.ini")" ]] || { err "looks like seafile has not been initialised yet"; return 1; }
+
+    read -r -p "enter seafile user (should be mail): " user
+    read -r -p "enter seafile pass: " passwd
+    [[ -z "$user" || -z "$passwd" ]] && { err "user and/or pass were not given"; return 1; }
+
+    for lib in "${libs[@]}"; do
+        seaf-cli download-by-name --libraryname "$lib" -s https://seafile.aliste.eu -d "$parent_dir" -u "$user" -p "$passwd" || { err "[seaf-cli download-by-name] for lib [$lib] failed w/ $?"; continue; }
+    done
 }
 
 
@@ -5142,7 +5172,7 @@ post_install_progs_setup() {
     #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
     configure_ntp_for_work  # TODO: confirm if ntp needed in WSL
     configure_pulseaudio  # TODO see if works in WSL
-    #setup_seafile_cli  # TODO https://github.com/haiwen/seafile/issues/1855 & https://github.com/haiwen/seafile/issues/1854
+    init_seafile_cli
     is_native && enable_fw
     is_native && setup_cups
     #addgroup_if_missing fuse  # not needed anymore?
