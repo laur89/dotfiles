@@ -883,7 +883,7 @@ install_deps() {
 
     # fasd - shell navigator similar to autojump:
     # note we're using whjvenyl's fork instead of original clvv, as latter was last updated 2015 (orig: https://github.com/clvv/fasd.git)
-    # TODO: consider https://github.com/ajeetdsouza/zoxide instead
+    # another alternative: https://github.com/ajeetdsouza/zoxide
     clone_or_pull_repo "whjvenyl" "fasd" "$BASE_DEPS_LOC"  # https://github.com/whjvenyl/fasd
     create_link "${BASE_DEPS_LOC}/fasd/fasd" "$HOME/bin/fasd"
 
@@ -1784,7 +1784,7 @@ install_own_builds() {
     #install_rambox
     #install_franz
     install_ferdi
-    install_zoxide
+    #install_zoxide
     install_slack_term
     install_ripgrep
     install_vnote
