@@ -2795,6 +2795,8 @@ __fo() {
         done
     fi
 
+    add_nodes_to_fasd "${files[@]}"
+
     case "$filetype" in
         'image/x-xcf; charset=binary')  # xcf is gimp
             check_progs_installed "$image_editor" || return 1
@@ -2805,15 +2807,15 @@ __fo() {
             "$image_viewer" -- "${files[@]}" &
             ;;
         application/octet-stream*)
-            # should be the logs on app servers
+            # should be the logs on app servers; TODO: shall we default to $editor and only use $PAGER based on... file extension?
             check_progs_installed "$PAGER" || return 1
             "$PAGER" -- "${files[@]}"
             ;;
         application/xml*)
             [[ "$count" -gt 1 ]] && { report "won't format multiple xml files! will just open them" "${FUNCNAME[1]}"; sleep 1.5; }
             if [[ "$count" -gt 1 || "$(wc -l < "${files[0]}")" -gt 2 ]]; then  # note if more than 2 lines we also assume it's already formatted;
-                # assuming it's already formatted:
-            check_progs_installed "$editor" || return 1
+                # note we're assuming it's already formatted if more than 2 lines;
+                check_progs_installed "$editor" || return 1
                 "$editor" -- "${files[@]}"
             else
                 xmlformat "${files[@]}"
@@ -2837,7 +2839,8 @@ __fo() {
             check_progs_installed "$pdf_viewer" || return 1
             "$pdf_viewer" -- "${files[@]}" &
             ;;
-        application/x-elc*)  # TODO: what exactly is it?
+        application/x-elc* \
+                | application/json*)  # TODO: what exactly is x-elc*?
             check_progs_installed "$editor" || return 1
             "$editor" -- "${files[@]}"
             ;;
@@ -2869,6 +2872,12 @@ __fo() {
             return 1
             ;;
     esac
+}
+
+# note id doesn't have to add _only_ to fasd, can also update other databases
+add_nodes_to_fasd() {
+    [[ -z "$*" ]] && return
+    command -v fasd > /dev/null 2>&1 && fasd -A "$@"
 }
 
 sethometime() { setspaintime; }  # home is where you make it;
@@ -4119,6 +4128,9 @@ d() {  # mnemonic: dir
     check_progs_installed fasd fzf || return 1
     dir="$(fasd -Rdl "$@" | fzf -1 -0 --no-sort +m --exit-0)" && cd -- "$dir" || return 1
 }
+
+# add tab completion support to all our own-defined fasd aliases (as per fasd readme):
+is_function _fasd_bash_hook_cmd_complete &&  _fasd_bash_hook_cmd_complete  e d
 
 
 # notes:
