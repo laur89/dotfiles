@@ -14,8 +14,8 @@ _FASD_BACKENDS='native current recently-used viminfo'
 # force case insensitivity:
 _FASD_NOCASE=1
 
-# programs to ignore: (defaults to [fasd ls echo] but might've changed)
-_FASD_IGNORE="fasd ls echo z zz e d find ffind fzf fd g gito fo gg fog foa fon fow foc ffstr ag rg grep fh fhd history latr lat lt ltr exa err report"
+# commands to ignore: (defaults to [fasd ls echo] but might've changed)
+_FASD_IGNORE="fasd ls echo z zz e d find ffind fzf fd g gito fo gg fog foa fon fow foc ffstr ag rg grep fh fhd history lgrep latr lat lt ltr exa err report homeshick dd git rm mv"
 
 # whether $PWD entry should be normalized to root of VCS, when in one; defaults to 1:
 #_FASD_ONLY_VCS=0
