@@ -294,8 +294,7 @@ setup_hosts() {
     if [[ -f "$file" ]]; then
         [[ -f "$hosts_file_dest/hosts" ]] || { err "system hosts file is missing!"; return 1; }
         current_hostline="$(_extract_current_hostname_line $hosts_file_dest/hosts)" || return 1
-        execute "cp -- '$file' '$tmpfile'" || { err; return 1; }
-        execute "sed --follow-symlinks -i 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' $tmpfile" || { err; return 1; }
+        execute "sed 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' $file > $tmpfile" || { err; return 1; }
 
         backup_original_and_copy_file --sudo "$tmpfile" "$hosts_file_dest"
         execute "rm -- '$tmpfile'"
@@ -883,8 +882,7 @@ install_deps() {
     execute "$HOME/.fzf/install --all" || err "could not install fzf"
 
     # fasd - shell navigator similar to autojump:
-    # note we're using whjvenyl's fork instead of original clvv, as latter
-    # was last updated 2015 (orig: https://github.com/clvv/fasd.git)
+    # note we're using whjvenyl's fork instead of original clvv, as latter was last updated 2015 (orig: https://github.com/clvv/fasd.git)
     # TODO: consider https://github.com/ajeetdsouza/zoxide instead
     clone_or_pull_repo "whjvenyl" "fasd" "$BASE_DEPS_LOC"  # https://github.com/whjvenyl/fasd
     create_link "${BASE_DEPS_LOC}/fasd/fasd" "$HOME/bin/fasd"
