@@ -394,18 +394,20 @@ _fzf_compgen_dir() {
 }
 ##########################################
 # fasd init caching and loading:  (https://github.com/clvv/fasd)
-fasd_cache="$HOME/.fasd-init-bash.cache"
 if command -v fasd > /dev/null; then
+    fasd_cache="$HOME/.fasd-init-bash.cache"
+
     if [[ ! -s "$fasd_cache" || "$(command -v fasd)" -nt "$fasd_cache" ]]; then
         fasd --init posix-alias bash-hook bash-ccomp bash-ccomp-install >| "$fasd_cache"
 
         # comment out some of the default aliases, as our bash_functions (likely) provide our own:
         sed -i --follow-symlinks 's/^alias d=/#alias d=/' "$fasd_cache"
+        sed -i --follow-symlinks 's/^alias z=/#alias z=/' "$fasd_cache"  # zoxide defines conflicting z alias, and we weren't using this alias anyway
     fi
 
     [[ -s "$fasd_cache" ]] && source "$fasd_cache"
+    unset fasd_cache
 fi
-unset fasd_cache
 ##########################################
 # zoxide settings:  (https://github.com/ajeetdsouza/zoxide)
 #export _ZO_DATA_DIR="$BASE_DATA_DIR/.zoxide"
