@@ -1,0 +1,15 @@
+# path to the fasd data file; defaults to ~/.fasd
+_FASD_DATA="$BASE_DATA_DIR/.fasd_database"
+
+# path to .viminfo file for viminfo backend
+_FASD_VIMINFO="$HOME/.local/share/nvim/shada/main.shada"
+
+# resolve symlinks to prevet duplicates (requires whjvenyl/fasd):
+_FASD_RESOLVE_SYMLINKS=1
+
+# for backends manual see https://github.com/whjvenyl/fasd#backends
+# fasd backends to use; note 'native' is the default:
+_FASD_BACKENDS='native current recently-used viminfo'
+
+# force case insensitivity:
+_FASD_NOCASE=1
