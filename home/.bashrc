@@ -398,6 +398,9 @@ fasd_cache="$HOME/.fasd-init-bash.cache"
 if command -v fasd > /dev/null; then
     if [[ ! -s "$fasd_cache" || "$(command -v fasd)" -nt "$fasd_cache" ]]; then
         fasd --init posix-alias bash-hook bash-ccomp bash-ccomp-install >| "$fasd_cache"
+
+        # comment out some of the default aliases, as our bash_functions (likely) provide our own:
+        sed -i --follow-symlinks 's/^alias d=/#alias d=/' "$fasd_cache"
     fi
 
     [[ -s "$fasd_cache" ]] && source "$fasd_cache"
