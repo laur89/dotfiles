@@ -1419,6 +1419,7 @@ $FUNCNAME  [-e]  /dir_to_look_from/filename_to_grep
         [[ "$src" == *\.\** ]] && { err "fyi only use asterisks (*) for wildcards, not .*" "$FUNCNAME"; return 1; }  # this is because of find
         #src="$(ls -lhA "${srcdir:-.}" | awk '{ print $9 }' | grep -i -- "^$src$")" # ! note it assumes filename is listed in 9th column in ls output; what about spaces in filenames?
         src="$(find "${srcdir:-.}" -maxdepth 1 -mindepth 1 -name "$src" -printf '%f\n' -quit)"  # note we only allow single item!
+        [[ $? -ne 0 || -z "$src" ]] && return 1
 
         #ls -lhA "${srcdir:-.}" | grep -E -- "^(\S+\s+){8}$src$" | grep --color=auto -F -- "$src"  # ! note it assumes filename is listed in 9+th column in ls output
         ls -lhA "${srcdir:-.}" | grep --color=auto -F -- "$src"
@@ -4449,7 +4450,9 @@ _complete_dirs_in_pwd() {
         fi
     fi
 
-    wordlist=$(find -L "${d:-.}" -mindepth 1 -maxdepth 1 -type d -printf "${prefix}%f\n")
+    # TODO: currently when doing  $g /dev dir word<TAB>   while /dev/dir is partial, then find here would
+    # try to search where $d=/dev/dir; not a deal-breaker, but some recursive completion for this would be cool
+    wordlist=$(find -L "${d:-.}" -mindepth 1 -maxdepth 1 -type d -printf "${prefix}%f\n" 2>/dev/null)
 
     # TODO: how to make sure our current dir's contents aren't offered
     # in case target dir no longer has candidates? setting COMPREPLY here to
