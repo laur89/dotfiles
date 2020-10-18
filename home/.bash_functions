@@ -4130,9 +4130,6 @@ d() {  # mnemonic: dir
     dir="$(fasd -Rdl "$@" | fzf -1 -0 --no-sort +m --exit-0)" && cd -- "$dir" || return 1
 }
 
-# add tab completion support to all our own-defined fasd aliases (as per fasd readme):
-is_function _fasd_bash_hook_cmd_complete &&  _fasd_bash_hook_cmd_complete  e d
-
 
 # notes:
 # - using [kill -3 <pid>] for thread dump causes it to appear jvm's stdout;

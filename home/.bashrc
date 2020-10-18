@@ -394,6 +394,7 @@ _fzf_compgen_dir() {
 }
 ##########################################
 # fasd init caching and loading:  (https://github.com/clvv/fasd)
+# note we also modify the cache
 if command -v fasd > /dev/null; then
     fasd_cache="$HOME/.fasd-init-bash.cache"
 
@@ -403,10 +404,45 @@ if command -v fasd > /dev/null; then
         # comment out some of the default aliases, as our bash_functions (likely) provide our own:
         sed -i --follow-symlinks 's/^alias d=/#alias d=/' "$fasd_cache"
         sed -i --follow-symlinks 's/^alias z=/#alias z=/' "$fasd_cache"  # zoxide defines conflicting z alias, and we weren't using this alias anyway
+
+        fasd_completion_replacement='
+        # manage how --complete figures out which types of files to complete for;
+        # note default solution exapnds the completable command - a shell alias - and
+        # passes it to fasd --complete, which then takes the $2 as option, which means
+        # it should likely be something like -d or -f; we expand this logic in order
+        # to be able to also define functions, not only aliases; for that we utilize
+        # the FASD_FUN_FLAG_MAP for lookup
+        local _r
+        if declare -Ff "$COMP_WORDS" > /dev/null; then  # is function
+            _r="fasd ${FASD_FUN_FLAG_MAP[$COMP_WORDS]:-"-d"}"  # note we default to -d
+        else  # the original solution, which expands the alias in order for --complete to extract the used fasd flag(s) from the alias
+            _r="$(alias -p $COMP_WORDS \\
+                2>> "/dev/null" | sed -n "\\\$s/^.*'"'"'\\\\(.*\\\\)'"'"'/\\\\1/p")"
+        fi
+        local RESULT=$( fasd --complete "$_r'
+
+        fasd_completion_replacement="$(sed ':a $!{N; ba}; s/\n/\\n/g' <<< "$fasd_completion_replacement")"  # replace newlines with \n; this is so sed repalcement can work
+
+        # replace the bash completion logic to also support functions, not only aliases;
+        # note this replacement will span 2 lines:
+        #sed -i --follow-symlinks ":a;N;$!ba;s+local RESULT.*2.*sed -n.*p\")$+$fasd_completion_replacement+" "$fasd_cache"
+        sed -i --follow-symlinks "N;s+local RESULT.*2.*sed -n.*p\")$+$fasd_completion_replacement+" "$fasd_cache"
+
+        unset fasd_completion_replacement
     fi
+
+    # lookup map to show which types of files tab completion should complete for
+    # for given function; used by fasd completion logic we modify above:
+    declare -A FASD_FUN_FLAG_MAP=(
+        [e]='-f'
+        [d]='-d'
+    )
 
     [[ -s "$fasd_cache" ]] && source "$fasd_cache"
     unset fasd_cache
+
+    # add tab completion support to all our own-defined fasd aliases (as per fasd readme):
+    _fasd_bash_hook_cmd_complete  e  # completion for d is already added by cache, no point in duplicating
 fi
 ##########################################
 # zoxide settings:  (https://github.com/ajeetdsouza/zoxide)
