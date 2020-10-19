@@ -139,7 +139,7 @@ export HISTTIMEFORMAT='%F %T '
 # from https://debian-administration.org/article/543/Bash_eternal_history#comment_19
 # WIP
 # TODO: what if HISTTIMEFORMAT is set, making hist entries 2 lines long?
-# TODO: dedup should perhaps be called w/ nice of 19!!!
+# TODO: dedup should perhaps be called w/ nice of 19? - yup, better convert to script & run via cron instead from .bashrc
 _dedup() {
     local temp
     temp="/tmp/.${RANDOM}-bash-hist-dupd"
@@ -161,7 +161,7 @@ _dedup() {
 
     #tac "$1" | grep -f "$ptrns" --fixed-strings --line-regexp --max-count=1 -A 1 | tac > "$temp" || return 1
     tac -- "$1" > "$reversed"
-    grep -Ev '^#[0-9]{10}$' "$reversed" | awk '!x[$0]++' > "$ptrns" || return 1  # uniqueing w/ preserving the order
+    grep -Ev '^#[0-9]{10}$' "$reversed" | awk '!x[$0]++' > "$ptrns" || return 1  # uniqueing w/ preserving the order; note we grep -v the timestamp-lines of hist entries
     cat -- "$ptrns" | xargs -n1 -I '{}' -- grep -e '{}' --fixed-strings --line-regexp --max-count=1 -A 1 -- "$reversed" | tac > "$temp" || return 1
     mv -- "$temp" "$1"
     rm -- "$ptrns" "$reversed"
@@ -606,6 +606,14 @@ nvr2() {
 
   command nvr -s "$@"
 }
+########################################## fzf-tab-completion
+# replace default bash tab completion menu w/ fzf: (https://github.com/lincheney/fzf-tab-completion)
+ftc="$BASE_DEPS_LOC/fzf-tab-completion/bash/fzf-bash-completion.sh"
+if [[ -f "$ftc" ]]; then
+    source "$ftc"
+    bind -x '"\t": fzf_bash_completion'
+fi
+unset ftc
 ########################################## sdkman
 # note following is added by script from https://get.sdkman.io/:
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!

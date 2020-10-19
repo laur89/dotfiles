@@ -881,6 +881,10 @@ install_deps() {
     create_link "${BASE_DEPS_LOC}/fzf" "$HOME/.fzf"
     execute "$HOME/.fzf/install --all" || err "could not install fzf"
 
+    # replace bash tab completion w/ fzf:
+    # alternatively consider https://github.com/rockandska/fzf-obc
+    clone_or_pull_repo "lincheney" "fzf-tab-completion" "$BASE_DEPS_LOC"  # https://github.com/lincheney/fzf-tab-completion
+
     # fasd - shell navigator similar to autojump:
     # note we're using whjvenyl's fork instead of original clvv, as latter was last updated 2015 (orig: https://github.com/clvv/fasd.git)
     # another alternative: https://github.com/ajeetdsouza/zoxide
