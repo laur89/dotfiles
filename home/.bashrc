@@ -278,7 +278,7 @@ unset _homes
 
 if [[ -f "$HOME/.bash-git-prompt/gitprompt.sh" ]]; then
     # add lazy-loaded/dynamic extra content to git-prompt, eg kube-ps1:
-    # !! note this guy's only called/shown when we're in git repo !!
+    # !! note this guy's only called/shown when we're in git repo, unless GIT_PROMPT_ONLY_IN_REPO=0 !!
     #prompt_callback() {  # function called by bash-git-prompt for additional dynamic content
     #    echo -n " $(kube_ps1)"
     #}
@@ -354,7 +354,7 @@ __check_for_change_and_compile_ssh_config() {
     if [[ -d "$ssh_configdir" ]] && ! is_dir_empty "$ssh_configdir"; then
         cd "$ssh_configdir" || return 1  # move to $ssh_configdir, since we execute find relative to curr dir;
         current_md5sum="$(find -L . -type f -exec md5sum -- '{}' \+ | sort -k 34 | md5sum)" || { err 'md5summing configdir failed' "$FUNCNAME"; return 1; }
-        test -e "$stored_md5sum"; stored_md5sum_exist=$?
+        test -s "$stored_md5sum"; stored_md5sum_exist=$?
 
         if [[ "$stored_md5sum_exist" -eq 0 && "$(cat -- "$stored_md5sum")" != "$current_md5sum" ]] \
                 || ! [[ -e "$ssh_config" ]]; then
@@ -374,8 +374,7 @@ __check_for_change_and_compile_ssh_config() {
 
 __check_for_change_and_compile_ssh_config &
 disown $!
-##########################################
-# fzf
+########################################## fzf
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
 # Replace default shell autocompeltes:  https://github.com/junegunn/fzf#settings
@@ -392,7 +391,14 @@ _fzf_compgen_path() {
 _fzf_compgen_dir() {
   fd --type d --hidden --follow --exclude '.git' . "$1"
 }
-##########################################
+
+####################
+# set additional commands for fzf-completion:
+# note it _might_ conflict w/ fzf-tab-completion (from another project) if used;
+#_fzf_setup_completion path ag rg git kubectl
+
+# TODO: see also about setting _fzf_comprun()?
+########################################## fasd
 # fasd init caching and loading:  (https://github.com/clvv/fasd)
 # note we also modify the cache
 if command -v fasd > /dev/null; then
@@ -433,26 +439,28 @@ if command -v fasd > /dev/null; then
 
     # lookup map to show which types of files tab completion should complete for
     # for given function; used by fasd completion logic we modify above:
-    declare -A FASD_FUN_FLAG_MAP=(
+    declare -rA FASD_FUN_FLAG_MAP=(
         [e]='-f'
+        [goto]='-a'
+        [gt]='-a'
         [d]='-d'
     )
 
-    [[ -s "$fasd_cache" ]] && source "$fasd_cache"
+    source "$fasd_cache"
     unset fasd_cache
 
     # add tab completion support to all our own-defined fasd aliases (as per fasd readme):
-    _fasd_bash_hook_cmd_complete  e  # completion for d is already added by cache, no point in duplicating
+    _fasd_bash_hook_cmd_complete  e goto gt  # completion for d is already added by cache, no point in duplicating
 fi
-##########################################
+########################################## zoxide
 # zoxide settings:  (https://github.com/ajeetdsouza/zoxide)
 #export _ZO_DATA_DIR="$BASE_DATA_DIR/.zoxide"
 export _ZO_RESOLVE_SYMLINKS=1
 command -v zoxide > /dev/null && eval "$(zoxide init bash)"
-##########################################
+########################################## forgit
 # forgit  (https://github.com/wfxr/forgit)
 [[ -s "$HOME/.forgit" ]] && source "$HOME/.forgit"
-##########################################
+########################################## nvm
 # nvm (node version manager):  (https://github.com/nvm-sh/nvm#git-install)
 # note . nvm.sh makes new shell startup slow (https://github.com/nvm-sh/nvm/issues/1277);
 # that's why we need to work around this:

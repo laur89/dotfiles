@@ -2528,7 +2528,7 @@ fod() {
 # finds files/dirs and goes to containing dir (or same dir if found item is already a dir)
 # mnemonic: file open go
 #
-# with fzf, $ goto <ctrl-t>   offers perhaps better results
+# with fzf, $ _goto <ctrl-t>   offers perhaps better results
 fog() {
     local opts default_depth matches i
 
@@ -2563,7 +2563,7 @@ fog() {
 
     [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
 
-    goto "${matches[@]}"
+    _goto "${matches[@]}"
 }
 
 # mnemonic: go go
@@ -2758,7 +2758,7 @@ fo() {
 
 __fo() {
     local files count filetype editor image_viewer video_player file_mngr
-    local pdf_viewer office image_editor i
+    local pdf_viewer office image_editor pager i
 
     editor="$EDITOR"
     image_viewer="sxiv"
@@ -2767,6 +2767,7 @@ __fo() {
     pdf_viewer="zathura"
     office="libreoffice"
     image_editor="gimp"
+    pager="$PAGER"
 
     declare -a files=()
 
@@ -2808,9 +2809,9 @@ __fo() {
             "$image_viewer" -- "${files[@]}" &
             ;;
         application/octet-stream*)
-            # should be the logs on app servers; TODO: shall we default to $editor and only use $PAGER based on... file extension?
-            check_progs_installed "$PAGER" || return 1
-            "$PAGER" -- "${files[@]}"
+            # should be the logs on app servers; TODO: shall we default to $editor and only use $pager based on... file extension?
+            check_progs_installed "$pager" || return 1
+            "$pager" -- "${files[@]}"
             ;;
         application/xml*)
             [[ "$count" -gt 1 ]] && { report "won't format multiple xml files! will just open them" "${FUNCNAME[1]}"; sleep 1.5; }
@@ -2827,10 +2828,10 @@ __fo() {
             "$video_player" -- "${files[@]}" &
             ;;
         text/*)
-            # if we're dealing with a logfile (including *.out), force open in PAGER
+            # if we're dealing with a logfile (including *.out), force open in pager
             if [[ "${files[0]}" =~ \.(log|out)(\.[\.a-z0-9]+)*$ ]]; then
-                check_progs_installed "$PAGER" || return 1
-                "$PAGER" -- "${files[@]}"
+                check_progs_installed "$pager" || return 1
+                "$pager" -- "${files[@]}"
             else
                 check_progs_installed "$editor" || return 1
                 "$editor" -- "${files[@]}"
@@ -2869,7 +2870,7 @@ __fo() {
             "$office" "${files[@]}" &  # libreoffice doesn't like option ending marker '--'
             ;;
         *)
-            err "dunno what to open this type of file with:\n\t$filetype" "${FUNCNAME[1]}"
+            err "dunno what to open this type of file with: [$filetype]" "${FUNCNAME[1]}"
             return 1
             ;;
     esac
@@ -2932,7 +2933,8 @@ xclass() {
 ################
 ## Smarter CD ##
 ################
-goto() {
+# note this is fronted by goto() for interactive usage
+_goto() {
     [[ -z "$*" ]] && { err "node operand required" "$FUNCNAME"; return 1; }
     [[ -d "$*" ]] && { cd -- "$*"; } || cd -- "$(dirname -- "$(realpath -- "$*")")";
 }
@@ -2947,9 +2949,9 @@ sumtree() {
     local usage OPTIND opt usage dir
 
     readonly usage="\n${FUNCNAME}: get cumulative md5 sum of all files of either
-    given directory, or current dir (default)
-    Usage: ${FUNCNAME}  [-h]  [directory]
-        -h  show this help\n"
+         given directory, or current dir (default)
+         Usage: ${FUNCNAME}  [-h]  [directory]
+             -h  show this help\n"
 
     while getopts "h" opt; do
         case "$opt" in
@@ -2972,7 +2974,7 @@ sumtree() {
     if command -v parallel > /dev/null 2>&1; then
         find . -type f | parallel -k -n 100 md5sum -- {} | sort -k 2 | md5sum | cut -d' ' -f 1  # speeds up a bit, as it decreases number of calls to md5sum
     else
-        find . -type f -exec md5sum -- {} \; | sort -k 2 | md5sum | cut -d' ' -f 1
+        find . -type f -exec md5sum -- {} \+ | sort -k 2 | md5sum | cut -d' ' -f 1
     fi
 
     # to ignore file names; note we could also bake parallel in this command as above
@@ -3282,7 +3284,7 @@ transfer() {
 ####################
 cpf() {
     [[ -z "$*" ]] && { err "arguments for the cp command required." "$FUNCNAME"; return 1; }
-    cp -- "$@" && goto "$_";
+    cp -- "$@" && _goto "$_";
 }
 
 ####################
@@ -3290,7 +3292,7 @@ cpf() {
 ####################
 mvf() {
     [[ -z "$*" ]] && { err "name of a node to be moved required." "$FUNCNAME"; return 1; }
-    mv -- "$@" && goto "$_";
+    mv -- "$@" && _goto "$_";
 }
 
 ########################
@@ -3520,7 +3522,7 @@ cf() {
      if [[ -d "$file" ]]; then
         cd -- "$file"
      else
-        cd -- "${file:h}"  # TODO: don't we want to use $goto here?
+        cd -- "${file:h}"  # TODO: don't we want to use $_goto here?
      fi
   fi
 }
@@ -4129,6 +4131,20 @@ d() {  # mnemonic: dir
     check_progs_installed fasd fzf || return 1
     dir="$(fasd -Rdl "$@" | fzf -1 -0 --no-sort +m --exit-0)" && cd -- "$dir" || return 1
 }
+
+
+# select recent dir or file and cd to it
+goto() {
+    local node
+
+    #command -v ranger >/dev/null && fm=ranger
+    #check_progs_installed "$fm" || return 1
+
+    check_progs_installed fasd fzf || return 1
+    node="$(fasd -Ral "$@" | fzf -1 -0 --no-sort +m --exit-0)" && _goto "$node" || return 1
+}
+
+gt() { goto "$@"; }  # alias to goto()
 
 
 # notes:
