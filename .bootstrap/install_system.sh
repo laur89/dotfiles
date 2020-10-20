@@ -422,7 +422,7 @@ backup_original_and_copy_file() {
     [[ "$dest_dir" == *.d ]] && err "sure we want to be backing up in [$dest_dir]?" "$FUNCNAME"
 
     # back up the destination file, if it already exists and differs from new content:
-    if $sudo test -e "$dest_dir/$filename" && ! $sudo cmp -s "$file" "$dest_dir/$filename"; then
+    if $sudo test -f "$dest_dir/$filename" && ! $sudo cmp -s "$file" "$dest_dir/$filename"; then
         declare -a old_suffixes
 
         # collect older .orig files' suffixes and increment latest value for the new file:
@@ -6085,6 +6085,9 @@ exit
 #
 # UTILS:
 # - for another bandwidth monitor, see https://github.com/tgraf/bmon
+#
+# OTHER PROGS:
+# - another raster image editor: krita (more for painting & illustration)
 #
 # vifm alternatives:
 #  - https://github.com/jarun/nnn
