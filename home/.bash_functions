@@ -4111,17 +4111,24 @@ fstash() {
 
 
 # select recent file with fasd and open for editing
+# TODO: manually invoke add_nodes_to_fasd() on result?
 e() {  # mnemonic: edit
     local file
 
     check_progs_installed fasd fzf "$EDITOR" || return 1
-    file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)" && $EDITOR -- "$file" || return 1
+    file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)"
+    if [[ -f "$file" ]]; then
+        $EDITOR -- "$file" || return 1
+    else
+        return 1
+    fi
 }
 
 
 # select recent dir with fasd and cd into
 #
 # !!note: d clashes with fasd alias; make sure you remove that one (in generated cache, likely in $HOME)
+# TODO: manually invoke add_nodes_to_fasd() on result?
 d() {  # mnemonic: dir
     local dir
 
@@ -4129,11 +4136,17 @@ d() {  # mnemonic: dir
     #check_progs_installed "$fm" || return 1
 
     check_progs_installed fasd fzf || return 1
-    dir="$(fasd -Rdl "$@" | fzf -1 -0 --no-sort +m --exit-0)" && cd -- "$dir" || return 1
+    dir="$(fasd -Rdl "$@" | fzf -1 -0 --no-sort +m --exit-0)"
+    if [[ -d "$dir" ]]; then
+        cd -- "$dir" || return 1
+    else
+        return 1
+    fi
 }
 
 
 # select recent dir or file and cd to it
+# TODO: manually invoke add_nodes_to_fasd() on result?
 goto() {
     local node
 
@@ -4141,7 +4154,12 @@ goto() {
     #check_progs_installed "$fm" || return 1
 
     check_progs_installed fasd fzf || return 1
-    node="$(fasd -Ral "$@" | fzf -1 -0 --no-sort +m --exit-0)" && _goto "$node" || return 1
+    node="$(fasd -Ral "$@" | fzf -1 -0 --no-sort +m --exit-0)"
+    if [[ -f "$node" || -d "$node" ]]; then
+        _goto "$node" || return 1
+    else
+        return 1
+    fi
 }
 
 gt() { goto "$@"; }  # alias to goto()
