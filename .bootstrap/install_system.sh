@@ -4509,14 +4509,16 @@ choose_step() {
            0) choose_single_task ;;
            1) full_install ;;
            2) quick_refresh ;;
+           3) quicker_refresh ;;
            *) exit 1 ;;
        esac
     else  # mode not provided
-       select_items -s -h 'what do you want to do' full-install single-task update
+       select_items -s -h 'what do you want to do' full-install single-task update fast-update
        case "$__SELECTED_ITEMS" in
           'full-install' ) full_install ;;
           'single-task'  ) choose_single_task ;;
           'update'       ) quick_refresh ;;
+          'fast-update'  ) quicker_refresh ;;
           ''             ) exit 0 ;;
           *) err "unsupported choice [$__SELECTED_ITEMS]"
              exit 1
@@ -4664,8 +4666,8 @@ full_install() {
     install_progs
     is_native && install_games  # TODO: move this step to install_progs()?
     install_deps
-    ! is_noninteractive && is_native && install_ssh_server_or_client
-    ! is_noninteractive && is_native && install_nfs_server_or_client
+    is_interactive && is_native && install_ssh_server_or_client
+    is_interactive && is_native && install_nfs_server_or_client
     [[ "$PROFILE" == work ]] && exe_work_funs
 
     remind_manually_installed_progs
@@ -4680,6 +4682,17 @@ quick_refresh() {
     setup
     install_progs  # TODO: consider replacing by only install_own_builds()
     install_deps
+}
+
+
+# even faster refresher without the install_from_repo() step that's included in install_progs()
+quicker_refresh() {
+    LOGGING_LVL=1
+    readonly MODE=3
+
+    setup
+    install_own_builds
+    post_install_progs_setup
 }
 
 
@@ -5960,6 +5973,11 @@ is_noninteractive() {
 }
 
 
+is_interactive() {
+    [[ "$NON_INTERACTIVE" -ne 1 ]]
+}
+
+
 # Checks whether the provided function name is actually a defined function.
 #
 # @param {string}   fun     name of the function whose validity to check.
@@ -6018,8 +6036,8 @@ cleanup() {
         sed -i --follow-symlinks '/^\s*$/d' "$EXECUTION_LOG"  # strip empty lines
 
         echo -e "\n\n___________________________________________"
-        echo -e "\tscript execution log can be found at [$EXECUTION_LOG]"
-        grep -q '    ERR' "$EXECUTION_LOG" && echo -e "${COLORS[RED]}    NOTE: log contains errors.${COLORS[OFF]}"
+        echo -e "    script execution log can be found at [$EXECUTION_LOG]"
+        grep -qF '    ERR' "$EXECUTION_LOG" && echo -en "${COLORS[RED]}    NOTE: log contains errors.${COLORS[OFF]}  "
         copy_to_clipboard "$EXECUTION_LOG" && echo -e '(logfile location has been copied to clipboard)'
         echo -e "___________________________________________"
     fi
@@ -6031,7 +6049,7 @@ cleanup() {
 #----------------------------
 #---  Script entry point  ---
 #----------------------------
-while getopts "NFSUO" OPT_; do
+while getopts "NFSUQO" OPT_; do
     case "$OPT_" in
         N) NON_INTERACTIVE=1
             ;;
@@ -6040,6 +6058,8 @@ while getopts "NFSUO" OPT_; do
         S) MODE=0  # single task
             ;;
         U) MODE=2  # update/quick_refresh
+            ;;
+        Q) MODE=3  # even faster update/quick_refresh
             ;;
         O) ALLOW_OFFLINE=1  # allow running offline
             ;;
