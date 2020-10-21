@@ -1798,6 +1798,7 @@ install_own_builds() {
     #install_gitin
     install_delta
     install_fd
+    install_bat
     install_exa
     #install_synergy  # currently installing from repo
     install_i3
@@ -2629,6 +2630,14 @@ install_minikube() {  # https://kubernetes.io/docs/tasks/tools/install-minikube/
 # found as apt fd-find package, but executable is named fdfind not fd!
 install_fd() {  # https://github.com/sharkdp/fd
     install_deb_from_git sharkdp fd 'fd_[-0-9.]+_amd64.deb'
+}
+
+
+# found as apt 'bat' package, but executable is named batcat not bat!
+#
+# see also https://github.com/eth-p/bat-extras/blob/master/README.md#installation
+install_bat() {  # https://github.com/sharkdp/bat
+    install_deb_from_git sharkdp bat 'bat_[-0-9.]+_amd64.deb'
 }
 
 
@@ -4261,7 +4270,6 @@ install_from_repo() {
         shellcheck
         ranger
         vifm
-        bat
         screenfetch
         neofetch
         maim
@@ -4599,6 +4607,7 @@ __choose_prog_to_build() {
         install_lazygit
         install_lazydocker
         install_fd
+        install_bat
         install_exa
         install_gitin
         install_delta
@@ -5194,7 +5203,7 @@ post_install_progs_setup() {
     #addgroup_if_missing fuse  # not needed anymore?
     setup_firefox
 
-    command -v kubectl >/dev/null && execute 'kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl'  # add kubectl bash completion
+    command -v kubectl >/dev/null && execute 'kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl > /dev/null'  # add kubectl bash completion
     command -v minikube >/dev/null && setup_minikube
 }
 
