@@ -4824,7 +4824,7 @@ setup_docker() {
             return 1
         fi
 
-        grep -q "$param" <<< "$line" && report "vsyscall opt already set in [$conf]" && return 0
+        grep -Fq "$param" <<< "$line" && report "[$param] option already set in [$conf]" && return 0
 
         execute "sudo sed -i --follow-symlinks 's/^GRUB_CMDLINE_LINUX_DEFAULT.*$/GRUB_CMDLINE_LINUX_DEFAULT=\"$line $param\"/g' $conf" || { err; return 1; }
         execute 'sudo update-grub'
@@ -4836,6 +4836,22 @@ setup_docker() {
     _add_kernel_option
 
     execute "sudo service docker restart"  # TODO: we should only restart service if something was _really_ changed
+}
+
+
+# setup tcpdump so our regular user can exe it
+# see https://www.stev.org/post/howtoruntcpdumpasroot
+setup_tcpdump() {
+    local tcpd
+
+    tcpd='/usr/sbin/tcpdump'
+
+    [[ -x "$tcpd" ]] || { err "[$tcpd] exec does not exist"; return 1; }
+
+    addgroup_if_missing tcpdump
+    execute "sudo chown root:tcpdump $tcpd" || return 1
+    execute "sudo chmod 0750 $tcpd" || return 1
+    execute "sudo setcap 'CAP_NET_RAW+eip' $tcpd" || return 1
 }
 
 
@@ -5192,6 +5208,7 @@ post_install_progs_setup() {
     increase_inotify_watches_limit         # for intellij IDEA
     enable_unprivileged_containers_for_regular_users
     setup_docker
+    setup_tcpdump
     setup_nvim
     is_native && addgroup_if_missing wireshark               # add user to wireshark group, so it could be run as non-root;
                                                 # (implies wireshark is installed with allowing non-root users
