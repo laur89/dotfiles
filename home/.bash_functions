@@ -4117,11 +4117,7 @@ e() {  # mnemonic: edit
 
     check_progs_installed fasd fzf "$EDITOR" || return 1
     file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)"
-    if [[ -f "$file" ]]; then
-        $EDITOR -- "$file" || return 1
-    else
-        return 1
-    fi
+    [[ -f "$file" ]] && $EDITOR -- "$file" && return 0 || return 1
 }
 
 
@@ -4137,11 +4133,7 @@ d() {  # mnemonic: dir
 
     check_progs_installed fasd fzf || return 1
     dir="$(fasd -Rdl "$@" | fzf -1 -0 --no-sort +m --exit-0)"
-    if [[ -d "$dir" ]]; then
-        cd -- "$dir" || return 1
-    else
-        return 1
-    fi
+    [[ -d "$dir" ]] && cd -- "$dir" && return 0 || return 1
 }
 
 
@@ -4150,16 +4142,9 @@ d() {  # mnemonic: dir
 goto() {
     local node
 
-    #command -v ranger >/dev/null && fm=ranger
-    #check_progs_installed "$fm" || return 1
-
     check_progs_installed fasd fzf || return 1
     node="$(fasd -Ral "$@" | fzf -1 -0 --no-sort +m --exit-0)"
-    if [[ -f "$node" || -d "$node" ]]; then
-        _goto "$node" || return 1
-    else
-        return 1
-    fi
+    [[ -f "$node" || -d "$node" ]] && _goto "$node" && return 0 || return 1
 }
 
 gt() { goto "$@"; }  # alias to goto()
@@ -4203,7 +4188,7 @@ javadump() {
         select_items "${opt[@]}"
         [[ -z "${__SELECTED_ITEMS[*]}" ]] && { err "no process selected"; return 1; }
         for i in "${__SELECTED_ITEMS[@]}"; do
-            pid="$(grep -Po '^\d+(?=)' <<< "$i")"
+            pid="$(grep -Eo '^[0-9]+' <<< "$i")"
             pids+=("$pid")
         done
         [[ "${#pids[@]}" -eq 0 ]] && { err "no pids selected"; return 1; }
@@ -4227,17 +4212,17 @@ javadump() {
 
     # TODO: heap_dump won't overwrite file! ask for deletion?
     for pid in "${pids[@]}"; do  # do not parallelize!
-        i="$(ps -o user= -p "$pid")"
+        i="$(ps -o user= -p "$pid")"  # user running given $pid
         tf="$target_dir/${pid}-thread-dump.jfr"
         hf="$target_dir/${pid}-heap-dump.hprof"
 
         if [[ "$i" != "$USER" ]]; then
             [[ "$EUID" -ne 0 ]] && { err "pid [$pid] is not owned by our user and we're not root to change to user [$i]"; return 1; }
-            [[ "$mode" != T ]] && report "dumping heap..." && { su -l "$i" -c "jcmd $pid GC.heap_dump '$hf'" || return 1; } && report "heapdump at [$hf]"
-            [[ "$mode" != H ]] && report "dumping threads..." && { su -l "$i" -c "jcmd $pid Thread.print" > "$tf" || return 1; } && report "thread dump at [$tf]"
+            [[ "$mode" != T ]] && report "dumping heap for ${pid}..." && { su -l "$i" -c "jcmd $pid GC.heap_dump '$hf'" || return 1; } && report "heapdump at [$hf]"
+            [[ "$mode" != H ]] && report "dumping threads for ${pid}..." && { su -l "$i" -c "jcmd $pid Thread.print" > "$tf" || return 1; } && report "thread dump at [$tf]"
         else  # target process is owned by us
-            [[ "$mode" != T ]] && report "dumping heap..." && { jcmd "$pid" GC.heap_dump "$hf" || return 1; } && report "heapdump at [$hf]"
-            [[ "$mode" != H ]] && report "dumping threads..." && { jcmd "$pid" Thread.print > "$tf" || return 1; } && report "thread dump at [$tf]"
+            [[ "$mode" != T ]] && report "dumping heap for ${pid}..." && { jcmd "$pid" GC.heap_dump "$hf" || return 1; } && report "heapdump at [$hf]"
+            [[ "$mode" != H ]] && report "dumping threads for ${pid}..." && { jcmd "$pid" Thread.print > "$tf" || return 1; } && report "thread dump at [$tf]"
             #jmap -dump:live,format=b,file=/tmp/dump.hprof 12587    #alternative headp dump using jmap
             #jstack -f 5824  #alternative thread dump using jstack
         fi
@@ -4279,6 +4264,7 @@ tcpdumperino() {
         fi
     fi
 
+    # note dumpcap is included w/ wireshark
     if command -v dumpcap > /dev/null 2>&1; then
         select_interface || return 1
 
