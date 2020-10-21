@@ -4415,24 +4415,25 @@ install_vbox_guest() {
 
 # offers to install nvidia drivers, if NVIDIA card is detected.
 #
-# in order to reinstall the dkms part, purge both nvidia-driver &
-# nvidia-xconfig, and then reinstall.
+# in order to reinstall the dkms part, purge nvidia-driver and then reinstall.
 #
 # - Note if you see some flickering, it might be caused by compton and its settings.
 #   eg based on info from https://github.com/chjj/compton/issues/152,
 #    set glx-swap-method to 1;
 # - also, you might want to select 'Force Full Composition Pipeline' from
 #   nvidia-settings -> x server Disp Conf -> Advanced... -> tick the box
+# - you might also consider enabling/disabling KMS: https://wiki.archlinux.org/index.php/kernel_mode_setting
 #
 # https://wiki.debian.org/NvidiaGraphicsDrivers
+# TODO: add logic to detect & configure nvidia Optimus, also described in abovementioned link
 install_nvidia() {
     # TODO: consider  lspci -vnn | grep VGA | grep -i nvidia
     if sudo lshw | grep -iA 5 'display' | grep -iq 'vendor.*NVIDIA'; then
         if confirm -d N "we seem to have NVIDIA card; want to install nvidia drivers?"; then  # TODO: should we default to _not_ installing in non-interactive mode?
             # TODO: also install  nvidia-detect ?
             report "installing NVIDIA drivers..."
-            install_block 'nvidia-driver  nvidia-xconfig'
-            #execute "sudo nvidia-xconfig"  # should not be required as of Stretch
+            install_block 'nvidia-driver'
+            #execute "sudo nvidia-xconfig"  # not required as of Stretch
             return $?
         else
             report "we chose not to install nvidia drivers..."
@@ -6112,3 +6113,4 @@ exit
 # vifm alternatives:
 #  - https://github.com/jarun/nnn
 #  - https://github.com/dylanaraps/fff - bash file mngr
+#  - https://github.com/gokcehan/lf    - go-based ranger-alike
