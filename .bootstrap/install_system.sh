@@ -2015,18 +2015,15 @@ resolve_dl_urls() {
     loc="$1"
     grep_tail="$2"
 
+    domain="$(grep -Po '^https?://([^/]+)(?=)' <<< "$loc")"
     page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
-    dl_url="$(grep -Po '.*a href="\K'"$grep_tail"'(?=")' <<< "$page" | sort --unique)"
+    readonly dl_url="$(grep -Po '.*a href="\K'"$grep_tail"'(?=")' <<< "$page" | sort --unique)"
 
     if [[ -z "$dl_url" ]]; then
         err "no urls found from [$loc] for pattern [$grep_tail]"
         return 1
-    elif [[ "$multi" -ne 1 ]] && ! is_single "$dl_url"; then
-        err "multiple urls found from [$loc] for pattern [$grep_tail], but expecting a single result"
-        return 1
     fi
 
-    domain="$(grep -Po '^https?://([^/]+)(?=)' <<< "$loc")"
     while IFS= read -r u; do
         [[ "$u" == /* ]] && u="${domain}$u"  # convert to fully qualified url
 
@@ -2034,6 +2031,22 @@ resolve_dl_urls() {
         is_valid_url "$u" || { err "[$u] is not a valid download link"; return 1; }
         urls+="$u"$'\n'
     done <<< "$dl_url"
+
+    # note we strip trailing newline in sorts' input:
+    readonly urls="$(sort --unique <<< "${urls:0:$(( ${#urls} - 1 ))}")"  # unique again, as we've expanded all into fully qualified addresses
+
+    # debug:
+    #report "   urls #:  $(wc -l <<< "$urls")"
+    #report "   urls:  $(echo -e "$urls")"
+    #report "   urls2:  [$(echo "$urls")]"
+
+    if [[ -z "$urls" ]]; then
+        err "all urls got filtered out after processing [$dl_url]?"  # TODO: this would never happen right?
+        return 1
+    elif [[ "$multi" -ne 1 ]] && ! is_single "$urls"; then
+        err "multiple urls found from [$loc] for pattern [$grep_tail], but expecting a single result"
+        return 1
+    fi
 
     echo "$urls"
 }
@@ -2248,7 +2261,7 @@ install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
 # note it's no longer actively maintained; consider replacing w/ https://github.com/Versent/saml2aws
 # tag: aws
 install_aws_okta() {  # https://github.com/segmentio/aws-okta
-    #install_deb_from_git segmentio aws-okta _amd64.deb  # TODO: deb no longer released?
+    #install_deb_from_git segmentio aws-okta _amd64.deb  # TODO: deb no longer released? dunno, eg 1.0.4 had it avail
     install_bin_from_git -n aws-okta -d "$HOME/bin" segmentio aws-okta linux-amd64
 }
 
