@@ -48,6 +48,9 @@ set vi-ins-mode-string "\1\e[0;37m\2\342\224\224\342\224\200\342\224\200\342\225
 set show-all-if-ambiguous on
 set show-all-if-unmodified on
 
+# do not auto-execute pasted command, even if it contains newline:
+set enable-bracketed-paste on
+
 # When hitting option-up/option-down, cycle through the previous commands
 # which start with the prefix you've entered, rather than just cycling through
 # the last entered commands.
