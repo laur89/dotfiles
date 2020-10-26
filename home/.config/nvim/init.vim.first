@@ -1,3 +1,4 @@
+" vim: set ft=vimrc:
 
 """ User interface {{{
     """ Syntax highlighting {{{
@@ -146,7 +147,7 @@
 
 
     """ set git editor & automatically close gitcommit nested buffer: {{{
-        if has('nvim')
+        if has('nvim') && match($NVIM_LISTEN_ADDRESS, "_userdef_") != -1
           let $GIT_EDITOR = 'nvr -cc split --remote-wait'
           autocmd FileType gitcommit,gitrebase,gitconfig set bufhidden=delete
         endif

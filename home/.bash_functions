@@ -1751,6 +1751,7 @@ xmlformat() {
 
 xmlf() { xmlformat "$@"; }  # alias for xmlformat;
 
+# TODO: instead of verifying device doesn't end w/ digit, perhaps list devices via:   lsblk -d -n -oNAME,RO | grep '0$' | awk {'print $1'}
 createUsbIso() {
     local file device mountpoint cleaned_devicename usage override_dev_partitioncheck
     local reverse inf ouf full_lsblk_output i OPTIND partition
@@ -2936,7 +2937,7 @@ xclass() {
 # note this is fronted by goto() for interactive usage
 _goto() {
     [[ -z "$*" ]] && { err "node operand required" "$FUNCNAME"; return 1; }
-    [[ -d "$*" ]] && { cd -- "$*"; } || cd -- "$(dirname -- "$(realpath -- "$*")")";
+    [[ -d "$*" ]] && { cd -- "$*"; } || cd -- "$(dirname -- "$(readlink -f -- "$*")")";  # readlink, as realpath might not be avail
 }
 
 
@@ -4364,6 +4365,11 @@ _completemarks() {
     return 0
 }
 complete -F _completemarks jj jum jmo
+
+# print out pstree, but in reverse (ie root of the tree is at the bottom)
+ptree() {
+    pstree -U | sed "y/└┬/┌┴/" | tac
+}
 
 ################################################
 # other shell completions:

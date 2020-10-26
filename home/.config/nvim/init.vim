@@ -285,8 +285,8 @@ set nocompatible " Must be the first line
 
 """ Local leading config, only use for prerequisites as it will be
 """ overwritten by anything below {{{
-    if filereadable($HOME."/.config/nvim/init.vim.first")
-        source $HOME/.config/nvim/init.vim.first
+    if filereadable($HOME."/.config/nvim/init.first.vim")
+        source $HOME/.config/nvim/init.first.vim
     endif
 """ }}}
 
@@ -342,8 +342,8 @@ set nocompatible " Must be the first line
 """ Plugin settings {{{
     " Startify, the fancy start page
     let g:startify_bookmarks = [
-        \ $HOME . "/.config/nvim/init.vim", $HOME . "/.config/nvim/init.vim.first",
-        \ $HOME . "/.config/nvim/init.vim.last", $HOME . "/.config/nvim/nvim.plugins"
+        \ $HOME . "/.config/nvim/init.vim", $HOME . "/.config/nvim/init.first.vim",
+        \ $HOME . "/.config/nvim/init.last.vim", $HOME . "/.config/nvim/nvim.plugins"
         \ ]
     let g:startify_custom_header = [
         \ '   Author:               la',
@@ -621,8 +621,8 @@ set nocompatible " Must be the first line
 """ }}}
 
 """ Local ending config, will overwrite anything above. Generally use this. {{{{
-    if filereadable($HOME."/.config/nvim/init.vim.last")
-        source $HOME/.config/nvim/init.vim.last
+    if filereadable($HOME."/.config/nvim/init.last.vim")
+        source $HOME/.config/nvim/init.last.vim
     endif
 """ }}}
 
