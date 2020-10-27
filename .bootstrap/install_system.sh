@@ -3838,7 +3838,7 @@ install_YCM() {  # the quick-and-not-dirty install.py way
 
     # install YCM
     execute "pushd -- $ycm_plugin_root" || return 1
-    execute --ignore-errs "python3 ./install.py --all" || { popd; return 1; }
+    execute -i "python3 ./install.py --all" || { popd; return 1; }
     execute "popd"
 }
 
@@ -3977,7 +3977,7 @@ install_fonts() {
         execute "git clone --recursive -j8 $NERD_FONTS_REPO_LOC '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
         for i in "${fonts[@]}"; do
-            execute --ignore-errs "./install.sh '$i'"
+            execute -i "./install.sh '$i'"
         done
 
         execute "popd"
@@ -4425,12 +4425,10 @@ install_vbox_guest() {
     fi
 
     # append '--nox11' if installing in non-gui system:
-    execute "sudo sh $bin"  # !! do not catch status, seems to always exit /w 2
+    execute -c 2 "sudo sh $bin" || err "looks like [sh $bin] failed w/ $?"
     execute "sudo umount $tmp_mount" || err "unmounting cdrom from [$tmp_mount] failed w/ $?"
 
-    if is_single "$label"; then
-        add_to_dl_log "vbox-guest-additions" "$label"
-    fi
+    is_single "$label" && add_to_dl_log "vbox-guest-additions" "$label"
 }
 
 
@@ -5202,7 +5200,7 @@ post_install_progs_setup() {
     is_native && install_acpi_events   # has to be after install_progs(), so acpid is already insalled and events/ dir present;
     enable_network_manager
     is_native && install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present  # TODO: do we want to install these only on native systems?
-    #is_native && execute --ignore-errs "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
+    #is_native && execute -i "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
     is_native && execute "mopidy local scan"            # update mopidy library
     is_native && execute "sudo sensors-detect --auto"   # answer enter for default values (this is lm-sensors config)
     increase_inotify_watches_limit         # for intellij IDEA
@@ -5442,12 +5440,27 @@ generate_key() {
 
 # required for common point of logging and exception catching.
 #
-# provide '-i' or '--ignore-errs' as first arg to avoid returning non-zero code or
-# logging ERR to exec logfile on unsuccessful execution.
+#  -i       ignore erroneous exit - in this case still exits 0 and doesn't log
+#           on ERR level to exec logfile
+#  -c code  provide value of successful exit code (defaults to 0)
 execute() {
-    local cmd exit_sig ignore_errs
+    local opt OPTIND cmd exit_sig ignore_errs ok_code
 
-    [[ "$1" == -i || "$1" == --ignore-errs ]] && { shift; readonly ignore_errs=1; } || readonly ignore_errs=0
+    ok_code=0  # default
+    ignore_errs=0  # default
+    while getopts 'ic:' opt; do
+        case "$opt" in
+           i) ignore_errs=1
+                ;;
+           c) ok_code="$OPTARG"
+              is_digit "$ok_code" || { err "non-digit ok_code arg passed to ${FUNCNAME}: [$ok_code]"; return 1; }
+              [[ "${#ok_code}" -gt 3 ]] && { err "too long ok_code arg passed to ${FUNCNAME}: [$ok_code]"; return 1; }
+                ;;
+           *) echo -e "unexpected opt [$opt] passed to $FUNCNAME"; return 1 ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
     readonly cmd="$(sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' <<< "$1")"  # trim leading-trailing whitespace
 
     >&2 echo -e "${COLORS[GREEN]}-->${COLORS[OFF]} executing [${COLORS[YELLOW]}${cmd}${COLORS[OFF]}]"
@@ -5456,7 +5469,7 @@ execute() {
     eval "$cmd"
     readonly exit_sig=$?
 
-    if [[ "$exit_sig" -ne 0 && "$ignore_errs" -ne 1 ]]; then
+    if [[ "$exit_sig" -ne "$ok_code" && "$ignore_errs" -ne 1 ]]; then
         if [[ "$LOGGING_LVL" -ge 1 ]]; then
             echo -e "    ERR CMD: [$cmd] (exit code [$exit_sig])" >> "$EXECUTION_LOG"
             echo -e "        LOC: [$(pwd -P)]" >> "$EXECUTION_LOG"
