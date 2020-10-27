@@ -587,7 +587,7 @@ fi
 ########################################## nvr
 # single nvim instance per tmux _window_  (from https://www.reddit.com/r/neovim/comments/aex45u/integrating_nvr_and_tmux_to_use_a_single_tmux_per/)
 if [[ -n "$TMUX" ]]; then
-    export NVIM_LISTEN_ADDRESS="/tmp/.nvim_${USER}"
+    export NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}"  # note this env var is referenced in vim config, so don't change the value carelessly!
 fi
 
 nvr() {
@@ -616,12 +616,15 @@ nvr2() {
 }
 ########################################## fzf-tab-completion
 # replace default bash tab completion menu w/ fzf: (https://github.com/lincheney/fzf-tab-completion)
-ftc="$BASE_DEPS_LOC/fzf-tab-completion/bash/fzf-bash-completion.sh"
-if [[ -f "$ftc" ]]; then
-    source "$ftc"
-    bind -x '"\t": fzf_bash_completion'
-fi
-unset ftc
+# note: commented out (at least) 'til these are solved:
+#   https://github.com/lincheney/fzf-tab-completion/issues/17
+#   https://github.com/lincheney/fzf-tab-completion/issues/15
+#ftc="$BASE_DEPS_LOC/fzf-tab-completion/bash/fzf-bash-completion.sh"
+#if [[ -f "$ftc" ]]; then
+    #source "$ftc"
+    #bind -x '"\t": fzf_bash_completion'
+#fi
+#unset ftc
 ########################################## sdkman
 # note following is added by script from https://get.sdkman.io/:
 #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
