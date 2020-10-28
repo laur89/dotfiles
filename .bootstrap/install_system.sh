@@ -840,9 +840,11 @@ install_deps() {
         }
 
         # xinput is for input device configuration; see  https://wiki.archlinux.org/index.php/Libinput
+        # evtest can display pressure and placement of touchpad input in realtime; note it cannot run together w/ xserver, so better ctrl+alt+F2 to another tty
         install_block '
             libinput-tools
             xinput
+            evtest
             blueman
             xfce4-power-manager
         '
@@ -5032,6 +5034,9 @@ configure_ntp_for_work() {
 #
 # see https://wiki.debian.org/PulseAudio#Dynamically_enable.2Fdisable
 # to dynamically enable/disable pulseaudio;
+#
+# TODO: should we wrap 'load-module' lines between .ifexists & .endif?
+# TODO2: read up on noise cancellation (eg 'module-echo-cancel')
 configure_pulseaudio() {
     local conf conf_lines i
 
@@ -5048,7 +5053,7 @@ configure_pulseaudio() {
     [[ -f "$conf" ]] || { err "[$conf] is not a valid file."; return 1; }
 
     for i in "${conf_lines[@]}"; do
-        if ! grep -q "^$i\$" "$conf"; then
+        if ! grep -qFx "$i" "$conf"; then
             report "adding [$i] to $conf"
             execute "echo $i | sudo tee --append $conf > /dev/null"
         fi
@@ -6158,6 +6163,7 @@ exit
 #
 # UTILS:
 # - for another bandwidth monitor, see https://github.com/tgraf/bmon
+# - for laptop power management, see also laptop-mode-tools https://github.com/rickysarraf/laptop-mode-tools (there's also arch wiki on it)
 #
 # OTHER PROGS:
 # - another raster image editor: krita (more for painting & illustration)
