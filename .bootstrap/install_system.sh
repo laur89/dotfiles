@@ -2148,17 +2148,19 @@ install_deb_from_git() {
 
 
 # Fetch and extract a tarball from given github /releases page.
-# Note it'll be fetched and extracted into current $pwd.
+# Note it'll be fetched and extracted into current $pwd, or into new tempdir if -S opt is provided.
+# Also note the opreation is successful only if a single directory gets extracted out.
 #
 # pass   -S   flag to create tmp directory where extraction should happen; takes the
-#             tmpdir extraction requirement off the caller;
+#             tmpdir creation requirement off the caller;
 #
 # $1 - git user
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
 #
 # @returns {string} path to root dir of extraction result, IF we found a
-#                   _single_ dir in PWD.
+#                   _single_ dir in the result.
+# @returns {bool} true, if we found a _single_ dir in result
 fetch_extract_tarball_from_git() {
     local opt i OPTIND standalone tmpdir
 
@@ -2179,10 +2181,11 @@ fetch_extract_tarball_from_git() {
     execute "aunpack --extract --quiet '$i'" > /dev/null || { err "extracting [$i] failed w/ $?"; [[ "$standalone" == 1 ]] && popd; return 1; }
 
     i="$(find "$(pwd -P)" -mindepth 1 -maxdepth 1 -type d)"
-    [[ "$standalone" == 1 ]] && popd
-    [[ -d "$i" ]] && echo "$i"
-    # do NOT remove $tmpdir
+    [[ "$standalone" == 1 ]] && execute popd
+    [[ -d "$i" ]] || { err "couldn't find single extracted dir in extracted tarball"; return 1; }
+    echo "$i"
     return 0
+    # do NOT remove $tmpdir! caller can clean up if the want
 }
 
 
@@ -2605,7 +2608,6 @@ install_visualvm() {  # https://github.com/oracle/visualvm
     target="$BASE_PROGS_DIR/visualvm"
 
     dir="$(fetch_extract_tarball_from_git -S oracle visualvm 'visualvm_[-0-9.]+\.zip')" || return 1
-    [[ -d "$dir" ]] || { err "couldn't find unpacked visualvm dir"; return 1; }
 
     [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }
     execute "mv -- '$dir' '$target'" || return 1
@@ -2875,11 +2877,14 @@ build_and_install_synergy_TODO_container_edition() {
 
 # building instructions from https://copyq.readthedocs.io/en/latest/build-source-code.html
 install_copyq() {
-    local tmpdir
+    local tmpdir ver
 
     readonly tmpdir="$TMP_DIR/copyq-build-${RANDOM}"
 
-    report "building copyq"
+    execute "git clone -j8 $COPYQ_REPO_LOC $tmpdir" || return 1
+    execute "pushd $tmpdir" || return 1
+    readonly ver="$(git rev-parse HEAD)"
+    [[ -n "$ver" ]] && is_installed "$ver" && return 2
 
     report "installing copyq build dependencies..."
     install_block '
@@ -2893,9 +2898,7 @@ install_copyq() {
         libxtst-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone -j8 $COPYQ_REPO_LOC $tmpdir" || return 1
-    execute "pushd $tmpdir" || return 1
-
+    report "building copyq"
     execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .' || { err; popd; return 1; }
     execute "make" || { err; popd; return 1; }
 
@@ -2903,6 +2906,9 @@ install_copyq() {
 
     execute "popd"
     execute "sudo rm -rf -- $tmpdir"
+
+    add_to_dl_log  copyq "$ver"
+
     return 0
 }
 
@@ -2940,10 +2946,15 @@ create_deb_install_and_store() {
 # also https://github.com/mank319/Go-For-It/issues/143 specifically for debian/buster
 # TODO: flatpak is avail for it
 install_goforit() {
-    local tmpdir
+    local tmpdir ver
 
     readonly tmpdir="$TMP_DIR/goforit-build-${RANDOM}"
-    report "building goforit..."
+
+    execute "git clone -j8 $GOFORIT_REPO_LOC $tmpdir" || return 1
+    execute "mkdir $tmpdir/build"
+    execute "pushd $tmpdir/build" || return 1
+    readonly ver="$(git rev-parse HEAD)"
+    [[ -n "$ver" ]] && is_installed "$ver" && return 2
 
     report "installing goforit build dependencies..."
     install_block '
@@ -2955,10 +2966,7 @@ install_goforit() {
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
 
-    execute "git clone -j8 $GOFORIT_REPO_LOC $tmpdir" || return 1
-
-    execute "mkdir $tmpdir/build"
-    execute "pushd $tmpdir/build" || return 1
+    report "building goforit..."
     execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..' || { err; popd; return 1; }
     execute "make" || { err; popd; return 1; }
 
@@ -2966,6 +2974,9 @@ install_goforit() {
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
+
+    add_to_dl_log  goforit "$ver"
+
     return 0
 }
 
@@ -3081,10 +3092,17 @@ install_keepassx() {
 # https://github.com/Raymo111/i3lock-color
 # this is a depency for i3lock-fancy.
 install_i3lock() {
-    local tmpdir
+    local tmpdir ver
 
     readonly tmpdir="$TMP_DIR/i3lock-build-${RANDOM}/build"
-    report "building i3lock..."
+
+    # clone the repository
+    execute "git clone -j8 $I3_LOCK_LOC '$tmpdir'" || return 1
+    execute "pushd $tmpdir" || return 1
+    execute "git tag -f 'git-$(git rev-parse --short HEAD)'" || return 1
+
+    readonly ver="$(git rev-parse HEAD)"
+    [[ -n "$ver" ]] && is_installed "$ver" && return 2
 
     report "installing i3lock build dependencies..."
 
@@ -3112,12 +3130,9 @@ install_i3lock() {
       libxcb1-dev
       libxcb-dpms0-dev' || { err 'failed to install i3lock build deps. abort.'; return 1; }
 
-    # clone the repository
-    execute "git clone -j8 $I3_LOCK_LOC '$tmpdir'" || return 1
-    execute "pushd $tmpdir" || return 1
-    execute "git tag -f 'git-$(git rev-parse --short HEAD)'" || return 1
-    build_deb i3lock-color || err "build_deb() for i3lock-color failed"
-    execute 'sudo dpkg -i ../i3lock-color_*.deb'
+    report "building i3lock..."
+    build_deb i3lock-color || { err "build_deb() for i3lock-color failed"; return 1; }
+    execute 'sudo dpkg -i ../i3lock-color_*.deb' || { err "installing i3lock-color failed"; return 1; }
 
     # old, checkinstall-compliant logic:
     ## compile & install:
@@ -3129,19 +3144,24 @@ install_i3lock() {
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
 
+    add_to_dl_log  i3lock-color "$ver"
+
     return 0
 }
 
 
 install_i3lock_fancy() {
-    local tmpdir
+    local tmpdir ver
 
     readonly tmpdir="$TMP_DIR/i3lock-fancy-build-${RANDOM}/build"
-    report "building i3lock-fancy..."
 
     # clone the repository
     execute "git clone -j8 $I3_LOCK_FANCY_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
+    readonly ver="$(git rev-parse HEAD)"
+    [[ -n "$ver" ]] && is_installed "$ver" && return 2
+
+
     #build_deb -D '--parallel' i3lock-fancy || err "build_deb() for i3lock-fancy failed"
     #echo "got these: $(ls -lat ../*.deb)"
     #exit
@@ -3154,10 +3174,13 @@ install_i3lock_fancy() {
     #execute 'make' || return 1
 
     # TODO: note this guy will already install it! the makefile of fancy is odd...
+    report "building i3lock-fancy..."
     create_deb_install_and_store i3lock-fancy
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
+
+    add_to_dl_log  i3lock-fancy "$ver"
 
     return 0
 }
@@ -3171,8 +3194,8 @@ install_betterlockscreen() {  # https://github.com/pavanjadhaw/betterlockscreen
 
 # https://github.com/Airblader/i3/wiki/Building-from-source
 # see also https://github.com/maestrogerardo/i3-gaps-deb for debian pkg building logic
-install_i3() {
-    local tmpdir
+build_i3() {
+    local tmpdir ver
 
     _apply_patches() {
         local f
@@ -3206,7 +3229,16 @@ EOF
     }
 
     readonly tmpdir="$TMP_DIR/i3-gaps-build-${RANDOM}/build"
-    report "building i3-gaps... (note install_i3_deps() will be called in the end)"; sleep 2
+
+    # clone the repository
+    execute "git clone -j8 $I3_REPO_LOC '$tmpdir'" || return 1
+    execute "pushd $tmpdir" || return 1
+    readonly ver="$(git rev-parse HEAD)"
+    [[ -n "$ver" ]] && is_installed "$ver" && return 2
+
+    _apply_patches  # TODO: should we bail on error?
+    _fix_rules
+
 
     report "installing i3 build dependencies..."
     install_block '
@@ -3234,19 +3266,14 @@ EOF
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
 
-    # clone the repository
-    execute "git clone -j8 $I3_REPO_LOC '$tmpdir'" || return 1
-    execute "pushd $tmpdir" || return 1
-
-    _apply_patches  # TODO: should we bail on error?
-    _fix_rules
-
     # alternatively, install build-deps based on what's in debian/control:
     # (note mk-build-deps needs equivs pkg)
     sudo mk-build-deps \
             -t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends -qqy' \
             -i -r debian/control || { err "automatic build-dep resolver for i3 failed w/ [$?]"; popd; return 1; }
     # alternatively, could also do $ sudo apt-get -y build-dep i3-wm
+
+    report "building i3-gaps...";
 
     build_deb || { err "build_deb() for i3 failed"; popd; return 1; }
     execute 'sudo dpkg -i ../i3-wm_*.deb'
@@ -3282,10 +3309,15 @@ EOF
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
+    add_to_dl_log  i3-gaps "$ver"
 
+    return 0
+}
+
+install_i3() {
+    build_i3   # do not return, as it might return w/ 2 because of is_installed()
     install_i3_deps
     install_i3_conf
-    return 0
 }
 
 
@@ -3359,7 +3391,6 @@ install_i3_deps() {
     # create links of our own i3 scripts on $PATH:
     create_symlinks "$BASE_DATA_DIR/dev/scripts/i3" "$HOME/bin"
 
-
     execute "sudo rm -rf -- '$f'"
 }
 
@@ -3368,10 +3399,12 @@ install_i3_deps() {
 # https://github.com/polybar/polybar/wiki/Compiling
 # https://github.com/polybar/polybar
 install_polybar() {
-    local tmpdir
+    local dir
+
+    #execute "git clone --recursive -j8 $POLYBAR_REPO_LOC '$dir'" || return 1
+    dir="$(fetch_extract_tarball_from_git -S polybar polybar '\d+\.\d+\.tar')" || return 1
 
     report "installing polybar build dependencies..."
-
     # note: clang is installed because of  https://github.com/polybar/polybar/issues/572
     install_block '
         clang
@@ -3401,17 +3434,14 @@ install_polybar() {
         libnl-genl-3-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    #execute "git clone --recursive -j8 $POLYBAR_REPO_LOC '$tmpdir'" || return 1
-    tmpdir="$(fetch_extract_tarball_from_git -S polybar polybar '\d+\.\d+\.tar')" || return 1
-    [[ -d "$tmpdir" ]] || { err "the expected unpacked polybar dir was not valid: [$tmpdir]"; return 1; }
-    execute "pushd $tmpdir" || return 1
+    execute "pushd $dir" || return 1
     execute "./build.sh --auto --all-features --no-install" || { popd; return 1; }
 
     execute "pushd build/" || return 1
     create_deb_install_and_store polybar  # TODO: note still using checkinstall
 
     execute "popd; popd"
-    execute "sudo rm -rf -- '$tmpdir'"
+    execute "sudo rm -rf -- '$dir'"
     return 0
 }
 
@@ -4943,17 +4973,20 @@ enable_network_manager() {
 # another themes to consider: flatabolous (https://github.com/anmoljagetia/Flatabulous)  (hosts also flat icons);
 #                             ultra-flat (https://www.gnome-look.org/content/show.php/Ultra-Flat?content=167473)
 install_gtk_numix() {
-    local theme_repo tmpdir
+    local theme_repo tmpdir ver
 
     readonly theme_repo='https://github.com/numixproject/numix-gtk-theme.git'
     readonly tmpdir="$TMP_DIR/numix-theme-build-${RANDOM}"
 
     check_progs_installed  glib-compile-schemas  gdk-pixbuf-pixdata || { err "those need to be on path for numix build to succeed."; return 1; }
-    report "installing numix build dependencies..."
-    rb_install sass || return 1
 
     execute "git clone -j8 $theme_repo $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
+    readonly ver="$(git rev-parse HEAD)"
+    [[ -n "$ver" ]] && is_installed "$ver" && return 2
+
+    report "installing numix build dependencies..."
+    rb_install sass || return 1
 
     execute "make" || { err; popd; return 1; }
 
@@ -4961,6 +4994,9 @@ install_gtk_numix() {
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
+
+    add_to_dl_log  numix-gtk-theme "$ver"
+
     return 0
 }
 
