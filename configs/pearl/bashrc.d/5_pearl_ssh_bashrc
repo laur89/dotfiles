@@ -15,9 +15,9 @@ export TERM=xterm-color
 
 # ignore dups:
 export HISTCONTROL=ignoreboth
-export HISTIGNORE='ls:bg:fg:history:c:lt:lat:latr:ltr'  # ignore commands from history
+export HISTIGNORE='?:??:fhd:history:lat:ltr:latr'  # ignore commands from history
 export HISTTIMEFORMAT='%F %T '
-export PROMPT_COMMAND='history -a'  # save comand to history immediately, not after the session terminates
+export PROMPT_COMMAND="history -a;$PROMPT_COMMAND"  # save comand to history immediately, not after the session terminates
 
 shopt -u mailwarn       # disable mail notification:
 shopt -s cdspell        # try to correct typos in path
