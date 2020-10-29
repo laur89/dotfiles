@@ -7,7 +7,8 @@
 # according to https://wiki.archlinux.org/index.php/Xinit#Starting_applications_without_a_window_manager,
 # this file should *at least* contain the last block of /etc/X11/xinit/xinitrc
 #
-# note: for all autostart stuff, consider https://github.com/jceb/dex instead
+# note: for all autostart stuff, consider https://github.com/jceb/dex instead;
+#       or better yet, systemd unit files as dex' readme itself suggests;
 ##################################
 
 SESSION_STARTFILE="$HOME/.session-startuplist"

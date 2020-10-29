@@ -516,7 +516,7 @@ __find_top_big_small_fun() {
         # calls to other programs (like awk and du).
 
         [[ -n "$fs_boundary" ]] && fs_boundary='-mount'
-        find $follow_links . -mindepth 1 $maxDepthParam $file_type $fs_boundary -exec du -a "$du_size_unit" '{}' +  2>/dev/null | \
+        find $follow_links . -mindepth 1 $maxDepthParam $file_type $fs_boundary -exec du -a "$du_size_unit" '{}' \+  2>/dev/null | \
                 sort -n $reverse | \
                 head -$itemsToShow
 
@@ -2936,10 +2936,16 @@ xclass() {
 ################
 ## Smarter CD ##
 ################
-# note this is fronted by goto() for interactive usage
+# note this is fronted by goto()/gt() for interactive usage
 _goto() {
+    local i
     [[ -z "$*" ]] && { err "node operand required" "$FUNCNAME"; return 1; }
-    [[ -d "$*" ]] && { cd -- "$*"; } || cd -- "$(dirname -- "$(readlink -f -- "$*")")";  # readlink, as realpath might not be avail
+
+    if [[ -d "$*" ]]; then
+        cd -- "$*"
+    else
+        i="$(readlink -f -- "$*")" && cd -- "$(dirname -- "$i")" || return 1  # readlink, as realpath might not be avail
+    fi
 }
 
 
@@ -4141,7 +4147,8 @@ d() {  # mnemonic: dir
 
 
 # select recent dir or file and cd to it
-# TODO: manually invoke add_nodes_to_fasd() on result? or should this be done in _goto()?
+# TODO: manually invoke add_nodes_to_fasd() on result? or should this be done in _goto()? thing in _goto() makes more sense
+# TODO: maybe _goto should be goto, and only gt to provide fasd integration?
 goto() {
     local node
 
@@ -4149,7 +4156,13 @@ goto() {
     [[ "$*" == */ && -d "$*" ]] && { _goto "$*"; return $?; }  # TODO: only short-circuit if dir-arg ends with slash?
 
     node="$(fasd -Ral "$@" | fzf -1 -0 --no-sort +m --exit-0)"
-    [[ -f "$node" || -d "$node" ]] && _goto "$node" && return 0 || return 1
+    if [[ -e "$node" ]]; then
+        _goto "$node"
+    elif [[ "$*" != */ && "$*" == */* ]]; then
+        _goto "$*"
+    else
+        return 1
+    fi
 }
 
 gt() { goto "$@"; }  # alias to goto()
