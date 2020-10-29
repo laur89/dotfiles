@@ -48,6 +48,7 @@ alias goo='googler'
 alias define='googler -n 4 define'
 alias py3='python3'
 alias dunc='ncdu'  # never remember it; if it starts w/ 'du', it'll be more likely to find
+alias dfpy='pydf'
 alias tgo='tmux new -A -s' # start a new tmux session, or attach to it if already exists
 alias ngo='nvim --listen /tmp/nvim_$USER' # start the _main_/master nvim process, listening on given socket; that socket will be used by nvr (neovim-remote)
 alias got='tgo'
