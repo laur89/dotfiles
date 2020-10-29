@@ -82,7 +82,7 @@ alias c='clear'
 alias cp='cp -rp'  # TODO: add -i for overwrite prompt? what about scripts that use cp?
 alias scp='scp -rp'
 alias dig='dig +search'  # https://serverfault.com/questions/434581/why-can-host-and-nslookup-resolve-a-name-but-dig-cannot/899996
-alias dfh='df -h'
+alias dfh='df -h'  # see also 'pydf' for py-based prettier df version
 #alias less="less -IRKFX" # handled by the $LESS env var
 ###############################
 alias ls='ls -h --color=auto --group-directories-first'

@@ -4156,6 +4156,8 @@ install_from_repo() {
     declare -ar block2=(
         dnsutils
         dnstracer
+        mtr
+        whois
         dnsmasq
         resolvconf
         network-manager
@@ -4163,18 +4165,20 @@ install_from_repo() {
         jq
         crudini
         htop
+        bpytop
         glances
         iotop
         ncdu
         pydf
         nethogs
-        etherape
         nload
+        iftop
+        etherape
         tcpdump
         tcpflow
         ngrep
-        ntp
         ncat
+        ntp
         remind
         tkremind
         wyrd
@@ -5050,7 +5054,7 @@ configure_pulseaudio() {
     # https://zach-adams.com/2014/07/bluetooth-audio-sink-stream-setup-failed/
     is_laptop && is_native && conf_lines+=('load-module module-bluetooth-discover')
 
-    [[ -f "$conf" ]] || { err "[$conf] is not a valid file."; return 1; }
+    [[ -f "$conf" ]] || { err "[$conf] is not a valid file; is pulseaudio installed?"; return 1; }
 
     for i in "${conf_lines[@]}"; do
         if ! grep -qFx "$i" "$conf"; then
@@ -5080,6 +5084,7 @@ init_seafile_cli() {
 }
 
 
+# note this is only to be invoked manually
 setup_seafile_cli() {
     local ccnet_conf parent_dir libs lib user passwd
 
@@ -6163,12 +6168,18 @@ exit
 #
 # UTILS:
 # - for another bandwidth monitor, see https://github.com/tgraf/bmon
+# - yet another top: bpytop: https://github.com/aristocratos/bpytop
+#   required true colors, so urxvt doesn't quite cut it :(
 # - for laptop power management, see also laptop-mode-tools https://github.com/rickysarraf/laptop-mode-tools (there's also arch wiki on it)
 #
 # OTHER PROGS:
 # - another raster image editor: krita (more for painting & illustration)
+# - TODO/productivity mngr: https://github.com/johannesjo/super-productivity
 #
 # vifm alternatives:
 #  - https://github.com/jarun/nnn
 #  - https://github.com/dylanaraps/fff - bash file mngr
 #  - https://github.com/gokcehan/lf    - go-based ranger-alike
+#
+#
+# list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/

@@ -557,10 +557,12 @@ __find_top_big_small_fun() {
     fi
 }
 
+# note: consider using ncdu instead
 ffindtopbig() {
     __find_top_big_small_fun M large 10 "$@"
 }
 
+# note: consider using ncdu instead
 ffindtopsmall() {
     #find . -type f -exec ls -s --block-size=K {} \; | sort -n | head -$itemsToShow 2>/dev/null
     __find_top_big_small_fun K small 10 "$@"
@@ -4139,11 +4141,13 @@ d() {  # mnemonic: dir
 
 
 # select recent dir or file and cd to it
-# TODO: manually invoke add_nodes_to_fasd() on result?
+# TODO: manually invoke add_nodes_to_fasd() on result? or should this be done in _goto()?
 goto() {
     local node
 
     check_progs_installed fasd fzf || return 1
+    [[ "$*" == */ && -d "$*" ]] && { _goto "$*"; return $?; }  # TODO: only short-circuit if dir-arg ends with slash?
+
     node="$(fasd -Ral "$@" | fzf -1 -0 --no-sort +m --exit-0)"
     [[ -f "$node" || -d "$node" ]] && _goto "$node" && return 0 || return 1
 }
