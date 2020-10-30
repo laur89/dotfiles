@@ -24,14 +24,13 @@ steps separately apart from the full installation mode.
     * can be found from https://www.debian.org/devel/debian-installer/
     * (or https://cdimage.debian.org/cdimage/daily-builds/daily/arch-latest/amd64/iso-cd/
       more specifically)
-    * *Note*: sometimes the daily images are broken, verify build is passing [here](https://d-i.debian.org/daily-images/daily-build-overview.html)
+    * *Note*: sometimes the daily images are broken, verify the build is passing [here](https://d-i.debian.org/daily-images/daily-build-overview.html)
       before downloading.
     * If you're installing on a laptop/wifi and need firmware, you might be better
-      off with these images:
-          http://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/weekly-builds/amd64/iso-cd/
-          ([shortcut](http://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/weekly-builds/amd64/iso-cd/firmware-testing-amd64-netinst.iso))
-          OR _daily_ sid (dunno, couldn't find daily testing): http://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/daily-builds/sid_d-i/current/amd64/iso-cd/
-          ([shortcut](http://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/daily-builds/sid_d-i/current/amd64/iso-cd/firmware-testing-amd64-netinst.iso))
+      off with these [unofficial images w/ firmware](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/weekly-builds/amd64/iso-cd/):
+      - [weekly netinstall w/ firmware](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/weekly-builds/amd64/iso-cd/firmware-testing-amd64-netinst.iso)
+      - OR [daily sid w/ firmware](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/daily-builds/sid_d-i/current/amd64/iso-cd/firmware-testing-amd64-netinst.iso)
+        from [this page](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/daily-builds/sid_d-i/current/amd64/iso-cd/)
 
 1. optionally preseed the installation (`esc` when graphical menu appears):
 
