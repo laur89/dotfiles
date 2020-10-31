@@ -21,8 +21,6 @@ set nocompatible " Must be the first line
 
             " make directory for the persistent undo storage (not related to vim-plug)...
             silent !mkdir -p $HOME/.config/nvim/undo
-            " ...and for tags (used by vim-easytags): # TODO: remove once easytags has been nuked
-            silent !mkdir -p $HOME/.config/nvim/tags
         endif
     """ }}}
 
@@ -40,17 +38,17 @@ set nocompatible " Must be the first line
     "Plug 'chrisbra/SudoEdit.vim'
 
     " A pretty statusline, bufferline integration:
-    "Plug 'itchyny/lightline.vim' "liiga minimalist mu jaoks
-    " !! use either vim-airline OR powerline !!
-    "   also, pwrline needs to be installed EITHER with vim-plug-manager OR by pip, never /w both
+    "Plug 'itchyny/lightline.vim'  " too minimalist for me
     Plug 'vim-airline/vim-airline'
     Plug 'bling/vim-bufferline'
 
     " Easy... motions... yeah.
-    Plug 'Lokaltog/vim-easymotion'
-
+    Plug 'easymotion/vim-easymotion'
     " TODO: check out this alternative to easymotion:
     "Plug  'justinmk/vim-sneak'
+
+    " extend fFtT to be repeatable:
+    Plug 'rhysd/clever-f.vim'
 
     " Glorious colorscheme
     "Plug 'nanotech/jellybeans.vim'
@@ -58,12 +56,13 @@ set nocompatible " Must be the first line
     Plug 'morhetz/gruvbox'  " TODO: consider changing to gruvbox-community/gruvbox
 
     " Super easy commenting, toggle comments etc
-    Plug 'scrooloose/nerdcommenter'
+    Plug 'preservim/nerdcommenter'
 
     " Autoclose (, " etc; ie when you insert an (, then ) will be automatically
     " inserted, and cursor placed between them;
     "Plug 'Townk/vim-autoclose'
-    " uses delimitMate instead of vim-autoclose, if you use YCM (they conflict):
+    " use delimitMate instead of vim-autoclose, if you use YCM (they conflict):
+    " TODO: does it conflict with tpope/vim-endwise?
     Plug 'Raimondi/delimitMate'
 
     " Git wrapper inside Vim
@@ -71,7 +70,9 @@ set nocompatible " Must be the first line
 
     " better git log borwser (hit :gitv)
     " !!! depfnds on tpope/fugitive !!!
-    Plug 'gregsexton/gitv', {'on': ['Gitv']}
+    "Plug 'gregsexton/gitv', {'on': ['Gitv']}  # looks like no longer maintained?
+    " alternative to gregsexton/gitv:
+    Plug 'rbong/vim-flog'
 
     " Handle surround chars like ''
     Plug 'tpope/vim-surround'
@@ -106,7 +107,7 @@ set nocompatible " Must be the first line
 
     " Functions, class data etc.
     " REQUIREMENTS: (exuberant)-ctags
-    "Plug 'majutsushi/tagbar'
+    Plug 'preservim/tagbar'
 
     " Ctags generator/highlighter (note the vim-misc is dependency for it)
     Plug 'ludovicchabant/vim-gutentags'  " alt: jsfaint/gen_tags.vim
@@ -122,14 +123,14 @@ set nocompatible " Must be the first line
     "Plug 'jlanzarotta/bufexplorer'
 
     " File browser
-    Plug 'scrooloose/nerdtree', { 'on': ['NERDTreeToggle', 'NERDTreeFind'] }
+    Plug 'preservim/nerdtree', { 'on': ['NERDTreeToggle', 'NERDTreeFind'] }
 
     " Visualise the undo tree
     Plug 'simnalamburt/vim-mundo', { 'on': 'MundoToggle' }  " gundo fork with neovim support
 
     " fast mechanism to open files and buffers.
     " requires compiling - read the docs/wiki!
-    " perhaps time to deprecate for ctrl-p?
+    " TODO perhaps time to deprecate? we're using Rg anyways?
     Plug 'wincent/Command-T'
 
     " development completion engine (integrates with utilsnips and deprecates
@@ -214,6 +215,7 @@ set nocompatible " Must be the first line
 
     " provides text-object 'a' (argument) - you can delete, change, select etc in
     " familiar ways;, eg daa, cia,...
+    " TODO: deprecate?
     Plug 'vim-scripts/argtextobj.vim'
 
     " gives 'f' textobj so vaf to select javascript function
@@ -226,12 +228,14 @@ set nocompatible " Must be the first line
     Plug 'jelera/vim-javascript-syntax'
 
     " show search window as 'at match # out of # matches':
-    Plug 'henrik/vim-indexed-search'
+    " looks like now supported natively by vim/nvim? see 'set shortmess-=S' conifg
+    "Plug 'henrik/vim-indexed-search'
 
     " adds . (repeat) functionality to more complex commands instead of the native-only ones:
     Plug 'tpope/vim-repeat'
 
     " ends if-blocks etc for few langs:
+    " TODO: does it conflict with delimitMate plugin?
     Plug 'tpope/vim-endwise'
 
     " vim sugar for unix shell commands:
@@ -265,6 +269,7 @@ set nocompatible " Must be the first line
     " universal text linking (here for orgmode hyperlink support) " vim-scripts/utl.vim
     Plug 'vim-scripts/utl.vim'
 
+    " i3 config syntax highlighting:
     Plug 'mboughaba/i3config.vim'
 
     Plug 'junegunn/fzf.vim'  " https://github.com/junegunn/fzf.vim
@@ -296,10 +301,6 @@ set nocompatible " Must be the first line
         map <F1> :TagbarToggle<CR>
         nmap <F8> :TagbarToggle<CR>
 
-        " Toggle pastemode, doesn't indent
-        "set pastetoggle=<F3>
-        set pastetoggle=<F6>
-
         " Syntastic - toggle error list. Probably should be toggleable.
         "noremap <silent><leader>lo :Errors<CR>
         "noremap <silent><leader>lc :lcl<CR>
@@ -317,9 +318,6 @@ set nocompatible " Must be the first line
         nnoremap <silent> <c-k> :TmuxNavigateUp<cr>
         nnoremap <silent> <c-l> :TmuxNavigateRight<cr>
         "nnoremap <silent> <todo> :TmuxNavigatePrevious<cr>
-
-        " powerline (disable if using airline instead):
-        "set rtp+=/usr/local/lib/python2.7/dist-packages/powerline/bindings/vim/
 
         " CamelCaseMotion: Replace the default 'w', 'b' and 'e' mappings instead of defining additional mappings ',w', ',b' and ',e': ...
         "map <silent> w <Plug>CamelCaseMotion_w
@@ -353,8 +351,9 @@ set nocompatible " Must be the first line
 
 
     " yankring:
-    " remap c-p so CtrlP could use it:
+    " remap c-p so CtrlP/fzf could use it:
     " TODO: think of an actual mappings!:
+    " TODO: leader+{p,P} conflict with our other pasting mappings!!!
     let g:yankring_replace_n_pkey = '<leader>p'
     let g:yankring_replace_n_nkey = '<leader>P'
     let g:yankring_history_dir = '$HOME/.config/nvim'
@@ -389,33 +388,12 @@ set nocompatible " Must be the first line
     let g:tagbar_left = 0
     let g:tagbar_width = 30
 
-    " vim-easytags/gutentags (not sure if latter uses this set 'tags'):
-    "set tags=./.tags;,~/.vimtags
+    " gutentags
+    "set tags=./.tags;,~/.vimtags   <-- TODO: does gutentags use this one? vim-easytags did, this not so sure
     set statusline+=%{gutentags#statusline()}  " show when we're generating tags
     "let g:gutentags_trace=1  " debug
     let g:gutentags_ctags_tagfile = '.tags'
     let g:gutentags_resolve_symlinks=0
-    "let g:easytags_dynamic_files = 1 " search for project specific tags; relative to wd or buffer!
-    "let g:easytags_by_filetype = '~/.config/nvim/tags' " TODO: how to use with jsctags?; also fyi -  dynamic_files takes precedence over this
-    "let g:easytags_always_enabled = 1
-    "let g:easytags_on_cursorhold = 1
-    "let g:easytags_async = 1
-    "let g:easytags_include_members = 1
-    "let g:easytags_autorecurse = 1 "!!! makes stuff slooooow
-    "let g:easytags_events = ['BufWritePost']
-    "let g:easytags_languages = {
-                "\   'javascript': {
-                "\     'cmd': 'jsctags',
-                "\       'args': ['-f', '$HOME/.config/nvim/tags/javascript'],
-                "\   },
-                "\   'haskell': {
-                "\       'cmd': '~/.cabal/bin/lushtags',
-                "\       'args': [],
-                "\       'fileoutput_opt': '-f',
-                "\       'stdout_opt': '-f-',
-                "\       'recurse_flag': '-R'
-                "\   }
-                "\}
 
     " eclim:
     " eclim completon registration to vim's omni complete which YCM automatically detects:
@@ -466,7 +444,7 @@ set nocompatible " Must be the first line
         "let g:UltiSnipsJumpForwardTrigger="<c-j>"
         "let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 
-        " If you want :UltiSnipsEdit to split your window.
+        " How you want :UltiSnipsEdit to split your window:
         let g:UltiSnipsEditSplit="vertical"
     """ }}}  /ultisnips-YCM
 

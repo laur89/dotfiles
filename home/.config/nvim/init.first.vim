@@ -114,6 +114,7 @@
     set nowrap                                      " don't wrap lines
     set numberwidth=5                               " 99999 lines
     set shortmess+=I                                " disable startup message
+    "set shortmess-=S                                " show 1/n count in statusbar when searching? TODO not working? was recommended in https://github.com/google/vim-searchindex
     set splitbelow                                  " splits go below w/focus
     set splitright                                  " vsplits go right w/focus
     set ttyfast                                     " for faster redraws etc
@@ -128,6 +129,8 @@
                                                     " for file-specific settings.
     set nomodeline                                  " security
     set lazyredraw                                  " redraw only when need to
+    set pastetoggle=<F6>                            " key for toggling paste mode (TODO: move to 'Keybindings' section?)
+
 
     if !has('nvim') && !exists("$__REMOTE_SSH")
         set viminfo+=n~/.config/nvim/viminfo  " TODO: this is wrong right, for nvim it's shada (~/.local/share/nvim/shada/main.shada by default)
@@ -158,7 +161,7 @@
     "au FocusLost * :wa
 
     " auto-reload vimrc on save:
-    autocmd! BufWritePost ~/.config/nvim/init.vim nested :source ~/.config/nvim/init.vim
+    autocmd! BufWritePost ~/.config/nvim/init.* nested :source ~/.config/nvim/init.vim
 
     """ Folding {{{
         set foldcolumn=0                            " hide folding column
@@ -168,7 +171,7 @@
     """ }}}
 
     """ Search and replace {{{
-        set gdefault                                " default s//g (global)
+        set gdefault                                " default s//g (global); note adding /g toggles global!
         set incsearch                               " "live"-search, ie incremental search
     """ }}}
 
@@ -178,7 +181,8 @@
         set showmatch                               " shows matching bracket when cursor is over
     """ }}}
 
-    """ Return to last edit position when opening files {{{
+    """ Return to last edit position when opening files, ie remember last position. {{{
+        " note there's also a plugin for remembering last position: https://github.com/farmergreg/vim-lastplace
         augroup LastPosition
             autocmd! BufReadPost *
                 \ if line("'\"") > 0 && line("'\"") <= line("$") |
@@ -245,12 +249,11 @@
         nnoremap <silent> <Space> @=(foldlevel('.')?'za':"\<Space>")<CR>
         vnoremap <Space> zf
 
-        " buffer delete fix (fix as in won't exit the window when dropping buffer, eg
-        " with NerdTree):
+        " buffer delete fix (fix as in won't exit the window when dropping buffer, eg with NerdTree):
         "nnoremap <leader>q :bp<cr>:bd #<cr>  "old
         nnoremap <leader>q :e #<cr>:bd #<cr>
 
-        " Bubbling (bracket matching)
+        " Bubbling (bracket matching)  TODO: what is this?
         nmap <C-up> [e
         nmap <C-down> ]e
         vmap <C-up> [egv
@@ -272,7 +275,7 @@
         nnoremap <F1> <nop>
         vnoremap <F1> <nop>
 
-        " Disable annoying ex mode (Q) (note we do have noremap Q below)
+        " Disable annoying ex mode (Q) (note we do have a new mapping for Q below)
         "map Q <nop>
 
         " This is totally awesome - remap jj to escape in insert mode.
@@ -311,10 +314,10 @@
         " avoid typos:
         nnoremap ; :
 
-        " only write file when something changed.
+        " only write file when something changed
         "map :w :update
 
-        " Use CTRL-S for saving, also in Insert mode
+        " Use CTRL-S for saving, also in Insert mode; make sure your shell is not catching ctrl+s (eg 'stty -ixon' setting for bash to disable)
         noremap <C-S>       :update<CR>
         vnoremap <C-S>      <C-C>:update<CR>
         inoremap <C-S>      <C-O>:update<CR>
@@ -363,7 +366,7 @@
     """ }}}
 
     """ Tabs {{{
-        " tab switching:
+        " tab switching, similar to browser tabs:
         map <A-1> <Esc>:tabn 1<CR>
         map <A-2> <Esc>:tabn 2<CR>
         map <A-3> <Esc>:tabn 3<CR>
@@ -388,7 +391,7 @@
         nnoremap tp  :tabprev<CR>
         nnoremap tl  :tablast<CR>
         nnoremap tt  :tabedit<CR>
-        nnoremap tm  :tabm<Space> "tabmove
+        nnoremap tm  :tabm<Space>
         nnoremap td  :tabclose<CR>
 
         " Move to prev/next tabpage:  (disables moving to top/bottom)
@@ -396,10 +399,12 @@
         "nnoremap <S-l> gt
 
         " copy file name and -path:  TODO, needs refining
-        nnor ,cf :let @*=expand("%:p")<CR>    " Mnemonic: Copy File path
-        nnor ,yf :let @"=expand("%:p")<CR>    " Mnemonic: Yank File path
-        nnor ,fn :let @"=expand("%")<CR>      " Mnemonic: yank File Name
-
+        " Mnemonic: Copy File path:
+        nnor ,cf :let @*=expand("%:p")<CR>    
+        " Mnemonic: Yank File path:
+        nnor ,yf :let @"=expand("%:p")<CR>    
+        " Mnemonic: yank File Name:
+        nnor ,fn :let @"=expand("%")<CR>      
     """ }}}
 
     " Maps to resizing a window split (Warn: conflict with indentation)
@@ -426,6 +431,7 @@
                 endif
             endfunction
 
+            " TODO: any point for this feature?
             nnoremap <leader>s :call ToggleSyntaxHighlighthing()<CR>
         """ }}}
 
@@ -473,6 +479,7 @@
         """ }}}
 
         """ Split to relative header/source {{{
+            " TODO: what is this one for?
             function! SplitRelSrc()
                 let s:fname = expand("%:t:r")
 
