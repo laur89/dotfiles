@@ -400,7 +400,7 @@ _fzf_compgen_dir() {
 # TODO: see also about setting _fzf_comprun()?
 ########################################## fasd
 # fasd init caching and loading:  (https://github.com/clvv/fasd)
-# note we also modify the cache
+# !! note we also modify the cache here
 if command -v fasd > /dev/null; then
     fasd_cache="$HOME/.fasd-init-bash.cache"
 

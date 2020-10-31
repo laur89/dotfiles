@@ -115,7 +115,7 @@ if is_native && ! is_proc_running compton; then
     compton --config ~/.compton.conf --respect-prop-shadow &  #--daemon
 fi
 
-if is_native && ! is_proc_running syndaemon && is_laptop; then
+if is_native && is_laptop && ! is_proc_running syndaemon; then
     syndaemon -d -t -K -i 1.5
     echo "Launching syndaemon..."
 fi
