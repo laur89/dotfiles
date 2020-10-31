@@ -326,10 +326,10 @@ set nocompatible " Must be the first line
         "sunmap w
         "sunmap b
         "sunmap e
-        " ...or define the <leader>-motion options:
-        map <silent><leader> w <Plug>CamelCaseMotion_w
-        map <silent><leader> b <Plug>CamelCaseMotion_b
-        map <silent><leader> e <Plug>CamelCaseMotion_e
+        " ...or define the <leader>-motion options (my preferred mappings for this plugin):
+        "map <silent><leader> w <Plug>CamelCaseMotion_w
+        "map <silent><leader> b <Plug>CamelCaseMotion_b
+        "map <silent><leader> e <Plug>CamelCaseMotion_e
 
         " yankring:
         nnoremap <silent> <F11> :YRShow<CR> "displays the yankring window
@@ -392,8 +392,16 @@ set nocompatible " Must be the first line
     "set tags=./.tags;,~/.vimtags   <-- TODO: does gutentags use this one? vim-easytags did, this not so sure
     set statusline+=%{gutentags#statusline()}  " show when we're generating tags
     "let g:gutentags_trace=1  " debug
+    "let g:gutentags_cache_dir = '~/.cache/gutentags'  " if we want to store all tags in central location, not at root of projects
     let g:gutentags_ctags_tagfile = '.tags'
     let g:gutentags_resolve_symlinks=0
+    let g:gutentags_project_root = ['.root_marker']  " user-defined list of markers, in addition to list of default ones
+    let g:gutentags_file_list_command = {
+        \ 'markers': {
+            \ '.git': 'git ls-files',
+            \ '.hg': 'hg files',
+            \ },
+        \ }
 
     " eclim:
     " eclim completon registration to vim's omni complete which YCM automatically detects:
