@@ -57,6 +57,7 @@ set nocompatible " Must be the first line
 
     " Super easy commenting, toggle comments etc
     Plug 'preservim/nerdcommenter'
+    " see also https://github.com/tomtom/tcomment_vim
 
     " Autoclose (, " etc; ie when you insert an (, then ) will be automatically
     " inserted, and cursor placed between them;
@@ -79,6 +80,11 @@ set nocompatible " Must be the first line
 
     " Align your = etc.
     Plug 'vim-scripts/Align'  " see also lion
+    " TODO: start using this instead:
+    "Plug 'junegunn/vim-easy-align'    
+
+    " basically here only so vim-puppet can auto-align rockets:
+    "Plug 'godlygeek/tabular'
 
     " Snippets like textmate
     "Plug 'MarcWeber/vim-addon-mw-utils' "vim-snipmate depends on this one
@@ -92,7 +98,6 @@ set nocompatible " Must be the first line
     " Vim signs (:h signs) for modified lines based off VCS (e.g. Git)
     " for git-only usage, consider vim-gitgutter
     Plug 'mhinz/vim-signify'
-
     " git-only support similar to vim-signify (only use one of them!)
     "Plug 'airblade/vim-gitgutter'
 
@@ -109,9 +114,9 @@ set nocompatible " Must be the first line
     " REQUIREMENTS: (exuberant)-ctags
     Plug 'preservim/tagbar'
 
-    " Ctags generator/highlighter (note the vim-misc is dependency for it)
+    " Ctags generator/highlighter
     Plug 'ludovicchabant/vim-gutentags'  " alt: jsfaint/gen_tags.vim
-    Plug 'xolox/vim-misc'
+    Plug 'xolox/vim-misc'  " remove once we no longer use any of xolox' plugins that use vim-misc as dependency
     Plug 'xolox/vim-session'  " TODO: replace with tpope/vim-obsession?
     "Plug 'xolox/vim-notes'  " alternative: http://orgmode.org/
     Plug 'fmoralesc/vim-pad', { 'branch': 'devel' }   " alt to vim-notes
@@ -170,9 +175,6 @@ set nocompatible " Must be the first line
     " supertab: (only so YCM and UltiSnips could play along, otherwise don't need)
     " <Tab> everything!
     Plug 'ervandew/supertab'
-
-    " basically here only so vim-puppet can auto-align rockets:
-    "Plug 'godlygeek/tabular'
 
     " yankring: hold copy of yanked elements:
     " alternative: yankstack
@@ -273,8 +275,7 @@ set nocompatible " Must be the first line
     Plug 'mboughaba/i3config.vim'
 
     Plug 'junegunn/fzf.vim'  " https://github.com/junegunn/fzf.vim
-
-    set rtp+=~/.fzf  "https://github.com/junegunn/fzf
+    set rtp+=~/.fzf 
 
 
     " Finish vim-plug stuff
@@ -626,12 +627,25 @@ set nocompatible " Must be the first line
 if executable("rg")
     command! -bang -nargs=* Rg
           \ call fzf#vim#grep(
-          \   'rg --column --line-number --no-heading --hidden --follow --color=always --ignore-case '.shellescape(<q-args>), 1,
+          \   'rg --column --line-number --no-heading --hidden --follow --color=always --smart-case '.shellescape(<q-args>), 1,
           \   <bang>0 ? fzf#vim#with_preview('up:60%')
           \           : fzf#vim#with_preview('right:50%', '?'),
           \   <bang>0)
 
-    " additional rg-related additions:
+
+    " define new RG command where the input in fzf is the input to rg - every time you change it, rg process is re-invoked;
+    " this also mean in this mode fzf is a dummy selector, not a fuzzy finder itself:
+    function! RipgrepFzf(query, fullscreen)
+      let command_fmt = 'rg --column --line-number --no-heading --color=always --smart-case -- %s || true'
+      let initial_command = printf(command_fmt, shellescape(a:query))
+      let reload_command = printf(command_fmt, '{q}')
+      let spec = {'options': ['--phony', '--query', a:query, '--bind', 'change:reload:'.reload_command]}
+      call fzf#vim#grep(initial_command, 1, fzf#vim#with_preview(spec), a:fullscreen)
+    endfunction
+    command! -nargs=* -bang RG call RipgrepFzf(<q-args>, <bang>0)
+
+
+    " this one will define command used with  :grep
     set grepprg=rg\ --vimgrep\ --no-heading
 endif
 
@@ -641,6 +655,15 @@ nnoremap <leader><C-P> :Files<CR>
 " Likewise, Files command with preview window:
 command! -bang -nargs=? -complete=dir Files
     \ call fzf#vim#files(<q-args>, fzf#vim#with_preview(), <bang>0)
+" same as previous 'Files' definition, but with spec dictionary:
+"command! -bang -nargs=? -complete=dir Files
+    "\ call fzf#vim#files(<q-args>, fzf#vim#with_preview({'options': ['--layout=reverse', '--info=inline']}), <bang>0)
+
+" git-grep wrapper (again, from fzf.vim readme); defines GGrep command:
+command! -bang -nargs=* GGrep
+  \ call fzf#vim#grep(
+  \   'git grep --line-number -- '.shellescape(<q-args>), 0,
+  \   fzf#vim#with_preview({'dir': systemlist('git rev-parse --show-toplevel')[0]}), <bang>0)
 
 
 """ automatically close terminal {{{
