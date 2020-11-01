@@ -239,6 +239,30 @@ setup_udev() {
 }
 
 
+# see https://wiki.archlinux.org/index.php/S.M.A.R.T.
+#
+# TODO: maybe instead of systemctl, enable smartd via     sudo vim /etc/default/smartmontools. Uncomment the line start_smartd=yes.   ?
+# TODO: enable smart on all drives if not enabeld & remove logic from common_startup?
+setup_smartd() {
+    local conf c
+
+    conf='/etc/smartd.conf'
+    c='DEVICESCAN -a -o on -S on -n standby,q -s (S/../.././02|L/../../6/03) -W 4,35,40 -m smart_mail_alias -M exec /usr/local/bin/smartdnotify'  # TODO: create the script! from there we mail & notify; note script shouldn't write anything to stdout/stderr, otherwise it ends up in syslog
+
+    [[ -f "$conf" ]] || { err "cannot configure smartd, its conf file [$conf] does not exist; abort;"; return 1; }
+    execute "sudo sed -i --follow-symlinks '/^DEVICESCAN.*$/d' '$conf'"  # nuke previous setting
+    execute "echo '$c' | sudo tee --append $conf > /dev/null"
+
+    execute 'systemctl enable --now smartd.service'
+}
+
+
+# TODO: set up msmtprc for system (/etc/msmtprc ?) so sendmail works; don't forget to add aliases, eg 'smart_mail_alias'; refer to arch wiki for more info
+setup_mail() {
+    true
+}
+
+
 # TODO: shouldn't it be COMMON_PRIVATE_DOTFILES/backups?
 setup_systemd() {
     local sysd_src sysd_target file tmpfile
@@ -1330,7 +1354,7 @@ setup_global_bash_settings() {
 }
 
 
-# setup system config files (the ones not living under $HOME, ie not managed by homesick)
+# setup system config files (the ones _not_ living under $HOME, ie not managed by homesick)
 # has to be invoked AFTER homeschick castles are cloned/pulled!
 #
 # note that this block overlaps logically a bit with post_install_progs_setup() (not really tho, as p_i_p_s() requires specific progs to be installed beforehand)
@@ -1344,6 +1368,8 @@ setup_config_files() {
     setup_hosts
     setup_systemd
     is_native && setup_udev
+    #is_native && setup_smartd  #TODO: uncomment once finished!
+    setup_mail
     setup_global_shell_links
     setup_private_asset_perms
     setup_global_bash_settings
@@ -4344,6 +4370,7 @@ install_from_repo() {
         copyq
         googler
         msmtp
+        msmtp-mta
         davmail
         thunderbird
         lightning
@@ -4363,6 +4390,7 @@ install_from_repo() {
         python3-pygments
         urlview
         silversearcher-ag
+        ugrep
         locate
         cowsay
         cowsay-off
@@ -6193,6 +6221,7 @@ exit
 
 # common debugging:
 #   sudo dmesg | grep -i apparmor | grep -i denied  <- shows if some stuff is blocked by apparmor (eg we had this issue with msmtp if .msmtprc was under /data, not somewhere under $HOME)
+#   journalctl -u apparmor   <- eg when at boot-time it compalined 'Failed to load AppArmor profiles'
 
 # TODOS:
 # - if apt-get update fails, then we should fail script fast?
