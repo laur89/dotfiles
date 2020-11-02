@@ -93,7 +93,7 @@ set nocompatible " Must be the first line
     Plug 'SirVer/ultisnips'             "...the engine.
 
     " A fancy start screen, shows MRU etc:
-    Plug 'mhinz/vim-startify'
+    "Plug 'mhinz/vim-startify'
 
     " Vim signs (:h signs) for modified lines based off VCS (e.g. Git)
     " for git-only usage, consider vim-gitgutter
@@ -170,10 +170,6 @@ set nocompatible " Must be the first line
 
     " navigate seamlessly btw vim & tmux splits (don't forget tmux plugin or bindings in .tmux.conf as well):
     Plug 'christoomey/vim-tmux-navigator'
-
-    " supertab: (only so YCM and UltiSnips could play along, otherwise don't need)
-    " <Tab> everything!
-    Plug 'ervandew/supertab'
 
     " yankring: hold copy of yanked elements:
     " alternative: yankstack
@@ -438,17 +434,15 @@ set nocompatible " Must be the first line
             "
 
         " another solution form the same stackOverflow topic:
-        " make YCM compatible with UltiSnips (using supertab):
+        " make YCM compatible with UltiSnips (note no longer using supertab!):
         let g:ycm_key_list_select_completion = ['<C-j>', '<Down>']
         let g:ycm_key_list_previous_completion = ['<C-k>', '<Up>']
-        let g:ycm_python_binary_path = 'python3'
-        let g:SuperTabDefaultCompletionType = '<C-j>' "enables us to use tab to cycle through non-ultisnip items
+        "let g:SuperTabDefaultCompletionType = '<C-j>' "enables us to use tab to cycle through non-ultisnip items
 
         " better key bindings for UltiSnipsExpandTrigger
         let g:UltiSnipsExpandTrigger = "<tab>"
         let g:UltiSnipsJumpForwardTrigger = "<tab>"
         let g:UltiSnipsJumpBackwardTrigger = "<s-tab>"
-
         " alternative to the previous:
         "let g:UltiSnipsExpandTrigger="<c-j>""
         "let g:UltiSnipsJumpForwardTrigger="<c-j>"
