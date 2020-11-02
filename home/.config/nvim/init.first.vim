@@ -400,11 +400,11 @@
 
         " copy file name and -path:  TODO, needs refining
         " Mnemonic: Copy File path:
-        nnor ,cf :let @*=expand("%:p")<CR>    
+        nnor ,cf :let @*=expand("%:p")<CR>
         " Mnemonic: Yank File path:
-        nnor ,yf :let @"=expand("%:p")<CR>    
+        nnor ,yf :let @"=expand("%:p")<CR>
         " Mnemonic: yank File Name:
-        nnor ,fn :let @"=expand("%")<CR>      
+        nnor ,fn :let @"=expand("%")<CR>
     """ }}}
 
     " Maps to resizing a window split (Warn: conflict with indentation)

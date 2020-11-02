@@ -168,8 +168,7 @@ set nocompatible " Must be the first line
     " js beautifier:
     "Plug 'jsbeautify'
 
-    " navigate seamlessly btw vim & tmux splits (don't forget tmux bindings in
-    " .tmux.conf as well):
+    " navigate seamlessly btw vim & tmux splits (don't forget tmux plugin or bindings in .tmux.conf as well):
     Plug 'christoomey/vim-tmux-navigator'
 
     " supertab: (only so YCM and UltiSnips could play along, otherwise don't need)
@@ -209,6 +208,7 @@ set nocompatible " Must be the first line
     Plug 'dkprice/vim-easygrep'
 
     " nicer in-buffer search with *; also clears highlight on cursor move
+    " another alternative: https://github.com/pgdouyon/vim-evanesco
     Plug 'junegunn/vim-slash'
 
     " manipulate on blocks based on their indentation:
@@ -231,6 +231,7 @@ set nocompatible " Must be the first line
 
     " show search window as 'at match # out of # matches':
     " looks like now supported natively by vim/nvim? see 'set shortmess-=S' conifg
+    " !! also - looks like this plugin overrides junegunn/vim-slash
     "Plug 'henrik/vim-indexed-search'
 
     " adds . (repeat) functionality to more complex commands instead of the native-only ones:
@@ -555,6 +556,15 @@ set nocompatible " Must be the first line
         autocmd InsertLeave * if pumvisible() == 0|pclose|endif
     augroup END
 
+    " vim-slash:
+    " blink the cursor after search:
+    if has('timers')
+        " Blink 2 times with 50ms interval
+        noremap <expr> <plug>(slash-after) slash#blink(2, 50)
+    endif
+    " place current match at the center of window (ie zz upon search):
+    noremap <plug>(slash-after) zz
+
     " vim-notes
     let g:notes_directories = ['/data/Seafile/main/notes']
     let g:notes_suffix = '.note'
@@ -645,7 +655,7 @@ if executable("rg")
     command! -nargs=* -bang RG call RipgrepFzf(<q-args>, <bang>0)
 
 
-    " this one will define command used with  :grep
+    " this one will define command used by  :grep
     set grepprg=rg\ --vimgrep\ --no-heading
 endif
 
