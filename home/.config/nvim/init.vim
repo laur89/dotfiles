@@ -134,9 +134,9 @@ set nocompatible " Must be the first line
     Plug 'simnalamburt/vim-mundo', { 'on': 'MundoToggle' }  " gundo fork with neovim support
 
     " fast mechanism to open files and buffers.
-    " requires compiling - read the docs/wiki!
-    " TODO perhaps time to deprecate? we're using Rg anyways?
-    Plug 'wincent/Command-T'
+    " requires compiling - read the docs/wiki! (think ruby support is paramount)
+    " disabled atm as we're using FZF mainly now
+    "Plug 'wincent/Command-T'
 
     " development completion engine (integrates with utilsnips and deprecates
     " supertab et al; needs compilation! read the docs!:
@@ -271,6 +271,7 @@ set nocompatible " Must be the first line
     " i3 config syntax highlighting:
     Plug 'mboughaba/i3config.vim'
 
+    " consider intead of/also this: https://github.com/liuchengxu/vim-clap
     Plug 'junegunn/fzf.vim'  " https://github.com/junegunn/fzf.vim
     set rtp+=~/.fzf 
 
@@ -331,6 +332,9 @@ set nocompatible " Must be the first line
 
         " yankring:
         nnoremap <silent> <F11> :YRShow<CR> "displays the yankring window
+
+        " FZF stuff
+        nnoremap <leader>l :Lines<CR>
 
     """ }}}
 """ }}}
@@ -551,13 +555,13 @@ set nocompatible " Must be the first line
     augroup END
 
     " vim-slash:
+    " place current match at the center of window (ie zz upon search):
+    noremap <plug>(slash-after) zz
     " blink the cursor after search:
     if has('timers')
         " Blink 2 times with 50ms interval
         noremap <expr> <plug>(slash-after) slash#blink(2, 50)
     endif
-    " place current match at the center of window (ie zz upon search):
-    noremap <plug>(slash-after) zz
 
     " vim-notes
     let g:notes_directories = ['/data/Seafile/main/notes']

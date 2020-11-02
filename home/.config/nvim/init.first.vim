@@ -72,9 +72,10 @@
                                                     " name it).
         set title                                   " window title
         set vb t_vb=                                " disable beep and flashing
-        set wildignore=.bak,.pyc,.o,.ojb,.a,
+        set wildignore+=.bak,.pyc,.o,.ojb,.a,.orig,
                        \.pdf,.jpg,.gif,.png,.jpeg,
-                       \.avi,.mkv,.so               " ignore said files for tab completion
+                       \.avi,.mkv,.so,
+                       \*/node_modules/*,*/vendor/* " ignore said files for tab completion
         set wildmenu                                " better auto complete
         set wildmode=longest,list                   " bash-like auto complete
         set equalalways                             " keep splits equally sized
@@ -280,6 +281,9 @@
 
         " This is totally awesome - remap jj to escape in insert mode.
         inoremap jj <Esc>
+
+        " map Backspace to C+6 (ie switch to previous buffer):
+        nnoremap <BS> <C-^>
 
         " unhighlight searchresult (2 bindings)
         nmap <silent> ,/ :nohlsearch<CR>
