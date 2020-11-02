@@ -2910,7 +2910,7 @@ install_copyq() {
     execute "git clone -j8 $COPYQ_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
     readonly ver="$(git rev-parse HEAD)"
-    [[ -n "$ver" ]] && is_installed "$ver" && return 2
+    is_installed "$ver" && return 2
 
     report "installing copyq build dependencies..."
     install_block '
@@ -2980,7 +2980,7 @@ install_goforit() {
     execute "mkdir $tmpdir/build"
     execute "pushd $tmpdir/build" || return 1
     readonly ver="$(git rev-parse HEAD)"
-    [[ -n "$ver" ]] && is_installed "$ver" && return 2
+    is_installed "$ver" && return 2
 
     report "installing goforit build dependencies..."
     install_block '
@@ -3128,7 +3128,7 @@ install_i3lock() {
     execute "git tag -f 'git-$(git rev-parse --short HEAD)'" || return 1
 
     readonly ver="$(git rev-parse HEAD)"
-    [[ -n "$ver" ]] && is_installed "$ver" && return 2
+    is_installed "$ver" && return 2
 
     report "installing i3lock build dependencies..."
 
@@ -3185,7 +3185,7 @@ install_i3lock_fancy() {
     execute "git clone -j8 $I3_LOCK_FANCY_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
     readonly ver="$(git rev-parse HEAD)"
-    [[ -n "$ver" ]] && is_installed "$ver" && return 2
+    is_installed "$ver" && return 2
 
 
     #build_deb -D '--parallel' i3lock-fancy || err "build_deb() for i3lock-fancy failed"
@@ -3260,7 +3260,7 @@ EOF
     execute "git clone -j8 $I3_REPO_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
     readonly ver="$(git rev-parse HEAD)"
-    [[ -n "$ver" ]] && is_installed "$ver" && return 2
+    is_installed "$ver" && return 2
 
     _apply_patches  # TODO: should we bail on error?
     _fix_rules
@@ -4765,7 +4765,7 @@ quick_refresh() {
     readonly MODE=2
 
     setup
-    install_progs  # TODO: consider replacing by only install_own_builds()
+    install_progs
     install_deps
 }
 
@@ -4778,6 +4778,7 @@ quicker_refresh() {
     setup
     install_own_builds
     post_install_progs_setup
+    install_deps  # TODO: do we want this with mode=3?
 }
 
 
@@ -5011,7 +5012,7 @@ install_gtk_numix() {
     execute "git clone -j8 $theme_repo $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
     readonly ver="$(git rev-parse HEAD)"
-    [[ -n "$ver" ]] && is_installed "$ver" && return 2
+    is_installed "$ver" && return 2
 
     report "installing numix build dependencies..."
     rb_install sass || return 1
@@ -5361,6 +5362,7 @@ is_installed() {
 
     dl_url="$1"
 
+    [[ -z "$dl_url" ]] && { err "empty ver passed to $FUNCNAME by ${FUNCNAME[1]}"; return 2; }  # sanity
     if grep -Fq "$dl_url" "$GIT_RLS_LOG" 2>/dev/null; then
         report "[$dl_url] already encountered, skipping installation..."
         return 0
