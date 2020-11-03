@@ -2,6 +2,9 @@
 #
 # be careful /w sorting; search for this sentence under --sort flag in man pages:
 #  "Note that sorting results currently always forces ripgrep to abandon parallelism and run in a single thread."
+#
+# Note gitignore data is not resolved if gitconfig uses [include] blocks:
+#   https://github.com/BurntSushi/ripgrep/issues/1014
 ############################################
 
 # Don't let ripgrep vomit really long lines to my terminal, and show a preview.
@@ -37,7 +40,6 @@
 # search in compressed files
 --search-zip
 
-# for some reason not reproing for me anymore, but apparently some git config
-# (eg ignored files) might not be picked up if said conf is included via [include]
-# tags; in those cases see https://github.com/BurntSushi/ripgrep/issues/1014#issuecomment-626752654
-#--ignore-file=$git_global_exclude_file_memoize
+# respect .gitignore rules regardless whether you're searching in git repo or not:
+--no-require-git
+
