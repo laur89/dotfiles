@@ -373,7 +373,7 @@ __check_for_change_and_compile_ssh_config() {
 }
 
 __check_for_change_and_compile_ssh_config &
-disown $!
+#disown $!
 ########################################## fzf
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
@@ -408,6 +408,7 @@ if command -v fasd > /dev/null; then
         fasd --init posix-alias bash-hook bash-ccomp bash-ccomp-install >| "$fasd_cache"
 
         # comment out some of the default aliases, as our bash_functions (likely) provide our own:
+        # (alternatively we could remove 'posix-alias' from the fasd --init command)
         sed -i --follow-symlinks 's/^alias d=/#alias d=/' "$fasd_cache"
         sed -i --follow-symlinks 's/^alias z=/#alias z=/' "$fasd_cache"  # zoxide defines conflicting z alias, and we weren't using this alias anyway
 
@@ -585,35 +586,58 @@ elif type compctl &>/dev/null; then
 fi
 ###-end-npm-completion-###
 ########################################## nvr
+# TODO: instead of any nvr functions here, consider https://github.com/carlocab/tmux-nvr instead
+#
 # single nvim instance per tmux _window_  (from https://www.reddit.com/r/neovim/comments/aex45u/integrating_nvr_and_tmux_to_use_a_single_tmux_per/)
-if [[ -n "$TMUX" ]]; then
-    export NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}"  # note this env var is referenced in vim config, so don't change the value carelessly!
-fi
+# just as a reminder - there might also be (n)vim config that sets $GIT_EDITOR to use nvr
+#
+# note: only enable _either_ of the logics (ie either per win OR per sess).
+# TODO: nvr doesn't start... look here for the socker issue: https://github.com/mhinz/neovim-remote/issues/134
 
+# logic for nvim per tmux window:
+[[ -n "$TMUX" ]] && export NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}_win_$(tmux display -p "#{window_id}")"  # note this env var is referenced in vim config, so don't change the value carelessly!
 nvr() {
     if [[ -n "$TMUX" ]]; then
         local pane_id
-        pane_id=$(tmux list-panes -F '#{pane_id} #{pane_current_command}' | grep nvim | cut -f1 -d' ' | head -n1)
-        if [[ $pane_id ]]; then
-            tmux select-pane -t "$pane_id"
+        pane_id=$(tmux list-panes -F '#{pane_current_command} #{pane_id}' | awk '/^nvim / {print $2;}')
+        if [[ -n "$pane_id" ]]; then
+            if is_single "$pane_id"; then
+                tmux select-pane -t "$pane_id"
+            else
+                err "multiple nvim instances found in current window - unambiguous!"
+            fi
         fi
     fi
 
-    command nvr -s "$@"
+    #command nvr --remote-silent -s --servername "$NVIM_LISTEN_ADDRESS" "$@"
+    if [[ -S "$NVIM_LISTEN_ADDRESS" ]]; then
+        command nvr -s "$@"
+    else
+        nvim -- "$@"
+    fi
 }
 
-# alternatively, single nvim per tmux _session_:
-nvr2() {
-  if [[ -n "$TMUX" ]]; then
-    local ids window_id pane_id
-    ids="$(tmux list-panes -a -F '#{pane_current_command} #{window_id} #{pane_id}' | awk '/^nvim / {print $2" "$3; exit}')"
-    window_id="$ids[(w)1]"
-    pane_id="$ids[(w)2]"
-    [[ -n "$window_id" && -n "$pane_id" ]] && tmux select-window -t "$window_id" && tmux select-pane -t "$pane_id"
-  fi
+# logic for nvim per tmux session:
+#[[ -n "$TMUX" ]] && export NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}_sess_$(tmux display -p "#{session_id}")"  # note this env var is referenced in vim config, so don't change the value carelessly!
+#nvr() {
+    #if [[ -n "$TMUX" ]]; then
+        #local ids
+        #read -ra ids < <(tmux list-panes -a -F '#{pane_current_command} #{window_id} #{pane_id}' | awk '/^nvim / {print $2" "$3; exit}')
+        #if [[ "${#ids[@]}" -gt 0 ]]; then
+            #if [[ "${#ids[@]}" -eq 2 ]]; then
+                #tmux select-window -t "${ids[0]}" && tmux select-pane -t "${ids[1]}"
+            #else
+                #err "multiple nvim instances found in current window - unambiguous!"
+            #fi
+        #fi
+    #fi
 
-  command nvr -s "$@"
-}
+    #if [[ -S "$NVIM_LISTEN_ADDRESS" ]]; then
+        #command nvr -s "$@"
+    #else
+        #nvim -- "$@"
+    #fi
+#}
 ########################################## fzf-tab-completion
 # replace default bash tab completion menu w/ fzf: (https://github.com/lincheney/fzf-tab-completion)
 # note: commented out (at least) 'til these are solved:
