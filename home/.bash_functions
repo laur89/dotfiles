@@ -826,27 +826,45 @@ aptbiggest() { aptlargest; }  # alias
 #   aptitude search '~o'
 #   aptitude purge '~o'
 upgrade() {
-    local start
+    local start res fmt
 
     sudo echo
     report "started at $(date)"
     start="$(date +%s)"
 
     sudo -s -- <<EOF
-        apt-get clean -y
-        apt-get update
-        apt-get upgrade -y
-        apt-get dist-upgrade -y
+        rep_() { echo -e "\033[1m -> \$*...\033[0m"; }
+
+        rep_ running apt-get clean && \
+        apt-get clean -y && \
+        rep_ running apt-get update && \
+        apt-get update && \
+        rep_ running apt-get upgrade && \
+        apt-get upgrade -y && \
+        rep_ running apt-get dist-upgrade && \
+        apt-get dist-upgrade -y && \
         #apt full-upgrade  # alternative to apt-get dist-upgrade
-        apt-get autoremove -y
-        apt-get autoclean -y
+        rep_ running apt-get autoremove && \
+        apt-get autoremove -y && \
+        rep_ running apt-get autoclean && \
+        apt-get autoclean -y && \
         # nuke removed packages' configs:
         __prgs_to_purge="$(dpkg -l | awk '/^rc/ { print $2 }')"
-        apt-get -y purge \$__prgs_to_purge
+
+        [[ \$? -ne 0 ]] && exit 1
+        if [[ -n "\$__prgs_to_purge" ]]; then
+            rep_ running apt-get purge
+            apt-get -y purge \$__prgs_to_purge
+            exit \$?
+        fi
 EOF
+
+    res="$?"
+    [[ "$res" -eq 0 ]] && fmt="${COLORS[GREEN]}${COLORS[BOLD]}$res${COLORS[OFF]}" || fmt="${COLORS[RED]}${COLORS[BOLD]}$res${COLORS[OFF]}"
         #apt-get -y purge $(dpkg -l | awk '/^rc/ { print $2 }')  <- doesn't work for some reason (instead of the last line prior EOF)
 
-    report "ended at $(date), completed in $(($(date +%s) - start)) sec"
+    report "ended at $(date) with code [$fmt], completed in $(($(date +%s) - start)) sec"
+    return $res
 }
 
 
