@@ -331,7 +331,8 @@ set nocompatible " Must be the first line
         "map <silent><leader> e <Plug>CamelCaseMotion_e
 
         " yankring:
-        nnoremap <silent> <F11> :YRShow<CR> "displays the yankring window
+        " toggle yankring window:
+        nnoremap <silent> <F11> :YRShow<CR> 
 
         " FZF stuff
         nnoremap <leader>l :Lines<CR>
@@ -555,12 +556,10 @@ set nocompatible " Must be the first line
     augroup END
 
     " vim-slash:
-    " place current match at the center of window (ie zz upon search):
-    noremap <plug>(slash-after) zz
-    " blink the cursor after search:
     if has('timers')
-        " Blink 2 times with 50ms interval
-        noremap <expr> <plug>(slash-after) slash#blink(2, 50)
+        " place current match at the center of window (ie zz upon search), AND
+        " blink x times with 50ms interval:
+        noremap <expr> <plug>(slash-after) 'zz'.slash#blink(3, 50)
     endif
 
     " vim-notes
