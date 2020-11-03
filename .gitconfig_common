@@ -14,7 +14,7 @@
 ;[mergetool]
     ;keepBackup = false
 [core]
-    excludesfile = /home/laur/.gitignore
+    ;excludesfile = /home/laur/.gitignore  # no point in setting; global default in NIX is ~/.config/git/ignore, in WIN: %USERPROFILE%\git\ignore
     editor = nvim
     ;editor = nvr --remote-wait-silent
     ;autocrlf = input
