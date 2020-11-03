@@ -1,3 +1,5 @@
+# vim:filetype=i3
+#
 # i3 version 4.12-8-gd7fd3c0 (2016-03-09, branch "gaps-next") © 2009 Michael Stapelberg and contributors
 # i3 config file.
 # Please see http://i3wm.org/docs/userguide.html for a complete reference!
@@ -156,7 +158,7 @@ bindsym $mod+Shift+r exec $HOME/.config/i3/scripts/refresh-settings.sh; restart
 
 # Resize window (you can also use the mouse for that)
 #set $resize <span background='blue'>resize</span>
-set $resize resize
+set $resize ❯ RESIZE ❮
 bindsym $mod+r mode "$resize"
 #mode --pango_markup "$resize" {  # note pango_markup only avail with i3bar
 mode "$resize" {
@@ -408,8 +410,11 @@ bindcode Control+34 exec --no-startup-id copyq toggle
 # Font for window titles. Will also be used by the bar unless a different font
 # is used in the bar {} block.
 #font pango:Terminess Powerline 12px
-#font pango:Hack 8
-font -*-terminus-*-*-*-*-12-*-*-*-*-*-*-13
+#font -*-terminus-*-*-*-*-12-*-*-*-*-*-*-13
+font pango:Hack Nerd Font Mono 8
+#font pango:monospace 8
+#font Droid Sans Mono for Powerline 8
+#font pango:Droid Sans Mono Slashed for Powerline 10
 #for_window [class=".*"] title_format "<span font='tewi 8'> ➤ %title</span>"
 #for_window [class=".*"] title_format "<span font='tewi 8'> </span>"
 
@@ -512,8 +517,6 @@ assign [class="^jetbrains-studio"]       $w8
 assign [class="^Deluge"]                 $w8
 # }}}
 
-# vim:filetype=i3
-
 
 # Theme colors (standalone, ie not plugin managed)
 #set $bg-color            #d79921
@@ -534,6 +537,13 @@ client.focused_inactive #373b41 #373b41 #969896 #282a2e
 client.unfocused #282a2e #282a2e #969896 #282a2e
 client.urgent #373b41 #cc6666 #ffffff #cc6666
 
+# another one from https://www.reddit.com/r/unixporn/comments/jmz2rc/how_do_you_like_your_rice_in_your_everyday_use_of/gaz1m7n?utm_source=share&utm_medium=web2x&context=3 : {
+#client.focused          #FFA31A #FFA31A #000000 #FFA31A   #C37D14
+#client.focused_inactive #C37D14 #382405 #C37D14 #382405   #382405
+#client.unfocused        #382405 #382405 #C37D14 #382405   #382405
+#client.urgent           #FFA31A #382405 #FFA31A #FFA31A   #FFA31A
+#client.placeholder      #382405 #382405 #C37D14 #382405   #382405
+# }
 
 
 
