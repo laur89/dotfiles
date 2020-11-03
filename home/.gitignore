@@ -18,6 +18,7 @@
 target/
 
 # vim
+.vimtags
 .tags
 .tags.lock
 .tags.temp
