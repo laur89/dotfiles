@@ -151,6 +151,8 @@
 
 
     """ set git editor & automatically close gitcommit nested buffer: {{{
+        " note we only define GIT_EDITOR if NVIM_LISTEN_ADDRESS has been set by us
+        " for tmux session, in which case its value contains '_userdef_' in it;
         if has('nvim') && match($NVIM_LISTEN_ADDRESS, "_userdef_") != -1
           let $GIT_EDITOR = 'nvr -cc split --remote-wait'
           autocmd FileType gitcommit,gitrebase,gitconfig set bufhidden=delete
@@ -162,7 +164,7 @@
     "au FocusLost * :wa
 
     " auto-reload vimrc on save:
-    autocmd! BufWritePost ~/.config/nvim/init.* nested :source ~/.config/nvim/init.vim
+    autocmd! BufWritePost ~/.config/nvim/init.* nested source ~/.config/nvim/init.vim
 
     """ Folding {{{
         set foldcolumn=0                            " hide folding column

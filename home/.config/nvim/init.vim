@@ -261,6 +261,7 @@ set nocompatible " Must be the first line
     Plug 'justinmk/vim-gtfo'
 
     " https://github.com/vimlab/split-term.vim
+    " provides us with plenty good mappings, like :Term, :VTerm, :TTerm...
     " perhaps see also kassio/neoterm  (this one mostly for REPL)
     " also mhinz/neovim-remote
     Plug 'vimlab/split-term.vim'
