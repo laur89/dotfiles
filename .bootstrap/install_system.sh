@@ -1554,8 +1554,8 @@ setup_additional_apt_keys_and_sources() {
 
     # seafile-client: (from https://download.seafile.com/published/seafile-user-manual/syncing_client/install_linux_client.md):
     #     seafile-drive instructions would be @ https://download.seafile.com/published/seafile-user-manual/drive_client/drive_client_for_linux.md
-    execute 'wget -O - https://linux-clients.seafile.com/seafile.key | sudo apt-key add -'
-    execute "echo 'deb [arch=amd64] https://linux-clients.seafile.com/seafile-deb/$DEB_STABLE/ stable main' | sudo tee /etc/apt/sources.list.d/seafile.list > /dev/null"
+    execute 'sudo wget https://linux-clients.seafile.com/seafile.asc -O /usr/share/keyrings/seafile-keyring.asc'
+    execute "echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/seafile-keyring.asc] https://linux-clients.seafile.com/seafile-deb/$DEB_STABLE/ stable main' | sudo tee /etc/apt/sources.list.d/seafile.list > /dev/null"
 
     # mono: (from https://www.mono-project.com/download/stable/#download-lin-debian):
     # later on installed by 'mono-complete' pkg
@@ -1746,6 +1746,7 @@ install_progs() {
 
 install_games() {
     snap_install xonotic
+    #install_block openttd  # openttd = transport tycoon deluxe
 }
 
 
@@ -6232,6 +6233,7 @@ exit
 #
 # GAMES:
 # - flightgear/unstable
+# - openttd
 #
 # UTILS:
 # - for another bandwidth monitor, see https://github.com/tgraf/bmon
