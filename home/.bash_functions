@@ -847,11 +847,11 @@ upgrade() {
         rep_ running apt-get autoremove && \
         apt-get autoremove -y && \
         rep_ running apt-get autoclean && \
-        apt-get autoclean -y && \
-        # nuke removed packages' configs:
-        __prgs_to_purge="$(dpkg -l | awk '/^rc/ { print $2 }')"
+        apt-get autoclean -y || exit 1
 
-        [[ \$? -ne 0 ]] && exit 1
+        # nuke removed packages' configs:
+        __prgs_to_purge="\$(dpkg -l | awk '/^rc/ { print \$2 }')" || exit 1
+
         if [[ -n "\$__prgs_to_purge" ]]; then
             rep_ running apt-get purge
             apt-get -y purge \$__prgs_to_purge
