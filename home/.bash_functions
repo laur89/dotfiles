@@ -883,9 +883,13 @@ update() {
 # nuke SNAPSHOT versions from maven repo
 mvnclean() {
     local m_repo
-    m_repo="$HOME/.m2/repository"
+
+    m_repo="$(grep -Po '^\s*<localRepository>\K.*(?=<)' "$HOME/.m2/settings.xml")"  # try to see if we're setting localRepo path in maven config
+    [[ "$?" -eq 0 && -d "$m_repo" ]] || m_repo="$HOME/.m2/repository"  # default if not found in settings.xml
+
     [[ -d "$m_repo" ]] || { err "maven repo [$m_repo] not a dir"; return 1; }
-    find "$m_repo" -name '*SNAPSHOT' -type d -print0 | xargs -0 rm -rf
+    #find "$m_repo" -name '*SNAPSHOT' -type d -print0 | xargs -0 rm -rf
+    find "$m_repo" -name '*SNAPSHOT' -type d -exec rm -rf -- '{}' \+
 }
 
 
