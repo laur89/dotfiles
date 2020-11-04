@@ -597,48 +597,33 @@ fi
 export NVR_TMUX_BIND_SESSION=1  # if 1, then single nvim per tmux session; otherwise single nvim per tmux window
 
 if [[ -n "$TMUX" ]]; then
+    # note NVIM_LISTEN_ADDRESS env var is referenced in vim config, so don't change the value carelessly!
     if [[ "$NVR_TMUX_BIND_SESSION" -eq 1 ]]; then
         export NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}_sess_$(tmux display -p '#{session_id}')"
     else
-        export NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}_win_$(tmux display -p '#{window_id}')"   # note this env var is referenced in vim config, so don't change the value carelessly!
+        export NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}_win_$(tmux display -p '#{window_id}')"
     fi
 fi
 
 # TODO: we might have to move this into a script on $PATH for git_editor settings to work et al
 nvr() {
-    if [[ -n "$TMUX" ]]; then
-        local sock pane_id window_id
-
-        for sock in $(command nvr --serverlist); do
-            # Check that we've found the right nvim server
-            if [[ "$sock" == "$NVIM_LISTEN_ADDRESS" ]]; then
-                # Use nvr to get the tmux pane_id
-                pane_id="$(command nvr --remote-expr 'get(environ(), "TMUX_PANE")')"
-                # Activate the pane containing our nvim server
-                command tmux select-pane -t"$pane_id"
-
-                if [[ "$NVR_TMUX_BIND_SESSION" -eq 1 ]]; then
-                    # Find the window containing $pane_id (this feature requires tmux 3.2+!)
-                    window_id="$(command tmux list-panes -s -F '#{window_id}' -f "#{m:$pane_id,#{pane_id}}")"
-                    # Activate the window
-                    command tmux select-window -t"$window_id"
-                fi
-                break
-            fi
-        done
-        # old, less versatile version:
-        #local ids
-        #read -ra ids < <(tmux list-panes -a -F '#{pane_current_command} #{window_id} #{pane_id}' | awk '/^nvim / {print $2" "$3; exit}')
-        #if [[ "${#ids[@]}" -gt 0 ]]; then
-            #if [[ "${#ids[@]}" -eq 2 ]]; then
-                #tmux select-window -t "${ids[0]}" && tmux select-pane -t "${ids[1]}"
-            #else
-                #err "multiple nvim instances found in current window - unambiguous!"
-            #fi
-        #fi
-    fi
-
     if [[ -S "$NVIM_LISTEN_ADDRESS" ]]; then
+        if [[ -n "$TMUX" ]]; then
+            local pane_id window_id
+
+            # Use nvr to get the tmux pane_id
+            pane_id="$(command nvr --remote-expr 'get(environ(), "TMUX_PANE")')"
+            # Activate the pane containing our nvim server
+            command tmux select-pane -t"$pane_id"
+
+            if [[ "$NVR_TMUX_BIND_SESSION" -eq 1 ]]; then
+                # Find the window containing $pane_id (this feature requires tmux 3.2+!)
+                window_id="$(command tmux list-panes -s -F '#{window_id}' -f "#{m:$pane_id,#{pane_id}}")"
+                # Activate the window
+                command tmux select-window -t"$window_id"
+            fi
+        fi
+
         command nvr -s "$@"
     else
         nvim -- "$@"
