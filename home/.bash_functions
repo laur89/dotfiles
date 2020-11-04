@@ -869,14 +869,17 @@ EOF
 
 
 update() {
-    local start
+    local start res fmt
 
     sudo echo
     report "started at $(date)"
     start="$(date +%s)"
 
     sudo apt-get update
-    report "ended at $(date), completed in $(($(date +%s) - start)) sec"
+    res="$?"
+    [[ "$res" -eq 0 ]] && fmt="${COLORS[GREEN]}${COLORS[BOLD]}$res${COLORS[OFF]}" || fmt="${COLORS[RED]}${COLORS[BOLD]}$res${COLORS[OFF]}"
+
+    report "ended at $(date) with code [$fmt], completed in $(($(date +%s) - start)) sec"
 }
 
 

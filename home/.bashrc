@@ -594,9 +594,9 @@ fi
 #
 # TODO: nvr doesn't start... look here for the socket issue: https://github.com/mhinz/neovim-remote/issues/134
 
-export NVR_TMUX_BIND_SESSION=1  # if 1, then single nvim per tmux session; otherwise single nvim per tmux window
-
 if [[ -n "$TMUX" ]]; then
+    export NVR_TMUX_BIND_SESSION=1  # if 1, then single nvim per tmux session; otherwise single nvim per tmux window
+
     # note NVIM_LISTEN_ADDRESS env var is referenced in vim config, so don't change the value carelessly!
     NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}_"
     if [[ "$NVR_TMUX_BIND_SESSION" -eq 1 ]]; then
