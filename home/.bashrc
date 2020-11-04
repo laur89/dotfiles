@@ -598,10 +598,11 @@ export NVR_TMUX_BIND_SESSION=1  # if 1, then single nvim per tmux session; other
 
 if [[ -n "$TMUX" ]]; then
     # note NVIM_LISTEN_ADDRESS env var is referenced in vim config, so don't change the value carelessly!
+    NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}_"
     if [[ "$NVR_TMUX_BIND_SESSION" -eq 1 ]]; then
-        export NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}_sess_$(tmux display -p '#{session_id}')"
+        export NVIM_LISTEN_ADDRESS+="sess_$(tmux display -p '#{session_id}').sock"
     else
-        export NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}_win_$(tmux display -p '#{window_id}')"
+        export NVIM_LISTEN_ADDRESS+="win_$(tmux display -p '#{window_id}').sock"
     fi
 fi
 
