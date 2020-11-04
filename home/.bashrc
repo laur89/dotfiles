@@ -589,6 +589,7 @@ fi
 # TODO: instead of any nvr functions here, consider https://github.com/carlocab/tmux-nvr instead
 #
 # single nvim instance per tmux _window_  (from https://www.reddit.com/r/neovim/comments/aex45u/integrating_nvr_and_tmux_to_use_a_single_tmux_per/)
+#  some ideas also taken from https://github.com/carlocab/tmux-nvr/blob/main/bin/nvr-tmux
 # just as a reminder - there might also be (n)vim config that sets $GIT_EDITOR to use nvr
 #
 # note: only enable _either_ of the logics (ie either per win OR per sess).
@@ -598,15 +599,28 @@ fi
 [[ -n "$TMUX" ]] && export NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}_win_$(tmux display -p "#{window_id}")"  # note this env var is referenced in vim config, so don't change the value carelessly!
 nvr() {
     if [[ -n "$TMUX" ]]; then
-        local pane_id
-        pane_id=$(tmux list-panes -F '#{pane_current_command} #{pane_id}' | awk '/^nvim / {print $2;}')
-        if [[ -n "$pane_id" ]]; then
-            if is_single "$pane_id"; then
-                tmux select-pane -t "$pane_id"
-            else
-                err "multiple nvim instances found in current window - unambiguous!"
+        local sock pane_id
+
+        for sock in $(command nvr --serverlist); do
+            # Check that we've found the right nvim server
+            if [[ "$sock" == "$NVIM_LISTEN_ADDRESS" ]]; then
+                # Use nvr to get the tmux pane_id
+                pane_id="$(command nvr --remote-expr 'get(environ(), "TMUX_PANE")')"
+                # Activate the pane containing our nvim server
+                command tmux select-pane -t"$pane_id"
+                break
             fi
-        fi
+        done
+
+        # old, less versatile version:
+        #pane_id=$(tmux list-panes -F '#{pane_current_command} #{pane_id}' | awk '/^nvim / {print $2;}')
+        #if [[ -n "$pane_id" ]]; then
+            #if is_single "$pane_id"; then
+                #tmux select-pane -t "$pane_id"
+            #else
+                #err "multiple nvim instances found in current window - unambiguous!"
+            #fi
+        #fi
     fi
 
     #command nvr --remote-silent -s --servername "$NVIM_LISTEN_ADDRESS" "$@"
@@ -621,15 +635,33 @@ nvr() {
 #[[ -n "$TMUX" ]] && export NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}_sess_$(tmux display -p "#{session_id}")"  # note this env var is referenced in vim config, so don't change the value carelessly!
 #nvr() {
     #if [[ -n "$TMUX" ]]; then
-        #local ids
-        #read -ra ids < <(tmux list-panes -a -F '#{pane_current_command} #{window_id} #{pane_id}' | awk '/^nvim / {print $2" "$3; exit}')
-        #if [[ "${#ids[@]}" -gt 0 ]]; then
-            #if [[ "${#ids[@]}" -eq 2 ]]; then
-                #tmux select-window -t "${ids[0]}" && tmux select-pane -t "${ids[1]}"
-            #else
-                #err "multiple nvim instances found in current window - unambiguous!"
+        #local sock pane_id window_id
+
+        #for sock in $(command nvr --serverlist); do
+            ## Check that we've found the right nvim server
+            #if [[ "$sock" == "$NVIM_LISTEN_ADDRESS" ]]; then
+                ## Use nvr to get the tmux pane_id
+                #pane_id="$(command nvr --remote-expr 'get(environ(), "TMUX_PANE")')"
+                ## Activate the pane containing our nvim server
+                #command tmux select-pane -t"$pane_id"
+                ## Find the window containing $pane_id
+                #window_id="$(command tmux list-panes -s -F '#{window_id}' -f "#{m:$pane_id,#{pane_id}}")"
+                ## Activate the window
+                #command tmux select-window -t"$window_id"
+                #break
             #fi
-        #fi
+        #done
+
+        ## old, less versatile version:
+        ##local ids
+        ##read -ra ids < <(tmux list-panes -a -F '#{pane_current_command} #{window_id} #{pane_id}' | awk '/^nvim / {print $2" "$3; exit}')
+        ##if [[ "${#ids[@]}" -gt 0 ]]; then
+            ##if [[ "${#ids[@]}" -eq 2 ]]; then
+                ##tmux select-window -t "${ids[0]}" && tmux select-pane -t "${ids[1]}"
+            ##else
+                ##err "multiple nvim instances found in current window - unambiguous!"
+            ##fi
+        ##fi
     #fi
 
     #if [[ -S "$NVIM_LISTEN_ADDRESS" ]]; then
