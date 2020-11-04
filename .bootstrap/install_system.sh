@@ -1010,7 +1010,7 @@ install_deps() {
     rb_install gist        # https://github.com/defunkt/gist  (pastebinit for gists)
 
     py_install update-conf.py # https://github.com/rarylson/update-conf.py  (generate config files from conf.d dirs)
-    py_install starred     # https://github.com/maguowei/starred  - create list of your github starts
+    #py_install starred     # https://github.com/maguowei/starred  - create list of your github starts; note it's updated by CI so no real reason to install it locally
 
     # rbenv & ruby-build: {                             # https://github.com/rbenv/rbenv-installer
     #   ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki):
