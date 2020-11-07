@@ -2910,9 +2910,7 @@ install_copyq() {
 
     readonly tmpdir="$TMP_DIR/copyq-build-${RANDOM}"
 
-    execute "git clone -j8 $COPYQ_REPO_LOC $tmpdir" || return 1
-    execute "pushd $tmpdir" || return 1
-    readonly ver="$(git rev-parse HEAD)"
+    ver="$(get_git_sha "$COPYQ_REPO_LOC")"
     is_installed "$ver" && return 2
 
     report "installing copyq build dependencies..."
@@ -2927,7 +2925,9 @@ install_copyq() {
         libxtst-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
+    execute "git clone -j8 $COPYQ_REPO_LOC $tmpdir" || return 1
     report "building copyq"
+    execute "pushd $tmpdir" || return 1
     execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .' || { err; popd; return 1; }
     execute "make" || { err; popd; return 1; }
 
@@ -2979,10 +2979,7 @@ install_goforit() {
 
     readonly tmpdir="$TMP_DIR/goforit-build-${RANDOM}"
 
-    execute "git clone -j8 $GOFORIT_REPO_LOC $tmpdir" || return 1
-    execute "mkdir $tmpdir/build"
-    execute "pushd $tmpdir/build" || return 1
-    readonly ver="$(git rev-parse HEAD)"
+    ver="$(get_git_sha "$GOFORIT_REPO_LOC")"
     is_installed "$ver" && return 2
 
     report "installing goforit build dependencies..."
@@ -2995,7 +2992,10 @@ install_goforit() {
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
 
+    execute "git clone -j8 $GOFORIT_REPO_LOC $tmpdir" || return 1
     report "building goforit..."
+    execute "mkdir $tmpdir/build"
+    execute "pushd $tmpdir/build" || return 1
     execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..' || { err; popd; return 1; }
     execute "make" || { err; popd; return 1; }
 
@@ -3125,16 +3125,10 @@ install_i3lock() {
 
     readonly tmpdir="$TMP_DIR/i3lock-build-${RANDOM}/build"
 
-    # clone the repository
-    execute "git clone -j8 $I3_LOCK_LOC '$tmpdir'" || return 1
-    execute "pushd $tmpdir" || return 1
-    execute "git tag -f 'git-$(git rev-parse --short HEAD)'" || return 1
-
-    readonly ver="$(git rev-parse HEAD)"
+    ver="$(get_git_sha "$I3_LOCK_LOC")"
     is_installed "$ver" && return 2
 
     report "installing i3lock build dependencies..."
-
     install_block '
       autoconf
       automake
@@ -3158,6 +3152,11 @@ install_i3lock() {
       libcairo2-dev
       libxcb1-dev
       libxcb-dpms0-dev' || { err 'failed to install i3lock build deps. abort.'; return 1; }
+
+    # clone the repository
+    execute "git clone -j8 $I3_LOCK_LOC '$tmpdir'" || return 1
+    execute "pushd $tmpdir" || return 1
+    execute "git tag -f 'git-$(git rev-parse --short HEAD)'" || { popd; return 1; }
 
     report "building i3lock..."
     build_deb i3lock-color || { err "build_deb() for i3lock-color failed"; return 1; }
@@ -3184,11 +3183,12 @@ install_i3lock_fancy() {
 
     readonly tmpdir="$TMP_DIR/i3lock-fancy-build-${RANDOM}/build"
 
+    ver="$(get_git_sha "$I3_LOCK_FANCY_LOC")"
+    is_installed "$ver" && return 2
+
     # clone the repository
     execute "git clone -j8 $I3_LOCK_FANCY_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
-    readonly ver="$(git rev-parse HEAD)"
-    is_installed "$ver" && return 2
 
 
     #build_deb -D '--parallel' i3lock-fancy || err "build_deb() for i3lock-fancy failed"
@@ -3259,11 +3259,12 @@ EOF
 
     readonly tmpdir="$TMP_DIR/i3-gaps-build-${RANDOM}/build"
 
+    ver="$(get_git_sha "$I3_REPO_LOC")"
+    is_installed "$ver" && return 2
+
     # clone the repository
     execute "git clone -j8 $I3_REPO_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
-    readonly ver="$(git rev-parse HEAD)"
-    is_installed "$ver" && return 2
 
     _apply_patches  # TODO: should we bail on error?
     _fix_rules
@@ -5016,16 +5017,16 @@ install_gtk_numix() {
     readonly theme_repo='https://github.com/numixproject/numix-gtk-theme.git'
     readonly tmpdir="$TMP_DIR/numix-theme-build-${RANDOM}"
 
-    check_progs_installed  glib-compile-schemas  gdk-pixbuf-pixdata || { err "those need to be on path for numix build to succeed."; return 1; }
-
-    execute "git clone -j8 $theme_repo $tmpdir" || return 1
-    execute "pushd $tmpdir" || return 1
-    readonly ver="$(git rev-parse HEAD)"
+    ver="$(get_git_sha "$theme_repo")"
     is_installed "$ver" && return 2
+
+    check_progs_installed  glib-compile-schemas  gdk-pixbuf-pixdata || { err "those need to be on path for numix build to succeed."; return 1; }
 
     report "installing numix build dependencies..."
     rb_install sass || return 1
 
+    execute "git clone -j8 $theme_repo $tmpdir" || return 1
+    execute "pushd $tmpdir" || return 1
     execute "make" || { err; popd; return 1; }
 
     create_deb_install_and_store numix
