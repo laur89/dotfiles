@@ -2,6 +2,7 @@
 [merge]
     ;tool = meld
     ;tool = vimdiff
+    ;tool = nvr
     tool = my_meld
     conflictstyle = diff3
     prompt = false
@@ -11,6 +12,8 @@
     ; MJ's cmd:
     cmd = meld --auto-merge $LOCAL $BASE $REMOTE --output $MERGED --diff $LOCAL $BASE --diff $BASE $REMOTE
     ;keepBackup = false
+[mergetool "nvr"]
+    cmd = nvr -s -d $LOCAL $BASE $REMOTE $MERGED -c 'wincmd J | wincmd ='
 ;[mergetool]
     ;keepBackup = false
 [core]
@@ -33,8 +36,11 @@
     autoStash = true  ; stashes local changes before rebase, if needed
 [difftool]
     prompt = true
+[difftool "nvr"]
+    cmd = nvr -s -d $LOCAL $REMOTE
 [diff]
     tool = meld
+    ;tool = nvr
     renames = true
     colorMoved = default
     ;tool = vimdiff
