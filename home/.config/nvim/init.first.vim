@@ -123,6 +123,7 @@
         set ttymouse=xterm2                         " experimental
     endif
     set ruler                                       " show current pos at bottom
+    set wildignorecase                              " file/path tab completion to case insensitive
     set modelines=0                                 " modelines sets the number of
                                                     " lines at the beginning and end
                                                     " of each file vim checks for
