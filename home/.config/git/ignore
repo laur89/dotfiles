@@ -80,3 +80,4 @@ _ReSharper*/
 *.min.js
 *.min.css
 __pycache__/
+.git/
