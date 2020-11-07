@@ -13,6 +13,8 @@
 #------------------------
 #---   Configuration  ---
 #------------------------
+set -o pipefail
+
 readonly TMP_DIR='/tmp'
 readonly CLANG_LLVM_LOC='http://releases.llvm.org/6.0.0/clang+llvm-6.0.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html;  https://apt.llvm.org/building-pkgs.php
 readonly I3_REPO_LOC='https://www.github.com/Airblader/i3'            # i3-gaps
@@ -3877,7 +3879,7 @@ build_and_install_vim() {
 # note: instructions & info here: https://github.com/Valloric/YouCompleteMe
 # note2: available in deb repo as 'ycmd'
 install_YCM() {  # the quick-and-not-dirty install.py way
-    local ycm_plugin_root
+    local ycm_plugin_root ver
 
     readonly ycm_plugin_root="$HOME/.config/nvim/bundle/YouCompleteMe"
 
@@ -3886,7 +3888,12 @@ install_YCM() {  # the quick-and-not-dirty install.py way
         err "expected vim plugin YouCompleteMe to be already pulled"
         err "you're either missing vimrc conf or haven't started vim yet (first start pulls all the plugins)."
         return 1
+    else
+        execute "pushd -- $ycm_plugin_root" || return 1
     fi
+
+    readonly ver="$(git rev-parse HEAD)"
+    is_installed "$ver" && { popd; return 2; }
 
     # install deps
     install_block '
@@ -3896,9 +3903,10 @@ install_YCM() {  # the quick-and-not-dirty install.py way
     '
 
     # install YCM
-    execute "pushd -- $ycm_plugin_root" || return 1
     execute -i "python3 ./install.py --all" || { popd; return 1; }
     execute "popd"
+
+    add_to_dl_log  YCM "$ver"
 }
 
 
@@ -5358,6 +5366,7 @@ add_to_dl_log() {
 }
 
 
+# TODO: in colling functions, resolve git sha by [git ls-remote https://github.com/gturri/dokuJClient.git HEAD | cut -f1] instead of cloning!
 is_installed() {
     local dl_url
 
@@ -5370,6 +5379,27 @@ is_installed() {
     fi
 
     return 1
+}
+
+# Fetch the sha of HEAD of given git repo.
+#
+# @param {string}  url  git repo url
+#
+# @returns {string} url's HEAD git sha
+# @returns {bool} false if anything went wrong
+get_git_sha() {
+    local repo sha
+
+    repo="$1"
+
+    [[ -z "$repo" ]] && { err "no repo url provided"; return 1; }
+    sha="$(git ls-remote "$repo" HEAD | cut -f1)"
+    if [[ "$?" -ne 0 || -z "$sha" ]] || ! is_single "$sha"; then
+        err "fetching [$repo] HEAD sha failed"
+        return 1
+    fi
+
+    echo -n "$sha"
 }
 
 ###################
