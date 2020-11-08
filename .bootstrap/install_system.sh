@@ -17,7 +17,7 @@ set -o pipefail
 
 readonly TMP_DIR='/tmp'
 readonly CLANG_LLVM_LOC='http://releases.llvm.org/6.0.0/clang+llvm-6.0.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html;  https://apt.llvm.org/building-pkgs.php
-readonly I3_REPO_LOC='https://www.github.com/Airblader/i3'            # i3-gaps
+readonly I3_REPO_LOC='https://github.com/Airblader/i3'            # i3-gaps
 readonly I3_LOCK_LOC='https://github.com/Raymo111/i3lock-color'       # i3lock-color
 readonly I3_LOCK_FANCY_LOC='https://github.com/meskarune/i3lock-fancy'    # i3lock-fancy
 readonly NERD_FONTS_REPO_LOC='https://github.com/ryanoasis/nerd-fonts'
@@ -974,8 +974,10 @@ install_deps() {
     fi
 
     # sdkman:  # https://sdkman.io/
-    execute "curl -s 'https://get.sdkman.io' | bash"  # TODO depends whether win or linux
+    execute "curl -sf 'https://get.sdkman.io' | bash"  # TODO depends whether win or linux
 
+    # cheat.sh:  # https://github.com/chubin/cheat.sh#installation
+    curl -fsSL "https://cht.sh/:cht.sh" > ~/bin/cht.sh && chmod +x ~/bin/cht.sh || err "cheat.sh curling failed w/ [$?]"
 
     py_install wheel    # https://pypi.org/project/wheel/  (wheel is py packaging standard; TODO: as per https://stackoverflow.com/a/56504270/1803648, this pkg should soon be provided by default)
 
@@ -2931,7 +2933,7 @@ install_copyq() {
     execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .' || { err; popd; return 1; }
     execute "make" || { err; popd; return 1; }
 
-    create_deb_install_and_store copyq
+    create_deb_install_and_store copyq || { popd; return 1; }
 
     execute "popd"
     execute "sudo rm -rf -- $tmpdir"
@@ -2945,7 +2947,7 @@ install_copyq() {
 # runs checkinstall in current working dir, and copies the created
 # .deb file to $BASE_BUILDS_DIR/
 create_deb_install_and_store() {
-    local opt cmd ver pkg_name OPTIND
+    local opt cmd ver pkg_name exit_sig OPTIND
 
     while getopts "C:" opt; do
         case "$opt" in
@@ -2959,13 +2961,19 @@ create_deb_install_and_store() {
     ver="${2:-0.0.1}"  # OPTIONAL
 
     check_progs_installed checkinstall || return 1
-    report "creating .deb and installing with checkinstall..."
+    report "creating [$pkg_name] .deb and installing with checkinstall..."
 
     # note --fstrans=no is because of checkinstall bug; see  https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=717778
     execute "sudo checkinstall \
         -D --default --fstrans=no \
         --pkgname=$pkg_name --pkgversion=$ver \
-        --pakdir=$BASE_BUILDS_DIR $cmd" || { err "checkinstall run failed. abort."; return 1; }
+        --pakdir=$BASE_BUILDS_DIR $cmd"
+    exit_sig="$?"
+
+    if [[ "$exit_sig" -ne 0 ]]; then
+        err "checkinstall run for [$pkg_name] failed w/ [$exit_sig]. abort."
+        return 1
+    fi
 
     return 0
 }
@@ -2999,7 +3007,7 @@ install_goforit() {
     execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..' || { err; popd; return 1; }
     execute "make" || { err; popd; return 1; }
 
-    create_deb_install_and_store goforit
+    create_deb_install_and_store goforit || { popd; return 1; }
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -3110,7 +3118,7 @@ install_keepassx() {
     execute 'cmake ..' || { err; popd; return 1; }
     execute "make" || { err; popd; return 1; }
 
-    create_deb_install_and_store keepassx
+    create_deb_install_and_store keepassx || { popd; return 1; }
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -3159,8 +3167,8 @@ install_i3lock() {
     execute "git tag -f 'git-$(git rev-parse --short HEAD)'" || { popd; return 1; }
 
     report "building i3lock..."
-    build_deb i3lock-color || { err "build_deb() for i3lock-color failed"; return 1; }
-    execute 'sudo dpkg -i ../i3lock-color_*.deb' || { err "installing i3lock-color failed"; return 1; }
+    build_deb i3lock-color || { err "build_deb() for i3lock-color failed"; popd; return 1; }
+    execute 'sudo dpkg -i ../i3lock-color_*.deb' || { err "installing i3lock-color failed"; popd; return 1; }
 
     # old, checkinstall-compliant logic:
     ## compile & install:
@@ -3204,7 +3212,7 @@ install_i3lock_fancy() {
 
     # TODO: note this guy will already install it! the makefile of fancy is odd...
     report "building i3lock-fancy..."
-    create_deb_install_and_store i3lock-fancy
+    create_deb_install_and_store i3lock-fancy || { popd; return 1; }
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -3467,7 +3475,7 @@ install_polybar() {
     execute "pushd $dir" || return 1
     execute "./build.sh --auto --all-features --no-install" || { popd; return 1; }
 
-    execute "pushd build/" || return 1
+    execute "pushd build/" || { popd; return 1; }
     create_deb_install_and_store polybar  # TODO: note still using checkinstall
 
     execute "popd; popd"
@@ -3859,11 +3867,11 @@ build_and_install_vim() {
             --enable-gui=gtk2 \
             --enable-cscope \
             --prefix=/usr/local \
-    " || { err 'vim configure build phase failed.'; return 1; }
+    " || { err 'vim configure build phase failed.'; popd; return 1; }
 
-    execute "make VIMRUNTIMEDIR=$expected_runtimedir" || { err 'vim make failed'; return 1; }
+    execute "make VIMRUNTIMEDIR=$expected_runtimedir" || { err 'vim make failed'; popd; return 1; }
     #!(make sure rutimedir is correct; at this moment 74 was)
-    create_deb_install_and_store vim || { err; return 1; }  # TODO: remove checkinstall
+    create_deb_install_and_store vim || { err; popd; return 1; }  # TODO: remove checkinstall
 
     execute "popd"
     execute "sudo rm -rf -- $tmpdir"
@@ -4158,6 +4166,7 @@ install_from_repo() {
 
     # consider apulse instead of pulseaudio;
     # TODO: xorg needs to be pulled into non-win (but still has to be installed for virt!) block:
+    # TODO: replace compton w/ picom or ibhagwan/picom? compton seems unmaintained since 2017
     declare -ar block1=(
         xorg
         x11-apps
@@ -5029,7 +5038,7 @@ install_gtk_numix() {
     execute "pushd $tmpdir" || return 1
     execute "make" || { err; popd; return 1; }
 
-    create_deb_install_and_store numix
+    create_deb_install_and_store numix || { popd; return 1; }
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -6135,7 +6144,7 @@ is_noninteractive() {
 
 
 is_interactive() {
-    [[ "$NON_INTERACTIVE" -ne 1 ]]
+    ! is_noninteractive
 }
 
 
