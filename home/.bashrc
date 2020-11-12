@@ -60,13 +60,17 @@ fi
 if [ "$color_prompt" = yes ]; then
     #PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
     # prompt w/o show-vi-prompt:
-    #PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\$(kube_ps1)\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
+    #PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\$(__py_virtualenv_ps1)\$(kube_ps1)\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
     # prompt w/ show-vi-prompt:
-    PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\$(kube_ps1)\n"
+    PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\$(__py_virtualenv_ps1)\$(kube_ps1)\n"
 else
     PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
 fi
 unset color_prompt force_color_prompt
+
+export PROMPT_SEGMENT_PREFIX=$'\342\224\200['  # TODO: standardize and use everywhere; note no need to provide color here, can use the default set by prompt
+export PROMPT_SEGMENT_SUFFIX=$'\033[0;37m]'    # TODO: standardize and use everywhere
+
 
 # If this is an xterm set the title to user@host:dir
 case "$TERM" in
@@ -373,7 +377,7 @@ __check_for_change_and_compile_ssh_config() {
 }
 
 __check_for_change_and_compile_ssh_config &
-#disown $!
+disown $!
 ########################################## fzf
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
@@ -518,11 +522,17 @@ fi
 [[ :$PATH: != *:"${BASE_DEPS_LOC}/kubectx":* ]] && export PATH="${BASE_DEPS_LOC}/kubectx:$PATH"
 ##########################################
 # kubernetes/k8s shell prompt: (https://github.com/jonmosco/kube-ps1)
-KUBE_PS1_PREFIX=$'\342\224\200[' # note no need to provide color here, can use the default set by prompt
-KUBE_PS1_SUFFIX=$'\033[0;37m]'
+KUBE_PS1_PREFIX="$PROMPT_SEGMENT_PREFIX"
+KUBE_PS1_SUFFIX="$PROMPT_SEGMENT_SUFFIX"
 KUBE_PS1_SYMBOL_USE_IMG=true
 #KUBE_PS1_SYMBOL_DEFAULT=$'\u2388'
 [[ -f "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh" ]] && source "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh" && kubeoff  # note we default to kubeoff
+##########################################
+# customize python virtualenv prompt
+export VIRTUAL_ENV_DISABLE_PROMPT=1  # disable the default virtualenv prompt change (as it doesn't play nice w/ multiline prompts)
+__py_virtualenv_ps1() {  # called by PS1
+    echo -n "${VIRTUAL_ENV:+${PROMPT_SEGMENT_PREFIX}${COLORS[BOLD]}venv:${COLORS[CYAN]}${VIRTUAL_ENV##*/}${PROMPT_SEGMENT_SUFFIX}}"
+}
 ##########################################
 # NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
 ###-begin-npm-completion-###
