@@ -485,15 +485,11 @@ clone_or_pull_repo() {
     if ! [[ -d "$install_dir/.git" ]]; then
         execute "git clone --recursive -j8 https://$hub/$user/${repo}.git '$install_dir'" || { err "cloning [$hub/$user/$repo] failed w/ $?"; return 1; }
 
-        execute "pushd $install_dir" || return 1
-        execute "git remote set-url origin git@${hub}:$user/${repo}.git" || { popd; return 1; }
-        execute "git remote set-url --push origin git@${hub}:$user/${repo}.git" || { popd; return 1; }
-        execute "popd"
+        execute "git -C '$install_dir' remote set-url origin git@${hub}:$user/${repo}.git" || return 1
+        execute "git -C '$install_dir' remote set-url --push origin git@${hub}:$user/${repo}.git" || return 1
     elif is_ssh_key_available; then
-        execute "pushd $install_dir" || return 1
-        execute "git pull" || { err "git pull for [$hub/$user/$repo] failed w/ $?"; popd; return 1; }  # TODO: retry?
-        execute "git submodule update --init --recursive" || { popd; return 1; }  # make sure to pull submodules
-        execute "popd"
+        execute "git -C '$install_dir' pull" || { err "git pull for [$hub/$user/$repo] failed w/ $?"; return 1; }  # TODO: retry?
+        execute "git -C '$install_dir' submodule update --init --recursive" || return 1  # make sure to pull submodules
     fi
 }
 
@@ -784,7 +780,7 @@ install_sshfs() {
 # aslo, should we extract python modules out?
 install_deps() {
     _install_tmux_deps() {
-        local dir plugins_dir
+        local plugins_dir dir
 
         readonly plugins_dir="$HOME/.tmux/plugins"
 
@@ -793,17 +789,9 @@ install_deps() {
             report "don't forget to install tmux plugins by running <prefix + I> in tmux later on." && sleep 4
         elif ! is_dir_empty "$plugins_dir"; then
             # update all the tmux plugins, including the plugin manager itself:
-            execute "pushd $plugins_dir" || return 1
-
-            for dir in ./*; do
-                if [[ -d "$dir" ]]; then
-                    execute "pushd $dir" || continue
-                    is_git && execute "git pull"
-                    execute "popd"
-                fi
+            for dir in "$plugins_dir"/*; do
+                [[ -d "$dir" && -d "$dir/.git" ]] && execute "git -C '$dir' pull"
             done
-
-            execute "popd"
         fi
     }
 
@@ -3163,10 +3151,10 @@ install_i3lock() {
 
     # clone the repository
     execute "git clone -j8 $I3_LOCK_LOC '$tmpdir'" || return 1
-    execute "pushd $tmpdir" || return 1
-    execute "git tag -f 'git-$(git rev-parse --short HEAD)'" || { popd; return 1; }
+    execute "git -C '$tmpdir' tag -f 'git-$(git rev-parse --short HEAD)'" || return 1
 
     report "building i3lock..."
+    execute "pushd $tmpdir" || return 1
     build_deb i3lock-color || { err "build_deb() for i3lock-color failed"; popd; return 1; }
     execute 'sudo dpkg -i ../i3lock-color_*.deb' || { err "installing i3lock-color failed"; popd; return 1; }
 
