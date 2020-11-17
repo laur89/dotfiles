@@ -1101,10 +1101,10 @@ setup_dirs() {
         fi
     done
 
-    # create logdir ($CUSTOM_LOGDIR comes from $SHELL_ENVS):
-    if ! [[ -d "$CUSTOM_LOGDIR" ]]; then
-        [[ -z "$CUSTOM_LOGDIR" ]] && { err "[CUSTOM_LOGDIR] env var was missing. abort."; sleep 5; return 1; }
-
+    # create logdir ($CUSTOM_LOGDIR defined in $SHELL_ENVS):
+    if [[ -z "$CUSTOM_LOGDIR" ]]; then
+        err "[CUSTOM_LOGDIR] env var is undefined. abort."; sleep 5
+    elif ! [[ -d "$CUSTOM_LOGDIR" ]]; then
         report "[$CUSTOM_LOGDIR] does not exist, creating..."
         execute "sudo mkdir -- $CUSTOM_LOGDIR"
         execute "sudo chmod 777 -- $CUSTOM_LOGDIR"
@@ -1160,16 +1160,12 @@ clone_or_link_castle() {
             retry 3 "$homesick_exe clone https://${hub}/$user/${castle}.git" || { err "cloning castle [$castle] failed with $?"; return 1; }
 
             # change just cloned repo remote from https to ssh:
-            execute "pushd $BASE_HOMESICK_REPOS_LOC/$castle" || return 1
-            execute "git remote set-url origin git@${hub}:$user/${castle}.git"
-            execute "popd"
+            execute "git -C '$BASE_HOMESICK_REPOS_LOC/$castle' remote set-url origin git@${hub}:$user/${castle}.git"
         fi
 
         # note this assumes $castle repo has a .githooks symlink at its root that points to dir that contains the actual hooks!
         if [[ "$set_hooks" -eq 1 ]]; then
-            execute "pushd $BASE_HOMESICK_REPOS_LOC/$castle" || { err "pushd failure - git hook installation failed!"; return 1; }
-            execute 'git config core.hooksPath .githooks' || err "git hook installation failed!"
-            execute "popd"
+            execute 'git -C '$BASE_HOMESICK_REPOS_LOC/$castle' config core.hooksPath .githooks' || err "git hook installation failed!"
         fi
     fi
 
@@ -1199,13 +1195,11 @@ fetch_castles() {
             user=laliste
             repo="$(basename -- "$PRIVATE_CASTLE")"
             if clone_or_link_castle -H "$repo" "$user" "$host"; then
-                pushd "$PRIVATE_CASTLE"
                 for u in "git@$host:$user/$repo.git"  "git@github.com:laur89/work-dots-mirror.git"; do
-                    if ! grep -iq "pushurl.*$u" .git/config; then  # need if-check as 'set-url --add' is not idempotent; TODO: create ticket for git?
-                        git remote set-url --add --push origin "$u"
+                    if ! grep -iq "pushurl.*$u" "$PRIVATE_CASTLE/.git/config"; then  # need if-check as 'set-url --add' is not idempotent; TODO: create ticket for git?
+                        execute "git -C '$PRIVATE_CASTLE' remote set-url --add --push origin '$u'"
                     fi
                 done
-                popd
             else
                 err "failed pulling work dotfiles; won't abort"
             fi
@@ -5603,8 +5597,8 @@ execute() {
 select_items() {
     local opt OPTIND options is_single_selection hdr
 
-	is_single_selection=0
-	hdr='Available options:'  # default if not given
+    is_single_selection=0
+    hdr='Available options:'  # default if not given
 
     while getopts 'sh:' opt; do
         case "$opt" in
@@ -5642,47 +5636,47 @@ select_items() {
 
         declare -a choices
 
-		__menu() {
-			local i
+        __menu() {
+            local i
 
-			echo -e "\n---------------------"
-			echo "$hdr"
+            echo -e "\n---------------------"
+            echo "$hdr"
 
-			#for i in "${!options[@]}"; do
-			for ((i = (( ${#options[@]} - 1 )) ; i >= 0 ; i--)); do
-				printf '%3d%s) %s\n' "$((i+1))" "${choices[i]:- }" "${choices[i]:+${COLORS[BOLD]}}${options[i]}${COLORS[OFF]}"
-			done
-			[[ "$msg" ]] && echo "$msg"; :
-		}
+            #for i in "${!options[@]}"; do
+            for ((i = (( ${#options[@]} - 1 )) ; i >= 0 ; i--)); do
+                printf '%3d%s) %s\n' "$((i+1))" "${choices[i]:- }" "${choices[i]:+${COLORS[BOLD]}}${options[i]}${COLORS[OFF]}"
+            done
+            [[ "$msg" ]] && echo "$msg"; :
+        }
 
-		if [[ "$is_single_selection" -eq 1 ]]; then
-			readonly prompt="Check an option, only 1 item can be selected (again to uncheck, ENTER when done): "
-		else
-			readonly prompt="Check an option, multiple items allowed (again to uncheck, ENTER when done): "
-		fi
+        if [[ "$is_single_selection" -eq 1 ]]; then
+            readonly prompt="Check an option, only 1 item can be selected (again to uncheck, ENTER when done): "
+        else
+            readonly prompt="Check an option, multiple items allowed (again to uncheck, ENTER when done): "
+        fi
 
-		while __menu && read -rp "$prompt" num && [[ "$num" ]]; do
-			[[ "$num" != *[![:digit:]]* ]] &&
-			(( num > 0 && num <= ${#options[@]} )) ||
-			{ msg="${COLORS[RED]}Invalid option: ${COLORS[BOLD]}${num}${COLORS[OFF]}"; continue; }
-			((num--)); msg="[${COLORS[YELLOW]}${COLORS[BOLD]}${options[num]}${COLORS[OFF]}] was ${choices[num]:+un}checked"
+        while __menu && read -rp "$prompt" num && [[ "$num" ]]; do
+            [[ "$num" != *[![:digit:]]* ]] &&
+            (( num > 0 && num <= ${#options[@]} )) ||
+            { msg="${COLORS[RED]}Invalid option: ${COLORS[BOLD]}${num}${COLORS[OFF]}"; continue; }
+            ((num--)); msg="[${COLORS[YELLOW]}${COLORS[BOLD]}${options[num]}${COLORS[OFF]}] was ${choices[num]:+un}checked"
 
-			if [[ "$is_single_selection" -eq 1 ]]; then
-				# un-select others to enforce single item only:
-				for i in "${!choices[@]}"; do
-					[[ "$i" -ne "$num" ]] && choices[i]=''
-				done
-			fi
+            if [[ "$is_single_selection" -eq 1 ]]; then
+                # un-select others to enforce single item only:
+                for i in "${!choices[@]}"; do
+                    [[ "$i" -ne "$num" ]] && choices[i]=''
+                done
+            fi
 
-			[[ "${choices[num]}" ]] && choices[num]='' || choices[num]="${COLORS[PURPLE]}${COLORS[BOLD]}>${COLORS[OFF]}"
-		done
+            [[ "${choices[num]}" ]] && choices[num]='' || choices[num]="${COLORS[PURPLE]}${COLORS[BOLD]}>${COLORS[OFF]}"
+        done
 
-		# collect the selections:
-		for i in "${!options[@]}"; do
-			[[ -n "${choices[i]}" ]] && __SELECTED_ITEMS+=( "${options[i]}" )
-		done
+        # collect the selections:
+        for i in "${!options[@]}"; do
+            [[ -n "${choices[i]}" ]] && __SELECTED_ITEMS+=( "${options[i]}" )
+        done
 
-		unset __menu  # to keep the inner function really an inner one (ie private).
+        unset __menu  # to keep the inner function really an inner one (ie private).
     fi
 
     [[ "${#__SELECTED_ITEMS[@]}" -eq 0 ]] && return 1 || return 0
@@ -5769,7 +5763,6 @@ is_laptop() {
     [[ -d "$pwr_supply_dir" ]] || { err "$pwr_supply_dir is not a valid dir! cannot decide if we're a laptop; assuming we're not. abort." "$FUNCNAME"; sleep 5; return 1; }
 
     find "$pwr_supply_dir" -mindepth 1 -maxdepth 1 -name 'BAT*' -print -quit | grep -q .
-    return $?
 }
 
 
@@ -5918,14 +5911,14 @@ create_link() {
     target="$2"
 
     if [[ "$target" == */ ]] && $sudo test -d "$target"; then
-        target="${target}$(basename -- "$src")"
+        target+="$(basename -- "$src")"
     fi
     #if $sudo test -d "$target"; then
         #[[ "$target" != */ ]] && target+='/'
         #target="${target}$(basename -- "$src")"
     #fi
 
-    $sudo test -h "$target" && execute "$sudo rm -- '$target'"  # only remove $target if it's already a symlink
+    $sudo test -h "$target" && execute "${sudo:+$sudo }rm -- '$target'"  # only remove $target if it's already a symlink
     execute "${sudo:+$sudo }ln -s -- '$src' '$target'"
 
     return 0
@@ -5976,7 +5969,7 @@ check_progs_installed() {
     # Check whether required programs are installed:
     for i in "$@"; do
         if ! cmd_avail "$i"; then
-            progs_missing+=( "$i" )
+            progs_missing+=("$i")
         fi
     done
 
