@@ -3797,45 +3797,43 @@ vim_post_install_configuration() {
 
 # building instructions from https://github.com/Valloric/YouCompleteMe/wiki/Building-Vim-from-source
 build_and_install_vim() {
-    local tmpdir expected_runtimedir python_confdir python3_confdir i
+    local tmpdir expected_runtimedir python3_confdir i
 
     readonly tmpdir="$TMP_DIR/vim-build-${RANDOM}"
-    readonly expected_runtimedir='/usr/local/share/vim/vim81'  # depends on the ./configure --prefix
-    readonly python_confdir='/usr/lib/python2.7/config-x86_64-linux-gnu'
-    readonly python3_confdir='/usr/lib/python3.6/config-3.6m-x86_64-linux-gnu'
+    readonly expected_runtimedir='/usr/local/share/vim/vim82'  # path depends on the ./configure --prefix
+    readonly python3_confdir="$(python3-config --configdir)"
 
     report "building vim..."
 
-    for i in "$python_confdir" "$python3_confdir"; do
+    for i in "$python3_confdir"; do
         [[ -d "$i" ]] || err "[$i] is not a valid dir; will install vim, but you'll need to recompile"
     done
 
+    # TODO: should this removal only happen in mode=1 (ie full) mode?
     report "removing already installed vim components..."
-    execute "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"
+    execute "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common vim-nox"
 
     report "installing vim build dependencies..."
     install_block '
         libncurses5-dev
-        libgnome2-dev
-        libgnomeui-dev
         libgtk2.0-dev
         libatk1.0-dev
-        libbonoboui2-dev
         libcairo2-dev
         libx11-dev
         libxpm-dev
         libxt-dev
-        python-dev
+        python2-dev
         python3-dev
         ruby-dev
-        lua5.1
-        lua5.1-dev
+        lua5.2
+        liblua5.2-dev
         libperl-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
     execute "git clone -j8 $VIM_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
 
+            # flags for py2 support (note python2 has been deprecated):
             #--enable-pythoninterp=yes \
             #--with-python-config-dir=$python_confdir \
     execute "./configure \
@@ -3856,7 +3854,7 @@ build_and_install_vim() {
     create_deb_install_and_store vim || { err; popd; return 1; }  # TODO: remove checkinstall
 
     execute "popd"
-    execute "sudo rm -rf -- $tmpdir"
+    execute "sudo rm -rf -- '$tmpdir'"
     if ! [[ -d "$expected_runtimedir" ]]; then
         err "[$expected_runtimedir] is not a dir; these match 'vim' under [$(dirname -- "$expected_runtimedir")]:"
         err "$(find "$(dirname -- "$expected_runtimedir")" -maxdepth 1 -mindepth 1 -type d -name 'vim*' -print)"
@@ -4180,7 +4178,6 @@ install_from_repo() {
         python3-dev
         python3-venv
         python3-pip
-        python-dev
         flake8
         msbuild
         mono-complete
