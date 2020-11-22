@@ -3806,7 +3806,7 @@ build_and_install_vim() {
     report "building vim..."
 
     for i in "$python3_confdir"; do
-        [[ -d "$i" ]] || err "[$i] is not a valid dir; will install vim, but you'll need to recompile"
+        [[ -d "$i" ]] || { err "[$i] is not a valid dir; abort"; return 1; }
     done
 
     # TODO: should this removal only happen in mode=1 (ie full) mode?
@@ -3822,7 +3822,6 @@ build_and_install_vim() {
         libx11-dev
         libxpm-dev
         libxt-dev
-        python2-dev
         python3-dev
         ruby-dev
         lua5.2
