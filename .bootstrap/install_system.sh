@@ -1800,12 +1800,12 @@ install_own_builds() {
     #install_keepassxc
     #install_goforit
     #install_copyq
-    install_uhk_agent
+    is_native && install_uhk_agent
     #install_rambox
     #install_franz
-    install_ferdi
+    is_native && install_ferdi
     #install_zoxide
-    install_slack_term
+    is_native && install_slack_term
     install_ripgrep
     install_browsh
     install_vnote
@@ -2074,9 +2074,11 @@ resolve_dl_urls() {
 #
 # -U     - skip extracting if archive and pass compressed/tarred ball as-is.
 # -s     - skip adding fetched asset in $GIT_RLS_LOG
+# -n     - filename pattern to be used by find; works together w/ -F;
 # -F     - $file output pattern to grep for in order to filter for specific
 #          single file from unpacked tarball (meaning it's pointless when -U is given);
-#          as it stands, the _first_ file matching given filetype is returned, even if there were more.
+#          as it stands, the _first_ file matching given filetype is returned, even
+#          if there were more. works together w/ -n
 # -I     - entity identifier (for logging/version tracking et al)
 # -r     - if href grep should be relative, ie start with / (note user should not prefix w/ '/' themselves)
 #
@@ -2085,13 +2087,14 @@ resolve_dl_urls() {
 #      note it matches 'til the very end of url (ie you should only provide the latter bit);
 # $3 - optional output file name; if given, downloaded file will be renamed to this; note name only, not including path!
 fetch_release_from_any() {
-    local opt noextract skipadd file_filter id relative loc tmpdir file loc dl_url OPTIND
+    local opt noextract skipadd file_filter name_filter id relative loc tmpdir file loc dl_url OPTIND
 
-    while getopts "UsF:I:r" opt; do
+    while getopts "UsF:n:I:r" opt; do
         case "$opt" in
             U) readonly noextract=1 ;;
             s) readonly skipadd=1 ;;
             F) readonly file_filter="$OPTARG" ;;
+            n) readonly name_filter="$OPTARG" ;;
             I) readonly id="$OPTARG" ;;
             r) readonly relative='TRUE' ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
@@ -2121,12 +2124,12 @@ fetch_release_from_any() {
         if [[ -n "$file_filter" ]]; then
             while IFS= read -r -d $'\0' file; do
                 grep -Eq "$file_filter" <<< "$(file -iLb "$file")" && break || unset file
-            done < <(find "$tmpdir" -type f -print0)
+            done < <(find "$tmpdir" -name "*${name_filter}*" -type f -print0)
         else
-            file="$(find "$tmpdir" -type f)"
+            file="$(find "$tmpdir" -name "*${name_filter}*" -type f)"
         fi
 
-        [[ -f "$file" ]] || { err "couldn't find single extracted/uncompressed file in [$tmpdir]"; popd; return 1; }
+        [[ -f "$file" ]] || { err "couldn't locate single extracted/uncompressed file in [$tmpdir]"; popd; return 1; }
         execute "popd"
     fi
 
@@ -5063,7 +5066,7 @@ install_veracrypt() {
     dl_urls="$(resolve_dl_urls -M 'https://www.veracrypt.fr/en/Downloads.html' '.*Debian-\d+-amd64.deb')" || return 1
 
     vers=()
-    declare -A ver_to_url
+    declare -A ver_to_url  # debian version to url
 
     while IFS= read -r u; do
         grep -qi console <<< "$u" && continue  # we want GUI version, not console
@@ -5074,11 +5077,7 @@ install_veracrypt() {
         fi
     done <<< "$dl_urls"
 
-
-    if [[ ${#vers[@]} -eq 0 ]]; then
-        err "no valid versions found from veracrypt dl urls"
-        return 1
-    fi
+    [[ ${#vers[@]} -eq 0 ]] && { err "no valid versions found from veracrypt dl urls"; return 1; }
 
     i="$(printf '%d\n' "${vers[@]}" | sort -rn | head -n1)"  # take largest (ie latest) version
     is_digit "$i" || { err "latest found version was not digit: [$i]" return 1; }
