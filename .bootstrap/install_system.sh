@@ -1800,12 +1800,14 @@ install_own_builds() {
     #install_keepassxc
     #install_goforit
     #install_copyq
+    install_uhk_agent
     #install_rambox
     #install_franz
     install_ferdi
     #install_zoxide
     install_slack_term
     install_ripgrep
+    install_browsh
     install_vnote
     #install_rebar
     install_lazygit
@@ -2042,7 +2044,7 @@ resolve_dl_urls() {
     while IFS= read -r u; do
         [[ "$u" == /* ]] && u="${domain}$u"  # convert to fully qualified url
 
-        u="$(html2text -width 1000000 <<< "$u")"
+        u="$(html2text -width 1000000 <<< "$u")" || err "html2text processing for [$loc] failed w/ [$?]"
         is_valid_url "$u" || { err "[$u] is not a valid download link"; return 1; }
         urls+="$u"$'\n'
     done <<< "$dl_url"
@@ -2273,6 +2275,11 @@ install_rebar() {  # https://github.com/erlang/rebar3
 
 install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
     install_deb_from_git BurntSushi ripgrep _amd64.deb
+}
+
+
+install_browsh() {  # https://github.com/browsh-org/browsh/releases
+    install_deb_from_git browsh-org browsh _linux_amd64.deb
 }
 
 
@@ -2810,7 +2817,7 @@ install_webdev() {
 
 
 # building instructions from https://github.com/symless/synergy-core/wiki/Compiling
-# TODO: latest built binaries also avail from https://symless.com/synergy/downloads
+# latest built binaries also avail from https://symless.com/synergy/downloads if you have licence
 install_synergy() {
     local tmpdir
 
@@ -2821,6 +2828,7 @@ install_synergy() {
         build-essential
         qtcreator
         qtbase5-dev
+        qttools5-dev
         cmake
         xorg-dev
         libssl-dev
@@ -2859,6 +2867,7 @@ build_and_install_synergy_TODO_container_edition() {
         build-essential \
         qtcreator \
         qtbase5-dev \
+        qttools5-dev
         cmake \
         xorg-dev \
         libssl-dev \
@@ -2923,6 +2932,12 @@ install_copyq() {
     add_to_dl_log  copyq "$ver"
 
     return 0
+}
+
+
+# https://github.com/UltimateHackingKeyboard/agent
+install_uhk_agent() {
+    install_bin_from_git -n agent UltimateHackingKeyboard agent linux-x86_64.AppImage
 }
 
 
@@ -3797,13 +3812,14 @@ vim_post_install_configuration() {
 
 # building instructions from https://github.com/Valloric/YouCompleteMe/wiki/Building-Vim-from-source
 build_and_install_vim() {
-    local tmpdir expected_runtimedir python3_confdir i
+    local tmpdir expected_runtimedir python3_confdir ver i
 
     readonly tmpdir="$TMP_DIR/vim-build-${RANDOM}"
     readonly expected_runtimedir='/usr/local/share/vim/vim82'  # path depends on the ./configure --prefix
     readonly python3_confdir="$(python3-config --configdir)"
 
-    report "building vim..."
+    ver="$(get_git_sha "$VIM_REPO_LOC")"
+    is_installed "$ver" && return 2
 
     for i in "$python3_confdir"; do
         [[ -d "$i" ]] || { err "[$i] is not a valid dir; abort"; return 1; }
@@ -3832,6 +3848,8 @@ build_and_install_vim() {
     execute "git clone -j8 $VIM_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
 
+    report "building vim..."
+
             # flags for py2 support (note python2 has been deprecated):
             #--enable-pythoninterp=yes \
             #--with-python-config-dir=$python_confdir \
@@ -3859,6 +3877,8 @@ build_and_install_vim() {
         err "$(find "$(dirname -- "$expected_runtimedir")" -maxdepth 1 -mindepth 1 -type d -name 'vim*' -print)"
         return 1
     fi
+
+    add_to_dl_log  vim-our-build "$ver"
 
     return 0
 }
@@ -4236,6 +4256,7 @@ install_from_repo() {
         tkremind
         wyrd
         tree
+        hyperfine
         synaptic
         apt-file
         apt-show-versions
@@ -4364,6 +4385,7 @@ install_from_repo() {
         weechat
         lxrandr
         arandr
+        autorandr
         copyq
         googler
         msmtp
@@ -4669,12 +4691,14 @@ __choose_prog_to_build() {
         install_keepassxc
         install_goforit
         install_copyq
+        install_uhk_agent
         install_rambox
         install_franz
         install_ferdi
         install_zoxide
         install_slack_term
         install_ripgrep
+        install_browsh
         install_rebar
         install_lazygit
         install_lazydocker
@@ -5354,13 +5378,12 @@ add_to_dl_log() {
 }
 
 
-# TODO: in colling functions, resolve git sha by [git ls-remote https://github.com/gturri/dokuJClient.git HEAD | cut -f1] instead of cloning!
 is_installed() {
     local dl_url
 
     dl_url="$1"
 
-    [[ -z "$dl_url" ]] && { err "empty ver passed to $FUNCNAME by ${FUNCNAME[1]}"; return 2; }  # sanity
+    [[ -z "$dl_url" ]] && { err "empty ver passed to ${FUNCNAME}() by ${FUNCNAME[1]}()"; return 2; }  # sanity
     if grep -Fq "$dl_url" "$GIT_RLS_LOG" 2>/dev/null; then
         report "[$dl_url] already encountered, skipping installation..."
         return 0
@@ -5382,7 +5405,7 @@ get_git_sha() {
 
     [[ -z "$repo" ]] && { err "no repo url provided"; return 1; }
     sha="$(git ls-remote "$repo" HEAD | cut -f1)"
-    if [[ "$?" -ne 0 || -z "$sha" ]] || ! is_single "$sha"; then
+    if [[ "$?" -ne 0 ]] || ! is_single "$sha"; then
         err "fetching [$repo] HEAD sha failed"
         return 1
     fi
