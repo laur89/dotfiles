@@ -1535,7 +1535,18 @@ get_apt_key() {
     if [[ -n "$k" ]]; then
 		execute "sudo gpg --no-default-keyring --keyring $keyfile --keyserver $url --recv-keys $k" || return 1
     else
+        # either single-conversion command, if it works:
         execute "wget -q -O - '$url' | gpg --dearmor | sudo tee $keyfile > /dev/null" || return 1
+
+        # ...or lengthier (but safer?) multi-step conversion:
+        #local f tmp_ring
+        #f="/tmp/.gpg-apt-key-${RANDOM}"
+        #tmp_ring="/tmp/temp-keyring-${RANDOM}.gpg"
+        #execute "curl -fsL -o '$f' '$url'" || return 1
+
+        #execute "gpg --no-default-keyring --keyring $tmp_ring --import $f" || return 1
+        #execute "gpg --no-default-keyring --keyring $tmp_ring --export --output $keyfile" || return 1
+        #rm -- "$tmp_ring" "$f"
 	fi
 
     src_entry="${src_entry//\{s\}/signed-by=$keyfile}"
@@ -2033,7 +2044,7 @@ fetch_release_from_git() {
     shift "$((OPTIND-1))"
 
     loc="https://github.com/$1/$2/releases/latest"
-    id="github-$1-$2"
+    id="github-$1-$2${4:+-$4}"  # note we append name to the id when defined
 
     fetch_release_from_any "${args[@]}" -r -I "$id" "$loc" "$3" "$4"
 }
@@ -4082,7 +4093,7 @@ install_fonts() {
         is_installed "$ver" && return 2
 
         # clone the repository
-        execute "git clone --recursive -j8 $NERD_FONTS_REPO_LOC '$tmpdir'" || return 1
+        execute "git clone --depth 1 -j8 $NERD_FONTS_REPO_LOC '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
 
         report "installing nerd-fonts..."
