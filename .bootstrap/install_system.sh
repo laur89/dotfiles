@@ -5378,7 +5378,7 @@ post_install_progs_setup() {
     #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
     configure_ntp_for_work  # TODO: confirm if ntp needed in WSL
     configure_pulseaudio  # TODO see if works in WSL
-    init_seafile_cli
+    #init_seafile_cli  # TODO: fix it and re-enable!
     is_native && enable_fw
     is_native && setup_cups
     #addgroup_if_missing fuse  # not needed anymore?
