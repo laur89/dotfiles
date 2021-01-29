@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # ~/.xinitrc
+# see this for ideas: https://github.com/liskin/dotfiles/blob/home/.xsession (all of his dotfiles are interesting!)
 #
 # Executed by startx (run your window manager from here) or DM;
 # Mul execute'ib siit DM või .profile
