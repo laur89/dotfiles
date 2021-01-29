@@ -38,7 +38,7 @@ enable_smart() {
 
     _disk_list="$(sudo smartctl --scan)"
     _status="$?"
-    _disk_list="$(echo "$_disk_list" | awk '{print $1}' | uniq | sort)"
+    _disk_list="$(echo "$_disk_list" | awk '{print $1}' | sort -u)"
 
     if [[ "$_status" -ne 0 ]]; then
         msg="smartctl --scan returned exit code [$_status]"
@@ -55,8 +55,8 @@ enable_smart() {
     fi
 
     for _disk in $_disk_list; do
-        disk_check="$(echo "$_disk" | sed 's/.*\///')"  # strip everything before last slash (included)
-        [[ -z "$disk_check" || "$disk_check" == */* ]] && { err_display "something went wrong with cleaning cmartctl returned disk; continuing." "$_SELF"; continue; }
+        disk_check="$(sed 's/.*\///' <<< "$_disk")"  # strip everything before last slash (included)
+        [[ -z "$disk_check" || "$disk_check" == */* ]] && { err_display "something went wrong with cleaning smartctl-returned disk; continuing." "$_SELF"; continue; }
 
         # sanity - check whether smartctl found disk is listed in /proc/partitions; if not, send error:
         if grep -Eq "\b${disk_check}\b" /proc/partitions; then
@@ -103,7 +103,8 @@ open_mpd_fifo() {
 }
 
 ################################################
-
+# see other xrander tips&tricks (namely globbing support for --output) from https://work.lisk.in/2020/10/11/xrandr-ux.html
+# alternatively also consider using autorandr: https://github.com/phillipberndt/autorandr
 (
     #check_progs_installed detect_displays.sh && detect_displays.sh
     if is_work && ! is_laptop; then
@@ -129,6 +130,8 @@ xset fp rehash
 # disable system beep:
 xset -b
 
+# key repeat settings: 200ms repeat delay and repeat speed of 25 key strokes per second:
+xset r rate 200 25
 
 
 
@@ -162,7 +165,7 @@ export GNOME_KEYRING_CONTROL GNOME_KEYRING_PID GPG_AGENT_INFO SSH_AUTH_SOCK DBUS
 if [[ -d "$HOME/.config/autostart" ]]; then
     for n in $HOME/.config/autostart/*; do
         m=$(cat "$n")
-        case $m in
+        case "$m" in
             *OnlyShowIn*) true
                 ;;
             *)
@@ -170,8 +173,7 @@ if [[ -d "$HOME/.config/autostart" ]]; then
                 ;;
         esac
     done
-    unset n
-    unset m
+    unset n m
 fi
 
 # System autostart directories
@@ -212,8 +214,7 @@ if [[ -d /etc/xdg/autostart ]]; then
                 ;;
         esac
     done
-    unset y
-    unset x
+    unset y x
 fi
 
 # Runs everything in the AUTOSTART array simultaneously without blocking startup
