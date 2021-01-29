@@ -16,6 +16,7 @@ bind k scrollline -5
 colors dark
 
 " hintmode as it was in vimperator:
+unbind --mode=hint <Space>
 set hintfiltermode vimperator
 set hintchars 1234567890
 
