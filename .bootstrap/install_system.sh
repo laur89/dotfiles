@@ -44,6 +44,7 @@ readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
+readonly APT_KEY_DIR='/usr/local/share/keyrings'  # dir where per-application apt keys will be stored in
 readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
 readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
@@ -1512,54 +1513,70 @@ update_clock() {
 }
 
 
-# note apt-key adv needs gnupg to be installed
-# TODO: apt-key is deprecated! no idea what to replace it with at this stage; see
-#  https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=968148
+get_apt_key() {
+    local name url src_entry keyfile k opt OPTIND
+
+    while getopts "k:" opt; do
+        case "$opt" in
+            k) k="$OPTARG" ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    name="$1"
+    url="$2"  # either keyfile or keyserver
+    src_entry="$3"
+    keyfile="$APT_KEY_DIR/${name}.gpg"
+
+    # create (arbitrary) dir for our apt keys:
+    [[ -d "$APT_KEY_DIR" ]] || execute "sudo mkdir -- $APT_KEY_DIR" || return 1
+
+    if [[ -n "$k" ]]; then
+		execute "sudo gpg --no-default-keyring --keyring $keyfile --keyserver $url --recv-keys $k" || return 1
+    else
+        execute "wget -q -O - '$url' | gpg --dearmor | sudo tee $keyfile > /dev/null" || return 1
+	fi
+
+    src_entry="${src_entry//\{s\}/signed-by=$keyfile}"
+    execute "echo '$src_entry' | sudo tee /etc/apt/sources.list.d/${name}.list > /dev/null" || return 1
+}
+
+
+# apt-key is deprecated! instead we follow instructions from https://askubuntu.com/a/1307181
+#  (https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=968148)
 setup_additional_apt_keys_and_sources() {
 
     # mopidy: (from https://docs.mopidy.com/en/latest/installation/debian/):
-    execute 'wget -q -O - https://apt.mopidy.com/mopidy.gpg | sudo apt-key add -'
-    execute "sudo wget -q -O /etc/apt/sources.list.d/mopidy.list https://apt.mopidy.com/${DEB_STABLE}.list"
+    # deb-line is from https://apt.mopidy.com/${DEB_STABLE}.list:
+    get_apt_key  mopidy  https://apt.mopidy.com/mopidy.gpg "deb [{s}] https://apt.mopidy.com/ $DEB_STABLE main contrib non-free"
 
     # docker:  (from https://docs.docker.com/install/linux/docker-ce/debian/):
-    # note we have to use hard-coded stable codename instead of testing or testing codename,
+    # note we have to use hard-coded stable codename instead of 'testing' or testing codename,
     # as https://download.docker.com/linux/debian/dists/ doesn't have 'em;
-    execute 'curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -'
-    #execute "sudo add-apt-repository \
-        #'deb [arch=amd64] https://download.docker.com/linux/debian \
-        #$DEB_STABLE \
-        #stable'
-    #"
-    execute "echo deb [arch=amd64] https://download.docker.com/linux/debian $DEB_STABLE stable | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null"
+    get_apt_key  docker  https://download.docker.com/linux/debian/gpg "deb [arch=amd64 {s}] https://download.docker.com/linux/debian $DEB_STABLE stable"
 
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
     # note it's avail also as a snap: $snap install spotify
-    execute 'curl -sS https://download.spotify.com/debian/pubkey_0D811D58.gpg | sudo apt-key add -'
-    execute 'echo deb http://repository.spotify.com stable non-free | sudo tee /etc/apt/sources.list.d/spotify.list > /dev/null'
+    get_apt_key  spotify  https://download.spotify.com/debian/pubkey_0D811D58.gpg "deb [{s}] http://repository.spotify.com stable non-free"
 
     # seafile-client: (from https://download.seafile.com/published/seafile-user-manual/syncing_client/install_linux_client.md):
     #     seafile-drive instructions would be @ https://download.seafile.com/published/seafile-user-manual/drive_client/drive_client_for_linux.md
-    execute 'sudo wget https://linux-clients.seafile.com/seafile.asc -O /usr/share/keyrings/seafile-keyring.asc'
-    execute "echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/seafile-keyring.asc] https://linux-clients.seafile.com/seafile-deb/$DEB_STABLE/ stable main' | sudo tee /etc/apt/sources.list.d/seafile.list > /dev/null"
+    get_apt_key  seafile  https://linux-clients.seafile.com/seafile.asc "deb [arch=amd64 {s}] https://linux-clients.seafile.com/seafile-deb/$DEB_STABLE/ stable main"
 
     # mono: (from https://www.mono-project.com/download/stable/#download-lin-debian):
     # later on installed by 'mono-complete' pkg
-    execute 'sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF'
-    execute "echo 'deb https://download.mono-project.com/repo/debian stable-$DEB_STABLE main' | sudo tee /etc/apt/sources.list.d/mono-official-stable.list > /dev/null"  # stable branch
-    #execute "echo 'deb https://download.mono-project.com/repo/debian preview-$DEB_STABLE main' | sudo tee /etc/apt/sources.list.d/mono-official-preview.list > /dev/null" # preview branch
+    get_apt_key -k 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF  mono  hkp://keyserver.ubuntu.com:80 "deb [{s}] https://download.mono-project.com/repo/debian stable-$DEB_STABLE main"
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
-    execute 'wget -q -O - https://www.charlesproxy.com/packages/apt/PublicKey | sudo apt-key add -'
-    execute 'echo deb https://www.charlesproxy.com/packages/apt/ charles-proxy main | sudo tee /etc/apt/sources.list.d/charles.list > /dev/null'
+    get_apt_key  charles  https://www.charlesproxy.com/packages/apt/PublicKey "deb [{s}] https://www.charlesproxy.com/packages/apt/ charles-proxy main"
 
     # yarn:  (from https://yarnpkg.com/en/docs/install#debian-stable):
-    execute 'curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -'
-    execute 'echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list > /dev/null'
+    get_apt_key  yarn  https://dl.yarnpkg.com/debian/pubkey.gpg "deb [{s}] https://dl.yarnpkg.com/debian/ stable main"
 
     # kubectl:  (from https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-on-linux):
-    execute 'curl -sS https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -'  # ! note it's google packages key, not specific to kubectl!
-    execute 'echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null'
+    get_apt_key  kubernetes  https://packages.cloud.google.com/apt/doc/apt-key.gpg "deb [{s}] https://apt.kubernetes.io/ kubernetes-xenial main"
 
     execute 'sudo apt-get --yes update'
 }
@@ -1847,7 +1864,8 @@ install_work_builds() {
     install_kube_ps1
     install_sops
     is_native && install_bloomrpc
-    install_postman
+    #install_postman
+    install_insomnia
     install_terraform
     install_terragrunt
     install_minikube
@@ -1891,6 +1909,7 @@ prepare_build_container() {  # TODO container build env not used atm
 
 
 # note that jdk will be installed under $JDK_INSTALLATION_DIR
+# TODO: deprecated
 install_oracle_jdk() {
     local tarball tmpdir dir
 
@@ -1924,6 +1943,7 @@ install_oracle_jdk() {
 }
 
 
+# TODO: deprecated
 switch_jdk_versions() {
     local avail_javas active_java
 
@@ -2061,7 +2081,8 @@ resolve_dl_urls() {
         err "all urls got filtered out after processing [$dl_url]?"  # TODO: this would never happen right?
         return 1
     elif [[ "$multi" -ne 1 ]] && ! is_single "$urls"; then
-        err "multiple urls found from [$loc] for pattern [$grep_tail], but expecting a single result"
+        err "multiple urls found from [$loc] for pattern [$grep_tail], but expecting a single result:"
+        err "$urls"
         return 1
     fi
 
@@ -2373,8 +2394,8 @@ install_kops() {  # https://github.com/kubernetes/kops/
 install_kubectx() {  # https://github.com/ahmetb/kubectx
     local COMPDIR
 
-    install_bin_from_git -n kubectx -d "$HOME/bin"  ahmetb  kubectx  kubectx.*_linux_x86_64
-    install_bin_from_git -n kubectx -d "$HOME/bin"  ahmetb  kubectx  kubens.*_linux_x86_64
+    install_bin_from_git -n kubectx -d "$HOME/bin"  ahmetb  kubectx  kubectx_.*_linux_x86_64.tar.gz
+    install_bin_from_git -n kubens  -d "$HOME/bin"  ahmetb  kubectx  kubens_.*_linux_x86_64.tar.gz
 
     # kubectx/kubens completion scripts: (note there's corresponding entry in ~/.bashrc)
     clone_or_pull_repo "ahmetb" "kubectx" "$BASE_DEPS_LOC" || return 1
@@ -2496,7 +2517,7 @@ install_redis_desktop_mngr() {  # https://snapcraft.io/install/redis-desktop-man
 #   https://github.com/BoostIO/Boostnote
 #   https://github.com/zadam/trilium  (also hostable as a server)
 install_vnote() {  # https://github.com/vnotex/vnote/releases
-    install_bin_from_git -n vnote vnotex vnote x86_64.AppImage
+    install_bin_from_git -n vnote vnotex vnote vnote-linux-x64_.*zip
 }
 
 
@@ -2550,6 +2571,13 @@ Categories=Development;
 # https://github.com/advanced-rest-client/arc-electron/releases/latest
 install_arc() {
     install_deb_from_git advanced-rest-client arc-electron '-amd64.deb'
+}
+
+
+# https://github.com/Kong/insomnia
+# https://github.com/Kong/insomnia/releases/latest
+install_insomnia() {
+    install_deb_from_git Kong insomnia '\.\d+\.\d+.deb'
 }
 
 
@@ -3440,7 +3468,7 @@ install_polybar() {
     local dir
 
     #execute "git clone --recursive -j8 $POLYBAR_REPO_LOC '$dir'" || return 1
-    dir="$(fetch_extract_tarball_from_git -S polybar polybar '\d+\.\d+\.tar')" || return 1
+    dir="$(fetch_extract_tarball_from_git -S polybar polybar 'polybar-\d+\.\d+.*\.tar\.gz')" || return 1
 
     report "installing polybar build dependencies..."
     # note: clang is installed because of  https://github.com/polybar/polybar/issues/572
@@ -3455,7 +3483,7 @@ install_polybar() {
         libxcb-util0-dev
         libxcb-randr0-dev
         libxcb-composite0-dev
-        python-xcbgen
+        python3-xcbgen
         xcb-proto
         libxcb-image0-dev
         libxcb-ewmh-dev
@@ -4033,7 +4061,7 @@ install_fonts() {
 
     # https://github.com/ryanoasis/nerd-fonts#option-3-install-script
     install_nerd_fonts() {
-        local tmpdir fonts i
+        local tmpdir fonts ver i
 
         readonly tmpdir="$TMP_DIR/nerd-fonts-${RANDOM}"
         fonts=(
@@ -4050,49 +4078,66 @@ install_fonts() {
             Iosevka
         )
 
-        report "installing nerd-fonts..."
+        ver="$(get_git_sha "$NERD_FONTS_REPO_LOC")"
+        is_installed "$ver" && return 2
 
+        # clone the repository
         execute "git clone --recursive -j8 $NERD_FONTS_REPO_LOC '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
+
+        report "installing nerd-fonts..."
         for i in "${fonts[@]}"; do
             execute -i "./install.sh '$i'"
         done
 
         execute "popd"
         execute "sudo rm -rf -- '$tmpdir'"
+
+        add_to_dl_log  nerd-fonts "$ver"
         return 0
     }
 
     # https://github.com/powerline/fonts
     # note this is same as 'fonts-powerline' pkg
     install_powerline_fonts() {
-        local tmpdir
+        local tmpdir ver
 
         readonly tmpdir="$TMP_DIR/powerline-fonts-${RANDOM}"
-        report "installing powerline-fonts..."
+
+        ver="$(get_git_sha "$PWRLINE_FONTS_REPO_LOC")"
+        is_installed "$ver" && return 2
 
         execute "git clone --depth=1 -j8 $PWRLINE_FONTS_REPO_LOC '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
+        report "installing powerline-fonts..."
         execute "./install.sh" || return 1
 
         execute "popd"
         execute "sudo rm -rf -- '$tmpdir'"
+
+        add_to_dl_log  powerline-fonts "$ver"
         return 0
     }
 
     # https://github.com/stark/siji   (bitmap font icons)
     install_siji() {
-        local tmpdir
+        local tmpdir repo ver
 
         readonly tmpdir="$TMP_DIR/siji-font-$RANDOM"
+        readonly repo='https://github.com/stark/siji'
 
-        execute "git clone -j8 https://github.com/stark/siji $tmpdir" || { err 'err cloning siji font'; return 1; }
+        ver="$(get_git_sha "$repo")"
+        is_installed "$ver" && return 2
+
+        execute "git clone -j8 $repo $tmpdir" || { err 'err cloning siji font'; return 1; }
         execute "pushd $tmpdir" || return 1
 
         execute "./install.sh" || { err "siji-font install.sh failed with $?"; return 1; }
 
         execute "popd"
         execute "sudo rm -rf -- '$tmpdir'"
+
+        add_to_dl_log  siji-font "$ver"
         return 0
     }
 
@@ -4743,6 +4788,8 @@ __choose_prog_to_build() {
         install_visualvm
         install_vnote
         install_postman
+        install_arc
+        install_insomnia
         install_weeslack
         install_terraform
         install_terragrunt
