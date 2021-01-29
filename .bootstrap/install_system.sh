@@ -1844,7 +1844,7 @@ install_own_builds() {
     install_delta
     install_fd
     install_bat
-    install_exa
+    #install_exa
     #install_synergy  # currently installing from repo
     install_i3
     install_polybar
@@ -4989,7 +4989,7 @@ setup_docker() {
 setup_tcpdump() {
     local tcpd
 
-    tcpd='/usr/sbin/tcpdump'
+    tcpd='/usr/bin/tcpdump'
 
     [[ -x "$tcpd" ]] || { err "[$tcpd] exec does not exist"; return 1; }
 
