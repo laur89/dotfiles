@@ -161,11 +161,6 @@ validate_and_init() {
 
     # keep-alive: update existing `sudo` time stamp
     while true; do sudo -n true; sleep 30; kill -0 "$$" || exit; done 2>/dev/null &
-
-    # we need to make sure our system clock is roughly right; otherwise stuff like apt-get might start failing:
-    #is_native || execute "rdate -s tick.greyware.com"
-    #is_native || execute "tlsdate -V -n -H encrypted.google.com"
-    update_clock || exit 1
 }
 
 
@@ -6302,6 +6297,12 @@ trap "cleanup; exit" EXIT HUP INT QUIT PIPE TERM;
 
 validate_and_init
 check_dependencies
+
+# we need to make sure our system clock is roughly right; otherwise stuff like apt-get might start failing:
+#is_native || execute "rdate -s tick.greyware.com"
+#is_native || execute "tlsdate -V -n -H encrypted.google.com"
+update_clock || exit 1  # needs to be done _after_ check_dependencies as update_clock() uses some
+
 choose_step
 
 [[ "$SYSCTL_CHANGED" -eq 1 ]] && execute "sudo sysctl -p --system"
