@@ -174,7 +174,7 @@ check_dependencies() {
     local dir prog perms exec_to_pkg
 
     readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
-    exec_to_pkg=(
+    declare -A exec_to_pkg=(
         [gpg]=gnupg
     )
 
