@@ -100,6 +100,7 @@ declare -A COLORS=(
     [BOLD]=$'\033[1m'
 )
 readonly NPMRC_BAK="$TMP_DIR/npmrc.bak.$RANDOM"  # temp location where we _might_ move our npmrc to for the duration of this script;
+readonly GIT_OPTS=(--depth 1 -j8)
 #-----------------------
 #---    Functions    ---
 #-----------------------
@@ -372,6 +373,9 @@ setup_apt() {
         backup_original_and_copy_file --sudo "$file" "$apt_dir"
     done
 
+    # TODO: 02periodic _might_ be duplicating the unattended-upgrades config if you
+    # opt for automatic security updates during debian installation?
+    #
     # copy to apt.conf.d/:
     for file in \
             02periodic \
@@ -806,7 +810,7 @@ install_deps() {
 
                 report "installing rtlwifi_new for card [$rtl_driver]"
                 tmpdir="$TMP_DIR/realtek-driver-${RANDOM}"
-                execute "git clone -j8 $repo $tmpdir" || return 1
+                execute "git clone ${GIT_OPTS[@]} $repo $tmpdir" || return 1
                 execute "pushd $tmpdir" || return 1
                 execute "make clean" || return 1
 
@@ -999,6 +1003,17 @@ install_deps() {
 
     py_install update-conf.py # https://github.com/rarylson/update-conf.py  (generate config files from conf.d dirs)
     #py_install starred     # https://github.com/maguowei/starred  - create list of your github starts; note it's updated by CI so no real reason to install it locally
+
+    #  TODO: spotify extensions need to be installed globally??
+    # mopidy-youtube        # https://pypi.org/project/Mopidy-YouTube/
+    install_block  gstreamer1.0-plugins-bad
+    py_install Mopidy-Youtube
+
+    # mopidy-soundcloud     # https://mopidy.com/ext/soundcloud/
+    py_install Mopidy-SoundCloud
+
+    # mopidy-spotify        # https://mopidy.com/ext/spotify/
+    py_install Mopidy-Spotify
 
     # rbenv & ruby-build: {                             # https://github.com/rbenv/rbenv-installer
     #   ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki):
@@ -1258,7 +1273,7 @@ setup_homesick() {
     fetch_castles || return 1
 
     # just in case check if any of the castles are still tracking https instead of ssh:
-    readonly https_castles="$($BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick list | grep '\bhttps://\b')"
+    https_castles="$($BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick list | grep '\bhttps://\b')"
     if [[ -n "$https_castles" ]]; then
         err "fyi, these homesick castles are for some reason still tracking https remotes:"
         report "$https_castles"
@@ -2039,7 +2054,7 @@ fetch_release_from_git() {
     shift "$((OPTIND-1))"
 
     loc="https://github.com/$1/$2/releases/latest"
-    id="github-$1-$2${4:+-$4}"  # note we append name to the id when defined
+    id="github-$1-$2${4:+-$4}"  # note we append name to the id when defined (same repo might contain multiple binaries)
 
     fetch_release_from_any "${args[@]}" -r -I "$id" "$loc" "$3" "$4"
 }
@@ -2171,7 +2186,7 @@ fetch_release_from_any() {
     fi
 
     #sanitize_apt "$tmpdir"  # think this is not really needed...
-    echo "$file"  # note returned should be indeed path, even if only relative (ie './xyz'), not cleaned, "pure" filename
+    echo "$file"  # note returned should be indeed path, even if only relative (ie './xyz'), not cleaned basename
     return 0
 }
 
@@ -2187,7 +2202,7 @@ install_deb_from_git() {
     deb="$(fetch_release_from_git "$1" "$2" "$3")" || return 1
     # TODO: note apt doesn't have --yes option!
     #execute "sudo apt install '$deb'" || { err "installing [$1/$2] failed w/ $?"; return 1; }
-    execute "sudo apt-get --yes install '$deb'" || { err "installing [$1/$2] failed w/ $?"; return 1; }
+    execute "sudo apt-get --yes install '$deb'" || { err "installing deb from [$1/$2] failed w/ $?"; return 1; }
     execute "rm -f -- '$deb'"
 }
 
@@ -2880,7 +2895,7 @@ install_synergy() {
         libsystemd-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone -j8 $SYNERGY_REPO_LOC $tmpdir" || return 1
+    execute "git clone ${GIT_OPTS[@]} $SYNERGY_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
     execute "git checkout v2-dev" || return 1  # see https://github.com/symless/synergy-core/wiki/Getting-Started
     export BOOST_ROOT="/home/$USER/boost"  # TODO: unsure if this is needed
@@ -2955,7 +2970,7 @@ install_copyq() {
         libxtst-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone -j8 $COPYQ_REPO_LOC $tmpdir" || return 1
+    execute "git clone ${GIT_OPTS[@]} $COPYQ_REPO_LOC $tmpdir" || return 1
     report "building copyq"
     execute "pushd $tmpdir" || return 1
     execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .' || { err; popd; return 1; }
@@ -3034,7 +3049,7 @@ install_goforit() {
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
 
-    execute "git clone -j8 $GOFORIT_REPO_LOC $tmpdir" || return 1
+    execute "git clone ${GIT_OPTS[@]} $GOFORIT_REPO_LOC $tmpdir" || return 1
     report "building goforit..."
     execute "mkdir $tmpdir/build"
     execute "pushd $tmpdir/build" || return 1
@@ -3145,7 +3160,7 @@ install_keepassx() {
         libxtst-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone -j8 $KEEPASS_REPO_LOC $tmpdir" || return 1
+    execute "git clone ${GIT_OPTS[@]} $KEEPASS_REPO_LOC $tmpdir" || return 1
 
     execute "mkdir $tmpdir/build"
     execute "pushd $tmpdir/build" || return 1
@@ -3196,7 +3211,7 @@ install_i3lock() {
       libxcb-dpms0-dev' || { err 'failed to install i3lock build deps. abort.'; return 1; }
 
     # clone the repository
-    execute "git clone -j8 $I3_LOCK_LOC '$tmpdir'" || return 1
+    execute "git clone ${GIT_OPTS[@]} $I3_LOCK_LOC '$tmpdir'" || return 1
     execute "git -C '$tmpdir' tag -f 'git-$(git rev-parse --short HEAD)'" || return 1
 
     report "building i3lock..."
@@ -3229,7 +3244,7 @@ install_i3lock_fancy() {
     is_installed "$ver" && return 2
 
     # clone the repository
-    execute "git clone -j8 $I3_LOCK_FANCY_LOC '$tmpdir'" || return 1
+    execute "git clone ${GIT_OPTS[@]} $I3_LOCK_FANCY_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
 
 
@@ -3305,7 +3320,7 @@ EOF
     is_installed "$ver" && return 2
 
     # clone the repository
-    execute "git clone -j8 $I3_REPO_LOC '$tmpdir'" || return 1
+    execute "git clone ${GIT_OPTS[@]} $I3_REPO_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
 
     _apply_patches  # TODO: should we bail on error?
@@ -3473,7 +3488,7 @@ install_i3_deps() {
 install_polybar() {
     local dir
 
-    #execute "git clone --recursive -j8 $POLYBAR_REPO_LOC '$dir'" || return 1
+    #execute "git clone --recursive ${GIT_OPTS[@]} $POLYBAR_REPO_LOC '$dir'" || return 1
     dir="$(fetch_extract_tarball_from_git -S polybar polybar 'polybar-\d+\.\d+.*\.tar\.gz')" || return 1
 
     report "installing polybar build dependencies..."
@@ -3715,7 +3730,7 @@ setup_nvim() {
             #unzip
         #' || { err 'failed to install neovim build deps. abort.'; return 1; }
 
-        #execute "git clone -j8 $NVIM_REPO_LOC $tmpdir" || return 1
+        #execute "git clone ${GIT_OPTS[@]} $NVIM_REPO_LOC $tmpdir" || return 1
         #execute "pushd $tmpdir" || { err; return 1; }
 
         ## TODO: checkinstall fails with neovim (bug in checkinstall afaik):
@@ -3882,7 +3897,7 @@ build_and_install_vim() {
         libperl-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone -j8 $VIM_REPO_LOC $tmpdir" || return 1
+    execute "git clone ${GIT_OPTS[@]} $VIM_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
 
     report "building vim..."
@@ -4088,7 +4103,7 @@ install_fonts() {
         is_installed "$ver" && return 2
 
         # clone the repository
-        execute "git clone --depth 1 -j8 $NERD_FONTS_REPO_LOC '$tmpdir'" || return 1
+        execute "git clone ${GIT_OPTS[@]} $NERD_FONTS_REPO_LOC '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
 
         report "installing nerd-fonts..."
@@ -4113,7 +4128,7 @@ install_fonts() {
         ver="$(get_git_sha "$PWRLINE_FONTS_REPO_LOC")"
         is_installed "$ver" && return 2
 
-        execute "git clone --depth=1 -j8 $PWRLINE_FONTS_REPO_LOC '$tmpdir'" || return 1
+        execute "git clone ${GIT_OPTS[@]} $PWRLINE_FONTS_REPO_LOC '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
         report "installing powerline-fonts..."
         execute "./install.sh" || return 1
@@ -4135,7 +4150,7 @@ install_fonts() {
         ver="$(get_git_sha "$repo")"
         is_installed "$ver" && return 2
 
-        execute "git clone -j8 $repo $tmpdir" || { err 'err cloning siji font'; return 1; }
+        execute "git clone ${GIT_OPTS[@]} $repo $tmpdir" || { err 'err cloning siji font'; return 1; }
         execute "pushd $tmpdir" || return 1
 
         execute "./install.sh" || { err "siji-font install.sh failed with $?"; return 1; }
@@ -4372,9 +4387,6 @@ install_from_repo() {
     declare -ar block3_nonwin=(
         spotify-client
         mopidy
-        mopidy-soundcloud
-        mopidy-spotify
-        mopidy-youtube
         socat
         youtube-dl
         mpc
@@ -4476,7 +4488,6 @@ install_from_repo() {
         docker-ce-cli
         containerd.io
         docker-compose
-        docker-swarm
         mitmproxy
         charles-proxy
     )
@@ -5092,7 +5103,7 @@ install_gtk_numix() {
     report "installing numix build dependencies..."
     rb_install sass || return 1
 
-    execute "git clone -j8 $theme_repo $tmpdir" || return 1
+    execute "git clone ${GIT_OPTS[@]} $theme_repo $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
     execute "make" || { err; popd; return 1; }
 
@@ -5285,6 +5296,7 @@ setup_cups() {
 
 
 # ff & extension configs/customisation
+# TODO: conf_dir does not exist during initial full install!
 setup_firefox() {
     local conf_dir profile
 
@@ -6326,8 +6338,6 @@ exit
 
 # TODOS:
 # - if apt-get update fails, then we should fail script fast?
-# - provide -Q option for quick execution; eg skip massive font installation
-#   and other dependency builds;
 #
 # GAMES:
 # - flightgear/unstable
