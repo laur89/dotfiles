@@ -824,6 +824,8 @@ install_deps() {
             # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
             readonly wifi_info="$(sudo lshw -C network | grep -iA 5 'Wireless interface')"
 
+            # TODO: with one intel card we had some UNCLAIMED in lspci output, instead of
+            # wireless interface'; went ok after intel drivers were installed tho
             if grep -iq 'vendor.*Intel' <<< "$wifi_info"; then
                 report "we have intel wifi; installing intel drivers..."
                 install_block "firmware-iwlwifi"
@@ -4067,7 +4069,6 @@ install_fonts() {
     report "installing fonts..."
 
     install_block '
-        fonts-powerline
         ttf-mscorefonts-installer
         xfonts-75dpi
         xfonts-75dpi-transcoded
@@ -4119,7 +4120,7 @@ install_fonts() {
     }
 
     # https://github.com/powerline/fonts
-    # note this is same as 'fonts-powerline' pkg
+    # note this is same as 'fonts-powerline' pkg, although at least in 2021 the package didn't work
     install_powerline_fonts() {
         local tmpdir ver
 
@@ -4175,7 +4176,7 @@ install_fonts() {
 
     enable_bitmap_rendering; unset enable_bitmap_rendering
     install_nerd_fonts; unset install_nerd_fonts
-    #install_powerline_fonts; unset install_powerline_fonts  # commented out as we're installing it via apt
+    install_powerline_fonts; unset install_powerline_fonts  # note 'fonts-powerline' pkg in apt does not seem to work
     install_siji; unset install_siji
 
     # TODO: guess we can't use xset when xserver is not yet running:
