@@ -218,8 +218,7 @@ setup_udev() {
     local udev_src udev_target file tmpfile
 
     readonly udev_src="$COMMON_PRIVATE_DOTFILES/backups/udev"
-    readonly udev_target='/etc/udev/rules.d/'
-    readonly tmpfile="$TMP_DIR/udev_setup-$RANDOM"
+    readonly udev_target='/etc/udev/rules.d'
 
     if ! [[ -d "$udev_target" ]]; then
         err "[$udev_target] is not a dir; skipping udev file(s) installation."
@@ -227,13 +226,15 @@ setup_udev() {
     elif ! [[ -d "$udev_src" ]]; then
         err "[$udev_src] is not a dir; skipping udev file(s) installation."
         return 1
+    elif is_dir_empty "$udev_src"; then
+        return 0
     fi
 
-    is_dir_empty "$udev_src" && return 0
     for file in "$udev_src/"*; do
+        tmpfile="$TMP_DIR/.udev_setup-$(basename -- "$file")"
         execute "cp -- '$file' '$tmpfile'" || return 1
         execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-        execute "sudo mv -- '$tmpfile' $udev_target/" || { err "moving [$tmpfile] to [$udev_src] failed"; return 1; }
+        execute "sudo mv -- '$tmpfile' $udev_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$udev_target] failed w/ $?"; return 1; }
     done
 }
 
@@ -268,7 +269,6 @@ setup_systemd() {
 
     readonly sysd_src="$PRIVATE_CASTLE/backups/systemd"
     readonly sysd_target='/etc/systemd/system'
-    readonly tmpfile="$TMP_DIR/sysd_setup-$RANDOM"
 
     if ! [[ -d "$sysd_target" ]]; then
         err "[$sysd_target] is not a dir; skipping systemd file(s) installation."
@@ -276,13 +276,15 @@ setup_systemd() {
     elif ! [[ -d "$sysd_src" ]]; then
         err "[$sysd_src] is not a dir; skipping systemd file(s) installation."
         return 1
+    elif is_dir_empty "$sysd_src"; then
+        return 0
     fi
 
-    is_dir_empty "$sysd_src" && return 0
     for file in "$sysd_src/"*; do
+        tmpfile="$TMP_DIR/.sysd_setup-$(basename -- "$file")"
         execute "cp -- '$file' '$tmpfile'" || return 1
         execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-        execute "sudo mv -- '$tmpfile' $sysd_target/" || { err "moving [$tmpfile] to [$sysd_src] failed"; return 1; }
+        execute "sudo mv -- '$tmpfile' $sysd_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$sysd_target] failed"; return 1; }
     done
 }
 
@@ -375,7 +377,7 @@ setup_apt() {
 
     # NOTE: 02periodic _might_ be duplicating the unattended-upgrades activation
     # config located at apt/apt.conf.d/20auto-upgrades; you should go with either,
-    # not both (see the debian wiki link), ie it might be best to remove 20auto-upgrades
+    # not both (see the debian wiki link), ie it might be best to remove 20auto-upgrades; TODO: do it maybe automatically?
     # if both it and 02periodic exist;
     #
     # copy to apt.conf.d/:
@@ -859,6 +861,7 @@ install_deps() {
 
         # xinput is for input device configuration; see  https://wiki.archlinux.org/index.php/Libinput
         # evtest can display pressure and placement of touchpad input in realtime; note it cannot run together w/ xserver, so better ctrl+alt+F2 to another tty
+        # TODO: doesn't xinput depend on synaptic driver, ie it doesnt work with the newer libinput driver?
         install_block '
             libinput-tools
             xinput
@@ -4444,7 +4447,7 @@ install_from_repo() {
         maim
         ffmpeg
         ffmpegthumbnailer
-        vokoscreen
+        vokoscreen-ng
         peek
         screenkey
         mediainfo
