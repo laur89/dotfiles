@@ -1764,6 +1764,7 @@ install_progs() {
     install_own_builds  # has to be after install_from_repo()
 
     is_native && install_nvidia
+    is_native && install_amd
 
     # TODO: delete?:
     #if [[ "$PROFILE" == work ]]; then
@@ -4593,6 +4594,25 @@ install_vbox_guest() {
 }
 
 
+# offers to install AMD drivers, if card is detected.
+#
+# https://wiki.debian.org/AtiHowTo
+install_amd() {
+    # TODO: consider  lspci -vnn | grep VGA | grep AMD
+    if sudo lshw | grep -iA 5 'display' | grep -q 'vendor.*AMD'; then
+        if confirm -d N "we seem to have AMD card; want to install AMD drivers?"; then  # TODO: should we default to _not_ installing in non-interactive mode?
+            report "installing AMD drivers & firmware..."
+            install_block 'firmware-amd-graphics libgl1-mesa-dri libglx-mesa0 mesa-vulkan-drivers xserver-xorg-video-all'
+            return $?
+        else
+            report "we chose not to install AMD drivers..."
+        fi
+    else
+        report "we don't have an AMD card; skipping installing their drivers..."
+    fi
+}
+
+
 # offers to install nvidia drivers, if NVIDIA card is detected.
 #
 # in order to reinstall the dkms part, purge nvidia-driver and then reinstall.
@@ -4737,6 +4757,7 @@ choose_single_task() {
         install_fonts
         upgrade_kernel
         install_nvidia
+        install_amd
         install_webdev
         install_from_repo
         install_ssh_server_or_client
