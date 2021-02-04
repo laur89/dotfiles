@@ -373,8 +373,10 @@ setup_apt() {
         backup_original_and_copy_file --sudo "$file" "$apt_dir"
     done
 
-    # TODO: 02periodic _might_ be duplicating the unattended-upgrades config if you
-    # opt for automatic security updates during debian installation?
+    # NOTE: 02periodic _might_ be duplicating the unattended-upgrades activation
+    # config located at apt/apt.conf.d/20auto-upgrades; you should go with either,
+    # not both (see the debian wiki link), ie it might be best to remove 20auto-upgrades
+    # if both it and 02periodic exist;
     #
     # copy to apt.conf.d/:
     for file in \
@@ -1827,53 +1829,13 @@ upgrade_kernel() {
 }
 
 
-# 'own build' as in everything from not the debian repository; either build from
-# source, or fetch from the interwebs and install/configure manually.
-#
-# note single-task counterpart would be __choose_prog_to_build()
-install_own_builds() {
-
-    #prepare_build_container
-
-    #install_vim  # note: can't exclude it as-is, as it also configures vim (if you ever want to go nvim-only)
-    #install_neovim
-    #install_keepassxc
-    #install_goforit
-    #install_copyq
-    is_native && install_uhk_agent
-    #install_rambox
-    #install_franz
-    is_native && install_ferdi
-    #install_zoxide
-    is_native && install_slack_term
-    install_ripgrep
-    install_browsh
-    install_vnote
+install_devstuff() {
     #install_rebar
     install_lazygit
     install_lazydocker
     #install_gitin
-    install_delta
-    install_fd
-    install_bat
-    #install_exa
-    #install_synergy  # currently installing from repo
-    install_i3
-    install_polybar
     #install_oracle_jdk  # start using sdkman (or something similar)
-    install_gruvbox_gtk_theme
-    #install_weeslack
-    install_veracrypt
 
-    #install_dwm
-    is_native && install_i3lock
-    #is_native && install_i3lock_fancy
-    is_native && install_betterlockscreen
-    [[ "$PROFILE" == work ]] && install_work_builds
-}
-
-
-install_work_builds() {
     install_aws_okta
     install_saml2aws
     install_aia
@@ -1892,6 +1854,53 @@ install_work_builds() {
     install_terraform
     install_terragrunt
     install_minikube
+}
+
+
+# 'own build' as in everything from not the debian repository; either build from
+# source, or fetch from the interwebs and install/configure manually.
+#
+# note single-task counterpart would be __choose_prog_to_build()
+install_own_builds() {
+
+    #prepare_build_container
+
+    #install_vim  # note: can't exclude it as-is, as it also configures vim (if you ever want to go nvim-only)
+    #install_neovim
+    #install_keepassxc
+    #install_goforit
+    #install_copyq
+    is_native && install_uhk_agent
+    #install_rambox
+    #install_franz
+    is_native && install_ferdi
+    #install_zoxide
+    install_ripgrep
+    install_browsh
+    install_vnote
+    install_delta
+    install_fd
+    install_bat
+    #install_exa
+    #install_synergy  # currently installing from repo
+    install_i3
+    install_polybar
+    install_gruvbox_gtk_theme
+    #install_weeslack
+    is_native && install_slack_term
+    install_veracrypt
+
+    #install_dwm
+    is_native && install_i3lock
+    #is_native && install_i3lock_fancy
+    is_native && install_betterlockscreen
+
+    [[ "$PROFILE" == work ]] && install_work_builds
+    install_devstuff
+}
+
+
+install_work_builds() {
     is_native && install_bluejeans
 }
 
@@ -4254,7 +4263,7 @@ install_from_repo() {
         libnotify-bin
         dunst
         rofi
-        compton
+        picom
         dosfstools
         checkinstall
         build-essential
@@ -4762,7 +4771,6 @@ __choose_prog_to_build() {
         install_franz
         install_ferdi
         install_zoxide
-        install_slack_term
         install_ripgrep
         install_browsh
         install_rebar
@@ -4809,6 +4817,7 @@ __choose_prog_to_build() {
         install_arc
         install_insomnia
         install_weeslack
+        install_slack_term
         install_terraform
         install_terragrunt
         install_bluejeans
@@ -4901,6 +4910,7 @@ remind_manually_installed_progs() {
         'intelliJ toolbox'
         'sdkman - jdk, maven, gradle...'
         'any custom certs'
+        'install tmux plugins (prefix+I)'
         'ublock origin additional configs (est, social media, ...)'
         'ublock whitelist (should be saved somewhere)'
         'import keepass-xc browser plugin config'
