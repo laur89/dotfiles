@@ -5885,6 +5885,15 @@ is_laptop() {
 }
 
 
+# Checks whether system is a thinkpad laptop.
+#
+# @returns {bool}   true if system is a thinkpad laptop.
+is_thinkpad() {
+    check_progs_installed  dmidecode || { err "dmidecode not installed"; return 2; }
+    is_laptop && sudo dmidecode | grep -A3 '^System Information' | grep -q 'ThinkPad'
+}
+
+
 # Checks whether system is running in WSL.
 #
 # @returns {bool}   true if we're running inside Windows.
