@@ -4451,6 +4451,7 @@ install_from_repo() {
         vokoscreen-ng
         peek
         screenkey
+        magnus
         mediainfo
         screenruler
         lynx
@@ -6019,7 +6020,8 @@ is_valid_ip() {
 # pass '-s' or '--sudo' as first arg to execute as sudo
 #
 # second arg, the target, should end with a slash if a containing dir is meant to be
-# passed, not a literal path to the link-to-be-created.
+# passed, not a literal path to the link-to-be-created. in this case dir needs to exist,
+# it doesn't get automatically created
 create_link() {
     local src target sudo
 
@@ -6352,7 +6354,7 @@ update_clock || exit 1  # needs to be done _after_ check_dependencies as update_
 
 choose_step
 
-[[ "$SYSCTL_CHANGED" -eq 1 ]] && execute "sudo sysctl -p --system"
+if [[ "$SYSCTL_CHANGED" -eq 1 ]]; then execute "sudo sysctl -p --system"; fi
 
 exit
 
