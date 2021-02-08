@@ -107,12 +107,12 @@ if is_native && ! is_proc_running xss-lock; then
     #xset dpms 0 0 1200
 fi
 
-# note compton causes WSL (at least in VcXsrv) to fail
-#if ! is_windows && ! is_proc_running compton; then
-if is_native && ! is_proc_running compton; then
-    echo "Launching compton..."
+# note compton/picom causes WSL (at least in VcXsrv) to fail
+#if ! is_windows && ! is_proc_running picom; then
+if is_native && ! is_proc_running picom; then
+    echo "Launching compton/picom..."
     # note -b|--daemon option causes crashes/hangs with some drivers: (https://github.com/chjj/compton/issues/176)
-    compton --config ~/.compton.conf --respect-prop-shadow &  #--daemon
+    picom --config ~/.config/picom.conf &  #--daemon
 fi
 
 if is_native && is_laptop && ! is_proc_running syndaemon; then
