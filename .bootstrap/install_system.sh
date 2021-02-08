@@ -14,6 +14,7 @@
 #---   Configuration  ---
 #------------------------
 set -o pipefail
+shopt -s nullglob       # unmatching globs to expand into empty string/list instead of being left unexpanded
 
 readonly TMP_DIR='/tmp'
 readonly CLANG_LLVM_LOC='http://releases.llvm.org/6.0.0/clang+llvm-6.0.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html;  https://apt.llvm.org/building-pkgs.php
@@ -71,6 +72,8 @@ EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%b-%y--%R).log" \
         || readonly EXECUTION_LOG="$HOME/installation-exe.log"  # do not create logfile here! otherwise cleanup()
                                                                 # picks it up and reports of its existence, opening
                                                                 # up for false positives.
+PRIVATE_CASTLE=''   # installation specific private castle location (eg for 'work' or 'personal')
+PLATFORM_CASTLE=''  # platform-speific castle location for machine-specific configs; optional
 SYSCTL_CHANGED=0       # states whether sysctl config got changed
 
 #------------------------
@@ -84,7 +87,6 @@ readonly BASE_HOMESICK_REPOS_LOC="$HOME/.homesick/repos"  # keep real location i
 readonly COMMON_DOTFILES="$BASE_HOMESICK_REPOS_LOC/dotfiles"
 readonly COMMON_PRIVATE_DOTFILES="$BASE_HOMESICK_REPOS_LOC/private-common"
 readonly SOME_PACKAGE_IGNORED_EXIT_CODE=199
-PRIVATE_CASTLE=''  # installation specific private castle location (eg for 'work' or 'personal')
 
 readonly SELF="${0##*/}"
 
@@ -101,6 +103,9 @@ declare -A COLORS=(
 )
 readonly NPMRC_BAK="$TMP_DIR/npmrc.bak.$RANDOM"  # temp location where we _might_ move our npmrc to for the duration of this script;
 readonly GIT_OPTS=(--depth 1 -j8)
+declare -A HOSTNAME_TO_PLATFORM=(
+    [p14s]="$BASE_HOMESICK_REPOS_LOC/p14s-dotfiles"
+)
 #-----------------------
 #---    Functions    ---
 #-----------------------
@@ -115,6 +120,7 @@ print_usage() {
 
 
 validate_and_init() {
+    local i
 
     check_connection && CONNECTED=1 || CONNECTED=0
     [[ "$CONNECTED" -eq 0 && "$ALLOW_OFFLINE" -ne 1 ]] && { err "no internet connection. abort."; exit 1; }
@@ -143,7 +149,27 @@ validate_and_init() {
             exit 1 ;;
     esac
 
+    if [[ -n "$PLATFORM" ]]; then  # provided via cmd opt
+        for i in "${HOSTNAME_TO_PLATFORM[@]}"; do
+            [[ "$i" == "$PLATFORM" ]] && break
+            unset i
+        done
+
+        [[ -z "$i" ]] && { err "selected platform [$PLATFORM] is not known"; exit 1; }
+        unset i
+    elif [[ -n "${HOSTNAME_TO_PLATFORM[$HOSTNAME]}" ]]; then
+        PLATFORM="${HOSTNAME_TO_PLATFORM[$HOSTNAME]}"
+    fi
+
+    if [[ -n "$PLATFORM" ]]; then
+        PLATFORM_CASTLE="${HOSTNAME_TO_PLATFORM[$HOSTNAME]}"
+    fi
+
+    # TODO: is this check valid?:
+    ! is_native && [[ -n "$PLATFORM" ]] && { err "platform selected on non-native setup - makes no sense"; exit 1; }
+
     report "private castle defined as [$PRIVATE_CASTLE]"
+    report "platform castle defined as [$PLATFORM_CASTLE]"
 
     # verify we have our key(s) set up and available:
     if is_ssh_key_available; then
@@ -215,26 +241,28 @@ check_dependencies() {
 
 
 setup_udev() {
-    local udev_src udev_target file tmpfile
+    local udev_src udev_target file dir tmpfile
 
-    readonly udev_src="$COMMON_PRIVATE_DOTFILES/backups/udev"
     readonly udev_target='/etc/udev/rules.d'
+    udev_src=(
+        "$COMMON_PRIVATE_DOTFILES/backups/udev"
+    )
+
+    [[ -n "$PLATFORM" ]] && udev_src+=("$PLATFORM_CASTLE/udev")
 
     if ! [[ -d "$udev_target" ]]; then
         err "[$udev_target] is not a dir; skipping udev file(s) installation."
         return 1
-    elif ! [[ -d "$udev_src" ]]; then
-        err "[$udev_src] is not a dir; skipping udev file(s) installation."
-        return 1
-    elif is_dir_empty "$udev_src"; then
-        return 0
     fi
 
-    for file in "$udev_src/"*; do
-        tmpfile="$TMP_DIR/.udev_setup-$(basename -- "$file")"
-        execute "cp -- '$file' '$tmpfile'" || return 1
-        execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-        execute "sudo mv -- '$tmpfile' $udev_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$udev_target] failed w/ $?"; return 1; }
+    for dir in "${udev_src[@]}"; do
+        [[ -d "$dir" ]] || continue
+        for file in "$dir/"*; do
+            tmpfile="$TMP_DIR/.udev_setup-$(basename -- "$file")"
+            execute "cp -- '$file' '$tmpfile'" || return 1
+            execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
+            execute "sudo mv --no-clobber -- '$tmpfile' $udev_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$udev_target] failed w/ $?"; return 1; }
+        done
     done
 }
 
@@ -265,26 +293,28 @@ setup_mail() {
 
 # TODO: shouldn't it be COMMON_PRIVATE_DOTFILES/backups?
 setup_systemd() {
-    local sysd_src sysd_target file tmpfile
+    local sysd_src sysd_target file dir tmpfile
 
-    readonly sysd_src="$PRIVATE_CASTLE/backups/systemd"
     readonly sysd_target='/etc/systemd/system'
+    sysd_src=(
+        "$PRIVATE_CASTLE/backups/systemd"
+    )
+
+    [[ -n "$PLATFORM" ]] && sysd_src+=("$PLATFORM_CASTLE/systemd")
 
     if ! [[ -d "$sysd_target" ]]; then
         err "[$sysd_target] is not a dir; skipping systemd file(s) installation."
         return 1
-    elif ! [[ -d "$sysd_src" ]]; then
-        err "[$sysd_src] is not a dir; skipping systemd file(s) installation."
-        return 1
-    elif is_dir_empty "$sysd_src"; then
-        return 0
     fi
 
-    for file in "$sysd_src/"*; do
-        tmpfile="$TMP_DIR/.sysd_setup-$(basename -- "$file")"
-        execute "cp -- '$file' '$tmpfile'" || return 1
-        execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-        execute "sudo mv -- '$tmpfile' $sysd_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$sysd_target] failed"; return 1; }
+    for dir in "${sysd_src[@]}"; do
+        [[ -d "$dir" ]] || continue
+        for file in "$dir/"*; do
+            tmpfile="$TMP_DIR/.sysd_setup-$(basename -- "$file")"
+            execute "cp -- '$file' '$tmpfile'" || return 1
+            execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
+            execute "sudo mv --no-clobber -- '$tmpfile' $sysd_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$sysd_target] failed"; return 1; }
+        done
     done
 }
 
@@ -1231,6 +1261,10 @@ fetch_castles() {
             err "unexpected \$PROFILE [$PROFILE]"; exit 1
             ;;
     esac
+
+    if [[ -n "$PLATFORM" ]]; then
+        clone_or_link_castle -H "$(basename -- "$PLATFORM_CASTLE")" laur89 github.com || err "failed pulling platform-specific dotfiles for [$PLATFORM]; won't abort"
+    fi
 
     #while true; do
         #if confirm "$(report 'want to clone another castle?')"; then
@@ -6329,7 +6363,7 @@ cleanup() {
 #----------------------------
 #---  Script entry point  ---
 #----------------------------
-while getopts "NFSUQO" OPT_; do
+while getopts "NFSUQOP:" OPT_; do
     case "$OPT_" in
         N) NON_INTERACTIVE=1
             ;;
@@ -6342,6 +6376,8 @@ while getopts "NFSUQO" OPT_; do
         Q) MODE=3  # even faster update/quick_refresh
             ;;
         O) ALLOW_OFFLINE=1  # allow running offline
+            ;;
+        P) PLATFORM="$OPTARG"  # force the platform-specific config to install (as opposed to deriving it from hostname)
             ;;
         *) print_usage; exit 1 ;;
     esac
