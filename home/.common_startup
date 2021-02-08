@@ -87,7 +87,7 @@ enable_smart() {
 
 set_keyboard_layout() {
     local layouts
-    readonly layouts='ee,us'
+    layouts='us,ee'
     check_progs_installed setxkbmap || return 1
     setxkbmap -option grp:alt_shift_toggle "$layouts" || { err_display "err setting keyboard layout(s) to [$layouts]" "$_SELF"; return 1; }
 }
@@ -105,6 +105,9 @@ open_mpd_fifo() {
 ################################################
 # see other xrander tips&tricks (namely globbing support for --output) from https://work.lisk.in/2020/10/11/xrandr-ux.html
 # alternatively also consider using autorandr: https://github.com/phillipberndt/autorandr
+#
+# for monitoring xrandr events, you might want to consider https://github.com/jceb/srandrd
+# (note udev does not appear to be working for screen connect/disconnect)
 (
     #check_progs_installed detect_displays.sh && detect_displays.sh
     if is_work && ! is_laptop; then
@@ -251,7 +254,7 @@ fi
 #eval "$(/usr/bin/gpg-agent --daemon)"
 #fi
 
-# Check whether logfolder at /var/log and /data/ dir are existing:
+# Check whether logfolder at /var/log and /data/ dir exist:
 for i in \
         "$CUSTOM_LOGDIR" \
         /data/ \
