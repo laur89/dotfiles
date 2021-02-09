@@ -91,17 +91,29 @@ fi
 # for dimming ,see xrandr (https://unix.stackexchange.com/a/181501/47501)
 if is_native && ! is_proc_running xss-lock; then
     #xss-lock -- lock -n &   # lock here is i3lock-fancy
+    # READ xss-lock manual!!
     #
     # if you first want to do notif/screen dimmin, followed by lock:
     # note with this you gotta provide dim command, otherwise your lock command will be
-    # executed after the first timeout, not second; if you don't care about dim delay,
+    # executed after the first timeout/param, not second; if you don't care about dim delay,
     # but only lock, then just give 'xset s <delay>' (ie /wo the second period);
     # note if we do not start xss-lock, then dpms would kick in after 1st period;
     #xset +dpms s 180 120
 
+    # - as explained above, this syntax (xset s <delay>) won't dim, but immediately run the lock command upon the delay:
+    # - looks like however dpms switches screen off (ie is it off, suspension or stdby),
+    #   it always invokes locker when set via xss-lock...
+    # - for LCD screens "put to sleep after" & "switch off after" are likely the same, they matter for CRT,
+    #   but for LCDs it cuts the power w/o locking;
+    # - xfce4-pwer-mngr power mngmnt options are explained @ https://superuser.com/a/727503
     xset s 300
     #xss-lock -n /home/laur/bri.sh -- /data/progs/deps/homesick/repos/private-common/scripts/system/i3lock.sh &
     xss-lock -- lock &  # note this should be kept in-sync with your wm keybinding
+
+    # TODO: at least w/ xfce4-pwr-mngr it was difficult to get the lock to trigger
+    # with this - screen was turned off after 'put to sleep after' and/or 'switch off after',
+    # but lock was not triggered...
+    #xss-lock -n dim-screen.sh -- lock &
 
     # turn screen off after 20min of idle:
     #xset dpms 0 0 1200
