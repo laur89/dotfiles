@@ -258,12 +258,28 @@ setup_udev() {
     for dir in "${udev_src[@]}"; do
         [[ -d "$dir" ]] || continue
         for file in "$dir/"*; do
+            [[ -f "$file" ]] || continue
             tmpfile="$TMP_DIR/.udev_setup-$(basename -- "$file")"
             execute "cp -- '$file' '$tmpfile'" || return 1
             execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-            execute "sudo mv --no-clobber -- '$tmpfile' $udev_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$udev_target] failed w/ $?"; return 1; }
+            execute "sudo mv -- '$tmpfile' $udev_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$udev_target] failed w/ $?"; return 1; }
         done
     done
+
+
+    # https://wiki.archlinux.org/index.php/backlight#ACPI
+    # setup backlight interface rule:
+    dir="/sys/class/backlight"
+    file="$COMMON_PRIVATE_DOTFILES/backups/udev/manual/20-backlight.rules"
+    if [[ -d "$dir" && -f "$file" ]]; then
+        tmpfile="$TMP_DIR/.udev_setup-$(basename -- "$file")"
+        dir="$(find -L "$dir" -mindepth 1 -maxdepth 1 -type d)"  # find our backlight interface
+        if [[ -d "$dir" ]]; then
+            local if="$(basename -- "$dir")"
+            execute "sed 's/{INTERFACE}/$if/g' $file > $tmpfile" || { err; return 1; }
+            execute "sudo mv -- '$tmpfile' $udev_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$udev_target] failed w/ $?"; return 1; }
+        fi
+    fi
 }
 
 
@@ -310,10 +326,11 @@ setup_systemd() {
     for dir in "${sysd_src[@]}"; do
         [[ -d "$dir" ]] || continue
         for file in "$dir/"*; do
+            [[ -f "$file" ]] || continue
             tmpfile="$TMP_DIR/.sysd_setup-$(basename -- "$file")"
             execute "cp -- '$file' '$tmpfile'" || return 1
             execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-            execute "sudo mv --no-clobber -- '$tmpfile' $sysd_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$sysd_target] failed"; return 1; }
+            execute "sudo mv -- '$tmpfile' $sysd_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$sysd_target] failed"; return 1; }
         done
     done
 }
