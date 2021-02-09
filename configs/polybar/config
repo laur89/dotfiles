@@ -1,5 +1,6 @@
 ; check https://github.com/jmnel/dotfiles/blob/master/polybar/config for i3 conf
 ; check also https://github.com/Alumniminium/dots/blob/master/.config/polybar/config (eg goodish wifi conf)
+; also https://github.com/mohabaks/dotfiles/blob/master/config/polybar/.config/polybar/config
 
 
 [colors]
