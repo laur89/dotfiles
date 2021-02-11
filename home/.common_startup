@@ -104,10 +104,10 @@ open_mpd_fifo() {
 
 ################################################
 # see other xrander tips&tricks (namely globbing support for --output) from https://work.lisk.in/2020/10/11/xrandr-ux.html
-# alternatively also consider using autorandr: https://github.com/phillipberndt/autorandr
+# TODO: deprecate this for autorandr or maybe python-umonitor if you have issues w/ autorandr
 #
 # for monitoring xrandr events, you might want to consider https://github.com/jceb/srandrd
-# (note udev does not appear to be working for screen connect/disconnect)
+# (note udev does not appear to be working for screen connect/disconnect; in fact, doesn't udev rule trigger _after_ xrandr hooks 'em up?)
 (
     #check_progs_installed detect_displays.sh && detect_displays.sh
     if is_work && ! is_laptop; then
