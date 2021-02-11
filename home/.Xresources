@@ -14,6 +14,13 @@ Xft.hintstyle: hintfull
 Xft.rgba: rgb
 Xft.lcdfilter: lcddefault
 
+! set our cursor size:  (https://wiki.archlinux.org/index.php/Cursor_themes#X_resources)
+! note as we tend to use gnome, then it might be also settable-gettable via gsettings,
+! eg ' gsettings get org.gnome.desktop.interface cursor-size' or '... cursor-theme'
+! for query, replace get->set for setting value.
+! Note cursor size generally wasn't needed to be set, but it tended to get huge
+! with laptops when docked in multi-screen setup.
+Xcursor.size: 24
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 URxvt.perl-ext-common: default,clipboard,tabbedex,keyboard-select,vtwheel,matcher,xresources-256
