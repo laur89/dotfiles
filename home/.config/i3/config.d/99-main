@@ -262,6 +262,7 @@ mode "$mode_gaps_outer" {
 # Lock screen
 bindsym Control+mod1+l exec --no-startup-id lock -f
 # maybe would be better to trigger via xset, as otherwise xss-lock would not about the locking state:
+# note instead of 'xset s activate' you could also use 'loginctl lock-session', assuming systemd usage.
 #bindsym Control+mod1+l exec --no-startup-id xset s activate
 #
 # first switch to likely-unused ws to avoid typing passwd for the world:
@@ -555,13 +556,17 @@ client.urgent #373b41 #cc6666 #ffffff #cc6666
 
 # Scratchpad: #######
 # Show the next scratchpad window or hide the focused scratchpad window.
-# If there are multiple scratchpad windows, this command cycles through them:
+# If there are multiple scratchpad windows, this command cycles through them.
+# Note this will cycle through _all_ scratchpadded windows, not only the
+# ones that've been tagged with our own 'scratch_mark' prefix tagging logic.
 bindsym $mod+Shift+s scratchpad show
 
 # Move focused win to scratchpad:
 bindsym $mod+Control+Shift+s move scratchpad
 ### common scratchpad (ie multiple windows being toggled simultaneously):
+# note it only toggles the scratchpad windows tagged w/ ^scratch_mark!
 bindsym $mod+Shift+z [con_mark="^scratch_mark"] scratchpad show
+# move focused window to scratchpad and tag with our own tag:
 bindsym $mod+Control+Shift+z exec --no-startup-id i3-scratch-marker.sh scratch_mark
 
 
