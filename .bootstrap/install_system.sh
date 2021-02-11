@@ -313,7 +313,7 @@ setup_systemd() {
 
     readonly sysd_target='/etc/systemd/system'
     sysd_src=(
-        "$PRIVATE_CASTLE/backups/systemd"
+        "$COMMON_PRIVATE_DOTFILES/backups/systemd"
     )
 
     [[ -n "$PLATFORM" ]] && sysd_src+=("$PLATFORM_CASTLE/systemd")
@@ -914,8 +914,9 @@ install_deps() {
             xinput
             evtest
             blueman
-            xfce4-power-manager
         '
+        # old removed ones:
+        #   - xfce4-power-manager
 
         # batt output (requires spark):
         clone_or_pull_repo "laur89" "Battery" "$BASE_DEPS_LOC"  # https://github.com/laur89/Battery
@@ -1884,6 +1885,7 @@ upgrade_kernel() {
 }
 
 
+# note this should still be common for both work & non-work
 install_devstuff() {
     #install_rebar
     install_lazygit
@@ -1909,6 +1911,10 @@ install_devstuff() {
     install_terraform
     install_terragrunt
     install_minikube
+
+    install_block '
+        kubectl
+    '
 }
 
 
@@ -4594,7 +4600,6 @@ install_from_repo() {
 
         install_block '
             ruby-dev
-            kubectl
         '
 
         # remmina is remote desktop for windows; rdesktop, remote vnc;
