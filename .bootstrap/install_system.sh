@@ -309,7 +309,7 @@ setup_mail() {
 
 # TODO: shouldn't it be COMMON_PRIVATE_DOTFILES/backups?
 setup_systemd() {
-    local sysd_src sysd_target file dir tmpfile
+    local sysd_src sysd_target file dir tmpfile filename
 
     readonly sysd_target='/etc/systemd/system'
     sysd_src=(
@@ -326,13 +326,24 @@ setup_systemd() {
     for dir in "${sysd_src[@]}"; do
         [[ -d "$dir" ]] || continue
         for file in "$dir/"*; do
-            [[ -f "$file" ]] || continue
-            tmpfile="$TMP_DIR/.sysd_setup-$(basename -- "$file")"
-            execute "cp -- '$file' '$tmpfile'" || return 1
-            execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-            execute "sudo mv -- '$tmpfile' $sysd_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$sysd_target] failed"; return 1; }
+            [[ -f "$file" || "$file" != *.service ]] || continue  # note we require '.service' suffix
+            filename="$(basename -- "$file")"
+            tmpfile="$TMP_DIR/.sysd_setup-$filename"
+            filename="${filename/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
+
+            execute "cp -- '$file' '$tmpfile'" || { err "copying systemd file [$file] failed"; continue; }
+            execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || { err "sed-ing systemd file [$file] failed"; continue; }
+            execute "sudo mv -- '$tmpfile' $sysd_target/$filename" || { err "moving [$tmpfile] to [$sysd_target] failed"; continue; }
+
+            # note do not use the '--now' flag with systemctl enable, nor execute systemctl start,
+            # as some service files might be listening on something like target.sleep - those should't be started on-demand like that!
+            execute "sudo systemctl enable $filename" || { err "enabling systemd service [$filename] failed w/ [$?]"; continue; }
         done
     done
+
+    # just incase reload the rules in case existing rules changed:
+    execute 'systemctl --user --now daemon-reload'  # --user flag manages the user services under ~/.config/systemd/user/
+    execute 'sudo systemctl daemon-reload'
 }
 
 
@@ -680,8 +691,7 @@ install_ssh_server() {
         #return 1  # don't return, it's just a banner.
     fi
 
-    execute "sudo systemctl start sshd.service"
-    #execute "systemctl enable sshd.service"  # TODO: this is not required, is it?
+    execute "sudo systemctl enable --now sshd.service"  # note --now flag effectively also starts the service immeidately
 
     return 0
 }
@@ -5348,7 +5358,7 @@ setup_seafile_cli() {
 
 # from  TODO find debian url for nftables
 enable_fw() {
-    execute 'sudo systemctl enable nftables.service'
+    execute 'sudo systemctl enable --now nftables.service'
 }
 
 
