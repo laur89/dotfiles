@@ -307,6 +307,33 @@ setup_mail() {
 }
 
 
+# TODO: instead of using sed for manipulation, maybe use crudini, as configuration
+#       file appears to be in ini format; eg in there were to be any other section
+#       'sides "Login", then our appending function wouldn't cut it.
+setup_logind() {
+    local logind_conf conf_map key value
+
+    readonly logind_conf='/etc/systemd/logind.conf'
+    declare -A conf_map=(
+        [HandlePowerKey]=suspend
+        [SuspendKeyIgnoreInhibited]=yes
+    )
+
+    if ! [[ -f "$logind_conf" ]]; then
+        err "[$logind_conf] is not a file; skipping configuring it"
+        return 1
+    fi
+
+	for key in ${!conf_map[*]}; do
+         value="${conf_map[$key]}"
+         if ! grep -q "^${key}=$value"; then
+            execute "sudo sed -i --follow-symlinks '/^$key\s*=/d' '$logind_conf'" || continue
+			execute "echo '$key=$value' | sudo tee --append $logind_conf > /dev/null"
+		 fi
+	done
+}
+
+
 # TODO: shouldn't it be COMMON_PRIVATE_DOTFILES/backups?
 setup_systemd() {
     local sysd_src sysd_target file dir tmpfile filename
@@ -1433,6 +1460,7 @@ setup_config_files() {
     #setup_ssh_config   # better stick to ~/.ssh/config, rite?  # TODO
     setup_hosts
     setup_systemd
+    setup_logind
     is_native && setup_udev
     #is_native && setup_smartd  #TODO: uncomment once finished!
     setup_mail
