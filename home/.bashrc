@@ -525,6 +525,7 @@ fi
 KUBE_PS1_PREFIX="$PROMPT_SEGMENT_PREFIX"
 KUBE_PS1_SUFFIX="$PROMPT_SEGMENT_SUFFIX"
 KUBE_PS1_SYMBOL_USE_IMG=true
+KUBE_PS1_SYMBOL_PADDING=false
 #KUBE_PS1_SYMBOL_DEFAULT=$'\u2388'
 [[ -f "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh" ]] && source "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh" && kubeoff  # note we default to kubeoff
 ##########################################
