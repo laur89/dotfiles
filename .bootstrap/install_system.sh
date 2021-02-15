@@ -1856,6 +1856,7 @@ install_progs() {
 
     is_native && install_nvidia
     is_native && install_amd
+    is_native && install_cpu_microcode_pkg
 
     # TODO: delete?:
     #if [[ "$PROFILE" == work ]]; then
@@ -1870,6 +1871,25 @@ install_progs() {
 install_games() {
     snap_install xonotic
     #install_block openttd  # openttd = transport tycoon deluxe
+}
+
+
+# https://github.com/fwupd/fwupd
+# depends on the fwupd package
+#
+# better run this manually, i think?
+upgrade_firmware() {
+    # display all devices detected by fwupd:
+    execute 'fwupdmgr get-devices'
+
+    # download latest metadata from LVFS:
+    execute 'fwupdmgr refresh'
+
+    # if updates are available, they'll be displayed:
+    execute 'fwupdmgr get-updates'
+
+    # downlaod and apply all updates (will be prompted first)
+    execute 'fwupdmgr update'
 }
 
 
@@ -4336,6 +4356,7 @@ install_from_repo() {
         fail2ban
         udisks2
         udiskie
+        fwupd
     )
     # old/deprecated block1_nonwin:
     #    ufw - iptables frontend, debian now on nftables instead
@@ -4709,6 +4730,19 @@ install_amd() {
 }
 
 
+# install cpu microcode patches; mostly security-related implications
+install_cpu_microcode_pkg() {
+    if is_intel_cpu; then
+        # see https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files
+        install_block  intel-microcode
+    elif is_amd_cpu; then
+        install_block  amd64-microcode
+    else
+        err "could not detect our cpu vendor"
+    fi
+}
+
+
 # offers to install nvidia drivers, if NVIDIA card is detected.
 #
 # in order to reinstall the dkms part, purge nvidia-driver and then reinstall.
@@ -4852,6 +4886,8 @@ choose_single_task() {
         install_deps
         install_fonts
         upgrade_kernel
+        upgrade_firmware
+        install_cpu_microcode_pkg
         install_nvidia
         install_amd
         install_webdev
@@ -6046,6 +6082,16 @@ is_native() {
 
 is_64_bit() {
     [[ "$(uname -m)" == x86_64 ]]
+}
+
+
+is_intel_cpu() {
+    grep vendor < /proc/cpuinfo | uniq | grep -iq intel
+}
+
+
+is_amd_cpu() {
+    grep vendor < /proc/cpuinfo | uniq | grep -iq amd
 }
 
 
