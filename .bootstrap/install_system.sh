@@ -898,7 +898,7 @@ install_deps() {
 
                 report "installing rtlwifi_new for card [$rtl_driver]"
                 tmpdir="$TMP_DIR/realtek-driver-${RANDOM}"
-                execute "git clone ${GIT_OPTS[@]} $repo $tmpdir" || return 1
+                execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
                 execute "pushd $tmpdir" || return 1
                 execute "make clean" || return 1
 
@@ -3026,7 +3026,7 @@ install_synergy() {
         libsystemd-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone ${GIT_OPTS[@]} $SYNERGY_REPO_LOC $tmpdir" || return 1
+    execute "git clone ${GIT_OPTS[*]} $SYNERGY_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
     execute "git checkout v2-dev" || return 1  # see https://github.com/symless/synergy-core/wiki/Getting-Started
     export BOOST_ROOT="/home/$USER/boost"  # TODO: unsure if this is needed
@@ -3101,7 +3101,7 @@ install_copyq() {
         libxtst-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone ${GIT_OPTS[@]} $COPYQ_REPO_LOC $tmpdir" || return 1
+    execute "git clone ${GIT_OPTS[*]} $COPYQ_REPO_LOC $tmpdir" || return 1
     report "building copyq"
     execute "pushd $tmpdir" || return 1
     execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .' || { err; popd; return 1; }
@@ -3180,7 +3180,7 @@ install_goforit() {
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
 
-    execute "git clone ${GIT_OPTS[@]} $GOFORIT_REPO_LOC $tmpdir" || return 1
+    execute "git clone ${GIT_OPTS[*]} $GOFORIT_REPO_LOC $tmpdir" || return 1
     report "building goforit..."
     execute "mkdir $tmpdir/build"
     execute "pushd $tmpdir/build" || return 1
@@ -3291,7 +3291,7 @@ install_keepassx() {
         libxtst-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone ${GIT_OPTS[@]} $KEEPASS_REPO_LOC $tmpdir" || return 1
+    execute "git clone ${GIT_OPTS[*]} $KEEPASS_REPO_LOC $tmpdir" || return 1
 
     execute "mkdir $tmpdir/build"
     execute "pushd $tmpdir/build" || return 1
@@ -3342,7 +3342,7 @@ install_i3lock() {
       libxcb-dpms0-dev' || { err 'failed to install i3lock build deps. abort.'; return 1; }
 
     # clone the repository
-    execute "git clone ${GIT_OPTS[@]} $I3_LOCK_LOC '$tmpdir'" || return 1
+    execute "git clone ${GIT_OPTS[*]} $I3_LOCK_LOC '$tmpdir'" || return 1
     execute "git -C '$tmpdir' tag -f 'git-$(git rev-parse --short HEAD)'" || return 1
 
     report "building i3lock..."
@@ -3375,7 +3375,7 @@ install_i3lock_fancy() {
     is_installed "$ver" && return 2
 
     # clone the repository
-    execute "git clone ${GIT_OPTS[@]} $I3_LOCK_FANCY_LOC '$tmpdir'" || return 1
+    execute "git clone ${GIT_OPTS[*]} $I3_LOCK_FANCY_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
 
 
@@ -3451,7 +3451,7 @@ EOF
     is_installed "$ver" && return 2
 
     # clone the repository
-    execute "git clone ${GIT_OPTS[@]} $I3_REPO_LOC '$tmpdir'" || return 1
+    execute "git clone ${GIT_OPTS[*]} $I3_REPO_LOC '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
 
     _apply_patches  # TODO: should we bail on error?
@@ -3619,7 +3619,7 @@ install_i3_deps() {
 install_polybar() {
     local dir
 
-    #execute "git clone --recursive ${GIT_OPTS[@]} $POLYBAR_REPO_LOC '$dir'" || return 1
+    #execute "git clone --recursive ${GIT_OPTS[*]} $POLYBAR_REPO_LOC '$dir'" || return 1
     dir="$(fetch_extract_tarball_from_git -S polybar polybar 'polybar-\d+\.\d+.*\.tar\.gz')" || return 1
 
     report "installing polybar build dependencies..."
@@ -3861,7 +3861,7 @@ setup_nvim() {
             #unzip
         #' || { err 'failed to install neovim build deps. abort.'; return 1; }
 
-        #execute "git clone ${GIT_OPTS[@]} $NVIM_REPO_LOC $tmpdir" || return 1
+        #execute "git clone ${GIT_OPTS[*]} $NVIM_REPO_LOC $tmpdir" || return 1
         #execute "pushd $tmpdir" || { err; return 1; }
 
         ## TODO: checkinstall fails with neovim (bug in checkinstall afaik):
@@ -4028,7 +4028,7 @@ build_and_install_vim() {
         libperl-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone ${GIT_OPTS[@]} $VIM_REPO_LOC $tmpdir" || return 1
+    execute "git clone ${GIT_OPTS[*]} $VIM_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
 
     report "building vim..."
@@ -4233,7 +4233,7 @@ install_fonts() {
         is_installed "$ver" && return 2
 
         # clone the repository
-        execute "git clone ${GIT_OPTS[@]} $NERD_FONTS_REPO_LOC '$tmpdir'" || return 1
+        execute "git clone ${GIT_OPTS[*]} $NERD_FONTS_REPO_LOC '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
 
         report "installing nerd-fonts..."
@@ -4258,7 +4258,7 @@ install_fonts() {
         ver="$(get_git_sha "$PWRLINE_FONTS_REPO_LOC")"
         is_installed "$ver" && return 2
 
-        execute "git clone ${GIT_OPTS[@]} $PWRLINE_FONTS_REPO_LOC '$tmpdir'" || return 1
+        execute "git clone ${GIT_OPTS[*]} $PWRLINE_FONTS_REPO_LOC '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
         report "installing powerline-fonts..."
         execute "./install.sh" || return 1
@@ -4280,7 +4280,7 @@ install_fonts() {
         ver="$(get_git_sha "$repo")"
         is_installed "$ver" && return 2
 
-        execute "git clone ${GIT_OPTS[@]} $repo $tmpdir" || { err 'err cloning siji font'; return 1; }
+        execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || { err 'err cloning siji font'; return 1; }
         execute "pushd $tmpdir" || return 1
 
         execute "./install.sh" || { err "siji-font install.sh failed with $?"; return 1; }
@@ -5270,7 +5270,7 @@ install_gtk_numix() {
     report "installing numix build dependencies..."
     rb_install sass || return 1
 
-    execute "git clone ${GIT_OPTS[@]} $theme_repo $tmpdir" || return 1
+    execute "git clone ${GIT_OPTS[*]} $theme_repo $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
     execute "make" || { err; popd; return 1; }
 
