@@ -326,7 +326,7 @@ setup_logind() {
 
 	for key in ${!conf_map[*]}; do
          value="${conf_map[$key]}"
-         if ! grep -q "^${key}=$value"; then
+         if ! grep -q "^${key}=$value" "$logind_conf"; then
             execute "sudo sed -i --follow-symlinks '/^$key\s*=/d' '$logind_conf'" || continue
 			execute "echo '$key=$value' | sudo tee --append $logind_conf > /dev/null"
 		 fi
@@ -1083,6 +1083,7 @@ install_deps() {
     #py_install maybe         # https://github.com/p-e-w/maybe (check what command would do)
     py_install httpstat       # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
     py_install tendo          # https://github.com/pycontribs/tendo  py utils, eg singleton (lockfile management)
+    py_install yamllint       # https://github.com/adrienverge/yamllint
     py_install awscli         # https://docs.aws.amazon.com/en_pv/cli/latest/userguide/install-linux.html#install-linux-awscli
 
     # colorscheme generator:
