@@ -271,10 +271,10 @@ setup_udev() {
     # setup backlight interface rule:
     dir="/sys/class/backlight"
     file="$COMMON_PRIVATE_DOTFILES/backups/udev/manual/20-backlight.rules"
-    if [[ -d "$dir" && -f "$file" ]]; then
+    if is_laptop && [[ -d "$dir" && -f "$file" ]]; then
         tmpfile="$TMP_DIR/.udev_setup-$(basename -- "$file")"
         dir="$(find -L "$dir" -mindepth 1 -maxdepth 1 -type d)"  # find our backlight interface
-        if [[ -d "$dir" ]]; then
+        if [[ -d "$dir" && -f "$dir/brightness" ]]; then
             local if="$(basename -- "$dir")"
             execute "sed 's/{INTERFACE}/$if/g' $file > $tmpfile" || { err; return 1; }
             execute "sudo mv -- '$tmpfile' $udev_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$udev_target] failed w/ $?"; return 1; }
