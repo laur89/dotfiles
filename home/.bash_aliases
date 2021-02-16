@@ -58,6 +58,8 @@ alias gist='gist --private --copy'
 #alias mkstart='CHANGE_MINIKUBE_NONE_USER=true sudo -E minikube start --driver=none --extra-config=apiserver.service-node-port-range=80-32767 --apiserver-ips 127.0.0.1 --apiserver-name localhost'
 # ...and this is using docker driver:
 alias mkstart='minikube start --driver=docker'
+alias kon='kubeon'
+alias kof='kubeoff'
 
 # $tm <sessname> to either create or attach, or $tm to search from avail sessions w/ fzf;
 #tm() {
