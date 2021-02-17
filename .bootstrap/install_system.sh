@@ -103,6 +103,8 @@ declare -A COLORS=(
 )
 readonly NPMRC_BAK="$TMP_DIR/npmrc.bak.$RANDOM"  # temp location where we _might_ move our npmrc to for the duration of this script;
 readonly GIT_OPTS=(--depth 1 -j8)
+
+# this configures our platform-specific dotfile repos:
 declare -A HOSTNAME_TO_PLATFORM=(
     [p14s]="$BASE_HOMESICK_REPOS_LOC/p14s-dotfiles"
 )
@@ -150,23 +152,24 @@ validate_and_init() {
     esac
 
     if [[ -n "$PLATFORM" ]]; then  # provided via cmd opt
-        for i in "${HOSTNAME_TO_PLATFORM[@]}"; do
+        for i in "${!HOSTNAME_TO_PLATFORM[@]}"; do
             [[ "$i" == "$PLATFORM" ]] && break
             unset i
         done
 
         [[ -z "$i" ]] && { err "selected platform [$PLATFORM] is not known"; exit 1; }
+        # TODO: prompt if selected platform doesn't match our hostname?
         unset i
     elif [[ -n "${HOSTNAME_TO_PLATFORM[$HOSTNAME]}" ]]; then
-        PLATFORM="${HOSTNAME_TO_PLATFORM[$HOSTNAME]}"
+        PLATFORM="$HOSTNAME"
     fi
 
     if [[ -n "$PLATFORM" ]]; then
-        PLATFORM_CASTLE="${HOSTNAME_TO_PLATFORM[$HOSTNAME]}"
-    fi
+        PLATFORM_CASTLE="${HOSTNAME_TO_PLATFORM[$PLATFORM]}"
 
-    # TODO: is this check valid?:
-    ! is_native && [[ -n "$PLATFORM" ]] && { err "platform selected on non-native setup - makes no sense"; exit 1; }
+        # TODO: is this check valid? maybe prompt instead?:
+        is_native || { err "platform selected on non-native setup - makes no sense"; exit 1; }
+    fi
 
     report "private castle defined as [$PRIVATE_CASTLE]"
     report "platform castle defined as [$PLATFORM_CASTLE]"
@@ -246,6 +249,7 @@ setup_udev() {
     readonly udev_target='/etc/udev/rules.d'
     udev_src=(
         "$COMMON_PRIVATE_DOTFILES/backups/udev"
+        "$PRIVATE_CASTLE/backups/udev"
     )
 
     is_laptop && udev_src+=("$COMMON_PRIVATE_DOTFILES/backups/udev/laptop")
@@ -259,7 +263,7 @@ setup_udev() {
     for dir in "${udev_src[@]}"; do
         [[ -d "$dir" ]] || continue
         for file in "$dir/"*; do
-            [[ -f "$file" ]] || continue
+            [[ -f "$file" && "$file" == *.rules ]] || continue  # note we require '.rules' suffix
             tmpfile="$TMP_DIR/.udev_setup-$(basename -- "$file")"
             execute "cp -- '$file' '$tmpfile'" || return 1
             execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
@@ -327,8 +331,10 @@ setup_systemd() {
     readonly sysd_target='/etc/systemd/system'
     sysd_src=(
         "$COMMON_PRIVATE_DOTFILES/backups/systemd"
+        "$PRIVATE_CASTLE/backups/systemd"
     )
 
+    is_laptop && sysd_src+=("$COMMON_PRIVATE_DOTFILES/backups/systemd/laptop")
     [[ -n "$PLATFORM" ]] && sysd_src+=("$PLATFORM_CASTLE/systemd")
 
     if ! [[ -d "$sysd_target" ]]; then
@@ -339,7 +345,7 @@ setup_systemd() {
     for dir in "${sysd_src[@]}"; do
         [[ -d "$dir" ]] || continue
         for file in "$dir/"*; do
-            [[ -f "$file" || "$file" != *.service ]] || continue  # note we require '.service' suffix
+            [[ -f "$file" && "$file" == *.service ]] || continue  # note we require '.service' suffix
             filename="$(basename -- "$file")"
             tmpfile="$TMP_DIR/.sysd_setup-$filename"
             filename="${filename/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
@@ -6492,7 +6498,7 @@ while getopts "NFSUQOP:" OPT_; do
             ;;
         O) ALLOW_OFFLINE=1  # allow running offline
             ;;
-        P) PLATFORM="$OPTARG"  # force the platform-specific config to install (as opposed to deriving it from hostname)
+        P) PLATFORM="$OPTARG"  # force the platform-specific config to install (as opposed to deriving it from hostname); best not use it and let platform be resolved from our hostname
             ;;
         *) print_usage; exit 1 ;;
     esac
