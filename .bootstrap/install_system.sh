@@ -1461,6 +1461,7 @@ setup_config_files() {
     setup_systemd
     setup_logind
     is_native && setup_udev
+    is_native && install_kernel_modules   # TODO: does this belong in setup_config_files()?
     #is_native && setup_smartd  #TODO: uncomment once finished!
     setup_mail
     setup_global_shell_links
@@ -1891,6 +1892,30 @@ upgrade_firmware() {
 }
 
 
+install_kernel_modules() {
+    local conf modules i
+
+    conf='/etc/modules'
+
+    if ! [[ -f "$conf" ]]; then
+        err "[$conf] is not a file; skipping kernel module installation"
+        return 1
+    fi
+
+    # list of modules to be added to $conf for auto-loading at boot:
+    modules=(
+        ddcci
+    )
+
+    # ddcci-dkms gives us DDC support so we can control also external monitor brightness
+    install_block ddcci-dkms || return 1
+
+    for i in "${modules[@]}"; do
+        grep -Fxq "$i" "$conf" || execute "echo $i | sudo tee --append $conf > /dev/null"
+    done
+}
+
+
 # to force ver: apt-get install linux-image-amd64:version
 # check avail vers: apt-cache showpkg linux-image-amd64
 upgrade_kernel() {
@@ -2012,7 +2037,8 @@ install_own_builds() {
     is_native && install_i3lock
     #is_native && install_i3lock_fancy
     is_native && install_betterlockscreen
-    is_native && install_acpilight
+    #is_native && install_acpilight
+    is_native && install_brillo
 
     [[ "$PROFILE" == work ]] && install_work_builds
     install_devstuff
@@ -3419,6 +3445,33 @@ install_betterlockscreen() {  # https://github.com/pavanjadhaw/betterlockscreen
 # TODO need to install  ddcci-dkms  pkg and load ddcci module to get external display evices listed under /sys
 install_acpilight() {
     true # TODO WIP
+}
+
+
+# https://gitlab.com/cameronnemo/brillo
+install_brillo() {
+    local repo tmpdir ver
+
+    repo="https://gitlab.com/cameronnemo/brillo.git"
+    tmpdir="$TMP_DIR/brillo-build-${RANDOM}/build"
+
+    ver="$(get_git_sha "$repo")"
+    is_installed "$ver" && return 2
+
+    # clone the repository
+    execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
+    execute "pushd $tmpdir" || return 1
+
+    # install dependencies:
+    install_block go-md2man
+
+    execute "make" || { err "[make] for brillo failed w/ $?"; popd; return 1; }
+    build_deb  brillo || { err "build_deb for brillo failed"; popd; return 1; }
+    execute 'sudo dpkg -i ../brillo_*.deb'
+
+    execute "popd"
+    execute "sudo rm -rf -- '$tmpdir'"
+    add_to_dl_log  brillo "$ver"
 }
 
 
@@ -4900,6 +4953,7 @@ choose_single_task() {
         install_deps
         install_fonts
         upgrade_kernel
+        install_kernel_modules
         upgrade_firmware
         install_cpu_microcode_pkg
         install_nvidia
@@ -4995,6 +5049,7 @@ __choose_prog_to_build() {
         install_gruvbox_gtk_theme
         install_veracrypt
         install_vbox_guest
+        install_brillo
     )
 
     report "what do you want to build/install?"
