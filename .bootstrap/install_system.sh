@@ -248,6 +248,7 @@ setup_udev() {
         "$COMMON_PRIVATE_DOTFILES/backups/udev"
     )
 
+    is_laptop && udev_src+=("$COMMON_PRIVATE_DOTFILES/backups/udev/laptop")
     [[ -n "$PLATFORM" ]] && udev_src+=("$PLATFORM_CASTLE/udev")
 
     if ! [[ -d "$udev_target" ]]; then
@@ -265,21 +266,6 @@ setup_udev() {
             execute "sudo mv -- '$tmpfile' $udev_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$udev_target] failed w/ $?"; return 1; }
         done
     done
-
-
-    # https://wiki.archlinux.org/index.php/backlight#ACPI
-    # setup backlight interface rule:
-    dir="/sys/class/backlight"
-    file="$COMMON_PRIVATE_DOTFILES/backups/udev/manual/20-backlight.rules"
-    if is_laptop && [[ -d "$dir" && -f "$file" ]]; then
-        tmpfile="$TMP_DIR/.udev_setup-$(basename -- "$file")"
-        dir="$(find -L "$dir" -mindepth 1 -maxdepth 1 -type d)"  # find our backlight interface
-        if [[ -d "$dir" && -f "$dir/brightness" ]]; then
-            local if="$(basename -- "$dir")"
-            execute "sed 's/{INTERFACE}/$if/g' $file > $tmpfile" || { err; return 1; }
-            execute "sudo mv -- '$tmpfile' $udev_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$udev_target] failed w/ $?"; return 1; }
-        fi
-    fi
 }
 
 
@@ -2020,6 +2006,7 @@ install_own_builds() {
     is_native && install_i3lock
     #is_native && install_i3lock_fancy
     is_native && install_betterlockscreen
+    is_native && install_acpilight
 
     [[ "$PROFILE" == work ]] && install_work_builds
     install_devstuff
@@ -3412,6 +3399,20 @@ install_i3lock_fancy() {
 install_betterlockscreen() {  # https://github.com/pavanjadhaw/betterlockscreen
     wget -O ~/bin/betterlockscreen "https://raw.githubusercontent.com/pavanjadhaw/betterlockscreen/master/betterlockscreen" || return 1
     execute "chmod u+x ~/bin/betterlockscreen"
+}
+
+
+# provides drop-in replacement for xbacklight
+# https://gitlab.com/wavexx/acpilight
+#
+# alternatives:
+# - https://gitlab.com/cameronnemo/brillo  - untested, but looks to be working on multiple devices at same time!
+# - https://github.com/haikarainen/light
+# - https://github.com/Hummer12007/brightnessctl
+#
+# TODO need to install  ddcci-dkms  pkg and load ddcci module to get external display evices listed under /sys
+install_acpilight() {
+    true # TODO WIP
 }
 
 
