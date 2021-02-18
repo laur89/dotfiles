@@ -305,9 +305,12 @@ setup_logind() {
 
     readonly logind_conf='/etc/systemd/logind.conf'
     declare -A conf_map=(
+        [HandleLidSwitch]=ignore
         [HandlePowerKey]=suspend
         [SuspendKeyIgnoreInhibited]=yes
     )
+    # note we've added 'HandleLidSwitch' as for some reason docking state is not detected
+    # and it still suspends lid-closed when docked otherwise.
 
     if ! [[ -f "$logind_conf" ]]; then
         err "[$logind_conf] is not a file; skipping configuring it"
@@ -325,6 +328,8 @@ setup_logind() {
 
 
 # TODO: shouldn't it be COMMON_PRIVATE_DOTFILES/backups?
+#
+# to temporarily disable lid-switch events:   systemd-inhibit --what=handle-lid-switch sleep 1d
 setup_systemd() {
     local sysd_src sysd_target file dir tmpfile filename
 
@@ -3563,6 +3568,10 @@ EOF
     execute 'sudo dpkg -i ../i3-wm_*.deb'
     execute 'sudo dpkg -i ../i3_*.deb'
 
+    # put package on hold so they don't get overridden by apt-upgrade:
+    execute 'sudo apt-mark hold i3 i3-wm i3-wm-build-deps'
+
+
     # TODO: deprecated, check-install based way:
     ## compile & install
     #execute 'autoreconf --force --install' || return 1
@@ -4944,7 +4953,7 @@ choose_single_task() {
         setup
         setup_homesick
         init_seafile_cli
-        setup_seafile_cli
+        download_seafile_libs
 
         generate_key
         switch_jdk_versions
@@ -5141,6 +5150,8 @@ remind_manually_installed_progs() {
         'import keepass-xc browser plugin config'
         'install tridactyl native messenger/executable (:installnative)'
         'setup default keyring via seahorse'
+        'update system firmware'
+        'download seafile libraries'
     )
 
     for i in "${progs[@]}"; do
@@ -5451,7 +5462,7 @@ configure_pulseaudio() {
 }
 
 
-# https://download.seafile.com/published/seafile-user-manual/syncing_client/linux-cli.md
+# https://download.seafile.com/published/seafile-user-manual/backup/syncing_client/linux-cli.md
 #
 # useful commands:
 #  - seaf-cli list  -> info about synced libraries
@@ -5469,23 +5480,34 @@ init_seafile_cli() {
 }
 
 
-# note this is only to be invoked manually
-setup_seafile_cli() {
+# this is only to be invoked manually.
+# note the client daemon needs to be running _prior_ to downloading the libraries.
+#
+# useful commands:
+#  - seaf-cli status  -> see download/sync status of libraries
+download_seafile_libs() {
     local ccnet_conf parent_dir libs lib user passwd
 
     readonly ccnet_conf="$HOME/.ccnet"
-    readonly parent_dir="$BASE_DATA_DIR"
-    readonly libs=(main)
+    readonly parent_dir="$BASE_DATA_DIR/seafile"  # where libraries will be downloaded into
+    readonly libs=(main)  # list of seafile libraries to sync with
 
     is_noninteractive && { err "do not exec $FUNCNAME() as non-interactive"; return 1; }
     [[ -f "$ccnet_conf/seafile.ini" && -d "$(cat "$ccnet_conf/seafile.ini")" ]] || { err "looks like seafile has not been initialised yet"; return 1; }
+
+    if ! is_proc_running seaf-daemon; then
+        err "seafile daemon not running, abort"; return 1
+    elif is_work && ! confirm "continue w/ downloading libs on work machine?"; then
+        return 1
+    fi
 
     read -r -p "enter seafile user (should be mail): " user
     read -r -p "enter seafile pass: " passwd
     [[ -z "$user" || -z "$passwd" ]] && { err "user and/or pass were not given"; return 1; }
 
     for lib in "${libs[@]}"; do
-        seaf-cli download-by-name --libraryname "$lib" -s https://seafile.aliste.eu -d "$parent_dir" -u "$user" -p "$passwd" || { err "[seaf-cli download-by-name] for lib [$lib] failed w/ $?"; continue; }
+        seaf-cli download-by-name --libraryname "$lib" -s https://seafile.aliste.eu \
+            -d "$parent_dir" -u "$user" -p "$passwd" || { err "[seaf-cli download-by-name] for lib [$lib] failed w/ $?"; continue; }
     done
 }
 
@@ -5621,7 +5643,7 @@ post_install_progs_setup() {
     #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
     configure_ntp_for_work  # TODO: confirm if ntp needed in WSL
     configure_pulseaudio  # TODO see if works in WSL
-    #init_seafile_cli  # TODO: fix it and re-enable!
+    is_native && init_seafile_cli
     is_native && enable_fw
     is_native && setup_cups
     #addgroup_if_missing fuse  # not needed anymore?
@@ -6321,6 +6343,23 @@ check_progs_installed() {
     fi
 
     return 0
+}
+
+
+# Checks whether a process with the given name is running.
+#
+# @param   {string}  proc   name of the process to check.
+#
+# @returns {bool}  true, if the process with given name is running.
+is_proc_running() {
+    local proc
+
+    readonly proc="$1"
+
+    [[ -z "$proc" ]] && { err_display "process name not provided! Abort." "$FUNCNAME"; return 1; }
+
+    #if pidof "$proc"; then
+    pgrep -f -- "$proc" > /dev/null 2>&1  # TODO: add -x flag to search for EXACT commands? also, -f seems like a bad idea, eg is_proc_running 'kala' would return true if file named 'kala' was opened in vim
 }
 
 
