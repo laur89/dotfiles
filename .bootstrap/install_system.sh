@@ -4952,8 +4952,7 @@ choose_single_task() {
     declare -a choices=(
         setup
         setup_homesick
-        init_seafile_cli
-        download_seafile_libs
+        setup_seafile
 
         generate_key
         switch_jdk_versions
@@ -5462,12 +5461,7 @@ configure_pulseaudio() {
 }
 
 
-# https://download.seafile.com/published/seafile-user-manual/backup/syncing_client/linux-cli.md
-#
-# useful commands:
-#  - seaf-cli list  -> info about synced libraries
-#  - seaf-cli list-remote
-init_seafile_cli() {
+_init_seafile_cli() {
     local ccnet_conf parent_dir
 
     readonly ccnet_conf="$HOME/.ccnet"
@@ -5480,12 +5474,16 @@ init_seafile_cli() {
 }
 
 
+# https://download.seafile.com/published/seafile-user-manual/backup/syncing_client/linux-cli.md
+#
 # this is only to be invoked manually.
 # note the client daemon needs to be running _prior_ to downloading the libraries.
 #
 # useful commands:
+#  - seaf-cli list  -> info about synced libraries
+#  - seaf-cli list-remote
 #  - seaf-cli status  -> see download/sync status of libraries
-download_seafile_libs() {
+setup_seafile() {
     local ccnet_conf parent_dir libs lib user passwd
 
     readonly ccnet_conf="$HOME/.ccnet"
@@ -5493,7 +5491,7 @@ download_seafile_libs() {
     readonly libs=(main)  # list of seafile libraries to sync with
 
     is_noninteractive && { err "do not exec $FUNCNAME() as non-interactive"; return 1; }
-    [[ -f "$ccnet_conf/seafile.ini" && -d "$(cat "$ccnet_conf/seafile.ini")" ]] || { err "looks like seafile has not been initialised yet"; return 1; }
+    _init_seafile_cli || return 1
 
     if ! is_proc_running seaf-daemon; then
         err "seafile daemon not running, abort"; return 1
@@ -5643,7 +5641,6 @@ post_install_progs_setup() {
     #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
     configure_ntp_for_work  # TODO: confirm if ntp needed in WSL
     configure_pulseaudio  # TODO see if works in WSL
-    is_native && init_seafile_cli
     is_native && enable_fw
     is_native && setup_cups
     #addgroup_if_missing fuse  # not needed anymore?
