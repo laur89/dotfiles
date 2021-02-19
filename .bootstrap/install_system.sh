@@ -1021,10 +1021,8 @@ install_deps() {
     # diff-so-fancy - human-readable git diff:  # https://github.com/so-fancy/diff-so-fancy
     # note: alternative would be https://github.com/dandavison/delta
     # either of those need manual setup in our gitconfig;
-    if execute "wget -O $TMP_DIR/d-s-f 'https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy'"; then
+    if execute "wget -O $TMP_DIR/d-s-f 'https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/diff-so-fancy'"; then
         test -s $TMP_DIR/d-s-f && execute "mv -- $TMP_DIR/d-s-f $HOME/bin/diff-so-fancy && chmod +x $HOME/bin/diff-so-fancy" || err "fetched diff-so-fancy file is null"
-    else
-        err "diff-so-fancy fetch failed"
     fi
 
     # forgit - fzf-fueled git tool:  # https://github.com/wfxr/forgit
@@ -2455,7 +2453,7 @@ install_ferdi() {  # https://github.com/getferdi/ferdi
 
 # TODO: looks like StevensNJD4/LazyMan is no more
 # maybe consider one of following:
-#  - https://github.com/tarkah/lazystream
+#  - https://github.com/tarkah/lazystream  - this seems most active as of Feb 2021
 #  - https://github.com/actionbronson/LazyMan
 install_lazyman() {  # https://github.com/StevensNJD4/LazyMan
     true
@@ -2546,6 +2544,8 @@ install_krew() {  # https://github.com/kubernetes-sigs/krew
 }
 
 # kubernetes (k8s) config/resource sanitizer
+#   "Popeye scans your Kubernetes clusters and reports potential resource issues."
+#
 # tag: aws, k8s, kubernetes
 install_popeye() {  # https://github.com/derailed/popeye
     install_bin_from_git -n popeye -d "$HOME/bin"  derailed  popeye  _Linux_x86_64.tar.gz
