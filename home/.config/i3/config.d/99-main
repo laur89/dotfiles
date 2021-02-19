@@ -286,15 +286,15 @@ bindsym Control+mod1+l exec --no-startup-id lock -f
 bindsym $mod+F9 exec --no-startup-id $HOME/.config/polybar/popups/power/power
 
 # Volume control
-bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +5%
-bindsym $mod+plus exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +5%
-bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -5%
-bindsym $mod+minus exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -5%
-bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle
+bindsym XF86AudioRaiseVolume exec --no-startup-id change-volume up
+bindsym $mod+plus exec            --no-startup-id change-volume up
+bindsym XF86AudioLowerVolume exec --no-startup-id change-volume down
+bindsym $mod+minus exec           --no-startup-id change-volume down
+bindsym XF86AudioMute exec        --no-startup-id change-volume mute
 
 # Brightness control
-bindsym XF86MonBrightnessUp exec xbacklight -inc 20
-bindsym XF86MonBrightnessDown exec xbacklight -dec 20
+bindsym XF86MonBrightnessUp exec --no-startup-id change-brightness up
+bindsym XF86MonBrightnessDown exec --no-startup-id change-brightness down
 
 # Touchpad controls
 bindsym XF86TouchpadToggle exec /some/path/toggletouchpad.sh
