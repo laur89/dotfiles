@@ -14,6 +14,11 @@ if [ -n "$BASH_VERSION" ]; then
     if [ -f "$HOME/.bashrc" ]; then
         source "$HOME/.bashrc"
     fi
+
+    # likely bashrc updated our env vars, make them visible to systemd
+    # user services: (https://wiki.archlinux.org/index.php/systemd/User#Environment_variables)
+    systemctl --user import-environment
+    # show avail vars via   $ systemctl --user show-environment
 fi
 
 # set PATH so it includes user's private bin if it exists
