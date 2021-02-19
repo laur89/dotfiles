@@ -243,6 +243,37 @@ check_dependencies() {
 }
 
 
+install_acpi_events() {
+    local file dir  acpi_target  acpi_src  tmpfile
+
+    readonly acpi_target="/etc/acpi/events"
+    acpi_src=(
+        "$COMMON_DOTFILES/backups/acpi_event_triggers"
+    )
+
+    is_laptop && acpi_src+=("$COMMON_DOTFILES/backups/acpi_event_triggers/laptop")
+    [[ -n "$PLATFORM" ]] && acpi_src+=("$PLATFORM_CASTLE/acpi_event_triggers")
+
+    if ! [[ -d "$acpi_target" ]]; then
+        err "[$acpi_target] dir does not exist; acpi event triggers won't be installed"
+        return 1
+    fi
+
+    for dir in "${acpi_src[@]}"; do
+        [[ -d "$dir" ]] || continue
+        for file in "$dir/"*; do
+            [[ -f "$file" ]] || continue  # TODO: how to validate acpi event files? what are the rules?
+            tmpfile="$TMP_DIR/.acpi_setup-$(basename -- "$file")"
+            execute "cp -- '$file' '$tmpfile'" || return 1
+            execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
+            execute "sudo mv -- '$tmpfile' $acpi_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$acpi_target] failed w/ $?"; return 1; }
+        done
+    done
+
+    return 0
+}
+
+
 setup_udev() {
     local udev_src udev_target file dir tmpfile
 
@@ -1472,32 +1503,6 @@ setup_config_files() {
     setup_global_bash_settings
     is_native && swap_caps_lock_and_esc
     override_locale_time
-}
-
-
-install_acpi_events() {
-    local f  system_acpi_eventdir  src_eventfiles_dir
-
-    readonly system_acpi_eventdir="/etc/acpi/events"
-    readonly src_eventfiles_dir="$COMMON_DOTFILES/backups/acpi_event_triggers"
-
-    if ! [[ -d "$system_acpi_eventdir" ]]; then
-        err "[$system_acpi_eventdir] dir does not exist; acpi event triggers won't be installed"
-        return 1
-    elif ! [[ -d "$src_eventfiles_dir" ]]; then
-        err "[$src_eventfiles_dir] dir does not exist; acpi event triggers won't be installed (since trigger files cannot be found)"
-        return 1
-    elif is_dir_empty "$src_eventfiles_dir"; then
-        return 0
-    fi
-
-    for f in "$src_eventfiles_dir"/* ; do
-        if [[ -f "$f" ]]; then
-            execute "sudo cp -- '$f' $system_acpi_eventdir"
-        fi
-    done
-
-    return 0
 }
 
 
