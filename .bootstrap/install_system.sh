@@ -5493,7 +5493,7 @@ setup_seafile() {
 
     readonly ccnet_conf="$HOME/.ccnet"
     readonly parent_dir="$BASE_DATA_DIR/seafile"  # where libraries will be downloaded into
-    readonly libs=(main)  # list of seafile libraries to sync with
+    readonly libs=(main secrets)  # list of seafile libraries to sync with
 
     is_noninteractive && { err "do not exec $FUNCNAME() as non-interactive"; return 1; }
     _init_seafile_cli || return 1
