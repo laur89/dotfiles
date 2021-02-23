@@ -2581,8 +2581,8 @@ install_kops() {  # https://github.com/kubernetes/kops/
 install_kubectx() {  # https://github.com/ahmetb/kubectx
     local COMPDIR
 
-    install_bin_from_git -n kubectx -d "$HOME/bin"  ahmetb  kubectx  kubectx_.*_linux_x86_64.tar.gz
-    install_bin_from_git -n kubens  -d "$HOME/bin"  ahmetb  kubectx  kubens_.*_linux_x86_64.tar.gz
+    install_bin_from_git -n kubectx -d "$HOME/bin"  ahmetb  kubectx  "kubectx_.*_linux_x86_64.tar.gz"
+    install_bin_from_git -n kubens  -d "$HOME/bin"  ahmetb  kubectx  "kubens_.*_linux_x86_64.tar.gz"
 
     # kubectx/kubens completion scripts: (note there's corresponding entry in ~/.bashrc)
     clone_or_pull_repo "ahmetb" "kubectx" "$BASE_DEPS_LOC" || return 1
