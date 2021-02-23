@@ -4695,6 +4695,8 @@ install_from_repo() {
         toilet
         lolcat
         figlet
+        xplanet
+        xplanet-images
         redshift
         geoclue-2.0
         docker-ce
