@@ -455,7 +455,7 @@ for_window [class="^copyq$"] floating enable
 for_window [class="^Arandr$"] floating enable
 for_window [class="^Lxappearance"] floating enable
 for_window [class="Nitrogen"] floating enable
-for_window [class="feh"] floating enable
+for_window [class="^feh$"] floating enable
 for_window [class="^Sxiv$"] floating enable
 for_window [window_role="Preferences"] floating enable
 for_window [window_type="dialog"] floating enable
@@ -580,7 +580,7 @@ bindsym $mod+Control+Shift+z exec --no-startup-id i3-scratch-marker.sh scratch_m
 # ------------------------------
 # 2nd ver, using i3-quickterm:
 exec_always --no-startup-id i3-quickterm --daemon
-bindsym $mod1+i exec --no-startup-id i3-quickterm shell
+bindsym $mod1+i exec --no-startup-id i3-quickterm --toggle shell
 # ------------------------------
 
 # bind i3expo launcher:
