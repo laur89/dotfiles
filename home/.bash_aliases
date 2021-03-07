@@ -202,8 +202,8 @@ alias git-root='is_git && __grt="$(git rev-parse --show-toplevel)" && [[ -n "$__
 alias grt='git-root'
 alias gpushall='is_git || err "not in a git repo" && { git push --tags && git checkout master && git push && git checkout develop && git push; }'
 # forgit aliases: (https://github.com/wfxr/forgit)
-alias gr='forgit::reset::head'  # git reset
-alias gR='forgit::restore'      # git co -- ...
+alias gr='forgit::reset::head'    # git reset
+alias gR='forgit::checkout::file' # git co -- ...
 alias gin='gitin'
 
 # ------------------------------------
