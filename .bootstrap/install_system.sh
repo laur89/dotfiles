@@ -1089,7 +1089,7 @@ install_deps() {
     execute "curl -sf 'https://get.sdkman.io' | bash"  # TODO depends whether win or linux
 
     # cheat.sh:  # https://github.com/chubin/cheat.sh#installation
-    curl -fsSL "https://cht.sh/:cht.sh" > ~/bin/cht.sh && chmod +x ~/bin/cht.sh || err "cheat.sh curling failed w/ [$?]"
+    curl -fsSL "https://cht.sh/:cht.sh" > ~/bin/cht.sh && chmod +x ~/bin/cht.sh || err "curling cheat.sh failed w/ [$?]"
 
     py_install wheel    # https://pypi.org/project/wheel/  (wheel is py packaging standard; TODO: as per https://stackoverflow.com/a/56504270/1803648, this pkg should soon be provided by default)
 
@@ -1128,6 +1128,16 @@ install_deps() {
 
     py_install update-conf.py # https://github.com/rarylson/update-conf.py  (generate config files from conf.d dirs)
     #py_install starred     # https://github.com/maguowei/starred  - create list of your github starts; note it's updated by CI so no real reason to install it locally
+
+    # rofi-based emoji picker
+    # TODO: ' rofi -modi "emoji:rofimoji" -show emoji' shows blank (see https://github.com/fdw/rofimoji/issues/76)
+    py_install -g fdw  rofimoji  # https://github.com/fdw/rofimoji
+
+    # keepass cli tool
+    py_install passhole     # https://github.com/Evidlo/passhole
+
+    # keepass rofi/demnu tool (similar to passhole (aka ph), but w/ rofi gui)
+    py_install keepmenu     # https://github.com/firecat53/keepmenu
 
     #  TODO: spotify extensions need to be installed globally??
     # mopidy-youtube        # https://pypi.org/project/Mopidy-YouTube/
@@ -1171,7 +1181,7 @@ install_deps() {
     # you'd might wanna install  libkrb5-dev (or whatever ver avail at the time)   https://github.com/ecederstrand/exchangelib/issues/404
 
     # flashfocus - flash window when focus changes  https://github.com/fennerm/flashfocus
-    install_block 'libxcb-render0-dev'
+    install_block 'libxcb-render0-dev libffi-dev python-cffi'
     py_install flashfocus
 
 
@@ -2030,6 +2040,7 @@ install_own_builds() {
     install_browsh
     install_vnote
     install_delta
+	install_peco
     install_fd
     install_bat
     #install_exa
@@ -2203,6 +2214,10 @@ switch_jdk_versions() {
 
 
 
+# $1 - git user
+# $2 - git repo
+# $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
+# $4 - what to rename resulting file as (optional)
 fetch_release_from_git() {
     local opt loc id OPTIND args
 
@@ -2345,7 +2360,8 @@ fetch_release_from_any() {
     fi
 
     if [[ "$skipadd" -ne 1 ]]; then
-        # we're assuming here that installation succeeded from here on:
+        # we're assuming here that installation succeeded from here on.
+        # it is optimistic, but removes repetitive calls.
         add_to_dl_log "$id" "$dl_url"
     fi
 
@@ -2373,7 +2389,7 @@ install_deb_from_git() {
 
 # Fetch and extract a tarball from given github /releases page.
 # Note it'll be fetched and extracted into current $pwd, or into new tempdir if -S opt is provided.
-# Also note the opreation is successful only if a single directory gets extracted out.
+# Also note the operation is successful only if a single directory gets extracted out.
 #
 # pass   -S   flag to create tmp directory where extraction should happen; takes the
 #             tmpdir creation requirement off the caller;
@@ -2409,7 +2425,7 @@ fetch_extract_tarball_from_git() {
     [[ -d "$i" ]] || { err "couldn't find single extracted dir in extracted tarball"; return 1; }
     echo "$i"
     return 0
-    # do NOT remove $tmpdir! caller can clean up if the want
+    # do NOT remove $tmpdir! caller can clean up if they want
 }
 
 
@@ -2638,8 +2654,17 @@ install_grpc_cli() {  # https://github.com/grpc/grpc/blob/master/doc/command_lin
     execute "rm -rf -- '$tmpdir'"
 }
 
+
+install_buku_related() {
+    true  # TODO
+    # https://gitlab.com/lbcnz/buku-rofi
+    # https://github.com/AndreiUlmeyda/oil
+}
+
+
 # db/database visualisation tool (for mysql/mariadb)
 # remember intellij idea also has a db tool!
+# TODO: grab from github releaess instead: https://github.com/dbeaver/dbeaver/releases
 install_dbeaver() {  # https://dbeaver.io/download/
     local loc dest url
 
@@ -2917,6 +2942,12 @@ install_lazydocker() {  # https://github.com/jesseduffield/lazydocker
 # TODO: remove for lazygit?
 install_gitin() {  # https://github.com/isacikgoz/gitin
     install_bin_from_git -n gitin -d "$HOME/bin" isacikgoz gitin '_linux_amd64.tar.gz'
+}
+
+
+# fzf-alternative, some tools use it as a dep
+install_peco() {  # https://github.com/peco/peco#installation
+    install_bin_from_git -n peco -d "$HOME/bin" peco peco '_linux_amd64.tar.gz'
 }
 
 
@@ -4278,6 +4309,7 @@ install_fonts() {
     report "installing fonts..."
 
     install_block '
+        fonts-noto
         ttf-mscorefonts-installer
         xfonts-75dpi
         xfonts-75dpi-transcoded
@@ -4568,7 +4600,6 @@ install_from_repo() {
         zip
         p7zip
         dos2unix
-        qt4-qtconfig
         lxappearance
         gtk2-engines-murrine
         gtk2-engines-pixbuf
@@ -4580,7 +4611,6 @@ install_from_repo() {
         meld
         at-spi2-core
         pastebinit
-        synergy
         keepassxc
         gnupg
         dirmngr
@@ -4637,6 +4667,7 @@ install_from_repo() {
         xsel
         wmctrl
         xdotool
+        python3-xlib
         exuberant-ctags
         shellcheck
         ranger
@@ -5020,6 +5051,7 @@ __choose_prog_to_build() {
         install_exa
         install_gitin
         install_delta
+		install_peco
         install_synergy
         install_dwm
         install_i3
