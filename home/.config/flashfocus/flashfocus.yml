@@ -17,3 +17,8 @@ simple: false
 
 # Number of animation frames in a flash.
 ntimepoints: 30
+
+# do not flash-on-focus for i3expo:
+rules:
+  - window-class: i3expod.py
+    flash-on-focus: False
