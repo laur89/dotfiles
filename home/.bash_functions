@@ -7,15 +7,7 @@
 #
 # =====================================================================
 # import common:
-if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
-    if [[ -r "$_SCRIPTS_COMMONS" ]]; then
-        source "$_SCRIPTS_COMMONS"
-    else
-        echo -e "\n    ERROR: common file [$_SCRIPTS_COMMONS] not found!! Many functions will be unusable!!!"
-        # ¡ do not exit, or you won't be able to open shell
-        # without the commons file being present!
-    fi
-fi
+[[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]] && _init  # for remote envs we already should have concatenated shell conf
 # =====================================================================
 
 # gnu find wrapper.
