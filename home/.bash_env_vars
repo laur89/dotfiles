@@ -44,13 +44,13 @@ if [[ "$-" != *i* ]]; then
     _r_dir="/run/user/$_id"
     if [[ -z "$DBUS_SESSION_BUS_ADDRESS" ]]; then
         _bus="$_r_dir/bus"
-        [[ "$_id" =~ ^[0-9]+$ ]] && test -e "$_bus" && export DBUS_SESSION_BUS_ADDRESS="unix:path=$_bus"
+        [[ "$_id" =~ ^[0-9]+$ && -e "$_bus" ]] && export DBUS_SESSION_BUS_ADDRESS="unix:path=$_bus"
         unset _bus
     fi
-    if [[ -z "$XDG_RUNTIME_DIR" ]]; then
-        test -e "$_r_dir" && export XDG_RUNTIME_DIR="$_r_dir"
-    fi
-    unset _id _r_dir
+
+    [[ -z "$XDG_RUNTIME_DIR" && -e "$_r_dir" ]] && export XDG_RUNTIME_DIR="$_r_dir"
+
+    unset _id  _r_dir
 fi
 
 [[ -z "$GID" && -n "$USER" ]] && export GID="$(id -g "$USER")"
@@ -156,6 +156,11 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export _CON_IF="/tmp/connected_interfaces.dat"
     export _WIRELESS_IF="/tmp/wireless_interfaces.dat"
     export _TRUSTED_CON_MARKER="/tmp/connected_trusted_NW.dat"
+
+    export WALLPAPER_DIR="/home/$USER/Pictures/wallpapers"
+    export DYN_WALLPAPER_DIR="/tmp/.dynamic_wallpapers"  # dir where scripts dynamically create walls into;
+                                                         # needs to be outside of synced wallpapers dir, as
+                                                         # they *might* be system specific (eg resolution).
 
     # which diff-so-fancy (git differ) executable to use; referenced eg by some functions in ~/.bash_functions:
     export _DSF='delta'  # alternatively: diff-so-fancy
