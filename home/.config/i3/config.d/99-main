@@ -464,6 +464,7 @@ for_window [class="^Pavucontrol$"] floating enable
 for_window [class="^KeePassXC?$"] floating enable
 for_window [class="^vokoscreen(NG)?$"] floating enable
 for_window [class="^Galculator$"] floating enable
+for_window [class="^Seafile Client$"] floating enable
 for_window [class="^XEyes$"] floating enable
 for_window [class="^XCalc$"] floating enable
 for_window [class="^Nvidia-settings$"] floating enable
