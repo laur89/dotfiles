@@ -1896,6 +1896,8 @@ install_games() {
 #
 # better run this manually, i think?
 upgrade_firmware() {
+    local c
+
     # display all devices detected by fwupd:
     execute 'fwupdmgr get-devices'
 
@@ -1903,7 +1905,14 @@ upgrade_firmware() {
     execute 'fwupdmgr refresh'
 
     # if updates are available, they'll be displayed:
-    execute 'fwupdmgr get-updates'
+    execute -c 0,2 -r 'fwupdmgr get-updates'
+    c=$?
+    if [[ $c -eq 2 ]]; then
+        report "no updates avail"
+        return 0
+    elif [[ $c -ne 0 ]]; then
+        return $c
+    fi
 
     # downlaod and apply all updates (will be prompted first)
     execute 'fwupdmgr update'
@@ -4726,6 +4735,7 @@ install_from_repo() {
         urlview
         silversearcher-ag
         ugrep
+        gawk
         locate
         cowsay
         cowsay-off
@@ -5533,22 +5543,24 @@ setup_seafile() {
 
     readonly ccnet_conf="$HOME/.ccnet"
     readonly parent_dir="$BASE_DATA_DIR/seafile"  # where libraries will be downloaded into
-    readonly libs=(main secrets)  # list of seafile libraries to sync with
+    readonly libs=(main secrets notes)  # list of seafile libraries to sync with
 
-    is_noninteractive && { err "do not exec $FUNCNAME() as non-interactive"; return 1; }
+    is_noninteractive && { err "do not exec $FUNCNAME() in non-interactive mode"; return 1; }
     _init_seafile_cli || return 1
 
     if ! is_proc_running seaf-daemon; then
         err "seafile daemon not running, abort"; return 1
-    elif is_work && ! confirm "continue w/ downloading libs on work machine?"; then
+    elif __is_work && ! confirm "continue w/ downloading libs on work machine?"; then
         return 1
     fi
 
-    read -r -p "enter seafile user (should be mail): " user
-    read -r -p "enter seafile pass: " passwd
-    [[ -z "$user" || -z "$passwd" ]] && { err "user and/or pass were not given"; return 1; }
-
     for lib in "${libs[@]}"; do
+        [[ -d "$parent_dir/$lib" ]] && { report "looks like we've already synced with library [$lib]"; continue; }
+
+        [[ -z "$user" ]] && read -r -p "enter seafile user (should be mail): " user
+        [[ -z "$passwd" ]] && read -r -p "enter seafile pass: " passwd
+        [[ -z "$user" || -z "$passwd" ]] && { err "user and/or pass were not given"; return 1; }
+
         seaf-cli download-by-name --libraryname "$lib" -s https://seafile.aliste.eu \
             -d "$parent_dir" -u "$user" -p "$passwd" || { err "[seaf-cli download-by-name] for lib [$lib] failed w/ $?"; continue; }
     done
@@ -5924,19 +5936,26 @@ generate_key() {
 #
 #  -i       ignore erroneous exit - in this case still exits 0 and doesn't log
 #           on ERR level to exec logfile
-#  -c code  provide value of successful exit code (defaults to 0)
+#  -c code  provide value of successful exit code (defaults to 0); may be comma-separated
+#           list of values if multiple exit codes are to be considered a success.
+#  -r       return the original return code in order to catch the code even when
+#           -c <code> or -i options were passed
 execute() {
-    local opt OPTIND cmd exit_sig ignore_errs ok_code
+    local opt OPTIND cmd exit_sig ignore_errs retain_code ok_code ok_codes
 
-    ok_code=0  # default
-    ignore_errs=0  # default
-    while getopts 'ic:' opt; do
+    ok_codes=(0)  # default
+    while getopts 'irc:' opt; do
         case "$opt" in
            i) ignore_errs=1
                 ;;
-           c) ok_code="$OPTARG"
-              is_digit "$ok_code" || { err "non-digit ok_code arg passed to ${FUNCNAME}: [$ok_code]"; return 1; }
-              [[ "${#ok_code}" -gt 3 ]] && { err "too long ok_code arg passed to ${FUNCNAME}: [$ok_code]"; return 1; }
+           r) retain_code=1
+                ;;
+           c)
+              IFS="," read -ra ok_codes <<< "$OPTARG"
+              for ok_code in "${ok_codes[@]}"; do
+                is_digit "$ok_code" || { err "non-digit ok_code arg passed to ${FUNCNAME}: [$ok_code]"; return 1; }
+                [[ "${#ok_code}" -gt 3 ]] && { err "too long ok_code arg passed to ${FUNCNAME}: [$ok_code]"; return 1; }
+              done
                 ;;
            *) echo -e "unexpected opt [$opt] passed to $FUNCNAME"; return 1 ;;
         esac
@@ -5951,16 +5970,18 @@ execute() {
     eval "$cmd"
     readonly exit_sig=$?
 
-    if [[ "$exit_sig" -ne "$ok_code" && "$ignore_errs" -ne 1 ]]; then
+	if [[ "$ignore_errs" -ne 1 ]] && ! list_contains "$exit_sig" "${ok_codes[@]}"; then
         if [[ "$LOGGING_LVL" -ge 1 ]]; then
             echo -e "    ERR CMD: [$cmd] (exit code [$exit_sig])" >> "$EXECUTION_LOG"
             echo -e "        LOC: [$(pwd -P)]" >> "$EXECUTION_LOG"
         fi
+
+        err "command exited w/ [$exit_sig]"
         return $exit_sig
     fi
 
     [[ "$LOGGING_LVL" -ge 10 ]] && echo "OK CMD: $cmd" >> "$EXECUTION_LOG"
-    return 0
+    [[ "$retain_code" -eq 1 ]] && return $exit_sig || return 0
 }
 
 
@@ -6363,12 +6384,13 @@ __is_work() {
 list_contains() {
     local array element i
 
+    [[ "$#" -lt 2 ]] && { err "at least 2 args required" "$FUNCNAME"; return 1; }
+
     readonly element="$1"; shift
     declare -ar array=("$@")
 
-    [[ "$#" -lt 2 ]] && { err "at least 2 args required" "$FUNCNAME"; return 1; }
     #[[ -z "$element" ]]    && { err "element to check can't be empty string." "$FUNCNAME"; return 1; }  # it can!
-    [[ -z "${array[*]}" ]] && { err "array/list to check from can't be empty." "$FUNCNAME"; return 1; }
+    [[ -z "${array[*]}" ]] && { err "array/list to check from can't be empty." "$FUNCNAME"; return 1; }  # is this check ok/necessary?
 
     for i in "${array[@]}"; do
         [[ "$i" == "$element" ]] && return 0
