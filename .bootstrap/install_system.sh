@@ -544,7 +544,7 @@ setup_crontab() {
                 continue
             fi
 
-            create_link --sudo "$i" "${weekly_crondir}/"
+            create_link -s "$i" "${weekly_crondir}/"
         done
     fi
 }
@@ -1436,7 +1436,7 @@ setup_global_shell_links() {
             continue
         fi
 
-        create_link --sudo "$file" "${global_dir}/"
+        create_link -s "$file" "${global_dir}/"
     done
 }
 
@@ -2131,7 +2131,7 @@ install_oracle_jdk() {
     execute "sudo chown -R root:root $JDK_INSTALLATION_DIR/$(basename -- "$dir")"
 
     # create link:
-    create_link --sudo "$JDK_INSTALLATION_DIR/$(basename -- "$dir")" "$JDK_LINK_LOC"
+    create_link -s "$JDK_INSTALLATION_DIR/$(basename -- "$dir")" "$JDK_LINK_LOC"
 
     execute "popd"
     execute "sudo rm -rf -- $tmpdir"
@@ -2164,7 +2164,7 @@ switch_jdk_versions() {
         if [[ -n "$__SELECTED_ITEMS" ]]; then
             [[ -d "$__SELECTED_ITEMS" ]] || { err "[$__SELECTED_ITEMS] is not a valid dir; try again."; continue; }
             report "selecting [$__SELECTED_ITEMS]..."
-            create_link --sudo "$__SELECTED_ITEMS" "$JDK_LINK_LOC"
+            create_link -s "$__SELECTED_ITEMS" "$JDK_LINK_LOC"
             break
         else
             confirm "no items were selected; skip jdk change?" && return
@@ -2604,8 +2604,8 @@ install_kubectx() {  # https://github.com/ahmetb/kubectx
     clone_or_pull_repo "ahmetb" "kubectx" "$BASE_DEPS_LOC" || return 1
     COMPDIR=$(pkg-config --variable=completionsdir bash-completion)
     [[ -d "$COMPDIR" ]] || { err "[$COMPDIR] not a dir, cannot install kube{ctx,ns} shell completion"; return 1; }
-    create_link --sudo "${BASE_DEPS_LOC}/kubectx/completion/kubens.bash" "$COMPDIR/kubens"
-    create_link --sudo "${BASE_DEPS_LOC}/kubectx/completion/kubectx.bash" "$COMPDIR/kubectx"
+    create_link -s "${BASE_DEPS_LOC}/kubectx/completion/kubens.bash" "$COMPDIR/kubens"
+    create_link -s "${BASE_DEPS_LOC}/kubectx/completion/kubectx.bash" "$COMPDIR/kubectx"
 }
 
 # kube-ps1 - kubernets shell prompt
@@ -3705,6 +3705,12 @@ install_i3_deps() {
     #execute "pip3 install --user -r ${BASE_DEPS_LOC}/rofi-tmux/requirements.txt"  # as we're not installing rft w/ pip, we need to manually install deps
     create_link "${BASE_DEPS_LOC}/rofi-tmux/rft/main.py" "$HOME/bin/rft"
 
+
+    # i3ass  # https://github.com/budlabs/i3ass/
+    clone_or_pull_repo "budlabs" "i3ass" "$BASE_DEPS_LOC"
+    create_link -c "${BASE_DEPS_LOC}/i3ass/src" "$HOME/bin/"
+
+
     # install i3-quickterm   # https://github.com/lbonn/i3-quickterm
     #curl --fail --output "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3-quickterm' \  # TODO: enable this one if/when PR is accepted
     curl --fail --output "$f" 'https://raw.githubusercontent.com/laur89/i3-quickterm/master/i3-quickterm' \
@@ -4026,7 +4032,7 @@ nvim_post_install_configuration() {
     readonly nvim_confdir="$HOME/.config/nvim"
 
     execute "sudo mkdir -p /root/.config"
-    create_link --sudo "$nvim_confdir" "/root/.config/"  # root should use same conf
+    create_link -s "$nvim_confdir" "/root/.config/"  # root should use same conf
 
     _setup_vim_sessions_dir() {
         local stored_vim_sessions vim_sessiondir
@@ -4072,7 +4078,7 @@ vim_post_install_configuration() {
             err "[$i] does not exist - can't link to /root/"
             continue
         else
-            create_link --sudo "$i" "/root/"
+            create_link -s "$i" "/root/"
         fi
     done
 
@@ -6294,38 +6300,57 @@ is_valid_ip() {
 }
 
 
-# pass '-s' or '--sudo' as first arg to execute as sudo
+# pass '-s' as first arg to execute as sudo
+# pass '-c' if $1 is a dir whose contents' should each be symlinked to directory at $2
 #
 # second arg, the target, should end with a slash if a containing dir is meant to be
 # passed, not a literal path to the link-to-be-created. in this case dir needs to exist,
 # it doesn't get automatically created
 create_link() {
-    local src target sudo
+    local opt OPTIND src srcs node target trgt sudo contents
 
-    [[ "$1" == -s || "$1" == --sudo ]] && { shift; readonly sudo=sudo; }
+    while getopts "sc" opt; do
+        case "$opt" in
+            s) sudo=sudo ;;
+            c) contents=1 ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
 
-    readonly src="$1"
+    readonly src="${1%/}"
     target="$2"
 
-    if [[ "$target" == */ ]] && $sudo test -d "$target"; then
-        target+="$(basename -- "$src")"
-    fi
-    #if $sudo test -d "$target"; then
-        #[[ "$target" != */ ]] && target+='/'
-        #target="${target}$(basename -- "$src")"
-    #fi
+    if [[ "$contents" -eq 1 ]]; then
+        [[ -d "$src" ]] || { err "source [$src] should be a dir, but is [$(file_type "$src")]"; return 1; }
+        [[ -d "$target" ]] || { err "with -c opt, target [$target] should be a dir, but is [$(file_type "$target")]"; return 1; }
+        [[ "$target" != */ ]] && target+='/'
 
-    $sudo test -h "$target" && execute "${sudo:+$sudo }rm -- '$target'"  # only remove $target if it's already a symlink
-    execute "${sudo:+$sudo }ln -s -- '$src' '$target'"
+        srcs=()
+        for node in "$src/"*; do
+            srcs+=("$node")
+        done
+    else
+        srcs=("$src")
+    fi
+
+    for node in "${srcs[@]}"; do
+        if [[ "$target" == */ ]] && $sudo test -d "$target"; then
+            trgt="${target}$(basename -- "$node")"
+        else
+            trgt="$target"
+        fi
+
+        $sudo test -h "$trgt" && execute "${sudo:+$sudo }rm -- '$trgt'"  # only remove $trgt if it's already a symlink
+        execute "${sudo:+$sudo }ln -s -- '$node' '$trgt'"
+    done
 
     return 0
 }
 
 
 __is_work() {
-    [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" || "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]] \
-            && return 0 \
-            || return 1
+    [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" || "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]]
 }
 
 
@@ -6555,6 +6580,29 @@ is_function() {
 
     _type="$(type -t -- "$fun" 2> /dev/null)"
     [[ "$?" -eq 0 && "$_type" == function ]]
+}
+
+
+file_type() {
+    if [[ -h "$*" ]]; then
+        echo symlink
+    elif [[ -f "$*" ]]; then
+        echo file
+    elif [[ -d "$*" ]]; then
+        echo dir
+    elif [[ -p "$*" ]]; then
+        echo 'named pipe'
+    elif [[ -c "$*" ]]; then
+        echo 'character special'
+    elif [[ -b "$*" ]]; then
+        echo 'block special'
+    elif [[ -S "$*" ]]; then
+        echo socket
+    elif ! [[ -e "$*" ]]; then
+        echo 'does not exist'
+    else
+        echo UNKNOWN
+    fi
 }
 
 
