@@ -2738,7 +2738,7 @@ install_redis_desktop_mngr() {  # https://snapcraft.io/install/redis-desktop-man
 #   https://github.com/BoostIO/Boostnote
 #   https://github.com/zadam/trilium  (also hostable as a server)
 install_vnote() {  # https://github.com/vnotex/vnote/releases
-    install_bin_from_git -n vnote vnotex vnote vnote-linux-x64_.*zip
+    install_bin_from_git -n vnote vnotex vnote 'vnote-linux-x64_.*zip'
 }
 
 
