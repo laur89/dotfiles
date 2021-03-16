@@ -5539,11 +5539,11 @@ _init_seafile_cli() {
 #  - seaf-cli list-remote
 #  - seaf-cli status  -> see download/sync status of libraries
 setup_seafile() {
-    local ccnet_conf parent_dir libs lib user passwd
+    local ccnet_conf parent_dir libs_conf libs lib user passwd
 
     readonly ccnet_conf="$HOME/.ccnet"
     readonly parent_dir="$BASE_DATA_DIR/seafile"  # where libraries will be downloaded into
-    readonly libs=(main secrets notes)  # list of seafile libraries to sync with
+    readonly libs_conf=(main secrets notes)  # list of seafile libraries to sync with
 
     is_noninteractive && { err "do not exec $FUNCNAME() in non-interactive mode"; return 1; }
     _init_seafile_cli || return 1
@@ -5554,9 +5554,15 @@ setup_seafile() {
         return 1
     fi
 
-    for lib in "${libs[@]}"; do
-        [[ -d "$parent_dir/$lib" ]] && { report "looks like we've already synced with library [$lib]"; continue; }
+    # filter out libs we've already synced with:
+    for lib in "${libs_conf[@]}"; do
+        [[ -d "$parent_dir/$lib" ]] && continue
+        libs+=("$lib")
+    done
 
+    select_items -h 'choose libraries to sync' "${libs[@]}" || return
+
+    for lib in "${__SELECTED_ITEMS[@]}"; do
         [[ -z "$user" ]] && read -r -p "enter seafile user (should be mail): " user
         [[ -z "$passwd" ]] && read -r -p "enter seafile pass: " passwd
         [[ -z "$user" || -z "$passwd" ]] && { err "user and/or pass were not given"; return 1; }
@@ -6001,7 +6007,6 @@ execute() {
 select_items() {
     local opt OPTIND options is_single_selection hdr
 
-    is_single_selection=0
     hdr='Available options:'  # default if not given
 
     while getopts 'sh:' opt; do
