@@ -2044,6 +2044,7 @@ install_own_builds() {
     #install_rambox
     #install_franz
     is_native && install_ferdi
+    is_native && install_discord
     #install_zoxide
     install_ripgrep
     install_browsh
@@ -2481,6 +2482,66 @@ install_ferdi() {  # https://github.com/getferdi/ferdi
 }
 
 
+# Fetch a file from given url, and install the binary. If url redirects to final
+# file asset, we follow the redirects.
+#
+# -d /target/dir    - dir to install pulled binary in, optional
+# $1 - name of the binary/resource
+# $2 - resource url
+install_from_url() {
+    local opt OPTIND target name loc file url ftype
+
+    target='/usr/local/bin'  # default
+    while getopts "d:" opt; do
+        case "$opt" in
+            d) target="$OPTARG" ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    readonly name="$1"
+    readonly loc="$2"
+
+    [[ -d "$target" ]] || { err "[$target] not a dir, can't install [$name]"; return 1; }
+
+    url="$(curl -Ls --head -o /dev/stdout "$loc" | grep -iPo '^location:\s*\K\S+' | tail -1)"  # extract the very last extract
+    [[ -z "$url" ]] || url="$loc"  # assuming no redirect
+
+    if ! is_valid_url "$url"; then
+        err "found $name url is improper: [$url]; aborting"
+        return 1
+    elif is_installed "$url"; then
+        return 2
+    fi
+
+    file="$TMP_DIR/$(basename -- "$url")"
+    #execute "wget --content-disposition -q --directory-prefix=$TMP_DIR '$url'" || { err "wgetting [$url] failed with $?"; return 1; }
+    execute "wget -O '$file' '$url'" || { err "wgetting [$url] failed."; return 1; }
+
+    ftype="$(file -iLb -- "$file")"
+
+    if [[ "$ftype" == *"debian.binary-package; charset=binary" ]]; then
+		execute "sudo apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
+		execute "rm -f -- '$file'"
+    elif [[ "$ftype" == *"executable; charset=binary" ]]; then
+		execute "chmod +x '$file'" || return 1
+		execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
+    else
+        err "dunno how to install file [$file] - unknown type [$ftype]"
+	    execute "rm -f -- '$file'"
+        return 1
+    fi
+
+    add_to_dl_log "$name" "$url"
+}
+
+
+install_discord() {  # https://discord.com/download
+    install_from_url  discord 'https://discord.com/api/download?platform=linux&format=deb'
+}
+
+
 # TODO: looks like StevensNJD4/LazyMan is no more
 # maybe consider one of following:
 #  - https://github.com/tarkah/lazystream  - this seems most active as of Feb 2021
@@ -2537,6 +2598,8 @@ install_aia() {  # https://github.com/kubernetes-sigs/aws-iam-authenticator
 
 # kubernetes configuration customizer
 # tag: aws, k8s, kubernetes, kubernetes-config, k8s-config
+#
+# alternatively use the curl-install hack from https://kubectl.docs.kubernetes.io/installation/kustomize/binaries/
 install_kustomize() {  # https://github.com/kubernetes-sigs/kustomize
     install_bin_from_git -n kustomize -d "$HOME/bin" kubernetes-sigs kustomize _linux_amd64.tar.gz
 }
@@ -2675,25 +2738,7 @@ install_buku_related() {
 # remember intellij idea also has a db tool!
 # TODO: grab from github releaess instead: https://github.com/dbeaver/dbeaver/releases
 install_dbeaver() {  # https://dbeaver.io/download/
-    local loc dest url
-
-    readonly loc='https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb'
-    url="$(curl -Ls --head -o /dev/stdout "$loc" | grep -iPo '^location:\s*\K\S+')"
-
-    if ! is_valid_url "$url"; then
-        err "found dbeaver url is improper: [$url]; aborting"
-        return 1
-    elif is_installed "$url"; then
-        return 2
-    fi
-
-    dest="$TMP_DIR/$(basename -- "$url")"
-    #execute "wget --content-disposition -q --directory-prefix=$TMP_DIR '$url'" || { err "wgetting [$url] failed with $?"; return 1; }
-    execute "wget -O '$dest' '$url'" || { err "wgetting [$url] failed."; return 1; }
-    execute "sudo apt-get --yes install '$dest'" || return 1
-    execute "rm -f -- '$dest'"
-
-    add_to_dl_log "dbeaver" "$url"
+    install_from_url  dbeaver 'https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb'
 }
 
 
@@ -5056,6 +5101,7 @@ __choose_prog_to_build() {
         install_rambox
         install_franz
         install_ferdi
+        install_discord
         install_zoxide
         install_ripgrep
         install_browsh
