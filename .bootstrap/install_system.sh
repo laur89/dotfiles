@@ -661,7 +661,7 @@ install_nfs_server() {
 
 install_nfs_client() {
     local fstab mountpoint nfs_share default_mountpoint server_ip prev_server_ip
-    local mounted_shares used_mountpoints
+    local mounted_shares used_mountpoints changed
 
     readonly fstab="/etc/fstab"
     readonly default_mountpoint="/mnt/nfs"
@@ -696,6 +696,7 @@ install_nfs_client() {
             report "adding [${server_ip}:$nfs_share] mounting to [$mountpoint] in $fstab"
             execute "echo ${server_ip}:${nfs_share} ${mountpoint} nfs noauto,x-systemd.automount,x-systemd.mount-timeout=10,_netdev,x-systemd.device-timeout=10,timeo=14,rsize=8192,wsize=8192,x-systemd.idle-timeout=1min 0 0 \
                     | sudo tee --append $fstab > /dev/null"
+            changed=1
         else
             err "an nfs share entry for [${server_ip}:${nfs_share}] in $fstab already exists."
         fi
@@ -704,6 +705,9 @@ install_nfs_client() {
         used_mountpoints+=("$mountpoint")
         mounted_shares+=("${server_ip}${nfs_share}")
     done
+
+    # force fstab reload & mount the new remote share(s):
+    [[ "$changed" -eq 1 ]] && execute 'sudo systemctl daemon-reload' && execute "sudo systemctl restart remote-fs.target local-fs.target"
 
     return 0
 }
@@ -778,7 +782,6 @@ install_sshfs() {
     readonly identity_file="$HOME/.ssh/id_rsa_only_for_server_connect"
     declare -a mounted_shares=()
     declare -a used_mountpoints=()
-
     declare -A sel_ips_to_user
 
     confirm "wish to install and configure sshfs?" || return 1
@@ -848,8 +851,7 @@ install_sshfs() {
         if [[ -f "${identity_file}.pub" ]]; then
             if confirm "try to ssh-copy-id public key to [$server_ip]?"; then
                 # install public key on ssh server:
-                # TODO: shouldn't we employ $ssh_port here?
-                ssh-copy-id -i "${identity_file}.pub" ${remote_user}@${server_ip} || err "ssh-copy-id to [${remote_user}@${server_ip}] failed with $?"
+                ssh-copy-id -i "${identity_file}.pub" -p "$ssh_port" ${remote_user}@${server_ip} || err "ssh-copy-id to [${remote_user}@${server_ip}] failed with $?"
             fi
         fi
 
@@ -860,6 +862,9 @@ install_sshfs() {
         fi
         # note2: also could circumvent known_hosts issue by adding 'StrictHostKeyChecking=no'; it does add a bit insecurity tho
     done
+
+    # force fstab reload & mount the new remote share(s):
+    [[ "${#sel_ips_to_user[@]}" -gt 0 ]] && execute 'sudo systemctl daemon-reload' && execute "sudo systemctl restart remote-fs.target local-fs.target"
 
     return 0
 }
@@ -5384,6 +5389,7 @@ enable_network_manager() {
         local ssids i
 
         ssids=(wifibox wifibox5g)  # networks to configure DNS for
+        check_progs_installed  nmcli || return 1
         for i in "${ssids[@]}"; do
             if nmcli -f NAME connection show | grep -qFw "$i"; then
                 execute "nmcli con mod $i ipv4.dns '10.42.21.10  1.1.1.1  8.8.8.8'" | err "dns addition for connection [$i] failed w/ $?"
@@ -6451,13 +6457,13 @@ __is_work() {
 list_contains() {
     local array element i
 
-    [[ "$#" -lt 2 ]] && { err "at least 2 args required" "$FUNCNAME"; return 1; }
+    #[[ "$#" -lt 2 ]] && { err "at least 2 args required" "$FUNCNAME"; return 1; }
 
     readonly element="$1"; shift
     declare -ar array=("$@")
 
     #[[ -z "$element" ]]    && { err "element to check can't be empty string." "$FUNCNAME"; return 1; }  # it can!
-    [[ -z "${array[*]}" ]] && { err "array/list to check from can't be empty." "$FUNCNAME"; return 1; }  # is this check ok/necessary?
+    #[[ -z "${array[*]}" ]] && { err "array/list to check from can't be empty." "$FUNCNAME"; return 1; }  # is this check ok/necessary?
 
     for i in "${array[@]}"; do
         [[ "$i" == "$element" ]] && return 0
