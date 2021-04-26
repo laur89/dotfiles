@@ -2489,7 +2489,7 @@ install_ferdi() {  # https://github.com/getferdi/ferdi
 # $1 - name of the binary/resource
 # $2 - resource url
 install_from_url() {
-    local opt OPTIND target name loc file url ftype
+    local opt OPTIND target name loc file url ftype tmpdir
 
     target='/usr/local/bin'  # default
     while getopts "d:" opt; do
@@ -2505,7 +2505,7 @@ install_from_url() {
 
     [[ -d "$target" ]] || { err "[$target] not a dir, can't install [$name]"; return 1; }
 
-    url="$(curl -Ls --head -o /dev/stdout "$loc" | grep -iPo '^location:\s*\K\S+' | tail -1)"  # extract the very last extract
+    url="$(curl -Ls --head -o /dev/stdout "$loc" | grep -iPo '^location:\s*\K\S+' | tail -1)"  # extract the very last redirect
     [[ -z "$url" ]] || url="$loc"  # assuming no redirect
 
     if ! is_valid_url "$url"; then
@@ -2515,9 +2515,10 @@ install_from_url() {
         return 2
     fi
 
-    file="$TMP_DIR/$(basename -- "$url")"
-    #execute "wget --content-disposition -q --directory-prefix=$TMP_DIR '$url'" || { err "wgetting [$url] failed with $?"; return 1; }
-    execute "wget -O '$file' '$url'" || { err "wgetting [$url] failed."; return 1; }
+    tmpdir="$(mktemp -d "install-from-url-${name}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    execute "wget --content-disposition -q --directory-prefix=$tmpdir '$url'" || { err "wgetting [$url] failed with $?"; return 1; }
+    file="$(find "$tmpdir" -type f)"
+    [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
     ftype="$(file -iLb -- "$file")"
 
@@ -2537,6 +2538,7 @@ install_from_url() {
 }
 
 
+# note also available as snap
 install_discord() {  # https://discord.com/download
     install_from_url  discord 'https://discord.com/api/download?platform=linux&format=deb'
 }
@@ -5377,9 +5379,23 @@ enable_network_manager() {
     readonly dnsmasq_conf="$COMMON_DOTFILES/backups/dnsmasq.conf"
     readonly dnsmasq_conf_dir='/etc/dnsmasq.d'
 
+    # configure per-connection DNS:
+    _configure_con_dns() {
+        local ssids i
+
+        ssids=(wifibox wifibox5g)  # networks to configure DNS for
+        for i in "${ssids[@]}"; do
+            if nmcli -f NAME connection show | grep -qFw "$i"; then
+                execute "nmcli con mod $i ipv4.dns '10.42.21.10  1.1.1.1  8.8.8.8'" | err "dns addition for connection [$i] failed w/ $?"
+                execute "nmcli con mod $i ipv4.ignore-auto-dns yes" | err "setting dns ignore-auto-dns for connection [$i] failed w/ $?"
+            fi
+        done
+    }
+
     [[ -d "$nm_conf_dir" ]] || { err "[$nm_conf_dir] does not exist; are you using NetworkManager? if not, this config logic should be removed."; return 1; }
     [[ -f "$nm_conf" ]] || { err "[$nm_conf] does not exist; cannot update config"; return 1; }
     execute "sudo cp -- '$nm_conf' '$nm_conf_dir'" || return 1
+    _configure_con_dns
 
     # old ver, directly updating /etc/NetworkManager/NetworkManager.conf:
     #sudo crudini --merge "$net_manager_conf_file" <<'EOF'
