@@ -1777,97 +1777,6 @@ swap_caps_lock_and_esc() {
 }
 
 
-install_altiris() {
-    local rpm_loc altiris_loc
-
-    rpm_loc="/usr/bin/rpm"
-    # alt_loc from   https://williamhill.jira.com/wiki/display/TRAD/Developer+Machines :
-    altiris_loc='https://williamhill.jira.com/wiki/download/attachments/21528849/altiris_install.sh'
-
-    [[ "$PROFILE" != work ]] && { err "won't install it in [$PROFILE] profile; only in work profile."; return 1; }
-
-    if ! command -v rpm >/dev/null; then
-        install_block 'rpm' || return 1
-        execute "sudo mv $rpm_loc ${rpm_loc}.orig" || return 1
-
-        echo -e '#!/bin/sh\n/usr/bin/rpm.orig --nodeps --force-debian $@' | sudo tee $rpm_loc > /dev/null \
-            || return 1
-        execute "sudo chmod +x -- $rpm_loc"
-    fi
-
-    # download and execute altiris script:
-    # !!! note the required cookie for jira to validate your session:
-    execute " \
-        wget --no-check-certificate \
-            --no-cookies \
-            --header 'Cookie: studio.crowd.tokenkey=sy1UCiW0EIXwN5lf7tUMLA00' \
-            -O $TMP_DIR/altiris_install.sh \
-            -- $altiris_loc \
-    " || { err "couldn't find altiris script; read wiki."; return 1; }
-
-    execute "chmod +x -- $TMP_DIR/altiris_install.sh"
-    execute "sudo $TMP_DIR/altiris_install.sh" || {
-        err "something's wrong; if it failed at rollout.sh, then you probably need to install libc6:i386"
-        err "(as per https://williamhill.jira.com/wiki/display/TRAD/Altiris+on+Ubuntu)"
-        return 1
-    }
-
-    execute "pushd /opt/altiris/notification/nsagent/bin" || return 1
-    execute "sudo ./aex-configure -configure" || return 1
-
-    execute "sudo mkdir -p /etc/rc.d/init.d" || return 1
-    execute "sudo ln -s -- /lib/lsb/init-functions /etc/rc.d/init.d/functions" || return 1
-
-    execute "sudo /etc/init.d/altiris start" || return 1
-    # refresh policies:
-    execute "sudo /opt/altiris/notification/nsagent/bin/aex-refreshpolicies"
-    execute "sudo /opt/altiris/notification/nsagent/bin/aex-sendbasicinv" || { err 'apparently cannot send basic inventory'; return 1; }
-}
-
-
-install_symantec_endpoint_security() {
-    local sep_loc jce_loc tmpdir tarball dir jars
-
-    sep_loc='https://williamhillorg-my.sharepoint.com/personal/leighhall_williamhill_co_uk/_layouts/15/guestaccess.aspx?guestaccesstoken=B5plVjedQluwT7BgUH50bG3rs99cJaCg6lckbkGdS6I%3d&docid=2_15a1ca98041134ad8b2e4d93286806892'
-    jce_loc='http://download.oracle.com/otn-pub/java/jce/8/jce_policy-8.zip'
-
-    [[ "$PROFILE" != work ]] && { err "won't install it in [$PROFILE] profile; only in work profile."; return 1; }
-    [[ -d "$JDK_LINK_LOC" ]] || { err "expected [$JDK_LINK_LOC] to link to existing jdk installation."; return 1; }
-
-    tmpdir="$(mktemp -d "symantec-endpoint-sec-tempdir-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$ mktemp"; return 1; }
-    execute "pushd $tmpdir" || return 1
-
-    # fetch & install SEP:
-    execute "wget -- $sep_loc" || return 1
-    tarball="$(ls)"
-    extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
-    dir="$(find . -mindepth 1 -maxdepth 1 -type d)"
-    [[ -d "$dir" ]] || { err "couldn't find unpacked SEP directory"; return 1; }
-
-    execute "sudo $dir/install.sh" || return 1
-
-    execute "rm -- $tarball"
-    execute "sudo rm -rf -- $dir" || return 1
-
-    # fetch & install the jdk crypto extensions (JCE):
-    execute "wget --no-check-certificate \
-        --no-cookies \
-        --header 'Cookie: oraclelicense=accept-securebackup-cookie' \
-        -- $jce_loc" || { err "unable to wget $jce_loc."; return 1; }
-
-    tarball="$(basename -- $jce_loc)"
-    extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
-    dir="$(find . -mindepth 1 -maxdepth 1 -type d)"
-    [[ -d "$dir" ]] || { err "couldn't find unpacked jce directory"; return 1; }
-    jars="$(find "$dir" -mindepth 1 -type f -name '*.jar')" || { err "looks like we didn't find any .jar files under [$dir]"; return 1; }
-    execute "sudo cp $jars $JDK_LINK_LOC/jre/lib/security" || return 1
-
-    # cleanup:
-    execute "popd"
-    execute "sudo rm -rf -- $tmpdir"
-}
-
-
 install_progs() {
 
     execute "sudo apt-get --yes update"
@@ -1879,12 +1788,6 @@ install_progs() {
     is_native && install_nvidia
     is_native && install_amd
     is_native && install_cpu_microcode_pkg
-
-    # TODO: delete?:
-    #if [[ "$PROFILE" == work ]]; then
-        #install_altiris
-        #install_symantec_endpoint_security
-    #fi
 
     post_install_progs_setup
 }
@@ -5203,8 +5106,6 @@ __choose_prog_to_build() {
         install_polybar
         install_oracle_jdk
         install_skype
-        install_altiris
-        install_symantec_endpoint_security
         install_aws_okta
         install_saml2aws
         install_aia
