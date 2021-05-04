@@ -2050,6 +2050,7 @@ install_own_builds() {
     #install_franz
     is_native && install_ferdi
     is_native && install_discord
+    install_xournalpp
     #install_zoxide
     install_ripgrep
     install_browsh
@@ -2397,8 +2398,7 @@ install_deb_from_git() {
     deb="$(fetch_release_from_git "$1" "$2" "$3")" || return 1
     # TODO: note apt doesn't have --yes option!
     #execute "sudo apt install '$deb'" || { err "installing [$1/$2] failed w/ $?"; return 1; }
-    execute "sudo apt-get --yes install '$deb'" || { err "installing deb from [$1/$2] failed w/ $?"; return 1; }
-    execute "rm -f -- '$deb'"
+    install_file "$deb" || return 1
 }
 
 
@@ -2468,8 +2468,7 @@ install_bin_from_git() {
 
     # note: some of (think rust?) binaries' mime is 'application/x-sharedlib', not /x-executable
     bin="$(fetch_release_from_git -F 'application/x-(sharedlib|executable)' "$1" "$2" "$3" "$name")" || return 1
-    execute "chmod +x '$bin'" || return 1
-    execute "sudo mv -- '$bin' '$target'" || { err "installing [$bin] in [$target] failed"; return 1; }
+    install_file -d "$target" "$bin" || return 1
 }
 
 
@@ -2487,6 +2486,15 @@ install_ferdi() {  # https://github.com/getferdi/ferdi
 }
 
 
+# Xournalpp is a handwriting notetaking app; I'm using it for PDF document annotation
+# (ie providing that fake handwritten signature).
+#
+# how to sign pdf: https://viktorsmari.github.io/linux/pdf/2018/08/23/annotate-pdf-linux.html
+install_xournalpp() {  # https://github.com/xournalpp/xournalpp
+    install_deb_from_git xournalpp xournalpp x86_64.deb
+}
+
+
 # Fetch a file from given url, and install the binary. If url redirects to final
 # file asset, we follow the redirects.
 #
@@ -2494,7 +2502,7 @@ install_ferdi() {  # https://github.com/getferdi/ferdi
 # $1 - name of the binary/resource
 # $2 - resource url
 install_from_url() {
-    local opt OPTIND target name loc file url ftype tmpdir
+    local opt OPTIND target name loc file url tmpdir
 
     target='/usr/local/bin'  # default
     while getopts "d:" opt; do
@@ -2525,6 +2533,27 @@ install_from_url() {
     file="$(find "$tmpdir" -type f)"
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
+    install_file -d "$target" "$file" || return 1
+
+    add_to_dl_log "$name" "$url"
+}
+
+
+install_file() {
+    local opt OPTIND ftype target file
+
+    target='/usr/local/bin'  # default
+    while getopts "d:" opt; do
+        case "$opt" in
+            d) target="$OPTARG" ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    file="$1"
+
+    [[ -f "$file" ]] || { err "file [$file] not a regular file"; return 1; }
     ftype="$(file -iLb -- "$file")"
 
     if [[ "$ftype" == *"debian.binary-package; charset=binary" ]]; then
@@ -2538,8 +2567,6 @@ install_from_url() {
 	    execute "rm -f -- '$file'"
         return 1
     fi
-
-    add_to_dl_log "$name" "$url"
 }
 
 
@@ -5110,6 +5137,7 @@ __choose_prog_to_build() {
         install_franz
         install_ferdi
         install_discord
+        install_xournalpp
         install_zoxide
         install_ripgrep
         install_browsh
