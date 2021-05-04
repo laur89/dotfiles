@@ -2510,7 +2510,7 @@ install_from_url() {
 
     [[ -d "$target" ]] || { err "[$target] not a dir, can't install [$name]"; return 1; }
 
-    url="$(curl -Ls --head -o /dev/stdout "$loc" | grep -iPo '^location:\s*\K\S+' | tail -1)"  # extract the very last redirect
+    url="$(curl -Ls --head -o /dev/stdout "$loc" | grep -iPo '^location:\s*\K\S+' | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
     [[ -z "$url" ]] || url="$loc"  # assuming no redirect
 
     if ! is_valid_url "$url"; then
@@ -4921,6 +4921,7 @@ install_cpu_microcode_pkg() {
         install_block  amd64-microcode
     else
         err "could not detect our cpu vendor"
+        return 1
     fi
 }
 
@@ -5494,40 +5495,22 @@ install_gruvbox_gtk_theme() {
 
 # also consider the generic installer instead of .deb, eg https://launchpad.net/veracrypt/trunk/1.24-update7/+download/veracrypt-1.24-Update7-setup.tar.bz2
 install_veracrypt() {
-    local tmpdir dl_urls u i vers dl_url ver_to_url file
+    local dl_urls ver_to_url u i
 
     dl_urls="$(resolve_dl_urls -M 'https://www.veracrypt.fr/en/Downloads.html' '.*Debian-\d+-amd64.deb')" || return 1
 
-    vers=()
     declare -A ver_to_url  # debian version to url
 
     while IFS= read -r u; do
         grep -qi console <<< "$u" && continue  # we want GUI version, not console
         i="$(grep -oP 'Debian-\K\d+(?=-amd64.deb$)' <<< "$u")"
-        if is_digit "$i"; then
-            vers+=("$i")
-            ver_to_url["$i"]="$u"
-        fi
+        is_digit "$i" && ver_to_url["$i"]="$u"
     done <<< "$dl_urls"
 
-    [[ ${#vers[@]} -eq 0 ]] && { err "no valid versions found from veracrypt dl urls"; return 1; }
+    [[ ${#ver_to_url[@]} -eq 0 ]] && { err "no valid download urls found for veracrypt"; return 1; }
 
-    i="$(printf '%d\n' "${vers[@]}" | sort -rn | head -n1)"  # take largest (ie latest) version
-    is_digit "$i" || { err "latest found version was not digit: [$i]" return 1; }
-
-    dl_url=${ver_to_url[$i]}
-
-    is_installed "$dl_url" && return 2
-
-    tmpdir="$(mktemp -d "veracrypt-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-    report "fetching [$dl_url]..."
-    execute "wget --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
-    file="$(find "$tmpdir" -type f)"
-    [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
-
-    execute "sudo apt-get --yes install '$file'" || { err "installing veracrypt failed w/ $?"; return 1; }
-
-    add_to_dl_log  veracrypt "$dl_url"
+    i="$(printf '%d\n' "${!ver_to_url[@]}" | sort -n | tail -1)"  # select largest (ie latest) version
+    install_from_url veracrypt "${ver_to_url[$i]}"
 }
 
 
