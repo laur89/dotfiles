@@ -2005,6 +2005,7 @@ install_devstuff() {
     install_lazygit
     install_lazydocker
     #install_gitin
+    install_gitkraken
     #install_oracle_jdk  # start using sdkman (or something similar)
 
     install_aws_okta
@@ -2417,7 +2418,36 @@ install_deb_from_git() {
 #                   _single_ dir in the result.
 # @returns {bool} true, if we found a _single_ dir in result
 fetch_extract_tarball_from_git() {
-    local opt i OPTIND standalone tmpdir
+    local opt i OPTIND standalone
+
+    while getopts 'S' opt; do
+        case "$opt" in
+            S) standalone='-S' ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    i="$(fetch_release_from_git -U "$1" "$2" "$3")" || return $?
+    extract_tarball  $standalone "$i"
+}
+
+
+# Extract given tarball file. Optionally also first downloads the tarball.
+# Note it'll be extracted into current $pwd, or into new tempdir if -S opt is provided.
+# Also note the operation is successful only if a single directory gets extracted out.
+#
+# pass   -S   flag to create tmp directory where extraction should happen; takes the
+#             tmpdir creation requirement off the caller; implied when an URL
+#             instead of a file is passed.
+#
+# $1 - tarball file to be extracted, or a URL where to fetch file from first
+#
+# @returns {string} path to root dir of extraction result, IF we found a
+#                   _single_ dir in the result.
+# @returns {bool} true, if we found a _single_ dir in result
+extract_tarball() {
+    local opt file OPTIND standalone tmpdir
 
     while getopts 'S' opt; do
         case "$opt" in
@@ -2427,18 +2457,30 @@ fetch_extract_tarball_from_git() {
     done
     shift "$((OPTIND-1))"
 
-    i="$(fetch_release_from_git -U "$1" "$2" "$3")" || return $?
+    file="$1"
+
+    if is_valid_url "$file"; then
+        tmpdir="$(mktemp -d "tarball-download-extract-XXXXX" -p "$TMP_DIR")" || { err "unable to create tempdir with \$ mktemp"; return 1; }
+        execute "wget --content-disposition -q --directory-prefix=$tmpdir '$file'" || { err "wgetting [$file] failed with $?"; return 1; }
+        file="$(find "$tmpdir" -mindepth 1 -maxdepth 1 -type f)"
+        standalone=1
+    fi
+
+    [[ -f "$file" ]] || { err "file [$file] not a regular file"; return 1; }
+
     if [[ "$standalone" == 1 ]]; then
-        tmpdir="$(mktemp -d "$1-$2-build-XXXXX" -p "$TMP_DIR")" || { err "unable to create tempdir with \$ mktemp"; return 1; }
+        if [[ -z "$tmpdir" ]]; then
+            tmpdir="$(mktemp -d "tarball-extract-XXXXX" -p "$TMP_DIR")" || { err "unable to create tempdir with \$ mktemp"; return 1; }
+        fi
         execute "pushd -- $tmpdir" || return 1
     fi
 
-    execute "aunpack --extract --quiet '$i'" > /dev/null || { err "extracting [$i] failed w/ $?"; [[ "$standalone" == 1 ]] && popd; return 1; }
+    execute "aunpack --extract --quiet '$file'" > /dev/null || { err "extracting [$file] failed w/ $?"; [[ "$standalone" == 1 ]] && popd; return 1; }
 
-    i="$(find "$(pwd -P)" -mindepth 1 -maxdepth 1 -type d)"
+    file="$(find "$(pwd -P)" -mindepth 1 -maxdepth 1 -type d)"
     [[ "$standalone" == 1 ]] && execute popd
-    [[ -d "$i" ]] || { err "couldn't find single extracted dir in extracted tarball"; return 1; }
-    echo "$i"
+    [[ -d "$file" ]] || { err "couldn't find single extracted dir in extracted tarball"; return 1; }
+    echo "$file"
     return 0
     # do NOT remove $tmpdir! caller can clean up if they want
 }
@@ -2502,7 +2544,7 @@ install_xournalpp() {  # https://github.com/xournalpp/xournalpp
 # $1 - name of the binary/resource
 # $2 - resource url
 install_from_url() {
-    local opt OPTIND target name loc file url tmpdir
+    local opt OPTIND target name loc file ver tmpdir
 
     target='/usr/local/bin'  # default
     while getopts "d:" opt; do
@@ -2518,24 +2560,27 @@ install_from_url() {
 
     [[ -d "$target" ]] || { err "[$target] not a dir, can't install [$name]"; return 1; }
 
-    url="$(curl -Ls --head -o /dev/stdout "$loc" | grep -iPo '^location:\s*\K\S+' | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
-    [[ -z "$url" ]] || url="$loc"  # assuming no redirect
+    ver="$(curl -Ls --fail --retry 2 --head -o /dev/stdout "$loc" | grep -iPo '^etag:\s*"*\K\S+(?=")' | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
+    if [[ -z "$ver" ]]; then
+        ver="$(curl -Ls --fail --retry 2 --head -o /dev/stdout "$loc" | grep -iPo '^location:\s*\K\S+' | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
+        [[ -z "$ver" ]] || ver="$loc"  # TODO: is this okay assumption for version tracking?
+    fi
 
-    if ! is_valid_url "$url"; then
-        err "found $name url is improper: [$url]; aborting"
+    if ! is_valid_url "$loc"; then
+        err "passed url for $name is improper: [$loc]; aborting"
         return 1
-    elif is_installed "$url"; then
+    elif is_installed "$ver"; then
         return 2
     fi
 
     tmpdir="$(mktemp -d "install-from-url-${name}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-    execute "wget --content-disposition -q --directory-prefix=$tmpdir '$url'" || { err "wgetting [$url] failed with $?"; return 1; }
+    execute "wget --content-disposition -q --directory-prefix=$tmpdir '$loc'" || { err "wgetting [$loc] failed with $?"; return 1; }
     file="$(find "$tmpdir" -type f)"
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
     install_file -d "$target" "$file" || return 1
 
-    add_to_dl_log "$name" "$url"
+    add_to_dl_log "$name" "$ver"
 }
 
 
@@ -2776,29 +2821,27 @@ install_dbeaver() {  # https://dbeaver.io/download/
 }
 
 
+install_gitkraken() {  # https://release.gitkraken.com/linux/gitkraken-amd64.deb
+    install_from_url  gitkraken 'https://release.gitkraken.com/linux/gitkraken-amd64.deb'
+}
+
+
 # perforce git mergetool, alternative to meld;
 # TODO: ver/url resolution unresolved, currenlty hard-coding version/url!
 #
 # TODO: generalize this path - dl tarball, unpack under $BASE_PROGS_DIR; eg Postman uses same pattern
 install_p4merge() {  # https://www.perforce.com/downloads/visual-merge-tool
-    local loc target tmpdir dir
+    local loc target dir
 
-    readonly loc='http://www.perforce.com/downloads/perforce/r20.1/bin.linux26x86_64/p4v.tgz'
+    readonly loc='https://www.perforce.com/downloads/perforce/r21.1/bin.linux26x86_64/p4v.tgz'
     readonly target="$BASE_PROGS_DIR/p4merge"
+
     is_installed "$loc" && return 2
 
-    tmpdir="$(mktemp -d 'p4merge-tempdir-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    dir="$(extract_tarball "$loc")" || return 1
 
-    execute "wget --content-disposition -q --directory-prefix=$tmpdir '$loc'" || { err "wgetting [$loc] failed with $?"; return 1; }
-    execute "pushd -- $tmpdir" || return 1
-    execute "aunpack --quiet ./*" || { err "extracting p4merge tarball failed w/ $?"; popd; return 1; }
-    execute "popd"
-
-    dir="$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d)"
-    [[ -d "$dir" ]] || { err "couldn't find single extracted dir in [$tmpdir]"; return 1; }
     [[ -d "$target" ]] && { execute "sudo rm -rf -- '$target'" || return 1; }  # rm previous installation
     execute "mv -- '$dir' '$target'" || return 1
-    execute "rm -rf -- '$tmpdir'"
 
     add_to_dl_log "p4merge" "$loc"
 }
@@ -5177,6 +5220,7 @@ __choose_prog_to_build() {
         install_bloomrpc
         install_grpc_cli
         install_dbeaver
+        install_gitkraken
         install_p4merge
         install_redis_desktop_mngr
         install_eclipse_mem_analyzer
@@ -6378,7 +6422,7 @@ is_valid_url() {
 
     readonly regex='(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
 
-    [[ "$url" =~ $regex ]] && return 0 || return 1
+    [[ "$url" =~ $regex ]]
 }
 
 
