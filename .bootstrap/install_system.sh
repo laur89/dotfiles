@@ -46,6 +46,7 @@ readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; e
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
 readonly APT_KEY_DIR='/usr/local/share/keyrings'  # dir where per-application apt keys will be stored in
+readonly SERVER_IP='10.42.21.10'             # default server address
 readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
 readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
@@ -675,6 +676,8 @@ install_nfs_client() {
 
     [[ -f "$fstab" ]] || { err "[$fstab] does not exist; cannot add fstab entry!"; return 1; }
 
+    prev_server_ip="$SERVER_IP"  # default
+
     while true; do
         confirm "$(report "add ${server_ip:+another }nfs server entry to fstab?")" || break
 
@@ -804,8 +807,10 @@ install_sshfs() {
         err "[$fuse_conf] appears not to contain config value 'user_allow_other'; check manually what's up; not aborting"
     fi
 
+    prev_server_ip="$SERVER_IP"  # default
+
     while true; do
-        confirm "$(report "add ${prev_server_ip:+another }sshfs entry to fstab?")" || break
+        confirm "$(report "add ${server_ip:+another }sshfs entry to fstab?")" || break
 
         read -r -p "enter server ip${prev_server_ip:+ (leave blank to default to [$prev_server_ip])}: " server_ip
         [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
@@ -2466,7 +2471,7 @@ install_from_url() {
     ver="$(curl -Ls --fail --retry 2 --head -o /dev/stdout "$loc" | grep -iPo '^etag:\s*"*\K\S+(?=")' | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
     if [[ -z "$ver" ]]; then
         ver="$(curl -Ls --fail --retry 2 --head -o /dev/stdout "$loc" | grep -iPo '^location:\s*\K\S+' | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
-        [[ -z "$ver" ]] || ver="$loc"  # TODO: is this okay assumption for version tracking?
+        [[ -z "$ver" ]] && ver="$loc"  # TODO: is this okay assumption for version tracking?
     fi
 
     if ! is_valid_url "$loc"; then
@@ -3046,6 +3051,11 @@ install_skype() {  # https://wiki.debian.org/skype
     # create target dir for skype file transfers;
     # ! needs to be configured in skype!
     [[ -d "$skype_downloads_dir" ]] || execute "mkdir '$skype_downloads_dir'"
+}
+
+
+install_zoom() {  # https://zoom.us/download
+    install_from_url  zoom 'https://zoom.us/client/latest/zoom_amd64.deb'
 }
 
 
@@ -5092,6 +5102,7 @@ __choose_prog_to_build() {
         install_polybar
         install_oracle_jdk
         install_skype
+        install_zoom
         install_aws_okta
         install_saml2aws
         install_aia
@@ -5351,8 +5362,8 @@ enable_network_manager() {
         ssids=(wifibox wifibox5g)  # networks to configure DNS for
         check_progs_installed  nmcli || return 1
         for i in "${ssids[@]}"; do
-            if nmcli -f NAME connection show | grep -qFw "$i"; then
-                execute "nmcli con mod $i ipv4.dns '10.42.21.10  1.1.1.1  8.8.8.8'" | err "dns addition for connection [$i] failed w/ $?"
+            if nmcli -f NAME connection show | grep -qFw "$i"; then  # verify connection has been set up/exists
+                execute "nmcli con mod $i ipv4.dns '$SERVER_IP  1.1.1.1  8.8.8.8'" | err "dns addition for connection [$i] failed w/ $?"
                 execute "nmcli con mod $i ipv4.ignore-auto-dns yes" | err "setting dns ignore-auto-dns for connection [$i] failed w/ $?"
             fi
         done
