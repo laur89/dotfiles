@@ -2773,8 +2773,9 @@ install_vnote() {  # https://github.com/vnotex/vnote/releases
 # TODO: consider ARC (advanced rest clinet) instead: https://install.advancedrestclient.com/install
 # TODO: also consider Insomnia: https://github.com/Kong/insomnia
 install_postman() {  # https://learning.postman.com/docs/getting-started/installation-and-updates/#installing-postman-on-linux
-    local url label tmpdir dir dsk target
+    local target url label dir dsk
 
+    target="$BASE_PROGS_DIR/Postman"
     url='https://dl.pstmn.io/download/channel/canary/linux_64'
     label="$(curl -Ls --head -o /dev/stdout "$url" | grep -iPo '^content-disposition:.*filename=\K.*tar.gz')"
 
@@ -2784,18 +2785,9 @@ install_postman() {  # https://learning.postman.com/docs/getting-started/install
         return 2
     fi
 
-    target="$BASE_PROGS_DIR/Postman"
-    tmpdir="$(mktemp -d 'postman-tempdir-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-    wget --directory-prefix=$tmpdir --content-disposition "$url" || return 1
-    execute "pushd -- '$tmpdir'" || return 1
-    execute "aunpack --quiet ./*" || { err "extracting postman tarball failed w/ $?"; popd; return 1; }
-    execute "popd"
-
-    dir="$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d)"
-    [[ -d "$dir" ]] || { err "couldn't find single extracted dir in [$tmpdir]"; return 1; }
+    dir="$(extract_tarball "$url")" || return 1
     [[ -d "$target" ]] && { execute "sudo rm -rf -- '$target'" || return 1; }  # rm previous installation
     execute "mv -- '$dir' '$target'" || return 1
-    execute "rm -rf -- '$tmpdir'"
 
     is_single "$label" && add_to_dl_log "postman-canary" "$label"
 
@@ -2866,37 +2858,31 @@ install_terragrunt() {  # https://github.com/gruntwork-io/terragrunt/
 #   1260 - denmark
 #
 install_eclipse_mem_analyzer() {  # https://www.eclipse.org/mat/downloads.php
-    local tmpdir target loc page dl_url file mirror
+    local target loc page dl_url dir mirror ver
 
-    tmpdir="$(mktemp -d "eclipse-mem-ana-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     target="$BASE_PROGS_DIR/mat"
     loc='https://www.eclipse.org/mat/downloads.php'
     mirror=96
 
     page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
-    loc="$(grep -Po '.*a href="\K.*linux.gtk.x86_64.zip(?=")' <<< "$page")" || { err "parsing download link from [$loc] content failed"; return 1; }
+    loc="$(grep -Po '.*a href="\K.*/\d+\.\d+\.\d+.*linux.gtk.x86_64.zip(?=")' <<< "$page")" || { err "parsing download link from [$loc] content failed"; return 1; }
     is_valid_url "$loc" || { err "[$loc] is not a valid link"; return 1; }
+
+    readonly ver="$loc"
+    is_installed "$ver" && return 2
+
     loc+="&mirror_id=$mirror"
     # now need to parse link again from the download page...
     page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
     dl_url="$(grep -Poi 'If the download doesn.t start.*a href="\K.*(?=")' <<< "$page")" || { err "parsing final download link from [$loc] content failed"; return 1; }
     is_valid_url "$dl_url" || { err "[$dl_url] is not a valid download link"; return 1; }
 
-    report "fetching [$dl_url]..."
-    execute "wget --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
-    file="$(find "$tmpdir" -type f)"
-    [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
-
-    grep -qiE 'archive|compressed' <<< "$(file --brief "$file")" || { err "looks like [$file] is not an archive"; return 1; }
-    execute "pushd -- $tmpdir" || return 1
-    aunpack --quiet "$file" || { err "couldn't extract [$file]"; popd; return 1; }
-    execute "popd"
-    file="$(find "$tmpdir" -maxdepth 1 -mindepth 1 -type d)"
-    [[ -d "$file" ]] || { err "couldn't find single extracted dir in [$tmpdir]"; return 1; }
-    [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }
-    execute "mv -- '$file' '$target'" || return 1
-    execute "rm -rf -- '$tmpdir'"
+    dir="$(extract_tarball "$dl_url")" || return 1
+    [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }  # rm previous installation
+    execute "mv -- '$dir' '$target'" || return 1
     create_link "$target/MemoryAnalyzer" "$HOME/bin/MemoryAnalyzer"
+
+    add_to_dl_log  mem_analyzer "$ver"
 }
 
 install_visualvm() {  # https://github.com/oracle/visualvm
