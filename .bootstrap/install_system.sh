@@ -1952,6 +1952,7 @@ install_own_builds() {
     #install_vim  # note: can't exclude it as-is, as it also configures vim (if you ever want to go nvim-only)
     #install_neovim
     #install_keepassxc
+    install_keybase
     #install_goforit
     #install_copyq
     is_native && install_uhk_agent
@@ -2452,7 +2453,7 @@ install_xournalpp() {  # https://github.com/xournalpp/xournalpp
 # $1 - name of the binary/resource
 # $2 - resource url
 install_from_url() {
-    local opt OPTIND target name loc file ver tmpdir
+    local opt OPTIND target name loc file ver hdrs tmpdir
 
     target='/usr/local/bin'  # default
     while getopts "d:" opt; do
@@ -2468,10 +2469,11 @@ install_from_url() {
 
     [[ -d "$target" ]] || { err "[$target] not a dir, can't install [$name]"; return 1; }
 
-    ver="$(curl -Ls --fail --retry 2 --head -o /dev/stdout "$loc" | grep -iPo '^etag:\s*"*\K\S+(?=")' | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
+    hdrs="$(curl -Ls --fail --retry 2 --head -o /dev/stdout "$loc")"
+    ver="$(grep -iPo '^etag:\s*"*\K\S+(?=")' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
     if [[ -z "$ver" ]]; then
-        ver="$(curl -Ls --fail --retry 2 --head -o /dev/stdout "$loc" | grep -iPo '^location:\s*\K\S+' | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
-        [[ -z "$ver" ]] && ver="$loc"  # TODO: is this okay assumption for version tracking?
+        ver="$(grep -iPo '^location:\s*\K\S+' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
+        [[ -z "$ver" ]] && ver="$loc"  # TODO: is this okay assumption for version tracking? maybe just not store ver and always install
     fi
 
     if ! is_valid_url "$loc"; then
@@ -2526,6 +2528,11 @@ install_file() {
 # note also available as snap
 install_discord() {  # https://discord.com/download
     install_from_url  discord 'https://discord.com/api/download?platform=linux&format=deb'
+}
+
+
+install_zoom() {  # https://zoom.us/download
+    install_from_url  zoom 'https://zoom.us/client/latest/zoom_amd64.deb'
 }
 
 
@@ -3054,11 +3061,6 @@ install_skype() {  # https://wiki.debian.org/skype
 }
 
 
-install_zoom() {  # https://zoom.us/download
-    install_from_url  zoom 'https://zoom.us/client/latest/zoom_amd64.deb'
-}
-
-
 install_webdev() {
     is_server && { report "we're server, skipping webdev env installation."; return; }
 
@@ -3323,44 +3325,15 @@ build_and_install_keepassxc_TODO_container_edition() {
 #                    https://github.com/keepassxreboot/keepassxc/wiki/Set-up-Build-Environment-on-Linux
 #                    https://github.com/keepassxreboot/keepassxc/wiki/Building-KeePassXC
 #                    https://keepassxc.org/download
-# note latest builds also avail from  https://github.com/keepassxreboot/keepassxc/releases/latest
 install_keepassxc() {
-    local tmpdir kxc_url kxc_dl page ver inst_loc img
+    install_bin_from_git -n keepassxc keepassxreboot keepassxc 'x86_64.AppImage'
+}
 
-    is_server && { report "we're server, skipping keepassxc installation."; return; }
 
-    tmpdir="$(mktemp -d "keepassxc-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-    readonly kxc_url='https://keepassxc.org/download'
-    readonly inst_loc="$BASE_PROGS_DIR/keepassxc"
-
-    report "setting up keepassxc"
-
-    execute "pushd -- $tmpdir" || return 1
-    page="$(wget "$kxc_url" --user-agent="Mozilla/5.0 (X11; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0" -q -O -)" || { err "wgetting [$kxc_url] failed"; return 1; }
-    kxc_dl="$(grep -Po '.*a href="\Khttps.*github.*keepassxreboot/keepassxc.*KeePassXC-.*x86_64\.AppImage(?=".*$)' <<< "$page")" || { err "parsing keepassxc download link failed"; return 1; }
-    is_valid_url "$kxc_dl" || { err "[$kxc_dl] is not a valid download link"; return 1; }
-
-    ver="$(grep -Po '.*releases/download/\K[0-9]+\.[0-9]+\.[-0-9]+(?=/.*$)' <<< "$kxc_dl")"
-    [[ -z "$ver" ]] && { err "unable to parse keepassxc ver from url. abort."; return 1; }
-    [[ -e "$inst_loc/installations/$ver" ]] && { report "[$ver] already exists, skipping"; return 0; }
-
-    report "fetching [$kxc_dl]"
-    execute "wget '$kxc_dl'" || { err "wgetting [$kxc_dl] failed."; return 1; }
-    img="$(find . -type f -name '*.AppImage')"
-    [[ -f "$img" ]] || { err "couldn't find downloaded appimage"; return 1; }
-    execute "chmod +x '$img'" || return 1
-
-    execute "mkdir -p -- '$inst_loc/installations/$ver'" || { err "keepassxc dir creation failed"; return 1; }
-    execute "mv -- $img '$inst_loc/installations/$ver'"
-    execute "pushd -- $inst_loc" || return 1
-    [[ -h keepassxc ]] && rm -- keepassxc
-    create_link "installations/$ver/$img" keepassxc
-    create_link "$inst_loc/keepassxc" "$HOME/bin/keepassxc"
-
-    execute "popd; popd"
-    execute "sudo rm -rf -- '$tmpdir'"
-
-    return 0
+# https://keybase.io/docs/the_app/install_linux
+install_keybase() {
+    execute 'sudo touch /etc/default/keybase' || return 1
+    install_from_url keybase 'https://prerelease.keybase.io/keybase_amd64.deb'
 }
 
 
@@ -5072,6 +5045,7 @@ __choose_prog_to_build() {
         install_YCM
         install_keepassx
         install_keepassxc
+        install_keybase
         install_goforit
         install_copyq
         install_uhk_agent
@@ -5079,6 +5053,7 @@ __choose_prog_to_build() {
         install_franz
         install_ferdi
         install_discord
+        install_zoom
         install_xournalpp
         install_zoxide
         install_ripgrep
@@ -5102,7 +5077,6 @@ __choose_prog_to_build() {
         install_polybar
         install_oracle_jdk
         install_skype
-        install_zoom
         install_aws_okta
         install_saml2aws
         install_aia
