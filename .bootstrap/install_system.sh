@@ -1174,9 +1174,10 @@ install_deps() {
         libffi-dev
         libgdbm6
         libgdbm-dev
+        libdb-dev
     '
-    execute 'curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-installer | bash'
-    # note rbenv-doctor can be ran to verify installation:  $ curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-doctor | bash
+    execute 'curl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash'
+    # note rbenv-doctor can be ran to verify installation:  $ curl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-doctor | bash
     # }
 
     # some py deps requred by scripts:  # TODO: should we not install these via said scripts' requirements.txt file instead?
@@ -4548,6 +4549,7 @@ install_from_repo() {
 
     # TODO: do we want ntp? on systemd systems we have systemd-timesyncd
     declare -ar block2=(
+        net-tools
         dnsutils
         dnstracer
         mtr
@@ -5337,8 +5339,8 @@ enable_network_manager() {
         check_progs_installed  nmcli || return 1
         for i in "${ssids[@]}"; do
             if nmcli -f NAME connection show | grep -qFw "$i"; then  # verify connection has been set up/exists
-                execute "nmcli con mod $i ipv4.dns '$SERVER_IP  1.1.1.1  8.8.8.8'" | err "dns addition for connection [$i] failed w/ $?"
-                execute "nmcli con mod $i ipv4.ignore-auto-dns yes" | err "setting dns ignore-auto-dns for connection [$i] failed w/ $?"
+                execute "nmcli con mod $i ipv4.dns '$SERVER_IP  1.1.1.1  8.8.8.8'" || err "dns addition for connection [$i] failed w/ $?"
+                execute "nmcli con mod $i ipv4.ignore-auto-dns yes" || err "setting dns ignore-auto-dns for connection [$i] failed w/ $?"
             fi
         done
     }
@@ -5697,7 +5699,7 @@ post_install_progs_setup() {
     is_native && addgroup_if_missing vboxusers   # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
     is_virtualbox && addgroup_if_missing vboxsf  # add user to vboxsf group (to be able to access mounted shared folders);
     #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
-    configure_ntp_for_work  # TODO: confirm if ntp needed in WSL
+    #configure_ntp_for_work  # TODO: confirm if ntp needed in WSL
     configure_pulseaudio  # TODO see if works in WSL
     is_native && enable_fw
     is_native && setup_cups
