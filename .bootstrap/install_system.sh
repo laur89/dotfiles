@@ -1661,7 +1661,7 @@ get_apt_key() {
     shift "$((OPTIND-1))"
 
     name="$1"
-    url="$2"  # either keyfile or keyserver
+    url="$2"  # either keyfile or keyserver, depending on whether -k is used
     src_entry="$3"
     keyfile="$APT_KEY_DIR/${name}.gpg"
 
@@ -1724,6 +1724,9 @@ setup_additional_apt_keys_and_sources() {
 
     # kubectl:  (from https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-on-linux):
     get_apt_key  kubernetes  https://packages.cloud.google.com/apt/doc/apt-key.gpg "deb [{s}] https://apt.kubernetes.io/ kubernetes-xenial main"
+
+    # openvpn:  (from https://openvpn.net/cloud-docs/openvpn-3-client-for-linux/):
+    get_apt_key  openvpn  https://swupdate.openvpn.net/repos/openvpn-repo-pkg-key.pub "deb [{s}] https://swupdate.openvpn.net/community/openvpn3/repos $DEB_STABLE main"
 
     execute 'sudo apt-get --yes update'
 }
@@ -1970,6 +1973,7 @@ install_own_builds() {
 	install_peco
     install_fd
     install_bat
+    install_alacritty
     #install_exa
     #install_synergy  # currently installing from repo
     install_i3
@@ -1992,7 +1996,8 @@ install_own_builds() {
 
 
 install_work_builds() {
-    is_native && install_bluejeans
+    true
+    #is_native && install_bluejeans
 }
 
 
@@ -2829,6 +2834,12 @@ install_arc() {
 # https://github.com/Kong/insomnia/releases/latest
 install_insomnia() {
     install_deb_from_git Kong insomnia '\.\d+\.\d+.deb'
+}
+
+
+# https://snapcraft.io/install/alacritty/debian#install
+install_alacritty() {
+    snap_install alacritty --classic
 }
 
 
@@ -4538,7 +4549,7 @@ install_from_repo() {
         iptraf
         rsync
         gparted
-        openvpn
+        openvpn3
         network-manager-openvpn-gnome
         gnome-disk-utility
         cups
@@ -5103,6 +5114,7 @@ __choose_prog_to_build() {
         install_postman
         install_arc
         install_insomnia
+        install_alacritty
         install_weeslack
         install_slack_term
         install_terraform
@@ -5460,20 +5472,21 @@ install_veracrypt() {
 }
 
 
-# add additional ntp servers
+# configure internal ntp servers, if access to public ones is blocked;
 configure_ntp_for_work() {
     local conf servers i
+
+    [[ "$PROFILE" != work ]] && return
 
     readonly conf='/etc/ntp.conf'
     declare -ar servers=('server gibntp01.prod.williamhill.plc'
                          'server gibntp02.prod.williamhill.plc'
                         )
 
-    [[ "$PROFILE" == work ]] || return
     [[ -f "$conf" ]] || { err "[$conf] is not a valid file. is ntp installed?"; return 1; }
 
     for i in "${servers[@]}"; do
-        if ! grep -q "^$i\$" "$conf"; then
+        if ! grep -qFx "$i" "$conf"; then
             report "adding [$i] to $conf"
             execute "echo $i | sudo tee --append $conf > /dev/null"
         fi
