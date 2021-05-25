@@ -1191,6 +1191,9 @@ install_deps() {
                 #error: command 'x86_64-linux-gnu-gcc' failed with exit status 1
     # you'd might wanna install  libkrb5-dev (or whatever ver avail at the time)   https://github.com/ecederstrand/exchangelib/issues/404
 
+    # Google Calendar CLI       # https://github.com/insanum/gcalcli
+    py_install gcalcli
+
     # flashfocus - flash window when focus changes  https://github.com/fennerm/flashfocus
     install_block 'libxcb-render0-dev libffi-dev python-cffi'
     py_install flashfocus
@@ -4701,6 +4704,7 @@ install_from_repo() {
         ffmpegthumbnailer
         vokoscreen-ng
         peek
+        cheese
         screenkey
         magnus
         mediainfo
