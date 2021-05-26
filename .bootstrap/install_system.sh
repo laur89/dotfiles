@@ -1245,6 +1245,9 @@ setup_dirs() {
             $BASE_DEPS_LOC \
             $BASE_BUILDS_DIR \
             $BASE_DATA_DIR/dev \
+            $BASE_DATA_DIR/apps \
+            $BASE_DATA_DIR/apps/maven \
+            $BASE_DATA_DIR/apps/gradle \
             $BASE_DATA_DIR/mail \
             $BASE_DATA_DIR/mail/work \
             $BASE_DATA_DIR/mail/personal \
@@ -1985,6 +1988,7 @@ install_own_builds() {
     #install_weeslack
     is_native && install_slack_term
     install_veracrypt
+    install_binance
 
     #install_dwm
     is_native && install_i3lock
@@ -2202,6 +2206,8 @@ resolve_dl_urls() {
 # $2 - build/file regex to be used (for grep -Po) to parse correct item from git /releases page src;
 #      note it matches 'til the very end of url (ie you should only provide the latter bit);
 # $3 - optional output file name; if given, downloaded file will be renamed to this; note name only, not including path!
+#
+# TODO: should we use etag here as well, whenever available?
 fetch_release_from_any() {
     local opt noextract skipadd file_filter name_filter id relative loc tmpdir file loc dl_url OPTIND
 
@@ -5086,6 +5092,7 @@ __choose_prog_to_build() {
         install_minikube
         install_gruvbox_gtk_theme
         install_veracrypt
+        install_binance
         install_vbox_guest
         install_brillo
     )
@@ -5432,6 +5439,12 @@ install_veracrypt() {
 
     i="$(printf '%d\n' "${!ver_to_url[@]}" | sort -n | tail -1)"  # select largest (ie latest) version
     install_from_url veracrypt "${ver_to_url[$i]}"
+}
+
+
+# https://www.binance.com/en/download
+install_binance() {
+    install_from_url  binance 'https://ftp.binance.com/electron-desktop/linux/production/binance-amd64-linux.deb'
 }
 
 
