@@ -77,6 +77,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     #export M2_HOME=$BASE_DATA_DIR/progs/maven/mvn_link
     #export M2=$M2_HOME/bin
     #export GRADLE_HOME=/usr/share/gradle
+    #export GRADLE_USER_HOME=$BASE_DATA_DIR/apps/gradle   # defaults to ~/.gradle; afaik we currently link it from ~/.gradle to $BASE_DATA_DIR via homeshick
 
     export KAFKA_HOME=$BASE_DATA_DIR/progs/kafka/kafka
 
@@ -166,7 +167,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export _DSF='delta'  # alternatively: diff-so-fancy
 
     export _MAX_STARTING_VOL_FOR_EARPHONES=70
-    export _PROJECTS_DIR="$HOME/dev/projects"
+    export _PROJECTS_DIR="$HOME/dev/projects"  # NOTE: .gitconf_work more likely than not depends on this value
 fi
 
 command -v nvim > /dev/null 2>&1 && export EDITOR=nvim || export EDITOR=vim
@@ -251,7 +252,7 @@ else
     export _PERSISTED_TMP='/tmp'
 fi
 
-# markpath/jumps dir:
+# markpath/jumps dir; note it's just the dirname, _not_ full path to dir:
 export _MARKPATH_DIR=.shell_jump_marks
 
 # FZF settings:  # https://github.com/sharkdp/fd

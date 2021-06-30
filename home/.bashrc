@@ -418,7 +418,7 @@ if command -v fasd > /dev/null; then
 
         fasd_completion_replacement='
         # manage how --complete figures out which types of files to complete for;
-        # note default solution exapnds the completable command - a shell alias - and
+        # note default solution expands the completable command - a shell alias - and
         # passes it to fasd --complete, which then takes the $2 as option, which means
         # it should likely be something like -d or -f; we expand this logic in order
         # to be able to also define functions, not only aliases; for that we utilize

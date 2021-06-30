@@ -7,6 +7,7 @@
 #
 # =====================================================================
 # import common:
+# !! do _not_ replace this block with the common _init() call !!
 if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
     if [[ -r "$_SCRIPTS_COMMONS" ]]; then
         source "$_SCRIPTS_COMMONS"
@@ -863,7 +864,7 @@ EOF
     [[ "$res" -eq 0 ]] && fmt="${COLORS[GREEN]}${COLORS[BOLD]}$res${COLORS[OFF]}" || fmt="${COLORS[RED]}${COLORS[BOLD]}$res${COLORS[OFF]}"
         #apt-get -y purge $(dpkg -l | awk '/^rc/ { print $2 }')  <- doesn't work for some reason (instead of the last line prior EOF)
 
-    report "ended at $(date) with code [$fmt], completed in $(($(date +%s) - start)) sec"
+    report "ended at [${COLORS[BLUE]}$(date)${COLORS[OFF]}] with code [$fmt], completed in $(($(date +%s) - start)) sec"
     return $res
 }
 
@@ -879,7 +880,7 @@ update() {
     res="$?"
     [[ "$res" -eq 0 ]] && fmt="${COLORS[GREEN]}${COLORS[BOLD]}$res${COLORS[OFF]}" || fmt="${COLORS[RED]}${COLORS[BOLD]}$res${COLORS[OFF]}"
 
-    report "ended at $(date) with code [$fmt], completed in $(($(date +%s) - start)) sec"
+    report "ended at [${COLORS[BLUE]}$(date)${COLORS[OFF]}] with code [$fmt], completed in $(($(date +%s) - start)) sec"
 }
 
 
@@ -3057,13 +3058,12 @@ is_same() {
             else
                 err "only dirs and files supported"; return 1
             fi
-        else
-            if [[ "$t" == f && ! -f "$n" ]] || [[ "$t" == d && ! -d "$n" ]]; then
-                err "all passed nodes need to be of same type"; return 1
-            fi
-        fi
 
-        first=0
+            first=0
+        elif [[ "$t" == f && ! -f "$n" ]] || [[ "$t" == d && ! -d "$n" ]]; then
+            err "all passed nodes need to be of same type"
+            return 1
+        fi
     done
 
     first=1
@@ -4075,6 +4075,8 @@ fsha() {
 #
 # note fstash accepts path(s) similar to fshow(); only that stash list command is
 # not affected by it, as git stash doesn't accept paths;
+#
+# NOTE possibly also implemented by forgit ('gss' command)
 fstash() {
     local dsf sha_extract_cmd preview_cmd difftool_cmd opts stash_cmd out q k stsh stash_name_regex stash_name
 
