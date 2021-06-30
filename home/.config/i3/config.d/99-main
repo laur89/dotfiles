@@ -475,6 +475,15 @@ exec_always --no-startup-id flashfocus
 #for_window [class="(?i)urxvt"] border pixel 1
 #for_window [class="^.*"] border pixel 2
 
+# enable window icons for all windows
+for_window [class=".*"] title_window_icon on
+
+# enable window icons for all windows with extra horizontal padding
+#for_window [class=".*"] title_window_icon padding 3px
+
+# show the window icon for the focused window to make it stand out
+#bindsym $mod+p title_window_icon on
+
 # Enable or disable floating
 for_window [class="^copyq$"] floating enable
 for_window [class="^zoom$"] floating enable
@@ -501,6 +510,8 @@ for_window [class="^Nm-connection-editor$"] floating enable
 for_window [class="^Blueman-.*"] floating enable
 for_window [class="^System-config-printer.py$"] floating enable
 for_window [class="^Magnus$"] floating enable
+# 'Toplevel' class is the class of various popup windows of tkremind:
+for_window [class="^Toplevel$"] floating enable
 for_window [class="^Xfce4-power-manager-settings$"] floating enable
 # Jetbrains splash (IDEA, Rider...):
 for_window [class="^jetbrains-" instance="^jetbrains-" title="^win0$"] floating enable, border pixel $border
