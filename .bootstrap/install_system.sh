@@ -2188,12 +2188,13 @@ resolve_dl_urls() {
     echo "$urls"
 }
 
+
 # Fetch a file from a given page, and return full path to the file.
-# Note we will automaticaly extract the asset if it's archived/compressed; pass -U
-# to skip that step.
+# Note we will automaticaly extract the asset (and expect to locate a single file
+# in the extracted result) if it's archived/compressed; pass -U to skip that step.
 #
 # -U     - skip extracting if archive and pass compressed/tarred ball as-is.
-# -s     - skip adding fetched asset in $GIT_RLS_LOG
+# -s     - skip adding fetched asset in $GIT_RLS_LOG; TODO: can't find any users, maybe deprecate?
 # -n     - filename pattern to be used by find; works together w/ -F;
 # -F     - $file output pattern to grep for in order to filter for specific
 #          single file from unpacked tarball (meaning it's pointless when -U is given);
@@ -2207,9 +2208,13 @@ resolve_dl_urls() {
 #      note it matches 'til the very end of url (ie you should only provide the latter bit);
 # $3 - optional output file name; if given, downloaded file will be renamed to this; note name only, not including path!
 #
-# TODO: should we use etag here as well, whenever available?
+# TODO: also add function install_from_any(), that combines/calls fetch_release_from_any() & install_file();
+#       or maybe replace this fun with new one install_from_any(), that just resolves url via resolve_dl_urls()
+#       and then installs directly via install_from_url()? one thing that's fishy from get-go is that this one here
+#       differentiates $name and $id; maybe install_from_url() could have optional -I, which then uses
+#       that value for ver tracking as opposed name? or make name always mandatory and just use that (ie drop ID)?
 fetch_release_from_any() {
-    local opt noextract skipadd file_filter name_filter id relative loc tmpdir file loc dl_url OPTIND
+    local opt noextract skipadd file_filter name_filter id relative loc tmpdir file loc dl_url ver OPTIND
 
     while getopts "UsF:n:I:r" opt; do
         case "$opt" in
@@ -2230,31 +2235,19 @@ fetch_release_from_any() {
 
     dl_url="$(resolve_dl_urls "$loc" "${relative:+/}.*$2")" || return 1  # note we might be looking for a relative url
 
-    [[ "$skipadd" -ne 1 ]] && is_installed "$dl_url" && return 2
+    ver="$(resolve_ver "$dl_url")" || return 1
+    [[ "$skipadd" -ne 1 ]] && is_installed "$ver" && return 2
 
     report "fetching [$dl_url]..."
     execute "wget --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
     file="$(find "$tmpdir" -type f)"
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
-    # TODO: support recursive extraction?
     if [[ "$noextract" -ne 1 ]] && grep -qiE "archive|compressed" <<< "$(file --brief "$file")"; then
-        execute "pushd -- $tmpdir" || return 1
-        execute "aunpack --quiet '$file'" || { err "couldn't extract [$file]"; popd; return 1; }
-        execute "rm -f -- '$file'" || { err; popd; return 1; }
-
-        if [[ -n "$file_filter" ]]; then
-            while IFS= read -r -d $'\0' file; do
-                grep -Eq "$file_filter" <<< "$(file -iLb "$file")" && break || unset file
-            done < <(find "$tmpdir" -name "*${name_filter}*" -type f -print0)
-        else
-            file="$(find "$tmpdir" -name "*${name_filter}*" -type f)"
-        fi
-
-        [[ -f "$file" ]] || { err "couldn't locate single extracted/uncompressed file in [$tmpdir]"; popd; return 1; }
-        execute "popd"
+        file="$(extract_tarball -s -f "$file_filter" -n "$name_filter" "$file")" || return 1
     fi
 
+    # TODO: should we invoke install_file() from this function instead of this reused logic? unsure..better read TODO at the top of this fun
     if [[ -n "$3" && "$(basename -- "$file")" != "$3" ]]; then
         execute "mv -- '$file' '$tmpdir/$3'" || { err "renaming [$file] to [$tmpdir/$3] failed"; return 1; }
         file="$tmpdir/$3"
@@ -2263,7 +2256,7 @@ fetch_release_from_any() {
     if [[ "$skipadd" -ne 1 ]]; then
         # we're assuming here that installation succeeded from here on.
         # it is optimistic, but removes repetitive calls.
-        add_to_dl_log "$id" "$dl_url"
+        add_to_dl_log "$id" "$ver"
     fi
 
     #sanitize_apt "$tmpdir"  # think this is not really needed...
@@ -2291,8 +2284,7 @@ install_deb_from_git() {
 # Note it'll be fetched and extracted into current $pwd, or into new tempdir if -S opt is provided.
 # Also note the operation is successful only if a single directory gets extracted out.
 #
-# pass   -S   flag to create tmp directory where extraction should happen; takes the
-#             tmpdir creation requirement off the caller;
+#   -S   see doc on extract_tarball()
 #
 # $1 - git user
 # $2 - git repo
@@ -2318,24 +2310,33 @@ fetch_extract_tarball_from_git() {
 
 
 # Extract given tarball file. Optionally also first downloads the tarball.
-# Note it'll be extracted into current $pwd, or into new tempdir if -S opt is provided.
-# Also note the operation is successful only if a single directory gets extracted out.
+# Note it'll be extracted into newly-created tempdir; if -S opt is provided, it
+# gets extracted into current $pwd instead.
+# Also note the operation is successful only if a single directory gets extracted out,
+# unless -s option (single_file) is provided.
 #
-# pass   -S   flag to create tmp directory where extraction should happen; takes the
-#             tmpdir creation requirement off the caller; implied when an URL
-#             instead of a file is passed.
+# -S     - flag to extract into current $PWD, ie won't create a new tempdir.
+# -s     - if we're after a single file in extracted result. see -f & -n for futher filtering.
+# -n     - filename pattern to be used by find; works together w/ -F;
+# -f     - $file output pattern to grep for in order to filter for specific
+#          single file from unpacked tarball;
+#          as it stands, the _first_ file matching given filetype is returned, even
+#          if there were more. works together w/ -n
 #
 # $1 - tarball file to be extracted, or a URL where to fetch file from first
 #
 # @returns {string} path to root dir of extraction result, IF we found a
 #                   _single_ dir in the result.
-# @returns {bool} true, if we found a _single_ dir in result
+# @returns {bool} true, if we found a _single_ dir in result; TODO: amend return desc
 extract_tarball() {
-    local opt file OPTIND standalone tmpdir
+    local opt standalone single_f file_filter name_filter file dir OPTIND tmpdir
 
-    while getopts 'S' opt; do
+    while getopts 'Ssf:n:' opt; do
         case "$opt" in
-            S) standalone=1 ;;
+            S) readonly standalone=1 ;;
+            s) readonly single_f=1 ;;
+            f) readonly file_filter="$OPTARG" ;;
+            n) readonly name_filter="$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2347,24 +2348,41 @@ extract_tarball() {
         tmpdir="$(mktemp -d "tarball-download-extract-XXXXX" -p "$TMP_DIR")" || { err "unable to create tempdir with \$ mktemp"; return 1; }
         execute "wget --content-disposition -q --directory-prefix=$tmpdir '$file'" || { err "wgetting [$file] failed with $?"; return 1; }
         file="$(find "$tmpdir" -mindepth 1 -maxdepth 1 -type f)"
-        standalone=1
     fi
 
     [[ -f "$file" ]] || { err "file [$file] not a regular file"; return 1; }
 
-    if [[ "$standalone" == 1 ]]; then
-        if [[ -z "$tmpdir" ]]; then
-            tmpdir="$(mktemp -d "tarball-extract-XXXXX" -p "$TMP_DIR")" || { err "unable to create tempdir with \$ mktemp"; return 1; }
-        fi
+    if [[ "$standalone" != 1 ]]; then
+        tmpdir="$(mktemp -d "tarball-extract-XXXXX" -p "$TMP_DIR")" || { err "unable to create tempdir with \$ mktemp"; return 1; }
         execute "pushd -- $tmpdir" || return 1
     fi
 
-    execute "aunpack --extract --quiet '$file'" > /dev/null || { err "extracting [$file] failed w/ $?"; [[ "$standalone" == 1 ]] && popd; return 1; }
+    execute "aunpack --extract --quiet '$file'" > /dev/null || { err "extracting [$file] failed w/ $?"; [[ "$standalone" != 1 ]] && popd; return 1; }
+    execute "rm -f -- '$file'" || { err; [[ "$standalone" != 1 ]] && popd; return 1; }
 
-    file="$(find "$(pwd -P)" -mindepth 1 -maxdepth 1 -type d)"
-    [[ "$standalone" == 1 ]] && execute popd
-    [[ -d "$file" ]] || { err "couldn't find single extracted dir in extracted tarball"; return 1; }
-    echo "$file"
+    dir="$(find "$(pwd -P)" -mindepth 1 -maxdepth 1 -type d)"  # do not verify -d $dir _yet_ - ok to fail if $single_f == 1
+    [[ "$standalone" != 1 ]] && execute popd
+
+    if [[ "$single_f" != 1 ]]; then
+        [[ -d "$dir" ]] || { err "couldn't find single extracted dir in extracted tarball"; return 1; }
+        echo "$dir"
+    else
+        unset file
+        [[ "$standalone" != 1 ]] && dir="$tmpdir" || dir='.'
+
+        # TODO: support recursive extraction?
+    	if [[ -n "$file_filter" ]]; then
+    		while IFS= read -r -d $'\0' file; do
+    			grep -Eq "$file_filter" <<< "$(file -iLb "$file")" && break || unset file
+    		done < <(find "$dir" -name "*${name_filter}*" -type f -print0)
+    	else
+    		file="$(find "$dir" -name "*${name_filter}*" -type f)"
+    	fi
+
+    	[[ -f "$file" ]] || { err "couldn't locate single extracted/uncompressed file in [$(realpath "$dir")]"; return 1; }
+        echo "$file"
+    fi
+
     return 0
     # do NOT remove $tmpdir! caller can clean up if they want
 }
@@ -2421,19 +2439,64 @@ install_xournalpp() {  # https://github.com/xournalpp/xournalpp
 }
 
 
+resolve_ver() {
+    local url ver hdrs
+
+    url="$1"
+
+    # verify the passed string includes (likely) a version
+    _verif_ver() {
+        local v n i j
+        v="$1"
+        [[ "$v" == http* ]] && v="$(grep -Po '^https?://([^/]+)\K.*' <<< "$v")"  # remove the domain, we only care for the path part
+        n=3  # we want to see at least 3 digits in url to make it more likely we have version in it
+
+        # increase $n by the number of digits in $v that are not part of ver:
+        for i in x86_64 linux_64 amd64; do
+            j="$(grep -Fo "$i" <<< "$v" | wc -l)"  # occurrences of $i in $v
+            i="${i//[!0-9]/}"  # leave only digits
+            i=$(( ${#i} * j ))  # number of digits in pattern times how many times pattern was found in input
+            let n+=$i
+        done
+        v="${v//[!0-9]/}"  # leave only digits
+        [[ "${#v}" -ge "$n" ]]
+    }
+
+    hdrs="$(curl -Ls --fail --retry 3 --head -o /dev/stdout "$url")"
+    ver="$(grep -iPo '^etag:\s*"*\K\S+(?=")' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
+    if [[ -z "$ver" ]]; then
+        ver="$(grep -iPo '^location:\s*\K\S+' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
+        if [[ -z "$ver" ]]; then
+            # TODO: is grepping for content-disposition hdr a good idea?
+            #       example case of this being used is Postman
+            ver="$(grep -iPo '^content-disposition:.*filename="*\K.+' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
+            _verif_ver "$ver" || ver="$url"  # TODO: is this okay assumption for version tracking? maybe just not store ver and always install?
+        fi
+
+        _verif_ver "$ver" || err_display "ver resolve from url [$url] resource dubious, as resolved ver [$ver] doesn't have enough digits"
+    fi
+
+    echo "$ver"
+}
+
+
 # Fetch a file from given url, and install the binary. If url redirects to final
 # file asset, we follow the redirects.
 #
-# -d /target/dir    - dir to install pulled binary in, optional
+# -d /target/dir    - dir to install pulled binary in, optional.
+#                     note if installing whole dirs (-D), it should be the root dir;
+#                     /$name will be created/appended by install_file()
+# -D                - see install_file()
 # $1 - name of the binary/resource
 # $2 - resource url
 install_from_url() {
-    local opt OPTIND target name loc file ver hdrs tmpdir
+    local opt OPTIND target install_file_params name loc file ver tmpdir
 
     target='/usr/local/bin'  # default
-    while getopts "d:" opt; do
+    while getopts "d:D" opt; do
         case "$opt" in
             d) target="$OPTARG" ;;
+            D) install_file_params+='-D ' ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2443,13 +2506,9 @@ install_from_url() {
     readonly loc="$2"
 
     [[ -d "$target" ]] || { err "[$target] not a dir, can't install [$name]"; return 1; }
+    [[ -z "$name" ]] && { err "[name] param required"; return 1; }
 
-    hdrs="$(curl -Ls --fail --retry 2 --head -o /dev/stdout "$loc")"
-    ver="$(grep -iPo '^etag:\s*"*\K\S+(?=")' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
-    if [[ -z "$ver" ]]; then
-        ver="$(grep -iPo '^location:\s*\K\S+' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
-        [[ -z "$ver" ]] && ver="$loc"  # TODO: is this okay assumption for version tracking? maybe just not store ver and always install
-    fi
+    ver="$(resolve_ver "$loc")" || return 1
 
     if ! is_valid_url "$loc"; then
         err "passed url for $name is improper: [$loc]; aborting"
@@ -2463,35 +2522,63 @@ install_from_url() {
     file="$(find "$tmpdir" -type f)"
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
-    install_file -d "$target" "$file" || return 1
+    install_file $install_file_params -d "$target" "$file" "$name" || return 1
 
     add_to_dl_log "$name" "$ver"
 }
 
 
 install_file() {
-    local opt OPTIND ftype target file
+    local opt OPTIND ftype single_f target file_filter noextract name_filter file name
 
     target='/usr/local/bin'  # default
-    while getopts "d:" opt; do
+    single_f='-s'  # ie default to installing/extracting a single file in case tarball is provided
+    while getopts "d:DUF:n:" opt; do
         case "$opt" in
             d) target="$OPTARG" ;;
+            D) unset single_f ;;  # mnemonic: directory; ie we want the "whole directory" in case $file is tarball
+            F) readonly file_filter="$OPTARG" ;;  # no use if -D or -U is used
+            U) readonly noextract=1 ;;  # if, for whatever the reason, an archive/tarball should not be unpacked
+            n) readonly name_filter="$OPTARG" ;;  # no use if -D or -U is used
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
     file="$1"
+    name="$2"  # OPTIONAL, unless installing whole uncompressed dir (-D opt)
 
     [[ -f "$file" ]] || { err "file [$file] not a regular file"; return 1; }
-    ftype="$(file -iLb -- "$file")"
+    [[ -d "$target" ]] || { err "[$target] not a dir, can't install [${name}${name:+/}$file]"; return 1; }
 
+    if [[ "$noextract" -ne 1 ]] && grep -qiE "archive|compressed" <<< "$(file --brief "$file")"; then
+        file="$(extract_tarball $single_f  -f "$file_filter" -n "$name_filter" "$file")" || return 1
+    fi
+
+    _rename() {
+        local tmpdir
+        if [[ -n "$name" && "$(basename -- "$file")" != "$name" ]]; then
+            tmpdir="$(mktemp -d 'install-file-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+            execute "mv -- '$file' '$tmpdir/$name'" || { err "renaming [$file] to [$tmpdir/$name] failed"; return 1; }
+            file="$tmpdir/$name"
+        fi
+        return 0
+    }
+
+    ftype="$(file -iLb -- "$file")"
     if [[ "$ftype" == *"debian.binary-package; charset=binary" ]]; then
 		execute "sudo apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
 		execute "rm -f -- '$file'"
     elif [[ "$ftype" == *"executable; charset=binary" ]]; then
+        _rename || return 1
 		execute "chmod +x '$file'" || return 1
 		execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
+    elif [[ "$ftype" == *"inode/directory; charset=binary" ]]; then
+        [[ -z "$name" ]] && { err "[name] arg needs to be provided when installing a directory"; return 1; }
+        _rename || return 1
+        target+="/$name"
+        [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }  # rm previous installation
+        execute "mv -- '$file' '$target'" || return 1
     else
         err "dunno how to install file [$file] - unknown type [$ftype]"
 	    execute "rm -f -- '$file'"
@@ -2717,23 +2804,19 @@ install_gitkraken() {  # https://release.gitkraken.com/linux/gitkraken-amd64.deb
 
 
 # perforce git mergetool, alternative to meld;
-# TODO: ver/url resolution unresolved, currenlty hard-coding version/url!
 #
 # TODO: generalize this path - dl tarball, unpack under $BASE_PROGS_DIR; eg Postman uses same pattern
 install_p4merge() {  # https://www.perforce.com/downloads/visual-merge-tool
-    local loc target dir
+    local ver loc
 
-    readonly loc='https://www.perforce.com/downloads/perforce/r21.1/bin.linux26x86_64/p4v.tgz'
-    readonly target="$BASE_PROGS_DIR/p4merge"
+    ver="$(curl -Ls --fail --retry 2 -X POST -d 'family=722&form_id=pfs_inline_download_10_1_1&_triggering_element_name=family' \
+        'https://www.perforce.com/downloads/visual-merge-tool?ajax_form=1&_wrapper_format=drupal_ajax' \
+        | jq 'last.data' | grep -Po 'selected=\\"selected\\">\d{2}\K\d{2}\.\d(?=/)')"
 
-    is_installed "$loc" && return 2
-
-    dir="$(extract_tarball "$loc")" || return 1
-
-    [[ -d "$target" ]] && { execute "sudo rm -rf -- '$target'" || return 1; }  # rm previous installation
-    execute "mv -- '$dir' '$target'" || return 1
-
-    add_to_dl_log "p4merge" "$loc"
+    [[ -z "$ver" ]] && { err "couldn't resolve p4merge version"; return 1; }
+    loc="https://www.perforce.com/downloads/perforce/r${ver}/bin.linux26x86_64/p4v.tgz"
+    install_from_url -D -d "$BASE_PROGS_DIR" p4merge "$loc" || return 1
+    create_link "${BASE_PROGS_DIR}/p4merge/bin/p4merge" "$HOME/bin/"
 }
 
 
@@ -2760,23 +2843,11 @@ install_vnote() {  # https://github.com/vnotex/vnote/releases
 # TODO: consider ARC (advanced rest clinet) instead: https://install.advancedrestclient.com/install
 # TODO: also consider Insomnia: https://github.com/Kong/insomnia
 install_postman() {  # https://learning.postman.com/docs/getting-started/installation-and-updates/#installing-postman-on-linux
-    local target url label dir dsk
+    local loc target dsk
 
+    loc="https://dl.pstmn.io/download/channel/canary/linux_64"
+    install_from_url -D -d "$BASE_PROGS_DIR" Postman "$loc" || return 1
     target="$BASE_PROGS_DIR/Postman"
-    url='https://dl.pstmn.io/download/channel/canary/linux_64'
-    label="$(curl -Ls --head -o /dev/stdout "$url" | grep -iPo '^content-disposition:.*filename=\K.*tar.gz')"
-
-    if ! is_single "$label"; then
-        err "found postman ver was unexpected: [$label]; will continue w/ installation"
-    elif is_installed "$label"; then
-        return 2
-    fi
-
-    dir="$(extract_tarball "$url")" || return 1
-    [[ -d "$target" ]] && { execute "sudo rm -rf -- '$target'" || return 1; }  # rm previous installation
-    execute "mv -- '$dir' '$target'" || return 1
-
-    is_single "$label" && add_to_dl_log "postman-canary" "$label"
 
     # install .desktop:
     dsk="$HOME/.local/share/applications"
@@ -2883,7 +2954,7 @@ install_visualvm() {  # https://github.com/oracle/visualvm
 
     target="$BASE_PROGS_DIR/visualvm"
 
-    dir="$(fetch_extract_tarball_from_git -S oracle visualvm 'visualvm_[-0-9.]+\.zip')" || return 1
+    dir="$(fetch_extract_tarball_from_git oracle visualvm 'visualvm_[-0-9.]+\.zip')" || return 1
 
     [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }
     execute "mv -- '$dir' '$target'" || return 1
@@ -3721,7 +3792,7 @@ install_polybar() {
     local dir
 
     #execute "git clone --recursive ${GIT_OPTS[*]} $POLYBAR_REPO_LOC '$dir'" || return 1
-    dir="$(fetch_extract_tarball_from_git -S polybar polybar 'polybar-\d+\.\d+.*\.tar\.gz')" || return 1
+    dir="$(fetch_extract_tarball_from_git polybar polybar 'polybar-\d+\.\d+.*\.tar\.gz')" || return 1
 
     report "installing polybar build dependencies..."
     # note: clang is installed because of  https://github.com/polybar/polybar/issues/572
@@ -5592,7 +5663,7 @@ setup_cups() {
     [[ -f "$conf2" ]] || { err "cannot configure our user for cups: [$conf2] does not exist; abort;"; return 1; }
     group="$(grep ^SystemGroup "$conf2" | awk '{print $NF}')" || { err "grepping group from [$conf2] failed w/ $?"; return 1; }
     is_single "$group" || { err "found SystemGroup in [$conf2] was unexpected: [$group]"; return 1; }
-    [[ "$group" == root || "$group" == sys ]] && { err "found SystemGroup is [$group] - verify we want to be added to that group"; return 1; }
+    list_contains "$group" root sys && { err "found SystemGroup is [$group] - verify we want to be added to that group"; return 1; }
     addgroup_if_missing "$group"
     # }}}
 
@@ -5747,13 +5818,13 @@ add_to_dl_log() {
 
 
 is_installed() {
-    local dl_url
+    local ver
 
-    dl_url="$1"
+    ver="$1"
 
-    [[ -z "$dl_url" ]] && { err "empty ver passed to ${FUNCNAME}() by ${FUNCNAME[1]}()"; return 2; }  # sanity
-    if grep -Fq "$dl_url" "$GIT_RLS_LOG" 2>/dev/null; then
-        report "[$dl_url] already encountered, skipping installation..."
+    [[ -z "$ver" ]] && { err "empty ver passed to ${FUNCNAME}() by ${FUNCNAME[1]}()"; return 2; }  # sanity
+    if grep -Fq "$ver" "$GIT_RLS_LOG" 2>/dev/null; then
+        report "[$ver] already encountered, skipping installation..."
         return 0
     fi
 

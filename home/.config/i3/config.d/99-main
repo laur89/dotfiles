@@ -38,22 +38,35 @@ bindsym $mod+h nop
 bindsym $mod+j nop
 bindsym $mod+k nop
 bindsym $mod+l nop
+bindsym --whole-window --border $mod+button7   nop
+bindsym --whole-window --border $mod+button6   nop
+bindsym --whole-window --border $mod+button5   nop
+bindsym --whole-window --border $mod+button4   nop
+
 bindsym $mod+period focus output right
 bindsym $mod+comma  focus output left
+bindsym $mod+question focus output down
+bindsym $mod+m focus output up
 
-bindsym $mod+button4 exec --no-startup-id i3-cycle-windows
-bindsym $mod1+button4 exec --no-startup-id i3-cycle-windows
+#bindsym --whole-window --border $mod+button4 exec --no-startup-id i3-cycle-windows
+#bindsym --whole-window --border $mod1+button4 exec --no-startup-id i3-cycle-windows
 
 # Alternatively, you can use the cursor keys (note these are defaults):
-bindsym $mod+Left  focus left
 bindsym $mod+Down  focus down
 bindsym $mod+Up    focus up
-bindsym $mod+Right focus right
+#bindsym $mod+Left  focus left
+#bindsym $mod+Right focus right
+bindsym $mod+Left   exec --no-startup-id i3viswiz left
+bindsym $mod+Right   exec --no-startup-id i3viswiz right
 
 bindsym $mod1+l   nop
 bindsym $mod1+h   nop
 bindsym $mod1+j   nop
 bindsym $mod1+k   nop
+bindsym --whole-window --border $mod1+button7   nop
+bindsym --whole-window --border $mod1+button6   nop
+bindsym --whole-window --border $mod1+button5   nop
+bindsym --whole-window --border $mod1+button4   nop
 
 # Move focused window:  # TODO: delegate to script in order to force focus on the window that was just moved; or open a bug?
 bindsym $mod+Shift+h move left
@@ -133,10 +146,14 @@ bindsym $mod+Ctrl+Shift+h move container to workspace prev_on_output,workspace p
 # Move container to next/prev screen:  # TODO: make mouse/active follow? prolly have to delegate to external prog for this; or open a ticket?
 bindsym $mod+Shift+period move container to output right
 bindsym $mod+Shift+comma move container to output left
+bindsym $mod+Shift+question move container to output down
+bindsym $mod+Shift+m move container to output up
 
 # Move whole workspace to next/prev screen:
 bindsym $mod+Ctrl+Shift+period move workspace to output right
 bindsym $mod+Ctrl+Shift+comma move workspace to output left
+bindsym $mod+Ctrl+Shift+question move workspace to output down
+bindsym $mod+Ctrl+Shift+m move workspace to output up
 
 # Move focused container to workspace; add '; workspace $wn' to navigate there
 bindsym $mod+Shift+1 move container to workspace $w1
@@ -157,18 +174,24 @@ bindsym $mod+Shift+c exec $HOME/.config/i3/scripts/refresh-settings.sh; reload
 bindsym $mod+Shift+r exec $HOME/.config/i3/scripts/refresh-settings.sh; restart
 
 # Resize window (you can also use the mouse for that)
-#set $resize <span background='blue'>resize</span>
-set $resize ❯ RESIZE ❮
-bindsym $mod+r mode "$resize"
-#mode --pango_markup "$resize" {  # note pango_markup only avail with i3bar
-mode "$resize" {
+#set $resize-label <span background='blue'>resize</span>
+set $resize-label ❯ RESIZE ❮
+bindsym $mod+r mode "$resize-label"
+#mode --pango_markup "$resize-label" {  # note pango_markup only avail with i3bar
+mode "$resize-label" {
         # change focus while in resize mode:
         bindsym $mod+h nop
         bindsym $mod+j nop
         bindsym $mod+k nop
         bindsym $mod+l nop
+        bindsym --whole-window --border $mod+button7   nop
+        bindsym --whole-window --border $mod+button6   nop
+        bindsym --whole-window --border $mod+button5   nop
+        bindsym --whole-window --border $mod+button4   nop
         bindsym $mod+period focus output right
         bindsym $mod+comma focus output left
+        bindsym $mod+question focus output down
+        bindsym $mod+m focus output up
 
         # These bindings trigger as soon as you enter the resize mode
         # Pressing left will shrink the window’s width.
@@ -299,8 +322,10 @@ bindsym XF86MonBrightnessDown exec --no-startup-id change-brightness down
 # Touchpad controls
 bindsym XF86TouchpadToggle exec /some/path/toggletouchpad.sh
 
-# Screenshot with scrot
-bindsym Print exec --no-startup-id scrot -e 'mv $f ~/Pictures/screenshots' && notify-send "Screenshot Taken"
+# Screenshot
+#bindsym Print exec --no-startup-id  scrot -e 'mv $f ~/Pictures/screenshots/$hostname' && notify-send "Screenshot Taken"
+#bindsym Print exec --no-startup-id  maim --quality 9 ~/Pictures/screenshots/$hostname/screenshot_latest.jpg
+bindsym Print exec --no-startup-id  screenshot.sh --auto
 
 # My apps shortcut
 # note all bindings get translated by Group1 keymap (see https://i3wm.org/docs/userguide.html#keybindings)
@@ -452,6 +477,7 @@ exec_always --no-startup-id flashfocus
 
 # Enable or disable floating
 for_window [class="^copyq$"] floating enable
+for_window [class="^zoom$"] floating enable
 for_window [class="^Arandr$"] floating enable
 for_window [class="^Lxappearance"] floating enable
 for_window [class="Nitrogen"] floating enable
@@ -472,6 +498,7 @@ for_window [class="^i3expod\.py$"] fullscreen enable
 for_window [class="Artha"] floating enable
 for_window [class="^jetbrains-toolbox$"] floating enable
 for_window [class="^Nm-connection-editor$"] floating enable
+for_window [class="^Blueman-.*"] floating enable
 for_window [class="^System-config-printer.py$"] floating enable
 for_window [class="^Magnus$"] floating enable
 for_window [class="^Xfce4-power-manager-settings$"] floating enable
