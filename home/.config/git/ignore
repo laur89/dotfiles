@@ -81,3 +81,6 @@ _ReSharper*/
 *.min.css
 __pycache__/
 .git/
+
+# system
+/proc/
