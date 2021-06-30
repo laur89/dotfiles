@@ -1466,6 +1466,8 @@ setup_private_asset_perms() {
     for i in \
             ~/.ssh \
             ~/.netrc \
+            ~/.gcalclirc \
+            ~/.gcalcli_oauth \
             ~/.msmtprc \
             "$GNUPGHOME" \
             ~/.gist \
@@ -1825,7 +1827,7 @@ upgrade_firmware() {
     execute 'fwupdmgr get-devices'
 
     # download latest metadata from LVFS:
-    execute 'fwupdmgr refresh'
+    execute -c 0,2 'fwupdmgr refresh'  # note it tends to exit w/ 2, and saying it was refreshed X time ago
 
     # if updates are available, they'll be displayed:
     execute -c 0,2 -r 'fwupdmgr get-updates'
@@ -2453,7 +2455,7 @@ resolve_ver() {
 
         # increase $n by the number of digits in $v that are not part of ver:
         for i in x86_64 linux_64 amd64; do
-            j="$(grep -Fo "$i" <<< "$v" | wc -l)"  # occurrences of $i in $v
+            j="$(grep -Fo "$i" <<< "$v" | wc -l)"  # number of occurrences of $i in $v
             i="${i//[!0-9]/}"  # leave only digits
             i=$(( ${#i} * j ))  # number of digits in pattern times how many times pattern was found in input
             let n+=$i
@@ -3580,11 +3582,6 @@ build_i3() {
         local f
         f="$TMP_DIR/i3-patch-${RANDOM}.patch"
 
-        #curl --fail -o "$f" 'https://raw.githubusercontent.com/ashinkarov/i3-extras/master/window-icons/window-icons.patch' || { err "window-icons-patch download failed"; return 1; }
-        curl --fail -o "$f" 'https://raw.githubusercontent.com/laur89/i3-extras/master/window-icons/window-icons.patch' || { err "window-icons-patch download failed"; return 1; }
-        report "patching window-icons..."
-        patch -p1 < "$f" || { err "applying window-icons.patch failed"; return 1; }
-
         curl --fail -o "$f" 'https://raw.githubusercontent.com/laur89/i3-extras/master/i3-v-h-split-label-swap.patch' || { err "i3-v-h-split-label-swap-patch download failed"; return 1; }
         report "patching v-h split label..."
         patch -p1 < "$f" || { err "applying i3-v-h-split-label-swap-patch failed"; return 1; }
@@ -4239,7 +4236,7 @@ build_and_install_vim() {
 }
 
 
-# note: instructions & info here: https://github.com/Valloric/YouCompleteMe
+# note: instructions & info here: https://github.com/ycm-core/YouCompleteMe#linux-64-bit
 # note2: available in deb repo as 'ycmd'
 install_YCM() {  # the quick-and-not-dirty install.py way
     local ycm_plugin_root ver
@@ -4251,10 +4248,9 @@ install_YCM() {  # the quick-and-not-dirty install.py way
         err "expected vim plugin YouCompleteMe to be already pulled"
         err "you're either missing vimrc conf or haven't started vim yet (first start pulls all the plugins)."
         return 1
-    else
-        execute "pushd -- $ycm_plugin_root" || return 1
     fi
 
+    execute "pushd -- $ycm_plugin_root" || return 1
     readonly ver="$(git rev-parse HEAD)"
     is_installed "$ver" && { popd; return 2; }
 
