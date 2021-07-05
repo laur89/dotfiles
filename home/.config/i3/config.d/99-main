@@ -512,6 +512,7 @@ for_window [class="^System-config-printer.py$"] floating enable
 for_window [class="^Magnus$"] floating enable
 # 'Toplevel' class is the class of various popup windows of tkremind:
 for_window [class="^Toplevel$"] floating enable
+for_window [class="^Steam$" title="^(Steam - News|Friends List)"] floating enable
 for_window [class="^Xfce4-power-manager-settings$"] floating enable
 # Jetbrains splash (IDEA, Rider...):
 for_window [class="^jetbrains-" instance="^jetbrains-" title="^win0$"] floating enable, border pixel $border
