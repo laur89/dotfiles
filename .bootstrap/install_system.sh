@@ -2329,7 +2329,9 @@ fetch_extract_tarball_from_git() {
 #
 # @returns {string} path to root dir of extraction result, IF we found a
 #                   _single_ dir in the result.
-# @returns {bool} true, if we found a _single_ dir in result; TODO: amend return desc
+# @returns {bool} true, if we found a _single_ dir (or file, if -s option is provided)
+#                 in result; also the full path to dir/file is returned.
+# TODO: shouldn't -f and/or -n options immediately imply -s usage?
 extract_tarball() {
     local opt standalone single_f file_filter name_filter file dir OPTIND tmpdir
 
@@ -2448,17 +2450,18 @@ resolve_ver() {
 
     # verify the passed string includes (likely) a version
     _verif_ver() {
-        local v n i j
+        local v n i j o
         v="$1"
         [[ "$v" == http* ]] && v="$(grep -Po '^https?://([^/]+)\K.*' <<< "$v")"  # remove the domain, we only care for the path part
         n=3  # we want to see at least 3 digits in url to make it more likely we have version in it
 
         # increase $n by the number of digits in $v that are not part of ver:
-        for i in x86_64 linux_64 amd64; do
-            j="$(grep -Fo "$i" <<< "$v" | wc -l)"  # number of occurrences of $i in $v
-            i="${i//[!0-9]/}"  # leave only digits
-            i=$(( ${#i} * j ))  # number of digits in pattern times how many times pattern was found in input
-            let n+=$i
+        for i in 'x86.64' 'linux.{,2}64' 'amd.{,2}64'; do
+            readarray o < <(grep -Eio "$i" <<< "$v")  # occurrences of $i in $v
+            for j in "${o[@]}"; do
+                i="${j//[!0-9]/}"  # leave only digits
+                let n+=${#i}
+            done
         done
         v="${v//[!0-9]/}"  # leave only digits
         [[ "${#v}" -ge "$n" ]]
@@ -2466,9 +2469,9 @@ resolve_ver() {
 
     hdrs="$(curl -Ls --fail --retry 3 --head -o /dev/stdout "$url")"
     ver="$(grep -iPo '^etag:\s*"*\K\S+(?=")' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
-    if [[ -z "$ver" ]]; then
+    if [[ "${#ver}" -le 5 ]]; then
         ver="$(grep -iPo '^location:\s*\K\S+' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
-        if [[ -z "$ver" ]]; then
+        if [[ "${#ver}" -le 5 ]]; then
             # TODO: is grepping for content-disposition hdr a good idea?
             #       example case of this being used is Postman
             ver="$(grep -iPo '^content-disposition:.*filename="*\K.+' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
@@ -2478,6 +2481,7 @@ resolve_ver() {
         _verif_ver "$ver" || err_display "ver resolve from url [$url] resource dubious, as resolved ver [$ver] doesn't have enough digits"
     fi
 
+    unset _verif_ver
     echo "$ver"
 }
 
@@ -2819,6 +2823,11 @@ install_p4merge() {  # https://www.perforce.com/downloads/visual-merge-tool
     loc="https://www.perforce.com/downloads/perforce/r${ver}/bin.linux26x86_64/p4v.tgz"
     install_from_url -D -d "$BASE_PROGS_DIR" p4merge "$loc" || return 1
     create_link "${BASE_PROGS_DIR}/p4merge/bin/p4merge" "$HOME/bin/"
+}
+
+
+install_steam() {  # https://store.steampowered.com/about/
+    install_from_url  steam 'https://cdn.akamai.steamstatic.com/client/installer/steam.deb'
 }
 
 
@@ -4584,13 +4593,15 @@ install_from_repo() {
         wireshark
         iptraf
         rsync
-        gparted
         openvpn3
         network-manager-openvpn-gnome
+        gparted
         gnome-disk-utility
+        gnome-usage
         cups
         cups-browsed
         cups-filters
+        ipp-usb
         system-config-printer
     )
 
@@ -5143,6 +5154,7 @@ __choose_prog_to_build() {
         install_dbeaver
         install_gitkraken
         install_p4merge
+        install_steam
         install_redis_desktop_mngr
         install_eclipse_mem_analyzer
         install_visualvm
@@ -5551,6 +5563,8 @@ configure_pulseaudio() {
     declare -a conf_lines=('load-module module-equalizer-sink'
                            'load-module module-dbus-protocol'
                           )
+    # another modules to consider:
+    # - pactl load-module module-loopback - hear mic input; https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/User/Modules/#module-loopback
 
     # make bluetooth (headset) device connection possible:
     # http://askubuntu.com/questions/801404/bluetooth-connection-failed-blueman-bluez-errors-dbusfailederror-protocol-no
@@ -5566,6 +5580,22 @@ configure_pulseaudio() {
         fi
     done
 
+    # change module-bluetooth-policy to change how headset profile is changed: (see https://www.reddit.com/r/linux/comments/at0zo0/til_that_since_2017_its_possible_in_pulseaudio_to/)
+    # documentation @ https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/User/Modules/#module-bluetooth-policy
+    _change_bt_policy() {
+        local line param
+
+        param='auto_switch=2'  # note mode 1 is the default used by this module
+        line="$(grep -Po '^load-module module-bluetooth-policy\K.*' "$conf")" || return 0  # return if we do not have module-bluetooth-policy in our conf
+        if [[ -n "$line" ]] && ! is_single "$line"; then
+            err "[$conf] contained more than 1 line(s) containing opt: [$line]"
+            return 1
+        fi
+        grep -Fq "$param" <<< "$line" && report "[$param] BT option already set in [$conf]" && return 0
+        execute "sudo sed -i --follow-symlinks 's/^load-module module-bluetooth-policy.*$/load-module module-bluetooth-policy$line $param/g' $conf" || { err; return 1; }
+    }
+
+    _change_bt_policy
 }
 
 
