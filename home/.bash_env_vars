@@ -158,6 +158,8 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export _WIRELESS_IF="/tmp/wireless_interfaces.dat"
     export _TRUSTED_CON_MARKER="/tmp/connected_trusted_NW.dat"
 
+    export _DOCK_USB_DEVICE_MARKER='17ef:306f'
+
     export WALLPAPER_DIR="/home/$USER/Pictures/wallpapers"
     export DYN_WALLPAPER_DIR="/tmp/.dynamic_wallpapers"  # dir where scripts dynamically create walls into;
                                                          # needs to be outside of synced wallpapers dir, as
@@ -313,6 +315,13 @@ export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
 
 #export AWS_OKTA_BACKEND=secret-service  # for aws-okta: https://github.com/segmentio/aws-okta
 
+# load our env/system specific overrides:
+if [[ -d "$HOME/.bash_env_vars_overrides" ]]; then
+    for env_override in $HOME/.bash_env_vars_overrides/*; do
+        [[ -f "$env_override" ]] && source "$env_override"
+    done
+    unset env_override
+fi
 
 # marker var used to detect whether env vars have been loaded:
 export __ENV_VARS_LOADED_MARKER_VAR=loaded

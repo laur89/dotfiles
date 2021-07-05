@@ -225,12 +225,6 @@ if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
         fi
     done
 
-    if [[ -d "$HOME/.bash_env_vars_overrides" ]]; then
-        for i in $HOME/.bash_env_vars_overrides/*; do
-            [[ -f "$i" ]] && source "$i"
-        done
-    fi
-
     unset i
 fi
 
