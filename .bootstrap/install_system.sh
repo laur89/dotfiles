@@ -3595,9 +3595,7 @@ build_i3() {
         report "patching v-h split label..."
         patch -p1 < "$f" || { err "applying i3-v-h-split-label-swap-patch failed"; return 1; }
 
-        # TODO: fix back to maestrogerardo repo once my PR #23 is accepted:
-        #curl --fail -o "$f" 'https://raw.githubusercontent.com/maestrogerardo/i3-gaps-deb/master/patches/0001-debian-Disable-sanitizers.patch' || { err "disable-sanitizers-patch download failed"; return 1; }
-        curl --fail -o "$f" 'https://raw.githubusercontent.com/laur89/i3-gaps-deb/master/patches/0001-debian-Disable-sanitizers.patch' || { err "disable-sanitizers-patch download failed"; return 1; }
+        curl --fail -o "$f" 'https://raw.githubusercontent.com/maestrogerardo/i3-gaps-deb/master/patches/0001-debian-Disable-sanitizers.patch' || { err "disable-sanitizers-patch download failed"; return 1; }
         report "patching removal of debian sanitizers..."
         patch --forward -r - -p1 < "$f" || { err "applying disable-sanitizers.patch failed"; return 1; }
     }
