@@ -35,7 +35,8 @@ set nocompatible " Must be the first line
     """ }}}
 
     " Edit files using sudo/su
-    "Plug 'chrisbra/SudoEdit.vim'
+    "Plug 'chrisbra/SudoEdit.vim'  This one does not support neovim!
+    Plug 'lambdalisue/suda.vim'
 
     " A pretty statusline, bufferline integration:
     "Plug 'itchyny/lightline.vim'  " too minimalist for me
@@ -342,6 +343,33 @@ set nocompatible " Must be the first line
 """ }}}
 
 """ Plugin settings {{{
+    " use copyq for copy-paste (from https://www.reddit.com/r/neovim/comments/jaw62e/help_needed_on_clipboard/)
+    let g:clipboard = {  
+        \ 'name': 'myClipboard',  
+        \ 'copy': {  
+        \    '+': 'copyq add -',  
+        \    '*': 'copyq add -',  
+        \ },
+        \ 'paste': {
+        \    '+': '+',
+        \    '*': '*',
+        \ },
+        \ 'cache_enabled': 1,
+        \ }
+    " use tmux buffers instead:
+    "let g:clipboard = {
+          "\   'name': 'myClipboard',
+          "\   'copy': {
+          "\      '+': 'tmux load-buffer -',
+          "\      '*': 'tmux load-buffer -',
+          "\    },
+          "\   'paste': {
+          "\      '+': 'tmux save-buffer -',
+          "\      '*': 'tmux save-buffer -',
+          "\   },
+          "\   'cache_enabled': 1,
+          "\ }
+
     " Startify, the fancy start page
     let g:startify_bookmarks = [
         \ $HOME . "/.config/nvim/init.vim", $HOME . "/.config/nvim/init.first.vim",

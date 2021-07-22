@@ -525,8 +525,13 @@
                 "vn <C-c> y:call system("xclip -i -selection clipboard", getreg("\""))<CR>:call system("xclip -i", getreg("\""))<CR>
                 "no <leader><C-v> :call setreg("\"",system("xclip -o -selection clipboard"))<CR>p
                 " -- with xsel:
-                vn <C-c> y:call system("xsel --input --clipboard", getreg("\""))<CR>:call system("xsel --input", getreg("\""))<CR>
-                no <leader><C-v> :call setreg("\"",system("xsel --output --clipboard"))<CR>p
+                "vn <C-c> y:call system("xsel --input --clipboard", getreg("\""))<CR>:call system("xsel --input", getreg("\""))<CR>
+                "no <leader><C-v> :call setreg("\"",system("xsel --output --clipboard"))<CR>p
+                " -- with copyq:
+                vn <C-c> y:call system("copyq add -", getreg("\""))<CR>:call system("copyq select 0")<CR>
+                no <leader><C-v> :call system("copyq select 0;copyq paste")<CR>
+                "or alternatively, use the registry for paste (untested, unsure how to make this work):
+                "no <leader><C-v> :call setreg("\"",system("copyq select 0;copyq paste"))<CR>p
             elseif has('mac')
                 vn <C-c> y:call system("pbcopy", getreg("\""))<CR>
                 no <leader><C-v> :call setreg("\"",system("pbpaste"))<CR>p
