@@ -426,7 +426,7 @@ if command -v fasd > /dev/null; then
         fi
         local RESULT=$( fasd --complete "$_r'
 
-        fasd_completion_replacement="$(sed ':a $!{N; ba}; s/\n/\\n/g' <<< "$fasd_completion_replacement")"  # replace newlines with \n; this is so sed repalcement can work
+        fasd_completion_replacement="$(sed ':a $!{N; ba}; s/\n/\\n/g' <<< "$fasd_completion_replacement")"  # replace newlines with \n; this is so sed replacement can work
 
         # replace the bash completion logic to also support functions, not only aliases;
         # note this replacement will span 2 lines:
@@ -440,6 +440,8 @@ if command -v fasd > /dev/null; then
     # for given function; used by fasd completion logic we modify above:
     declare -rA FASD_FUN_FLAG_MAP=(
         [e]='-f'
+        [se]='-f'
+        [es]='-f'
         [goto]='-a'
         [gt]='-a'
         [d]='-d'
@@ -449,7 +451,7 @@ if command -v fasd > /dev/null; then
     unset fasd_cache
 
     # add tab completion support to all our own-defined fasd aliases (as per fasd readme):
-    _fasd_bash_hook_cmd_complete  e goto gt  # completion for d is already added by cache, no point in duplicating
+    _fasd_bash_hook_cmd_complete  e se es goto gt  # completion for d is already added by cache, no point in duplicating
 fi
 ########################################## zoxide
 # zoxide settings:  (https://github.com/ajeetdsouza/zoxide)
