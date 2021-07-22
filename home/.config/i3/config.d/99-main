@@ -54,10 +54,11 @@ bindsym $mod+m focus output up
 # Alternatively, you can use the cursor keys (note these are defaults):
 bindsym $mod+Down  focus down
 bindsym $mod+Up    focus up
-#bindsym $mod+Left  focus left
-#bindsym $mod+Right focus right
-bindsym $mod+Left   exec --no-startup-id i3viswiz left
-bindsym $mod+Right   exec --no-startup-id i3viswiz right
+bindsym $mod+Left  focus left
+bindsym $mod+Right focus right
+# TODO: i3viswiz, at least on Jul 2021, launches a cpu-intensive awk process that hangs (in multi-mon setup anyway):
+#bindsym $mod+Left   exec --no-startup-id i3viswiz left
+#bindsym $mod+Right   exec --no-startup-id i3viswiz right
 
 bindsym $mod1+l   nop
 bindsym $mod1+h   nop
