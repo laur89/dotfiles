@@ -864,7 +864,7 @@ EOF
     [[ "$res" -eq 0 ]] && fmt="${COLORS[GREEN]}${COLORS[BOLD]}$res${COLORS[OFF]}" || fmt="${COLORS[RED]}${COLORS[BOLD]}$res${COLORS[OFF]}"
         #apt-get -y purge $(dpkg -l | awk '/^rc/ { print $2 }')  <- doesn't work for some reason (instead of the last line prior EOF)
 
-    report "ended at [${COLORS[BLUE]}$(date)${COLORS[OFF]}] with code [$fmt], completed in $(($(date +%s) - start)) sec"
+    report "ended at [${COLORS[BLUE]}$(date)${COLORS[OFF]}] with code [$fmt], completed in ${COLORS[YELLOW]}${COLORS[BOLD]}$(($(date +%s) - start))${COLORS[OFF]} sec"
     return $res
 }
 
@@ -880,7 +880,7 @@ update() {
     res="$?"
     [[ "$res" -eq 0 ]] && fmt="${COLORS[GREEN]}${COLORS[BOLD]}$res${COLORS[OFF]}" || fmt="${COLORS[RED]}${COLORS[BOLD]}$res${COLORS[OFF]}"
 
-    report "ended at [${COLORS[BLUE]}$(date)${COLORS[OFF]}] with code [$fmt], completed in $(($(date +%s) - start)) sec"
+    report "ended at [${COLORS[BLUE]}$(date)${COLORS[OFF]}] with code [$fmt], completed in ${COLORS[YELLOW]}${COLORS[BOLD]}$(($(date +%s) - start))${COLORS[OFF]} sec"
 }
 
 
@@ -1547,11 +1547,12 @@ whatsmyip() { myip; }  # alias for myip
 
 # !! lrzip might offer best compression when it comes to text: http://unix.stackexchange.com/questions/78262/which-file-compression-software-for-linux-offers-the-highest-size-reduction
 compress() {
-    local usage file type opt OPTIND
+    local usage file type sup def opt OPTIND
 
-    file="$1"
-    type="$2"
-    readonly usage="$FUNCNAME  fileOrDir  [zip|tar|rar|7z]\n\tif optional second arg not provided, compression type defaults to tar (tar.bz2) "
+    sup='zip|tar|rar|7z'  # supported compression type options
+    sup="[${COLORS[YELLOW]}${COLORS[BOLD]}${sup}${COLORS[OFF]}]"
+    readonly def=tar  # default compression mode
+    readonly usage="$FUNCNAME  fileOrDir  $sup\n\tif optional second arg not provided, compression type defaults to [$def] "
 
     while getopts "h" opt; do
         case "$opt" in
@@ -1563,10 +1564,14 @@ compress() {
               ;;
         esac
     done
+    shift "$((OPTIND-1))"
+
+    file="$1"
+    type="$2"
 
     [[ $# -eq 1 || $# -eq 2 ]] || { err "gimme file/dir to compress plox.\n" "$FUNCNAME"; echo -e "$usage"; return 1; }
     [[ -e "$file" ]] || { err "$file doesn't exist." "$FUNCNAME"; echo -e "\n\n$usage"; return 1; }
-    [[ -z "$type" ]] && { report "no compression type selected, defaulting to tar.bz2\n" "$FUNCNAME"; type="tar"; }  # default to tar
+    [[ -z "$type" ]] && { report "no compression type selected, defaulting to [${COLORS[YELLOW]}${COLORS[BOLD]}$def${COLORS[OFF]}]\n" "$FUNCNAME"; type="$def"; }
 
     case "$type" in
         zip) makezip "$file"
@@ -1579,7 +1584,7 @@ compress() {
              ;;
         7z)  make7z "$file"
              ;;
-        *)   err "compression type [$type] not supported\n" "$FUNCNAME"
+        *)   err "compression type [$type] not supported; supported types: $sup\n" "$FUNCNAME"
              echo -e "$usage";
              return 1;
              ;;
@@ -1597,6 +1602,7 @@ maketar2() { tar cvjf "${1%%/}.tar.bz2" -- "${1%%/}/"; }
 
 # Create a rar archive.
 # -m# - compresson lvl, 5 being max level, 0 just storage;
+# TODO: what's the deal with -r flag?
 makerar() {
     check_progs_installed rar || return 1
 
@@ -2711,7 +2717,7 @@ fow() {
     fi
 
     [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
-    report "opening [${matches[*]}] with [$prog]" "$FUNCNAME"
+    report "opening [${COLORS[YELLOW]}${COLORS[BOLD]}${matches[*]}${COLORS[OFF]}] with [${COLORS[GREEN]}${COLORS[BOLD]}$prog${COLORS[OFF]}]" "$FUNCNAME"
     $prog -- "${matches[@]}"
 }
 
@@ -2818,11 +2824,11 @@ __fo() {
 
     # report files to be opened
     if [[ "$count" -eq 1 ]]; then
-        report "opening [${files[*]}]" "${FUNCNAME[1]}"
+        report "opening [${COLORS[YELLOW]}${COLORS[BOLD]}${files[*]}${COLORS[OFF]}]" "${FUNCNAME[1]}"
     else
         report "opening:" "${FUNCNAME[1]}"
         for i in "${files[@]}"; do
-            echo -e "\t${i}"
+            echo -e "\t${COLORS[YELLOW]}${COLORS[BOLD]}${i}${COLORS[OFF]}"
         done
     fi
 
@@ -4157,6 +4163,17 @@ e() {  # mnemonic: edit
 }
 
 
+se() {  # mnemonic: sudo edit
+    local file
+
+    check_progs_installed fasd fzf "$EDITOR" || return 1
+    file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)"
+    [[ -f "$file" ]] && sudo $EDITOR -- "$file" && return 0 || return 1
+}
+
+es() { se "$@"; }  # alias; keep as a function as opposed to shell alias
+
+
 # select recent dir with fasd and cd into
 #
 # !!note: d clashes with fasd alias; make sure you remove that one (in generated cache, likely in $HOME)
@@ -4329,6 +4346,19 @@ tcpdumperino() {
     fi
 
     report "output in [$file]"
+}
+
+
+# look up IPs in LAN
+# from https://superuser.com/a/261823/179401
+scan_network() {
+    check_progs_installed  arp-scan || return 1
+    report "note that sudo passwd is required" "$FUNCNAME"
+
+    #sudo arp-scan 10.42.21.1/24 --retry=5
+    #sudo arp-scan --interface=enp2s0f0 --localnet --timeout=1500 --retry=5
+    #sudo arp-scan --interface=enp2s0f0 --localnet --retry=5
+    sudo arp-scan --localnet --retry=3
 }
 
 ##############################################
