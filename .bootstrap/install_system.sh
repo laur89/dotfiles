@@ -46,7 +46,7 @@ readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; e
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
 readonly APT_KEY_DIR='/usr/local/share/keyrings'  # dir where per-application apt keys will be stored in
-readonly SERVER_IP='10.42.21.10'             # default server address
+readonly SERVER_IP='10.42.21.10'             # default server address; likely to be an address in our LAN
 readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
 readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
@@ -4625,6 +4625,7 @@ install_from_repo() {
         nethogs
         nload
         iftop
+        arp-scan
         etherape
         tcpdump
         tcpflow
@@ -5392,16 +5393,25 @@ enable_network_manager() {
 
     # configure per-connection DNS:
     _configure_con_dns() {
-        local ssids i
+        local network_names i
 
-        ssids=(wifibox wifibox5g)  # networks to configure DNS for
+        network_names=(wifibox wifibox5g home-dock)  # networks to configure DNS for; for wifi this will likely be the SSID unless changed
         check_progs_installed  nmcli || return 1
-        for i in "${ssids[@]}"; do
+        for i in "${network_names[@]}"; do
             if nmcli -f NAME connection show | grep -qFw "$i"; then  # verify connection has been set up/exists
                 execute "nmcli con mod $i ipv4.dns '$SERVER_IP  1.1.1.1  8.8.8.8'" || err "dns addition for connection [$i] failed w/ $?"
                 execute "nmcli con mod $i ipv4.ignore-auto-dns yes" || err "setting dns ignore-auto-dns for connection [$i] failed w/ $?"
             fi
+            # TODO: look also into 'trust-ad' & 'rotate' options, eg
+            #    nmcli connection modify ethernet-enp1s0 ipv4.dns-options trust-ad,rotate
+            # also, one possilbe /etc/resolv.conf contents:
+            #    nameserver 127.0.0.1
+            #    options timeout:1
+            #    options single-request
         done
+
+        # make resolv.conf immutable (see https://wiki.archlinux.org/title/Domain_name_resolution#Overwriting_of_/etc/resolv.conf)
+        # chattr +i /etc/resolv.conf
     }
 
     [[ -d "$nm_conf_dir" ]] || { err "[$nm_conf_dir] does not exist; are you using NetworkManager? if not, this config logic should be removed."; return 1; }
