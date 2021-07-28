@@ -511,6 +511,7 @@ for_window [class="^Nm-connection-editor$"] floating enable
 for_window [class="^Blueman-.*"] floating enable
 for_window [class="^System-config-printer.py$"] floating enable
 for_window [class="^Magnus$"] floating enable
+for_window [class="^Gnome-usage$"] floating enable
 # 'Toplevel' class is the class of various popup windows of tkremind:
 for_window [class="^Toplevel$"] floating enable
 for_window [class="^Steam$" title="^(Steam - News|Friends List)"] floating enable
