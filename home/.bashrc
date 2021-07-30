@@ -470,7 +470,7 @@ command -v zoxide > /dev/null && eval "$(zoxide init bash)"
 export NVM_DIR="$HOME/.nvm"  # do not change location, keep _non-linked_ .nvm/ under ~
 #declare -a __NODE_GLOBALS=($(find "$NVM_DIR/versions/node/" -maxdepth 3 -mindepth 3 -type l -wholename '*/bin/*' | xargs -n1 basename | sort | uniq))
 mapfile -t __NODE_GLOBALS < <(find "$NVM_DIR/versions/node/"*/bin/ -maxdepth 1 -mindepth 1 -type l -print0 | xargs --null -n1 basename | sort --unique)
-__NODE_GLOBALS+=(node nvm)
+__NODE_GLOBALS+=(node nvm yarn)
 
 # instead of using --no-use flag, load nvm lazily:
 _load_nvm() {
