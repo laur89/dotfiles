@@ -93,6 +93,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
             "$HOME/.local/bin" \
             "$GRADLE_HOME/bin" \
             "$HOME/.rbenv/bin" \
+            "$HOME/.yarn/bin" \
             /usr/local/go/bin \
             "$GOPATH/bin" \
             "${KREW_ROOT:-$HOME/.krew}/bin" \
