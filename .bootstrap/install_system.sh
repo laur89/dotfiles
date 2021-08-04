@@ -1989,6 +1989,7 @@ install_own_builds() {
     install_gruvbox_gtk_theme
     #install_weeslack
     is_native && install_slack_term
+    install_slack
     install_veracrypt
     install_binance
 
@@ -2622,6 +2623,11 @@ install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
 # see also https://github.com/wee-slack/wee-slack/
 install_slack_term() {  # https://github.com/erroneousboat/slack-term
     install_bin_from_git -n slack-term erroneousboat slack-term slack-term-linux-amd64
+}
+
+
+install_slack() {  # https://slack.com/intl/en-es/help/articles/212924728-Download-Slack-for-Linux--beta-
+    snap_install slack --classic
 }
 
 
@@ -5164,6 +5170,7 @@ __choose_prog_to_build() {
         install_alacritty
         install_weeslack
         install_slack_term
+        install_slack
         install_terraform
         install_terragrunt
         install_bluejeans
