@@ -38,7 +38,6 @@ readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u172-b11/a
                                                                           # jdk9: https://jdk9.java.net/  /  https://jdk9.java.net/download/
                                                                           # jdk10: http://www.oracle.com/technetwork/java/javase/downloads/jdk10-downloads-4416644.html
                                                                           # archive: http://www.oracle.com/technetwork/java/javase/archive-139210.html
-readonly SKYPE_LOC='https://go.skype.com/skypeforlinux-64.deb'       # https://www.skype.com/en/get-skype/
 readonly JDK_LINK_LOC="/usr/local/jdk_link"      # symlink linking to currently active java installation
 readonly JDK_INSTALLATION_DIR="/usr/local/javas" # dir containing all the installed java versions
 readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
@@ -1140,7 +1139,7 @@ install_deps() {
     #py_install starred     # https://github.com/maguowei/starred  - create list of your github starts; note it's updated by CI so no real reason to install it locally
 
     # rofi-based emoji picker
-    # TODO: ' rofi -modi "emoji:rofimoji" -show emoji' shows blank (see https://github.com/fdw/rofimoji/issues/76)
+    # TODO: needs rofi 1.6.0+ (see https://github.com/fdw/rofimoji/issues/76)
     py_install -g fdw  rofimoji  # https://github.com/fdw/rofimoji
 
     # keepass cli tool
@@ -1819,7 +1818,7 @@ install_games() {
 # https://github.com/fwupd/fwupd
 # depends on the fwupd package
 #
-# better run this manually, i think?
+# TODO: better run this manually, i think? or only run if in interactive mode and explicitly ask before running 'update'?
 upgrade_firmware() {
     local c
 
@@ -2479,7 +2478,7 @@ resolve_ver() {
             _verif_ver "$ver" || ver="$url"  # TODO: is this okay assumption for version tracking? maybe just not store ver and always install?
         fi
 
-        _verif_ver "$ver" || err_display "ver resolve from url [$url] resource dubious, as resolved ver [$ver] doesn't have enough digits"
+        _verif_ver "$ver" || err "ver resolve from url [$url] resource dubious, as resolved ver [$ver] doesn't have enough digits"
     fi
 
     unset _verif_ver
@@ -3103,30 +3102,13 @@ install_rambox() {  # https://github.com/ramboxapp/community-edition/wiki/Instal
 }
 
 
-# note skype is also available as a snap;
+# note skype is also available as a snap (sudo snap install skype)
+# - tho the snap version seemed tad buggy/unstable
 install_skype() {  # https://wiki.debian.org/skype
                    # https://www.skype.com/en/get-skype/
-    local skypeFile skype_downloads_dir
 
-    is_server && { report "we're server, skipping skype installation."; return; }
-    readonly skypeFile="$TMP_DIR/skype-install.deb"
-    readonly skype_downloads_dir="$BASE_DATA_DIR/Downloads/skype_dl"
-
-    #report "setting up skype"
-
-    #if is_64_bit; then
-        #execute "sudo dpkg --add-architecture i386"
-        #execute "sudo apt-get --yes update"
-        #execute "sudo apt-get -f --yes install"
-    #fi
-
-    execute "wget -O $skypeFile -- $SKYPE_LOC" || { err; return 1; }
-    execute "sudo dpkg -i $skypeFile"  #|| { err; return 1; }  # do not exit on err!; TODO: instead of this install-and-fix, directly install file via apt-get?
-    #execute "sudo apt-get -f --yes install" || { err; return 1; }
-
-    # create target dir for skype file transfers;
-    # ! needs to be configured in skype!
-    [[ -d "$skype_downloads_dir" ]] || execute "mkdir '$skype_downloads_dir'"
+    #this url, that resolves to the one below, doesn't support --head: https://go.skype.com/skypeforlinux-64.deb
+    install_from_url skype 'https://repo.skype.com/latest/skypeforlinux-64.deb'
 }
 
 
@@ -6542,7 +6524,7 @@ is_proc_running() {
 
     readonly proc="$1"
 
-    [[ -z "$proc" ]] && { err_display "process name not provided! Abort." "$FUNCNAME"; return 1; }
+    [[ -z "$proc" ]] && { err "process name not provided! Abort." "$FUNCNAME"; return 1; }
 
     #if pidof "$proc"; then
     pgrep -f -- "$proc" > /dev/null 2>&1  # TODO: add -x flag to search for EXACT commands? also, -f seems like a bad idea, eg is_proc_running 'kala' would return true if file named 'kala' was opened in vim
