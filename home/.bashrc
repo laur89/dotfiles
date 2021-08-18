@@ -468,7 +468,8 @@ command -v zoxide > /dev/null && eval "$(zoxide init bash)"
 #   https://www.reddit.com/r/node/comments/4tg5jg/lazy_load_nvm_for_faster_shell_start/d5ib9fs/
 #   https://gist.github.com/fl0w/07ce79bd44788f647deab307c94d6922
 export NVM_DIR="$HOME/.nvm"  # do not change location, keep _non-linked_ .nvm/ under ~
-#declare -a __NODE_GLOBALS=($(find "$NVM_DIR/versions/node/" -maxdepth 3 -mindepth 3 -type l -wholename '*/bin/*' | xargs -n1 basename | sort | uniq))
+#declare -a __NODE_GLOBALS=($(find "$NVM_DIR/versions/node/" -maxdepth 3 -mindepth 3 -type l -wholename '*/bin/*' | xargs -n1 basename | sort --unique))
+#mapfile -t __NODE_GLOBALS < <(fd --max-depth 1 --min-depth 1 --type l . "$NVM_DIR/versions/node/"*/bin/ --exec basename {} | sort --unique)
 mapfile -t __NODE_GLOBALS < <(find "$NVM_DIR/versions/node/"*/bin/ -maxdepth 1 -mindepth 1 -type l -print0 | xargs --null -n1 basename | sort --unique)
 __NODE_GLOBALS+=(node nvm yarn)
 

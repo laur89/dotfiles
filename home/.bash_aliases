@@ -130,12 +130,11 @@ alias snvim='sudo nvim'
 alias root='sudo su'
 alias lsd='{ ls | tr "\n" " "; echo; } | lolcat -a -d 150 -s 60'
 
-# TODO: add -l flag to tree aliases to follow symlinked dirs?:
-alias t1='tree -L 1'
-alias t2='tree -L 2'
-alias t3='tree -L 3'
-alias t4='tree -L 4'
-alias t5='tree -L 5'
+alias t1='tree -lL 1'
+alias t2='tree -lL 2'
+alias t3='tree -lL 3'
+alias t4='tree -lL 4'
+alias t5='tree -lL 5'
 
 #
 # hate the typos:

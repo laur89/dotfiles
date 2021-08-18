@@ -1715,8 +1715,8 @@ setup_additional_apt_keys_and_sources() {
     # note it's avail also as a snap: $snap install spotify
     get_apt_key  spotify  https://download.spotify.com/debian/pubkey_0D811D58.gpg "deb [{s}] http://repository.spotify.com stable non-free"
 
-    # seafile-client: (from https://download.seafile.com/published/seafile-user-manual/syncing_client/install_linux_client.md):
-    #     seafile-drive instructions would be @ https://download.seafile.com/published/seafile-user-manual/drive_client/drive_client_for_linux.md
+    # seafile-client: (from https://help.seafile.com/syncing_client/install_linux_client/):
+    #     seafile-drive instructions would be @ https://help.seafile.com/drive_client/drive_client_for_linux/
     get_apt_key  seafile  https://linux-clients.seafile.com/seafile.asc "deb [arch=amd64 {s}] https://linux-clients.seafile.com/seafile-deb/$DEB_STABLE/ stable main"
 
     # mono: (from https://www.mono-project.com/download/stable/#download-lin-debian):
@@ -2238,7 +2238,7 @@ fetch_release_from_any() {
     dl_url="$(resolve_dl_urls "$loc" "${relative:+/}.*$2")" || return 1  # note we might be looking for a relative url
 
     ver="$(resolve_ver "$dl_url")" || return 1
-    [[ "$skipadd" -ne 1 ]] && is_installed "$ver" && return 2
+    [[ "$skipadd" -ne 1 ]] && is_installed "$ver" "$3" && return 2
 
     report "fetching [$dl_url]..."
     execute "wget --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
@@ -2519,7 +2519,7 @@ install_from_url() {
     if ! is_valid_url "$loc"; then
         err "passed url for $name is improper: [$loc]; aborting"
         return 1
-    elif is_installed "$ver"; then
+    elif is_installed "$ver" "$name"; then
         return 2
     fi
 
@@ -2685,7 +2685,7 @@ install_krew() {  # https://github.com/kubernetes-sigs/krew
 
     # resolve url to track the actual version installed:
     dl_url="$(resolve_dl_urls "https://github.com/kubernetes-sigs/krew/releases/latest" '.*krew.yaml')" || return 1
-    is_installed "$dl_url" && return 2
+    is_installed "$dl_url" krew && return 2
 
     tmpdir="$(mktemp -d 'krew-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     execute "pushd -- '$tmpdir'" || return 1
@@ -2773,7 +2773,7 @@ install_grpc_cli() {  # https://github.com/grpc/grpc/blob/master/doc/command_lin
 
     ver="$(curl --fail -L https://grpc.io/release)"
     label="grpc-cli-$ver"
-    is_installed "$label" && return 2
+    is_installed "$label" grpc-cli && return 2
 
     tmpdir="$(mktemp -d 'grpc-cli-tempdir-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     execute "pushd -- '$tmpdir'" || return 1
@@ -3236,7 +3236,7 @@ install_copyq() {
     readonly tmpdir="$TMP_DIR/copyq-build-${RANDOM}"
 
     ver="$(get_git_sha "$COPYQ_REPO_LOC")"
-    is_installed "$ver" && return 2
+    is_installed "$ver" copyq && return 2
 
     report "installing copyq build dependencies..."
     install_block '
@@ -3317,7 +3317,7 @@ install_goforit() {
     readonly tmpdir="$TMP_DIR/goforit-build-${RANDOM}"
 
     ver="$(get_git_sha "$GOFORIT_REPO_LOC")"
-    is_installed "$ver" && return 2
+    is_installed "$ver" goforit && return 2
 
     report "installing goforit build dependencies..."
     install_block '
@@ -3434,7 +3434,7 @@ install_i3lock() {
     readonly tmpdir="$TMP_DIR/i3lock-build-${RANDOM}/build"
 
     ver="$(get_git_sha "$I3_LOCK_LOC")"
-    is_installed "$ver" && return 2
+    is_installed "$ver" i3lock-color && return 2
 
     report "installing i3lock build dependencies..."
     install_block '
@@ -3492,7 +3492,7 @@ install_i3lock_fancy() {
     readonly tmpdir="$TMP_DIR/i3lock-fancy-build-${RANDOM}/build"
 
     ver="$(get_git_sha "$I3_LOCK_FANCY_LOC")"
-    is_installed "$ver" && return 2
+    is_installed "$ver" i3lock-fancy && return 2
 
     # clone the repository
     execute "git clone ${GIT_OPTS[*]} $I3_LOCK_FANCY_LOC '$tmpdir'" || return 1
@@ -3551,7 +3551,7 @@ install_brillo() {
     tmpdir="$TMP_DIR/brillo-build-${RANDOM}/build"
 
     ver="$(get_git_sha "$repo")"
-    is_installed "$ver" && return 2
+    is_installed "$ver" brillo && return 2
 
     # clone the repository
     execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
@@ -3602,7 +3602,7 @@ EOF
     readonly tmpdir="$TMP_DIR/i3-gaps-build-${RANDOM}/build"
 
     ver="$(get_git_sha "$I3_REPO_LOC")"
-    is_installed "$ver" && return 2
+    is_installed "$ver" i3-gaps && return 2
 
     # clone the repository
     execute "git clone ${GIT_OPTS[*]} $I3_REPO_LOC '$tmpdir'" || return 1
@@ -4166,7 +4166,7 @@ build_and_install_vim() {
     readonly python3_confdir="$(python3-config --configdir)"
 
     ver="$(get_git_sha "$VIM_REPO_LOC")"
-    is_installed "$ver" && return 2
+    is_installed "$ver" vim-our-build && return 2
 
     for i in "$python3_confdir"; do
         [[ -d "$i" ]] || { err "[$i] is not a valid dir; abort"; return 1; }
@@ -4247,7 +4247,7 @@ install_YCM() {  # the quick-and-not-dirty install.py way
 
     execute "pushd -- $ycm_plugin_root" || return 1
     readonly ver="$(git rev-parse HEAD)"
-    is_installed "$ver" && { popd; return 2; }
+    is_installed "$ver" YCM && { popd; return 2; }
 
     # install deps
     install_block '
@@ -4394,7 +4394,7 @@ install_fonts() {
         )
 
         ver="$(get_git_sha "$NERD_FONTS_REPO_LOC")"
-        is_installed "$ver" && return 2
+        is_installed "$ver" nerd-fonts && return 2
 
         # clone the repository
         execute "git clone ${GIT_OPTS[*]} $NERD_FONTS_REPO_LOC '$tmpdir'" || return 1
@@ -4420,7 +4420,7 @@ install_fonts() {
         readonly tmpdir="$TMP_DIR/powerline-fonts-${RANDOM}"
 
         ver="$(get_git_sha "$PWRLINE_FONTS_REPO_LOC")"
-        is_installed "$ver" && return 2
+        is_installed "$ver" powerline-fonts && return 2
 
         execute "git clone ${GIT_OPTS[*]} $PWRLINE_FONTS_REPO_LOC '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
@@ -4442,7 +4442,7 @@ install_fonts() {
         readonly repo='https://github.com/stark/siji'
 
         ver="$(get_git_sha "$repo")"
-        is_installed "$ver" && return 2
+        is_installed "$ver" siji-font && return 2
 
         execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || { err 'err cloning siji font'; return 1; }
         execute "pushd $tmpdir" || return 1
@@ -4870,7 +4870,7 @@ install_vbox_guest() {
 
     if ! is_single "$label"; then
         err "found vbox additions ver was unexpected: [$label]; will continue w/ installation"
-    elif is_installed "$label"; then
+    elif is_installed "$label" vbox-guest-additions; then
         return 2
     fi
 
@@ -5470,7 +5470,7 @@ install_gtk_numix() {
     readonly tmpdir="$TMP_DIR/numix-theme-build-${RANDOM}"
 
     ver="$(get_git_sha "$theme_repo")"
-    is_installed "$ver" && return 2
+    is_installed "$ver" numix-gtk-theme && return 2
 
     check_progs_installed  glib-compile-schemas  gdk-pixbuf-pixdata || { err "those need to be on path for numix build to succeed."; return 1; }
 
@@ -5841,13 +5841,14 @@ add_to_dl_log() {
 
 
 is_installed() {
-    local ver
+    local ver name
 
     ver="$1"
+    name="$2"  # optional
 
     [[ -z "$ver" ]] && { err "empty ver passed to ${FUNCNAME}() by ${FUNCNAME[1]}()"; return 2; }  # sanity
     if grep -Fq "$ver" "$GIT_RLS_LOG" 2>/dev/null; then
-        report "[$ver] already encountered, skipping installation..."
+        report "[$ver] already encountered, skipping ${name:+$name }installation..."
         return 0
     fi
 
