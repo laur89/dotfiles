@@ -12,3 +12,9 @@ rofi.terminal: urxvtc
 rofi.show-icons: true
 !rofi.matching: regex
 rofi.bw: 3
+! Key-bindings; note to use existing binding, you first need to re-bind its current action to something else in order to release it for re-binding
+! run [rofi -show keys] to see current bindings
+rofi.kb-accept-entry: Return,KP_Enter
+rofi.kb-row-down: Ctrl-j,Ctrl-n,Down
+rofi.kb-remove-to-eol: Ctrl-l
+rofi.kb-row-up: Ctrl-k,Ctrl-p,Up,ISO_Left_Tab
