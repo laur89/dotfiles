@@ -1774,8 +1774,8 @@ swap_caps_lock_and_esc() {
     # map caps to esc:
     if ! grep -q 'key <ESC>.*Caps_Lock' "$conf_file"; then
         # hasn't been replaced yet
-        if ! execute "sudo sed -i --follow-symlinks 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock        \]   \};/g' $conf_file"; then
-            err "replacing esc<->caps @ [$conf_file] failed"
+        if ! execute "sudo sed -i --follow-symlinks 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock     \]   \};/g' $conf_file"; then
+            err "mapping esc->caps @ [$conf_file] failed"
             return 2
         fi
     fi
@@ -1783,8 +1783,8 @@ swap_caps_lock_and_esc() {
     # map esc to caps:
     if ! grep -q 'key <CAPS>.*Escape' "$conf_file"; then
         # hasn't been replaced yet
-        if ! execute "sudo sed -i --follow-symlinks 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS> \{    \[ Escape     \]   \};/g' $conf_file"; then
-            err "replacing esc<->caps @ [$conf_file] failed"
+        if ! execute "sudo sed -i --follow-symlinks 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS> \{    \[ Escape        \]   \};/g' $conf_file"; then
+            err "mapping caps->esc @ [$conf_file] failed"
             return 2
         fi
     fi
@@ -2238,7 +2238,7 @@ fetch_release_from_any() {
     dl_url="$(resolve_dl_urls "$loc" "${relative:+/}.*$2")" || return 1  # note we might be looking for a relative url
 
     ver="$(resolve_ver "$dl_url")" || return 1
-    [[ "$skipadd" -ne 1 ]] && is_installed "$ver" "$3" && return 2
+    [[ "$skipadd" -ne 1 ]] && is_installed "$ver" "${id:-$3}" && return 2
 
     report "fetching [$dl_url]..."
     execute "wget --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
@@ -2318,7 +2318,7 @@ fetch_extract_tarball_from_git() {
 # unless -s option (single_file) is provided.
 #
 # -S     - flag to extract into current $PWD, ie won't create a new tempdir.
-# -s     - if we're after a single file in extracted result. see -f & -n for futher filtering.
+# -s     - if we're after a single file in extracted result. see -f & -n for further filtering.
 # -n     - filename pattern to be used by find; works together w/ -F;
 # -f     - $file output pattern to grep for in order to filter for specific
 #          single file from unpacked tarball;
@@ -2326,6 +2326,7 @@ fetch_extract_tarball_from_git() {
 #          if there were more. works together w/ -n
 #
 # $1 - tarball file to be extracted, or a URL where to fetch file from first
+#      TODO: remove url support? as we're not tracking the version this way.
 #
 # @returns {string} path to root dir of extraction result, IF we found a
 #                   _single_ dir in the result.
@@ -2370,7 +2371,7 @@ extract_tarball() {
     if [[ "$single_f" != 1 ]]; then
         [[ -d "$dir" ]] || { err "couldn't find single extracted dir in extracted tarball"; return 1; }
         echo "$dir"
-    else
+    else  # we're looking for a specific file (not a dir!) under extracted tarball
         unset file
         [[ "$standalone" != 1 ]] && dir="$tmpdir" || dir='.'
 
@@ -2499,7 +2500,7 @@ install_from_url() {
     local opt OPTIND target install_file_params name loc file ver tmpdir
 
     target='/usr/local/bin'  # default
-    while getopts "d:D" opt; do
+    while getopts 'd:D' opt; do
         case "$opt" in
             d) target="$OPTARG" ;;
             D) install_file_params+='-D ' ;;
@@ -2836,6 +2837,11 @@ install_steam() {  # https://store.steampowered.com/about/
 }
 
 
+install_chrome() {  # https://www.google.com/chrome/?platform=linux
+    install_from_url  chrome 'https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb'
+}
+
+
 # redis manager
 install_redis_desktop_mngr() {  # https://snapcraft.io/install/redis-desktop-manager/debian
     snap_install redis-desktop-manager
@@ -3102,8 +3108,7 @@ install_rambox() {  # https://github.com/ramboxapp/community-edition/wiki/Instal
 }
 
 
-# note skype is also available as a snap (sudo snap install skype)
-# - tho the snap version seemed tad buggy/unstable
+# note skype is also available as a snap (sudo snap install skype), tho the snap version seemed tad buggy/unstable
 install_skype() {  # https://wiki.debian.org/skype
                    # https://www.skype.com/en/get-skype/
 
@@ -3751,6 +3756,7 @@ install_i3_deps() {
     clone_or_pull_repo "laur89" "rofi-tmux" "$BASE_DEPS_LOC"
     #execute "pip3 install --user -r ${BASE_DEPS_LOC}/rofi-tmux/requirements.txt"  # as we're not installing rft w/ pip, we need to manually install deps
     create_link "${BASE_DEPS_LOC}/rofi-tmux/rft/main.py" "$HOME/bin/rft"
+    py_install click libtmux python-rofi i3ipc  # rofi-tmux/rft dependencies
 
 
     # i3ass  # https://github.com/budlabs/i3ass/
@@ -5142,6 +5148,7 @@ __choose_prog_to_build() {
         install_gitkraken
         install_p4merge
         install_steam
+        install_chrome
         install_redis_desktop_mngr
         install_eclipse_mem_analyzer
         install_visualvm
@@ -5702,7 +5709,8 @@ setup_firefox() {
     conf_dir="$HOME/.mozilla/firefox"
 
     # install tridactyl native messenger:  https://github.com/tridactyl/tridactyl#extra-features
-    execute 'curl -fsSl https://raw.githubusercontent.com/tridactyl/tridactyl/master/native/install.sh -o /tmp/trinativeinstall.sh && bash /tmp/trinativeinstall.sh master'
+    #                                      https://github.com/tridactyl/native_messenger
+    execute 'curl -fsSl https://raw.githubusercontent.com/tridactyl/native_messenger/master/installers/install.sh -o /tmp/trinativeinstall.sh && sh /tmp/trinativeinstall.sh master'  # TODO: think we can remove 'master' arg
 
 
     # install custom css/styling {  # see also https://github.com/MrOtherGuy/firefox-csshacks
@@ -5716,6 +5724,32 @@ setup_firefox() {
 
     execute "popd"
     # }
+}
+
+
+# updatedb.findutils is a logic executed by cron to find files and build a db for $locate.
+# here we provide customization for it
+configure_updatedb() {
+    local exe conf param line
+
+    exe='/etc/cron.daily/locate'  # cron task that executes updatedb
+    conf='/etc/updatedb.findutils.cron.local'  # file customizing $exe
+    param='/mnt'  # to be added to PRUNEPATHS definition
+
+    [[ -x "$exe" ]] || { err "[$exe] not an executable"; return 1; }
+    grep -Fq "$conf" "$exe" || { err "[$conf] not referenced in [$exe]"; return 1; }
+
+    readonly line="$(grep -Po '^PRUNEPATHS="\K.*(?="$)' "$exe")"
+    is_single "$line" || { err "[$exe] contained either more or less than 1 line(s) containing PRUNEPATHS: [$line]"; return 1; }
+
+    grep -Fq "$param" <<< "$line" && report "[$param] option already set in [$exe]" && return 0
+    [[ -f "$conf" ]] && grep -q "^PRUNEPATHS=.*$param" "$conf" && report "[$param] option already set in [$conf]" && return 0
+
+    if [[ -f "$conf" ]] && grep -q '^PRUNEPATHS=' "$conf"; then
+        execute "sudo sed -i --follow-symlinks 's/^PRUNEPATHS.*$/PRUNEPATHS=\"$line $param\"/g' $conf"
+    else
+        execute "echo 'PRUNEPATHS=\"$line $param\"' | sudo tee --append $conf > /dev/null"
+    fi
 }
 
 
@@ -5788,6 +5822,7 @@ post_install_progs_setup() {
     is_native && setup_cups
     #addgroup_if_missing fuse  # not needed anymore?
     setup_firefox
+    configure_updatedb
 
     command -v kubectl >/dev/null && execute 'kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl > /dev/null'  # add kubectl bash completion
     command -v minikube >/dev/null && setup_minikube
@@ -5844,11 +5879,11 @@ is_installed() {
     local ver name
 
     ver="$1"
-    name="$2"  # optional
+    name="$2"  # optional, just for better logging
 
     [[ -z "$ver" ]] && { err "empty ver passed to ${FUNCNAME}() by ${FUNCNAME[1]}()"; return 2; }  # sanity
     if grep -Fq "$ver" "$GIT_RLS_LOG" 2>/dev/null; then
-        report "[$ver] already encountered, skipping ${name:+$name }installation..."
+        report "[${COLORS[GREEN]}$ver${COLORS[OFF]}] already encountered, skipping ${name:+${COLORS[YELLOW]}$name${COLORS[OFF]} }installation..."
         return 0
     fi
 
