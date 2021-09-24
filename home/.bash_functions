@@ -516,8 +516,8 @@ __find_top_big_small_fun() {
         # optimization for files-only logic (ie no directories) to avoid expensive
         # calls to other programs (like awk and du).
 
-        [[ -n "$fs_boundary" ]] && fs_boundary='-mount'
-        find $follow_links . -mindepth 1 $maxDepthParam $file_type $fs_boundary -exec du -a "$du_size_unit" '{}' \+  2>/dev/null | \
+        [[ -n "$fs_boundary" ]] && fs_boundary='-mount'  # or '-xdev', same thing
+        find $follow_links . -mindepth 1 $maxDepthParam $file_type $fs_boundary -exec du "$du_size_unit" '{}' \+  2>/dev/null | \
                 sort -n $reverse | \
                 head -$itemsToShow
 
@@ -710,7 +710,7 @@ __find_bigger_smaller_common_fun() {
         du_blk_sz="--block-size=$du_size_unit"
     fi
 
-    if [[ "$file_type" == "-type f" ]]; then
+    if [[ "$file_type" == '-type f' ]]; then
         # optimization for files-only logic (ie no directories) to avoid expensive
         # calls to other programs (like awk and du).
 
@@ -762,10 +762,7 @@ __find_bigger_smaller_common_fun() {
                 #sort -n $reverse 2>/dev/null
         #fi
 
-        if [[ "$du_size_unit" == B ]]; then
-            unset du_size_unit  # with bytes, --threshold arg doesn't need a unit
-        fi
-
+        [[ "$du_size_unit" == B ]] && unset du_size_unit  # with bytes, --threshold arg doesn't need a unit
         [[ "$file_type" != '-type d' ]] && readonly du_include_regular_files='--all'  # if not dirs only;
 
         du $follow_links $du_include_regular_files $du_blk_sz $duMaxDepthParam \
@@ -826,8 +823,29 @@ aptbiggest() { aptlargest; }  # alias
 # to remove obsolete packages:
 #   aptitude search '~o'
 #   aptitude purge '~o'
+#
+# provide -f flag to allow for release codename change (ie to upgrade to new codename)
+# TODO: remove -f support here as it's also defined on update()?
 upgrade() {
-    local start res fmt
+    local usage start res fmt opt OPTIND full
+
+    readonly usage="\n$FUNCNAME: upgrade OS
+    Usage: $FUNCNAME  [-f]
+        -f  full upgrade, ie allow bumping releaseinfo/codename"
+
+    while getopts 'fh' opt; do
+        case "$opt" in
+           f) full=TRUE
+              ;;
+           h) echo -e "$usage"
+              return 0
+              ;;
+           *) echo -e "$usage"
+              return 1
+              ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
 
     sudo echo
     report "started at $(date)"
@@ -838,8 +856,8 @@ upgrade() {
 
         rep_ running apt-get clean && \
         apt-get clean -y && \
-        rep_ running apt-get update && \
-        apt-get update && \
+        rep_ running apt-get ${full:+--allow-releaseinfo-change }update && \
+        apt-get ${full:+--allow-releaseinfo-change} -y update && \
         rep_ running apt-get upgrade && \
         apt-get upgrade -y && \
         rep_ running apt-get dist-upgrade && \
@@ -861,7 +879,8 @@ upgrade() {
 EOF
 
     res="$?"
-    [[ "$res" -eq 0 ]] && fmt="${COLORS[GREEN]}${COLORS[BOLD]}$res${COLORS[OFF]}" || fmt="${COLORS[RED]}${COLORS[BOLD]}$res${COLORS[OFF]}"
+    [[ "$res" -eq 0 ]] && fmt=GREEN || fmt=RED
+    fmt="${COLORS[$fmt]}${COLORS[BOLD]}$res${COLORS[OFF]}"
         #apt-get -y purge $(dpkg -l | awk '/^rc/ { print $2 }')  <- doesn't work for some reason (instead of the last line prior EOF)
 
     report "ended at [${COLORS[BLUE]}$(date)${COLORS[OFF]}] with code [$fmt], completed in ${COLORS[YELLOW]}${COLORS[BOLD]}$(($(date +%s) - start))${COLORS[OFF]} sec"
@@ -869,31 +888,67 @@ EOF
 }
 
 
+# provide -f flag to allow for release codename change (ie to upgrade to new codename)
 update() {
-    local start res fmt
+    local opt full OPTIND start res fmt
+
+    while getopts 'f' opt; do
+        case "$opt" in
+           f) full=TRUE
+              ;;
+           *) err "unsupported option [$opt]";
+              return 1
+              ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
 
     sudo echo
     report "started at $(date)"
     start="$(date +%s)"
 
-    sudo apt-get update
+    sudo apt-get ${full:+--allow-releaseinfo-change} -y update
     res="$?"
-    [[ "$res" -eq 0 ]] && fmt="${COLORS[GREEN]}${COLORS[BOLD]}$res${COLORS[OFF]}" || fmt="${COLORS[RED]}${COLORS[BOLD]}$res${COLORS[OFF]}"
+    [[ "$res" -eq 0 ]] && fmt=GREEN || fmt=RED
+    fmt="${COLORS[$fmt]}${COLORS[BOLD]}$res${COLORS[OFF]}"
 
     report "ended at [${COLORS[BLUE]}$(date)${COLORS[OFF]}] with code [$fmt], completed in ${COLORS[YELLOW]}${COLORS[BOLD]}$(($(date +%s) - start))${COLORS[OFF]} sec"
 }
 
 
-# nuke SNAPSHOT versions from maven repo
+# nuke SNAPSHOT versions from local maven repo
 mvnclean() {
-    local m_repo
+    local mvn_conf ptrn m_repo noop opt OPTIND
 
-    m_repo="$(grep -Po '^\s*<localRepository>\K.*(?=<)' "$HOME/.m2/settings.xml")"  # try to see if we're setting localRepo path in maven config
+    readonly mvn_conf="$HOME/.m2/settings.xml"
+    ptrn='*SNAPSHOT'
+
+    while getopts 'np:' opt; do
+        case "$opt" in
+           n) noop=1
+              ;;
+           p) ptrn="$OPTARG"
+              [[ -z "$ptrn" ]] && { err "[pattern] arg cannot be empty"; return 1; }
+              ;;
+           *) return 1
+              ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    [[ -f "$mvn_conf" ]] && m_repo="$(grep -Po '^\s*<localRepository>\K.*(?=<)' "$mvn_conf")"  # try to see if we're setting localRepo path in maven config
     [[ "$?" -eq 0 && -d "$m_repo" ]] || m_repo="$HOME/.m2/repository"  # default if not found in settings.xml
-
     [[ -d "$m_repo" ]] || { err "maven repo [$m_repo] not a dir"; return 1; }
-    #find "$m_repo" -name '*SNAPSHOT' -type d -print0 | xargs -0 rm -rf
-    find "$m_repo" -name '*SNAPSHOT' -type d -exec rm -rf -- '{}' \+
+
+    if [[ "$noop" -eq 1 ]]; then
+        report "following directories would be removed:"
+        find "$m_repo" -name "$ptrn" -type d -printf '  -> %p\n'
+    else
+        confirm "wish to delete all [$ptrn] vers under [${COLORS[YELLOW]}${m_repo}${COLORS[OFF]}]?" || return 0
+
+        #find "$m_repo" -name "$ptrn" -type d -print0 | xargs -0 rm -rf
+        find "$m_repo" -name "$ptrn" -type d -exec rm -rf -- '{}' \+
+    fi
 }
 
 
@@ -924,7 +979,7 @@ ffstr() {
 
     command -v ag > /dev/null && report "consider using ag or its wrapper astr (same thing as $FUNCNAME, but using ag instead of find+grep)\n" "$FUNCNAME"
 
-    while getopts "isrm:Lcoh" opt; do
+    while getopts 'isrm:Lcoh' opt; do
         case "$opt" in
            i)
               [[ "$iname_arg" != '-iname' ]] && let caseOptCounter+=1
@@ -1182,7 +1237,7 @@ memgt(){
     # $1: percentage of memory. Default 90%
 
     local perc=$1
-    [ "$perc" == "" ] && perc="90"
+    [[ -z "$perc" ]] && perc=90
 
     local ps_out=$(ps -auxf) || return 1
     echo "$ps_out" | head -n 1
@@ -1936,13 +1991,13 @@ mkgit() {
 
     mainOptCounter=0
     is_private=true  # by default create private repos
-    readonly usage="usage:   $FUNCNAME  -g|-b|-w [-p] <dirname> [project_name]
+    readonly usage="usage:   $FUNCNAME  -g|-b|-w [-p] <dir> [project_name]
            -g   create repo in github
            -b   create repo in bitbucket
            -w   create repo at work
            -p   create a public repo (default is private)
 
-     if  [project_name]  is not given, then project name will be same as  <dirname>"
+     if  [project_name]  is not given, then project name will be same as  <dir>"
 
     while getopts "hgbwp" opt; do
         case "$opt" in
@@ -1973,7 +2028,11 @@ mkgit() {
     shift "$((OPTIND-1))"
 
     readonly dir="${1%/}"  # strip trailing slash
-    readonly project_name="${2:-$dir}"  # default to dir name
+    project_name="$2"
+    if [[ -z "$project_name" ]]; then
+        # default to $dir:
+        [[ -d "$dir" ]] && project_name="$(basename -- "$(realpath -- "$dir")")" || project_name="$dir"  # this is so 'mkgit .' would work
+    fi
 
     readonly curl_output="/tmp/curl_create_repo_output_${RANDOM}.out"
 
@@ -1992,7 +2051,7 @@ mkgit() {
     elif ! check_progs_installed git getnetrc curl jq; then
         return 1
     elif [[ -z "$dir" ]]; then
-        err "need to provide dirname at minimum" "$FUNCNAME"
+        err "need to provide dir at minimum" "$FUNCNAME"
         echo -e "$usage"
         return 1
     elif [[ -d "$dir/.git" ]]; then
@@ -2009,8 +2068,12 @@ mkgit() {
         return 1
     fi
 
-    [[ -d "$dir" ]] || { mkdir -- "$dir"; readonly newly_created_dir=1; }
+    if ! [[ -d "$dir" ]]; then
+        mkdir -- "$dir" || { err "[mkdir $dir] failed w/ $?"; return 1; }
+        readonly newly_created_dir=1
+    fi
 
+    # sanity in case:
     if ! [[ -d "$dir" && -w "$dir" ]]; then
        err "we were unable to create dir [$dir], or it simply doesn't have write permission." "$FUNCNAME"
        return 1
@@ -2031,7 +2094,7 @@ mkgit() {
         # https://forum.gitlab.com/t/create-a-new-project-in-a-group-using-api/1552/2
         #
         # find our namespaces:
-        readonly gitlab_namespaces_json="$(curl --fail -sL --insecure \
+        readonly gitlab_namespaces_json="$(curl --fail -sSL --insecure \
             --header "PRIVATE-TOKEN: $passwd" \
             --max-time 5 --connect-timeout 2 \
             "https://${repo}/api/v3/namespaces?per_page=300")"
@@ -2062,7 +2125,7 @@ mkgit() {
     if ! git ls-remote "git@${repo}:${user}/${project_name}" &> /dev/null; then
         case "$repo" in
             'github.com')
-                readonly http_statuscode="$(curl --fail -sL \
+                readonly http_statuscode="$(curl --fail -sSL \
                     -w '%{http_code}' \
                     --max-time 4 --connect-timeout 1 \
                     -u "$user:$passwd" \
@@ -2072,7 +2135,7 @@ mkgit() {
                 ;;
             'bitbucket.org')
                 # note: auth $user needs to be the one you actually log in with, user in url can/has to be the old username (layr)
-                readonly http_statuscode="$(curl --fail -sL -X POST \
+                readonly http_statuscode="$(curl --fail -sSL -X POST \
                     -w '%{http_code}' \
                     --max-time 5 --connect-timeout 2 \
                     -H "Content-Type: application/json" \
@@ -2081,11 +2144,12 @@ mkgit() {
                     -d "{ \"scm\": \"git\", \"is_private\": $is_private, \"fork_policy\": \"no_public_forks\" }" \
                     -o "$curl_output")"
                 ;;
+            # TODO: remove this work-specific gitlab logic?:
             "$(getnetrc "${user}@git.url.workplace")")
                 [[ "$is_private" == true ]] && is_private=0 || is_private=10  # 0 = private, 10 = internal, 20 = public
                 __select_namespace || { [[ "$newly_created_dir" -eq 1 ]] && rm -r -- "$dir"; unset __select_namespace; return 1; }  # delete the dir we just created
                 unset __select_namespace
-                readonly http_statuscode="$(curl --fail -sL --insecure \
+                readonly http_statuscode="$(curl --fail -sSL --insecure \
                     -w '%{http_code}' \
                     --max-time 5 --connect-timeout 2 \
                     --header "PRIVATE-TOKEN: $passwd" \
@@ -2100,7 +2164,7 @@ mkgit() {
         esac
 
         if [[ "${#http_statuscode}" -ne 3 || "$http_statuscode" != 20* ]]; then
-            err "curl request for creating the repo @ [$repo] apparently failed; response code was [$http_statuscode]" "$FUNCNAME"
+            err "curl request for creating the repo @ [$repo] failed w/ [$http_statuscode]" "$FUNCNAME"
             if [[ -f "$curl_output" ]]; then
                 err "curl output can be found in [$curl_output]. contents are:\n\n" "$FUNCNAME"
                 jq . < "$curl_output"
@@ -4425,7 +4489,7 @@ function jum {
 # list all saved marks:
 function jjj {
     [[ -d "$_MARKPATH" ]] || { err "no marks saved in [$_MARKPATH] - dir does not exist." "$FUNCNAME"; return 1; }
-    ls -l -- "$_MARKPATH" | sed 's/  / /g' | cut -d' ' -f9- | sed 's/ -/\t-/g' && echo
+    ls -l -- "$_MARKPATH/" | sed 's/  / /g' | cut -d' ' -f9- | sed 's/ -/\t-/g' && echo
 }
 
 # marks/jumps completion:
@@ -4434,7 +4498,7 @@ _completemarks() {
 
     [[ -d "$_MARKPATH" ]] || { err "no marks saved in [$_MARKPATH] - dir does not exist." "$FUNCNAME"; return 1; }
     curw=${COMP_WORDS[COMP_CWORD]}
-    wordlist=$(find "$_MARKPATH" -type l -printf "%f\n")
+    wordlist=$(find "$_MARKPATH/" -type l -printf '%f\n')
     COMPREPLY=($(compgen -W '${wordlist[@]}' -- "$curw"))
     return 0
 }
