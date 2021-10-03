@@ -3155,6 +3155,42 @@ is_same() {
     return 0
 }
 
+
+# Checks if given files are valid json files
+#
+# @param {file...}   list of files whose json-sanity to check
+#
+# @returns {bool}  true if all provided files are valid json files.
+is_valid_json() {
+    local file
+
+    [[ "$#" -gt 0 ]] || return 2
+    command -v jq >/dev/null 2>&1 || return 2
+
+    for file in "$@"; do
+        jq -e . >/dev/null 2>&1 "$file" || return 1
+    done
+
+    return 0
+}
+
+
+# Checks if given two files are json files of same logical contents
+#
+# @param {file1}   first file to compare
+# @param {file2}   second file to compare
+#
+# @returns {bool}  true if given files have same logical json contents
+same_json() {
+    local f1 f2
+    f1="$1"
+    f2="$2"
+
+    [[ "$#" -eq 2 && -f "$f1" && -f "$f2" ]] || return 1
+    jq -en --slurpfile a "$f1" --slurpfile b "$f2" '$a == $b' >/dev/null 2>&1
+}
+
+
 # cd-s to directory by partial match; if multiple matches, opens input via fzf. smartcase.
 #
 #
