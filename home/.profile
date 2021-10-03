@@ -21,6 +21,12 @@ if [ -n "$BASH_VERSION" ]; then
     # show avail vars via   $ systemctl --user show-environment
 fi
 
+
+# note we also have some init in .bashrc
+if command -v pyenv >/dev/null 2>/dev/null; then
+    eval "$(pyenv init --path)"
+fi
+
 # set PATH so it includes user's private bin if it exists
 # currently done from bashrc
 #if [ -d "$HOME/bin" ] ; then
