@@ -63,14 +63,13 @@ if ! command -v tree >/dev/null; then
 fi
 
 ###########################
-if [[ -d "$HOME/.bash_env_vars_overrides" ]]; then
-    for i in $HOME/.bash_env_vars_overrides/*; do
-        [[ -f "$i" ]] && source "$i"
-    done
-
-    unset i
+# source homeshick:
+_homes="$HOME/.homesick/repos/homeshick"
+if [[ -e "$_homes" ]]; then
+    source "$_homes/homeshick.sh"
+    source "$_homes/completions/homeshick-completion.bash"
 fi
-
+unset _homes
 ###########################
 
 if [[ -d "$HOME/.bash_funs_overrides" ]]; then
