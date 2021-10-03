@@ -1096,6 +1096,7 @@ install_deps() {
 
     # sdkman:  # https://sdkman.io/
     execute "curl -sf 'https://get.sdkman.io' | bash"  # TODO depends whether win or linux
+    #install_from_url_shell  sdkman 'https://get.sdkman.io'  # TODO: can't use yet, as https://get.sdkman.io doesn't have etag or anything other useful to version by
 
     # cheat.sh:  # https://github.com/chubin/cheat.sh#installation
     curl -fsSL "https://cht.sh/:cht.sh" > ~/bin/cht.sh && chmod +x ~/bin/cht.sh || err "curling cheat.sh failed w/ [$?]"
@@ -1175,9 +1176,12 @@ install_deps() {
         libgdbm-dev
         libdb-dev
     '
-    execute 'curl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash'
-    # note rbenv-doctor can be ran to verify installation:  $ curl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-doctor | bash
+    install_from_url_shell  rbenv 'https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer'
+    # note rbenv-doctor can be ran to verify installation:  $ install_from_url_shell rbenv-doctor https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-doctor
     # }
+
+    # pyenv  # https://github.com/pyenv/pyenv-installer
+    install_from_url_shell  pyenv 'https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer'
 
     # some py deps requred by scripts:  # TODO: should we not install these via said scripts' requirements.txt file instead?
     py_install exchangelib vobject icalendar arrow
@@ -1979,6 +1983,7 @@ install_own_builds() {
     install_delta
 	install_peco
     install_fd
+    install_jd
     install_bat
     install_alacritty
     #install_exa
@@ -2535,6 +2540,38 @@ install_from_url() {
 }
 
 
+# pull given $loc and pipe it to a shell for installation
+install_from_url_shell() {
+    local opt OPTIND shell name loc ver
+
+    shell=bash  # default
+    while getopts 's' opt; do
+        case "$opt" in
+            s) shell='sh' ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    readonly name="$1"
+    readonly loc="$2"
+
+    [[ -z "$name" ]] && { err "[name] param required"; return 1; }
+
+    ver="$(resolve_ver "$loc")" || return 1
+
+    if ! is_valid_url "$loc"; then
+        err "passed url for $name is improper: [$loc]; aborting"
+        return 1
+    elif is_installed "$ver" "$name"; then
+        return 2
+    fi
+
+    execute "curl -fsSL '$loc' | $shell" || return 1
+    add_to_dl_log "$name" "$ver"
+}
+
+
 install_file() {
     local opt OPTIND ftype single_f target file_filter noextract name_filter file name
 
@@ -3016,6 +3053,11 @@ install_minikube() {  # https://kubernetes.io/docs/tasks/tools/install-minikube/
 # found as apt fd-find package, but executable is named fdfind not fd!
 install_fd() {  # https://github.com/sharkdp/fd
     install_deb_from_git sharkdp fd 'fd_[-0-9.]+_amd64.deb'
+}
+
+
+install_jd() {  # https://github.com/josephburnett/jd
+    install_bin_from_git -n jd josephburnett  jd  amd64-linux
 }
 
 
@@ -5115,6 +5157,7 @@ __choose_prog_to_build() {
         install_lazygit
         install_lazydocker
         install_fd
+        install_jd
         install_bat
         install_exa
         install_gitin

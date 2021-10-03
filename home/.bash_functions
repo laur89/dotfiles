@@ -2190,7 +2190,7 @@ mkgit() {
         touch README.md
         git add README.md
         git commit -a -m 'inital commit, adding readme - automated'
-        git push -u origin master
+        git push -u origin master  # note 'master' is set in our gitconfig @ init.defaultBranch
     fi
 
     unset __select_namespace
