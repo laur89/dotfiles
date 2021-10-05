@@ -1,4 +1,4 @@
 {
     "wm": "i3",
-    "tmux_title_rgx": "^{session} / {window} "
+    "tmux_title_rgx": "^t:{session} / {window} "
 }
