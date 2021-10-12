@@ -42,10 +42,14 @@ command -v bat >/dev/null || alias bat='cat'
 
 if ! command -v tree >/dev/null; then
     function tree() {
-        local opt OPTIND follow_links depth dir
-        while getopts 'lL:' opt; do
+        local opt OPTIND follow_links depth dir f_opts
+
+        f_opts=('(' '!' '-regex' '.*/\..*' ')')  # by default skip hidden files-dirs
+        while getopts 'laL:' opt; do
             case "$opt" in
                l) follow_links='-L'  # note tree uses -l, while find has -L
+                    ;;
+               a) unset f_opts
                     ;;
                L) depth="-maxdepth $OPTARG"  # -L is tree's maxdepth arg
                   is_digit "$OPTARG" || { err "-L arg needs to be a digit (max depth)"; return 1; }
@@ -58,7 +62,7 @@ if ! command -v tree >/dev/null; then
         dir="${1:-.}"
         [[ -d "$dir" ]] || { err "[$dir] is not a valid directory"; return 1; }
         [[ "$dir" != */ ]] && dir+='/'
-        find $follow_links "$dir" $depth 2>/dev/null | sed -e "s/[^-][^\/]*\//  |/g" -e "s/|\([^ ]\)/|-\1/"
+        find $follow_links "$dir" $depth "${f_opts[@]}" 2>/dev/null | sed -e "s/[^-][^\/]*\//  |/g" -e "s/|\([^ ]\)/|-\1/"
     }
 fi
 
