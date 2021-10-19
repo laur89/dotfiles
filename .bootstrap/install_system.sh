@@ -1739,6 +1739,9 @@ setup_additional_apt_keys_and_sources() {
     # openvpn:  (from https://openvpn.net/cloud-docs/openvpn-3-client-for-linux/):
     get_apt_key  openvpn  https://swupdate.openvpn.net/repos/openvpn-repo-pkg-key.pub "deb [{s}] https://swupdate.openvpn.net/community/openvpn3/repos $DEB_STABLE main"
 
+    # signal: (from https://signal.org/en/download/#):
+    get_apt_key  signal  https://updates.signal.org/desktop/apt/keys.asc "deb [arch=amd64 {s}] https://updates.signal.org/desktop/apt xenial main"
+
     execute 'sudo apt-get --yes update'
 }
 
@@ -4798,6 +4801,7 @@ install_from_repo() {
         libxml2-utils
         pidgin
         weechat
+        signal-desktop
         lxrandr
         arandr
         autorandr
