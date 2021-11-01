@@ -81,7 +81,7 @@ alias fd="fd --hidden --exclude '.git'"
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='grep -E --color=auto'
-command -v ncal > /dev/null 2>&1 && alias cal='ncal -bM -A 1 -B 1'
+command -v ncal > /dev/null 2>&1 && alias cal='ncal -bM -A 1 -B 1'  # same as [ncal -bM3]
 alias gagenda='gcalcli agenda "$(date "+%F %R")"  "$(date -d tomorrow "+%F 00:00")" --details=url --military'
 alias c='clear'
 alias cp='cp -rp'  # TODO: add -i for overwrite prompt? what about scripts that use cp?
@@ -192,6 +192,7 @@ alias gita='git a'
 alias gitaa='git aa'
 alias gitb='git b'
 alias gitp='git pull'
+alias gitpsh='git push'
 alias gitdi='git difftool --dir-diff'                    # diff only unstaged files
 alias gitdi-all='git difftool --dir-diff HEAD'           # also diff staged files
 alias gitdi-staged-only='git difftool --dir-diff --cached'    # --cached == --staged, as in diff only staged files
