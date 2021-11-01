@@ -1682,7 +1682,7 @@ make7z() {
 # alias for extract
 unpack() { extract "$@"; }
 
-# TODO: consider atool instead
+# TODO: consider atool or aunpack instead
 #
 # helper wrapper for uncompressing archives. it uncompresses into new directory, which
 # name is the same as the archive's, sans the file extension. this avoids situations
@@ -1706,43 +1706,43 @@ extract() {
     __create_target_dir() {
         local dir
 
-        readonly dir="$1"
+        readonly dir="$file_without_extension"
         [[ -d "$dir" ]] && { err "[$dir] already exists" "${FUNCNAME[1]}"; return 1; }
-        mkdir -- "$dir" || return 1
+        command mkdir -- "$dir" || return 1
         [[ -d "$dir" ]] || { err "mkdir failed to create [$dir]" "${FUNCNAME[1]}"; return 1; }
         return 0
     }
 
     case "$file" in
         *.tar.bz2)   file_without_extension="${file_without_extension%.*}"  # because two extensions
-                        __create_target_dir "$file_without_extension" && tar xjf "$file" -C "$file_without_extension" || return 1
+                        __create_target_dir && tar xjf "$file" -C "$file_without_extension" || return 1
                         ;;
         *.tar.gz)    file_without_extension="${file_without_extension%.*}"  # because two extensions
-                        __create_target_dir "$file_without_extension" && tar xzf "$file" -C "$file_without_extension" || return 1
+                        __create_target_dir && tar xzf "$file" -C "$file_without_extension" || return 1
                         ;;
         *.tar.xz)    file_without_extension="${file_without_extension%.*}"  # because two extensions
-                        __create_target_dir "$file_without_extension" && tar xpvf "$file" -C "$file_without_extension" || return 1
+                        __create_target_dir && tar xpvf "$file" -C "$file_without_extension" || return 1
                         ;;
         *.bz2)       check_progs_installed bunzip2 || return 1
                         bunzip2 -k -- "$file" || return 1
                         ;;
         *.rar)       check_progs_installed unrar || return 1
-                        __create_target_dir "$file_without_extension" && unrar x "$file" "${file_without_extension}"/ || return 1
+                        __create_target_dir && unrar x "$file" "${file_without_extension}"/ || return 1
                         ;;
         *.gz)        check_progs_installed gunzip || return 1
                         gunzip -kd -- "$file" || return 1
                         ;;
-        *.tar)       __create_target_dir "$file_without_extension" && tar xf "$file" -C "$file_without_extension" || return 1
+        *.tar)       __create_target_dir && tar xf "$file" -C "$file_without_extension" || return 1
                         ;;
-        *.tbz2)      __create_target_dir "$file_without_extension" && tar xjf "$file" -C "$file_without_extension" || return 1
+        *.tbz2)      __create_target_dir && tar xjf "$file" -C "$file_without_extension" || return 1
                         ;;
-        *.tgz)       __create_target_dir "$file_without_extension" && tar xzf "$file" -C "$file_without_extension" || return 1
+        *.tgz)       __create_target_dir && tar xzf "$file" -C "$file_without_extension" || return 1
                         ;;
         *.zip)       check_progs_installed unzip || return 1
-                        __create_target_dir "$file_without_extension" && unzip -- "$file" -d "$file_without_extension" || return 1
+                        __create_target_dir && unzip -- "$file" -d "$file_without_extension" || return 1
                         ;;
         *.7z)        check_progs_installed 7z || return 1
-                        __create_target_dir "$file_without_extension" && 7z x "-o$file_without_extension" -- "$file" || return 1
+                        __create_target_dir && 7z x "-o$file_without_extension" -- "$file" || return 1
                         ;;
                         # TODO .Z is unverified how and where they'd unpack:
         *.Z)         check_progs_installed uncompress || return 1
@@ -2069,7 +2069,7 @@ mkgit() {
     fi
 
     if ! [[ -d "$dir" ]]; then
-        mkdir -- "$dir" || { err "[mkdir $dir] failed w/ $?"; return 1; }
+        command mkdir -- "$dir" || { err "[mkdir $dir] failed w/ $?"; return 1; }
         readonly newly_created_dir=1
     fi
 
@@ -3440,7 +3440,7 @@ mvf() {
 ########################
 mkcd() {
     [[ -z "$*" ]] && { err "name of a directory to be created required." "$FUNCNAME"; return 1; }
-    mkdir -p -- "$@" && cd -- "$@"
+    command mkdir -p -- "$@" && cd -- "$@"
 }
 
 
@@ -4501,7 +4501,7 @@ function jm {
 
     [[ $# -ne 1 || -z "$1" ]] && { err "exactly one arg accepted" "$FUNCNAME"; return 1; }
     [[ -z "$_MARKPATH" ]] && { err "\$_MARKPATH not set, aborting." "$FUNCNAME"; return 1; }
-    mkdir -p -- "$_MARKPATH" || { err "creating [$_MARKPATH] failed." "$FUNCNAME"; return 1; }
+    command mkdir -p -- "$_MARKPATH" || { err "creating [$_MARKPATH] failed." "$FUNCNAME"; return 1; }
     [[ "$overwrite" -eq 1 && -h "$target" ]] && rm -- "$target" >/dev/null 2>/dev/null
     [[ -h "$target" ]] && { err "[$target] already exists; use jmo() or $FUNCNAME -o to overwrite." "$FUNCNAME"; return 1; }
 
