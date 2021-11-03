@@ -19,3 +19,6 @@ _FASD_IGNORE="fasd ls echo z zz e d goto gt find ffind fzf fd g gito fo gg fog f
 
 # whether $PWD entry should be normalized to root of VCS, when in one; defaults to 1:
 #_FASD_ONLY_VCS=0
+
+# enable logging:
+#_FASD_SINK="$HOME/.fasd.log"
