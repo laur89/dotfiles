@@ -1,6 +1,7 @@
 ;[name]  ! name block doesn't belong in common gitconfig !
 [merge]
     ;tool = meld
+    ;tool = p4merge
     ;tool = vimdiff
     ;tool = nvr
     tool = my_meld
@@ -40,10 +41,11 @@
     cmd = nvr -s -d $LOCAL $REMOTE
 [diff]
     tool = meld
+    ;tool = p4merge
     ;tool = nvr
+    ;tool = vimdiff
     renames = true
     colorMoved = default
-    ;tool = vimdiff
 ;[multidiff]
     ; see http://www.xenomachina.com/2012/02/multi-diff-with-vim-andor-git.html
     ; & https://github.com/xenomachina/public/
