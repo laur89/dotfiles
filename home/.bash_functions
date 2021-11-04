@@ -3011,6 +3011,7 @@ __settz() {
     timedatectl set-timezone "$tz" || { err "setting tz to [$tz] failed (code $?)" "${FUNCNAME[1]}"; return 1; }
 }
 
+# fork bomb
 killmenao() {
     confirm 'you sure?' || return
     clear
