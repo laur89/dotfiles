@@ -193,7 +193,8 @@ export HISTFILE=~/.bash_hist
 #
 #export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"  <-- immediately propagate to all open shells; fyi makes every command slow if our histfile is massive!
 # note the eternal history bit is from https://debian-administration.org/article/543/Bash_eternal_history
-[[ ";${PROMPT_COMMAND};" != *';history -a;'* ]] && export PROMPT_COMMAND="history -a;$PROMPT_COMMAND"'echo $USER "$(history 1)" >> ~/.bash_history_eternal'
+#  (link dead, see archive @ http://web.archive.org/web/20200925232709/https://debian-administration.org/article/543/Bash_eternal_history)
+[[ ";${PROMPT_COMMAND};" != *';history -a;'* ]] && export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND;}"'history -a;echo $USER "$(history 1)" >> ~/.bash_history_eternal'
 
 shopt -u mailwarn       # disable mail notification:
 shopt -s cdspell        # try to correct typos in path
