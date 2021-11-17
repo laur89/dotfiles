@@ -516,8 +516,8 @@ for_window [class="^Gnome-usage$"] floating enable
 for_window [class="^Toplevel$"] floating enable
 for_window [class="^Steam$" title="^(Steam - News|Friends List)"] floating enable
 for_window [class="^Xfce4-power-manager-settings$"] floating enable
-# Jetbrains splash (IDEA, Rider...):
-for_window [class="^jetbrains-" instance="^jetbrains-" title="^win0$"] floating enable, border pixel $border
+# Jetbrains splash (IDEA, Rider...) & license activation:
+for_window [class="^jetbrains-" instance="^jetbrains-" title="^(win0|License Activation)$"] floating enable, border pixel $border
 # charles splash:
 for_window [class="charles-gui-MainWithClassLoader$" title="^win"] floating enable, border pixel $border
 # our own invented title to force some wins (eg terminals) float with no titlebar:

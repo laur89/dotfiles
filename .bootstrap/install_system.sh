@@ -4621,6 +4621,7 @@ install_from_repo() {
         fuse
         fuseiso
         parallel
+        progress
         md5deep
     )
 
@@ -5447,10 +5448,14 @@ enable_network_manager() {
             fi
             # TODO: look also into 'trust-ad' & 'rotate' options, eg
             #    nmcli connection modify ethernet-enp1s0 ipv4.dns-options trust-ad,rotate
-            # also, one possilbe /etc/resolv.conf contents:
+            # also, one possilbe /etc/resolv.conf contents; especially those 'options' sound like something we want!:
             #    nameserver 127.0.0.1
             #    options timeout:1
             #    options single-request
+            #
+            # TODO2: look into modifying /etc/nsswitch.conf to make sure 'resolve' precedes 'dns' in the "hosts:" line;
+            # TODO3: disable systemd-resolved stub listener via 'DNSStubListener=no'
+            # TODO4: consider disabling ipv6 for faster queries:   $ sysctl -w net.ipv6.conf.all.disable_ipv6=1
         done
 
         # make resolv.conf immutable (see https://wiki.archlinux.org/title/Domain_name_resolution#Overwriting_of_/etc/resolv.conf)

@@ -4546,6 +4546,31 @@ ptree() {
     pstree -U | sed "y/└┬/┌┴/" | tac
 }
 
+
+copy-progress() {
+    local i src dest
+
+    if [[ $# -lt 2 ]]; then
+        err "at least 2 args required"
+        return 1
+    fi
+    for i in "$@"; do
+        if ! [[ -e "$i" ]]; then
+            err "given source/dest [$i] does not exist"
+            return 1
+        fi
+    done
+
+    dest="${*: -1:1}"  # last arg
+    #set -- "${@:1:$(($#-1))}"  # remove last arg
+    src=()
+    for i in "${@:1:$(($#-1))}"; do  # iterate over all but last arg
+        src+=("${i%/}")  # strip trailing slash; otherwise directories are not copied the same way as cp does
+    done
+
+    rsync -ah --info=progress2 --no-i-r -- "${src[@]}" "$dest"
+}
+
 ################################################
 # other shell completions:
 # use this if grep w/ perl regex not avail:
