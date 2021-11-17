@@ -659,19 +659,16 @@ install_nfs_server() {
 }
 
 
-install_nfs_client() {
+# fstab entries are ok only if we're a desktop, and the NFS server is _always_ on
+_install_nfs_client_stationary() {
     local fstab mountpoint nfs_share default_mountpoint server_ip prev_server_ip
     local mounted_shares used_mountpoints changed
 
-    readonly fstab="/etc/fstab"
-    readonly default_mountpoint="/mnt/nfs"
+    readonly fstab='/etc/fstab'
+    readonly default_mountpoint='/mnt/nfs'
 
     declare -a mounted_shares=()
     declare -a used_mountpoints=()
-
-    confirm "wish to install & configure nfs client?" || return 1
-
-    install_block 'nfs-common' || { err "unable to install nfs-common. aborting nfs client install/config."; return 1; }
 
     [[ -f "$fstab" ]] || { err "[$fstab] does not exist; cannot add fstab entry!"; return 1; }
 
@@ -712,6 +709,57 @@ install_nfs_client() {
     [[ "$changed" -eq 1 ]] && execute 'sudo systemctl daemon-reload' && execute "sudo systemctl restart remote-fs.target local-fs.target"
 
     return 0
+}
+
+
+# more lax mounting than fstab mountpoints
+_install_nfs_client_laptop() {
+    local autofs_d root_confd filename i changed target
+
+    readonly autofs_d='/etc/auto.master.d'
+    readonly root_confd="$COMMON_PRIVATE_DOTFILES/backups/autofs"
+
+    install_block 'autofs' || { err "unable to install autofs. aborting nfs client install/config."; return 1; }
+
+    [[ -d "$autofs_d" ]] || { err "[$autofs_d] is not a dir; cannot add autofs nfs config!"; return 1; }
+    [[ -d "$root_confd" ]] && ! is_dir_empty "$root_confd" || return 0
+
+	for i in "$root_confd/servers/"*; do
+		[[ -f "$i" ]] || continue
+		filename="$(basename -- "$i")"
+        [[ "$filename" == auto.* ]] || { err "incorrect filename for autofs server definition: [$filename]"; continue; }
+        target="/etc/$filename"
+        [[ -f "$target" ]] && cmp -s "$i" "$target" && continue  # no changes
+        execute "sudo cp -- '$i' '$target'"
+        changed=1
+	done
+
+	for i in "$root_confd/master.d/"*; do
+		[[ -f "$i" ]] || continue
+		filename="$(basename -- "$i")"
+        [[ "$filename" == *.autofs ]] || { err "incorrect filename for autofs master.d definition: [$filename]"; continue; }
+        target="$autofs_d/$filename"
+        [[ -f "$target" ]] && cmp -s "$i" "$target" && continue  # no changes
+        execute "sudo cp -- '$i' '$target'"
+        changed=1
+	done
+
+    [[ "$changed" -eq 1 ]] && execute 'sudo service autofs reload'
+
+    return 0
+}
+
+
+install_nfs_client() {
+    confirm "wish to install & configure nfs client?" || return 1
+
+    install_block 'nfs-common' || { err "unable to install nfs-common. aborting nfs client install/config."; return 1; }
+
+    if is_laptop; then
+        _install_nfs_client_laptop
+    else
+        _install_nfs_client_stationary
+    fi
 }
 
 
