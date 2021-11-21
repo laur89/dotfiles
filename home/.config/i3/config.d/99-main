@@ -518,10 +518,13 @@ for_window [class="^Steam$" title="^(Steam - News|Friends List)"] floating enabl
 for_window [class="^Xfce4-power-manager-settings$"] floating enable
 # Jetbrains splash (IDEA, Rider...) & license activation:
 for_window [class="^jetbrains-" instance="^jetbrains-" title="^(win0|License Activation)$"] floating enable, border pixel $border
+# Jetbrains user agreement:
+for_window [class="^java-util-concurrent-ForkJoinWorkerThread$" title=" User Agreement$"] floating enable, border pixel $border
 # charles splash:
 for_window [class="charles-gui-MainWithClassLoader$" title="^win"] floating enable, border pixel $border
 # our own invented title to force some wins (eg terminals) float with no titlebar:
 for_window [title="^_wm_float_no_titlebar$"] floating enable, border pixel $border, focus
+for_window [class="^org.remmina.Remmina$" title="^Remmina Preferences$"] floating enable, border pixel $border, focus
 
 # some other per-app configs:
 #  we occupy first index; note 'scratch_mark' is a pre-set prefix used elsewhere in this config!:
