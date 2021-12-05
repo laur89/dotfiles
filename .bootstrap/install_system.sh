@@ -4057,6 +4057,7 @@ setup_nvim() {
     # YCM installation AFTER the first nvim launch (nvim launch pulls in ycm plugin, among others)!
     install_YCM
     py_install neovim-remote     # https://github.com/mhinz/neovim-remote
+    py_install pynvim            # https://github.com/neovim/pynvim
 }
 
 
@@ -4846,7 +4847,6 @@ install_from_repo() {
         w3m
         tmux
         neovim/unstable
-        python3-pynvim/unstable
         libxml2-utils
         pidgin
         weechat
