@@ -2029,6 +2029,7 @@ install_own_builds() {
     install_xournalpp
     #install_zoxide
     install_ripgrep
+    install_rga
     install_browsh
     install_vnote
     install_delta
@@ -2179,11 +2180,12 @@ fetch_release_from_git() {
     local opt loc id OPTIND args
 
     args=()
-    while getopts "UsF:" opt; do
+    while getopts 'UsF:n:' opt; do
         case "$opt" in
-            U) args+=("-U") ;;
-            s) args+=("-s") ;;
-            F) args+=("-F" "$OPTARG") ;;
+            U) args+=(-U) ;;
+            s) args+=(-s) ;;
+            F) args+=(-F "$OPTARG") ;;
+            n) args+=(-n "$OPTARG") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2274,14 +2276,14 @@ resolve_dl_urls() {
 fetch_release_from_any() {
     local opt noextract skipadd file_filter name_filter id relative loc tmpdir file loc dl_url ver OPTIND
 
-    while getopts "UsF:n:I:r" opt; do
+    while getopts 'UsF:n:I:r' opt; do
         case "$opt" in
-            U) readonly noextract=1 ;;
-            s) readonly skipadd=1 ;;
-            F) readonly file_filter="$OPTARG" ;;
-            n) readonly name_filter="$OPTARG" ;;
-            I) readonly id="$OPTARG" ;;
-            r) readonly relative='TRUE' ;;
+            U) noextract=1 ;;
+            s) skipadd=1 ;;
+            F) file_filter="$OPTARG" ;;
+            n) name_filter="$OPTARG" ;;
+            I) id="$OPTARG" ;;
+            r) relative='TRUE' ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2453,17 +2455,21 @@ extract_tarball() {
 #
 # -d /target/dir    - dir to install pulled binary in, optional
 # -n binary_name    - what to name pulled binary to, optional; TODO: should it not be mandatory - otherwise filename changes w/ each new version?
+# -N, -F            - see fetch_release_from_any()
 # $1 - git user
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
 install_bin_from_git() {
-    local opt bin target name OPTIND
+    local opt bin target name OPTIND fetch_git_args
 
+    fetch_git_args=(-F 'application/x-(sharedlib|executable)')
     target='/usr/local/bin'  # default
-    while getopts "n:d:" opt; do
+    while getopts 'n:d:N:F:' opt; do
         case "$opt" in
-            n) name="$OPTARG" ;;
+            n) name="$OPTARG" ;;  # TODO: switch -n & -N?
             d) target="$OPTARG" ;;
+            N) fetch_git_args+=(-n "$OPTARG") ;;
+            F) fetch_git_args+=(-F "$OPTARG") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2472,7 +2478,7 @@ install_bin_from_git() {
     [[ -d "$target" ]] || { err "[$target] not a dir, can't install [$1/$2]"; return 1; }
 
     # note: some of (think rust?) binaries' mime is 'application/x-sharedlib', not /x-executable
-    bin="$(fetch_release_from_git -F 'application/x-(sharedlib|executable)' "$1" "$2" "$3" "$name")" || return 1
+    bin="$(fetch_release_from_git "${fetch_git_args[@]}" "$1" "$2" "$3" "$name")" || return 1
     install_file -d "$target" "$bin" || return 1
 }
 
@@ -2632,9 +2638,9 @@ install_file() {
         case "$opt" in
             d) target="$OPTARG" ;;
             D) unset single_f ;;  # mnemonic: directory; ie we want the "whole directory" in case $file is tarball
-            F) readonly file_filter="$OPTARG" ;;  # no use if -D or -U is used
-            U) readonly noextract=1 ;;  # if, for whatever the reason, an archive/tarball should not be unpacked
-            n) readonly name_filter="$OPTARG" ;;  # no use if -D or -U is used
+            F) file_filter="$OPTARG" ;;  # no use if -D or -U is used
+            U) noextract=1 ;;  # if, for whatever the reason, an archive/tarball should not be unpacked
+            n) name_filter="$OPTARG" ;;  # no use if -D or -U is used
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2726,6 +2732,12 @@ install_rebar() {  # https://github.com/erlang/rebar3
 
 install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
     install_deb_from_git BurntSushi ripgrep _amd64.deb
+}
+
+
+install_rga() {  # https://github.com/phiresky/ripgrep-all#debian-based
+    install_block 'pandoc poppler-utils ffmpeg' || return 1
+    install_bin_from_git -n rga -N rga phiresky  ripgrep-all 'x86_64-unknown-linux-musl.tar.gz'
 }
 
 
@@ -3009,7 +3021,7 @@ install_terraform() {  # https://www.terraform.io/downloads.html
 
     target='/usr/local/bin'
 
-    bin="$(fetch_release_from_any -I "terraform" 'https://www.terraform.io/downloads.html' '_linux_amd64.zip')" || return $?
+    bin="$(fetch_release_from_any -I 'terraform' 'https://www.terraform.io/downloads.html' '_linux_amd64.zip')" || return $?
     execute "chmod +x -- '$bin'" || return 1
     execute "sudo mv -- '$bin' '$target'" || { err "installing [$bin] in [$target] failed"; return 1; }
     return 0
@@ -5205,6 +5217,7 @@ __choose_prog_to_build() {
         install_xournalpp
         install_zoxide
         install_ripgrep
+        install_rga
         install_browsh
         install_rebar
         install_lazygit
