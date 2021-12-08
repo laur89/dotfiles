@@ -1982,6 +1982,29 @@ hw() {
     $sudo inxi -F
 }
 
+
+iostat-monit() {
+    local opt OPTIND interval_sec path
+
+    interval_sec=2  # default
+    while getopts 'i:' opt; do
+        case "$opt" in
+            i) interval_sec="$OPTARG" ;;
+            *) err "unsupported opt [$opt]"; return 1 ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    [[ "$#" -gt 1 ]] && { err "max 1 arg (path) accepted"; return 1; }
+    path="${1:-$HOME}"
+
+    [[ -d "$path" ]] || { err "provided path [$path] is not a dir"; return 1; }
+    is_digit "$interval_sec" && [[ "$interval_sec" -gt 0 ]] || { err "interval needs to be positive int, but was [$interval_sec]"; return 1; }
+    check_progs_installed  iostat || return 1
+
+    iostat -xk "$interval_sec" "$(findmnt --target "$path" | awk 'END {print $2}')"
+}
+
 #######################
 ## Setup github repo ##
 #######################
