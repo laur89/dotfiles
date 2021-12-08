@@ -515,6 +515,7 @@ for_window [class="^Gnome-usage$"] floating enable
 # 'Toplevel' class is the class of various popup windows of tkremind:
 for_window [class="^Toplevel$"] floating enable
 for_window [class="^Steam$" title="^(Steam - News|Friends List)"] floating enable
+for_window [class="^Binance$" title="^Login$"] floating enable, border pixel $border, focus
 for_window [class="^Xfce4-power-manager-settings$"] floating enable
 # Jetbrains splash (IDEA, Rider...) & license activation:
 for_window [class="^jetbrains-" instance="^jetbrains-" title="^(win0|License Activation)$"] floating enable, border pixel $border
