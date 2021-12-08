@@ -2437,9 +2437,9 @@ extract_tarball() {
     	if [[ -n "$file_filter" ]]; then
     		while IFS= read -r -d $'\0' file; do
     			grep -Eq "$file_filter" <<< "$(file -iLb "$file")" && break || unset file
-    		done < <(find "$dir" -name "*${name_filter}*" -type f -print0)
+    		done < <(find "$dir" -name "${name_filter:-*}" -type f -print0)
     	else
-    		file="$(find "$dir" -name "*${name_filter}*" -type f)"
+    		file="$(find "$dir" -name "${name_filter:-*}" -type f)"
     	fi
 
     	[[ -f "$file" ]] || { err "couldn't locate single extracted/uncompressed file in [$(realpath "$dir")]"; return 1; }
@@ -2454,8 +2454,8 @@ extract_tarball() {
 # Fetch a file from given github /releases page, and install the binary
 #
 # -d /target/dir    - dir to install pulled binary in, optional
-# -n binary_name    - what to name pulled binary to, optional; TODO: should it not be mandatory - otherwise filename changes w/ each new version?
-# -N, -F            - see fetch_release_from_any()
+# -N binary_name    - what to name pulled binary to, optional; TODO: should it not be mandatory - otherwise filename changes w/ each new version?
+# -n, -F            - see fetch_release_from_any()
 # $1 - git user
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
@@ -2464,11 +2464,11 @@ install_bin_from_git() {
 
     fetch_git_args=(-F 'application/x-(sharedlib|executable)')
     target='/usr/local/bin'  # default
-    while getopts 'n:d:N:F:' opt; do
+    while getopts 'N:d:n:F:' opt; do
         case "$opt" in
-            n) name="$OPTARG" ;;  # TODO: switch -n & -N?
+            N) name="$OPTARG" ;;
             d) target="$OPTARG" ;;
-            N) fetch_git_args+=(-n "$OPTARG") ;;
+            n) fetch_git_args+=(-n "$OPTARG") ;;
             F) fetch_git_args+=(-F "$OPTARG") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
@@ -2485,14 +2485,14 @@ install_bin_from_git() {
 
 install_franz() {  # https://github.com/meetfranz/franz/blob/master/docs/linux.md
     #install_block 'libx11-dev libxext-dev libxss-dev libxkbfile-dev'
-    install_bin_from_git -n franz meetfranz franz x86_64.AppImage
+    install_bin_from_git -N franz meetfranz franz x86_64.AppImage
 }
 
 
 # Franz nag-less fork; found it from this franz thread: https://github.com/meetfranz/franz/issues/1167
 # might also consider open-source fork of rambox: https://github.com/TheGoddessInari/hamsket
 install_ferdi() {  # https://github.com/getferdi/ferdi
-    #install_bin_from_git -n ferdi getferdi ferdi .AppImage
+    #install_bin_from_git -N ferdi getferdi ferdi .AppImage
     install_deb_from_git getferdi ferdi _amd64.deb
 }
 
@@ -2710,13 +2710,13 @@ install_lazyman() {  # https://github.com/StevensNJD4/LazyMan
 
 # fasd-alike alternative
 install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
-    install_bin_from_git -n zoxide ajeetdsouza zoxide 'zoxide-x86_64-unknown-linux-gnu'
+    install_bin_from_git -N zoxide ajeetdsouza zoxide 'zoxide-x86_64-unknown-linux-gnu'
 }
 
 
 # see also https://github.com/wee-slack/wee-slack/
 install_slack_term() {  # https://github.com/erroneousboat/slack-term
-    install_bin_from_git -n slack-term erroneousboat slack-term slack-term-linux-amd64
+    install_bin_from_git -N slack-term erroneousboat slack-term slack-term-linux-amd64
 }
 
 
@@ -2726,7 +2726,7 @@ install_slack() {  # https://slack.com/intl/en-es/help/articles/212924728-Downlo
 
 
 install_rebar() {  # https://github.com/erlang/rebar3
-    install_bin_from_git -n rebar3 erlang rebar3 rebar3
+    install_bin_from_git -N rebar3 erlang rebar3 rebar3
 }
 
 
@@ -2737,7 +2737,7 @@ install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
 
 install_rga() {  # https://github.com/phiresky/ripgrep-all#debian-based
     install_block 'pandoc poppler-utils ffmpeg' || return 1
-    install_bin_from_git -n rga -N rga phiresky  ripgrep-all 'x86_64-unknown-linux-musl.tar.gz'
+    install_bin_from_git -N rga -n rga phiresky  ripgrep-all 'x86_64-unknown-linux-musl.tar.gz'
 }
 
 
@@ -2750,18 +2750,18 @@ install_browsh() {  # https://github.com/browsh-org/browsh/releases
 # tag: aws
 install_aws_okta() {  # https://github.com/segmentio/aws-okta
     #install_deb_from_git segmentio aws-okta _amd64.deb  # TODO: deb no longer released? dunno, eg 1.0.4 had it avail
-    install_bin_from_git -n aws-okta -d "$HOME/bin" segmentio aws-okta linux-amd64
+    install_bin_from_git -N aws-okta -d "$HOME/bin" segmentio aws-okta linux-amd64
 }
 
 install_saml2aws() {  # https://github.com/Versent/saml2aws
-    install_bin_from_git -n saml2aws -d "$HOME/bin" Versent saml2aws '_linux_amd64.tar.gz'
+    install_bin_from_git -N saml2aws -d "$HOME/bin" Versent saml2aws '_linux_amd64.tar.gz'
 }
 
 # kubernetes aws-iam-authenticator (k8s)
 # tag: aws, k8s, kubernetes, auth
                           # https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html
 install_aia() {  # https://github.com/kubernetes-sigs/aws-iam-authenticator
-    install_bin_from_git -n aws-iam-authenticator -d "$HOME/bin" kubernetes-sigs aws-iam-authenticator _linux_amd64
+    install_bin_from_git -N aws-iam-authenticator -d "$HOME/bin" kubernetes-sigs aws-iam-authenticator _linux_amd64
 }
 
 # kubernetes configuration customizer
@@ -2769,13 +2769,13 @@ install_aia() {  # https://github.com/kubernetes-sigs/aws-iam-authenticator
 #
 # alternatively use the curl-install hack from https://kubectl.docs.kubernetes.io/installation/kustomize/binaries/
 install_kustomize() {  # https://github.com/kubernetes-sigs/kustomize
-    install_bin_from_git -n kustomize -d "$HOME/bin" kubernetes-sigs kustomize _linux_amd64.tar.gz
+    install_bin_from_git -N kustomize -d "$HOME/bin" kubernetes-sigs kustomize _linux_amd64.tar.gz
 }
 
 # kubernetes (k8s) cli management
 # tag: aws, k8s, kubernetes
 install_k9s() {  # https://github.com/derailed/k9s
-    install_bin_from_git -n k9s -d "$HOME/bin"  derailed  k9s  _Linux_x86_64.tar.gz
+    install_bin_from_git -N k9s -d "$HOME/bin"  derailed  k9s  _Linux_x86_64.tar.gz
 }
 
 # krew (kubectl plugins package manager)
@@ -2809,7 +2809,7 @@ install_krew() {  # https://github.com/kubernetes-sigs/krew
 #
 # tag: aws, k8s, kubernetes
 install_popeye() {  # https://github.com/derailed/popeye
-    install_bin_from_git -n popeye -d "$HOME/bin"  derailed  popeye  _Linux_x86_64.tar.gz
+    install_bin_from_git -N popeye -d "$HOME/bin"  derailed  popeye  _Linux_x86_64.tar.gz
 }
 
 # kubernetes cluster analyzer for better comprehension (introspective tooling, cluster
@@ -2827,7 +2827,7 @@ install_octant() {  # https://github.com/vmware-tanzu/octant
 #
 # for usecase, see https://medium.com/bench-engineering/deploying-kubernetes-clusters-with-kops-and-terraform-832b89250e8e
 install_kops() {  # https://github.com/kubernetes/kops/
-    install_bin_from_git -n kops -d "$HOME/bin"  kubernetes  kops  kops-linux-amd64
+    install_bin_from_git -N kops -d "$HOME/bin"  kubernetes  kops  kops-linux-amd64
 }
 
 # kubectx - kubernetes contex swithcher
@@ -2837,8 +2837,8 @@ install_kops() {  # https://github.com/kubernetes/kops/
 install_kubectx() {  # https://github.com/ahmetb/kubectx
     local COMPDIR
 
-    install_bin_from_git -n kubectx -d "$HOME/bin"  ahmetb  kubectx  "kubectx_.*_linux_x86_64.tar.gz"
-    install_bin_from_git -n kubens  -d "$HOME/bin"  ahmetb  kubectx  "kubens_.*_linux_x86_64.tar.gz"
+    install_bin_from_git -N kubectx -d "$HOME/bin"  ahmetb  kubectx  "kubectx_.*_linux_x86_64.tar.gz"
+    install_bin_from_git -N kubens  -d "$HOME/bin"  ahmetb  kubectx  "kubens_.*_linux_x86_64.tar.gz"
 
     # kubectx/kubens completion scripts: (note there's corresponding entry in ~/.bashrc)
     clone_or_pull_repo "ahmetb" "kubectx" "$BASE_DEPS_LOC" || return 1
@@ -2864,7 +2864,7 @@ install_sops() {  # https://github.com/mozilla/sops
 
 install_bloomrpc() {  # https://github.com/uw-labs/bloomrpc/releases
     install_deb_from_git uw-labs bloomrpc _amd64.deb  # TODO deb pkg has unmet deps that aren't automatically installed (similar to ferdi)
-    #install_bin_from_git -n bloomrpc uw-labs bloomrpc x86_64.AppImage
+    #install_bin_from_git -N bloomrpc uw-labs bloomrpc x86_64.AppImage
 }
 
 # if build fails, you might be able to salvage something by doing:
@@ -2955,7 +2955,7 @@ install_redis_desktop_mngr() {  # https://snapcraft.io/install/redis-desktop-man
 #   https://github.com/BoostIO/Boostnote
 #   https://github.com/zadam/trilium  (also hostable as a server)
 install_vnote() {  # https://github.com/vnotex/vnote/releases
-    install_bin_from_git -n vnote vnotex vnote 'vnote-linux-x64_.*zip'
+    install_bin_from_git -N vnote vnotex vnote 'vnote-linux-x64_.*zip'
 }
 
 
@@ -3028,7 +3028,7 @@ install_terraform() {  # https://www.terraform.io/downloads.html
 }
 
 install_terragrunt() {  # https://github.com/gruntwork-io/terragrunt/
-    install_bin_from_git -n terragrunt gruntwork-io terragrunt terragrunt_linux_amd64
+    install_bin_from_git -N terragrunt gruntwork-io terragrunt terragrunt_linux_amd64
 }
 
 # download mirrors:
@@ -3120,7 +3120,7 @@ install_fd() {  # https://github.com/sharkdp/fd
 
 
 install_jd() {  # https://github.com/josephburnett/jd
-    install_bin_from_git -n jd josephburnett  jd  amd64-linux
+    install_bin_from_git -N jd josephburnett  jd  amd64-linux
 }
 
 
@@ -3135,30 +3135,30 @@ install_bat() {  # https://github.com/sharkdp/bat
 # modern ls replacement written in rust
 # TODO: project dead? see https://github.com/ogham/exa/issues/621
 install_exa() {  # https://github.com/ogham/exa
-    install_bin_from_git -n exa -d "$HOME/bin"  ogham  exa 'exa-linux-x86_64-.*.zip'
+    install_bin_from_git -N exa -d "$HOME/bin"  ogham  exa 'exa-linux-x86_64-.*.zip'
 }
 
 
 # TODO: consider https://github.com/extrawurst/gitui  instead
 install_lazygit() {  # https://github.com/jesseduffield/lazygit
-    install_bin_from_git -n lazygit -d "$HOME/bin" jesseduffield lazygit '_Linux_x86_64.tar.gz'
+    install_bin_from_git -N lazygit -d "$HOME/bin" jesseduffield lazygit '_Linux_x86_64.tar.gz'
 }
 
 
 install_lazydocker() {  # https://github.com/jesseduffield/lazydocker
-    install_bin_from_git -n lazydocker -d "$HOME/bin" jesseduffield lazydocker '_Linux_x86_64.tar.gz'
+    install_bin_from_git -N lazydocker -d "$HOME/bin" jesseduffield lazydocker '_Linux_x86_64.tar.gz'
 }
 
 
 # TODO: remove for lazygit?
 install_gitin() {  # https://github.com/isacikgoz/gitin
-    install_bin_from_git -n gitin -d "$HOME/bin" isacikgoz gitin '_linux_amd64.tar.gz'
+    install_bin_from_git -N gitin -d "$HOME/bin" isacikgoz gitin '_linux_amd64.tar.gz'
 }
 
 
 # fzf-alternative, some tools use it as a dep
 install_peco() {  # https://github.com/peco/peco#installation
-    install_bin_from_git -n peco -d "$HOME/bin" peco peco '_linux_amd64.tar.gz'
+    install_bin_from_git -N peco -d "$HOME/bin" peco peco '_linux_amd64.tar.gz'
 }
 
 
@@ -3379,7 +3379,7 @@ install_copyq() {
 
 # https://github.com/UltimateHackingKeyboard/agent
 install_uhk_agent() {
-    install_bin_from_git -n agent UltimateHackingKeyboard agent linux-x86_64.AppImage
+    install_bin_from_git -N agent UltimateHackingKeyboard agent linux-x86_64.AppImage
 }
 
 
@@ -3487,7 +3487,7 @@ build_and_install_keepassxc_TODO_container_edition() {
 #                    https://github.com/keepassxreboot/keepassxc/wiki/Building-KeePassXC
 #                    https://keepassxc.org/download
 install_keepassxc() {
-    install_bin_from_git -n keepassxc keepassxreboot keepassxc 'x86_64.AppImage'
+    install_bin_from_git -N keepassxc keepassxreboot keepassxc 'x86_64.AppImage'
 }
 
 
