@@ -1143,6 +1143,7 @@ install_deps() {
     fi
 
     # sdkman:  # https://sdkman.io/
+    # TODO: consider replacing all env/version managers by asdf
     execute "curl -sf 'https://get.sdkman.io' | bash"  # TODO depends whether win or linux
     #install_from_url_shell  sdkman 'https://get.sdkman.io'  # TODO: can't use yet, as https://get.sdkman.io doesn't have etag or anything other useful to version by
 
@@ -1208,6 +1209,7 @@ install_deps() {
     # mopidy-spotify        # https://mopidy.com/ext/spotify/
     py_install Mopidy-Spotify
 
+    # TODO: consider replacing all env/version managers by asdf
     # rbenv & ruby-build: {                             # https://github.com/rbenv/rbenv-installer
     #   ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki):
     install_block '
@@ -1229,6 +1231,7 @@ install_deps() {
     # }
 
     # pyenv  # https://github.com/pyenv/pyenv-installer
+    # TODO: consider replacing all env/version managers by asdf
     install_from_url_shell  pyenv 'https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer'
 
     # some py deps requred by scripts:  # TODO: should we not install these via said scripts' requirements.txt file instead?
@@ -2308,9 +2311,12 @@ fetch_release_from_any() {
     fi
 
     # TODO: should we invoke install_file() from this function instead of this reused logic? unsure..better read TODO at the top of this fun
-    if [[ -n "$3" && "$(basename -- "$file")" != "$3" ]]; then
-        execute "mv -- '$file' '$tmpdir/$3'" || { err "renaming [$file] to [$tmpdir/$3] failed"; return 1; }
-        file="$tmpdir/$3"
+    if [[ -n "$3" ]]; then
+        [[ "$3" == */* ]] && { err "name can't be a path, but was [$3]"; return 1; }
+        if [[ "$(basename -- "$file")" != "$3" ]]; then
+            execute "mv -- '$file' '$tmpdir/$3'" || { err "renaming [$file] to [$tmpdir/$3] failed"; return 1; }
+            file="$tmpdir/$3"
+        fi
     fi
 
     if [[ "$skipadd" -ne 1 ]]; then
@@ -2531,7 +2537,7 @@ resolve_ver() {
     }
 
     hdrs="$(curl -Ls --fail --retry 3 --head -o /dev/stdout "$url")"
-    ver="$(grep -iPo '^etag:\s*"*\K\S+(?=")' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
+    ver="$(grep -iPo '^etag:\s*"*\K\S+' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
     if [[ "${#ver}" -le 5 ]]; then
         ver="$(grep -iPo '^location:\s*\K\S+' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
         if [[ "${#ver}" -le 5 ]]; then
@@ -3808,6 +3814,7 @@ install_i3() {
 
 
 # TODO: this installation method is dirty; consider https://github.com/pipxproject/pipx
+#       see https://packaging.python.org/en/latest/guides/installing-stand-alone-command-line-tools/
 #
 # just fyi: to install local copy in dev mode:
 #      /usr/bin/env python3 -m pip install --user --upgrade --force-reinstall --editable .
@@ -3865,7 +3872,7 @@ install_i3_deps() {
 
 
     # i3ass  # https://github.com/budlabs/i3ass/
-    clone_or_pull_repo "budlabs" "i3ass" "$BASE_DEPS_LOC"
+    clone_or_pull_repo budlabs i3ass "$BASE_DEPS_LOC"
     create_link -c "${BASE_DEPS_LOC}/i3ass/src" "$HOME/bin/"
 
 
@@ -3974,7 +3981,7 @@ install_dwm() {
 build_deb() {
     local opt pkg_name configure_extra dh_extra deb OPTIND
 
-    while getopts "C:D:" opt; do
+    while getopts 'C:D:' opt; do
         case "$opt" in
             C) readonly configure_extra="$OPTARG" ;;
             D) readonly dh_extra="$OPTARG" ;;
@@ -6564,7 +6571,7 @@ is_valid_ip() {
 create_link() {
     local opt OPTIND src srcs node target trgt sudo contents
 
-    while getopts "sc" opt; do
+    while getopts 'sc' opt; do
         case "$opt" in
             s) sudo=sudo ;;
             c) contents=1 ;;
@@ -6975,6 +6982,7 @@ exit
 
 # TODOS:
 # - if apt-get update fails, then we should fail script fast?
+# - upgrade py_install() to use pipx instead
 #
 # GAMES:
 # - flightgear/unstable
