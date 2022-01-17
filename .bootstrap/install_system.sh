@@ -5519,6 +5519,8 @@ enable_network_manager() {
             if nmcli -f NAME connection show | grep -qFw "$i"; then  # verify connection has been set up/exists
                 execute "nmcli con mod $i ipv4.dns '$SERVER_IP  1.1.1.1  8.8.8.8'" || err "dns addition for connection [$i] failed w/ $?"
                 execute "nmcli con mod $i ipv4.ignore-auto-dns yes" || err "setting dns ignore-auto-dns for connection [$i] failed w/ $?"
+            else
+                err "NM connection [$i] does not exist"
             fi
             # TODO: look also into 'trust-ad' & 'rotate' options, eg
             #    nmcli connection modify ethernet-enp1s0 ipv4.dns-options trust-ad,rotate
@@ -5528,7 +5530,8 @@ enable_network_manager() {
             #    options single-request
             #
             # TODO2: look into modifying /etc/nsswitch.conf to make sure 'resolve' precedes 'dns' in the "hosts:" line;
-            # TODO3: disable systemd-resolved stub listener via 'DNSStubListener=no'
+            #        note for that setup we should sunset dnsmasq; also setting dnsstublistener=no makes no sense in that case!
+            # TODO3: disable systemd-resolved stub listener via 'DNSStubListener=no', _if_ unsing dnsmasq.
             # TODO4: consider disabling ipv6 for faster queries:   $ sysctl -w net.ipv6.conf.all.disable_ipv6=1
         done
 
