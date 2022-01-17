@@ -1768,7 +1768,7 @@ setup_additional_apt_keys_and_sources() {
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
     # note it's avail also as a snap: $snap install spotify
-    get_apt_key  spotify  https://download.spotify.com/debian/pubkey_0D811D58.gpg "deb [{s}] http://repository.spotify.com stable non-free"
+    get_apt_key  spotify  https://download.spotify.com/debian/pubkey_5E3C45D7B312C643.gpg "deb [{s}] http://repository.spotify.com stable non-free"
 
     # seafile-client: (from https://help.seafile.com/syncing_client/install_linux_client/):
     #     seafile-drive instructions would be @ https://help.seafile.com/drive_client/drive_client_for_linux/
@@ -1821,6 +1821,8 @@ override_locale_time() {
 # can also exec 'setxkbmap -option' caps:escape or use dconf-editor; also could use $loadkeys
 # or switch it via XKB options (see https://wiki.archlinux.org/index.php/Keyboard_configuration_in_Xorg)
 #
+# see also https://gist.github.com/tanyuan/55bca522bf50363ae4573d4bdcf06e2e
+#
 # to see current active keyboard setting:    setxkbmap -print -verbose 10
 swap_caps_lock_and_esc() {
     local conf_file
@@ -1829,7 +1831,7 @@ swap_caps_lock_and_esc() {
 
     [[ -f "$conf_file" ]] || { err "cannot swap esc<->caps: [$conf_file] does not exist; abort;"; return 1; }
 
-    # map caps to esc:
+    # map esc to caps:
     if ! grep -q 'key <ESC>.*Caps_Lock' "$conf_file"; then
         # hasn't been replaced yet
         if ! execute "sudo sed -i --follow-symlinks 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock     \]   \};/g' $conf_file"; then
@@ -1838,14 +1840,17 @@ swap_caps_lock_and_esc() {
         fi
     fi
 
-    # map esc to caps:
-    if ! grep -q 'key <CAPS>.*Escape' "$conf_file"; then
+    # map caps to control:
+    if ! grep -q 'key <CAPS>.*Control_L' "$conf_file"; then
         # hasn't been replaced yet
-        if ! execute "sudo sed -i --follow-symlinks 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS> \{    \[ Escape        \]   \};/g' $conf_file"; then
+        if ! execute "sudo sed -i --follow-symlinks 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS> \{    \[ Control_L        \]   \};/g' $conf_file"; then
             err "mapping caps->esc @ [$conf_file] failed"
             return 2
         fi
     fi
+
+    # make short-pressed Ctrl behave like Escape:
+    execute "xcape -e 'Control_L=Escape'" || return 2   # note this command needs to be ran also at every startup!
 
     return 0
 }
@@ -4819,6 +4824,7 @@ install_from_repo() {
         transmission-remote-cli
         transmission-remote-gtk
         etckeeper
+        xcape
     )
 
     declare -ar block3=(
