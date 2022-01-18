@@ -348,13 +348,13 @@ setup_logind() {
         return 1
     fi
 
-	for key in ${!conf_map[*]}; do
+    for key in ${!conf_map[*]}; do
          value="${conf_map[$key]}"
          if ! grep -q "^${key}=$value" "$logind_conf"; then
             execute "sudo sed -i --follow-symlinks '/^$key\s*=/d' '$logind_conf'" || continue
-			execute "echo '$key=$value' | sudo tee --append $logind_conf > /dev/null"
-		 fi
-	done
+            execute "echo '$key=$value' | sudo tee --append $logind_conf > /dev/null"
+         fi
+    done
 }
 
 
@@ -724,25 +724,25 @@ _install_nfs_client_laptop() {
     [[ -d "$autofs_d" ]] || { err "[$autofs_d] is not a dir; cannot add autofs nfs config!"; return 1; }
     [[ -d "$root_confd" ]] && ! is_dir_empty "$root_confd" || return 0
 
-	for i in "$root_confd/servers/"*; do
-		[[ -f "$i" ]] || continue
-		filename="$(basename -- "$i")"
+    for i in "$root_confd/servers/"*; do
+        [[ -f "$i" ]] || continue
+        filename="$(basename -- "$i")"
         [[ "$filename" == auto.* ]] || { err "incorrect filename for autofs server definition: [$filename]"; continue; }
         target="/etc/$filename"
         [[ -f "$target" ]] && cmp -s "$i" "$target" && continue  # no changes
         execute "sudo cp -- '$i' '$target'"
         changed=1
-	done
+    done
 
-	for i in "$root_confd/master.d/"*; do
-		[[ -f "$i" ]] || continue
-		filename="$(basename -- "$i")"
+    for i in "$root_confd/master.d/"*; do
+        [[ -f "$i" ]] || continue
+        filename="$(basename -- "$i")"
         [[ "$filename" == *.autofs ]] || { err "incorrect filename for autofs master.d definition: [$filename]"; continue; }
         target="$autofs_d/$filename"
         [[ -f "$target" ]] && cmp -s "$i" "$target" && continue  # no changes
         execute "sudo cp -- '$i' '$target'"
         changed=1
-	done
+    done
 
     [[ "$changed" -eq 1 ]] && execute 'sudo service autofs reload'
 
@@ -1712,10 +1712,11 @@ update_clock() {
 
 
 get_apt_key() {
-    local name url src_entry keyfile k opt OPTIND
+    local name url src_entry keyfile k grp_ptrn opt OPTIND
 
-    while getopts "k:" opt; do
+    while getopts 'gk:' opt; do
         case "$opt" in
+            g) grp_ptrn='-----BEGIN PGP PUBLIC KEY BLOCK-----.*END PGP PUBLIC KEY BLOCK-----' ;;  # PGP is embedded in a file at $url and needs to be grepped out first
             k) k="$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
@@ -1723,7 +1724,7 @@ get_apt_key() {
     shift "$((OPTIND-1))"
 
     name="$1"
-    url="$2"  # either keyfile or keyserver, depending on whether -k is used
+    url="$2"  # either keyfile or keyserver, depending on whether -k is used; with -g flag it's a file that contains the PGP key, together with other content (likely an installer script)
     src_entry="$3"
     keyfile="$APT_KEY_DIR/${name}.gpg"
 
@@ -1731,10 +1732,10 @@ get_apt_key() {
     [[ -d "$APT_KEY_DIR" ]] || execute "sudo mkdir -- $APT_KEY_DIR" || return 1
 
     if [[ -n "$k" ]]; then
-		execute "sudo gpg --no-default-keyring --keyring $keyfile --keyserver $url --recv-keys $k" || return 1
+        execute "sudo gpg --no-default-keyring --keyring $keyfile --keyserver $url --recv-keys $k" || return 1
     else
-        # either single-conversion command, if it works:
-        execute "wget -q -O - '$url' | gpg --dearmor | sudo tee $keyfile > /dev/null" || return 1
+        # either single-conversion command, if it works...:
+        execute "wget -q -O - '$url' | grep -Pzo -- '(?s)${grp_ptrn:-.*}' | gpg --dearmor | sudo tee $keyfile > /dev/null" || return 1
 
         # ...or lengthier (but safer?) multi-step conversion:
         #local f tmp_ring
@@ -1745,7 +1746,7 @@ get_apt_key() {
         #execute "gpg --no-default-keyring --keyring $tmp_ring --import $f" || return 1
         #execute "gpg --no-default-keyring --keyring $tmp_ring --export --output $keyfile" || return 1
         #rm -- "$tmp_ring" "$f"
-	fi
+    fi
 
     src_entry="${src_entry//\{s\}/signed-by=$keyfile}"
     execute "echo '$src_entry' | sudo tee /etc/apt/sources.list.d/${name}.list > /dev/null" || return 1
@@ -1754,6 +1755,9 @@ get_apt_key() {
 
 # apt-key is deprecated! instead we follow instructions from https://askubuntu.com/a/1307181
 #  (https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=968148)
+#
+# note if you need to grep embedded key from a (maybe an installer?) file, then do
+#   $ grep -Pzo -- '(?s)-----BEGIN PGP PUBLIC KEY BLOCK-----.*END PGP PUBLIC KEY BLOCK-----'  file
 setup_additional_apt_keys_and_sources() {
 
     # mopidy: (from https://docs.mopidy.com/en/latest/installation/debian/):
@@ -1792,6 +1796,10 @@ setup_additional_apt_keys_and_sources() {
 
     # signal: (from https://signal.org/en/download/#):
     get_apt_key  signal  https://updates.signal.org/desktop/apt/keys.asc "deb [arch=amd64 {s}] https://updates.signal.org/desktop/apt xenial main"
+
+    # estonian open eid: (from https://installer.id.ee/media/install-scripts/install-open-eid.sh):
+    #get_apt_key -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh "deb [{s}] https://installer.id.ee/media/ubuntu/ focal main"
+    get_apt_key  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub "deb [{s}] https://installer.id.ee/media/ubuntu/ focal main"
 
     execute 'sudo apt-get --yes update'
 }
@@ -2041,7 +2049,7 @@ install_own_builds() {
     install_browsh
     install_vnote
     install_delta
-	install_peco
+    install_peco
     install_fd
     install_jd
     install_bat
@@ -2055,6 +2063,7 @@ install_own_builds() {
     is_native && install_slack_term
     install_slack
     install_veracrypt
+    install_open_eid
     install_binance
 
     #install_dwm
@@ -2445,15 +2454,15 @@ extract_tarball() {
         [[ "$standalone" != 1 ]] && dir="$tmpdir" || dir='.'
 
         # TODO: support recursive extraction?
-    	if [[ -n "$file_filter" ]]; then
-    		while IFS= read -r -d $'\0' file; do
-    			grep -Eq "$file_filter" <<< "$(file -iLb "$file")" && break || unset file
-    		done < <(find "$dir" -name "${name_filter:-*}" -type f -print0)
-    	else
-    		file="$(find "$dir" -name "${name_filter:-*}" -type f)"
-    	fi
+        if [[ -n "$file_filter" ]]; then
+            while IFS= read -r -d $'\0' file; do
+                grep -Eq "$file_filter" <<< "$(file -iLb "$file")" && break || unset file
+            done < <(find "$dir" -name "${name_filter:-*}" -type f -print0)
+        else
+            file="$(find "$dir" -name "${name_filter:-*}" -type f)"
+        fi
 
-    	[[ -f "$file" ]] || { err "couldn't locate single extracted/uncompressed file in [$(realpath "$dir")]"; return 1; }
+        [[ -f "$file" ]] || { err "couldn't locate single extracted/uncompressed file in [$(realpath "$dir")]"; return 1; }
         echo "$file"
     fi
 
@@ -2679,12 +2688,12 @@ install_file() {
 
     ftype="$(file -iLb -- "$file")"
     if [[ "$ftype" == *"debian.binary-package; charset=binary" ]]; then
-		execute "sudo apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
-		execute "rm -f -- '$file'"
+        execute "sudo apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
+        execute "rm -f -- '$file'"
     elif [[ "$ftype" == *"executable; charset=binary" ]]; then
         _rename || return 1
-		execute "chmod +x '$file'" || return 1
-		execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
+        execute "chmod +x '$file'" || return 1
+        execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
     elif [[ "$ftype" == *"inode/directory; charset=binary" ]]; then
         [[ -z "$name" ]] && { err "[name] arg needs to be provided when installing a directory"; return 1; }
         _rename || return 1
@@ -2693,7 +2702,7 @@ install_file() {
         execute "mv -- '$file' '$target'" || return 1
     else
         err "dunno how to install file [$file] - unknown type [$ftype]"
-	    execute "rm -f -- '$file'"
+        execute "rm -f -- '$file'"
         return 1
     fi
 }
@@ -5241,7 +5250,7 @@ __choose_prog_to_build() {
         install_exa
         install_gitin
         install_delta
-		install_peco
+        install_peco
         install_synergy
         install_dwm
         install_i3
@@ -5288,6 +5297,7 @@ __choose_prog_to_build() {
         install_minikube
         install_gruvbox_gtk_theme
         install_veracrypt
+        install_open_eid
         install_binance
         install_vbox_guest
         install_brillo
@@ -5651,6 +5661,19 @@ install_veracrypt() {
 
     i="$(printf '%d\n' "${!ver_to_url[@]}" | sort -n | tail -1)"  # select largest (ie latest) version
     install_from_url veracrypt "${ver_to_url[$i]}"
+}
+
+
+# estonian ID card soft; tags: digidoc, id-kaart, id kaart, id card, id-card
+# based on script @ https://github.com/open-eid/linux-installer/blob/master/install-open-eid.sh
+#
+# note our setup logic configures apt repo
+install_open_eid() {
+    install_block 'opensc  open-eid' || return 1
+
+    # Configure Chrome PKCS11 driver for current user, /etc/xdg/autstart/ will init other users on next logon
+    # (taken from the bottom of install-open-eid.sh script)
+    execute '/usr/bin/esteid-update-nssdb'
 }
 
 
@@ -6221,7 +6244,7 @@ execute() {
     eval "$cmd"
     readonly exit_sig=$?
 
-	if [[ "$ignore_errs" -ne 1 ]] && ! list_contains "$exit_sig" "${ok_codes[@]}"; then
+    if [[ "$ignore_errs" -ne 1 ]] && ! list_contains "$exit_sig" "${ok_codes[@]}"; then
         if [[ "$LOGGING_LVL" -ge 1 ]]; then
             echo -e "    ERR CMD: [$cmd] (exit code [$exit_sig])" >> "$EXECUTION_LOG"
             echo -e "        LOC: [$(pwd -P)]" >> "$EXECUTION_LOG"
