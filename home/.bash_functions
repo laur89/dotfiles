@@ -4571,7 +4571,7 @@ ptree() {
 
 
 copy-progress() {
-    local i src dest
+    local i src dest e
 
     if [[ $# -lt 2 ]]; then
         err "at least 2 args required"
@@ -4592,6 +4592,16 @@ copy-progress() {
     done
 
     rsync -ah --info=progress2 --no-i-r -- "${src[@]}" "$dest"
+    e=$?
+
+    if [[ "$e" -eq 0 ]]; then
+        report "copy succeeded, running sync..."
+        sync && report "sync OK" || err "sync failed w/ $?"
+    else
+        err "rsync failed w/ $?"
+    fi
+
+    return "$e"
 }
 
 ################################################
