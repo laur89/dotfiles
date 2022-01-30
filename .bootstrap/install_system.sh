@@ -551,6 +551,7 @@ setup_crontab() {
 
 
 # pass '-s' or '--sudo' as first arg to execute as sudo
+# TODO: mv, cp & ln commands have --backup option (eg --backup=numbered)
 #
 backup_original_and_copy_file() {
     local sudo file dest_dir filename i old_suffixes
@@ -1584,7 +1585,7 @@ setup_config_files() {
     setup_global_shell_links
     setup_private_asset_perms
     setup_global_bash_settings
-    is_native && swap_caps_lock_and_esc
+    #is_native && swap_caps_lock_and_esc
     override_locale_time
 }
 
@@ -1832,6 +1833,10 @@ override_locale_time() {
 # see also https://gist.github.com/tanyuan/55bca522bf50363ae4573d4bdcf06e2e
 #
 # to see current active keyboard setting:    setxkbmap -print -verbose 10
+#################
+# TODO: do not call; looks like changing pc file makes xcape not work for the remapped caps key;
+#       regular ctrl key worked fine, but caps key only worked as esc -- ctrl functionality was broken for it.
+#       we're calling alternative logic from .xinitrc instead.
 swap_caps_lock_and_esc() {
     local conf_file
 
@@ -3902,6 +3907,9 @@ install_i3_deps() {
             && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-cycle-windows" || err "installing i3-cycle-windows failed /w $?"
 
 
+    # TODO: consider https://github.com/infokiller/i3-workspace-groups
+    # TODO: consider https://github.com/JonnyHaystack/i3-resurrect
+
     # create links of our own i3 scripts on $PATH:
     create_symlinks "$BASE_DATA_DIR/dev/scripts/i3" "$HOME/bin"
 
@@ -4866,6 +4874,7 @@ install_from_repo() {
         screenfetch
         neofetch
         maim
+        flameshot
         ffmpeg
         ffmpegthumbnailer
         vokoscreen-ng
