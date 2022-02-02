@@ -1734,9 +1734,11 @@ get_apt_key() {
 
     if [[ -n "$k" ]]; then
         execute "sudo gpg --no-default-keyring --keyring $keyfile --keyserver $url --recv-keys $k" || return 1
+    elif [[ -n "$grp_ptrn" ]]; then
+        execute "wget -q -O - '$url' | grep -Pzo -- '(?s)$grp_ptrn' | gpg --dearmor | sudo tee $keyfile > /dev/null" || return 1
     else
         # either single-conversion command, if it works...:
-        execute "wget -q -O - '$url' | grep -Pzo -- '(?s)${grp_ptrn:-.*}' | gpg --dearmor | sudo tee $keyfile > /dev/null" || return 1
+        execute "wget -q -O - '$url' | gpg --dearmor | sudo tee $keyfile > /dev/null" || return 1
 
         # ...or lengthier (but safer?) multi-step conversion:
         #local f tmp_ring
