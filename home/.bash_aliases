@@ -236,15 +236,52 @@ alias dkd='docker run -d -P'
 # Run interactive container, e.g., $dki base_image /bin/bash
 alias dki='docker run -i -t -P'
 
+_running_dock_by_name() {
+    local input opt OPTIND single name_to_id name line fzf_selection id
+
+    while getopts 's' opt; do
+        case "$opt" in
+           s) single=1
+              ;;
+           *)
+              return 1
+              ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    input="$*"
+
+    if [[ "$single" == 1 ]]; then
+        declare -A name_to_id
+
+        while read -r line; do
+            name="$(cut -d' ' -f2- <<< "$line")"
+            fzf_selection+="${name}\n"
+            name_to_id[$name]="$(cut -d' ' -f1 <<< "$line")"
+        done < <(docker ps --no-trunc -qf "name=$input" --format '{{.ID}} {{.Names}}')
+
+        readonly fzf_selection="${fzf_selection:0:$(( ${#fzf_selection} - 2 ))}"  # strip the trailing newline
+        name="$(echo -e "$fzf_selection" | fzf --select-1 --exit-0)" || return 1
+        id="${name_to_id[$name]}"
+        [[ -z "$id" ]] && { err "no docker found by name [$input]"; return 1; }
+        echo -n "$id"
+        return 0
+        #fzf --select-1 --multi --exit-0 --print0 <<< "${name_to_id[@]}"
+    else
+        docker ps --no-trunc -qf "name=$input"
+    fi
+}
+
 # Execute interactive container, e.g., $dex base /bin/bash
 # note: docker exec  runs command in an (already) RUNNING container
 #alias dex="docker exec -i -t"
-dex() { docker exec -it $(docker ps --no-trunc -qf "name=$1") "${@:2}"; }
+dex() { docker exec -it "$(_running_dock_by_name -s "$1")" "${@:2}"; }
 
 # Stop all containers
 dstop() { docker stop $(docker ps --no-trunc -aq); }
 
-# Remove all containers
+# Remove all (all, not just running!) containers
 drm() { docker rm $(docker ps --no-trunc -aq); }
 # TODO: rename drm() to drma(), and use drm() to delete specific containers only?
 
@@ -259,10 +296,10 @@ alias drmi='dri'
 dbu() { docker build --tag="$1" .; }
 
 # Show all alias related docker
-dalias() { alias | grep 'docker' | sed "s/^\([^=]*\)=\(.*\)/\1 => \2/"| sed "s/['|\']//g" | sort; }
+dalias() { alias | grep 'docker' | sed "s/^\([^=]*\)=\(.*\)/\1 => \2/;s/['|\']//g" | sort; }
 
 # Bash into running container
-dbash() { docker exec -it $(docker ps --no-trunc -qf "name=$1") bash -l; }
+dbash() { docker exec -it "$(_running_dock_by_name -s "$1")" bash -l; }
 
 # docker (better use functions in bash_funtions.sh):
 #alias drmi='docker rmi $(docker images --filter "dangling=true" -q --no-trunc)'
