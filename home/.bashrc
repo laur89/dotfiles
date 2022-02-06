@@ -209,6 +209,7 @@ shopt -s lithist        # if cmdhist is enabled, then multiline commands are sav
 set -o vi               # needs to be added *before* fzf is sourced, otherwise fzf is screwed:
                         #     https://github.com/junegunn/fzf#key-bindings-for-command-line
 stty -ixon              # disable ctrl+s/ctrl+q;
+set -o pipefail
 
 unset MAILCHECK         # avoid delays;
 ##########################################
