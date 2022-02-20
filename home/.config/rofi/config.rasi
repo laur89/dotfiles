@@ -1,0 +1,18 @@
+configuration {
+    terminal: "urxvtc";
+    show-icons: true;
+    font: "Droid Sans Mono for Powerline 10";
+
+    // Key-bindings; note to use existing binding, you first need to re-bind its current action to something else in order to release it for re-binding
+    // run [rofi -show keys] to see current bindings
+    kb-accept-entry: "Return,KP_Enter";
+    kb-row-down: [Ctrl-j,Ctrl-n,Down];
+    kb-remove-to-eol: "Ctrl-z";
+    kb-row-up: "Ctrl-k,Ctrl-p,Up,ISO_Left_Tab";
+}
+
+@theme "/usr/share/rofi/themes/gruvbox-dark-hard.rasi"
+
+window {
+    border: 3px;
+}
