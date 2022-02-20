@@ -2529,7 +2529,7 @@ install_ferdi() {  # https://github.com/getferdi/ferdi
 #
 # how to sign pdf: https://viktorsmari.github.io/linux/pdf/2018/08/23/annotate-pdf-linux.html
 install_xournalpp() {  # https://github.com/xournalpp/xournalpp
-    install_deb_from_git xournalpp xournalpp x86_64.deb
+    install_deb_from_git xournalpp xournalpp 'Debian-.*x86_64.deb'
 }
 
 
@@ -5181,7 +5181,7 @@ choose_step() {
 choose_single_task() {
     local choices
 
-    LOGGING_LVL=1
+    [[ -z "$MANUAL_LOG_LVL" ]] && LOGGING_LVL=1
     readonly MODE=0
 
     source_shell_conf
@@ -5326,7 +5326,7 @@ __choose_prog_to_build() {
 
 full_install() {
 
-    LOGGING_LVL=10
+    [[ -z "$MANUAL_LOG_LVL" ]] && LOGGING_LVL=10
     readonly MODE=1
 
     setup
@@ -5346,7 +5346,7 @@ full_install() {
 
 # quicker update than full_install() to be executed periodically
 quick_refresh() {
-    LOGGING_LVL=1
+    [[ -z "$MANUAL_LOG_LVL" ]] && LOGGING_LVL=1
     readonly MODE=2
 
     setup
@@ -5357,7 +5357,7 @@ quick_refresh() {
 
 # even faster refresher without the install_from_repo() step that's included in install_progs()
 quicker_refresh() {
-    LOGGING_LVL=1
+    [[ -z "$MANUAL_LOG_LVL" ]] && LOGGING_LVL=1
     readonly MODE=3
 
     setup
@@ -6193,6 +6193,7 @@ check_connection() {
 }
 
 
+# https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
 generate_key() {
     local mail valid_mail_regex
 
@@ -6213,7 +6214,8 @@ generate_key() {
         read -r mail
     done
 
-    execute "ssh-keygen -t rsa -b 4096 -C '$mail' -f '$PRIVATE_KEY_LOC'"
+    #execute "ssh-keygen -t rsa -b 4096 -C '$mail' -f '$PRIVATE_KEY_LOC'"  # for RSA
+    execute "ssh-keygen -t ed25519 -C '$mail' -f '$PRIVATE_KEY_LOC'"
 }
 
 
@@ -6811,6 +6813,7 @@ create_symlinks() {
 
     # Create symlink of every file (note target file will be overwritten no matter what):
     find "$src" -maxdepth 1 -mindepth 1 -type f -printf 'ln -sf -- "%p" "$dest"\n' | dest="$dest" bash
+    #find "$src" -maxdepth 1 -mindepth 1 -type f -print | xargs -I '{}' ln -sf -- "{}" "$dest"
 }
 
 
@@ -6968,7 +6971,7 @@ cleanup() {
 #----------------------------
 #---  Script entry point  ---
 #----------------------------
-while getopts "NFSUQOP:" OPT_; do
+while getopts 'NFSUQOP:L:' OPT_; do
     case "$OPT_" in
         N) NON_INTERACTIVE=1
             ;;
@@ -6983,6 +6986,10 @@ while getopts "NFSUQOP:" OPT_; do
         O) ALLOW_OFFLINE=1  # allow running offline
             ;;
         P) PLATFORM="$OPTARG"  # force the platform-specific config to install (as opposed to deriving it from hostname); best not use it and let platform be resolved from our hostname
+            ;;
+        L) LOGGING_LVL="$OPTARG"  # log vl
+           MANUAL_LOG_LVL=TRUE
+           is_digit "$OPTARG" || { err "log level needs to be an int, but was [$OPTARG]"; exit 1; }
             ;;
         *) print_usage; exit 1 ;;
     esac
