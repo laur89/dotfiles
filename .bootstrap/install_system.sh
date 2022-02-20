@@ -50,7 +50,8 @@ readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
 readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
 readonly BUILD_DOCK='deb-build-box'              # name of the build container
-readonly DEB_STABLE=buster                   # current _stable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
+readonly DEB_STABLE=bullseye                    # current _stable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
+readonly DEB_OLDSTABLE=buster                   # current _oldstable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
 
 #------------------------
 #--- Global Variables ---
@@ -1233,7 +1234,11 @@ install_deps() {
 
     # pyenv  # https://github.com/pyenv/pyenv-installer
     # TODO: consider replacing all env/version managers by asdf
-    install_from_url_shell  pyenv 'https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer'
+    if [[ -d "$HOME/.pyenv" ]]; then  # already installed
+        execute 'pyenv update'
+    else
+        install_from_url_shell  pyenv 'https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer'
+    fi
 
     # some py deps requred by scripts:  # TODO: should we not install these via said scripts' requirements.txt file instead?
     py_install exchangelib vobject icalendar arrow
@@ -1764,8 +1769,8 @@ get_apt_key() {
 setup_additional_apt_keys_and_sources() {
 
     # mopidy: (from https://docs.mopidy.com/en/latest/installation/debian/):
-    # deb-line is from https://apt.mopidy.com/${DEB_STABLE}.list:
-    get_apt_key  mopidy  https://apt.mopidy.com/mopidy.gpg "deb [{s}] https://apt.mopidy.com/ $DEB_STABLE main contrib non-free"
+    # deb-line is from https://apt.mopidy.com/${DEB_OLDSTABLE}.list:
+    get_apt_key  mopidy  https://apt.mopidy.com/mopidy.gpg "deb [{s}] https://apt.mopidy.com/ $DEB_OLDSTABLE main contrib non-free"
 
     # docker:  (from https://docs.docker.com/install/linux/docker-ce/debian/):
     # note we have to use hard-coded stable codename instead of 'testing' or testing codename,
@@ -1779,20 +1784,24 @@ setup_additional_apt_keys_and_sources() {
 
     # seafile-client: (from https://help.seafile.com/syncing_client/install_linux_client/):
     #     seafile-drive instructions would be @ https://help.seafile.com/drive_client/drive_client_for_linux/
-    get_apt_key  seafile  https://linux-clients.seafile.com/seafile.asc "deb [arch=amd64 {s}] https://linux-clients.seafile.com/seafile-deb/$DEB_STABLE/ stable main"
+    get_apt_key  seafile  https://linux-clients.seafile.com/seafile.asc "deb [arch=amd64 {s}] https://linux-clients.seafile.com/seafile-deb/$DEB_OLDSTABLE/ stable main"
 
     # mono: (from https://www.mono-project.com/download/stable/#download-lin-debian):
     # later on installed by 'mono-complete' pkg
-    get_apt_key -k 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF  mono  hkp://keyserver.ubuntu.com:80 "deb [{s}] https://download.mono-project.com/repo/debian stable-$DEB_STABLE main"
+    get_apt_key -k 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF  mono  hkp://keyserver.ubuntu.com:80 "deb [{s}] https://download.mono-project.com/repo/debian stable-$DEB_OLDSTABLE main"
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
     get_apt_key  charles  https://www.charlesproxy.com/packages/apt/PublicKey "deb [{s}] https://www.charlesproxy.com/packages/apt/ charles-proxy main"
 
+    # TODO: migrate yarn to v2 (see https://yarnpkg.com/getting-started/migration#why-should-you-migrate)
     # yarn:  (from https://yarnpkg.com/en/docs/install#debian-stable):
     get_apt_key  yarn  https://dl.yarnpkg.com/debian/pubkey.gpg "deb [{s}] https://dl.yarnpkg.com/debian/ stable main"
 
-    # kubectl:  (from https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-on-linux):
+    # kubectl:  (from https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-using-native-package-management):
     get_apt_key  kubernetes  https://packages.cloud.google.com/apt/doc/apt-key.gpg "deb [{s}] https://apt.kubernetes.io/ kubernetes-xenial main"
+
+    # terraform:  (from https://www.terraform.io/downloads):
+    get_apt_key  terraform  https://apt.releases.hashicorp.com/gpg "deb [arch=amd64 {s}] https://apt.releases.hashicorp.com $DEB_STABLE main"
 
     # openvpn:  (from https://openvpn.net/cloud-docs/openvpn-3-client-for-linux/):
     get_apt_key  openvpn  https://swupdate.openvpn.net/repos/openvpn-repo-pkg-key.pub "deb [{s}] https://swupdate.openvpn.net/community/openvpn3/repos $DEB_STABLE main"
@@ -2020,7 +2029,6 @@ install_devstuff() {
     is_native && install_bloomrpc
     #install_postman
     install_insomnia
-    install_terraform
     install_terragrunt
     install_minikube
 
@@ -2368,7 +2376,8 @@ install_deb_from_git() {
 
 
 # Fetch and extract a tarball from given github /releases page.
-# Note it'll be fetched and extracted into current $pwd, or into new tempdir if -S opt is provided.
+# Whether extraction is done into $PWD or a new tmpdir, is controlled via -S option.
+#
 # Also note the operation is successful only if a single directory gets extracted out.
 #
 #   -S   see doc on extract_tarball()
@@ -2809,26 +2818,10 @@ install_k9s() {  # https://github.com/derailed/k9s
 # tag: aws, k8s, kubernetes, kubectl
 # installation instructions: https://krew.sigs.k8s.io/docs/user-guide/setup/install/
 install_krew() {  # https://github.com/kubernetes-sigs/krew
-    local dl_url tmpdir KREW
-
-    # resolve url to track the actual version installed:
-    dl_url="$(resolve_dl_urls "https://github.com/kubernetes-sigs/krew/releases/latest" '.*krew.yaml')" || return 1
-    is_installed "$dl_url" krew && return 2
-
-    tmpdir="$(mktemp -d 'krew-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-    execute "pushd -- '$tmpdir'" || return 1
-
-    curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew.{tar.gz,yaml}" || { err "krew download failed w/ $?"; popd; return 1; }
-    tar zxvf krew.tar.gz || { err "krew untarring failed w/ $?"; popd; return 1; }
-    KREW=./krew-"$(uname | tr '[:upper:]' '[:lower:]')_amd64"
-    test -x "$KREW" || { err "krew executable [$KREW] not found"; popd; return 1; }
-    "$KREW" install --manifest=krew.yaml --archive=krew.tar.gz || { err "krew install failed w/ $?"; popd; return 1; }
-    "$KREW" update || err "[krew update] failed w/ [$?]"
-
-    execute "popd" || return 1
-    execute "rm -rf -- '$tmpdir'"
-
-    add_to_dl_log "github-kubernetes-sigs-krew" "$dl_url"
+    local dir
+    dir="$(fetch_extract_tarball_from_git  kubernetes-sigs krew 'linux_amd64.tar.gz')" || return 1
+    execute "$dir/krew-linux_amd64  install krew"
+    #"$KREW" update || err "[krew update] failed w/ [$?]"
 }
 
 # kubernetes (k8s) config/resource sanitizer
@@ -3040,18 +3033,6 @@ install_weeslack() {  # https://github.com/wee-slack/wee-slack
     execute 'curl -O https://raw.githubusercontent.com/wee-slack/wee-slack/master/wee_slack.py' || return 1
     execute 'ln -s ../wee_slack.py autoload'  # in order to start wee-slack automatically when weechat starts
     execute 'popd' || return 1
-}
-
-
-install_terraform() {  # https://www.terraform.io/downloads.html
-    local bin target
-
-    target='/usr/local/bin'
-
-    bin="$(fetch_release_from_any -I 'terraform' 'https://www.terraform.io/downloads.html' '_linux_amd64.zip')" || return $?
-    execute "chmod +x -- '$bin'" || return 1
-    execute "sudo mv -- '$bin' '$target'" || { err "installing [$bin] in [$target] failed"; return 1; }
-    return 0
 }
 
 install_terragrunt() {  # https://github.com/gruntwork-io/terragrunt/
@@ -4939,6 +4920,7 @@ install_from_repo() {
         docker-compose
         mitmproxy
         charles-proxy
+        terraform
     )
     # old/deprecated block4:
 
@@ -5302,7 +5284,6 @@ __choose_prog_to_build() {
         install_weeslack
         install_slack_term
         install_slack
-        install_terraform
         install_terragrunt
         install_bluejeans
         install_minikube
@@ -6521,6 +6502,7 @@ is_native() {
 
 
 is_64_bit() {
+    # also could do  $ dpkg --print-architecture
     [[ "$(uname -m)" == x86_64 ]]
 }
 
