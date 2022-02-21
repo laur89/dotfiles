@@ -15,4 +15,11 @@ configuration {
 
 window {
     border: 3px;
+    padding: 2;
+    border-radius: 10px;  /* works with compositor */
 }
+/*
+listview {
+	lines: 4;
+	columns: 3;
+}*/
