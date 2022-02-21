@@ -1,4 +1,5 @@
 {
     "term": "urxvtc",
-    "ratio": 0.35
+    "ratio": 0.35,
+    "borderWidthPx": 2
 }
