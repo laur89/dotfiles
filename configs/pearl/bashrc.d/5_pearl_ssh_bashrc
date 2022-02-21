@@ -38,7 +38,7 @@ unset MAILCHECK
 ###########################
 # alias/function overrides:
 command -v nvim >/dev/null || alias nvim='vim'
-command -v bat >/dev/null || alias bat='cat'
+command -v batcat >/dev/null || alias bat='cat'
 command -v rg >/dev/null || alias rg='ffstr'
 
 if ! command -v tree >/dev/null; then

@@ -28,9 +28,9 @@ bindsym $mod+c kill
 #bindsym $mod+d exec  dmenu_run -b -nf "#839496" -sb "#b58900" -sf "#002b36" -nb "#002b36" -fn "tewi-8"
 
 # Start Rofi:
-bindsym $mod+space exec --no-startup-id rofi -show combi -combi-modi 'window#drun#run' \
--modi combi#ssh -lines 15 -columns 2 -width 50 -separator-style "none" -sidebar-mode
-# rofi-tmux:
+bindsym $mod+space exec --no-startup-id rofi -show combi \
+-combi-modi 'window#drun#run' -modi combi#ssh -sidebar-mode
+# rofi-tmux (aka rft):
 bindsym $mod+Shift+space exec --no-startup-id rft sw
 
 # Change focus (note 'nop' is read by our listener script(s))
