@@ -1191,7 +1191,7 @@ install_deps() {
     #py_install starred     # https://github.com/maguowei/starred  - create list of your github starts; note it's updated by CI so no real reason to install it locally
 
     # rofi-based emoji picker
-    # TODO: needs rofi 1.6.0+ (see https://github.com/fdw/rofimoji/issues/76)
+    # change rofi command to something like [-modi combi#ssh#emoji:rofimoji] to use.
     py_install -g fdw  rofimoji  # https://github.com/fdw/rofimoji
 
     # keepass cli tool
@@ -3376,6 +3376,9 @@ install_copyq() {
 
     create_deb_install_and_store copyq || { popd; return 1; }
 
+    # put package on hold so they don't get overridden by apt-upgrade:
+    execute 'sudo apt-mark hold  copyq'
+
     execute "popd"
     execute "sudo rm -rf -- $tmpdir"
 
@@ -3441,9 +3444,12 @@ install_goforit() {
     install_block '
         valac
         cmake
-        intltool
+        gettext
         libgtk-3-dev
         libglib2.0-dev
+        libcanberra-dev
+        libpeas-dev
+        libayatana-appindicator3-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
 
@@ -3452,7 +3458,7 @@ install_goforit() {
     execute "mkdir $tmpdir/build"
     execute "pushd $tmpdir/build" || return 1
     execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..' || { err; popd; return 1; }
-    execute "make" || { err; popd; return 1; }
+    execute make || { err; popd; return 1; }
 
     create_deb_install_and_store goforit || { popd; return 1; }
 
@@ -3632,6 +3638,9 @@ install_i3lock_fancy() {
     report "building i3lock-fancy..."
     create_deb_install_and_store i3lock-fancy || { popd; return 1; }
 
+    # put package on hold so they don't get overridden by apt-upgrade:
+    execute 'sudo apt-mark hold  i3lock-fancy'
+
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
 
@@ -3770,7 +3779,7 @@ EOF
     execute 'sudo dpkg -i ../i3_*.deb'
 
     # put package on hold so they don't get overridden by apt-upgrade:
-    execute 'sudo apt-mark hold i3 i3-wm i3-wm-build-deps'
+    execute 'sudo apt-mark hold  i3 i3-wm i3-wm-build-deps'
 
 
     # TODO: deprecated, check-install based way:
@@ -3826,7 +3835,7 @@ install_i3() {
 py_install() {
     local opt OPTIND github pkg
 
-    while getopts "g" opt; do
+    while getopts 'g' opt; do
         case "$opt" in
             g) github=1 ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
@@ -3864,13 +3873,16 @@ install_i3_deps() {
 
     py_install i3ipc      # https://github.com/altdesktop/i3ipc-python
 
-    # rofi-tmux:
+    # rofi-tmux (aka rft):
     #py_install rofi-tmux  # https://github.com/viniarck/rofi-tmux  # TODO use this as soon as/if our PR is accepted; or not, it's rather slow to start
     #py_install -g laur89 rofi-tmux  # https://github.com/laur89/rofi-tmux (note it includes i3 integration); aka rtf;  this version is extension of the original
     clone_or_pull_repo "laur89" "rofi-tmux" "$BASE_DEPS_LOC"
     #execute "pip3 install --user -r ${BASE_DEPS_LOC}/rofi-tmux/requirements.txt"  # as we're not installing rft w/ pip, we need to manually install deps
     create_link "${BASE_DEPS_LOC}/rofi-tmux/rft/main.py" "$HOME/bin/rft"
-    py_install click libtmux python-rofi i3ipc  # rofi-tmux/rft dependencies
+
+    # install rofi-tmux/rft dependencies:
+    py_install click i3ipc #python-rofi libtmux
+    py_install -g bcbnz  python-rofi
 
 
     # i3ass  # https://github.com/budlabs/i3ass/
@@ -3879,15 +3891,17 @@ install_i3_deps() {
 
 
     # install i3-quickterm   # https://github.com/lbonn/i3-quickterm
-    #curl --fail --output "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3-quickterm' \  # TODO: enable this one if/when PR is accepted
+    #curl --fail --output "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3_quickterm/main.py' \  # TODO: enable this one if/when PR is accepted
     curl --fail --output "$f" 'https://raw.githubusercontent.com/laur89/i3-quickterm/master/i3-quickterm' \
-            && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-quickterm" || err "installing i3-quickterm failed /w $?"
+            && execute "chmod +x -- '$f'" \
+            && execute "mv -- '$f' $HOME/bin/i3-quickterm" || err "installing i3-quickterm failed /w $?"
 
 
     # install i3-cycle-windows   # https://github.com/DavsX/dotfiles/blob/master/bin/i3_cycle_windows
     # this script defines a 'next' window, so we could bind it to someting like super+mouse_wheel;
     curl --fail --output "$f" 'https://raw.githubusercontent.com/DavsX/dotfiles/master/bin/i3_cycle_windows' \
-            && execute "chmod +x -- '$f'" && execute "mv -- '$f' $HOME/bin/i3-cycle-windows" || err "installing i3-cycle-windows failed /w $?"
+            && execute "chmod +x -- '$f'" \
+            && execute "mv -- '$f' $HOME/bin/i3-cycle-windows" || err "installing i3-cycle-windows failed /w $?"
 
 
     # TODO: consider https://github.com/infokiller/i3-workspace-groups
@@ -3944,6 +3958,9 @@ install_polybar() {
 
     execute "pushd build/" || { popd; return 1; }
     create_deb_install_and_store polybar  # TODO: note still using checkinstall
+
+    # put package on hold so they don't get overridden by apt-upgrade:
+    execute 'sudo apt-mark hold  polybar'
 
     execute "popd; popd"
     execute "sudo rm -rf -- '$dir'"
