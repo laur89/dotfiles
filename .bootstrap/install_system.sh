@@ -1803,10 +1803,10 @@ setup_additional_apt_keys_and_sources() {
     # terraform:  (from https://www.terraform.io/downloads):
     get_apt_key  terraform  https://apt.releases.hashicorp.com/gpg "deb [arch=amd64 {s}] https://apt.releases.hashicorp.com $DEB_STABLE main"
 
-    # openvpn:  (from https://openvpn.net/cloud-docs/openvpn-3-client-for-linux/):
+    # openvpn3:  (from https://openvpn.net/cloud-docs/openvpn-3-client-for-linux/):
     get_apt_key  openvpn  https://swupdate.openvpn.net/repos/openvpn-repo-pkg-key.pub "deb [{s}] https://swupdate.openvpn.net/community/openvpn3/repos $DEB_STABLE main"
 
-    # signal: (from https://signal.org/en/download/#):
+    # signal: (from https://signal.org/en/download/):
     get_apt_key  signal  https://updates.signal.org/desktop/apt/keys.asc "deb [arch=amd64 {s}] https://updates.signal.org/desktop/apt xenial main"
 
     # estonian open eid: (from https://installer.id.ee/media/install-scripts/install-open-eid.sh):
