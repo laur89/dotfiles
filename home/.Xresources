@@ -18,7 +18,7 @@ Xft.lcdfilter: lcddefault
 ! note as we tend to use gnome, then it might be also settable-gettable via gsettings,
 ! eg ' gsettings get org.gnome.desktop.interface cursor-size' or '... cursor-theme'
 ! for query, replace get->set for setting value.
-! Note cursor size generally wasn't needed to be set, but it tended to get huge
+! Note cursor size generally wasnt needed to be set, but it tended to get huge
 ! with laptops when docked in multi-screen setup.
 Xcursor.size: 24
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -44,10 +44,12 @@ URxvt*secondaryScroll: true
 URxvt*saveLines: 2000
 ! icon:
 !URxvt.iconFile: /home/laur/.icons/ultra-flat-icons/apps/scalable/lxterminal.svg
+! set meta key:
+URxvt*modifier: alt
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! kuake
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-URxvt.kuake.hotkey: F12
+!URxvt.kuake.hotkey: F12
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Matcher
 !   note: either use this, or url-select, not both
