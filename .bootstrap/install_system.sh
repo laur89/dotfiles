@@ -2478,7 +2478,7 @@ extract_tarball() {
             file="$(find "$dir" -name "${name_filter:-*}" -type f)"
         fi
 
-        [[ -f "$file" ]] || { err "couldn't locate single extracted/uncompressed file in [$(realpath "$dir")]"; return 1; }
+        [[ -f "$file" ]] || { err "couldn't locate single extracted/uncompressed file in [$(realpath "$dir")]; resulting/found asset is [$file]"; return 1; }
         echo "$file"
     fi
 
@@ -2498,7 +2498,8 @@ extract_tarball() {
 install_bin_from_git() {
     local opt bin target name OPTIND fetch_git_args
 
-    fetch_git_args=(-F 'application/x-(sharedlib|executable)')
+    # as to why we include 'sharedlib', see https://gitlab.freedesktop.org/xdg/shared-mime-info/-/issues/11
+    fetch_git_args=(-F 'application/x-(pie-)?(sharedlib|executable)')
     target='/usr/local/bin'  # default
     while getopts 'N:d:n:F:' opt; do
         case "$opt" in
@@ -3394,6 +3395,12 @@ install_uhk_agent() {
 }
 
 
+# install sway-overfocus, allowing easier window focus change/movement   # https://github.com/korreman/sway-overfocus
+install_overfocus() {
+    install_bin_from_git -N sway-overfocus -d "$HOME/bin" korreman sway-overfocus '_x86-64.tar.gz'
+}
+
+
 # runs checkinstall in current working dir, and copies the created
 # .deb file to $BASE_BUILDS_DIR/
 create_deb_install_and_store() {
@@ -3867,6 +3874,9 @@ install_i3_conf() {
     update-conf.py -f "$conf" || { err "i3 config install failed w/ $?"; return 1; }
 }
 
+# TODO: also consider:
+#  - https://gitlab.com/aquator/i3-scratchpad - docks/launches/toggles windows/apps at specific position on screen
+#  - https://github.com/justahuman1/i3-grid
 install_i3_deps() {
     local f
     f="$TMP_DIR/i3-dep-${RANDOM}"
@@ -3896,13 +3906,18 @@ install_i3_deps() {
             && execute "chmod +x -- '$f'" \
             && execute "mv -- '$f' $HOME/bin/i3-quickterm" || err "installing i3-quickterm failed /w $?"
 
-
     # install i3-cycle-windows   # https://github.com/DavsX/dotfiles/blob/master/bin/i3_cycle_windows
     # this script defines a 'next' window, so we could bind it to someting like super+mouse_wheel;
     curl --fail --output "$f" 'https://raw.githubusercontent.com/DavsX/dotfiles/master/bin/i3_cycle_windows' \
             && execute "chmod +x -- '$f'" \
             && execute "mv -- '$f' $HOME/bin/i3-cycle-windows" || err "installing i3-cycle-windows failed /w $?"
 
+    # install i3move, allowing easier floating-window movement   # https://github.com/dmbuce/i3b
+    curl --fail --output "$f" 'https://raw.githubusercontent.com/DMBuce/i3b/master/bin/i3move' \
+            && execute "chmod +x -- '$f'" \
+            && execute "mv -- '$f' $HOME/bin/i3move" || err "installing i3move failed /w $?"
+
+    install_overfocus
 
     # TODO: consider https://github.com/infokiller/i3-workspace-groups
     # TODO: consider https://github.com/JonnyHaystack/i3-resurrect
