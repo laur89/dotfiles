@@ -77,7 +77,7 @@ alias kof='kubeoff'
 alias logout="pkill -TERM -u $(whoami) & sleep 5 && pkill -KILL -u $(whoami) && exit 0"
 #alias logout="pkill -u $USER"   # by default pkill sends SIGTERM signal
 #alias logout='kill -9 -1' # kill all processes *you* can kill
-alias bat=batcat  # on ubuntu/debian, bat installs now as batcat command
+command -v batcat > /dev/null 2>&1 && alias bat=batcat  # on ubuntu/debian, bat installs now as batcat command
 alias fd="fd --hidden --exclude '.git'"  # TODO: consider adding --no-ignore option to bypass gitignore, fdignore et al
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
