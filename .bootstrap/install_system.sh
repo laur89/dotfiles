@@ -1201,9 +1201,13 @@ install_deps() {
     py_install keepmenu     # https://github.com/firecat53/keepmenu
 
     #  TODO: spotify extensions need to be installed globally??
-    # mopidy-youtube        # https://pypi.org/project/Mopidy-YouTube/
+    # mopidy-youtube        # https://mopidy.com/ext/youtube/
     install_block  gstreamer1.0-plugins-bad
     py_install Mopidy-Youtube
+
+    # mopidy-local        # https://mopidy.com/ext/local/
+    # (provides us with 'mopidy local scan' command)
+	py_install Mopidy-Local
 
     # mopidy-soundcloud     # https://mopidy.com/ext/soundcloud/
     py_install Mopidy-SoundCloud
@@ -1701,7 +1705,7 @@ update_clock() {
         return 0
     fi
 
-    remote_time="$(curl --connect-timeout 2 --max-time 2 --fail --insecure --silent --head "$src" 2>&1 \
+    remote_time="$(curl --connect-timeout 5 --max-time 5 --fail --insecure --silent --head "$src" 2>&1 \
             | grep -ioP '^date:\s*\K.*' | { read -r t; [[ -z "$t" ]] && return 1; date +%s -d "$t"; })"
 
     is_digit "$remote_time" || { err "resolved remote [$src] time was not digit: [$remote_time]"; return 1; }
@@ -1913,7 +1917,7 @@ upgrade_firmware() {
     execute 'fwupdmgr get-devices'
 
     # download latest metadata from LVFS:
-    execute -c 0,2 'fwupdmgr refresh'  # note it tends to exit w/ 2, and saying it was refreshed X time ago
+    execute -c 0,2 'fwupdmgr refresh'  # note it can exit w/ 2, and saying it was refreshed X time ago; not the case if passing '--force' flag to it
 
     # if updates are available, they'll be displayed:
     execute -c 0,2 -r 'fwupdmgr get-updates'
@@ -2758,7 +2762,15 @@ install_slack_term() {  # https://github.com/erroneousboat/slack-term
 
 
 install_slack() {  # https://slack.com/intl/en-es/help/articles/212924728-Download-Slack-for-Linux--beta-
-    snap_install slack --classic
+    # snap version:
+    #snap_install slack
+
+    # ...or deb:
+    local deb
+
+    deb="$(fetch_release_from_any -I slack 'https://slack.com/intl/en-gb/downloads/instructions/ubuntu' '-amd64.deb')" || return $?
+    execute "sudo apt-get --yes install '$deb'" || return 1
+    return 0
 }
 
 
@@ -3397,7 +3409,7 @@ install_uhk_agent() {
 
 # install sway-overfocus, allowing easier window focus change/movement   # https://github.com/korreman/sway-overfocus
 install_overfocus() {
-    install_bin_from_git -N sway-overfocus -d "$HOME/bin" korreman sway-overfocus '_x86-64.tar.gz'
+    install_bin_from_git -N sway-overfocus -d "$HOME/bin" korreman sway-overfocus '-x86_64.tar.gz'
 }
 
 
@@ -3946,6 +3958,8 @@ install_polybar() {
         cmake-data
         pkg-config
         python3-sphinx
+        python3-packaging
+        libuv1-dev
         libcairo2-dev
         libxcb1-dev
         libxcb-util0-dev
@@ -5970,7 +5984,7 @@ post_install_progs_setup() {
     enable_network_manager
     is_native && install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present  # TODO: do we want to install these only on native systems?
     #is_native && execute -i "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
-    is_native && execute "mopidy local scan"            # update mopidy library
+    is_native && execute 'mopidy local scan'            # update mopidy library;
     is_native && execute "sudo sensors-detect --auto"   # answer enter for default values (this is lm-sensors config)
     increase_inotify_watches_limit         # for intellij IDEA
     enable_unprivileged_containers_for_regular_users
