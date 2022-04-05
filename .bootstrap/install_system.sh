@@ -1146,8 +1146,12 @@ install_deps() {
 
     # sdkman:  # https://sdkman.io/
     # TODO: consider replacing all env/version managers by asdf
-    execute "curl -sf 'https://get.sdkman.io' | bash"  # TODO depends whether win or linux
-    #install_from_url_shell  sdkman 'https://get.sdkman.io'  # TODO: can't use yet, as https://get.sdkman.io doesn't have etag or anything other useful to version by
+    if [[ -d "$HOME/.sdkman" ]]; then  # already installed; note if you'd add some config from that dir to homeshick, then this check would effectively become invalid!
+        execute 'sdk selfupdate'
+    else
+        execute "curl -sf 'https://get.sdkman.io' | bash"  # TODO depends whether win or linux
+        #install_from_url_shell  sdkman 'https://get.sdkman.io'  # TODO: can't use yet, as https://get.sdkman.io doesn't have etag or anything other useful to version by
+    fi
 
     # cheat.sh:  # https://github.com/chubin/cheat.sh#installation
     curl -fsSL "https://cht.sh/:cht.sh" > ~/bin/cht.sh && chmod +x ~/bin/cht.sh || err "curling cheat.sh failed w/ [$?]"
@@ -3033,6 +3037,7 @@ install_insomnia() {
 
 
 # https://snapcraft.io/install/alacritty/debian#install
+# TODO: possibly no longer updated; snap page says 'last updated 17 June 2021'
 install_alacritty() {
     snap_install alacritty --classic
 }

@@ -1155,7 +1155,7 @@ ffstr() {
     unset __find_fun
 }
 
-__mem_cpu_most_common_fun(){
+__mem_cpu_most_common_fun() {
     local num ps_out first_hdr second_hdr first_ps_col second_ps_col format
 
     readonly first_hdr="$1"
