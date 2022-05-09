@@ -1984,12 +1984,13 @@ hw() {
 
 
 iostat-monit() {
-    local opt OPTIND interval_sec path
+    local opt OPTIND interval_sec clean path _cmd
 
     interval_sec=2  # default
-    while getopts 'i:' opt; do
+    while getopts 'i:c' opt; do
         case "$opt" in
             i) interval_sec="$OPTARG" ;;
+            c) clean=TRUE ;;
             *) err "unsupported opt [$opt]"; return 1 ;;
         esac
     done
@@ -2002,7 +2003,17 @@ iostat-monit() {
     is_digit "$interval_sec" && [[ "$interval_sec" -gt 0 ]] || { err "interval needs to be positive int, but was [$interval_sec]"; return 1; }
     check_progs_installed  iostat findmnt || return 1
 
-    iostat -xk "$interval_sec" "$(findmnt --target "$path" | awk 'END {print $2}')"
+    _cmd() {
+        iostat -xk "$interval_sec" "$(findmnt --target "$path" | awk 'END {print $2}')"
+    }
+
+    if [[ -n "$clean" ]]; then
+        _cmd | grep -Ev '^(Device|$|avg-cpu|\s+)'
+    else
+        _cmd
+    fi
+
+    unset _cmd
 }
 
 #######################
