@@ -3037,9 +3037,11 @@ install_insomnia() {
 
 
 # https://snapcraft.io/install/alacritty/debian#install
-# TODO: possibly no longer updated; snap page says 'last updated 17 June 2021'
+# TODO!!: this snap is broken and to be ignored! see
+#         https://github.com/alacritty/alacritty/issues/6054
 install_alacritty() {
-    snap_install alacritty --classic
+    true  # TODO find alternative installation method!!
+    #snap_install alacritty --classic  <---- do NOT install this snap
 }
 
 
