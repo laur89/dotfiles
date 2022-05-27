@@ -1210,7 +1210,7 @@ install_deps() {
 
     # mopidy-local        # https://mopidy.com/ext/local/
     # (provides us with 'mopidy local scan' command)
-	py_install Mopidy-Local
+    py_install Mopidy-Local
 
     # mopidy-soundcloud     # https://mopidy.com/ext/soundcloud/
     py_install Mopidy-SoundCloud
@@ -2085,6 +2085,7 @@ install_own_builds() {
     is_native && install_slack_term
     install_slack
     install_veracrypt
+    install_hblock
     install_open_eid
     install_binance
 
@@ -2714,7 +2715,7 @@ install_file() {
     if [[ "$ftype" == *"debian.binary-package; charset=binary" ]]; then
         execute "sudo apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
         execute "rm -f -- '$file'"
-    elif [[ "$ftype" == *"executable; charset=binary" ]]; then
+    elif [[ "$ftype" == *'executable; charset=binary' || "$ftype" == 'text/x-shellscript; charset=utf-8' ]]; then
         _rename || return 1
         execute "chmod +x '$file'" || return 1
         execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
@@ -5339,6 +5340,7 @@ __choose_prog_to_build() {
         install_minikube
         install_gruvbox_gtk_theme
         install_veracrypt
+        install_hblock
         install_open_eid
         install_binance
         install_vbox_guest
@@ -5709,6 +5711,12 @@ install_veracrypt() {
 
     i="$(printf '%d\n' "${!ver_to_url[@]}" | sort -n | tail -1)"  # select largest (ie latest) version
     install_from_url veracrypt "${ver_to_url[$i]}"
+}
+
+
+# https://github.com/hectorm/hblock
+install_hblock() {
+    install_bin_from_git -N hblock -n hblock -F 'text/x-shellscript' hectorm hblock '\d+.tar.gz'
 }
 
 
