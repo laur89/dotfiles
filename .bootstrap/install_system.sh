@@ -406,16 +406,15 @@ setup_systemd() {
 setup_hosts() {
     local hosts_file_dest file current_hostline tmpfile
 
-    readonly hosts_file_dest="/etc"
-    readonly tmpfile="$TMP_DIR/hosts"
-    readonly file="$PRIVATE_CASTLE/backups/hosts"
+    readonly hosts_file_dest='/etc'
+    readonly tmpfile="$TMP_DIR/hosts.head"  # note result file won't be 'hosts', but 'hosts.head'
+    readonly file="$PRIVATE_CASTLE/backups/hosts-header.tmpl"
 
     _extract_current_hostname_line() {
         local file current
 
         readonly file="$1"
-        #current="$(grep '\(127\.0\.1\.1\)\s\+\(.*\)\s\+\(\w\+\)' $file)"
-        readonly current="$(grep "$HOSTNAME" "$file")"
+        current="$(grep '\(127\.0\.1\.1\)\s\+\(.*\)\s\+\(\w\+\)' "$file")"
         if ! is_single "$current"; then
             err "[$file] contained either more or less than 1 line(s) containing our hostname. check manually."
             return 1
@@ -433,7 +432,7 @@ setup_hosts() {
     if [[ -f "$file" ]]; then
         [[ -f "$hosts_file_dest/hosts" ]] || { err "system hosts file is missing!"; return 1; }
         current_hostline="$(_extract_current_hostname_line $hosts_file_dest/hosts)" || return 1
-        execute "sed 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' $file > $tmpfile" || { err; return 1; }
+        execute "sed -e 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' -e 's/{HOSTNAME}/$HOSTNAME/g' $file > $tmpfile" || { err; return 1; }
 
         backup_original_and_copy_file --sudo "$tmpfile" "$hosts_file_dest"
         execute "rm -- '$tmpfile'"
@@ -537,7 +536,7 @@ setup_crontab() {
         err "[$weekly_crondir] is not a dir; skipping weekly scripts installation."
     else
         for i in \
-                dnsmasq-hosts-update \
+                hblock-hosts-update \
                     ; do
             i="$BASE_DATA_DIR/dev/scripts/$i"
             if ! [[ -f "$i" ]]; then
@@ -4776,8 +4775,6 @@ install_from_repo() {
         dnstracer
         mtr
         whois
-        dnsmasq
-        resolvconf
         network-manager
         network-manager-gnome
         jq
@@ -5549,20 +5546,62 @@ setup_tcpdump() {
 #}
 
 
+# make sure resolvconf (or openresolv?) pkg is installed for seamless resolv config updates & dnsmasq usage (as per https://unix.stackexchange.com/a/406724/47501)
+#
+# note we no longer are using dnsmasq - unsing systemd-resolved instead
+setup_dnsmasq() {
+    local dnsmasq_conf dnsmasq_conf_dir i
+
+    readonly dnsmasq_conf="$COMMON_DOTFILES/backups/dnsmasq.conf"
+    readonly dnsmasq_conf_dir='/etc/dnsmasq.d'
+
+    # update dnsmasq conf:
+    # note: to check dnsmasq conf/performance, see
+    #     dig +short chaos txt hits.bind
+    #     dig +short chaos txt misses.bind
+    #     dig +short chaos txt cachesize.bind
+    [[ -d "$dnsmasq_conf_dir" ]] || { err "[$dnsmasq_conf_dir] does not exist"; return 1; }
+    [[ -f "$dnsmasq_conf" ]] || { err "[$dnsmasq_conf] does not exist; cannot update config"; return 1; }
+    execute "sudo cp -- '$dnsmasq_conf' '$dnsmasq_conf_dir'" || return 1
+
+
+    # old ver, directly updating /etc/dnsmasq.conf:
+    #execute "sudo sed -i --follow-symlinks '/^cache-size=/d' '$dnsmasq_conf'"
+    #execute "echo cache-size=10000 | sudo tee --append $dnsmasq_conf > /dev/null"
+
+    #execute "sudo sed -i --follow-symlinks '/^local-ttl=/d' '$dnsmasq_conf'"
+    #execute "echo local-ttl=10 | sudo tee --append $dnsmasq_conf > /dev/null"
+
+    ## lock dnsmasq to be exposed only to localhost:
+    #execute "sudo sed -i --follow-symlinks '/^listen-address=/d' '$dnsmasq_conf'"
+    #execute "echo listen-address=::1,127.0.0.1 | sudo tee --append $dnsmasq_conf > /dev/null"
+
+
+    # TODO: not sure about this bit:
+    #if [[ "$PROFILE" != work ]]; then
+        #execute "sudo sed -i --follow-symlinks '/^server=/d' '$dnsmasq_conf'"
+        #for i in 1.1.1.1   8.8.8.8; do
+            #execute "echo server=$i | sudo tee --append $dnsmasq_conf > /dev/null"
+        #done
+
+        ## no-resolv stops dnsmasq from reading /etc/resolv.conf, and makes it only rely on servers defined in $dnsmasq_conf
+        #if ! grep -q '^no-resolv$' "$dnsmasq_conf"; then
+            #execute "echo no-resolv | sudo tee --append $dnsmasq_conf > /dev/null"
+        #fi
+    #fi
+}
+
+
 # puts networkManager to manage our network interfaces;
 # alternatively, you can remove your interface name from /etc/network/interfaces
 # (bottom) line; eg from 'iface wlan0 inet dhcp' to 'iface inet dhcp'
 #
-# make sure resolvconf pkg is installed for seamless resolv config updates & dnsmasq usage (as per https://unix.stackexchange.com/a/406724/47501)
-#
 # see also wiki.debian.org/NetworkManager
 enable_network_manager() {
-    local nm_conf nm_conf_dir dnsmasq_conf dnsmasq_conf_dir i
+    local nm_conf nm_conf_dir i
 
     readonly nm_conf="$COMMON_DOTFILES/backups/networkmanager.conf"
     readonly nm_conf_dir='/etc/NetworkManager/conf.d'
-    readonly dnsmasq_conf="$COMMON_DOTFILES/backups/dnsmasq.conf"
-    readonly dnsmasq_conf_dir='/etc/dnsmasq.d'
 
     # configure per-connection DNS:
     _configure_con_dns() {
@@ -5609,42 +5648,6 @@ enable_network_manager() {
 #rc-manager=resolvconf
 #EOF
     #[[ $? -ne 0 ]] && { err "updating [$net_manager_conf_file] exited w/ failure"; return 1; }
-
-
-    # update dnsmasq conf:  TODO: refactor out from this fun?
-    # note: to check dnsmasq conf/performance, see
-    #     dig +short chaos txt hits.bind
-    #     dig +short chaos txt misses.bind
-    #     dig +short chaos txt cachesize.bind
-    [[ -d "$dnsmasq_conf_dir" ]] || { err "[$dnsmasq_conf_dir] does not exist"; return 1; }
-    [[ -f "$dnsmasq_conf" ]] || { err "[$dnsmasq_conf] does not exist; cannot update config"; return 1; }
-    execute "sudo cp -- '$dnsmasq_conf' '$dnsmasq_conf_dir'" || return 1
-
-
-    # old ver, directly updating /etc/dnsmasq.conf:
-    #execute "sudo sed -i --follow-symlinks '/^cache-size=/d' '$dnsmasq_conf'"
-    #execute "echo cache-size=10000 | sudo tee --append $dnsmasq_conf > /dev/null"
-
-    #execute "sudo sed -i --follow-symlinks '/^local-ttl=/d' '$dnsmasq_conf'"
-    #execute "echo local-ttl=10 | sudo tee --append $dnsmasq_conf > /dev/null"
-
-    ## lock dnsmasq to be exposed only to localhost:
-    #execute "sudo sed -i --follow-symlinks '/^listen-address=/d' '$dnsmasq_conf'"
-    #execute "echo listen-address=::1,127.0.0.1 | sudo tee --append $dnsmasq_conf > /dev/null"
-
-
-    # TODO: not sure about this bit:
-    #if [[ "$PROFILE" != work ]]; then
-        #execute "sudo sed -i --follow-symlinks '/^server=/d' '$dnsmasq_conf'"
-        #for i in 1.1.1.1   8.8.8.8; do
-            #execute "echo server=$i | sudo tee --append $dnsmasq_conf > /dev/null"
-        #done
-
-        ## no-resolv stops dnsmasq from reading /etc/resolv.conf, and makes it only rely on servers defined in $dnsmasq_conf
-        #if ! grep -q '^no-resolv$' "$dnsmasq_conf"; then
-            #execute "echo no-resolv | sudo tee --append $dnsmasq_conf > /dev/null"
-        #fi
-    #fi
 }
 
 
