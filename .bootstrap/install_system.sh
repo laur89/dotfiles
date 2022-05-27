@@ -531,7 +531,7 @@ setup_crontab() {
         err "expected configuration file at [$file] does not exist; won't install it."
     fi
 
-    # install weekly scripts:
+    # install/link weekly scripts:
     if ! [[ -d "$weekly_crondir" ]]; then
         err "[$weekly_crondir] is not a dir; skipping weekly scripts installation."
     else
@@ -5594,6 +5594,18 @@ setup_dnsmasq() {
 }
 
 
+# verify the hosts: line has the ordering we'd expect
+setup_nsswitch() {
+    local conf target
+
+    conf='/etc/nsswitch.conf'
+    target='hosts:          files resolve [!UNAVAIL=return] myhostname dns'
+
+    if ! grep -qFx "$target" "$conf"; then
+        err "[$conf] hosts: line needs fixing!!!"
+    fi
+}
+
 # puts networkManager to manage our network interfaces;
 # alternatively, you can remove your interface name from /etc/network/interfaces
 # (bottom) line; eg from 'iface wlan0 inet dhcp' to 'iface inet dhcp'
@@ -6028,6 +6040,7 @@ post_install_progs_setup() {
     configure_pulseaudio  # TODO see if works in WSL
     is_native && enable_fw
     is_native && setup_cups
+    setup_nsswitch
     #addgroup_if_missing fuse  # not needed anymore?
     setup_firefox
     configure_updatedb
