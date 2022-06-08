@@ -1791,7 +1791,7 @@ setup_additional_apt_keys_and_sources() {
 
     # seafile-client: (from https://help.seafile.com/syncing_client/install_linux_client/):
     #     seafile-drive instructions would be @ https://help.seafile.com/drive_client/drive_client_for_linux/
-    get_apt_key  seafile  https://linux-clients.seafile.com/seafile.asc "deb [arch=amd64 {s}] https://linux-clients.seafile.com/seafile-deb/$DEB_OLDSTABLE/ stable main"
+    get_apt_key  seafile  https://linux-clients.seafile.com/seafile.asc "deb [arch=amd64 {s}] https://linux-clients.seafile.com/seafile-deb/$DEB_STABLE/ stable main"
 
     # mono: (from https://www.mono-project.com/download/stable/#download-lin-debian):
     # later on installed by 'mono-complete' pkg
@@ -4684,6 +4684,7 @@ install_from_repo() {
         smartmontools
         pm-utils
         ntfs-3g
+        android-file-transfer
         erlang
         acpid
         lm-sensors
@@ -5628,7 +5629,7 @@ enable_network_manager() {
                 execute "nmcli con mod $i ipv4.dns '$SERVER_IP  1.1.1.1  8.8.8.8'" || err "dns addition for connection [$i] failed w/ $?"
                 execute "nmcli con mod $i ipv4.ignore-auto-dns yes" || err "setting dns ignore-auto-dns for connection [$i] failed w/ $?"
             else
-                err "NM connection [$i] does not exist"
+                err "NM connection [$i] does not exist; either create it or remove from install script"
             fi
             # TODO: look also into 'trust-ad' & 'rotate' options, eg
             #    nmcli connection modify ethernet-enp1s0 ipv4.dns-options trust-ad,rotate
