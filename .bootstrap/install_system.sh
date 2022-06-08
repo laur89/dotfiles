@@ -4929,6 +4929,7 @@ install_from_repo() {
         pidgin
         weechat
         signal-desktop
+        telegram-desktop
         lxrandr
         arandr
         autorandr
