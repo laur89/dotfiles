@@ -536,7 +536,7 @@ setup_crontab() {
         err "[$weekly_crondir] is not a dir; skipping weekly scripts installation."
     else
         for i in \
-                hblock-hosts-update \
+                hosts-block-update \
                     ; do
             i="$BASE_DATA_DIR/dev/scripts/$i"
             if ! [[ -f "$i" ]]; then
@@ -2085,9 +2085,10 @@ install_own_builds() {
     is_native && install_slack_term
     install_slack
     install_veracrypt
-    install_hblock
+    #install_hblock
     install_open_eid
     install_binance
+    install_exodus_wallet
 
     #install_dwm
     is_native && install_i3lock
@@ -2525,6 +2526,14 @@ install_bin_from_git() {
     # note: some of (think rust?) binaries' mime is 'application/x-sharedlib', not /x-executable
     bin="$(fetch_release_from_git "${fetch_git_args[@]}" "$1" "$2" "$3" "$name")" || return 1
     install_file -d "$target" "$bin" || return 1
+}
+
+
+# terminal-based presentation/slideshow tool
+#
+# alternative: https://github.com/visit1985/mdp
+install_slides() {  # https://github.com/maaslalani/slides
+    install_bin_from_git -N slides maaslalani slides '_linux_amd64.tar.gz'
 }
 
 
@@ -5279,6 +5288,7 @@ __choose_prog_to_build() {
         install_uhk_agent
         install_rambox
         install_franz
+        install_slides
         install_ferdi
         install_discord
         install_zoom
@@ -5342,9 +5352,10 @@ __choose_prog_to_build() {
         install_minikube
         install_gruvbox_gtk_theme
         install_veracrypt
-        install_hblock
+		install_hblock
         install_open_eid
         install_binance
+        install_exodus_wallet
         install_vbox_guest
         install_brillo
     )
@@ -5750,6 +5761,21 @@ install_open_eid() {
 # https://www.binance.com/en/download
 install_binance() {
     install_from_url  binance 'https://ftp.binance.com/electron-desktop/linux/production/binance-amd64-linux.deb'
+}
+
+
+# Exodus crypto wallet: https://www.exodus.com/download/
+# TODO: find out how to grep download url in one go
+#
+# another alternative would be Atomic wallet (https://atomicwallet.io/downloads) - note direct link to debian asset is https://atomicwallet.io/download/atomicwallet.deb
+install_exodus_wallet() {
+    local loc page ver
+
+    loc='https://www.exodus.com/download/'
+    page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
+    ver="$(grep -Po '.*a href="https://downloads.exodus.com/releases/hashes-exodus-\K[-.0-9]+(?=\.txt)' <<< "$page")"
+
+    install_from_url  exodus "https://downloads.exodus.com/releases/exodus-linux-x64-${ver}.deb"
 }
 
 
