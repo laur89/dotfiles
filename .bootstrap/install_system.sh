@@ -2532,6 +2532,7 @@ install_bin_from_git() {
 # terminal-based presentation/slideshow tool
 #
 # alternative: https://github.com/visit1985/mdp
+# another, more rich alternative: https://github.com/slidevjs/slidev
 install_slides() {  # https://github.com/maaslalani/slides
     install_bin_from_git -N slides maaslalani slides '_linux_amd64.tar.gz'
 }
@@ -3049,8 +3050,45 @@ install_insomnia() {
 # TODO!!: this snap is broken and to be ignored! see
 #         https://github.com/alacritty/alacritty/issues/6054
 install_alacritty() {
-    true  # TODO find alternative installation method!!
     #snap_install alacritty --classic  <---- do NOT install this snap
+    local dir
+
+    # first install deps: (https://github.com/alacritty/alacritty/blob/master/INSTALL.md#debianubuntu)
+    report "installing alacritty build dependencies..."
+    install_block 'cmake pkg-config libfreetype6-dev libfontconfig1-dev libxcb-xfixes0-dev libxkbcommon-dev' || return 1
+
+    # quick, binary-only installation...:
+    #execute 'cargo install alacritty'
+    #return
+
+    # ...or follow the full build logic if you want to install extras like manpages:
+    dir="$(fetch_extract_tarball_from_git alacritty alacritty 'v\d+\.\d+.*\.tar\.gz')" || return 1
+
+    execute "pushd $dir" || return 1
+
+    # build: https://github.com/alacritty/alacritty/blob/master/INSTALL.md#building
+    # Force support for only X11:
+    execute 'cargo build --release --no-default-features --features=x11' || return 1  # should produce binary at target/release/alacritty
+
+    # post-build setup: https://github.com/alacritty/alacritty/blob/master/INSTALL.md#post-build
+    if ! infocmp alacritty; then
+        execute 'sudo tic -xe alacritty,alacritty-direct extra/alacritty.info' || err
+    fi
+
+    # install man-pages:
+    execute 'sudo mkdir -p /usr/local/share/man/man1'
+    execute 'gzip -c extra/alacritty.man | sudo tee /usr/local/share/man/man1/alacritty.1.gz > /dev/null' || err
+    execute 'gzip -c extra/alacritty-msg.man | sudo tee /usr/local/share/man/man1/alacritty-msg.1.gz > /dev/null' || err
+
+    # install bash completion:
+    execute 'cp extra/completions/alacritty.bash ~/.bash_completion.d/alacritty' || err
+
+    execute 'sudo mv -- target/release/alacritty  /usr/local/bin/' || err
+
+    # cleanup:
+    execute 'popd'
+	execute "sudo rm -rf -- '$dir'"
+    return 0
 }
 
 
@@ -4695,6 +4733,7 @@ install_from_repo() {
         ntfs-3g
         android-file-transfer
         erlang
+        cargo
         acpid
         lm-sensors
         psensor
