@@ -2062,7 +2062,7 @@ install_own_builds() {
     is_native && install_uhk_agent
     #install_rambox
     #install_franz
-    is_native && install_ferdi
+    is_native && install_ferdium
     is_native && install_discord
     install_xournalpp
     #install_zoxide
@@ -2544,11 +2544,11 @@ install_franz() {  # https://github.com/meetfranz/franz/blob/master/docs/linux.m
 }
 
 
-# Franz nag-less fork; found it from this franz thread: https://github.com/meetfranz/franz/issues/1167
+# Franz nag-less fork.
 # might also consider open-source fork of rambox: https://github.com/TheGoddessInari/hamsket
-install_ferdi() {  # https://github.com/getferdi/ferdi
-    #install_bin_from_git -N ferdi getferdi ferdi .AppImage
-    install_deb_from_git getferdi ferdi _amd64.deb
+install_ferdium() {  # https://github.com/ferdium/ferdium-app
+    #install_bin_from_git -N ferdium ferdium ferdium-app .AppImage
+    install_deb_from_git ferdium ferdium-app _amd64.deb
 }
 
 
@@ -5328,7 +5328,7 @@ __choose_prog_to_build() {
         install_rambox
         install_franz
         install_slides
-        install_ferdi
+        install_ferdium
         install_discord
         install_zoom
         install_xournalpp
