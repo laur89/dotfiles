@@ -2082,6 +2082,7 @@ install_own_builds() {
     install_polybar
     install_gruvbox_gtk_theme
     #install_weeslack
+    install_gomuks
     is_native && install_slack_term
     install_slack
     install_veracrypt
@@ -3097,14 +3098,19 @@ install_alacritty() {
 # follow instruction at https://github.com/wee-slack/wee-slack#get-a-session-token
 install_weeslack() {  # https://github.com/wee-slack/wee-slack
     local d
-    d="$HOME/.local/share/weechat"
+    d="$HOME/.local/share/weechat/python"
     install_block 'weechat-python python3-websocket' || return 1
 
-    execute "mkdir -p $d/python/autoload" || return 1
-    execute "pushd $d/python" || return 1
+    execute "mkdir -p $d/autoload" || return 1
+    execute "pushd $d" || return 1
     execute 'curl -O https://raw.githubusercontent.com/wee-slack/wee-slack/master/wee_slack.py' || return 1
     execute 'ln -s ../wee_slack.py autoload'  # in order to start wee-slack automatically when weechat starts
     execute 'popd' || return 1
+}
+
+# go-based matrix client
+install_gomuks() {  # https://github.com/tulir/gomuks
+    install_deb_from_git tulir gomuks _amd64.deb
 }
 
 install_terragrunt() {  # https://github.com/gruntwork-io/terragrunt/
@@ -5389,6 +5395,7 @@ __choose_prog_to_build() {
         install_insomnia
         install_alacritty
         install_weeslack
+        install_gomuks
         install_slack_term
         install_slack
         install_terragrunt
