@@ -3092,11 +3092,16 @@ install_alacritty() {
 }
 
 
+# potentially useful tutorial: http://www.futurile.net/2020/11/30/weechat-for-slack/
+#
+# follow instruction at https://github.com/wee-slack/wee-slack#get-a-session-token
 install_weeslack() {  # https://github.com/wee-slack/wee-slack
+    local d
+    d="$HOME/.local/share/weechat"
     install_block 'weechat-python python3-websocket' || return 1
 
-    execute "mkdir -p $HOME/.weechat/python/autoload" || return 1
-    execute 'pushd ~/.weechat/python' || return 1
+    execute "mkdir -p $d/python/autoload" || return 1
+    execute "pushd $d/python" || return 1
     execute 'curl -O https://raw.githubusercontent.com/wee-slack/wee-slack/master/wee_slack.py' || return 1
     execute 'ln -s ../wee_slack.py autoload'  # in order to start wee-slack automatically when weechat starts
     execute 'popd' || return 1
