@@ -3108,6 +3108,25 @@ install_weeslack() {  # https://github.com/wee-slack/wee-slack
     execute 'popd' || return 1
 }
 
+
+# https://github.com/poljar/weechat-matrix#other-platforms ignore step 3, instead follow the next link...:
+# https://github.com/poljar/weechat-matrix#run-from-git-directly
+install_weechat_matrix() {  # https://github.com/poljar/weechat-matrix
+    local d deps
+    d="$HOME/.local/share/weechat/python"
+    deps="${BASE_DEPS_LOC}/weechat-matrix"
+
+    install_block 'libolm-dev' || return 1
+    execute "mkdir -p $d/autoload" || return 1
+
+    clone_or_pull_repo "poljar" "weechat-matrix" "$deps/"
+
+    execute "pip3 install --user -r $deps/requirements.txt"
+    create_link "$deps/main.py" "$d/matrix.py"
+    create_link "$deps/matrix" "$d/"
+    create_link "$d/matrix.py" "$d/autoload/"
+}
+
 # go-based matrix client
 install_gomuks() {  # https://github.com/tulir/gomuks
     install_deb_from_git tulir gomuks _amd64.deb
@@ -4730,6 +4749,7 @@ install_fonts() {
 }
 
 
+#magnus - magnifier app
 # majority of packages get installed at this point;
 install_from_repo() {
     local block blocks block1 block2 block3 block4 block5 extra_apt_params
@@ -4975,7 +4995,6 @@ install_from_repo() {
         peek
         cheese
         screenkey
-        magnus
         mediainfo
         screenruler
         lynx
@@ -4987,6 +5006,7 @@ install_from_repo() {
         libxml2-utils
         pidgin
         weechat
+        nheko
         signal-desktop
         telegram-desktop
         lxrandr
@@ -5395,6 +5415,7 @@ __choose_prog_to_build() {
         install_insomnia
         install_alacritty
         install_weeslack
+        install_weechat_matrix
         install_gomuks
         install_slack_term
         install_slack
