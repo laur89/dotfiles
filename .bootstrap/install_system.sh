@@ -2222,12 +2222,13 @@ fetch_release_from_git() {
     local opt loc id OPTIND args
 
     args=()
-    while getopts 'UsF:n:' opt; do
+    while getopts 'UsF:n:R:' opt; do
         case "$opt" in
             U) args+=(-U) ;;
             s) args+=(-s) ;;
             F) args+=(-F "$OPTARG") ;;
             n) args+=(-n "$OPTARG") ;;
+            R) args+=(-R "$OPTARG") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2240,11 +2241,12 @@ fetch_release_from_git() {
 }
 
 resolve_dl_urls() {
-    local opt OPTIND multi loc grep_tail page dl_url urls domain u
+    local opt OPTIND multi zort loc grep_tail page dl_url urls domain u
 
-    while getopts "M" opt; do
+    while getopts 'MS' opt; do
         case "$opt" in
             M) multi=1 ;;  # ie multiple newline-separated urls/results are allowed (but not required!)
+            S) zort=1; multi=1 ;;  # if multiple urls, sort it down to single one. mnemonic: sort/single
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2265,13 +2267,13 @@ resolve_dl_urls() {
     while IFS= read -r u; do
         [[ "$u" == /* ]] && u="${domain}$u"  # convert to fully qualified url
 
-        u="$(html2text -width 1000000 <<< "$u")" || err "html2text processing for [$loc] failed w/ [$?]"
+        u="$(html2text -width 1000000 <<< "$u")" || err "html2text processing for [$u] failed w/ [$?]"
         is_valid_url "$u" || { err "[$u] is not a valid download link"; return 1; }
         urls+="$u"$'\n'
     done <<< "$dl_url"
 
     # note we strip trailing newline in sorts' input:
-    readonly urls="$(sort --unique <<< "${urls:0:$(( ${#urls} - 1 ))}")"  # unique again, as we've expanded all into fully qualified addresses
+    urls="$(sort --unique <<< "${urls:0:$(( ${#urls} - 1 ))}")"  # unique again, as we've expanded all into fully qualified addresses
 
     # debug:
     #report "   urls #:  $(wc -l <<< "$urls")"
@@ -2285,6 +2287,8 @@ resolve_dl_urls() {
         err "multiple urls found from [$loc] for pattern [$grep_tail], but expecting a single result:"
         err "$urls"
         return 1
+    elif [[ "$zort" -eq 1 ]] && ! is_single "$urls"; then
+        urls="$(tail -n1 <<< "$urls")"
     fi
 
     echo "$urls"
@@ -2316,9 +2320,9 @@ resolve_dl_urls() {
 #       differentiates $name and $id; maybe install_from_url() could have optional -I, which then uses
 #       that value for ver tracking as opposed name? or make name always mandatory and just use that (ie drop ID)?
 fetch_release_from_any() {
-    local opt noextract skipadd file_filter name_filter id relative loc tmpdir file loc dl_url ver OPTIND
+    local opt noextract skipadd file_filter name_filter id relative resolveurls_opts loc tmpdir file loc dl_url ver OPTIND
 
-    while getopts 'UsF:n:I:r' opt; do
+    while getopts 'UsF:n:I:rR:' opt; do
         case "$opt" in
             U) noextract=1 ;;
             s) skipadd=1 ;;
@@ -2326,6 +2330,7 @@ fetch_release_from_any() {
             n) name_filter="$OPTARG" ;;
             I) id="$OPTARG" ;;
             r) relative='TRUE' ;;
+            R) resolveurls_opts="$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2335,7 +2340,7 @@ fetch_release_from_any() {
     readonly loc="$1"
     tmpdir="$(mktemp -d "release-from-external-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
-    dl_url="$(resolve_dl_urls "$loc" "${relative:+/}.*$2")" || return 1  # note we might be looking for a relative url
+    dl_url="$(resolve_dl_urls $resolveurls_opts "$loc" "${relative:+/}.*$2")" || return 1  # note we might be looking for a relative url
 
     ver="$(resolve_ver "$dl_url")" || return 1
     [[ "$skipadd" -ne 1 ]] && is_installed "$ver" "${id:-$3}" && return 2
@@ -2548,8 +2553,10 @@ install_franz() {  # https://github.com/meetfranz/franz/blob/master/docs/linux.m
 # Franz nag-less fork.
 # might also consider open-source fork of rambox: https://github.com/TheGoddessInari/hamsket
 install_ferdium() {  # https://github.com/ferdium/ferdium-app
-    #install_bin_from_git -N ferdium ferdium ferdium-app .AppImage
-    install_deb_from_git ferdium ferdium-app _amd64.deb
+    #install_deb_from_git ferdium ferdium-app _amd64.deb  # TODO: use this shortcut once they've released a single release
+
+    deb="$(fetch_release_from_git -R '-SM' ferdium ferdium-app _amd64.deb)" || return 1
+    install_file "$deb" || return 1
 }
 
 
