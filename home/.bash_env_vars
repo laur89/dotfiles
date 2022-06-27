@@ -109,7 +109,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # see https://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
     # NOTE:  make sure you know what you do; eg setting XDG_DATA_DIRS below effed up meld
     export XDG_CONFIG_HOME="/home/$USER/.config"
-    #export XDG_DATA_HOME="/home/$USER/.local/share"
+    export XDG_DATA_HOME="/home/$USER/.local/share"
     #export XDG_DATA_DIR="/home/$USER/.local/share"
     #export XDG_DATA_DIRS="$XDG_DATA_DIR"
 
