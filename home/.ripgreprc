@@ -43,3 +43,5 @@
 # respect .gitignore rules regardless whether you're searching in git repo or not:
 --no-require-git
 
+# do not cross filesystem boundaries:
+--one-file-system
