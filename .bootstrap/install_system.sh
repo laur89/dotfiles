@@ -402,6 +402,29 @@ setup_systemd() {
     execute 'sudo systemctl daemon-reload'
 }
 
+# unlock default keyring on login
+#
+# as per https://wiki.archlinux.org/title/GNOME/Keyring#PAM_step
+# this should only be used if not using DM/display manager
+#
+# see also: https://wiki.gnome.org/Projects/GnomeKeyring/Pam/Manual
+#
+# TODO: should we perhaps see if the line exists, but is commented out? note hyphen might be a valid comment-character for PAM files
+setup_pam_login() {
+    local f
+    f='/etc/pam.d/login'
+
+    [[ -f "$f" ]] || { err "[$f] not a file"; return 1; }
+
+    if ! grep -Eq '^auth\s+optional\s+pam_gnome_keyring.so$' "$f"; then
+        execute "echo 'auth       optional     pam_gnome_keyring.so' | sudo tee --append '$f' > /dev/null"
+    fi
+
+    if ! grep -Eq '^session\s+optional\s+pam_gnome_keyring.so\s+auto_start$' "$f"; then
+        execute "echo 'session    optional     pam_gnome_keyring.so auto_start' | sudo tee --append '$f' > /dev/null"
+    fi
+}
+
 
 setup_hosts() {
     local hosts_file_dest file current_hostline tmpfile
@@ -1589,6 +1612,7 @@ setup_config_files() {
     #setup_ssh_config   # better stick to ~/.ssh/config, rite?  # TODO
     setup_hosts
     setup_systemd
+    setup_pam_login
     setup_logind
     is_native && setup_udev
     is_native && install_kernel_modules   # TODO: does this belong in setup_config_files()?
@@ -4903,6 +4927,7 @@ install_from_repo() {
         zenity
         gxmessage
         gnome-keyring
+        libpam-gnome-keyring
         policykit-1-gnome
         seahorse
         libsecret-tools
