@@ -35,11 +35,11 @@ case "$input" in
 
         if is_windows; then
             i3 &
-            #sleep 1
-            source "$HOME/.common_startup"
         else  # both native & virt:
-            source "$HOME/.common_startup"
-            exec i3
+            # use dbus-run-session, see https://github.com/flexibeast/guides/blob/master/dbus-on-void.md :
+            #exec dbus-run-session  i3  # this is to make sure certain dbus env vars are set
+            exec i3  # simple, dummy way; should always work
+
             #exec i3 --shmlog-size=26214400  # enable logging; to enable logging on the fly, do:  i3-msg 'debuglog on; shmlog on; reload'
             # to obtain log:     DISPLAY=:0 i3-dump-log
         fi
