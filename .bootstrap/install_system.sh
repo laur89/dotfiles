@@ -363,37 +363,68 @@ setup_logind() {
 #
 # to temporarily disable lid-switch events:   systemd-inhibit --what=handle-lid-switch sleep 1d
 setup_systemd() {
-    local sysd_src sysd_target file dir tmpfile filename
+    local global_sysd_src usr_sysd_src global_sysd_target usr_sysd_target file dir tmpfile filename
 
-    readonly sysd_target='/etc/systemd/system'
-    sysd_src=(
-        "$COMMON_PRIVATE_DOTFILES/backups/systemd"
-        "$PRIVATE_CASTLE/backups/systemd"
+    readonly global_sysd_target='/etc/systemd/system'
+    readonly usr_sysd_target="$HOME/.config/systemd/user"
+    global_sysd_src=(
+        "$COMMON_PRIVATE_DOTFILES/backups/systemd/global"
+        "$PRIVATE_CASTLE/backups/systemd/global"
+    )
+    usr_sysd_src=(
+        "$COMMON_PRIVATE_DOTFILES/backups/systemd/user"
+        "$PRIVATE_CASTLE/backups/systemd/user"
     )
 
-    is_laptop && sysd_src+=("$COMMON_PRIVATE_DOTFILES/backups/systemd/laptop")
-    [[ -n "$PLATFORM" ]] && sysd_src+=("$PLATFORM_CASTLE/systemd")
+    is_laptop && global_sysd_src+=("$COMMON_PRIVATE_DOTFILES/backups/systemd/global/laptop") && usr_sysd_src+=("$COMMON_PRIVATE_DOTFILES/backups/systemd/user/laptop")
+    [[ -n "$PLATFORM" ]] && global_sysd_src+=("$PLATFORM_CASTLE/systemd/global") && usr_sysd_src+=("$PLATFORM_CASTLE/systemd/user")
 
-    if ! [[ -d "$sysd_target" ]]; then
-        err "[$sysd_target] is not a dir; skipping systemd file(s) installation."
+    if ! [[ -d "$global_sysd_target" ]]; then
+        err "[$global_sysd_target] is not a dir; skipping systemd file(s) installation."
         return 1
     fi
 
-    for dir in "${sysd_src[@]}"; do
+    [[ -d "$usr_sysd_target" ]] || mkdir -p "$usr_sysd_target"
+
+    # global systemd files:
+    for dir in "${global_sysd_src[@]}"; do
         [[ -d "$dir" ]] || continue
         for file in "$dir/"*; do
-            [[ -f "$file" && "$file" == *.service ]] || continue  # note we require '.service' suffix
+            [[ -f "$file" && "$file" =~ \.(service|target|unit)$ ]] || continue  # note we require certain suffix
             filename="$(basename -- "$file")"
             tmpfile="$TMP_DIR/.sysd_setup-$filename"
             filename="${filename/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
 
             execute "cp -- '$file' '$tmpfile'" || { err "copying systemd file [$file] failed"; continue; }
             execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || { err "sed-ing systemd file [$file] failed"; continue; }
-            execute "sudo mv -- '$tmpfile' $sysd_target/$filename" || { err "moving [$tmpfile] to [$sysd_target] failed"; continue; }
+            execute "sudo mv -- '$tmpfile' $global_sysd_target/$filename" || { err "moving [$tmpfile] to [$global_sysd_target] failed"; continue; }
 
             # note do not use the '--now' flag with systemctl enable, nor execute systemctl start,
             # as some service files might be listening on something like target.sleep - those should't be started on-demand like that!
-            execute "sudo systemctl enable $filename" || { err "enabling systemd service [$filename] failed w/ [$?]"; continue; }
+            if [[ "$filename" == *.service ]]; then
+                execute "sudo systemctl enable '$filename'" || { err "enabling global systemd service [$filename] failed w/ [$?]"; continue; }
+            fi
+        done
+    done
+
+    # user systemd files:
+    for dir in "${usr_sysd_src[@]}"; do
+        [[ -d "$dir" ]] || continue
+        for file in "$dir/"*; do
+            [[ -f "$file" && "$file" =~ \.(service|target|unit)$ ]] || continue  # note we require certain suffix
+            filename="$(basename -- "$file")"
+            tmpfile="$TMP_DIR/.sysd_setup-$filename"
+            filename="${filename/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
+
+            execute "cp -- '$file' '$tmpfile'" || { err "copying systemd file [$file] failed"; continue; }
+            execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || { err "sed-ing systemd file [$file] failed"; continue; }
+            execute "mv -- '$tmpfile' $usr_sysd_target/$filename" || { err "moving [$tmpfile] to [$usr_sysd_target] failed"; continue; }
+
+            # note do not use the '--now' flag with systemctl enable, nor execute systemctl start,
+            # as some service files might be listening on something like target.sleep - those should't be started on-demand like that!
+            if [[ "$filename" == *.service ]]; then
+                execute "systemctl --user enable '$filename'" || { err "enabling user systemd service [$filename] failed w/ [$?]"; continue; }
+            fi
         done
     done
 
@@ -1840,6 +1871,9 @@ setup_additional_apt_keys_and_sources() {
     # signal: (from https://signal.org/en/download/):
     get_apt_key  signal  https://updates.signal.org/desktop/apt/keys.asc "deb [arch=amd64 {s}] https://updates.signal.org/desktop/apt xenial main"
 
+    # signald: (from https://signald.org/articles/install/debian/):
+    get_apt_key  signald  https://updates.signald.org/apt-signing-key.asc "deb [{s}] https://updates.signald.org unstable main"
+
     # estonian open eid: (from https://installer.id.ee/media/install-scripts/install-open-eid.sh):
     #get_apt_key -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh "deb [{s}] https://installer.id.ee/media/ubuntu/ focal main"
     get_apt_key  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub "deb [{s}] https://installer.id.ee/media/ubuntu/ focal main"
@@ -2802,6 +2836,7 @@ install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
 
 
 # see also https://github.com/wee-slack/wee-slack/
+# this is one of installation/setup blogs: http://www.futurile.net/2020/11/30/weechat-for-slack/
 install_slack_term() {  # https://github.com/erroneousboat/slack-term
     install_bin_from_git -N slack-term erroneousboat slack-term slack-term-linux-amd64
 }
@@ -3161,6 +3196,56 @@ install_weechat_matrix() {  # https://github.com/poljar/weechat-matrix
 # go-based matrix client
 install_gomuks() {  # https://github.com/tulir/gomuks
     install_deb_from_git tulir gomuks _amd64.deb
+}
+
+
+
+# IRC to other chat networks gateway
+install_bitlbee() {  # https://github.com/bitlbee/bitlbee
+    # slack support: https://github.com/dylex/slack-libpurple
+    # from https://github.com/dylex/slack-libpurple#linuxmacos
+    _install_slack_support() {
+        local name tmpdir repo ver
+
+        readonly name=slack-libpurple
+        readonly tmpdir="$TMP_DIR/$name-build-${RANDOM}"
+        readonly repo="https://github.com/dylex/slack-libpurple.git"
+
+        ver="$(get_git_sha "$repo")"
+        is_installed "$ver" "$name" && return 2
+
+        report "installing $name build dependencies..."
+        install_block 'libpurple-dev' || { err 'failed to install build deps. abort.'; return 1; }
+
+        execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
+        report "building $name"
+        execute "pushd $tmpdir" || return 1
+        execute "make" || { err; popd; return 1; }
+
+        create_deb_install_and_store  "$name" || { popd; return 1; }
+
+        # put package on hold so they don't get overridden by apt-upgrade:
+        execute "sudo apt-mark hold  $name"
+
+        execute 'popd'
+        execute "sudo rm -rf -- $tmpdir"
+
+        add_to_dl_log  "$name" "$ver"
+
+        return 0
+    }
+
+    # discord support (installed via 'purple-discord' pkg (https://github.com/EionRobb/purple-discord))
+    # purple-discord package is in the main list
+
+    # signal support
+    # https://github.com/hoehermann/libpurple-signald/blob/master/HOWTO.md
+    install_block 'qrencode'
+    # signald package is in the main list
+
+    # slack:
+    _install_slack_support
+
 }
 
 install_terragrunt() {  # https://github.com/gruntwork-io/terragrunt/
@@ -3528,12 +3613,36 @@ install_overfocus() {
 }
 
 
+# trying out checkinstall replacement, absed on fpm (https://fpm.readthedocs.io)
+# TODO wip
+create_deb_install_and_store2() {
+    execute 'sudo gem install fpm'
+#######################
+    local opt cmd ver pkg_name exit_sig OPTIND
+
+    while getopts 'C:' opt; do
+        case "$opt" in
+            C) readonly cmd="$OPTARG" ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    pkg_name="$1"
+    ver="${2:-0.0.1}"  # OPTIONAL
+
+    check_progs_installed fpm || return 1
+    report "creating [$pkg_name] .deb and installing with fpm..."
+
+    fpm -s dir -t deb -n name -a amd64 -v 2.0.0 .
+}
+
 # runs checkinstall in current working dir, and copies the created
 # .deb file to $BASE_BUILDS_DIR/
 create_deb_install_and_store() {
     local opt cmd ver pkg_name exit_sig OPTIND
 
-    while getopts "C:" opt; do
+    while getopts 'C:' opt; do
         case "$opt" in
             C) readonly cmd="$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
@@ -5038,8 +5147,11 @@ install_from_repo() {
         libxml2-utils
         pidgin
         weechat
+        bitlbee
+        purple-discord
         nheko
         signal-desktop
+        signald
         telegram-desktop
         lxrandr
         arandr
@@ -5451,6 +5563,7 @@ __choose_prog_to_build() {
         install_gomuks
         install_slack_term
         install_slack
+        install_bitlbee
         install_terragrunt
         install_bluejeans
         install_minikube
