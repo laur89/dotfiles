@@ -3154,7 +3154,7 @@ install_alacritty() {
 
     # cleanup:
     execute 'popd'
-	execute "sudo rm -rf -- '$dir'"
+    execute "sudo rm -rf -- '$dir'"
     return 0
 }
 
@@ -3202,6 +3202,7 @@ install_gomuks() {  # https://github.com/tulir/gomuks
 
 # IRC to other chat networks gateway
 install_bitlbee() {  # https://github.com/bitlbee/bitlbee
+
     # slack support: https://github.com/dylex/slack-libpurple
     # from https://github.com/dylex/slack-libpurple#linuxmacos
     _install_slack_support() {
@@ -5082,6 +5083,7 @@ install_from_repo() {
     declare -ar block3_nonwin=(
         spotify-client
         mopidy
+        playerctl
         socat
         youtube-dl
         mpc
@@ -5148,6 +5150,7 @@ install_from_repo() {
         pidgin
         weechat
         bitlbee
+        bitlbee-libpurple
         purple-discord
         nheko
         signal-desktop
@@ -5569,7 +5572,7 @@ __choose_prog_to_build() {
         install_minikube
         install_gruvbox_gtk_theme
         install_veracrypt
-		install_hblock
+        install_hblock
         install_open_eid
         install_binance
         install_exodus_wallet
