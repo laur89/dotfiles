@@ -2076,7 +2076,7 @@ install_devstuff() {
     install_lazygit
     install_lazydocker
     #install_gitin
-    install_gitkraken
+    #install_gitkraken
     #install_oracle_jdk  # start using sdkman (or something similar)
 
     install_aws_okta
