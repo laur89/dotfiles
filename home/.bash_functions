@@ -783,9 +783,129 @@ ffindsmallerthan() {
     __find_bigger_smaller_common_fun M smaller "$@"
 }
 
+
+# sort using find & mtime:
+#   find . -type f -printf '%T@ %Tc %P\n' | sort -k1nr | tail | sed -r 's/^.{22}//'
+# same, but null-terminated:
+#   find . -type f -printf '%T@ %Tc %P\0' | sort -zk1nr | tail | sed -r 's/^.{22}//'
+#
+# - files changed last 5 minutes ago:  $ find -cmin -5
+# - files changed last 3 days ago:  $ find -ctime -3
+#
+# to get file _creation_, you gotta use stat:  $ stat -c '%W  -  %w'  ~/.bashrc
+#
+# see also:
+#   find . -type f -exec stat -f "%Sm %N" -t "%Y%y%m%d%H%M" {} \; | sort -r
+#   find $SOMEPATH -exec stat -c '%Y %n' '{}' + | sort -n
+__find_top_new_old_fun() {
+    local usage opt OPTIND itemsToShow file_type maxDepth follow_links reverse
+    local new_or_old filetypeOptionCounter fs_boundary mode
+
+    new_or_old="$1"
+    itemsToShow="$2"   # default top number of items displayed
+    shift 2
+
+    filetypeOptionCounter=0
+    mode=m  # default
+
+    usage="\n${FUNCNAME[1]}: find top $new_or_old nodes from current dir.\nif node type not specified, defaults to searching for everything.\n
+    Usage: ${FUNCNAME[1]}  [-f] [-d] [-L] [-B] [-m depth]  [nr_of_top_items_to_show]
+        -f  search only for regular files
+        -d  search only for directories
+        -L  follow/dereference symlinks
+        -B  do not cross filesystem boundaries
+        -m<digit>   max depth to descend; unlimited by default.
+
+        examples:
+            ${FUNCNAME[1]} 20       - seek top 20 $new_or_old files and dirs;
+            ${FUNCNAME[1]} -f 15    - seek top 15 $new_or_old files;
+            ${FUNCNAME[1]} -dm3     - seek top $new_or_old dirs;
+                                   descend up to 3 levels from current dir.
+"
+
+    while getopts 'm:fdLBch' opt; do
+        case "$opt" in
+           f | d)
+              [[ "$file_type" != "-type $opt" ]] && let filetypeOptionCounter+=1
+              file_type="-type $opt"
+                ;;
+           m) maxDepth="$OPTARG"
+                ;;
+           L) follow_links='-L'
+                ;;
+           B) fs_boundary='-mount'  # or '-xdev', same thing
+                ;;
+           c) mode=c  # TODO: searching/sorting by creation date currently not implemeted; maybe consider different function altogether for this?
+                ;;
+           h) echo -e "$usage"
+              return 0
+                ;;
+           *) echo -e "$usage"; return 1 ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+
+    if [[ "$#" -gt 1 ]]; then
+        err "maximum of 1 arg is allowed" "${FUNCNAME[1]}"
+        echo -e "$usage"
+        return 1
+    elif [[ "$#" -eq 1 ]]; then
+        readonly itemsToShow="$1"
+        is_digit "$itemsToShow" || { err "only digit arg allowed (# of top files to show)" "${FUNCNAME[1]}"; return 1; }
+        [[ "$itemsToShow" -le 0 ]] && { err "something larger than 0 would make sense." "${FUNCNAME[1]}"; return 1; }
+    fi
+
+    if [[ -n "$maxDepth" ]]; then
+        if ! is_digit "$maxDepth"; then
+            err "maxdepth arg value has to be... y'know, a digit" "${FUNCNAME[1]}"
+            echo -e "$usage"
+            return 1
+        fi
+
+        readonly maxDepth="-maxdepth $maxDepth"
+    fi
+
+    if [[ "$filetypeOptionCounter" -gt 1 ]]; then
+        err "-f and -d flags are exclusive" "${FUNCNAME[1]}"
+        echo -e "$usage"
+        return 1
+    fi
+
+    # invoker sanity: (and define whether sort output should be reversed)
+    case "$new_or_old" in
+        old)
+            true
+            ;;
+        new)
+            reverse=r
+            ;;
+        *)
+            err "could not detect whether we should look for top new or old files" "$FUNCNAME"
+            return 1
+            ;;
+    esac
+
+    report "seeking for top $itemsToShow $new_or_old files...\n" "${FUNCNAME[1]}"
+
+    find $follow_links . -mindepth 1 $maxDepthParam $file_type $fs_boundary -printf '%T@ %Tc %P\n' | \
+            sort -k1n${reverse} | \
+            head -$itemsToShow | \
+            sed -r 's/^.{22}//'
+}
+
+ffindtopnew() {
+    __find_top_new_old_fun  new 10 "$@"
+}
+
+ffindtopold() {
+    __find_top_new_old_fun  old 10 "$@"
+}
+
+
 aptsearch() {
     [[ -z "$@" ]] && { err "provide partial package name to search for." "$FUNCNAME"; return 1; }
-    check_progs_installed apt-cache || return 1
+    check_progs_installed  apt-cache || return 1
 
     apt-cache search -- "$@"
     #aptitude search -- "$@"
@@ -851,6 +971,7 @@ upgrade() {
     report "started at $(date)"
     start="$(date +%s)"
 
+    # note we run upgrade --without-new-pkgs before dist-upgrade as per https://www.debian.org/releases/bullseye/amd64/release-notes/ch-upgrading.en.html#minimal-upgrade
     sudo -s -- <<EOF
         rep_() { echo -e "\033[1m -> \$*...\033[0m"; }
 
@@ -858,8 +979,8 @@ upgrade() {
         apt-get clean -y && \
         rep_ running apt-get ${full:+--allow-releaseinfo-change }update && \
         apt-get ${full:+--allow-releaseinfo-change} -y update && \
-        rep_ running apt-get upgrade && \
-        apt-get upgrade -y && \
+        rep_ running apt-get upgrade --without-new-pkgs && \
+        apt-get upgrade --without-new-pkgs -y && \
         rep_ running apt-get dist-upgrade && \
         apt-get dist-upgrade -y && \
         #apt full-upgrade  # alternative to apt-get dist-upgrade
@@ -3221,9 +3342,12 @@ same_json() {
     f1="$1"
     f2="$2"
 
-    [[ "$#" -eq 2 && -f "$f1" && -f "$f2" ]] || return 1
+    check_progs_installed  jq || return 1
+    [[ "$#" -eq 2 && -f "$f1" && -f "$f2" ]] || { err "exactly 2 args expected, both json files"; return 1; }
     jq -en --slurpfile a "$f1" --slurpfile b "$f2" '$a == $b' >/dev/null 2>&1
 }
+
+is_same_json() { same_json "@"; }
 
 
 # cd-s to directory by partial match; if multiple matches, opens input via fzf. smartcase.
@@ -3250,11 +3374,12 @@ g() {
     __find_fun() {
         local pattern dir iname_arg
         readonly pattern="$1"
-        readonly dir="${2:-.}"
+        dir="${2:-.}"
 
-        [[ "$(tolowercase "$pattern")" == "$pattern" ]] && iname_arg="iname"
+        [[ "$(tolowercase "$pattern")" == "$pattern" ]] && iname_arg='iname'
+        [[ "$dir" != */ ]] && dir+='/'
 
-        find -L "$dir" -maxdepth 1 -mindepth 1 -type d -${iname_arg:-name} '*'"$pattern"'*' -print0
+        find -L "$dir" -maxdepth 1 -mindepth 1 -type d -${iname_arg:-name} "*${pattern}*" -print0
     }
 
     # note this function sets the parent function's dir variable.
