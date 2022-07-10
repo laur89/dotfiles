@@ -336,9 +336,10 @@ fi
 #[ -n "$PS1" ] && [ -s $BASE16_SHELL/profile_helper.sh ] && eval "$($BASE16_SHELL/profile_helper.sh)"
 
 ##########################################
-if ! ssh-add -l > /dev/null 2>&1; then
-    ssh-add
-fi
+# this business shouldn't be needed if gnome-keyring is functioning a-ok:
+#if ! ssh-add -l > /dev/null 2>&1; then
+    #ssh-add
+#fi
 ##########################################
 
 # compile .ssh/config
