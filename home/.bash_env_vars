@@ -40,6 +40,7 @@ if [[ "$-" != *i* ]]; then
         unset _disp
     fi
 
+    # TODO: should we be setting following env vars, if user is root?? eg $XDG_RUNTIME_DIR would be shared by root & our regular user in this case?!
     _id="$(id -u "$MAIN_SYSTEM_USER")"
     _r_dir="/run/user/$_id"
     if [[ -z "$DBUS_SESSION_BUS_ADDRESS" ]]; then
@@ -93,6 +94,10 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     ## Tell Node about these packages
     #NODE_PATH="$NPM_PACKAGES/lib/node_modules:$NODE_PATH"
 
+    export NVM_DIR="$HOME/.nvm"  # do not change location, keep _non-linked_ .nvm/ under ~
+
+    # set our own-used link to latest node version (managed by .bashrc):
+    export NODE_LOC="$NVM_DIR/latest"
 
     export CUSTOM_LOGDIR='/var/log/custom_logs'
     export PANEL_FIFO='/tmp/panel-fifo'  # for BSPWM
@@ -105,6 +110,10 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # Update RC file locations for apps that don't support XDG:
     #export GTK2_RC_FILES="$HOME/.config/gtk-2.0/gtkrc"
     export GTK2_RC_FILES=$HOME/.gtkrc-2.0
+
+    # Make QT automatically scale according to screen DPI (from https://github.com/vincentbernat/i3wm-configuration/blob/master/dotfiles/xsession )
+    export QT_AUTO_SCREEN_SCALE_FACTOR=1
+    export QT_QPA_PLATFORMTHEME=qt5ct
 
     # see https://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
     # NOTE:  make sure you know what you do; eg setting XDG_DATA_DIRS below effed up meld
@@ -313,9 +322,11 @@ for i in \
         /usr/local/go/bin \
         "$GOPATH/bin" \
         "${KREW_ROOT:-$HOME/.krew}/bin" \
-        "${BASE_DEPS_LOC}/git-fuzzy/bin" \
+        "$BASE_DEPS_LOC/git-fuzzy/bin" \
         "$CONSCRIPT_HOME/bin" \
         "$PYENV_ROOT/bin" \
+        "$BASE_PROGS_DIR/clojure/bin" \
+        "$HOME/.config/nvim/bundle/vim-iced/bin" \
             ; do
     if [[ :$PATH: != *:"$i":* && -d "$i" ]]; then
         j+="$i:"
