@@ -2559,6 +2559,19 @@ extract_tarball() {
     # do NOT remove $tmpdir! caller can clean up if they want
 }
 
+download_git_raw() {
+    local u repo ver f out
+    u="$1"
+    repo="$2"
+    ver="$3"
+    f="$4"
+    out="${5:-/tmp/$RANDOM-dl_git_raw.out}"
+
+    execute "curl -fsSL https://raw.githubusercontent.com/$u/$repo/$ver/$f -o '$out' > /dev/null" || return 1
+    [[ -f "$out" ]] && echo "$out" && return 0
+    return 1
+}
+
 
 # Fetch a file from given github /releases page, and install the binary
 #
@@ -2857,6 +2870,32 @@ install_slack() {  # https://slack.com/intl/en-es/help/articles/212924728-Downlo
 
 install_rebar() {  # https://github.com/erlang/rebar3
     install_bin_from_git -N rebar3 erlang rebar3 rebar3
+}
+
+
+install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instructions
+    local name repo install_target ver f
+
+    readonly name=clojure
+    readonly repo=brew-install
+    readonly install_target="$BASE_PROGS_DIR/clojure"
+    readonly f="/tmp/${RANDOM}-clojure-linux-install.sh"
+
+    ver="$(get_git_tag "https://github.com/$name/$repo.git")" || return 1
+    is_installed "$ver" "$name" && return 2
+
+    report "installing $name dependencies..."
+    install_block 'rlwrap' || { err 'failed to install deps. abort.'; return 1; }
+
+    # note we can't directly DL from github, as linux-install file there contains some palceholders:
+    execute "curl -fsSL 'https://download.clojure.org/install/linux-install-${ver}.sh' -o '$f'" || return 1
+
+    execute "chmod +x '$f'" || return 1
+    execute "$f --prefix $install_target" || return 1
+    add_manpath "$install_target/bin" "$install_target/man"
+
+    add_to_dl_log  "$name" "$ver"
+    return 0
 }
 
 
@@ -3212,7 +3251,7 @@ install_bitlbee() {  # https://github.com/bitlbee/bitlbee
         readonly tmpdir="$TMP_DIR/$name-build-${RANDOM}"
         readonly repo="https://github.com/dylex/slack-libpurple.git"
 
-        ver="$(get_git_sha "$repo")"
+        ver="$(get_git_sha "$repo")" || return 1
         is_installed "$ver" "$name" && return 2
 
         report "installing $name build dependencies..."
@@ -3448,12 +3487,23 @@ install_webdev() {
     is_server && { report "we're server, skipping webdev env installation."; return; }
 
     # first get nvm (node version manager) :  # https://github.com/nvm-sh/nvm#git-install
-    clone_or_pull_repo nvm-sh nvm "$HOME/.nvm/"  # note repo dest needs to be exactly @ ~/.nvm, ie do not symlink
-    execute "source '$HOME/.nvm/nvm.sh'" || err "sourcing ~/.nvm/nvm.sh failed"
+    clone_or_pull_repo nvm-sh nvm "$NVM_DIR/"  # note repo dest needs to be exactly @ ~/.nvm, ie do not symlink
+
+    unset -f corepack npm npx node nvm yarn;  # just in case unset our nvm shell hack (set up in .bashrc) so node/npm executable isn't masked!
+
+    execute "source '$NVM_DIR/nvm.sh'" || err "sourcing [$NVM_DIR/nvm.sh] failed"
     if ! command -v node >/dev/null 2>&1; then  # only proceed if node hasn't already been installed
         execute "nvm install stable" || err "installing nodejs 'stable' version failed"
         execute "nvm alias default stable" || err "setting [nvm default stable] failed"
         execute "nvm use default" || err "[nvm use default] failed"
+    fi
+
+    # make sure the constant link to latest node exec ($NODE_LOC) is set up (normally managed by .bashrc, but might not have been created, as this is install_sys).
+    # eg some nvim plugin(s) might reference $NODE_LOC
+    if ! [[ -f "$NODE_LOC" ]]; then
+        local _node_const
+        _node_const="$(find "$NVM_DIR/versions/node/" -maxdepth 1 -mindepth 1 | sort -n | tail -n 1)/bin/node"
+        execute "ln -sf -- '$_node_const' '$NODE_LOC'"
     fi
 
     # update npm:
@@ -3567,7 +3617,7 @@ install_copyq() {
 
     readonly tmpdir="$TMP_DIR/copyq-build-${RANDOM}"
 
-    ver="$(get_git_sha "$COPYQ_REPO_LOC")"
+    ver="$(get_git_sha "$COPYQ_REPO_LOC")" || return 1
     is_installed "$ver" copyq && return 2
 
     report "installing copyq build dependencies..."
@@ -3681,7 +3731,7 @@ install_goforit() {
 
     readonly tmpdir="$TMP_DIR/goforit-build-${RANDOM}"
 
-    ver="$(get_git_sha "$GOFORIT_REPO_LOC")"
+    ver="$(get_git_sha "$GOFORIT_REPO_LOC")" || return 1
     is_installed "$ver" goforit && return 2
 
     report "installing goforit build dependencies..."
@@ -3801,7 +3851,7 @@ install_i3lock() {
 
     readonly tmpdir="$TMP_DIR/i3lock-build-${RANDOM}/build"
 
-    ver="$(get_git_sha "$I3_LOCK_LOC")"
+    ver="$(get_git_sha "$I3_LOCK_LOC")" || return 1
     is_installed "$ver" i3lock-color && return 2
 
     report "installing i3lock build dependencies..."
@@ -3859,7 +3909,7 @@ install_i3lock_fancy() {
 
     readonly tmpdir="$TMP_DIR/i3lock-fancy-build-${RANDOM}/build"
 
-    ver="$(get_git_sha "$I3_LOCK_FANCY_LOC")"
+    ver="$(get_git_sha "$I3_LOCK_FANCY_LOC")" || return 1
     is_installed "$ver" i3lock-fancy && return 2
 
     # clone the repository
@@ -3921,7 +3971,7 @@ install_brillo() {
     repo="https://gitlab.com/cameronnemo/brillo.git"
     tmpdir="$TMP_DIR/brillo-build-${RANDOM}/build"
 
-    ver="$(get_git_sha "$repo")"
+    ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" brillo && return 2
 
     # clone the repository
@@ -3972,7 +4022,7 @@ EOF
 
     readonly tmpdir="$TMP_DIR/i3-gaps-build-${RANDOM}/build"
 
-    ver="$(get_git_sha "$I3_REPO_LOC")"
+    ver="$(get_git_sha "$I3_REPO_LOC")" || return 1
     is_installed "$ver" i3-gaps && return 2
 
     # clone the repository
@@ -4350,7 +4400,8 @@ setup_nvim() {
     fi
 
     # YCM installation AFTER the first nvim launch (nvim launch pulls in ycm plugin, among others)!
-    install_YCM
+    #install_YCM
+    config_coc
     py_install neovim-remote     # https://github.com/mhinz/neovim-remote
     py_install pynvim            # https://github.com/neovim/pynvim
 }
@@ -4560,7 +4611,7 @@ build_and_install_vim() {
     readonly expected_runtimedir='/usr/local/share/vim/vim82'  # path depends on the ./configure --prefix
     readonly python3_confdir="$(python3-config --configdir)"
 
-    ver="$(get_git_sha "$VIM_REPO_LOC")"
+    ver="$(get_git_sha "$VIM_REPO_LOC")" || return 1
     is_installed "$ver" vim-our-build && return 2
 
     for i in "$python3_confdir"; do
@@ -4623,6 +4674,15 @@ build_and_install_vim() {
     add_to_dl_log  vim-our-build "$ver"
 
     return 0
+}
+
+config_coc() {
+    if [[ "$MODE" -eq 1 ]]; then
+        # TODO: instead of this, maybe we should just track ~/.config/coc/extensions/package.json?; unsure if that will bring the plugins to fresh install, but possibly worth a try;
+        nvim +'CocInstall coc-snippets coc-json'
+    else
+        nvim +CocUpdate
+    fi
 }
 
 
@@ -4788,7 +4848,7 @@ install_fonts() {
             Iosevka
         )
 
-        ver="$(get_git_sha "$NERD_FONTS_REPO_LOC")"
+        ver="$(get_git_sha "$NERD_FONTS_REPO_LOC")" || return 1
         is_installed "$ver" nerd-fonts && return 2
 
         # clone the repository
@@ -4814,7 +4874,7 @@ install_fonts() {
 
         readonly tmpdir="$TMP_DIR/powerline-fonts-${RANDOM}"
 
-        ver="$(get_git_sha "$PWRLINE_FONTS_REPO_LOC")"
+        ver="$(get_git_sha "$PWRLINE_FONTS_REPO_LOC")" || return 1
         is_installed "$ver" powerline-fonts && return 2
 
         execute "git clone ${GIT_OPTS[*]} $PWRLINE_FONTS_REPO_LOC '$tmpdir'" || return 1
@@ -4836,7 +4896,7 @@ install_fonts() {
         readonly tmpdir="$TMP_DIR/siji-font-$RANDOM"
         readonly repo='https://github.com/stark/siji'
 
-        ver="$(get_git_sha "$repo")"
+        ver="$(get_git_sha "$repo")" || return 1
         is_installed "$ver" siji-font && return 2
 
         execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || { err 'err cloning siji font'; return 1; }
@@ -5515,6 +5575,7 @@ __choose_prog_to_build() {
         install_rga
         install_browsh
         install_rebar
+        install_clojure
         install_lazygit
         install_lazydocker
         install_fd
@@ -5661,7 +5722,7 @@ remind_manually_installed_progs() {
     declare -ar progs=(
         lazyman2
         'intelliJ toolbox'
-        'sdkman - jdk, maven, gradle...'
+        'sdkman - jdk, maven, gradle, leiningen...'
         'any custom certs'
         'install tmux plugins (prefix+I)'
         'ublock origin additional configs (est, social media, ...)'
@@ -5709,7 +5770,7 @@ _sysctl_conf() {
     readonly value="$3"
 
     [[ -d "$sysctl_dir" ]] || { err "[$sysctl_dir] is not a dir. can't change our sysctl value for [$1]"; return 1; }
-    grep -q "^$property\s*=\s*$value\$" "$sysctl_conf" && return  # value already set, nothing to do
+    grep -q "^$property\s*=\s*$value\$" "$sysctl_conf" && return 0  # value already set, nothing to do
 
     # delete all same prop definitions, regardless of its value:
     [[ -f "$sysctl_conf" ]] && execute "sudo sed -i --follow-symlinks '/^${property}\s*=/d' '$sysctl_conf'"
@@ -5717,6 +5778,19 @@ _sysctl_conf() {
 
     # mark our sysctl config has changed:
     SYSCTL_CHANGED=1
+}
+
+# add manpath mapping
+add_manpath() {
+    local path manpath man_db
+
+    path="$1"
+    manpath="$2"
+    man_db='/etc/manpath.config'
+
+    [[ -f "$man_db" ]] || { err "[$man_db] is not a file, can't add [$path -> $manpath] mapping"; return 1; }
+    grep -q "^MANPATH_MAP\s+${path}\s+${manpath}\$" "$man_db" && return 0  # value already set, nothing to do
+    execute "echo 'MANPATH_MAP $path  $manpath' | sudo tee --append $man_db > /dev/null"
 }
 
 
@@ -5910,7 +5984,7 @@ install_gtk_numix() {
     readonly theme_repo='https://github.com/numixproject/numix-gtk-theme.git'
     readonly tmpdir="$TMP_DIR/numix-theme-build-${RANDOM}"
 
-    ver="$(get_git_sha "$theme_repo")"
+    ver="$(get_git_sha "$theme_repo")" || return 1
     is_installed "$ver" numix-gtk-theme && return 2
 
     check_progs_installed  glib-compile-schemas  gdk-pixbuf-pixdata || { err "those need to be on path for numix build to succeed."; return 1; }
@@ -6178,7 +6252,7 @@ setup_firefox() {
 
     # install tridactyl native messenger:  https://github.com/tridactyl/tridactyl#extra-features
     #                                      https://github.com/tridactyl/native_messenger
-    execute 'curl -fsSl https://raw.githubusercontent.com/tridactyl/native_messenger/master/installers/install.sh -o /tmp/trinativeinstall.sh && sh /tmp/trinativeinstall.sh master'  # TODO: think we can remove 'master' arg
+    execute 'curl -fsSL https://raw.githubusercontent.com/tridactyl/native_messenger/master/installers/install.sh -o /tmp/trinativeinstall.sh && sh /tmp/trinativeinstall.sh master'  # TODO: think we can remove 'master' arg
 
 
     # install custom css/styling {  # see also https://github.com/MrOtherGuy/firefox-csshacks
@@ -6359,6 +6433,30 @@ is_installed() {
     return 1
 }
 
+
+# Fetch last/lates tag of given git repo.
+# from https://stackoverflow.com/a/12704727/1803648
+#
+# @param {string}  url  git repo url
+#
+# @returns {string} last git tag
+# @returns {bool} false if anything went wrong
+get_git_tag() {
+    local repo tag
+    repo="$1"
+
+    tag="$(git -c 'versionsort.suffix=-' \
+        ls-remote --exit-code --refs --sort='version:refname' --tags "$repo" '*.*.*' \
+        | tail --lines=1 \
+        | cut --delimiter='/' --fields=3)"
+    if [[ "$?" -ne 0 ]] || ! is_single "$tag"; then
+        err "fetching [$repo] latest tag failed"
+        return 1
+    fi
+
+    echo -n "$tag"
+}
+
 # Fetch the sha of HEAD of given git repo.
 #
 # @param {string}  url  git repo url
@@ -6371,7 +6469,7 @@ get_git_sha() {
     repo="$1"
 
     [[ -z "$repo" ]] && { err "no repo url provided"; return 1; }
-    sha="$(git ls-remote "$repo" HEAD | cut -f1)"
+    sha="$(git ls-remote --exit-code "$repo" HEAD | cut -f1)"
     if [[ "$?" -ne 0 ]] || ! is_single "$sha"; then
         err "fetching [$repo] HEAD sha failed"
         return 1
