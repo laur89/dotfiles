@@ -470,7 +470,6 @@ command -v zoxide > /dev/null && eval "$(zoxide init bash)"
 # that's why we need to work around this:
 #   https://www.reddit.com/r/node/comments/4tg5jg/lazy_load_nvm_for_faster_shell_start/d5ib9fs/
 #   https://gist.github.com/fl0w/07ce79bd44788f647deab307c94d6922
-export NVM_DIR="$HOME/.nvm"  # do not change location, keep _non-linked_ .nvm/ under ~
 #declare -a __NODE_GLOBALS=($(find "$NVM_DIR/versions/node/" -maxdepth 3 -mindepth 3 -type l -wholename '*/bin/*' | xargs -n1 basename | sort --unique))
 #mapfile -t __NODE_GLOBALS < <(fd --max-depth 1 --min-depth 1 --type l . "$NVM_DIR/versions/node/"*/bin/ --exec basename {} | sort --unique)
 mapfile -t __NODE_GLOBALS < <(find "$NVM_DIR/versions/node/"*/bin/ -maxdepth 1 -mindepth 1 -type l -print0 | xargs --null -n1 basename | sort --unique)
@@ -486,6 +485,18 @@ for cmd in "${__NODE_GLOBALS[@]}"; do
     eval "function ${cmd}(){ unset -f ${__NODE_GLOBALS[*]}; _load_nvm; unset -f _load_nvm; ${cmd} \"\$@\"; }"
 done
 unset cmd __NODE_GLOBALS
+
+# some nvim plugins require node to be on PATH; configure a constant link so plugins et al can be pointed at it;
+# idea is to have access to node executable prior to loading anything from nvm.
+#
+# note we have equivalent logic in install_system.sh as well!
+#
+# eg some nvim plugin(s) might reference $NODE_LOC
+_latest_node_ver="$(find "$NVM_DIR/versions/node/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
+if [[ "$(realpath -- "$NODE_LOC")" != "$_latest_node_ver" ]]; then
+    ln -sf -- "$_latest_node_ver" "$NODE_LOC"
+fi
+unset _latest_node_ver
 
 #   from https://stackoverflow.com/a/50378304/1803648
 # Run 'nvm use' automatically every time there's
