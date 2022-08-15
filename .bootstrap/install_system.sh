@@ -3530,12 +3530,19 @@ install_webdev() {
 }
 
 
-# building instructions from https://github.com/symless/synergy-core/wiki/Compiling
+# building instructions from https://github.com/symless/synergy-core/wiki/Compiling#linux
 # latest built binaries also avail from https://symless.com/synergy/downloads if you have licence
+#
+# note this FOSS fork:  https://github.com/debauchee/barrier which in turn was migrated to
+# https://github.com/input-leap/input-leap by its main contributors (see https://github.com/input-leap/input-leap/issues/1414);
+# it's unclear whether the latter will be _the_ location at this point.
 install_synergy() {
-    local tmpdir
+    local tmpdir ver
 
     readonly tmpdir="$TMP_DIR/synergy-build-${RANDOM}"
+
+    ver="$(get_git_sha "$SYNERGY_REPO_LOC")" || return 1
+    is_installed "$ver" synergy && return 2
 
     report "installing synergy build dependencies..."
     install_block '
@@ -3544,6 +3551,7 @@ install_synergy() {
         qtbase5-dev
         qttools5-dev
         cmake
+        make
         xorg-dev
         libssl-dev
         libx11-dev
@@ -3555,12 +3563,15 @@ install_synergy() {
         qtdeclarative5-dev
         libqt5svg5-dev
         libsystemd-dev
+        libnotify-dev
+        libgdk-pixbuf2.0-dev
+        libglib2.0-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
     execute "git clone ${GIT_OPTS[*]} $SYNERGY_REPO_LOC $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
-    execute "git checkout v2-dev" || return 1  # see https://github.com/symless/synergy-core/wiki/Getting-Started
-    export BOOST_ROOT="/home/$USER/boost"  # TODO: unsure if this is needed
+    #execute "git checkout v2-dev" || return 1  # see https://github.com/symless/synergy-core/wiki/Getting-Started
+    export BOOST_ROOT="$HOME/boost"  # TODO: unsure if this is needed
 
     report "building synergy"
     execute "mkdir build" || return 1
@@ -3568,9 +3579,13 @@ install_synergy() {
     execute "cmake .." || { err "[cmake ..] for synergy failed w/ $?"; return 1; }
     execute "make" || { err "[make] for synergy failed w/ $?"; return 1; }
     build_deb  synergy || err "build_deb for synergy failed"  # TODO: unsure if has to be ran from build/ or root dir;
+    #create_deb_install_and_store  synergy || { popd; return 1; }
 
     execute "popd;popd"
     execute "sudo rm -rf -- '$tmpdir'"
+
+    add_to_dl_log  synergy "$ver"
+
     return 0
 }
 
