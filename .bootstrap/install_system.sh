@@ -3500,10 +3500,10 @@ install_webdev() {
 
     # make sure the constant link to latest node exec ($NODE_LOC) is set up (normally managed by .bashrc, but might not have been created, as this is install_sys).
     # eg some nvim plugin(s) might reference $NODE_LOC
-    if ! [[ -f "$NODE_LOC" ]]; then
-        local _node_const
-        _node_const="$(find "$NVM_DIR/versions/node/" -maxdepth 1 -mindepth 1 | sort -n | tail -n 1)/bin/node"
-        execute "ln -sf -- '$_node_const' '$NODE_LOC'"
+    if ! [[ -x "$NODE_LOC" ]]; then
+        local _latest_node_ver
+        _latest_node_ver="$(find "$NVM_DIR/versions/node/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
+        [[ -x "$_latest_node_ver" ]] && execute "ln -sf -- '$_latest_node_ver' '$NODE_LOC'"
     fi
 
     # update npm:
@@ -6449,7 +6449,7 @@ is_installed() {
 }
 
 
-# Fetch last/lates tag of given git repo.
+# Fetch last/latest tag of given git repo.
 # from https://stackoverflow.com/a/12704727/1803648
 #
 # @param {string}  url  git repo url
