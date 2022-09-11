@@ -493,7 +493,7 @@ unset cmd __NODE_GLOBALS
 #
 # eg some nvim plugin(s) might reference $NODE_LOC
 _latest_node_ver="$(find "$NVM_DIR/versions/node/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
-if [[ "$(realpath -- "$NODE_LOC")" != "$_latest_node_ver" ]]; then
+if [[ "$(realpath -- "$NODE_LOC")" != "$_latest_node_ver" && -x "$_latest_node_ver" ]]; then
     ln -sf -- "$_latest_node_ver" "$NODE_LOC"
 fi
 unset _latest_node_ver
@@ -519,7 +519,7 @@ _enter_dir() {
     PREV_PWD="$d"
 }
 
-[[ -s "$NVM_DIR/nvm.sh" && ";${PROMPT_COMMAND};" != *";_enter_dir;"* ]] && export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
+[[ -s "$NVM_DIR/nvm.sh" && ";${PROMPT_COMMAND};" != *';_enter_dir;'* ]] && export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
 ##########################################
 # generate .Xauth to be passed to (and used by) GUI docker gui containers:
 export XAUTH='/tmp/.docker.xauth'

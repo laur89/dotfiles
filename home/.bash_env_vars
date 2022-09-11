@@ -143,7 +143,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export _WIRELESS_IF="/tmp/wireless_interfaces.dat"
     export _TRUSTED_CON_MARKER="/tmp/connected_trusted_NW.dat"
 
-    export _DOCK_USB_DEVICE_MARKER='17ef:306f'
+    export _DOCK_USB_DEVICE_MARKER='17ef:306f'  # TODO: should this be moved to computer-specific overrides?
 
     export WALLPAPER_DIR="/home/$USER/Pictures/wallpapers"
     export DYN_WALLPAPER_DIR="/tmp/.dynamic_wallpapers"  # dir where scripts dynamically create walls into;
@@ -224,12 +224,6 @@ export TLDR_COLOR_COMMAND="red"
 export TLDR_COLOR_PARAMETER="white"
 export TLDR_CACHE_ENABLED=1
 export TLDR_CACHE_MAX_AGE=720
-
-# conscript (distribution mechanism for scala apps using github & mvn) env vars
-# (from http://www.foundweekends.org/conscript/setup.html):
-export CONSCRIPT_HOME="$HOME/.conscript"
-export CONSCRIPT_OPTS="-XX:MaxPermSize=512M -Dfile.encoding=UTF-8"
-#export PATH=$CONSCRIPT_HOME/bin:$PATH  # PATH added below
 
 
 if [[ -d "$BASE_DATA_DIR/tmp" && -w "$BASE_DATA_DIR/tmp" ]]; then
@@ -323,7 +317,7 @@ for i in \
         "$GOPATH/bin" \
         "${KREW_ROOT:-$HOME/.krew}/bin" \
         "$BASE_DEPS_LOC/git-fuzzy/bin" \
-        "$CONSCRIPT_HOME/bin" \
+        "$HOME/.local/share/coursier/bin" \
         "$PYENV_ROOT/bin" \
         "$BASE_PROGS_DIR/clojure/bin" \
         "$HOME/.config/nvim/bundle/vim-iced/bin" \
