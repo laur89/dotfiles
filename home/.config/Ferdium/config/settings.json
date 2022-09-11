@@ -17,6 +17,7 @@
   "showMessageBadgeWhenMuted": true,
   "showDragArea": false,
   "enableSpellchecking": true,
+  "enableTranslator": false,
   "spellcheckerLanguage": "en-us",
   "darkMode": true,
   "navigationBarManualActive": false,
@@ -54,8 +55,11 @@
   "iconSize": 20,
   "navigationBarBehaviour": "custom",
   "searchEngine": "startPage",
-  "useVerticalStyle": false,
+  "translatorLanguage": "en",
+  "translatorEngine": "LibreTranslate",
+  "useHorizontalStyle": false,
   "hideCollapseButton": false,
+  "isMenuCollapsed": false,
   "hideRecipesButton": false,
   "hideSplitModeButton": true,
   "useGrayscaleServices": false,
@@ -68,6 +72,7 @@
   "enableLongPressServiceHint": false,
   "proxyFeatureEnabled": false,
   "onlyShowFavoritesInUnreadCount": false,
+  "customTodoServer": "",
   "locale": "en-US",
-  "customTodoServer": ""
+  "useVerticalStyle": false
 }
