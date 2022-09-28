@@ -1007,6 +1007,8 @@ install_sshfs() {
 #
 # aslo, should we extract python modules out?
 install_deps() {
+    local u
+
     _install_tmux_deps() {
         local plugins_dir dir
 
@@ -1161,12 +1163,11 @@ install_deps() {
     create_link "${BASE_DEPS_LOC}/notify-send.sh/notify-send.sh" "$HOME/bin/"
 
 
-    # diff-so-fancy - human-readable git diff:  # https://github.com/so-fancy/diff-so-fancy
+    # diff-so-fancy - human-readable git diff:  # https://github.com/so-fancy/diff-so-fancy#install
     # note: alternative would be https://github.com/dandavison/delta
-    # either of those need manual setup in our gitconfig;
-    if execute "wget -O $TMP_DIR/d-s-f 'https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/diff-so-fancy'"; then
-        test -s $TMP_DIR/d-s-f && execute "mv -- $TMP_DIR/d-s-f $HOME/bin/diff-so-fancy && chmod +x $HOME/bin/diff-so-fancy" || err "fetched diff-so-fancy file is null"
-    fi
+    # either of those need manual setup in our gitconfig
+    clone_or_pull_repo "so-fancy" "diff-so-fancy" "$BASE_DEPS_LOC" || return 1
+    create_link "$BASE_DEPS_LOC/diff-so-fancy" "$HOME/bin/"
 
     # forgit - fzf-fueled git tool:  # https://github.com/wfxr/forgit
     if ! execute "wget -O $HOME/.forgit 'https://raw.githubusercontent.com/wfxr/forgit/master/forgit.plugin.zsh'"; then
@@ -1185,24 +1186,23 @@ install_deps() {
     # tmux plugin manager:
     _install_tmux_deps; unset _install_tmux_deps
 
-    # conscript (scala apps distribution manager):  # http://www.foundweekends.org/conscript/setup.html
-                                                    # TODO: check https://github.com/foundweekends/conscript/issues/124 (reason we exec with -i)
-    execute -i 'wget https://raw.githubusercontent.com/foundweekends/conscript/master/setup.sh -O - | sh'
-
-    # install scala apps (requires conscript):
-    if [[ "$PATH" == *conscript* ]]; then  # (assuming conscript is installed and executable is on our PATH)
-        execute 'cs foundweekends/giter8'  # https://github.com/foundweekends/giter8
-                                           #   note its conf is in bash_env_vars
+    # install scala apps (requires coursier):
+    # giter8    # http://www.foundweekends.org/giter8/setup.html
+    if command -v g8 >/dev/null 2>&1; then
+        execute 'cs update g8'
     else
-        err "[conscript] not on \$PATH; if it's the initial installation, then just re-run ${FUNCNAME}()"
+        execute 'cs install giter8'
     fi
 
     # sdkman:  # https://sdkman.io/
     # TODO: consider replacing all env/version managers by asdf
     if [[ -d "$HOME/.sdkman" ]]; then  # already installed; note if you'd add some config from that dir to homeshick, then this check would effectively become invalid!
-        execute 'sdk selfupdate'
+        #execute 'sdk selfupdate'  # will fail, as 'sdk' is a function imported in .bashrc
+        true  # pass
     else
-        execute "curl -sf 'https://get.sdkman.io' | bash"  # TODO depends whether win or linux
+        u='https://get.sdkman.io'
+        is_noninteractive && u+='?rcupdate=false'
+        execute "curl -sf '$u' | bash"  # TODO depends whether win or linux
         #install_from_url_shell  sdkman 'https://get.sdkman.io'  # TODO: can't use yet, as https://get.sdkman.io doesn't have etag or anything other useful to version by
     fi
 
@@ -1215,7 +1215,7 @@ install_deps() {
     # git-playback; install _either_ of these two (ie either from jianli or mmozuras):
     py_install git-playback   # https://github.com/jianli/git-playback
 
-    # whatportis: query applications' default port:
+    # whatportis: query applications' default port:  (eg  $ whatportis posgresql)
     py_install whatportis     # https://github.com/ncrocfer/whatportis
 
     # git-playback:   # https://github.com/mmozuras/git-playback
@@ -1339,6 +1339,7 @@ install_deps() {
     # https://github.com/riyadhalnur/weather-cli
     #
     execute "$NPM_PRFX npm install -g \
+        neovim \
         ungit \
         JSON.sh \
         speed-test \
@@ -2096,6 +2097,7 @@ install_devstuff() {
     install_insomnia
     install_terragrunt
     install_minikube
+    install_coursier
 
     install_block '
         kubectl
@@ -2113,6 +2115,7 @@ install_own_builds() {
 
     #install_vim  # note: can't exclude it as-is, as it also configures vim (if you ever want to go nvim-only)
     #install_neovim
+    install_neovide
     #install_keepassxc
     install_keybase
     #install_goforit
@@ -2276,6 +2279,8 @@ switch_jdk_versions() {
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
 # $4 - what to rename resulting file as (optional)
+#
+# TODO: instead of using fetch_release_from_any(), fetch data from github api: https://api.github.com/repos/jpbruinsslot/slack-term/releases/latest
 fetch_release_from_git() {
     local opt loc id OPTIND args
 
@@ -2626,7 +2631,7 @@ install_franz() {  # https://github.com/meetfranz/franz/blob/master/docs/linux.m
 install_ferdium() {  # https://github.com/ferdium/ferdium-app
     #install_deb_from_git ferdium ferdium-app _amd64.deb  # TODO: use this shortcut once they've released a single release
 
-    deb="$(fetch_release_from_git -R '-SM' ferdium ferdium-app _amd64.deb)" || return 1
+    deb="$(fetch_release_from_git -R '-SM' ferdium ferdium-app -amd64.deb)" || return 1
     install_file "$deb" || return 1
 }
 
@@ -2850,11 +2855,12 @@ install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
 
 # see also https://github.com/wee-slack/wee-slack/
 # this is one of installation/setup blogs: http://www.futurile.net/2020/11/30/weechat-for-slack/
-install_slack_term() {  # https://github.com/erroneousboat/slack-term
-    install_bin_from_git -N slack-term erroneousboat slack-term slack-term-linux-amd64
+install_slack_term() {  # https://github.com/jpbruinsslot/slack-term
+    install_bin_from_git -N slack-term jpbruinsslot slack-term slack-term-linux-amd64
 }
 
 
+# TODO: looks like after initial installation apt keeps updating it automatically?!
 install_slack() {  # https://slack.com/intl/en-es/help/articles/212924728-Download-Slack-for-Linux--beta-
     # snap version:
     #snap_install slack
@@ -2898,6 +2904,10 @@ install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instruc
     return 0
 }
 
+# scala application & artifact manager
+install_coursier() {  # https://github.com/coursier/coursier
+    install_bin_from_git -N cs  coursier coursier  cs-x86_64-pc-linux.gz
+}
 
 install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
     install_deb_from_git BurntSushi ripgrep _amd64.deb
@@ -4422,6 +4432,12 @@ setup_nvim() {
 }
 
 
+# https://github.com/neovide/neovide
+install_neovide() {  # rust-based GUI front-end to neovim
+    install_bin_from_git -N neovide -n neovide  neovide neovide 'neovide.tar.gz'
+}
+
+
 # https://github.com/neovim/neovim/wiki/Installing-Neovim
 #install_neovim() {  # the AppImage version
     #local tmpdir nvim_confdir inst_loc nvim_url
@@ -4691,12 +4707,15 @@ build_and_install_vim() {
     return 0
 }
 
+# note the installation bit could be replaced by nvim config:
+#  let g:coc_global_extensions = ['coc-json', 'coc-git']
 config_coc() {
     if [[ "$MODE" -eq 1 ]]; then
         # TODO: instead of this, maybe we should just track ~/.config/coc/extensions/package.json?; unsure if that will bring the plugins to fresh install, but possibly worth a try;
-        nvim +'CocInstall coc-snippets coc-json'
+        #nvim +'CocInstall -sync  coc-snippets coc-tsserver coc-json coc-html coc-css coc-pyright coc-sh|qall'
+        nvim +'CocInstall -sync  coc-snippets coc-tsserver coc-json coc-html coc-css coc-pyright coc-sh' +qall
     else
-        nvim +CocUpdate
+        nvim +CocUpdateSync +qall
     fi
 }
 
@@ -5072,6 +5091,7 @@ install_from_repo() {
         dnstracer
         mtr
         whois
+        systemd-resolved
         network-manager
         network-manager-gnome
         jq
@@ -5235,6 +5255,7 @@ install_from_repo() {
         arandr
         autorandr
         copyq
+        copyq-plugins
         googler
         msmtp
         msmtp-mta
@@ -5590,6 +5611,7 @@ __choose_prog_to_build() {
         install_rga
         install_browsh
         install_rebar
+        install_coursier
         install_clojure
         install_lazygit
         install_lazydocker
@@ -5654,6 +5676,7 @@ __choose_prog_to_build() {
         install_exodus_wallet
         install_vbox_guest
         install_brillo
+        install_neovide
     )
 
     report "what do you want to build/install?"
@@ -6031,7 +6054,7 @@ install_gruvbox_gtk_theme() {
 install_veracrypt() {
     local dl_urls ver_to_url u i
 
-    dl_urls="$(resolve_dl_urls -M 'https://www.veracrypt.fr/en/Downloads.html' '.*Debian-\d+-amd64.deb')" || return 1
+    dl_urls="$(resolve_dl_urls -M 'https://veracrypt.fr/en/Downloads.html' '.*Debian-\d+-amd64.deb')" || return 1
 
     declare -A ver_to_url  # debian version to url
 
@@ -6118,12 +6141,27 @@ configure_ntp_for_work() {
 # TODO: should we wrap 'load-module' lines between .ifexists & .endif?
 # TODO2: read up on noise cancellation (eg 'module-echo-cancel')
 configure_pulseaudio() {
-    local conf conf_lines i
+    local conf_main confdir target conf_files conf_lines i
 
-    readonly conf='/etc/pulse/default.pa'
+    readonly conf_main='/etc/pulse/default.pa'
+    readonly confdir='/etc/pulse/default.pa.d'  # additional conf; note files here must have .pa extension
     declare -a conf_lines=('load-module module-equalizer-sink'
                            'load-module module-dbus-protocol'
                           )
+    declare -a conf_files=("$conf_main")
+
+    if [[ -d "$confdir" ]]; then
+        if ! is_dir_empty "$confdir"; then
+            for i in "$confdir/"*; do
+                [[ -f "$i" ]] && conf_files+=("$i")
+            done
+        fi
+
+        target="$confdir/${HOSTNAME}.pa"
+    else
+        target="$conf_main"
+    fi
+
     # another modules to consider:
     # - pactl load-module module-loopback - hear mic input; https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/User/Modules/#module-loopback
 
@@ -6132,12 +6170,12 @@ configure_pulseaudio() {
     # https://zach-adams.com/2014/07/bluetooth-audio-sink-stream-setup-failed/
     is_laptop && is_native && conf_lines+=('load-module module-bluetooth-discover')
 
-    [[ -f "$conf" ]] || { err "[$conf] is not a valid file; is pulseaudio installed?"; return 1; }
+    [[ -f "$conf_main" ]] || { err "[$conf_main] is not a valid file; is pulseaudio installed?"; return 1; }
 
     for i in "${conf_lines[@]}"; do
-        if ! grep -qFx "$i" "$conf"; then
-            report "adding [$i] to $conf"
-            execute "echo $i | sudo tee --append $conf > /dev/null"
+        if ! grep -qFx "$i" "${conf_files[@]}"; then
+            report "adding [$i] to $target"
+            execute "echo $i | sudo tee --append $target > /dev/null"
         fi
     done
 
@@ -6147,13 +6185,13 @@ configure_pulseaudio() {
         local line param
 
         param='auto_switch=2'  # note mode 1 is the default used by this module
-        line="$(grep -Po '^load-module module-bluetooth-policy\K.*' "$conf")" || return 0  # return if we do not have module-bluetooth-policy in our conf
+        line="$(grep -Po '^load-module module-bluetooth-policy\K.*' "$conf_main")" || return 0  # return if we do not have module-bluetooth-policy in our conf
         if [[ -n "$line" ]] && ! is_single "$line"; then
-            err "[$conf] contained more than 1 line(s) containing opt: [$line]"
+            err "[$conf_main] contained more than 1 line(s) containing opt: [$line]"
             return 1
         fi
-        grep -Fq "$param" <<< "$line" && report "[$param] BT option already set in [$conf]" && return 0
-        execute "sudo sed -i --follow-symlinks 's/^load-module module-bluetooth-policy.*$/load-module module-bluetooth-policy$line $param/g' $conf" || { err; return 1; }
+        grep -Fq "$param" <<< "$line" && report "[$param] BT option already set in [$conf_main]" && return 0
+        execute "sudo sed -i --follow-symlinks 's/^load-module module-bluetooth-policy.*$/load-module module-bluetooth-policy$line $param/g' $conf_main" || { err; return 1; }
     }
 
     _change_bt_policy
@@ -6178,8 +6216,12 @@ _init_seafile_cli() {
 # this is only to be invoked manually.
 # note the client daemon needs to be running _prior_ to downloading the libraries.
 #
+# This should leave us with a situation where
+#  - $BASE_DATA_DIR/seafile       contains our library directories
+#  - $BASE_DATA_DIR/seafile-data  contains seafile's own metadata (we don't interact with ourselves)
+#
 # useful commands:
-#  - seaf-cli list  -> info about synced libraries
+#  - seaf-cli list [--json]  -> info about synced libraries
 #  - seaf-cli list-remote
 #  - seaf-cli status  -> see download/sync status of libraries
 setup_seafile() {
