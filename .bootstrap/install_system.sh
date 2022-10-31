@@ -206,7 +206,7 @@ check_dependencies() {
 
     for prog in \
             git cmp wc wget curl tar unzip atool \
-            realpath dirname basename head tee \
+            realpath dirname basename head tee jq \
             gpg mktemp file date alien id html2text \
             pwd \
                 ; do
@@ -2132,6 +2132,7 @@ install_own_builds() {
     install_browsh
     install_vnote
     install_delta
+    install_dust
     install_peco
     install_fd
     install_jd
@@ -2277,31 +2278,68 @@ switch_jdk_versions() {
 
 # $1 - git user
 # $2 - git repo
-# $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
+# $3 - asset regex to be used (for jq's test()) to parse correct item from git /releases page
 # $4 - what to rename resulting file as (optional)
 #
-# TODO: instead of using fetch_release_from_any(), fetch data from github api: https://api.github.com/repos/jpbruinsslot/slack-term/releases/latest
+# see also:
+#  - https://github.com/OhMyMndy/bin-get
+#  - https://github.com/wimpysworld/deb-get
 fetch_release_from_git() {
-    local opt loc id OPTIND args
+    local opt loc id OPTIND tmpdir dl_url noextract skipadd file_filter name_filter file
 
-    args=()
-    while getopts 'UsF:n:R:' opt; do
+    while getopts 'UsF:n:' opt; do
         case "$opt" in
-            U) args+=(-U) ;;
-            s) args+=(-s) ;;
-            F) args+=(-F "$OPTARG") ;;
-            n) args+=(-n "$OPTARG") ;;
-            R) args+=(-R "$OPTARG") ;;
+            U) noextract=1 ;;
+            s) skipadd=1 ;;
+            F) file_filter="$OPTARG" ;;
+            n) name_filter="$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
-    loc="https://github.com/$1/$2/releases/latest"
-    id="github-$1-$2${4:+-$4}"  # note we append name to the id when defined (same repo might contain multiple binaries)
+    readonly loc="https://api.github.com/repos/$1/$2/releases/latest"
+    dl_url="$(curl -fsSL "$loc" | jq -er ".assets[] | select(.name|test(\"$3\$\")) | .browser_download_url")" || { err "asset url resolution from [$loc] failed w/ $?"; return 1; }
+    readonly id="github-$1-$2${4:+-$4}"  # note we append name to the id when defined (same repo might contain multiple binaries)
 
-    fetch_release_from_any "${args[@]}" -r -I "$id" "$loc" "$3" "$4"
+    if ! is_valid_url "$dl_url"; then
+        err "resolved url for ${id} is improper: [$dl_url]; aborting"
+        return 1
+    fi
+
+    tmpdir="$(mktemp -d "release-from-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+
+    # TODO: following logic is _essentially_ same as in fetch_release_from_any()
+    [[ "$skipadd" -ne 1 ]] && is_installed "$dl_url" "$id" && return 2
+
+    report "fetching [$dl_url]..."
+    execute "wget --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
+    file="$(find "$tmpdir" -type f)"
+    [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
+
+    if [[ "$noextract" -ne 1 ]] && grep -qiE "archive|compressed" <<< "$(file --brief "$file")"; then
+        file="$(extract_tarball -s -f "$file_filter" -n "$name_filter" "$file")" || return 1
+    fi
+
+    if [[ -n "$4" ]]; then
+        [[ "$4" == */* ]] && { err "name can't be a path, but was [$4]"; return 1; }
+        if [[ "$(basename -- "$file")" != "$4" ]]; then
+            execute "mv -- '$file' '$tmpdir/$4'" || { err "renaming [$file] to [$tmpdir/$4] failed"; return 1; }
+            file="$tmpdir/$4"
+        fi
+    fi
+
+    if [[ "$skipadd" -ne 1 ]]; then
+        # we're assuming here that installation succeeded from here on.
+        # it is optimistic, but removes repetitive calls.
+        add_to_dl_log "$id" "$dl_url"
+    fi
+
+    #sanitize_apt "$tmpdir"  # think this is not really needed...
+    echo "$file"  # note returned should be indeed path, even if only relative (ie './xyz'), not cleaned basename
+    return 0
 }
+
 
 resolve_dl_urls() {
     local opt OPTIND multi zort loc grep_tail page dl_url urls domain u
@@ -2406,6 +2444,7 @@ fetch_release_from_any() {
     dl_url="$(resolve_dl_urls $resolveurls_opts "$loc" "${relative:+/}.*$2")" || return 1  # note we might be looking for a relative url
 
     ver="$(resolve_ver "$dl_url")" || return 1
+    # TODO: following logic is _essentially_ same as in fetch_release_from_git()
     [[ "$skipadd" -ne 1 ]] && is_installed "$ver" "${id:-$3}" && return 2
 
     report "fetching [$dl_url]..."
@@ -2631,7 +2670,7 @@ install_franz() {  # https://github.com/meetfranz/franz/blob/master/docs/linux.m
 install_ferdium() {  # https://github.com/ferdium/ferdium-app
     #install_deb_from_git ferdium ferdium-app _amd64.deb  # TODO: use this shortcut once they've released a single release
 
-    deb="$(fetch_release_from_git -R '-SM' ferdium ferdium-app -amd64.deb)" || return 1
+    deb="$(fetch_release_from_git ferdium ferdium-app -amd64.deb)" || return 1
     install_file "$deb" || return 1
 }
 
@@ -3437,6 +3476,12 @@ install_peco() {  # https://github.com/peco/peco#installation
 # note: alternative would be diff-so-fancy (dsf)
 install_delta() {  # https://github.com/dandavison/delta
     install_deb_from_git  dandavison  delta  'git-delta_.*_amd64.deb'
+}
+
+
+# ncdu-like FS usage viewer, in rust (name is 'du + rust')
+install_dust() {  # https://github.com/bootandy/dust
+    install_deb_from_git  bootandy  dust  '_amd64.deb'
 }
 
 
@@ -4329,6 +4374,7 @@ install_dwm() {
 # https://github.com/phusion/debian-packaging-for-the-modern-developer/tree/master/tutorial-1
 #
 # see also pbuilder, https://wiki.debian.org/SystemBuildTools
+# see also https://github.com/makedeb/makedeb
 build_deb() {
     local opt pkg_name configure_extra dh_extra deb OPTIND
 
@@ -5072,6 +5118,7 @@ install_from_repo() {
         wireshark
         iptraf
         rsync
+        wireguard
         openvpn3
         network-manager-openvpn-gnome
         gparted
@@ -5621,6 +5668,7 @@ __choose_prog_to_build() {
         install_exa
         install_gitin
         install_delta
+        install_dust
         install_peco
         install_synergy
         install_dwm
