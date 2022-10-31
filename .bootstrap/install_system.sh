@@ -2285,14 +2285,15 @@ switch_jdk_versions() {
 #  - https://github.com/OhMyMndy/bin-get
 #  - https://github.com/wimpysworld/deb-get
 fetch_release_from_git() {
-    local opt loc id OPTIND tmpdir dl_url noextract skipadd file_filter name_filter file
+    local opt loc id OPTIND dl_url opts
 
+    opts=()
     while getopts 'UsF:n:' opt; do
         case "$opt" in
-            U) noextract=1 ;;
-            s) skipadd=1 ;;
-            F) file_filter="$OPTARG" ;;
-            n) name_filter="$OPTARG" ;;
+            U) opts+=(-U) ;;
+            s) opts+=(-s) ;;
+            F) opts+=(-F "$OPTARG") ;;
+            n) opts+=(-n "$OPTARG") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2307,32 +2308,55 @@ fetch_release_from_git() {
         return 1
     fi
 
-    tmpdir="$(mktemp -d "release-from-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    _fetch_release_common "${opts[@]}" "$id" "$dl_url" "$dl_url" "$4"
+}
 
-    # TODO: following logic is _essentially_ same as in fetch_release_from_any()
-    [[ "$skipadd" -ne 1 ]] && is_installed "$dl_url" "$id" && return 2
+
+# common logic for both fetch_release_from_{git,any}()
+_fetch_release_common() {
+    local opt noextract skipadd file_filter name_filter id ver dl_url name tmpdir file OPTIND
+
+    while getopts 'UsF:n:' opt; do
+        case "$opt" in
+            U) noextract=1 ;;
+            s) skipadd=1 ;;
+            F) file_filter="$OPTARG" ;;
+            n) name_filter="$OPTARG" ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    id="$1"
+    ver="$2"
+    dl_url="$3"
+    name="$4"  # optional
+
+    [[ "$skipadd" -ne 1 ]] && is_installed "$ver" "${id:-$name}" && return 2
+    tmpdir="$(mktemp -d "release-from-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     report "fetching [$dl_url]..."
     execute "wget --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
     file="$(find "$tmpdir" -type f)"
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
-    if [[ "$noextract" -ne 1 ]] && grep -qiE "archive|compressed" <<< "$(file --brief "$file")"; then
+    if [[ "$noextract" -ne 1 ]] && grep -qiE 'archive|compressed' <<< "$(file --brief "$file")"; then
         file="$(extract_tarball -s -f "$file_filter" -n "$name_filter" "$file")" || return 1
     fi
 
-    if [[ -n "$4" ]]; then
-        [[ "$4" == */* ]] && { err "name can't be a path, but was [$4]"; return 1; }
-        if [[ "$(basename -- "$file")" != "$4" ]]; then
-            execute "mv -- '$file' '$tmpdir/$4'" || { err "renaming [$file] to [$tmpdir/$4] failed"; return 1; }
-            file="$tmpdir/$4"
+    # TODO: should we invoke install_file() from this function instead of this reused logic? unsure..better read TODO at the top of this fun
+    if [[ -n "$name" ]]; then
+        [[ "$name" == */* ]] && { err "name can't be a path, but was [$name]"; return 1; }
+        if [[ "$(basename -- "$file")" != "$name" ]]; then
+            execute "mv -- '$file' '$tmpdir/$name'" || { err "renaming [$file] to [$tmpdir/$name] failed"; return 1; }
+            file="$tmpdir/$name"
         fi
     fi
 
     if [[ "$skipadd" -ne 1 ]]; then
         # we're assuming here that installation succeeded from here on.
         # it is optimistic, but removes repetitive calls.
-        add_to_dl_log "$id" "$dl_url"
+        add_to_dl_log "$id" "$ver"
     fi
 
     #sanitize_apt "$tmpdir"  # think this is not really needed...
@@ -2421,14 +2445,15 @@ resolve_dl_urls() {
 #       differentiates $name and $id; maybe install_from_url() could have optional -I, which then uses
 #       that value for ver tracking as opposed name? or make name always mandatory and just use that (ie drop ID)?
 fetch_release_from_any() {
-    local opt noextract skipadd file_filter name_filter id relative resolveurls_opts loc tmpdir file loc dl_url ver OPTIND
+    local opts opt id relative resolveurls_opts loc dl_url ver OPTIND
 
+    opts=()
     while getopts 'UsF:n:I:rR:' opt; do
         case "$opt" in
-            U) noextract=1 ;;
-            s) skipadd=1 ;;
-            F) file_filter="$OPTARG" ;;
-            n) name_filter="$OPTARG" ;;
+            U) opts+=(-U) ;;
+            s) opts+=(-s) ;;
+            F) opts+=(-F "$OPTARG") ;;
+            n) opts+=(-n "$OPTARG") ;;
             I) id="$OPTARG" ;;
             r) relative='TRUE' ;;
             R) resolveurls_opts="$OPTARG" ;;
@@ -2437,43 +2462,11 @@ fetch_release_from_any() {
     done
     shift "$((OPTIND-1))"
 
-
     readonly loc="$1"
-    tmpdir="$(mktemp -d "release-from-external-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-
     dl_url="$(resolve_dl_urls $resolveurls_opts "$loc" "${relative:+/}.*$2")" || return 1  # note we might be looking for a relative url
-
     ver="$(resolve_ver "$dl_url")" || return 1
-    # TODO: following logic is _essentially_ same as in fetch_release_from_git()
-    [[ "$skipadd" -ne 1 ]] && is_installed "$ver" "${id:-$3}" && return 2
 
-    report "fetching [$dl_url]..."
-    execute "wget --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
-    file="$(find "$tmpdir" -type f)"
-    [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
-
-    if [[ "$noextract" -ne 1 ]] && grep -qiE "archive|compressed" <<< "$(file --brief "$file")"; then
-        file="$(extract_tarball -s -f "$file_filter" -n "$name_filter" "$file")" || return 1
-    fi
-
-    # TODO: should we invoke install_file() from this function instead of this reused logic? unsure..better read TODO at the top of this fun
-    if [[ -n "$3" ]]; then
-        [[ "$3" == */* ]] && { err "name can't be a path, but was [$3]"; return 1; }
-        if [[ "$(basename -- "$file")" != "$3" ]]; then
-            execute "mv -- '$file' '$tmpdir/$3'" || { err "renaming [$file] to [$tmpdir/$3] failed"; return 1; }
-            file="$tmpdir/$3"
-        fi
-    fi
-
-    if [[ "$skipadd" -ne 1 ]]; then
-        # we're assuming here that installation succeeded from here on.
-        # it is optimistic, but removes repetitive calls.
-        add_to_dl_log "$id" "$ver"
-    fi
-
-    #sanitize_apt "$tmpdir"  # think this is not really needed...
-    echo "$file"  # note returned should be indeed path, even if only relative (ie './xyz'), not cleaned basename
-    return 0
+    _fetch_release_common "${opts[@]}" "${id:-$3}" "$ver" "$dl_url" "$3"
 }
 
 
@@ -6518,7 +6511,7 @@ add_to_dl_log() {
     id="$1"
     url="$2"
 
-    [[ -f "$GIT_RLS_LOG" ]] && sed --follow-symlinks -i "/^$id:/d" "$GIT_RLS_LOG"
+    [[ -s "$GIT_RLS_LOG" ]] && sed --follow-symlinks -i "/^$id:/d" "$GIT_RLS_LOG"
     echo -e "${id}:\t$url" >> "$GIT_RLS_LOG"
 }
 
