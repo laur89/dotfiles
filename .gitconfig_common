@@ -87,7 +87,6 @@
     a = add
     b = branch -avv
     aa = add --all
-    rst = reset
     rvrt = revert
     di = diff
     dif = diff
@@ -100,8 +99,11 @@
     rb = rebase
     rbo = "!rb_origin () { b=${1:-$(git rev-parse --abbrev-ref HEAD)}; git fetch origin && git rebase origin/$b; }; rb_origin $1"
     rbu = "!rb_upstream () { b=${1:-$(git rev-parse --abbrev-ref HEAD)}; git fetch upstream && git rebase upstream/$b; }; rb_upstream $1"
+    rst = reset
     rsto = "!rst_origin () { b=${1:-$(git rev-parse --abbrev-ref HEAD)}; git fetch origin && git reset origin/$b; }; rst_origin $1"
     rstoh = "!rst_origin_hard () { b=${1:-$(git rev-parse --abbrev-ref HEAD)}; git fetch origin && git reset --hard origin/$b; }; rst_origin_hard $1"
+    rstu = "!rst_upstream () { b=${1:-$(git rev-parse --abbrev-ref HEAD)}; git fetch upstream && git reset upstream/$b; }; rst_upstream $1"
+    rstuh = "!rst_upstream_hard () { b=${1:-$(git rev-parse --abbrev-ref HEAD)}; git fetch upstream && git reset --hard upstream/$b; }; rst_upstream_hard $1"
     fe = fetch --prune --tags --all
     pul = pull
     desc = describe

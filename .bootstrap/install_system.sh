@@ -2290,10 +2290,8 @@ fetch_release_from_git() {
     opts=()
     while getopts 'UsF:n:' opt; do
         case "$opt" in
-            U) opts+=(-U) ;;
-            s) opts+=(-s) ;;
-            F) opts+=(-F "$OPTARG") ;;
-            n) opts+=(-n "$OPTARG") ;;
+            U|s) opts+=("-$opt") ;;
+            F|n) opts+=("-$opt" "$OPTARG") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2450,10 +2448,8 @@ fetch_release_from_any() {
     opts=()
     while getopts 'UsF:n:I:rR:' opt; do
         case "$opt" in
-            U) opts+=(-U) ;;
-            s) opts+=(-s) ;;
-            F) opts+=(-F "$OPTARG") ;;
-            n) opts+=(-n "$OPTARG") ;;
+            U|s) opts+=("-$opt") ;;
+            F|n) opts+=("-$opt" "$OPTARG") ;;
             I) id="$OPTARG" ;;
             r) relative='TRUE' ;;
             R) resolveurls_opts="$OPTARG" ;;
@@ -2523,7 +2519,7 @@ fetch_extract_tarball_from_git() {
 #
 # -S     - flag to extract into current $PWD, ie won't create a new tempdir.
 # -s     - if we're after a single file in extracted result. see -f & -n for further filtering.
-# -n     - filename pattern to be used by find; works together w/ -F;
+# -n     - filename pattern to be used by find; works together w/ -f;
 # -f     - $file output pattern to grep for in order to filter for specific
 #          single file from unpacked tarball;
 #          as it stands, the _first_ file matching given filetype is returned, even
@@ -2602,7 +2598,7 @@ download_git_raw() {
     repo="$2"
     ver="$3"
     f="$4"
-    out="${5:-/tmp/$RANDOM-dl_git_raw.out}"
+    out="${5:-/tmp/${RANDOM}-dl_git_raw.out}"
 
     execute "curl -fsSL https://raw.githubusercontent.com/$u/$repo/$ver/$f -o '$out' > /dev/null" || return 1
     [[ -f "$out" ]] && echo "$out" && return 0
@@ -2614,7 +2610,7 @@ download_git_raw() {
 #
 # -d /target/dir    - dir to install pulled binary in, optional
 # -N binary_name    - what to name pulled binary to, optional; TODO: should it not be mandatory - otherwise filename changes w/ each new version?
-# -n, -F            - see fetch_release_from_any()
+# -n, -F            - see _fetch_release_common()/fetch_release_from_any()
 # $1 - git user
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
@@ -2628,8 +2624,7 @@ install_bin_from_git() {
         case "$opt" in
             N) name="$OPTARG" ;;
             d) target="$OPTARG" ;;
-            n) fetch_git_args+=(-n "$OPTARG") ;;
-            F) fetch_git_args+=(-F "$OPTARG") ;;
+            n|F) fetch_git_args+=("-$opt" "$OPTARG") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2805,7 +2800,7 @@ install_file() {
 
     target='/usr/local/bin'  # default
     single_f='-s'  # ie default to installing/extracting a single file in case tarball is provided
-    while getopts "d:DUF:n:" opt; do
+    while getopts 'd:DUF:n:' opt; do
         case "$opt" in
             d) target="$OPTARG" ;;
             D) unset single_f ;;  # mnemonic: directory; ie we want the "whole directory" in case $file is tarball
@@ -2830,7 +2825,7 @@ install_file() {
     _rename() {
         local tmpdir
         if [[ -n "$name" && "$(basename -- "$file")" != "$name" ]]; then
-            tmpdir="$(mktemp -d 'install-file-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+            tmpdir="$(mktemp -d "install-file-${name}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
             execute "mv -- '$file' '$tmpdir/$name'" || { err "renaming [$file] to [$tmpdir/$name] failed"; return 1; }
             file="$tmpdir/$name"
         fi
