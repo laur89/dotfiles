@@ -2656,10 +2656,7 @@ install_franz() {  # https://github.com/meetfranz/franz/blob/master/docs/linux.m
 # Franz nag-less fork.
 # might also consider open-source fork of rambox: https://github.com/TheGoddessInari/hamsket
 install_ferdium() {  # https://github.com/ferdium/ferdium-app
-    #install_deb_from_git ferdium ferdium-app _amd64.deb  # TODO: use this shortcut once they've released a single release
-
-    deb="$(fetch_release_from_git ferdium ferdium-app -amd64.deb)" || return 1
-    install_file "$deb" || return 1
+    install_deb_from_git ferdium ferdium-app '-amd64.deb'
 }
 
 
