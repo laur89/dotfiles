@@ -3142,7 +3142,7 @@ install_redis_desktop_mngr() {  # https://snapcraft.io/install/redis-desktop-man
 #   https://github.com/BoostIO/Boostnote
 #   https://github.com/zadam/trilium  (also hostable as a server)
 install_vnote() {  # https://github.com/vnotex/vnote/releases
-    install_bin_from_git -N vnote vnotex vnote 'vnote-linux-x64_.*zip'
+    install_bin_from_git -N vnote vnotex vnote 'linux-x64_.*.AppImage'
 }
 
 
@@ -6338,7 +6338,7 @@ setup_cups() {
 setup_firefox() {
     local conf_dir profile
 
-    conf_dir="$HOME/.mozilla/firefox"
+    readonly conf_dir="$HOME/.mozilla/firefox"
 
     # install tridactyl native messenger:  https://github.com/tridactyl/tridactyl#extra-features
     #                                      https://github.com/tridactyl/native_messenger
@@ -6354,33 +6354,39 @@ setup_firefox() {
     clone_or_pull_repo  MrOtherGuy  firefox-csshacks  './'
 
 
-    execute "popd"
+    execute popd
     # }
+
+    # manual edits in about:config:
+    # -  toolkit.cosmeticAnimations.enabled -> false   # remove fullscreen animation
+    # -  full-screen-api.ignore-widgets -> true  # remove window decorations in non-fullscreen; note it still requires F11 toggle!
 }
 
 
 # updatedb.findutils is a logic executed by cron to find files and build a db for $locate.
 # here we provide customization for it
 configure_updatedb() {
-    local exe conf param line
+    local exe conf paths line i modified
 
     exe='/etc/cron.daily/locate'  # cron task that executes updatedb
     conf='/etc/updatedb.findutils.cron.local'  # file customizing $exe
-    param='/mnt'  # to be added to PRUNEPATHS definition
+    paths='/mnt'  # space-separated paths to be added to PRUNEPATHS definition
 
-    [[ -x "$exe" ]] || { err "[$exe] not an executable"; return 1; }
+    [[ -x "$exe" ]] || { err "[$exe] not found or not an executable"; return 1; }
     grep -Fq "$conf" "$exe" || { err "[$conf] not referenced in [$exe]"; return 1; }
 
-    readonly line="$(grep -Po '^PRUNEPATHS="\K.*(?="$)' "$exe")"
-    is_single "$line" || { err "[$exe] contained either more or less than 1 line(s) containing PRUNEPATHS: [$line]"; return 1; }
+    [[ -f "$conf" ]] && grep -q '^PRUNEPATHS=' "$conf" && i="$conf" || i="$exe"
+    line="$(grep -Po '^PRUNEPATHS="\K.*(?="$)' "$i")" || { err "no PRUNEPATHS found in [$i]"; return 1; }
 
-    grep -Fq "$param" <<< "$line" && report "[$param] option already set in [$exe]" && return 0
-    [[ -f "$conf" ]] && grep -q "^PRUNEPATHS=.*$param" "$conf" && report "[$param] option already set in [$conf]" && return 0
+    for i in $paths; do
+        [[ "$line" =~ ([[:space:]]|^)"$i"([[:space:]]|$) ]] && continue  # path already included
+        line+=" $i"
+        modified=TRUE
+    done
 
-    if [[ -f "$conf" ]] && grep -q '^PRUNEPATHS=' "$conf"; then
-        execute "sudo sed -i --follow-symlinks 's/^PRUNEPATHS.*$/PRUNEPATHS=\"$line $param\"/g' $conf"
-    else
-        execute "echo 'PRUNEPATHS=\"$line $param\"' | sudo tee --append $conf > /dev/null"
+    if [[ -n "$modified" ]]; then
+        execute "sudo sed -i --follow-symlinks '/^PRUNEPATHS=.*$/d' '$conf'"  # nuke previous setting
+        execute "echo 'PRUNEPATHS=\"$line\"' | sudo tee --append $conf > /dev/null"
     fi
 }
 
