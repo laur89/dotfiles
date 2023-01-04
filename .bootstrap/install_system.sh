@@ -1170,9 +1170,7 @@ install_deps() {
     create_link "$BASE_DEPS_LOC/diff-so-fancy" "$HOME/bin/"
 
     # forgit - fzf-fueled git tool:  # https://github.com/wfxr/forgit
-    if ! execute "wget -O $HOME/.forgit 'https://raw.githubusercontent.com/wfxr/forgit/master/forgit.plugin.zsh'"; then
-        err "forgit fetch failed"
-    fi
+    clone_or_pull_repo "wfxr" "forgit" "$BASE_DEPS_LOC" || return 1
 
     # dynamic colors loader: (TODO: deprecated by pywal right?)
     #clone_or_pull_repo "sos4nt" "dynamic-colors" "$BASE_DEPS_LOC"  # https://github.com/sos4nt/dynamic-colors
@@ -3182,7 +3180,7 @@ install_arc() {
 # https://github.com/Kong/insomnia
 # https://github.com/Kong/insomnia/releases/latest
 install_insomnia() {
-    install_deb_from_git Kong insomnia '\.\d+\.\d+.deb'
+    install_deb_from_git Kong insomnia '\\.\\d+\\.\\d+.deb'
 }
 
 
@@ -3202,7 +3200,7 @@ install_alacritty() {
     #return
 
     # ...or follow the full build logic if you want to install extras like manpages:
-    dir="$(fetch_extract_tarball_from_git alacritty alacritty 'v\d+\.\d+.*\.tar\.gz')" || return 1
+    dir="$(fetch_extract_tarball_from_git alacritty alacritty 'v\\d+\\.\\d+.*\\.tar\\.gz')" || return 1
 
     execute "pushd $dir" || return 1
 
@@ -3371,7 +3369,7 @@ install_visualvm() {  # https://github.com/oracle/visualvm
 
     target="$BASE_PROGS_DIR/visualvm"
 
-    dir="$(fetch_extract_tarball_from_git oracle visualvm 'visualvm_[-0-9.]+\.zip')" || return 1
+    dir="$(fetch_extract_tarball_from_git oracle visualvm 'visualvm_[-0-9.]+\\.zip')" || return 1
 
     [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }
     execute "mv -- '$dir' '$target'" || return 1
@@ -4278,7 +4276,7 @@ install_polybar() {
     local dir
 
     #execute "git clone --recursive ${GIT_OPTS[*]} $POLYBAR_REPO_LOC '$dir'" || return 1
-    dir="$(fetch_extract_tarball_from_git polybar polybar 'polybar-\d+\.\d+.*\.tar\.gz')" || return 1
+    dir="$(fetch_extract_tarball_from_git polybar polybar 'polybar-\\d+\\.\\d+.*\\.tar\\.gz')" || return 1
 
     report "installing polybar build dependencies..."
     # note: clang is installed because of  https://github.com/polybar/polybar/issues/572
@@ -6106,7 +6104,7 @@ install_veracrypt() {
 
 # https://github.com/hectorm/hblock
 install_hblock() {
-    install_bin_from_git -N hblock -n hblock -F 'text/x-shellscript' hectorm hblock '\d+.tar.gz'
+    install_bin_from_git -N hblock -n hblock -F 'text/x-shellscript' hectorm hblock '\\d+.tar.gz'
 }
 
 
@@ -6376,6 +6374,7 @@ configure_updatedb() {
     grep -Fq "$conf" "$exe" || { err "[$conf] not referenced in [$exe]"; return 1; }
 
     [[ -f "$conf" ]] && grep -q '^PRUNEPATHS=' "$conf" && i="$conf" || i="$exe"
+    # raw value from within quotes:
     line="$(grep -Po '^PRUNEPATHS="\K.*(?="$)' "$i")" || { err "no PRUNEPATHS found in [$i]"; return 1; }
 
     for i in $paths; do
