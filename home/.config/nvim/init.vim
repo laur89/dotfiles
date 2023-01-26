@@ -115,7 +115,7 @@ let g:ale_virtualtext_cursor = 'current'  " to show the inline errors only on ac
     " Async Lint Engine - provies linting
     " note if using ale together w/ coc, then it requires additional config on both part;
     " see https://github.com/dense-analysis/ale#5iii-how-can-i-use-ale-and-cocnvim-together
-    Plug 'dense-analysis/ale'
+    "Plug 'dense-analysis/ale'
 
     " Functions, class data etc.
     " REQUIREMENTS: (exuberant)-ctags
