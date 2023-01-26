@@ -6,6 +6,13 @@
 "
 "
 set nocompatible " Must be the first line
+let g:python3_host_prog = '/usr/bin/python3'
+let g:python_host_prog = '/usr/bin/python2'
+
+" disable LSP features in ALE (covered by coc); needs to be set _before_ plugins are loaded!
+let g:ale_disable_lsp = 1
+let g:ale_virtualtext_cursor = 'current'  " to show the inline errors only on active line
+
 
 """ vim-plug plugin manager {{{
     """ Automatically setting up, taken from
@@ -41,7 +48,7 @@ set nocompatible " Must be the first line
     " A pretty statusline, bufferline integration:
     "Plug 'itchyny/lightline.vim'  " too minimalist for me
     Plug 'vim-airline/vim-airline'
-    Plug 'bling/vim-bufferline'
+    "Plug 'bling/vim-bufferline'
 
     " Easy... motions... yeah.
     Plug 'easymotion/vim-easymotion'
@@ -62,18 +69,13 @@ set nocompatible " Must be the first line
 
     " Autoclose (, " etc; ie when you insert an (, then ) will be automatically
     " inserted, and cursor placed between them;
-    "Plug 'Townk/vim-autoclose'
-    " use delimitMate instead of vim-autoclose, if you use YCM (they conflict):
     " TODO: does it conflict with tpope/vim-endwise?
     Plug 'Raimondi/delimitMate'
 
     " Git wrapper inside Vim
     Plug 'tpope/vim-fugitive'
 
-    " better git log borwser (hit :gitv)
-    " !!! depfnds on tpope/fugitive !!!
-    "Plug 'gregsexton/gitv', {'on': ['Gitv']}  # looks like no longer maintained?
-    " alternative to gregsexton/gitv:
+    " git branch viewer that integrates (and requires!) w/ vim-fugitive
     Plug 'rbong/vim-flog'
 
     " Handle surround chars like ''
@@ -91,7 +93,7 @@ set nocompatible " Must be the first line
     "Plug 'MarcWeber/vim-addon-mw-utils' "vim-snipmate depends on this one
     "Plug 'tomtom/tlib_vim'              " ... and this.
     Plug 'honza/vim-snippets'           " The snippets repo, and...
-    Plug 'SirVer/ultisnips'             "...the engine.
+    "Plug 'SirVer/ultisnips'             "...the engine. note with coc-snippets this is not needed
 
     " A fancy start screen, shows MRU etc:
     "Plug 'mhinz/vim-startify'
@@ -109,6 +111,10 @@ set nocompatible " Must be the first line
     " REQUIREMENTS: See :h syntastic-intro
     " alternative: neomake
     "Plug 'vim-syntastic/syntastic'
+
+    " Async Lint Engine - provies linting
+    " note if using ale together w/ coc, then it requires additional config on both part;
+    " see https://github.com/dense-analysis/ale#5iii-how-can-i-use-ale-and-cocnvim-together
     Plug 'dense-analysis/ale'
 
     " Functions, class data etc.
@@ -117,6 +123,7 @@ set nocompatible " Must be the first line
 
     " Ctags generator/highlighter
     Plug 'ludovicchabant/vim-gutentags'  " alt: jsfaint/gen_tags.vim
+
     Plug 'xolox/vim-misc'  " remove once we no longer use any of xolox' plugins that use vim-misc as dependency
     Plug 'xolox/vim-session'  " TODO: replace with tpope/vim-obsession?
     "Plug 'xolox/vim-notes'  " alternative: http://orgmode.org/
@@ -140,34 +147,30 @@ set nocompatible " Must be the first line
     "Plug 'wincent/Command-T'
 
     " development completion engine (integrates with utilsnips and deprecates
-    " supertab et al; needs compilation! read the docs!:
+    " supertab et al; needs compilation! read the docs!):
     " !!! ühed väidavad, et javaphp,js,html jaoks on neocomplete parem;
     " for neovim, consider Shougo/deoplete.nvim as alternative;
-    Plug 'ycm-core/YouCompleteMe'
+    " another alternative: coc (sic)
+    "Plug 'ycm-core/YouCompleteMe'
+    Plug 'neoclide/coc.nvim', {'branch': 'release'}
 
     " Go-lang/golang/go lang support:
-    Plug 'fatih/vim-go', { 'for': 'go', 'do': ':GoUpdateBinaries' }
+    " (believe it's redundtant when using vim-coc)
+    "Plug 'fatih/vim-go', { 'for': 'go', 'do': ':GoUpdateBinaries' }
+
+    " Clojure:
+    " vim-iced & its deps+extensions+integrations:
+    Plug 'guns/vim-sexp',    {'for': 'clojure'}
+    Plug 'liquidz/vim-iced', {'for': 'clojure'}
+    " add coc support for vim-iced:
+    Plug 'liquidz/vim-iced-coc-source', {'for': 'clojure'}
 
     " Scala
+    " TODO: delete? is coc deprecating this?
     Plug 'derekwyatt/vim-scala', { 'for': 'scala' }
 
     " C# support: (requires mono)    https://github.com/OmniSharp/omnisharp-vim
     "Plug 'OmniSharp/omnisharp-vim'  " using one provided by YCM
-
-    " c# additions (mainly better syntax highlight):
-    Plug 'OrangeT/vim-csharp'  " TODO: deprecate for omnisharp?
-
-    " typescript https://github.com/leafgarland/typescript-vim
-    Plug 'leafgarland/typescript-vim', { 'for': 'ts' }
-
-    " Node.js:
-    Plug 'moll/vim-node'
-
-    " syntax highlight for vue components:  " https://github.com/posva/vim-vue
-    Plug 'posva/vim-vue', { 'for': 'vue' }
-
-    " js beautifier:
-    "Plug 'jsbeautify'
 
     " navigate seamlessly btw vim & tmux splits (don't forget tmux plugin or bindings in .tmux.conf as well):
     Plug 'christoomey/vim-tmux-navigator'
@@ -177,10 +180,6 @@ set nocompatible " Must be the first line
     "Plug 'maxbrunsfeld/vim-yankstack'
     Plug 'vim-scripts/YankRing.vim'
     " another alternative: https://github.com/bfredl/nvim-miniyank
-
-    " show location of the marks: (! requires compilation with +signs)
-    " !!! deprecated by vim-signature?
-    "Plug 'showmarks'
 
     " show, place and toggle marks: (! requires compilation with +signs)
     Plug 'kshenoy/vim-signature'
@@ -217,14 +216,21 @@ set nocompatible " Must be the first line
     " TODO: deprecate?
     Plug 'vim-scripts/argtextobj.vim'
 
-    " gives 'f' textobj so vaf to select javascript function
-    Plug 'thinca/vim-textobj-function-javascript'
+    " Node.js:
+    " TODO: is this needed?
+    Plug 'moll/vim-node'
 
-    " better jquery syntax highlighting:
-    "Plug 'jQuery'
+    " syntax highlight for vue components:  " https://github.com/posva/vim-vue
+    Plug 'posva/vim-vue', { 'for': 'vue' }
 
-    " TODO: consider  pangloss/vim-javascript  instead
-    Plug 'jelera/vim-javascript-syntax'
+    " js beautifier:
+    "Plug 'jsbeautify'
+
+    " typescript syntax https://github.com/leafgarland/typescript-vim
+    Plug 'leafgarland/typescript-vim', { 'for': 'ts' }
+
+    " js syntax highlighting & improved indentation:
+    Plug 'pangloss/vim-javascript'
 
     " show search window as 'at match # out of # matches':
     " looks like now supported natively by vim/nvim? see 'set shortmess-=S' conifg
@@ -252,7 +258,7 @@ set nocompatible " Must be the first line
     Plug 'rodjek/vim-puppet'
 
     " tabline + tab rename
-    Plug 'gcmt/taboo.vim'
+    "Plug 'gcmt/taboo.vim'
 
     " vim multidiff in tabs:
     "Plug 'xenomachina/public/tree/master/vim/plugin'
@@ -273,9 +279,9 @@ set nocompatible " Must be the first line
     " i3 config syntax highlighting:
     Plug 'mboughaba/i3config.vim'
 
-    " consider intead of/also this: https://github.com/liuchengxu/vim-clap
-    Plug 'junegunn/fzf.vim'  " https://github.com/junegunn/fzf.vim
-    set rtp+=~/.fzf 
+    " alternative to fzf: https://github.com/liuchengxu/vim-clap (rust)
+    Plug '~/.fzf'
+    Plug 'junegunn/fzf.vim'
 
 
     " Finish vim-plug stuff
@@ -344,18 +350,23 @@ set nocompatible " Must be the first line
 
 """ Plugin settings {{{
     " use copyq for copy-paste (from https://www.reddit.com/r/neovim/comments/jaw62e/help_needed_on_clipboard/)
-    let g:clipboard = {  
-        \ 'name': 'myClipboard',  
-        \ 'copy': {  
-        \    '+': 'copyq add -',  
-        \    '*': 'copyq add -',  
-        \ },
-        \ 'paste': {
-        \    '+': '+',
-        \    '*': '*',
-        \ },
-        \ 'cache_enabled': 1,
-        \ }
+    "let g:clipboard = {  
+        "\ 'name': 'copyq',  
+        "\ 'copy': {  
+        "\    '+': ['copyq', 'add', '-'],
+        "\    '*': ['copyq', 'add', '-'],
+        "\ },
+        ""\ 'paste': {  
+        ""\    '+': ['copyq', 'paste'],
+        ""\    '*': ['copyq', 'paste'],
+        ""\ },
+        ""\ 'paste': {
+        ""\    '+': ['+'],
+        ""\    '*': ['*'],
+        ""\ },
+        "\ 'cache_enabled': 0,
+        "\ }
+
     " use tmux buffers instead:
     "let g:clipboard = {
           "\   'name': 'myClipboard',
@@ -376,7 +387,7 @@ set nocompatible " Must be the first line
         \ $HOME . "/.config/nvim/init.last.vim", $HOME . "/.config/nvim/nvim.plugins"
         \ ]
     let g:startify_custom_header = [
-        \ '   Author:               la',
+        \ '   Author:               LA',
         \ '   Original vimconf:     http://github.com/timss/vimconf',
         \ ''
         \ ]
@@ -401,11 +412,12 @@ set nocompatible " Must be the first line
     let g:airline_theme='dark'
     " integrate with https://github.com/edkolev/tmuxline.vim:
     "let g:airline#extensions#tmuxline#enabled = 1
-    let g:airline#extensions#bufferline#enabled = 0
+    let g:airline#extensions#bufferline#enabled = 1
     "let g:airline#extensions#bufferline#overwrite_variables = 1
-    "let g:airline#extensions#tabline#enabled = 1  "when using this, comment out tab colring (doesn't break it, just pointless)
+    let g:airline#extensions#tabline#enabled = 1  "when using this, comment out tab colring (doesn't break it, just pointless)
+    let g:airline#extensions#coc#enabled = 1
 
-    " bufferline:
+    " vim-bufferline:
     "let g:bufferline_active_buffer_left = '['
     "let g:bufferline_active_buffer_right = ']'
     "let g:bufferline_modified = '+'
@@ -473,25 +485,87 @@ set nocompatible " Must be the first line
         let g:ycm_key_list_previous_completion = ['<C-k>', '<Up>']
         "let g:SuperTabDefaultCompletionType = '<C-j>' "enables us to use tab to cycle through non-ultisnip items
 
-        " better key bindings for UltiSnipsExpandTrigger
-        let g:UltiSnipsExpandTrigger = "<tab>"
-        let g:UltiSnipsJumpForwardTrigger = "<tab>"
-        let g:UltiSnipsJumpBackwardTrigger = "<s-tab>"
+        " better key bindings for UltiSnipsExpandTrigger ('tab' is generally used, but it tends to collide w/ other plugins)
+        "let g:UltiSnipsExpandTrigger = "<tab>"
+        "let g:UltiSnipsJumpForwardTrigger = "<tab>"
+        "let g:UltiSnipsJumpBackwardTrigger = "<s-tab>"
         " alternative to the previous:
-        "let g:UltiSnipsExpandTrigger="<c-j>""
-        "let g:UltiSnipsJumpForwardTrigger="<c-j>"
-        "let g:UltiSnipsJumpBackwardTrigger="<c-k>"
+        let g:UltiSnipsExpandTrigger="<c-j>"
+        let g:UltiSnipsJumpForwardTrigger="<c-j>"
+        let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 
         " How you want :UltiSnipsEdit to split your window:
         let g:UltiSnipsEditSplit="vertical"
     """ }}}  /ultisnips-YCM
+
+    """ coc {{{
+        " Use tab for trigger completion with characters ahead and navigate.
+        " NOTE: Use command ':verbose imap <tab>' to make sure tab is not mapped by
+        " other plugin before putting this into your config.
+        inoremap <silent><expr> <TAB>
+              \ coc#pum#visible() ? coc#pum#next(1):
+              \ CheckBackspace() ? "\<Tab>" :
+              \ coc#refresh()
+        inoremap <expr><S-TAB> coc#pum#visible() ? coc#pum#prev(1) : "\<C-h>"
+
+        " Make <CR> to accept selected completion item or notify coc.nvim to format
+        " <C-g>u breaks current undo, please make your own choice.
+        inoremap <silent><expr> <CR> coc#pum#visible() ? coc#pum#confirm()
+                                      \: "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR>"
+
+        function! CheckBackspace() abort
+          let col = col('.') - 1
+          return !col || getline('.')[col - 1]  =~# '\s'
+        endfunction
+
+        " Use <c-space> to trigger completion.
+        if has('nvim')
+          inoremap <silent><expr> <c-space> coc#refresh()
+        else
+          inoremap <silent><expr> <c-@> coc#refresh()
+        endif
+
+
+        " Use K to show documentation in preview window:
+        " (!! possibly conflicts w/ default vim-iced shortcut !!)
+        "nnoremap <silent> K :call ShowDocumentation()<CR>
+        
+        function! ShowDocumentation()
+          if CocAction('hasProvider', 'hover')
+            call CocActionAsync('doHover')
+          else
+            call feedkeys('K', 'in')
+          endif
+        endfunction
+
+        " Highlight the symbol and its references when holding the cursor.
+        autocmd CursorHold * silent call CocActionAsync('highlight')
+
+        " because of our system nvm hack, manually set node path so _a_ node version is discoverable at a constant location:
+        let g:coc_node_path = $NODE_LOC
+
+        " Remap <C-f> and <C-b> for scroll float windows/popups:
+        if has('nvim-0.4.0') || has('patch-8.2.0750')
+          nnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
+          nnoremap <silent><nowait><expr> <C-b> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-b>"
+          inoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(1)\<cr>" : "\<Right>"
+          inoremap <silent><nowait><expr> <C-b> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(0)\<cr>" : "\<Left>"
+          vnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
+          vnoremap <silent><nowait><expr> <C-b> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-b>"
+        endif
+
+        " Add (Neo)Vim's native statusline support
+        " NOTE: Please see `:h coc-status` for integrations with external plugins that
+        " provide custom statusline: lightline.vim, vim-airline
+        "set statusline^=%{coc#status()}%{get(b:,'coc_current_function','')}
+    """ }}}  /coc
 
 
     " vim-tmux-navigator:
     let g:tmux_navigator_no_mappings = 1
     let g:tmux_navigator_save_on_switch = 1
 
-    " YouCompleteMe:
+    " YouCompleteMe/YCM:
     " open default ycm_extra_conf, so every project doesn't request
     " explicitly its own:
     "let g:ycm_global_ycm_extra_conf = '~/.ycm_extra_conf.py'
@@ -647,6 +721,11 @@ set nocompatible " Must be the first line
     if filereadable($HOME."/.config/nvim/init.last.vim")
         source $HOME/.config/nvim/init.last.vim
     endif
+
+    " vim-iced
+    " Enable vim-iced's default key mapping
+    " This is recommended for newbies
+    let g:iced_enable_default_key_mappings = v:true
 """ }}}
 
 " save fold states
@@ -663,7 +742,7 @@ set nocompatible " Must be the first line
 if executable("rg")
     command! -bang -nargs=* Rg
           \ call fzf#vim#grep(
-          \   'rg --column --line-number --no-heading --hidden --follow --color=always --smart-case '.shellescape(<q-args>), 1,
+          \   'rg --column --line-number --no-heading --hidden --follow --color=always --smart-case -- '.shellescape(<q-args>), 1,
           \   <bang>0 ? fzf#vim#with_preview('up:60%')
           \           : fzf#vim#with_preview('right:50%', '?'),
           \   <bang>0)

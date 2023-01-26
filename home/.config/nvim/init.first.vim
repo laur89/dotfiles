@@ -65,6 +65,8 @@
         set relativenumber                          " linenumbers are relative
         set scrolloff=3                             " lines above/below cursor
         set showcmd                                 " show cmds being typed
+        set cmdheight=2                             " Give more space for displaying messages
+        set updatetime=300                          " default is 4000; longer values can lead to noticeable delays and poor UX
         set clipboard+=unnamed                      " use os clipboard by default;
                                                     " change to 'unnamedplus' to use
                                                     " system clipboard for all
@@ -90,8 +92,8 @@
         """ }}}
 
         """ Gvim {{{
-            "set guifont=DejaVu\ Sans\ Mono\ 9
-            set guifont=Terminess\ Powerline\ 10
+            set guifont=DejaVu\ Sans\ Mono:h9       " note this :h<size> syntax is at least for 'neovide' (sic!), unsure if it works for other GUIs
+            "set guifont=Terminess\ Powerline\ 10
             set guioptions-=m                       " remove menubar
             set guioptions-=T                       " remove toolbar
             set guioptions-=r                       " remove right scrollbar
@@ -115,6 +117,7 @@
     set nowrap                                      " don't wrap lines
     set numberwidth=5                               " 99999 lines
     set shortmess+=I                                " disable startup message
+    set shortmess+=c                                " Don't pass messages to |ins-completion-menu| (as per coc recommendation)
     "set shortmess-=S                                " show 1/n count in statusbar when searching? TODO not working? was recommended in https://github.com/google/vim-searchindex
     set splitbelow                                  " splits go below w/focus
     set splitright                                  " vsplits go right w/focus
@@ -122,6 +125,16 @@
     if !has('nvim')
         set ttymouse=xterm2                         " experimental
     endif
+
+    " Always show the signcolumn, otherwise it would shift the text each time
+    " diagnostics appear/become resolved: (as per coc recommendation)
+    if has("nvim-0.5.0") || has("patch-8.1.1564")
+      " Recently vim can merge signcolumn and number column into one
+      set signcolumn=number
+    else
+      set signcolumn=yes
+    endif
+
     set ruler                                       " show current pos at bottom
     set wildignorecase                              " file/path tab completion to case insensitive
     set modelines=0                                 " modelines sets the number of
@@ -202,6 +215,7 @@
     set confirm                                     " confirm changed files
     set noautowrite                                 " never autowrite
     set nobackup                                    " disable backups
+    set nowritebackup
     set noswapfile                                  " disable swapfile
     set updatecount=50                              " update swp after 50chars
     """ Persistent undo. Requires Vim 7.3 {{{
@@ -219,6 +233,7 @@
     set colorcolumn=85
     set formatoptions=qrn1j
     set autoindent                                  " preserve indentation
+    set smartindent                                 " similar to autoindent, but adds some C syntax stuff
     set backspace=indent,eol,start                  " smart backspace
     set cinkeys-=0#                                 " don't force # indentation
     set ignorecase                                  " by default ignore case
@@ -229,7 +244,7 @@
     set smarttab                                    " tab to 0,4,8 etc.
     set softtabstop=4                               " "tab" feels like <tab>
     set tabstop=4                                   " <TAB> appears 4 spaces wide (but is still an actual tab char)
-    set expandtab                                   " no real tabs
+    set expandtab                                   " no real tabs, ie expand to spaces
     """ Only auto-comment newline for block comments {{{
         augroup AutoBlockComment
             autocmd! FileType c,cpp setlocal comments -=:// comments +=f://
