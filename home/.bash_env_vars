@@ -95,9 +95,11 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     #NODE_PATH="$NPM_PACKAGES/lib/node_modules:$NODE_PATH"
 
     export NVM_DIR="$HOME/.nvm"  # do not change location, keep _non-linked_ .nvm/ under ~
+    export ASDF_DIR="$BASE_DEPS_LOC/asdf"
+    export ASDF_DATA_DIR="$ASDF_DIR"
 
     # set our own-used link to latest node version (managed by .bashrc):
-    export NODE_LOC="$NVM_DIR/latest"
+    export NODE_LOC="$ASDF_DIR/nodejs-latest"
 
     export CUSTOM_LOGDIR='/var/log/custom_logs'
     export PANEL_FIFO='/tmp/panel-fifo'  # for BSPWM

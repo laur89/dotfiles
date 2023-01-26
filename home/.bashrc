@@ -378,7 +378,7 @@ disown $!
 ########################################## fzf
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
-# Replace default shell autocompeltes:  https://github.com/junegunn/fzf#settings
+# Replace default shell autocomplete:  https://github.com/junegunn/fzf#settings
 ####################
 # Use fd (https://github.com/sharkdp/fd) instead of the default find
 # command for listing path candidates.
@@ -463,64 +463,87 @@ export _ZO_RESOLVE_SYMLINKS=1
 command -v zoxide > /dev/null && eval "$(zoxide init bash)"
 ########################################## forgit
 # forgit  (https://github.com/wfxr/forgit)
-[[ -s "$HOME/.forgit" ]] && source "$HOME/.forgit"
+_forgit="$BASE_DEPS_LOC/forgit/forgit.plugin.sh"
+[[ -s "$_forgit" ]] && source "$_forgit"
+unset _forgit
 ########################################## nvm
-# nvm (node version manager):  (https://github.com/nvm-sh/nvm#git-install)
-# note . nvm.sh makes new shell startup slow (https://github.com/nvm-sh/nvm/issues/1277);
-# that's why we need to work around this:
-#   https://www.reddit.com/r/node/comments/4tg5jg/lazy_load_nvm_for_faster_shell_start/d5ib9fs/
-#   https://gist.github.com/fl0w/07ce79bd44788f647deab307c94d6922
-#declare -a __NODE_GLOBALS=($(find "$NVM_DIR/versions/node/" -maxdepth 3 -mindepth 3 -type l -wholename '*/bin/*' | xargs -n1 basename | sort --unique))
-#mapfile -t __NODE_GLOBALS < <(fd --max-depth 1 --min-depth 1 --type l . "$NVM_DIR/versions/node/"*/bin/ --exec basename {} | sort --unique)
-mapfile -t __NODE_GLOBALS < <(find "$NVM_DIR/versions/node/"*/bin/ -maxdepth 1 -mindepth 1 -type l -print0 | xargs --null -n1 basename | sort --unique)
-__NODE_GLOBALS+=(node nvm yarn)
+## nvm (node version manager):  (https://github.com/nvm-sh/nvm#git-install)
+## note . nvm.sh makes new shell startup slow (https://github.com/nvm-sh/nvm/issues/1277);
+## that's why we need to work around this:
+##   https://www.reddit.com/r/node/comments/4tg5jg/lazy_load_nvm_for_faster_shell_start/d5ib9fs/
+##   https://gist.github.com/fl0w/07ce79bd44788f647deab307c94d6922
+#mapfile -t __NODE_GLOBALS < <(find "$NVM_DIR/versions/node/"*/bin/ -maxdepth 1 -mindepth 1 -type l -print0 | xargs --null -n1 basename | sort --unique)
+#__NODE_GLOBALS+=(node nvm yarn)
+#
+## instead of using --no-use flag, load nvm lazily:
+#_load_nvm() {
+#    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+#    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+#}
+#
+#for cmd in "${__NODE_GLOBALS[@]}"; do
+#    eval "function ${cmd}(){ unset -f ${__NODE_GLOBALS[*]}; _load_nvm; unset -f _load_nvm; ${cmd} \"\$@\"; }"
+#done
+#unset cmd __NODE_GLOBALS
+#
+## some nvim plugins require node to be on PATH; configure a constant link so plugins et al can be pointed at it;
+## idea is to have access to node executable prior to loading anything from nvm.
+##
+## note we have equivalent logic in install_system.sh as well!
+##
+## eg some nvim plugin(s) might reference $NODE_LOC
+#_latest_node_ver="$(find "$NVM_DIR/versions/node/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
+#if [[ "$(realpath -- "$NODE_LOC")" != "$_latest_node_ver" && -x "$_latest_node_ver" ]]; then
+#    ln -sf -- "$_latest_node_ver" "$NODE_LOC"
+#fi
+#unset _latest_node_ver
+#
+##   from https://stackoverflow.com/a/50378304/1803648
+## Run 'nvm use' automatically every time there's
+## a .nvmrc file in git project root. Also, revert to default
+## version when entering a directory without .nvmrc
+##
+#_enter_dir() {
+#    local d
+#    d=$(git rev-parse --show-toplevel 2>/dev/null)
+#
+#    if [[ "$d" == "$PREV_PWD" ]]; then
+#        return
+#    elif [[ -n "$d" && -f "$d/.nvmrc" ]]; then
+#        nvm use
+#        NVM_DIRTY=1
+#    elif [[ "$NVM_DIRTY" == 1 ]]; then
+#        nvm use default
+#        NVM_DIRTY=0
+#    fi
+#    PREV_PWD="$d"
+#}
+#
+#[[ -s "$NVM_DIR/nvm.sh" && ";${PROMPT_COMMAND};" != *';_enter_dir;'* ]] && export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
+########################################## /nvm
+########################################## asdf
 
-# instead of using --no-use flag, load nvm lazily:
-_load_nvm() {
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-}
+# TODO: remove these 2 exports upon reboot (when env vars are imported again):
+export ASDF_DIR="$BASE_DEPS_LOC/asdf"
+export ASDF_DATA_DIR="$ASDF_DIR"
 
-for cmd in "${__NODE_GLOBALS[@]}"; do
-    eval "function ${cmd}(){ unset -f ${__NODE_GLOBALS[*]}; _load_nvm; unset -f _load_nvm; ${cmd} \"\$@\"; }"
-done
-unset cmd __NODE_GLOBALS
+if [[ -s "$ASDF_DIR/asdf.sh" ]]; then
+    source "$ASDF_DIR/asdf.sh"
+    source "$ASDF_DIR/completions/asdf.bash"
+fi
 
 # some nvim plugins require node to be on PATH; configure a constant link so plugins et al can be pointed at it;
-# idea is to have access to node executable prior to loading anything from nvm.
+# idea is to have access to node executable prior to loading anything from asdf.
 #
 # note we have equivalent logic in install_system.sh as well!
 #
 # eg some nvim plugin(s) might reference $NODE_LOC
-_latest_node_ver="$(find "$NVM_DIR/versions/node/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
+_latest_node_ver="$(find "$ASDF_DATA_DIR/installs/nodejs/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
 if [[ "$(realpath -- "$NODE_LOC")" != "$_latest_node_ver" && -x "$_latest_node_ver" ]]; then
     ln -sf -- "$_latest_node_ver" "$NODE_LOC"
 fi
 unset _latest_node_ver
-
-#   from https://stackoverflow.com/a/50378304/1803648
-# Run 'nvm use' automatically every time there's
-# a .nvmrc file in git project root. Also, revert to default
-# version when entering a directory without .nvmrc
-#
-_enter_dir() {
-    local d
-    d=$(git rev-parse --show-toplevel 2>/dev/null)
-
-    if [[ "$d" == "$PREV_PWD" ]]; then
-        return
-    elif [[ -n "$d" && -f "$d/.nvmrc" ]]; then
-        nvm use
-        NVM_DIRTY=1
-    elif [[ "$NVM_DIRTY" == 1 ]]; then
-        nvm use default
-        NVM_DIRTY=0
-    fi
-    PREV_PWD="$d"
-}
-
-[[ -s "$NVM_DIR/nvm.sh" && ";${PROMPT_COMMAND};" != *';_enter_dir;'* ]] && export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
-##########################################
+########################################## /asdf
 # generate .Xauth to be passed to (and used by) GUI docker gui containers:
 export XAUTH='/tmp/.docker.xauth'
 if [[ ! -s "$XAUTH" && -n "$DISPLAY" ]]; then  # TODO: also check for is_x()?
@@ -538,7 +561,8 @@ KUBE_PS1_SUFFIX="$PROMPT_SEGMENT_SUFFIX"
 KUBE_PS1_SYMBOL_USE_IMG=true
 KUBE_PS1_SYMBOL_PADDING=false
 #KUBE_PS1_SYMBOL_DEFAULT=$'\u2388'
-[[ -f "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh" ]] && source "${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh" && kubeoff  # note we default to kubeoff
+__kube_ps1_sh="${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh"
+[[ -f "$__kube_ps1_sh" ]] && source "$__kube_ps1_sh" && kubeoff && unset __kube_ps1_sh  # note we default to kubeoff; for better automatic prompt filtering check out this issue/comment: https://github.com/jonmosco/kube-ps1/issues/115#issuecomment-724971405
 ##########################################
 # customize python virtualenv prompt
 export VIRTUAL_ENV_DISABLE_PROMPT=1  # disable the default virtualenv prompt change (as it doesn't play nice w/ multiline prompts)
