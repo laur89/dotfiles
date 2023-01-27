@@ -3521,26 +3521,38 @@ install_skype() {  # https://wiki.debian.org/skype
 }
 
 
+# https://asdf-vm.com/guide/getting-started.html
+# node (and others) version manager
+install_asdf() {
+    clone_or_pull_repo  asdf-vm asdf "$ASDF_DIR/"
+
+    if ! command -v asdf >/dev/null 2>&1 && [[ -s "$ASDF_DIR/asdf.sh" ]]; then
+        source "$ASDF_DIR/asdf.sh"
+    fi
+
+    command -v asdf >/dev/null 2>&1 || return 1  # sanity
+
+    # asdf plugins:
+    if ! [[ -d "$ASDF_DATA_DIR/plugins/nodejs" ]]; then
+        asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git || err "asdf [nodejs] plugin addition failed w/ $?"
+    fi
+}
+
+
 install_webdev() {
     is_server && { report "we're server, skipping webdev env installation."; return; }
 
-    # first get nvm (node version manager) :  # https://github.com/nvm-sh/nvm#git-install
-    clone_or_pull_repo nvm-sh nvm "$NVM_DIR/"  # note repo dest needs to be exactly @ ~/.nvm, ie do not symlink
+    install_asdf
 
-    unset -f corepack npm npx node nvm yarn;  # just in case unset our nvm shell hack (set up in .bashrc) so node/npm executable isn't masked!
-
-    execute "source '$NVM_DIR/nvm.sh'" || err "sourcing [$NVM_DIR/nvm.sh] failed"
     if ! command -v node >/dev/null 2>&1; then  # only proceed if node hasn't already been installed
-        execute "nvm install stable" || err "installing nodejs 'stable' version failed"
-        execute "nvm alias default stable" || err "setting [nvm default stable] failed"
-        execute "nvm use default" || err "[nvm use default] failed"
+        asdf install nodejs latest || err "installing nodejs 'latest' version failed"
     fi
 
     # make sure the constant link to latest node exec ($NODE_LOC) is set up (normally managed by .bashrc, but might not have been created, as this is install_sys).
     # eg some nvim plugin(s) might reference $NODE_LOC
-    if ! [[ -x "$NODE_LOC" ]]; then
+    if [[ -n "$NODE_LOC" && ! -x "$NODE_LOC" ]]; then
         local _latest_node_ver
-        _latest_node_ver="$(find "$NVM_DIR/versions/node/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
+        _latest_node_ver="$(find "$ASDF_DATA_DIR/installs/nodejs/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
         [[ -x "$_latest_node_ver" ]] && execute "ln -sf -- '$_latest_node_ver' '$NODE_LOC'"
     fi
 
@@ -5575,8 +5587,6 @@ choose_single_task() {
     setup_install_log_file
 
 
-    command -v nvm >/dev/null && execute 'nvm use default'
-
     # note choices need to be valid functions
     declare -a choices=(
         setup
@@ -5708,6 +5718,7 @@ __choose_prog_to_build() {
         install_vbox_guest
         install_brillo
         install_neovide
+        install_asdf
     )
 
     report "what do you want to build/install?"

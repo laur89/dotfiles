@@ -99,6 +99,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export ASDF_DATA_DIR="$ASDF_DIR"
 
     # set our own-used link to latest node version (managed by .bashrc):
+    #export NODE_LOC="$NVM_DIR/latest"  # if unsing nvm
     export NODE_LOC="$ASDF_DIR/nodejs-latest"
 
     export CUSTOM_LOGDIR='/var/log/custom_logs'
