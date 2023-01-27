@@ -79,7 +79,8 @@
                        \.avi,.mkv,.so,
                        \*/node_modules/*,*/vendor/* " ignore said files for tab completion
         set wildmenu                                " better auto complete
-        set wildmode=longest,list                   " bash-like auto complete
+        "set wildmode=longest:full                   " bash-like auto complete
+        "set wildmode=list:longest,list:full
         set equalalways                             " keep splits equally sized
 
         """ Encoding {{{
