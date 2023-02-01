@@ -17,9 +17,75 @@ window {
     border: 3px;
     padding: 2;
     border-radius: 10px;  /* works with compositor */
+    // background-color: transparent;
+    // transparency: "real";
 }
+
 /*
 listview {
 	lines: 4;
 	columns: 3;
 }*/
+
+///
+
+/*
+inputbar {
+    margin: 0 0 0.6em 0;
+    padding: 1%;
+    children: [prompt, textbox-prompt-colon, entry, case-indicator];
+    background-color: var(background);
+}
+
+prompt {
+    text-color: var(blue);
+}
+textbox-prompt-colon {
+    expand: false;
+    str: ":";
+}
+
+entry {
+    margin: 0 0.3em;
+}
+
+listview {
+    padding: 0.2em;
+    spacing: 0.2em;
+    dynamic: true;
+    border: 0;
+    scrollbar: false;
+    background-color: var(background);
+}
+
+element {
+    padding: 0.2em;
+    border-radius: 5px;
+}
+element-icon {
+    size: 1em;
+    padding: 0 0.6em 0 0;
+}
+
+message, error-message {
+    margin: 0 0 0.6em;
+    padding: 1%;
+    border: 0;
+    border-radius: 5px;
+    background-color: var(background);
+}
+error-message {
+    margin: 0;
+    padding: 0.6em;
+    border-color: var(red);
+    border: 3px;
+}
+
+mode-switcher {
+    margin: 0.6em 0 0 0;
+}
+button selected {
+    padding: 0.3em;
+    border-radius: 5px;
+}
+*/
