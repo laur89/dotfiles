@@ -522,11 +522,6 @@ unset _forgit
 #[[ -s "$NVM_DIR/nvm.sh" && ";${PROMPT_COMMAND};" != *';_enter_dir;'* ]] && export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
 ########################################## /nvm
 ########################################## asdf
-
-# TODO: remove these 2 exports upon reboot (when env vars are imported again):
-export ASDF_DIR="$BASE_DEPS_LOC/asdf"
-export ASDF_DATA_DIR="$ASDF_DIR"
-
 if [[ -s "$ASDF_DIR/asdf.sh" ]]; then
     source "$ASDF_DIR/asdf.sh"
     source "$ASDF_DIR/completions/asdf.bash"
