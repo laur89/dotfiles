@@ -1311,7 +1311,7 @@ install_deps() {
     # you'd might wanna install  libkrb5-dev (or whatever ver avail at the time)   https://github.com/ecederstrand/exchangelib/issues/404
 
     # Google Calendar CLI       # https://github.com/insanum/gcalcli
-    py_install gcalcli
+    py_install gcalcli  # tag: gagenda
 
     # flashfocus - flash window when focus changes  https://github.com/fennerm/flashfocus
     install_block 'libxcb-render0-dev libffi-dev python-cffi'
@@ -4467,7 +4467,8 @@ setup_nvim() {
 
     # YCM installation AFTER the first nvim launch (nvim launch pulls in ycm plugin, among others)!
     #install_YCM
-    config_coc
+
+    config_coc  # _instead_ of YCM
     py_install neovim-remote     # https://github.com/mhinz/neovim-remote
     py_install pynvim            # https://github.com/neovim/pynvim
 }
