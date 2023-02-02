@@ -18,7 +18,7 @@ shopt -s nullglob       # unmatching globs to expand into empty string/list inst
 
 readonly TMP_DIR='/tmp'
 readonly CLANG_LLVM_LOC='http://releases.llvm.org/6.0.0/clang+llvm-6.0.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html;  https://apt.llvm.org/building-pkgs.php
-readonly I3_REPO_LOC='https://github.com/Airblader/i3'            # i3-gaps
+readonly I3_REPO_LOC='https://github.com/i3/i3'
 readonly I3_LOCK_LOC='https://github.com/Raymo111/i3lock-color'       # i3lock-color
 readonly I3_LOCK_FANCY_LOC='https://github.com/meskarune/i3lock-fancy'    # i3lock-fancy
 readonly NERD_FONTS_REPO_LOC='https://github.com/ryanoasis/nerd-fonts'
