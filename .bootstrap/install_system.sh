@@ -28,7 +28,7 @@ readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - ye
 readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
 readonly RAMBOX_REPO_LOC='https://github.com/ramboxapp/community-edition.git'  # closed source franz alt.
 readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX - open password manager forked from keepass project
-readonly GOFORIT_REPO_LOC='https://github.com/mank319/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
+readonly GOFORIT_REPO_LOC='https://github.com/Manuel-Kehl/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
 readonly SYNERGY_REPO_LOC='https://github.com/symless/synergy-core.git'    # synergy - share keyboard&mouse between computers on same LAN
 readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u172-b11/a58eab1ec242421181065cdc37240b08/jdk-8u172-linux-x64.tar.gz'
@@ -3788,9 +3788,10 @@ create_deb_install_and_store() {
 }
 
 
-# building instructions from https://github.com/mank319/Go-For-It
-# also https://github.com/mank319/Go-For-It/issues/143 specifically for debian/buster
+# building instructions from https://github.com/Manuel-Kehl/Go-For-It#how-to-build
+# also https://github.com/Manuel-Kehl/Go-For-It/issues/143 specifically for debian/buster
 # TODO: flatpak is avail for it
+# TODO: github desc says https://github.com/JMoerman/Go-For-It fork is more active these days!
 install_goforit() {
     local tmpdir ver
 
