@@ -54,6 +54,8 @@ alias ngo='nvim --listen /tmp/nvim_$USER' # start the _main_/master nvim process
 alias got='tgo'
 alias gist='gist --private --copy'
 alias tkremind='tkremind -m -b1'
+alias lofi='mpv --no-video https://youtu.be/jfKfPfyJRdk'  # play lo-fi music
+stock() { curl "https://terminal-stocks.herokuapp.com/${1:-GME}"; }
 
 # note following uses the 'none' driver, now effectively superseded by 'docker' driver:   # https://minikube.sigs.k8s.io/docs/drivers/none/
 #alias mkstart='CHANGE_MINIKUBE_NONE_USER=true sudo -E minikube start --driver=none --extra-config=apiserver.service-node-port-range=80-32767 --apiserver-ips 127.0.0.1 --apiserver-name localhost'
@@ -156,7 +158,7 @@ alias nvi='nvim'
 alias vmi='nvim'
 alias xs='cd'
 alias vf='cd'
-#alias cs='cd'  # conscript (http://www.foundweekends.org/conscript/) uses 'cs'
+#alias cs='cd'  # conscript and/or coursier use 'cs'
 alias ct='cd'
 alias sd='cd'
 alias fin='find'
@@ -196,7 +198,7 @@ alias gitp='git pull'
 alias gitpsh='git push'
 alias gitdi='git difftool --dir-diff'                    # diff only unstaged files
 alias gitdi-all='git difftool --dir-diff HEAD'           # also diff staged files
-alias gitdi-staged-only='git difftool --dir-diff --cached'    # --cached == --staged, as in diff only staged files
+alias gitdi-staged='git difftool --dir-diff --cached'    # --cached == --staged, as in diff only staged files
 alias gitdi-prev='git difftool --dir-diff HEAD^ HEAD'    # local last commit against current index (as in last commit; shows what was changed with last commit); does NOT include current uncommited changes);
 alias gitdi-commit='git showtool'  # diff specific commit, or HEAD, if no arg was given
 #alias gitdi-stashed='git difftool --dir-diff stash@{0}^!'  # diff stash against its parent;
@@ -260,17 +262,18 @@ _running_dock_by_name() {
             name="$(cut -d' ' -f2- <<< "$line")"
             fzf_selection+="${name}\n"
             name_to_id[$name]="$(cut -d' ' -f1 <<< "$line")"
-        done < <(docker ps --no-trunc -qf "name=$input" --format '{{.ID}} {{.Names}}')
+        done < <(docker ps --no-trunc --format '{{.ID}} {{.Names}}' | grep -i "$input")  # note we don't use docker-ps's --filter option, as using grep gives us case-insensitivity
 
         readonly fzf_selection="${fzf_selection:0:$(( ${#fzf_selection} - 2 ))}"  # strip the trailing newline
-        name="$(echo -e "$fzf_selection" | fzf --select-1 --exit-0)" || return 1
+        name="$(echo -e "$fzf_selection" | fzf --select-1)" || return 1
+        [[ -z "$name" ]] && return 1
         id="${name_to_id[$name]}"
         [[ -z "$id" ]] && { err "no docker found by name [$input]"; return 1; }
         echo -n "$id"
         return 0
         #fzf --select-1 --multi --exit-0 --print0 <<< "${name_to_id[@]}"
     else
-        docker ps --no-trunc -qf "name=$input"
+        docker ps --no-trunc | grep -i "$input"
     fi
 }
 
