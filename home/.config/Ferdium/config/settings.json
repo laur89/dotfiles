@@ -53,7 +53,9 @@
   "serviceRibbonWidth": 68,
   "sidebarServicesLocation": 0,
   "iconSize": 20,
+  "sentry": false,
   "navigationBarBehaviour": "custom",
+  "webRTCIPHandlingPolicy": "disable_non_proxied_udp",
   "searchEngine": "startPage",
   "translatorLanguage": "en",
   "translatorEngine": "LibreTranslate",
@@ -70,9 +72,11 @@
   "alwaysShowWorkspaces": false,
   "liftSingleInstanceLock": false,
   "enableLongPressServiceHint": false,
-  "proxyFeatureEnabled": false,
-  "onlyShowFavoritesInUnreadCount": false,
+  "isTodosFeatureEnabled": true,
   "customTodoServer": "",
   "locale": "en-US",
+  "keepAllWorkspacesLoaded": false,
+  "proxyFeatureEnabled": false,
+  "onlyShowFavoritesInUnreadCount": false,
   "useVerticalStyle": false
 }
