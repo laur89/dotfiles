@@ -4086,10 +4086,10 @@ override_dh_installman:
 EOF
     }
 
-    readonly tmpdir="$TMP_DIR/i3-gaps-build-${RANDOM}/build"
+    readonly tmpdir="$TMP_DIR/i3-build-${RANDOM}/build"
 
     ver="$(get_git_sha "$I3_REPO_LOC")" || return 1
-    is_installed "$ver" i3-gaps && return 2
+    is_installed "$ver" i3 && return 2
 
     # clone the repository
     execute "git clone ${GIT_OPTS[*]} $I3_REPO_LOC '$tmpdir'" || return 1
@@ -4132,7 +4132,7 @@ EOF
             -i -r debian/control || { err "automatic build-dep resolver for i3 failed w/ [$?]"; popd; return 1; }
     # alternatively, could also do $ sudo apt-get -y build-dep i3-wm
 
-    report "building i3-gaps...";
+    report "building i3...";
 
     build_deb || { err "build_deb() for i3 failed"; popd; return 1; }
     execute 'sudo dpkg -i ../i3-wm_*.deb'
@@ -4152,7 +4152,7 @@ EOF
     ## The prefix and sysconfdir are, obviously, dependent on the distribution.
     #execute '../configure --prefix=/usr/local --sysconfdir=/etc --disable-sanitizers' || return 1
     #execute 'make'
-    #create_deb_install_and_store i3-gaps
+    #create_deb_install_and_store i3
     #execute "popd"
 
     # --------------------------
@@ -4172,7 +4172,7 @@ EOF
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
-    add_to_dl_log  i3-gaps "$ver"
+    add_to_dl_log  i3 "$ver"
 
     return 0
 }
