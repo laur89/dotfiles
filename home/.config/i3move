@@ -1,0 +1,13 @@
+--title 18
+--border 2
+--margins 20 1 1 1
+--inside-distance w
+--outside-distance -9px
+--small-distance =
+--large-distance 3
+--threshold 33%%
+--no-clamp
+--snap
+--hide
+--compound-display
+--passthru
