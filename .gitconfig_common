@@ -90,6 +90,7 @@
     rvrt = revert
     di = diff
     di-staged = diff --cached
+    distaged = diff --cached
     dif = diff
     dd = difftool --dir-diff
     showtool = "!showci () { rev=${1:-HEAD}; git difftool --dir-diff $rev~1 $rev; }; showci $1"

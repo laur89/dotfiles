@@ -3140,7 +3140,8 @@ install_redis_desktop_mngr() {  # https://snapcraft.io/install/redis-desktop-man
 #   https://github.com/BoostIO/Boostnote
 #   https://github.com/zadam/trilium  (also hostable as a server)
 install_vnote() {  # https://github.com/vnotex/vnote/releases
-    install_bin_from_git -N vnote vnotex vnote 'linux-x64_.*.AppImage'
+    #install_bin_from_git -N vnote vnotex vnote 'linux-x64_.*zip'
+    install_bin_from_git -N vnote vnotex vnote 'linux-x64_.*AppImage'
 }
 
 
@@ -6311,6 +6312,10 @@ enable_fw() {
 
 # - change DefaultAuthType to None, so printer configuration wouldn't require basic auth;
 # - add our user to necessary group (most likely 'lpadmin') so we can add/delete printers;
+#
+# cups web interface @ http://localhost:631/
+# note our configured printers are stored in /etc/cups/printers.conf  !
+# see also https://github.com/openprinting/cups
 setup_cups() {
     local conf_file conf2 group should_restart
 
@@ -6336,7 +6341,7 @@ setup_cups() {
     [[ -f "$conf2" ]] || { err "cannot configure our user for cups: [$conf2] does not exist; abort;"; return 1; }
     group="$(grep ^SystemGroup "$conf2" | awk '{print $NF}')" || { err "grepping group from [$conf2] failed w/ $?"; return 1; }
     is_single "$group" || { err "found SystemGroup in [$conf2] was unexpected: [$group]"; return 1; }
-    list_contains "$group" root sys && { err "found SystemGroup is [$group] - verify we want to be added to that group"; return 1; }
+    list_contains "$group" root sys && { err "found SystemGroup is [$group] - verify we want to be added to that group"; return 1; }  # failsafe for not adding oursevles to root or sys groups
     addgroup_if_missing "$group"
     # }}}
 
