@@ -5112,7 +5112,6 @@ install_from_repo() {
 
     # for .NET dev, consider also nuget pkg;
     declare -ar block2_nonwin=(
-        netdata
         wireshark
         iptraf
         rsync
@@ -5128,6 +5127,8 @@ install_from_repo() {
         ipp-usb
         system-config-printer
     )
+    # removed from above block:
+    # -    netdata
 
     # TODO: do we want ntp? on systemd systems we have systemd-timesyncd
     declare -ar block2=(
