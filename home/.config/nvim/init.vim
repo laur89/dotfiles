@@ -232,6 +232,9 @@ let g:ale_virtualtext_cursor = 'current'  " to show the inline errors only on ac
     " js syntax highlighting & improved indentation:
     Plug 'pangloss/vim-javascript'
 
+    " tridactyl syntax
+    Plug 'tridactyl/vim-tridactyl'
+
     " show search window as 'at match # out of # matches':
     " looks like now supported natively by vim/nvim? see 'set shortmess-=S' conifg
     " !! also - looks like this plugin overrides junegunn/vim-slash
