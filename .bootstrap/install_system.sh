@@ -1841,7 +1841,7 @@ setup_additional_apt_keys_and_sources() {
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
     # note it's avail also as a snap: $snap install spotify
-    get_apt_key  spotify  https://download.spotify.com/debian/pubkey_5E3C45D7B312C643.gpg "deb [{s}] http://repository.spotify.com stable non-free"
+    get_apt_key  spotify  https://download.spotify.com/debian/pubkey_7A3A762FAFD4A51F.gpg "deb [{s}] http://repository.spotify.com stable non-free"
 
     # seafile-client: (from https://help.seafile.com/syncing_client/install_linux_client/):
     #     seafile-drive instructions would be @ https://help.seafile.com/drive_client/drive_client_for_linux/
@@ -1871,7 +1871,7 @@ setup_additional_apt_keys_and_sources() {
     get_apt_key  signal  https://updates.signal.org/desktop/apt/keys.asc "deb [arch=amd64 {s}] https://updates.signal.org/desktop/apt xenial main"
 
     # signald: (from https://signald.org/articles/install/debian/):
-    get_apt_key  signald  https://updates.signald.org/apt-signing-key.asc "deb [{s}] https://updates.signald.org unstable main"
+    get_apt_key  signald  https://signald.org/signald.gpg "deb [{s}] https://updates.signald.org unstable main"
 
     # estonian open eid: (from https://installer.id.ee/media/install-scripts/install-open-eid.sh):
     #get_apt_key -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh "deb [{s}] https://installer.id.ee/media/ubuntu/ focal main"
@@ -6359,7 +6359,7 @@ setup_firefox() {
 
     # install tridactyl native messenger:  https://github.com/tridactyl/tridactyl#extra-features
     #                                      https://github.com/tridactyl/native_messenger
-    execute 'curl -fsSL https://raw.githubusercontent.com/tridactyl/native_messenger/master/installers/install.sh -o /tmp/trinativeinstall.sh && sh /tmp/trinativeinstall.sh master'  # TODO: think we can remove 'master' arg
+    execute 'curl -fsSL https://raw.githubusercontent.com/tridactyl/native_messenger/master/installers/install.sh -o /tmp/trinativeinstall.sh && sh /tmp/trinativeinstall.sh master'  # 'master' refers to git ref/tag; can also remove that arg, so latest tag is installed instead.
 
 
     # install custom css/styling {  # see also https://github.com/MrOtherGuy/firefox-csshacks
