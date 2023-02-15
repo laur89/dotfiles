@@ -1,4 +1,5 @@
 " see example at https://github.com/tridactyl/tridactyl/blob/master/.tridactylrc
+" additional list of configs: https://github.com/tridactyl/tridactyl/wiki/Exemplar-.tridactylrc-files
 " to pull changes in, run :source
 "
 " via userChrome.css it's possible modify statusbar; eg see this: https://gist.github.com/osleg/e95cbe9219a84a1d73cb0bf9480ec70f
@@ -20,6 +21,13 @@ unbind --mode=hint <Space>
 set hintfiltermode vimperator
 set hintchars 1234567890
 
+" Make gu take you back to subreddit from comments
+bindurl reddit.com gu urlparent 3
+
+" note hintdelay was introduced in https://github.com/tridactyl/tridactyl/commit/aaa0016fc5e5e160462555ab8ec517dcf9e7421e
+" Defaults to 300ms; this is especially beneficial in vimperator hintmode
+"set hintdelay 100
+
 """""""""""""""""""""""""""""""""""""""""""""""""""
-" This will have to do until someone writes us a nice syntax file :)
-" vim: set filetype=vim:
+" needs syntax plugin, see https://github.com/tridactyl/vim-tridactyl
+" vim: set filetype=tridactyl
