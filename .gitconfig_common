@@ -88,10 +88,19 @@
     b = branch -avv
     aa = add --all
     rvrt = revert
-    di = diff
     di-staged = diff --cached
+    di-stged = diff --cached
     distaged = diff --cached
+    distged = diff --cached
+
+    di = diff
     dif = diff
+
+    di-stashed = difftool --dir-diff stash@{0}^ stash@{0}
+    di-stshed = difftool --dir-diff stash@{0}^ stash@{0}
+    distashed = difftool --dir-diff stash@{0}^ stash@{0}
+    distshed = difftool --dir-diff stash@{0}^ stash@{0}
+
     dd = difftool --dir-diff
     showtool = "!showci () { rev=${1:-HEAD}; git difftool --dir-diff $rev~1 $rev; }; showci $1"
     squash = "!sqash () { rev=$1; echo "$rev" | grep -Eq '^[0-9]+$' && [ "$rev" -gt 1 -a "$rev" -lt 10 ] || return 1; git rebase -i HEAD~$rev; }; sqash $1"
