@@ -86,7 +86,11 @@ alias fgrep='fgrep --color=auto'
 alias egrep='grep -E --color=auto'
 command -v ncal > /dev/null 2>&1 && alias cal='ncal -bM -A 1 -B 1'  # same as [ncal -bM3]
 alias caly='cal -y'  # year view
-alias gagenda='gcalcli agenda "$(date "+%F %R")"  "$(date -d tomorrow "+%F 00:00")" --details=url --military'
+alias gagenda='gcalcli agenda "$(date "+%F %R")"  "$(date -d tomorrow "+%F 00:00")" --details=url --details=end --military'
+alias calw='gcalcli calw --details=end --military --monday'
+alias galw=calw
+alias calm='gcalcli calm --details=end --military --monday'
+alias galm=calm
 alias c='clear'
 alias cp='cp -rp'  # TODO: add -i for overwrite prompt? what about scripts that use cp?
 alias scp='scp -rp'
