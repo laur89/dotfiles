@@ -22,7 +22,8 @@
 # by other scripts. It also forces the TERM env var.
 # also defines gosu() alias for going sudo with included rc files.
 #
-# Check https://github.com/Russell91/sshrc for alternative.
+# Check ~https://github.com/Russell91/sshrc~ (DEAD!) for alternative.
+#       https://github.com/ezbik/sshrc
 #
 
 readonly SELF="$(basename -- "$0")"
