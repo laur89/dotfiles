@@ -855,7 +855,7 @@ install_ssh_server() {
         #return 1  # don't return, it's just a banner.
     fi
 
-    execute "sudo systemctl enable --now sshd.service"  # note --now flag effectively also starts the service immeidately
+    execute "sudo systemctl enable --now sshd.service"  # note --now flag effectively also starts the service immediately
 
     return 0
 }
@@ -6127,8 +6127,10 @@ install_hblock() {
 # based on script @ https://github.com/open-eid/linux-installer/blob/master/install-open-eid.sh
 #
 # note our setup logic configures apt repo
+# note digidoc4 client executable is likely `qdigidoc4`
 install_open_eid() {
     install_block 'opensc  open-eid' || return 1
+    execute 'sudo systemctl enable --now pcscd.socket' || return 1  # note --now flag effectively also starts the service immediately
 
     # Configure Chrome PKCS11 driver for current user, /etc/xdg/autstart/ will init other users on next logon
     # (taken from the bottom of install-open-eid.sh script)
