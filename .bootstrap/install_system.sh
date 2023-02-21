@@ -2901,15 +2901,15 @@ install_rebar() {  # https://github.com/erlang/rebar3
 }
 
 
+# note: clojure also available through asdf
 install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instructions
-    local name repo install_target ver f
+    local name install_target ver f
 
     readonly name=clojure
-    readonly repo=brew-install
     readonly install_target="$BASE_PROGS_DIR/clojure"
     readonly f="/tmp/${RANDOM}-clojure-linux-install.sh"
 
-    ver="$(get_git_tag "https://github.com/$name/$repo.git")" || return 1
+    ver="$(get_git_tag "https://github.com/$name/brew-install.git")" || return 1
     is_installed "$ver" "$name" && return 2
 
     report "installing $name dependencies..."
@@ -2919,6 +2919,7 @@ install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instruc
     execute "curl -fsSL 'https://download.clojure.org/install/linux-install-${ver}.sh' -o '$f'" || return 1
 
     execute "chmod +x '$f'" || return 1
+    # TODO: should we clean up/delete existing $install_target?:
     execute "$f --prefix $install_target" || return 1
     add_manpath "$install_target/bin" "$install_target/man"
 
@@ -5311,6 +5312,7 @@ install_from_repo() {
         notmuch
         abook
         isync
+        translate-shell
     )
     # old/deprecated block3:
     #         spacefm-gtk3
@@ -6530,7 +6532,7 @@ add_to_dl_log() {
     url="$2"
 
     [[ -s "$GIT_RLS_LOG" ]] && sed --follow-symlinks -i "/^$id:/d" "$GIT_RLS_LOG"
-    echo -e "${id}:\t$url" >> "$GIT_RLS_LOG"
+    echo -e "${id}:\t$url\t$(date)" >> "$GIT_RLS_LOG"
 }
 
 
