@@ -1874,8 +1874,9 @@ setup_additional_apt_keys_and_sources() {
     get_apt_key  signald  https://signald.org/signald.gpg "deb [{s}] https://updates.signald.org unstable main"
 
     # estonian open eid: (from https://installer.id.ee/media/install-scripts/install-open-eid.sh):
+    # note you'll likely want to use the latest ubuntu LTS or latest, period, codename for repo.
     #get_apt_key -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh "deb [{s}] https://installer.id.ee/media/ubuntu/ focal main"
-    get_apt_key  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub "deb [{s}] https://installer.id.ee/media/ubuntu/ focal main"
+    get_apt_key  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub "deb [{s}] https://installer.id.ee/media/ubuntu/ jammy main"
 
     execute 'sudo apt-get --yes update'
 }
@@ -5233,6 +5234,8 @@ install_from_repo() {
         ncmpc
         audacity
         mpv
+        kdenlive
+        frei0r-plugins
         gimp
         xss-lock
         filezilla
