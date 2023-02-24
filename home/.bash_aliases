@@ -89,8 +89,10 @@ alias caly='cal -y'  # year view
 alias gagenda='gcalcli agenda "$(date "+%F %R")"  "$(date -d tomorrow "+%F 00:00")" --details=url --details=end --military'
 alias calw='gcalcli calw --details=end --military --monday'
 alias galw=calw
+alias gagw=calw
 alias calm='gcalcli calm --details=end --military --monday'
 alias galm=calm
+alias gagm=calm
 alias c='clear'
 alias cp='cp -rp'  # TODO: add -i for overwrite prompt? what about scripts that use cp?
 alias scp='scp -rp'
