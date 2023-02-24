@@ -89,7 +89,7 @@ URxvt.matcher.render.4: fg=5
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! yankable url settings (requires urxvt-perls package; disables clickable urls extension):
 !!! note url-select is essentially deprecated by the matcher perl script; either use
-!!! one or the other, not both
+!!! one or the other, not both. (but deffo prefer matcher)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !URxvt.keysym.M-u: perl:url-select:select_next
 !URxvt.url-select.underline: true
@@ -101,6 +101,7 @@ URxvt.matcher.render.4: fg=5
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 URxvt.keysym.M-Escape: perl:keyboard-select:activate
 URxvt.keysym.M-s: perl:keyboard-select:search
+!URxvt.keyboard-select.clipboard: If true, copy to clipboard too; TODO: does this depend on the deprecated 'clipboard' extension from https://github.com/xyb3rt/urxvt-perls/tree/master/deprecated ?
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Tabs
@@ -129,6 +130,7 @@ URxvt.tabbed.autohide: true
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! copy-pasta:
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!note since v9.20 rxvt-unicode natively supports copying & pasting from CLIPBOARD buffer with the ctrl-meta-{c,v} bindings.
 URxvt.keysym.Shift-Control-V: perl:clipboard:paste
 !URxvt.keysym.Shift-Control-C: perl:clipboard:copy
 URxvt.iso14755: false
