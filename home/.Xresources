@@ -23,7 +23,8 @@ Xft.lcdfilter: lcddefault
 Xcursor.size: 24
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-URxvt.perl-ext-common: default,clipboard,tabbedex,keyboard-select,vtwheel,matcher,xresources-256
+! note '-confirm-paste' disables the confirmation on paste, if test contains say newlines (or other control characters)
+URxvt.perl-ext-common: default,tabbedex,keyboard-select,selection-to-clipboard,vtwheel,matcher,xresources-256,-confirm-paste
 !URxvt.perl-lib: /your/folder/  ! only needed if you use a non-standard directory
 URxvt*geometry: 100x50
 ! comment the depth, otherwise w3m cant render images in urxvt:
@@ -101,7 +102,7 @@ URxvt.matcher.render.4: fg=5
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 URxvt.keysym.M-Escape: perl:keyboard-select:activate
 URxvt.keysym.M-s: perl:keyboard-select:search
-!URxvt.keyboard-select.clipboard: If true, copy to clipboard too; TODO: does this depend on the deprecated 'clipboard' extension from https://github.com/xyb3rt/urxvt-perls/tree/master/deprecated ?
+URxvt.keyboard-select.clipboard: true
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Tabs
@@ -131,8 +132,12 @@ URxvt.tabbed.autohide: true
 ! copy-pasta:
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !note since v9.20 rxvt-unicode natively supports copying & pasting from CLIPBOARD buffer with the ctrl-meta-{c,v} bindings.
-URxvt.keysym.Shift-Control-V: perl:clipboard:paste
+!URxvt.keysym.Shift-Control-V: perl:clipboard:paste
 !URxvt.keysym.Shift-Control-C: perl:clipboard:copy
+!
+! bind S-C-V to native paste (in addition to the default C-M-V):
+URxvt.keysym.Shift-Control-V: eval:paste_clipboard
+!
 URxvt.iso14755: false
 URxvt.iso14755_52: false
 
