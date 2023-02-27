@@ -6535,7 +6535,7 @@ add_to_dl_log() {
     url="$2"
 
     [[ -s "$GIT_RLS_LOG" ]] && sed --follow-symlinks -i "/^$id:/d" "$GIT_RLS_LOG"
-    echo -e "${id}:\t$url\t$(date)" >> "$GIT_RLS_LOG"
+    echo -e "${id}:\t$url\t$(date +'%d %b %Y %R')" >> "$GIT_RLS_LOG"
 }
 
 
