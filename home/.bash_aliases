@@ -87,6 +87,8 @@ alias egrep='grep -E --color=auto'
 command -v ncal > /dev/null 2>&1 && alias cal='ncal -bM -A 1 -B 1'  # same as [ncal -bM3]
 alias caly='cal -y'  # year view
 alias gagenda='gcalcli agenda "$(date "+%F %R")"  "$(date -d tomorrow "+%F 00:00")" --details=url --details=end --military'
+alias gag=gagenda
+alias gagt='gcalcli agenda "$(date -d tomorrow "+%F 00:00")"  "$(date -d "+2 days" "+%F 00:00")" --details=url --details=end --military'
 alias calw='gcalcli calw --details=end --military --monday'
 alias galw=calw
 alias gagw=calw
