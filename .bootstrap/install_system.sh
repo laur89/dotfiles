@@ -1849,10 +1849,6 @@ setup_additional_apt_keys_and_sources() {
     #     seafile-drive instructions would be @ https://help.seafile.com/drive_client/drive_client_for_linux/
     get_apt_key  seafile  https://linux-clients.seafile.com/seafile.asc "deb [arch=amd64 {s}] https://linux-clients.seafile.com/seafile-deb/$DEB_STABLE/ stable main"
 
-    # mono: (from https://www.mono-project.com/download/stable/#download-lin-debian):
-    # later on installed by 'mono-complete' pkg
-    get_apt_key -k 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF  mono  hkp://keyserver.ubuntu.com:80 "deb [{s}] https://download.mono-project.com/repo/debian stable-$DEB_OLDSTABLE main"
-
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
     get_apt_key  charles  https://www.charlesproxy.com/packages/apt/PublicKey "deb [{s}] https://www.charlesproxy.com/packages/apt/ charles-proxy main"
 
@@ -5128,7 +5124,6 @@ install_from_repo() {
         python3-pip
         flake8
         msbuild
-        mono-complete
         curl
         httpie
         lshw
