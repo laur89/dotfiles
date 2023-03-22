@@ -561,6 +561,7 @@ setup_apt() {
 }
 
 
+# symlinked crontabs don't work!
 setup_crontab() {
     local cron_dir weekly_crondir tmpfile file i
 
@@ -598,7 +599,8 @@ setup_crontab() {
                 continue
             fi
 
-            create_link -s "$i" "${weekly_crondir}/"
+            #create_link -s "$i" "${weekly_crondir}/"  # linked crontabs don't work!
+            execute "sudo cp -- '$i' '$weekly_crondir'" || continue
         done
     fi
 }
@@ -1407,7 +1409,7 @@ install_homesick() {
 clone_or_link_castle() {
     local castle user hub homesick_exe opt OPTIND set_hooks batch
 
-    while getopts "H" opt; do
+    while getopts 'H' opt; do
         case "$opt" in
             H) set_hooks=1 ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
@@ -1865,13 +1867,13 @@ setup_additional_apt_keys_and_sources() {
     get_apt_key  terraform  https://apt.releases.hashicorp.com/gpg "deb [arch=amd64 {s}] https://apt.releases.hashicorp.com $DEB_STABLE main"
 
     # openvpn3:  (from https://openvpn.net/cloud-docs/openvpn-3-client-for-linux/):
-    get_apt_key  openvpn  https://swupdate.openvpn.net/repos/openvpn-repo-pkg-key.pub "deb [{s}] https://swupdate.openvpn.net/community/openvpn3/repos $DEB_STABLE main"
+    get_apt_key  openvpn  https://swupdate.openvpn.net/repos/openvpn-repo-pkg-key.pub "deb [arch=amd64 {s}] https://swupdate.openvpn.net/community/openvpn3/repos $DEB_STABLE main"
 
     # signal: (from https://signal.org/en/download/):
     get_apt_key  signal  https://updates.signal.org/desktop/apt/keys.asc "deb [arch=amd64 {s}] https://updates.signal.org/desktop/apt xenial main"
 
     # signald: (from https://signald.org/articles/install/debian/):
-    get_apt_key  signald  https://signald.org/signald.gpg "deb [{s}] https://updates.signald.org unstable main"
+    get_apt_key  signald  https://signald.org/signald.gpg "deb [arch=amd64 {s}] https://updates.signald.org unstable main"
 
     # estonian open eid: (from https://installer.id.ee/media/install-scripts/install-open-eid.sh):
     # note you'll likely want to use the latest ubuntu LTS or latest, period, codename for repo.
@@ -2158,6 +2160,7 @@ install_own_builds() {
     is_native && install_betterlockscreen
     #is_native && install_acpilight
     is_native && install_brillo
+    is_native && install_display_switch
 
     [[ "$PROFILE" == work ]] && install_work_builds
     install_devstuff
@@ -4060,6 +4063,29 @@ install_brillo() {
 }
 
 
+# https://github.com/haimgel/display-switch
+# switches display output when USB device (eg kbd switch) is connected/disconnected
+install_display_switch() {
+    local repo tmpdir ver
+
+    repo='git@github.com:haimgel/display-switch.git'
+    tmpdir="$TMP_DIR/display-switch-${RANDOM}"
+
+    ver="$(get_git_sha "$repo")" || return 1
+    is_installed "$ver" display-switch && return 2
+
+    execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
+    execute "pushd $tmpdir" || return 1
+
+    execute 'cargo build --release' || return 1  # should produce binary at target/release/display_switch
+    execute 'sudo mv -- target/release/display_switch  /usr/local/bin/' || err
+
+    execute popd
+    execute "sudo rm -rf -- '$tmpdir'"
+    add_to_dl_log  display-switch "$ver"
+}
+
+
 # https://github.com/Airblader/i3/wiki/Building-from-source
 # see also https://github.com/maestrogerardo/i3-gaps-deb for debian pkg building logic
 build_i3() {
@@ -4905,6 +4931,7 @@ install_fonts() {
         xfonts-mplus
         xfonts-base
         xbitmaps
+        fonts-firacode
     '
 
     is_native && install_block 'fontforge gucharmap'
@@ -5726,6 +5753,7 @@ __choose_prog_to_build() {
         install_exodus_wallet
         install_vbox_guest
         install_brillo
+        install_display_switch
         install_neovide
         install_asdf
     )
@@ -6607,7 +6635,7 @@ confirm() {
     local msg yno opt OPTIND default timeout
 
     timeout=2  # default
-    while getopts "d:t:" opt; do
+    while getopts 'd:t:' opt; do
         case "$opt" in
            d)
               default="$OPTARG"
