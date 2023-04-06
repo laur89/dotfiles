@@ -2142,6 +2142,7 @@ install_own_builds() {
     install_gruvbox_gtk_theme
     #install_weeslack
     install_gomuks
+    is_native && install_nyxt
     is_native && install_slack_term
     install_slack
     install_veracrypt
@@ -2872,6 +2873,20 @@ install_lazyman() {  # https://github.com/StevensNJD4/LazyMan
 # fasd-alike alternative
 install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
     install_bin_from_git -N zoxide ajeetdsouza zoxide 'zoxide-x86_64-unknown-linux-gnu'
+}
+
+
+# web browser written in LISP
+install_nyxt() {  # https://nyxt.atlas.engineer
+    local target dir
+
+    target="$BASE_PROGS_DIR/nyxt"
+
+    dir="$(fetch_extract_tarball_from_git  atlas-engineer nyxt 'nyxt-(\\d+\\.?)+\\.tar\\.xz')" || return 1
+
+    [[ -d "$target" ]] && { execute "sudo rm -rf -- '$target'" || return 1; }
+    execute "sudo mv -- '$dir' '$target'" || return 1
+    create_link "$target/usr/local/bin/nyxt" "$HOME/bin/nyxt"
 }
 
 
@@ -5736,6 +5751,7 @@ __choose_prog_to_build() {
         install_weeslack
         install_weechat_matrix
         install_gomuks
+        install_nyxt
         install_slack_term
         install_slack
         install_bitlbee
