@@ -2089,7 +2089,7 @@ install_devstuff() {
     install_kubectx
     install_kube_ps1
     install_sops
-    is_native && install_bloomrpc
+    #is_native && install_bloomrpc
     #install_postman
     install_insomnia
     install_terragrunt
@@ -3048,6 +3048,8 @@ install_sops() {  # https://github.com/mozilla/sops
 }
 
 
+# deprecated!
+# better look into https://github.com/fullstorydev/grpcui
 install_bloomrpc() {  # https://github.com/uw-labs/bloomrpc/releases
     install_deb_from_git uw-labs bloomrpc _amd64.deb  # TODO deb pkg has unmet deps that aren't automatically installed (similar to ferdi)
     #install_bin_from_git -N bloomrpc uw-labs bloomrpc x86_64.AppImage
