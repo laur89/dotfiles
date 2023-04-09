@@ -154,7 +154,7 @@ ffind() {
     caseOptCounter=0
     filetypeCounter=0
 
-    while getopts "m:isrefdlxbLBDqphVPICt:0Y" opt; do
+    while getopts 'm:isrefdlxbLBDqphVPICt:0Y' opt; do
         case "$opt" in
            i)
               [[ "$iname_arg" != '-iname' ]] && let caseOptCounter+=1
@@ -430,7 +430,7 @@ __find_top_big_small_fun() {
                                    in kilos; descend up to 3 levels from current dir.
 "
 
-    while getopts "m:fdLBh" opt; do
+    while getopts 'm:fdLBh' opt; do
         case "$opt" in
            f | d)
               [[ "$file_type" != "-type $opt" ]] && let filetypeOptionCounter+=1
@@ -607,7 +607,7 @@ __find_bigger_smaller_common_fun() {
                                         descend up to 3 levels from current dir.
 "
 
-    while getopts "m:fdLBh" opt; do
+    while getopts 'm:fdLBh' opt; do
         case "$opt" in
            f | d)
               [[ "$file_type" != "-type $opt" ]] && let filetypeOptionCounter+=1
@@ -789,19 +789,16 @@ ffindsmallerthan() {
 # same, but null-terminated:
 #   find . -type f -printf '%T@ %Tc %P\0' | sort -zk1nr | tail | sed -r 's/^.{22}//'
 #
-# - files changed last 5 minutes ago:  $ find -cmin -5
-# - files changed last 3 days ago:  $ find -ctime -3
-#
 # to get file _creation_, you gotta use stat:  $ stat -c '%W  -  %w'  ~/.bashrc
 #
 # see also:
-#   find . -type f -exec stat -f "%Sm %N" -t "%Y%y%m%d%H%M" {} \; | sort -r
-#   find $SOMEPATH -exec stat -c '%Y %n' '{}' + | sort -n
+#   find . -type f -exec stat -f "%Sm %N" -t "%Y%y%m%d%H%M" {} \; | sort -r        # TODO: doesn't work
+#   find $SOMEPATH -exec stat -c '%Y %n' '{}' + | sort -n        # note %Y is last modification time, epoch; %W would be time of file birth, if known;
 __find_top_new_old_fun() {
     local usage opt OPTIND itemsToShow file_type maxDepth follow_links reverse
     local new_or_old filetypeOptionCounter fs_boundary mode
 
-    new_or_old="$1"
+    new_or_old="$1"    # new | old
     itemsToShow="$2"   # default top number of items displayed
     shift 2
 
@@ -888,7 +885,8 @@ __find_top_new_old_fun() {
 
     report "seeking for top $itemsToShow $new_or_old files...\n" "${FUNCNAME[1]}"
 
-    find $follow_links . -mindepth 1 $maxDepthParam $file_type $fs_boundary -printf '%T@ %Tc %P\n' | \
+    # note %T@ is file modification time in epoch:
+    find $follow_links . -mindepth 1 $maxDepthParam $file_type $fs_boundary -printf '%T@ %Tc %P\n' 2>/dev/null | \
             sort -k1n${reverse} | \
             head -$itemsToShow | \
             sed -r 's/^.{22}//'
@@ -900,6 +898,162 @@ ffindtopnew() {
 
 ffindtopold() {
     __find_top_new_old_fun  old 10 "$@"
+}
+
+
+# find newer/older than X time_unit files
+#
+# - files changed last 5 minutes ago:  $ find -cmin -5
+# - files changed last 3 days ago:  $ find -ctime -3
+# (note if ctime & mtime match, then it probably means that's when the file was created)
+#
+# - atime - last access time
+# - ctime - when file or dir got metadata changes; usually that's ownership & access perms; also updated when file contents are updated
+# - mtime - last change to files' contents
+#
+# TODO: instead of using ctime & cmin, consider using -mtime (see https://unix.stackexchange.com/questions/630530/find-cmin-vs-find-mmin-status-vs-data-what-is-the-difference#comment1182659_630530)
+__find_newer_older_common_fun() {
+    local usage opt OPTIND file_type maxDepthParam maxDepth follow_links reverse newer_or_older age_arg
+    local plusOrMinus filetypeOptionCounter age_arg_tail
+    local fs_boundary t
+
+    t="$1"     # min | time; default time unit provided by the invoker (possible values dictated by find options)
+    newer_or_older="$2"  # denotes whether newer or older than X size units were queried
+    shift 2
+
+    filetypeOptionCounter=0
+
+    usage="\n${FUNCNAME[1]}: find nodes $newer_or_older than X $t from current dir.\nif node type not specified, defaults to searching for everything.\n
+    Usage: ${FUNCNAME[1]}  [-f] [-d] [-L] [-B] [-m depth]  age[time_unit]
+
+        the [time_unit] can be any of [mMdD]; if not provided, defaults to $t.
+
+        -f  search only for regular files
+        -d  search only for directories
+        -L  follow/dereference symlinks
+        -B  do not cross filesystem boundaries
+        -m<digit>   max depth to descend; unlimited by default.
+
+        examples:
+            ${FUNCNAME[1]} 2        - seek files and dirs $newer_or_older than 2 default
+                                      time units, which is '$t';
+            ${FUNCNAME[1]} -f 3m    - seek files $newer_or_older than 3 minutes;
+            ${FUNCNAME[1]} -dm3 1d  - seek dirs $newer_or_older than 1 day;
+                                      descend up to 3 levels from current dir.
+"
+
+    while getopts 'm:fdLBh' opt; do
+        case "$opt" in
+           f | d)
+              [[ "$file_type" != "-type $opt" ]] && let filetypeOptionCounter+=1
+              file_type="-type $opt"
+                ;;
+           m) maxDepth="$OPTARG"
+                ;;
+           L) follow_links='-L'  # common for both find and du
+                ;;
+           B) fs_boundary='-mount'  # or '-xdev', same thing
+                ;;
+           h) echo -e "$usage"
+              return 0
+                ;;
+           *) echo -e "$usage"
+              return 1
+                ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    age_arg="$1"
+
+    if [[ "$#" -ne 1 ]]; then
+        err "exactly one arg required" "${FUNCNAME[1]}"
+        echo -e "$usage"
+        return 1
+    fi
+
+    if [[ -n "$maxDepth" ]]; then
+        if ! is_digit "$maxDepth" || [[ "$maxDepth" -le 0 ]]; then
+            err "maxdepth arg value has to be... y'know, a digit" "${FUNCNAME[1]}"
+            echo -e "$usage"
+            return 1
+        fi
+
+        maxDepthParam="-maxdepth $maxDepth"
+    fi
+
+    if [[ -n "$age_arg" ]]; then
+        # find out whether block size unit was provided:
+        age_arg_tail="${age_arg:$(( ${#age_arg} - 1)):1}"
+
+        if ! is_digit "$age_arg_tail"; then
+            case "$age_arg_tail" in
+                m|M) # minutes
+                    t=min
+                    ;;
+                d|D) # days
+                    t=time
+                    ;;
+                *)
+                    err "unsupported time unit provided: [$age_arg_tail]" "${FUNCNAME[1]}"
+                    return 1
+                    ;;
+            esac
+
+            # clean up the numeric age_arg:
+            age_arg="${age_arg:0:$(( ${#age_arg} - 1))}"
+        fi
+
+        if [[ -z "$age_arg" ]]; then
+            err "age has to be provided as well, not only the unit." "${FUNCNAME[1]}"
+            echo -e "$usage"
+            return 1
+        elif ! is_digit "$age_arg"; then
+            err "age has to be a positive digit, but was [$age_arg]." "${FUNCNAME[1]}"
+            echo -e "$usage"
+            return 1
+        fi
+    else
+        err "need to provide age in $t" "${FUNCNAME[1]}"
+        echo -e "$usage"
+        return 1
+    fi
+
+    if [[ "$filetypeOptionCounter" -gt 1 ]]; then
+        err "-f and -d flags are exclusive." "${FUNCNAME[1]}"
+        echo -e "$usage"
+        return 1
+    fi
+
+
+    case "$newer_or_older" in
+        older)
+            plusOrMinus='+'
+            reverse='r'
+            ;;
+        newer)
+            plusOrMinus='-'
+            ;;
+        *)
+            err "could not detect whether we should look for 'older' or 'newer' than ${age_arg}$t files" "$FUNCNAME"
+            return 1
+            ;;
+    esac
+
+    report "seeking for files $newer_or_older than ${age_arg}${t}...\n" "${FUNCNAME[1]}"
+
+    # note %T@ is file modification time in epoch:
+    find $follow_links . -mindepth 1 $maxDepthParam $file_type $fs_boundary -c${t} ${plusOrMinus}${age_arg} -printf '%T@ %Tc %P\n' 2>/dev/null | \
+            sort -k1n${reverse} | \
+            sed -r 's/^.{22}//'
+}
+
+ffindnewerthan() {
+    __find_newer_older_common_fun  time  newer "$@"
+}
+
+ffindolderthan() {
+    __find_newer_older_common_fun  time  older "$@"
 }
 
 
@@ -934,10 +1088,16 @@ aptclean() {
 }
 
 aptlargest()  {
-    aptitude search --sort '~installsize' --display-format '%p %I' '~i' | head
+    local num
+
+    num="$1"
+    [[ -z "$num" ]] && num=10
+    is_digit "$num" && [[ "$num" -gt 0 ]] || { err "nr of largest apt packages needs to be a positive digit, but was [$num]" "$FUNCNAME"; return 1; }
+
+    aptitude search --sort '~installsize' --display-format '%p %I' '~i' | head -n "$num"
 }
 
-aptbiggest() { aptlargest; }  # alias
+aptbiggest() { aptlargest "$@"; }  # alias
 
 
 # to remove obsolete packages:
@@ -1401,7 +1561,7 @@ astr() {
     report "consider using ag directly; it has really sane syntax (compared to find + grep)
       for instance, with this wrapper you can't use the filetype & path options.\n" "$FUNCNAME"
 
-    while getopts "isLhm:" opt; do
+    while getopts 'isLhm:' opt; do
         case "$opt" in
            i)
               [[ "$grepcase" != ' -i ' ]] && let caseOptCounter+=1
@@ -1577,7 +1737,7 @@ $FUNCNAME  [-e]  /dir_to_look_from/filename_to_grep
             lgrep /tmp/pattern    searches for pattern in /tmp
 "
 
-    while getopts "he" opt; do
+    while getopts 'he' opt; do
         case "$opt" in
            h) echo -e "$usage";
               return 0
@@ -1730,7 +1890,7 @@ compress() {
     readonly def=tar  # default compression mode
     readonly usage="$FUNCNAME  fileOrDir  $sup\n\tif optional second arg not provided, compression type defaults to [$def] "
 
-    while getopts "h" opt; do
+    while getopts 'h' opt; do
         case "$opt" in
            h) echo -e "$usage";
               return 0
@@ -1978,7 +2138,7 @@ createUsbIso() {
 
     check_progs_installed   dd lsblk dirname umount sudo || return 1
 
-    while getopts "ho" opt; do
+    while getopts 'ho' opt; do
         case "$opt" in
            h) echo -e "$usage";
               return 0
@@ -2090,7 +2250,7 @@ createUsbIso() {
 hw() {
     local opt sudo OPTIND
 
-    while getopts "s" opt; do
+    while getopts 's' opt; do
         case "$opt" in
             s) sudo=sudo ;;
             *) err "incorrect opt [$opt]"; return 1 ;;
@@ -2154,7 +2314,7 @@ mkgit() {
 
      if  [project_name]  is not given, then project name will be same as  <dir>"
 
-    while getopts "hgbwp" opt; do
+    while getopts 'hgbwp' opt; do
         case "$opt" in
            h) echo -e "$usage";
               return 0
@@ -2283,7 +2443,8 @@ mkgit() {
                 readonly http_statuscode="$(curl --fail -sSL \
                     -w '%{http_code}' \
                     --max-time 4 --connect-timeout 1 \
-                    -u "$user:$passwd" \
+                    -H 'Accept: application/vnd.github+json' \
+                    -H "Authorization: Bearer $passwd" \
                     https://api.github.com/user/repos \
                     -d "{ \"name\":\"$project_name\", \"private\":$is_private }" \
                     -o "$curl_output")"
@@ -3161,7 +3322,7 @@ __settz() {
 
     check_progs_installed timedatectl || return 1
     [[ -z "$tz" ]] && { err "provide a timezone to switch to (e.g. Europe/Madrid)." "${FUNCNAME[1]}"; return 1; }
-    [[ "$tz" =~ [A-Z][a-z]+/[A-Z][a-z]+ ]] || { err "invalid timezone format; has to be in a format like [Europe/Madrid]." "${FUNCNAME[1]}"; return 1; }
+    [[ "$tz" =~ ^[A-Z][a-z]+/[A-Z][a-z]+$ ]] || { err "invalid timezone format; has to be in a format like [Europe/Madrid]" "${FUNCNAME[1]}"; return 1; }
 
     timedatectl set-timezone "$tz" || { err "setting tz to [$tz] failed (code $?)" "${FUNCNAME[1]}"; return 1; }
 }
@@ -3214,7 +3375,7 @@ sumtree() {
          Usage: ${FUNCNAME}  [-h]  [directory]
              -h  show this help\n"
 
-    while getopts "h" opt; do
+    while getopts 'h' opt; do
         case "$opt" in
            h) echo -e "$usage"; return 0 ;;
            *) echo -e "$usage"; return 1 ;;
@@ -3316,7 +3477,7 @@ is_same() {
 #
 # @param {file...}   list of files whose json-sanity to check
 #
-# @returns {bool}  true if all provided files are valid json files.
+# @returns {bool}  true if all provided files contain valid json.
 is_valid_json() {
     local file
 
@@ -3324,14 +3485,18 @@ is_valid_json() {
     command -v jq >/dev/null 2>&1 || return 2
 
     for file in "$@"; do
-        jq -e . >/dev/null 2>&1 "$file" || return 1
+        jq -reM '""' "$file" >/dev/null 2>&1 || return 1  # https://stackoverflow.com/a/67979464/1803648
     done
 
     return 0
 }
 
+is_json() { is_valid_json "$@"; }
+
 
 # Checks if given two files are json files of same logical contents
+#
+# If you want diff, see json_diff()
 #
 # @param {file1}   first file to compare
 # @param {file2}   second file to compare
@@ -3344,10 +3509,25 @@ same_json() {
 
     check_progs_installed  jq || return 1
     [[ "$#" -eq 2 && -f "$f1" && -f "$f2" ]] || { err "exactly 2 args expected, both json files"; return 1; }
+    is_valid_json "$f1" "$f2" || { err "both files need to contain valid json"; return 1; }
     jq -en --slurpfile a "$f1" --slurpfile b "$f2" '$a == $b' >/dev/null 2>&1
 }
 
-is_same_json() { same_json "@"; }
+is_same_json() { same_json "$@"; }
+
+
+json_diff() {
+    local f1 f2
+    f1="$1"
+    f2="$2"
+
+    check_progs_installed  jq vimdiff || return 1
+    [[ "$#" -eq 2 && -f "$f1" && -f "$f2" ]] || { err "exactly 2 args expected, both json files"; return 1; }
+    is_valid_json "$f1" "$f2" || { err "both files need to contain valid json"; return 1; }
+    vimdiff <(jq -S . "$f1") <(jq -S . "$f2")
+}
+
+diff_json() { json_diff "$@"; }
 
 
 # cd-s to directory by partial match; if multiple matches, opens input via fzf. smartcase.
@@ -3476,7 +3656,7 @@ dcleanup() {
     check_progs_installed docker || return 1
     [[ -z "$*" ]] && { echo -e "$usage"; return 1; }
 
-    while getopts "acivnh" opt; do
+    while getopts 'acivnh' opt; do
         case "$opt" in
            a) docker system prune --all
                 ;;
@@ -3703,7 +3883,7 @@ pubkey() {
     local opt OPTIND contents o s
 
     o=0
-    while getopts "sg" opt; do
+    while getopts 'sg' opt; do
         case "$opt" in
            s)
               let o++
@@ -4485,7 +4665,7 @@ javadump() {
 "
 
     # TODO: maybe replace -h w/ -H, as -h is generally help?
-    while getopts "ht" opt; do
+    while getopts 'ht' opt; do
         case "$opt" in
            h) mode=H
                 ;;
@@ -4565,7 +4745,7 @@ tcpdumperino() {
         -o  allow overwriting <outputfile> if it already exists
 "
 
-    while getopts "of:" opt; do
+    while getopts 'of:' opt; do
         case "$opt" in
            f) file="$OPTARG"
                 ;;
@@ -4634,7 +4814,7 @@ scan_network() {
 # from: http://jeroenjanssens.com/2013/08/16/quickly-navigate-your-filesystem-from-the-command-line.html
 ##############################################
 if [[ "$EUID" -eq 0 ]]; then
-    _MARKPATH="$(find $BASE_DATA_DIR /home -mindepth 2 -maxdepth 2 -type d -name $_MARKPATH_DIR -print0 -quit 2>/dev/null)"
+    _MARKPATH="$(find $BASE_DATA_DIR /home -mindepth 2 -maxdepth 2 -type d -name "$_MARKPATH_DIR" -print0 -quit 2>/dev/null)"
     [[ -z "$_MARKPATH" ]] && _MARKPATH="$HOME/$_MARKPATH_DIR"
 else
     # if $BASE_DATA_DIR available, try writing it there so it'd be persisted between OS installs:
@@ -4661,7 +4841,7 @@ function jm {
 
     [[ $# -ne 1 || -z "$1" ]] && { err "exactly one arg accepted" "$FUNCNAME"; return 1; }
     [[ -z "$_MARKPATH" ]] && { err "\$_MARKPATH not set, aborting." "$FUNCNAME"; return 1; }
-    command mkdir -p -- "$_MARKPATH" || { err "creating [$_MARKPATH] failed." "$FUNCNAME"; return 1; }
+    [[ -d "$_MARKPATH" ]] || command mkdir -p -- "$_MARKPATH" || { err "creating [$_MARKPATH] failed." "$FUNCNAME"; return 1; }
     [[ "$overwrite" -eq 1 && -h "$target" ]] && rm -- "$target" >/dev/null 2>/dev/null
     [[ -h "$target" ]] && { err "[$target] already exists; use jmo() or $FUNCNAME -o to overwrite." "$FUNCNAME"; return 1; }
 
