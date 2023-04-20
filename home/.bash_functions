@@ -2281,7 +2281,7 @@ iostat-monit() {
     path="${1:-$HOME}"
 
     [[ -d "$path" ]] || { err "provided path [$path] is not a dir"; return 1; }
-    is_digit "$interval_sec" && [[ "$interval_sec" -gt 0 ]] || { err "interval needs to be positive int, but was [$interval_sec]"; return 1; }
+    is_positive "$interval_sec" || { err "interval needs to be positive int, but was [$interval_sec]"; return 1; }
     check_progs_installed  iostat findmnt || return 1
 
     _cmd() {
@@ -2289,7 +2289,8 @@ iostat-monit() {
     }
 
     if [[ -n "$clean" ]]; then
-        _cmd | grep -Ev '^(Device|$|avg-cpu|\s+)'
+        # note -F '[ ]' is to preserve original whitespace:
+        _cmd | awk -F '[ ]' '!/^(Device|$|avg-cpu|\s+)/ {if($NF<75){$NF="\033[1;34m" $NF "\033[0m"};if($NF>=75 && $NF<90){$NF="\033[1;35m" $NF "\033[0m"};if($NF>=90){$NF="\033[1;31m" $NF "\033[0m"};print}'
     else
         _cmd
     fi
