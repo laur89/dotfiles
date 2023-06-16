@@ -1213,8 +1213,6 @@ install_deps() {
     # cheat.sh:  # https://github.com/chubin/cheat.sh#installation
     curl -fsSL "https://cht.sh/:cht.sh" > ~/bin/cht.sh && chmod +x ~/bin/cht.sh || err "curling cheat.sh failed w/ [$?]"
 
-    py_install wheel    # https://pypi.org/project/wheel/  (wheel is py packaging standard; TODO: as per https://stackoverflow.com/a/56504270/1803648, this pkg should soon be provided by default)
-
     # TODO: following are not deps, are they?:
     # git-playback; install _either_ of these two (ie either from jianli or mmozuras):
     py_install git-playback   # https://github.com/jianli/git-playback
@@ -1242,6 +1240,7 @@ install_deps() {
 
     # colorscheme generator:
     # see also complementing script @ https://github.com/dylanaraps/bin/blob/master/wal-set
+    # rust alternative to pywal: https://codeberg.org/explosion-mental/wallust
     py_install pywal          # https://github.com/dylanaraps/pywal/wiki/Installation
 
     # consider also perl alternative @ https://github.com/pasky/speedread
@@ -4238,12 +4237,6 @@ install_i3() {
 }
 
 
-# TODO: this installation method is dirty; consider https://github.com/pipxproject/pipx
-#       see https://packaging.python.org/en/latest/guides/installing-stand-alone-command-line-tools/
-#
-# just fyi: to install local copy in dev mode:
-#      /usr/bin/env python3 -m pip install --user --upgrade --force-reinstall --editable .
-#
 # pass -g opt to install from github; in that case 2 args are to be provided - user & repo,
 # and we can install one pkg at a time.
 py_install() {
@@ -4259,7 +4252,11 @@ py_install() {
 
     pkg="$*"
     [[ "$github" -eq 1 ]] && pkg="git+ssh://git@github.com/$1/$2.git"  # append @branch for a specific branch
-    execute "/usr/bin/env python3 -m pip install --user --upgrade $pkg"
+
+    # old way using pip (deprecated for system/global executables):
+    #execute "/usr/bin/env python3 -m pip install --break-system-packages --user --upgrade $pkg"
+
+    execute "pipx install $pkg"
 }
 
 
@@ -4288,7 +4285,8 @@ install_i3_deps() {
     local f
     f="$TMP_DIR/i3-dep-${RANDOM}"
 
-    py_install i3ipc      # https://github.com/altdesktop/i3ipc-python
+    # i3ipc now installed as apt pkg
+    #py_install i3ipc      # https://github.com/altdesktop/i3ipc-python
 
     # rofi-tmux (aka rft):
     #py_install rofi-tmux  # https://github.com/viniarck/rofi-tmux  # TODO use this as soon as/if our PR is accepted; or not, it's rather slow to start
@@ -4298,7 +4296,6 @@ install_i3_deps() {
     create_link "${BASE_DEPS_LOC}/rofi-tmux/rft/main.py" "$HOME/bin/rft"
 
     # install rofi-tmux/rft dependencies:
-    py_install click i3ipc #python-rofi libtmux
     py_install -g bcbnz  python-rofi
 
 
@@ -5151,6 +5148,10 @@ install_from_repo() {
         python3-dev
         python3-venv
         python3-pip
+        pipx
+        python3-wheel
+        python3-click
+        python3-i3ipc
         flake8
         msbuild
         curl
@@ -5824,6 +5825,7 @@ quick_refresh() {
     setup
     install_progs
     install_deps
+    execute 'pipx  upgrade-all'
 }
 
 
@@ -5836,6 +5838,7 @@ quicker_refresh() {
     install_own_builds
     post_install_progs_setup
     install_deps  # TODO: do we want this with mode=3?
+    execute 'pipx  upgrade-all'
 }
 
 
@@ -7624,7 +7627,6 @@ exit
 
 # TODOS:
 # - if apt-get update fails, then we should fail script fast?
-# - upgrade py_install() to use pipx instead
 #
 # GAMES:
 # - flightgear/unstable
