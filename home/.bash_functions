@@ -1988,7 +1988,7 @@ extract() {
         local dir
 
         readonly dir="$file_without_extension"
-        [[ -d "$dir" ]] && { err "[$dir] already exists" "${FUNCNAME[1]}"; return 1; }
+        [[ -e "$dir" ]] && { err "[$dir] already exists" "${FUNCNAME[1]}"; return 1; }
         command mkdir -- "$dir" || return 1
         [[ -d "$dir" ]] || { err "mkdir failed to create [$dir]" "${FUNCNAME[1]}"; return 1; }
         return 0
@@ -2285,12 +2285,18 @@ iostat-monit() {
     check_progs_installed  iostat findmnt || return 1
 
     _cmd() {
-        iostat -xk "$interval_sec" "$(findmnt --target "$path" | awk 'END {print $2}')"
+        local device
+        device="$(findmnt --target "$path" | awk 'END {print $2}')" || return 1
+        iostat -xm "$interval_sec" "$device"
+        #iostat --human -xm "$interval_sec" "$device"
     }
 
+    # note -F '[ ]' option for awk is to preserve original whitespace
     if [[ -n "$clean" ]]; then
-        # note -F '[ ]' is to preserve original whitespace:
-        _cmd | awk -F '[ ]' '!/^(Device|$|avg-cpu|\s+)/ {if($NF<75){$NF="\033[1;34m" $NF "\033[0m"};if($NF>=75 && $NF<90){$NF="\033[1;35m" $NF "\033[0m"};if($NF>=90){$NF="\033[1;31m" $NF "\033[0m"};print}'
+        # terse version, only printing device_name & util:
+        _cmd | awk -F '[ ]' '!/^(Device|Linux|$|avg-cpu|\s+)/ {$1="\033[32m" $1 "\033[0m";if($NF<75){$NF="\033[1;34m" $NF "\033[0m"};if($NF>=75 && $NF<90){$NF="\033[1;35m" $NF "\033[0m"};if($NF>=90){$NF="\033[1;31m" $NF "\033[0m"};print $1, $NF}'
+        # ...and longer version, preserving the original output:
+        #_cmd | awk -F '[ ]' '!/^(Device|Linux|$|avg-cpu|\s+)/ {$1="\033[32m" $1 "\033[0m";if($NF<75){$NF="\033[1;34m" $NF "\033[0m"};if($NF>=75 && $NF<90){$NF="\033[1;35m" $NF "\033[0m"};if($NF>=90){$NF="\033[1;31m" $NF "\033[0m"};print}'
     else
         _cmd
     fi
@@ -3258,7 +3264,7 @@ __fo() {
             "$pdf_viewer" -- "${files[@]}" &
             ;;
         application/x-elc* \
-                | application/json*)  # TODO: what exactly is x-elc*?
+                | application/*json*)  # TODO: what exactly is x-elc*?
             check_progs_installed "$editor" || return 1
             "$editor" -- "${files[@]}"
             ;;
@@ -3271,7 +3277,7 @@ __fo() {
         'inode/directory;'*)
             [[ "$count" -gt 1 ]] && { report "won't navigate to multiple dirs! select one please" "${FUNCNAME[1]}"; return 1; }
             check_progs_installed "$file_mngr" || return 1
-            "$file_mngr" "${files[0]}"
+            "$file_mngr" "${files[0]}"  # optionally 'cd'
             ;;
         'inode/x-empty; charset=binary')
             check_progs_installed "$editor" || return 1
@@ -3738,6 +3744,7 @@ fumount() {
 # TODO2: log the headers, as upload header response has deletion header 'X-Url-Delete'!
 # TODO3: optionally set max-downloads, max-days (to keep the file), also set by _request_ headers;
 # TODO4: for alternative, see also http://ix.io/
+# TODO5: retrieve&store deletion token
 #
 # see  https://github.com/dutchcoders/transfer.sh/
 transfer() {
@@ -3745,7 +3752,7 @@ transfer() {
 
     readonly file="$1"
 
-    [[ "$#" -ne 1 || -z "$file" ]] && { err "file to upload required." "$FUNCNAME"; return 1; }
+    [[ "$#" -ne 1 || -z "$file" ]] && { err "single file to upload required" "$FUNCNAME"; return 1; }
     [[ -e "$file" ]] || { err "[$file] does not exist." "$FUNCNAME"; return 1; }
     check_progs_installed curl || return 1
 
@@ -3754,7 +3761,7 @@ transfer() {
     curl --fail --connect-timeout 2 --progress-bar --upload-file "$file" "https://transfer.sh/$(basename -- "$file")" >> "$tmpfile" || { err; return 1; }
     cat -- "$tmpfile"
     echo
-    copy_to_clipboard "$(cat -- "$tmpfile")" && report "copied link to clipboard" "$FUNCNAME" || err "copying to clipboard failed" "$FUNCNAME"
+    copy_to_clipboard "$(cat -- "$tmpfile")" && report "copied link above to clipboard" "$FUNCNAME" || err "copying to clipboard failed" "$FUNCNAME"
 
     rm -f -- "$tmpfile"
 }
