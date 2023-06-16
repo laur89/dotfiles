@@ -1152,6 +1152,10 @@ install_deps() {
     clone_or_pull_repo "gradle" "gradle-completion" "$BASE_DEPS_LOC"
     create_link "${BASE_DEPS_LOC}/gradle-completion/gradle-completion.bash" "$HOME/.bash_completion.d/"
 
+    # leiningen bash completion:  # https://codeberg.org/leiningen/leiningen/src/branch/main/bash_completion.bash
+    #
+    install_from_url -d "$HOME/.bash_completion.d/" lein_bash_completion.bash "https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash" || return 1
+
     # vifm filetype icons: https://github.com/cirala/vifm_devicons.git
     clone_or_pull_repo "cirala" "vifm_devicons" "$BASE_DEPS_LOC"
     create_link "${BASE_DEPS_LOC}/vifm_devicons" "$HOME/.vifm_devicons"
@@ -1368,7 +1372,7 @@ setup_dirs() {
             $BASE_BUILDS_DIR \
             $BASE_DATA_DIR/dev \
             $BASE_DATA_DIR/apps \
-            $BASE_DATA_DIR/apps/maven \
+            $BASE_DATA_DIR/apps/maven/repo \
             $BASE_DATA_DIR/apps/gradle \
             $BASE_DATA_DIR/mail \
             $BASE_DATA_DIR/mail/work \
@@ -2189,14 +2193,14 @@ bc_install() {
 
 
 prepare_build_container() {  # TODO container build env not used atm
-    if [[ -z "$(docker ps -qa -f name="$BUILD_DOCK" --format '{{.Names}}')" ]]; then  # container hasn't been created
+    if [[ -z "$(docker ps -qa -f name="$BUILD_DOCK")" ]]; then  # container hasn't been created
         #execute "docker create -t --name '$BUILD_DOCK' debian:testing-slim" || return 1  # alternative to docker run
         execute "docker run -dit --name '$BUILD_DOCK' -v '$BASE_BUILDS_DIR:/out' debian:testing-slim" || return 1
         bc_exe "apt-get --yes update"
         bc_install git checkinstall build-essential devscripts equivs cmake || return 1
     fi
 
-    if [[ -z "$(docker ps -qa -f status=running -f name="$BUILD_DOCK" --format '{{.Names}}')" ]]; then
+    if [[ -z "$(docker ps -qa -f status=running -f name="$BUILD_DOCK")" ]]; then
         execute "docker start '$BUILD_DOCK'" || return 1
     fi
 
@@ -2836,6 +2840,9 @@ install_file() {
         _rename || return 1
         execute "chmod +x '$file'" || return 1
         execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
+    elif [[ "$ftype" == 'text/plain; charset='* ]]; then  # same as executable/binary above, but do not set executable flag
+        _rename || return 1
+        execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
     elif [[ "$ftype" == *"inode/directory; charset=binary" ]]; then
         [[ -z "$name" ]] && { err "[name] arg needs to be provided when installing a directory"; return 1; }
         _rename || return 1
@@ -2940,6 +2947,13 @@ install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instruc
 
     add_to_dl_log  "$name" "$ver"
     return 0
+}
+
+
+# clojure static analyzer/linter
+# https://github.com/clj-kondo/clj-kondo
+install_clj_kondo() {
+    install_bin_from_git -N clj-kondo  clj-kondo  clj-kondo 'clj-kondo-.*-linux-amd64.zip'
 }
 
 # scala application & artifact manager
@@ -3436,8 +3450,6 @@ install_jd() {  # https://github.com/josephburnett/jd
 }
 
 
-# found as apt 'bat' package, but executable is named batcat not bat!
-#
 # see also https://github.com/eth-p/bat-extras/blob/master/README.md#installation
 install_bat() {  # https://github.com/sharkdp/bat
     install_deb_from_git sharkdp bat 'bat_[-0-9.]+_amd64.deb'
@@ -4797,8 +4809,8 @@ build_and_install_vim() {
 config_coc() {
     if [[ "$MODE" -eq 1 ]]; then
         # TODO: instead of this, maybe we should just track ~/.config/coc/extensions/package.json?; unsure if that will bring the plugins to fresh install, but possibly worth a try;
-        #nvim +'CocInstall -sync  coc-snippets coc-tsserver coc-json coc-html coc-css coc-pyright coc-sh|qall'
-        nvim +'CocInstall -sync  coc-snippets coc-tsserver coc-json coc-html coc-css coc-pyright coc-sh' +qall
+        #nvim +'CocInstall -sync  coc-snippets coc-tsserver coc-json coc-html coc-css coc-pyright coc-sh coc-clojure|qall'
+        nvim +'CocInstall -sync  coc-snippets coc-tsserver coc-json coc-html coc-css coc-pyright coc-sh coc-clojure' +qall
     else
         nvim +CocUpdateSync +qall
     fi
@@ -5228,6 +5240,8 @@ install_from_repo() {
         vdirsyncer
         calcurse
         galculator
+        speedcrunch
+        calc
         bcal
         atool
         file-roller
@@ -5701,6 +5715,7 @@ __choose_prog_to_build() {
         install_rebar
         install_coursier
         install_clojure
+        install_clj_kondo
         install_lazygit
         install_lazydocker
         install_fd
@@ -5859,6 +5874,7 @@ remind_manually_installed_progs() {
         'ublock whitelist (should be saved somewhere)'
         'import keepass-xc browser plugin config'
         'install tridactyl native messenger/executable (:installnative)'
+        'install/load chromium Surfingkeys plugin config from [https://github.com/laur89/surfingkeys-config/]'
         'setup default keyring via seahorse'
         'update system firmware'
         'download seafile libraries'
@@ -7424,13 +7440,22 @@ is_dir_empty() {
 }
 
 
-# Checks whether the argument is a non-negative digit.
+# Checks whether the argument is a non-negative integer.
 #
 # @param {digit}  arg   argument to check.
 #
-# @returns {bool}  true if argument is a valid (and non-negative) digit.
+# @returns {bool}  true if argument is a valid (and non-negative) int.
 is_digit() {
     [[ "$*" =~ ^[0-9]+$ ]]
+}
+
+# Checks whether the argument is a positive integer.
+#
+# @param {digit}  arg   argument to check.
+#
+# @returns {bool}  true if argument is a valid positive digit.
+is_positive() {
+    is_digit "$*" && [[ "$*" -gt 0 ]]
 }
 
 
@@ -7450,7 +7475,7 @@ is_interactive() {
 #
 # @returns {bool}    true, if provided function name is a valid function.
 is_function() {
-    local _type fun
+    local fun _type
 
     readonly fun="$1"
 
@@ -7510,7 +7535,7 @@ cleanup() {
     [[ -s "$NPMRC_BAK" ]] && mv -- "$NPMRC_BAK" ~/.npmrc   # move back
 
     # shut down the build container:
-    if command -v docker >/dev/null 2>&1 && [[ -n "$(docker ps -qa -f status=running -f name="$BUILD_DOCK" --format '{{.Names}}')" ]]; then
+    if command -v docker >/dev/null 2>&1 && [[ -n "$(docker ps -qa -f status=running -f name="$BUILD_DOCK")" ]]; then
         execute "docker stop '$BUILD_DOCK'" || err "[cleanup] stopping build container [$BUILD_DOCK] failed"
     fi
 
