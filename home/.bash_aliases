@@ -24,8 +24,7 @@ alias eclipse='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkrc:/home/laur/.g
 alias mat='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-eclipse "/data/progs/mat/MemoryAnalyzer"'
 #alias sts='env GTK2_RC_FILES=/usr/share/themes/Greybird/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/STS"'
 alias sts='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/eclipse/sts"'
-#alias idea='env GTK2_RC_FILES=/usr/share/themes/Greybird/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/idea/idea-IU-139.1117.1/bin/idea.sh"'
-alias idea='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtkrc-2.0-IDE "/data/progs/idea/idea"'
+#alias idea='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtkrc-2.0-IDE "/data/progs/idea/idea"'
 alias soapui='( cd /data/progs/soapui && env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtkrc-2.0-IDE "./soapui/bin/soapui.sh" )'
 alias giteye='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtkrc-2.0-IDE "/data/progs/GitEye/GitEye"'
 #alias sts='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/STS"'
@@ -79,7 +78,6 @@ alias kof='kubeoff'
 alias logout="pkill -TERM -u $(whoami) & sleep 5 && pkill -KILL -u $(whoami) && exit 0"
 #alias logout="pkill -u $USER"   # by default pkill sends SIGTERM signal
 #alias logout='kill -9 -1' # kill all processes *you* can kill
-command -v batcat > /dev/null 2>&1 && alias bat=batcat  # on ubuntu/debian, bat installs now as batcat command
 alias fd="fd --hidden --exclude '.git'"  # TODO: consider adding --no-ignore option to bypass gitignore, fdignore et al
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
@@ -303,7 +301,6 @@ alias drmf='docker stop $(docker ps --no-trunc -aq) && docker rm $(docker ps --n
 
 # Remove all images
 dri() { docker rmi $(docker images -q); }
-alias drmi='dri'
 
 # Dockerfile build, e.g., $dbu tcnksm/test
 dbu() { docker build --tag="$1" .; }
@@ -315,7 +312,7 @@ dalias() { alias | grep 'docker' | sed "s/^\([^=]*\)=\(.*\)/\1 => \2/;s/['|\']//
 dbash() { docker exec -it "$(_running_dock_by_name -s "$1")" bash -l; }
 
 # docker (better use functions in bash_funtions.sh):
-#alias drmi='docker rmi $(docker images --filter "dangling=true" -q --no-trunc)'
+alias drmi='docker rmi $(docker images --filter "dangling=true" -q --no-trunc)'
 # ------------------------------------
 # AWS aliases (for aws-okta):
 alias aod='aws-okta exec dev --'
