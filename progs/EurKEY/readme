@@ -20,3 +20,6 @@ best to use the deb. there's also xmodmap config, but as the project itself stat
   > This is a very old version of EurKEY and will probably not work on your linux
   > installation, but may help you creating your own Xmodmap definition. Use this only
   > if you know what this is all about.
+
+note a copy of said xmodmap file is backed up here in same directory. also node xmodmap
+usage and .deb version/installation should be, as i understand, mutually exclusive.
