@@ -320,7 +320,7 @@ mode "$mode_gaps_outer" {
 # workspace $w1 output LVDS1
 
 # Lock screen
-bindsym Control+mod1+l exec --no-startup-id lock -f
+bindsym Control+mod1+l   $ex lock -f
 # maybe would be better to trigger via xset, as otherwise xss-lock would not about the locking state:
 # note instead of 'xset s activate' you could also use 'loginctl lock-session', assuming systemd usage.
 #bindsym Control+mod1+l exec --no-startup-id xset s activate
@@ -343,26 +343,36 @@ bindsym Control+mod1+l exec --no-startup-id lock -f
  #     bindsym Escape mode "default"
  # }
 #bindsym $mod+F9 mode "$mode_system"
-bindsym $mod+F9 exec --no-startup-id $HOME/.config/polybar/popups/power/power
+bindsym $mod+F9 $ex  $HOME/.config/polybar/popups/power/power
 
 # Volume control
-bindsym XF86AudioRaiseVolume exec --no-startup-id change-volume up
-bindsym $mod+plus exec            --no-startup-id change-volume up
-bindsym XF86AudioLowerVolume exec --no-startup-id change-volume down
-bindsym $mod+minus exec           --no-startup-id change-volume down
-bindsym XF86AudioMute exec        --no-startup-id change-volume mute
+bindsym XF86AudioRaiseVolume  $ex change-volume up
+bindsym $mod+plus             $ex change-volume up
+bindsym XF86AudioLowerVolume  $ex change-volume down
+bindsym $mod+minus            $ex change-volume down
+bindsym XF86AudioMute         $ex change-volume mute
+
+# Media control
+bindsym XF86AudioPlay          $ex  playerctl play-pause
+bindsym XF86AudioPause         $ex  playerctl play-pause
+bindsym Control+XF86AudioNext  $ex  playerctl play-pause
+
+bindsym XF86AudioNext        $ex  playerctl next
+bindsym XF86AudioPrev        $ex  playerctl previous
+bindsym Shift+XF86AudioNext  $ex  playerctl position 5+
+bindsym Shift+XF86AudioPrev  $ex  playerctl position 5-
 
 # Brightness control
-bindsym XF86MonBrightnessUp exec --no-startup-id change-brightness up
-bindsym XF86MonBrightnessDown exec --no-startup-id change-brightness down
+bindsym XF86MonBrightnessUp   $ex  change-brightness up
+bindsym XF86MonBrightnessDown $ex  change-brightness down
 
 # Touchpad controls
-bindsym XF86TouchpadToggle exec /some/path/toggletouchpad.sh
+bindsym XF86TouchpadToggle  $ex /some/path/toggletouchpad.sh
 
 # Screenshot
-#bindsym Print exec --no-startup-id  scrot -e 'mv $f ~/Pictures/screenshots/$hostname' && notify-send "Screenshot Taken"
-#bindsym Print exec --no-startup-id  maim --quality 9 ~/Pictures/screenshots/$hostname/screenshot_latest.jpg
-bindsym Print exec --no-startup-id  screenshot.sh #--auto
+#bindsym Print $ex   scrot -e 'mv $f ~/Pictures/screenshots/$hostname' && notify-send "Screenshot Taken"
+#bindsym Print $ex   maim --quality 9 ~/Pictures/screenshots/$hostname/screenshot_latest.jpg
+bindsym Print $ex   screenshot.sh #--auto
 
 # My apps shortcut
 # note all bindings get translated by Group1 keymap (see https://i3wm.org/docs/userguide.html#keybindings)
@@ -370,8 +380,8 @@ bindsym Print exec --no-startup-id  screenshot.sh #--auto
 #bindsym $mod+b exec firefox
 
 # keycode 34 = ü on et, [ on us keymap:
-bindcode Control+34 exec --no-startup-id copyq toggle
-bindsym  $mod1+o    exec --no-startup-id copyq toggle
+bindcode Control+34  $ex copyq toggle
+bindsym  $mod1+o     $ex copyq toggle
 
 ##################################
 ## Custom colors (from xresources):
@@ -689,6 +699,9 @@ bindsym $mod+Tab exec --no-startup-id i3-cycle-workspace.py --switch
 
 # start i3expo daemon:
 exec_always --no-startup-id i3expod.py
+
+# start playerctl daemon:
+$ex playerctld daemon
 
 # populate DBUS vars.
 # taken from some reddit post: https://www.reddit.com/r/Gentoo/comments/tzdnvn/comment/i3zzvjl/?utm_source=share&utm_medium=web2x&context=3
