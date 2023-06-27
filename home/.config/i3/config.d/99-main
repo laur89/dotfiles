@@ -15,15 +15,15 @@ set $border 2
 set $ex     exec --no-startup-id
 set $exa    exec_always --no-startup-id
 
-set $mod_j "exec --no-startup-id sway-overfocus split-dt float-dt output-dw"
-set $mod_k "exec --no-startup-id sway-overfocus split-ut float-ut output-uw"
-set $mod_h "exec --no-startup-id sway-overfocus split-lt float-lt output-lw"
-set $mod_l "exec --no-startup-id sway-overfocus split-rt float-rt output-rw"
+set $mod_j "$ex sway-overfocus split-dt float-dt output-dw"
+set $mod_k "$ex sway-overfocus split-ut float-ut output-uw"
+set $mod_h "$ex sway-overfocus split-lt float-lt output-lw"
+set $mod_l "$ex sway-overfocus split-rt float-rt output-rw"
 
-set $mod1_j "exec --no-startup-id sway-overfocus group-dw float-dt split-dt output-dt"
-set $mod1_k "exec --no-startup-id sway-overfocus group-uw float-ut split-ut output-ut"
-set $mod1_h "exec --no-startup-id sway-overfocus group-lw float-lt split-lt output-lt"
-set $mod1_l "exec --no-startup-id sway-overfocus group-rw float-rt split-rt output-rt"
+set $mod1_j "$ex sway-overfocus group-dw float-dt split-dt output-dt"
+set $mod1_k "$ex sway-overfocus group-uw float-ut split-ut output-ut"
+set $mod1_h "$ex sway-overfocus group-lw float-lt split-lt output-lt"
+set $mod1_l "$ex sway-overfocus group-rw float-rt split-rt output-rt"
 
 workspace_layout tabbed
 workspace_auto_back_and_forth yes
@@ -46,10 +46,10 @@ popup_during_fullscreen smart
 #bindsym $mod+d exec  dmenu_run -b -nf "#839496" -sb "#b58900" -sf "#002b36" -nb "#002b36" -fn "tewi-8"
 
 # Start Rofi:
-bindsym $mod+space exec --no-startup-id rofi -show combi \
+bindsym $mod+space $ex rofi -show combi \
 -combi-modi 'window#drun#run' -modi combi#ssh -sidebar-mode
 # rofi-tmux (aka rft):
-bindsym $mod+Shift+space exec --no-startup-id rft sw
+bindsym $mod+Shift+space $ex rft sw
 
 bindsym $mod+j $mod_j
 bindsym $mod+k $mod_k
@@ -66,8 +66,8 @@ bindsym $mod+comma  focus output left
 bindsym $mod+question focus output down
 bindsym $mod+m focus output up
 
-#bindsym --whole-window --border $mod+button4 exec --no-startup-id i3-cycle-windows
-#bindsym --whole-window --border $mod1+button4 exec --no-startup-id i3-cycle-windows
+#bindsym --whole-window --border $mod+button4 $ex i3-cycle-windows
+#bindsym --whole-window --border $mod1+button4 $ex i3-cycle-windows
 
 # Alternatively, you can use the cursor keys (note these are defaults):
 bindsym $mod+Down  focus down
@@ -75,8 +75,8 @@ bindsym $mod+Up    focus up
 bindsym $mod+Left  focus left
 bindsym $mod+Right focus right
 # TODO: i3viswiz, at least on Jul 2021, launches a cpu-intensive awk process that hangs (in multi-mon setup anyway):
-#bindsym $mod+Left   exec --no-startup-id i3viswiz left
-#bindsym $mod+Right   exec --no-startup-id i3viswiz right
+#bindsym $mod+Left   $ex i3viswiz left
+#bindsym $mod+Right   $ex i3viswiz right
 
 bindsym $mod1+j $mod1_j
 bindsym $mod1+k $mod1_k
@@ -89,16 +89,16 @@ bindsym --whole-window --border $mod1+button6  $mod1_h
 bindsym --whole-window --border $mod1+button7  $mod1_l
 
 # Move focused window:  # TODO: delegate to script in order to force focus on the window that was just moved; or open a bug?
-bindsym $mod+Shift+h exec --no-startup-id i3move --clamp left
-bindsym $mod+Shift+j exec --no-startup-id i3move --clamp down
-bindsym $mod+Shift+k exec --no-startup-id i3move --clamp up
-bindsym $mod+Shift+l exec --no-startup-id i3move --clamp right
+bindsym $mod+Shift+h $ex i3move --clamp left
+bindsym $mod+Shift+j $ex i3move --clamp down
+bindsym $mod+Shift+k $ex i3move --clamp up
+bindsym $mod+Shift+l $ex i3move --clamp right
 
 # Alternatively, you can use the cursor keys:
-bindsym $mod+Shift+Left  exec --no-startup-id i3move left
-bindsym $mod+Shift+Down  exec --no-startup-id i3move down
-bindsym $mod+Shift+Up    exec --no-startup-id i3move up
-bindsym $mod+Shift+Right exec --no-startup-id i3move right
+bindsym $mod+Shift+Left  $ex i3move left
+bindsym $mod+Shift+Down  $ex i3move down
+bindsym $mod+Shift+Up    $ex i3move up
+bindsym $mod+Shift+Right $ex i3move right
 
 
 # Split in horizontal orientation (note it's really vertical in vi terms)
@@ -323,20 +323,20 @@ mode "$mode_gaps_outer" {
 bindsym Control+mod1+l   $ex lock -f
 # maybe would be better to trigger via xset, as otherwise xss-lock would not about the locking state:
 # note instead of 'xset s activate' you could also use 'loginctl lock-session', assuming systemd usage.
-#bindsym Control+mod1+l exec --no-startup-id xset s activate
+#bindsym Control+mod1+l $ex xset s activate
 #
 # first switch to likely-unused ws to avoid typing passwd for the world:
-#bindsym Control+mod1+Delete exec --no-startup-id i3-msg workspace $w8 && /usr/local/bin/lock
+#bindsym Control+mod1+Delete $ex i3-msg workspace $w8 && /usr/local/bin/lock
 
 # Shutdwon, Restart, Logout, Suspend, Hibernate, Reboot, Lock
  # set $mode_system System (l) lock, (e) logout, (s) suspend, (h) hibernate, (r) reboot, (Shift+s) shutdown
  # mode "$mode_system" {
- #     bindsym l exec --no-startup-id $Locker, mode "default"
- #     bindsym e exec --no-startup-id i3-msg exit, mode "default"
- #     bindsym s exec --no-startup-id $Locker && systemctl suspend, mode "default"
- #     bindsym h exec --no-startup-id $Locker && systemctl hibernate,mode "default"
- #     bindsym r exec --no-startup-id systemctl reboot, mode "default"
- #     bindsym Shift+s exec --no-startup-id systemctl poweroff -i, mode "default"
+ #     bindsym l $ex $Locker, mode "default"
+ #     bindsym e $ex i3-msg exit, mode "default"
+ #     bindsym s $ex $Locker && systemctl suspend, mode "default"
+ #     bindsym h $ex $Locker && systemctl hibernate,mode "default"
+ #     bindsym r $ex systemctl reboot, mode "default"
+ #     bindsym Shift+s $ex systemctl poweroff -i, mode "default"
 
  #     # back to normal: Enter or Escape
  #     bindsym Return mode "default"
@@ -502,22 +502,22 @@ default_border normal $border
 
 #*************  My apps settings  *********************
 # Autolock/turn off screen
-#exec --no-startup-id xautolock -detectsleep \
+#$ex xautolock -detectsleep \
   #-notify   300 -notifier "xset dpms force off" \
   #-time     10  -locker   "$Locker" \
   #-killtime 20 -killer "systemctl suspend"
-exec_always --no-startup-id $HOME/.config/polybar/launch.sh
-exec_always --no-startup-id flashfocus
+$exa $HOME/.config/polybar/launch.sh
+$exa flashfocus
 
 
 # # Start apps during startup
-#exec --no-startup-id nitrogen --restore  &
-#exec --no-startup-id conky -c $HOME/.config/i3/conkybar-top -d
-#exec --no-startup-id compton --config ~/.compton.conf -b
-#exec --no-startup-id dunst -config $HOME/.config/dunst/dunstrc
-#exec --no-startup-id xrdb -load -I$HOME ~/.Xresources
-#exec --no-startup-id . $HOME/.local/bin/urxvt_daemon &
-#exec --no-startup-id . $HOME/.local/bin/barstart &
+#$ex nitrogen --restore  &
+#$ex conky -c $HOME/.config/i3/conkybar-top -d
+#$ex compton --config ~/.compton.conf -b
+#$ex dunst -config $HOME/.config/dunst/dunstrc
+#$ex xrdb -load -I$HOME ~/.Xresources
+#$ex . $HOME/.local/bin/urxvt_daemon &
+#$ex . $HOME/.local/bin/barstart &
 
 # Set per-application border
 #for_window [class="^.*"] border pixel 1   # note border pixel 0 is required if you wanna use gaps
@@ -664,7 +664,7 @@ bindsym $mod+Control+Shift+s move scratchpad
 # note it only toggles the scratchpad windows tagged w/ ^scratch_mark!
 bindsym $mod+Shift+z [con_mark="^scratch_mark"] scratchpad show
 # move focused window to scratchpad and tag with our own tag:
-bindsym $mod+Control+Shift+z exec --no-startup-id i3-scratch-marker.sh scratch_mark
+bindsym $mod+Control+Shift+z $ex i3-scratch-marker.sh scratch_mark
 
 
 # TODO: what keybinding for sticky? do we even want it?
@@ -676,33 +676,33 @@ bindsym $mod+Control+Shift+z exec --no-startup-id i3-scratch-marker.sh scratch_m
 #bindsym $mod1+i exec urxvtq scratchpad_urxvt_top
 # ------------------------------
 # 2nd ver, using i3-quickterm:
-exec_always --no-startup-id i3-quickterm --daemon
-bindsym $mod1+i exec --no-startup-id i3-quickterm --toggle shell
+$exa i3-quickterm --daemon
+bindsym $mod1+i $ex i3-quickterm --toggle shell
 # ------------------------------
 
 # bind i3expo launcher:
-bindsym $mod1+e exec --no-startup-id killall -s SIGUSR1 i3expod.py
+bindsym $mod1+e $ex killall -s SIGUSR1 i3expod.py
 
 
 
 # alt-tab between latest windows (note 2 similar implementations):
-#exec --no-startup-id i3-focus-last-window.sh
+#$ex i3-focus-last-window.sh
 #bindsym $mod1+Tab [con_mark=^_last$] focus
 # another, py-based alt-tab alternative:
-exec_always --no-startup-id i3-cycle-focus.py --ignore-floating --focused-workspace --history 3 --delay 0.7
-bindsym $mod1+Tab exec --no-startup-id i3-cycle-focus.py --switch
+$exa i3-cycle-focus.py --ignore-floating --focused-workspace --history 3 --delay 0.7
+bindsym $mod1+Tab $ex i3-cycle-focus.py --switch
 
 # manage workspace history:
-exec_always --no-startup-id i3-cycle-workspace.py --focused-output --history 3 --delay 0.7
-bindsym $mod+Tab exec --no-startup-id i3-cycle-workspace.py --switch
+$exa i3-cycle-workspace.py --focused-output --history 3 --delay 0.7
+bindsym $mod+Tab $ex i3-cycle-workspace.py --switch
 #bindsym $mod+Tab workspace back_and_forth
 
 # start i3expo daemon:
-exec_always --no-startup-id i3expod.py
+$exa i3expod.py
 
 # start playerctl daemon:
 $ex playerctld daemon
 
 # populate DBUS vars.
 # taken from some reddit post: https://www.reddit.com/r/Gentoo/comments/tzdnvn/comment/i3zzvjl/?utm_source=share&utm_medium=web2x&context=3
-#exec --no-startup-id create-desktop-environment.sh
+#$ex create-desktop-environment.sh
