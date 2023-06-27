@@ -1,5 +1,6 @@
 {
     "term": "urxvtc",
     "ratio": 0.35,
-    "borderWidthPx": 2
+    "borderWidthPx": 2,
+    "envVarBlacklist": ["PYENV_VERSION"]
 }
