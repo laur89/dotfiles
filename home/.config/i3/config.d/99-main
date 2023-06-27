@@ -12,17 +12,35 @@ set $mod Mod4
 set $mod1 Mod1
 set $border 2
 
+set $ex     exec --no-startup-id
+set $exa    exec_always --no-startup-id
+
+set $mod_j "exec --no-startup-id sway-overfocus split-dt float-dt output-dw"
+set $mod_k "exec --no-startup-id sway-overfocus split-ut float-ut output-uw"
+set $mod_h "exec --no-startup-id sway-overfocus split-lt float-lt output-lw"
+set $mod_l "exec --no-startup-id sway-overfocus split-rt float-rt output-rw"
+
+set $mod1_j "exec --no-startup-id sway-overfocus group-dw float-dt split-dt output-dt"
+set $mod1_k "exec --no-startup-id sway-overfocus group-uw float-ut split-ut output-ut"
+set $mod1_h "exec --no-startup-id sway-overfocus group-lw float-lt split-lt output-lt"
+set $mod1_l "exec --no-startup-id sway-overfocus group-rw float-rt split-rt output-rt"
+
+workspace_layout tabbed
+workspace_auto_back_and_forth yes
+
 #focus_follows_mouse no
 floating_modifier $mod1
 
 # Start a terminal
 bindsym $mod+Return exec urxvtc
+#bindsym $mod+Return exec i3-sensible-terminal
 
 # Kill focused window
 bindsym $mod+c kill
 
 # leave fullscreen when pop-up window starts:
 #popup_during_fullscreen leave_fullscreen
+popup_during_fullscreen smart
 
 # Start dmenu:
 #bindsym $mod+d exec  dmenu_run -b -nf "#839496" -sb "#b58900" -sf "#002b36" -nb "#002b36" -fn "tewi-8"
@@ -33,15 +51,15 @@ bindsym $mod+space exec --no-startup-id rofi -show combi \
 # rofi-tmux (aka rft):
 bindsym $mod+Shift+space exec --no-startup-id rft sw
 
-# Change focus (note 'nop' is read by our listener script(s))
-bindsym $mod+h nop
-bindsym $mod+j nop
-bindsym $mod+k nop
-bindsym $mod+l nop
-bindsym --whole-window --border $mod+button7   nop
-bindsym --whole-window --border $mod+button6   nop
-bindsym --whole-window --border $mod+button5   nop
-bindsym --whole-window --border $mod+button4   nop
+bindsym $mod+j $mod_j
+bindsym $mod+k $mod_k
+bindsym $mod+h $mod_h
+bindsym $mod+l $mod_l
+
+bindsym --whole-window --border $mod+button5 $mod_j
+bindsym --whole-window --border $mod+button4 $mod_k
+bindsym --whole-window --border $mod+button6 $mod_h
+bindsym --whole-window --border $mod+button7 $mod_l
 
 bindsym $mod+period focus output right
 bindsym $mod+comma  focus output left
@@ -60,26 +78,27 @@ bindsym $mod+Right focus right
 #bindsym $mod+Left   exec --no-startup-id i3viswiz left
 #bindsym $mod+Right   exec --no-startup-id i3viswiz right
 
-bindsym $mod1+l   nop
-bindsym $mod1+h   nop
-bindsym $mod1+j   nop
-bindsym $mod1+k   nop
-bindsym --whole-window --border $mod1+button7   nop
-bindsym --whole-window --border $mod1+button6   nop
-bindsym --whole-window --border $mod1+button5   nop
-bindsym --whole-window --border $mod1+button4   nop
+bindsym $mod1+j $mod1_j
+bindsym $mod1+k $mod1_k
+bindsym $mod1+h $mod1_h
+bindsym $mod1+l $mod1_l
+
+bindsym --whole-window --border $mod1+button5  $mod1_j
+bindsym --whole-window --border $mod1+button4  $mod1_k
+bindsym --whole-window --border $mod1+button6  $mod1_h
+bindsym --whole-window --border $mod1+button7  $mod1_l
 
 # Move focused window:  # TODO: delegate to script in order to force focus on the window that was just moved; or open a bug?
-bindsym $mod+Shift+h move left
-bindsym $mod+Shift+j move down
-bindsym $mod+Shift+k move up
-bindsym $mod+Shift+l move right
+bindsym $mod+Shift+h exec --no-startup-id i3move --clamp left
+bindsym $mod+Shift+j exec --no-startup-id i3move --clamp down
+bindsym $mod+Shift+k exec --no-startup-id i3move --clamp up
+bindsym $mod+Shift+l exec --no-startup-id i3move --clamp right
 
 # Alternatively, you can use the cursor keys:
-bindsym $mod+Shift+Left  move left
-bindsym $mod+Shift+Down  move down
-bindsym $mod+Shift+Up    move up
-bindsym $mod+Shift+Right move right
+bindsym $mod+Shift+Left  exec --no-startup-id i3move left
+bindsym $mod+Shift+Down  exec --no-startup-id i3move down
+bindsym $mod+Shift+Up    exec --no-startup-id i3move up
+bindsym $mod+Shift+Right exec --no-startup-id i3move right
 
 
 # Split in horizontal orientation (note it's really vertical in vi terms)
@@ -95,12 +114,25 @@ bindsym $mod+f fullscreen toggle
 bindsym $mod+s layout stacking
 bindsym $mod+w layout tabbed
 bindsym $mod+e layout toggle split
+#$mod3+z     layout toggle tabbed splith splitv
 
 # Toggle tiling / floating
 bindsym $mod+Shift+f floating toggle
 
 # Change focus between tiling / floating windows
 bindsym $mod+Control+f focus mode_toggle
+
+# move floating window to center of current output:
+bindsym $mod1+semicolon move position center
+# move floating window to center of all outputs:
+#$cmod2+semicolon move absolute position center
+
+# read 1 character and mark the current window with this character:
+bindsym $mod+t exec i3-input -F 'mark %s' -l 1 -P 'Mark: '
+# read 1 character and go to the window marked with the character:
+bindsym $mod+g exec i3-input -F '[con_mark="^%s$"] focus' -l 1 -P 'Goto: '
+# swap window with name from your input:
+#$mod3+braceright exec i3-input -F 'swap with mark %s' -l 1 -P 'Mark: '
 
 # Focus the parent container
 bindsym $mod+a focus parent
@@ -132,7 +164,6 @@ bindsym $mod+7 workspace $w7
 bindsym $mod+8 workspace $w8
 bindsym $mod+9 workspace $w9
 bindsym $mod+0 workspace $w10
-bindsym $mod+Tab workspace back_and_forth
 bindsym $mod+Shift+Tab move container to workspace back_and_forth; workspace back_and_forth
 
 # Navigate workspaces next/previous:
@@ -176,23 +207,28 @@ bindsym $mod+Shift+r exec $HOME/.config/i3/scripts/refresh-settings.sh; restart
 
 # Resize window (you can also use the mouse for that)
 #set $resize-label <span background='blue'>resize</span>
-set $resize-label ❯ RESIZE ❮
+set $resize-label ❯❯ RESIZE ❮❮
 bindsym $mod+r mode "$resize-label"
 #mode --pango_markup "$resize-label" {  # note pango_markup only avail with i3bar
 mode "$resize-label" {
         # change focus while in resize mode:
-        bindsym $mod+h nop
-        bindsym $mod+j nop
-        bindsym $mod+k nop
-        bindsym $mod+l nop
-        bindsym --whole-window --border $mod+button7   nop
-        bindsym --whole-window --border $mod+button6   nop
-        bindsym --whole-window --border $mod+button5   nop
-        bindsym --whole-window --border $mod+button4   nop
+        bindsym $mod+j $mod_j
+        bindsym $mod+k $mod_k
+        bindsym $mod+h $mod_h
+        bindsym $mod+l $mod_l
+
+        bindsym --whole-window --border $mod+button5 $mod_j
+        bindsym --whole-window --border $mod+button4 $mod_k
+        bindsym --whole-window --border $mod+button6 $mod_h
+        bindsym --whole-window --border $mod+button7 $mod_l
+
         bindsym $mod+period focus output right
         bindsym $mod+comma focus output left
         bindsym $mod+question focus output down
         bindsym $mod+m focus output up
+
+        # Change focus between tiling / floating windows
+        bindsym $mod+Control+f focus mode_toggle
 
         # These bindings trigger as soon as you enter the resize mode
         # Pressing left will shrink the window’s width.
@@ -326,15 +362,16 @@ bindsym XF86TouchpadToggle exec /some/path/toggletouchpad.sh
 # Screenshot
 #bindsym Print exec --no-startup-id  scrot -e 'mv $f ~/Pictures/screenshots/$hostname' && notify-send "Screenshot Taken"
 #bindsym Print exec --no-startup-id  maim --quality 9 ~/Pictures/screenshots/$hostname/screenshot_latest.jpg
-bindsym Print exec --no-startup-id  screenshot.sh --auto
+bindsym Print exec --no-startup-id  screenshot.sh #--auto
 
 # My apps shortcut
 # note all bindings get translated by Group1 keymap (see https://i3wm.org/docs/userguide.html#keybindings)
 #bindsym $mod+p exec pcmanfm
 #bindsym $mod+b exec firefox
 
-# keycode 34 = ü on ee, [ on us keymap:
+# keycode 34 = ü on et, [ on us keymap:
 bindcode Control+34 exec --no-startup-id copyq toggle
+bindsym  $mod1+o    exec --no-startup-id copyq toggle
 
 ##################################
 ## Custom colors (from xresources):
@@ -442,6 +479,7 @@ bindcode Control+34 exec --no-startup-id copyq toggle
 #font pango:Terminess Powerline 12px
 #font -*-terminus-*-*-*-*-12-*-*-*-*-*-*-13
 font pango:Hack Nerd Font Mono 8
+#font pango:FiraCode Nerd Font 10
 #font pango:monospace 8
 #font Droid Sans Mono for Powerline 8
 #font pango:Droid Sans Mono Slashed for Powerline 10
@@ -499,7 +537,9 @@ for_window [window_type="menu"] floating enable
 for_window [class="^Pavucontrol$"] floating enable
 for_window [class="^KeePassXC?$"] floating enable
 for_window [class="^vokoscreen(NG)?$"] floating enable
+for_window [class="^flameshot$" instance="^flameshot$" title="^(Open With|Upload image|About)$"] floating enable
 for_window [class="^Galculator$"] floating enable
+for_window [class="^SpeedCrunch$"] floating enable
 for_window [class="^Seafile Client$"] floating enable
 for_window [class="^XEyes$"] floating enable
 for_window [class="^XCalc$"] floating enable
@@ -512,6 +552,7 @@ for_window [class="^Blueman-.*"] floating enable
 for_window [class="^System-config-printer.py$"] floating enable
 for_window [class="^Magnus$"] floating enable
 for_window [class="^Gnome-usage$"] floating enable
+for_window [class="^Firefox$" title="^About Mozilla Firefox$"] floating enable
 # 'Toplevel' class is the class of various popup windows of tkremind:
 for_window [class="^Toplevel$"] floating enable
 for_window [class="^Steam$" title="^(Steam - News|Friends List)"] floating enable
@@ -520,7 +561,7 @@ for_window [class="^Xfce4-power-manager-settings$"] floating enable
 # Jetbrains splash (IDEA, Rider...) & license activation:
 for_window [class="^jetbrains-" instance="^jetbrains-" title="^(win0|License Activation)$"] floating enable, border pixel $border
 # Jetbrains user agreement:
-for_window [class="^java-util-concurrent-ForkJoinWorkerThread$" title=" User Agreement$"] floating enable, border pixel $border
+for_window [class="^(java-util-concurrent-ForkJoinWorkerThread|jetbrains-)" title=" User Agreement$"] floating enable, border pixel $border
 # charles splash:
 for_window [class="charles-gui-MainWithClassLoader$" title="^win"] floating enable, border pixel $border
 # our own invented title to force some wins (eg terminals) float with no titlebar:
@@ -638,13 +679,17 @@ bindsym $mod1+e exec --no-startup-id killall -s SIGUSR1 i3expod.py
 #exec --no-startup-id i3-focus-last-window.sh
 #bindsym $mod1+Tab [con_mark=^_last$] focus
 # another, py-based alt-tab alternative:
-exec_always --no-startup-id i3-cycle-focus.py --ignore-floating --history 2
+exec_always --no-startup-id i3-cycle-focus.py --ignore-floating --focused-workspace --history 3 --delay 0.7
 bindsym $mod1+Tab exec --no-startup-id i3-cycle-focus.py --switch
 
-# start focus change listener scripts:
-exec_always --no-startup-id i3-cycle-exclude-tabs.py
-exec_always --no-startup-id i3-cycle-tabs.py
+# manage workspace history:
+exec_always --no-startup-id i3-cycle-workspace.py --focused-output --history 3 --delay 0.7
+bindsym $mod+Tab exec --no-startup-id i3-cycle-workspace.py --switch
+#bindsym $mod+Tab workspace back_and_forth
 
 # start i3expo daemon:
 exec_always --no-startup-id i3expod.py
 
+# populate DBUS vars.
+# taken from some reddit post: https://www.reddit.com/r/Gentoo/comments/tzdnvn/comment/i3zzvjl/?utm_source=share&utm_medium=web2x&context=3
+#exec --no-startup-id create-desktop-environment.sh
