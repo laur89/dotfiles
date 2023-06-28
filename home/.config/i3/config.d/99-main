@@ -15,15 +15,15 @@ set $border 2
 set $ex     exec --no-startup-id
 set $exa    exec_always --no-startup-id
 
-set $mod_j "$ex sway-overfocus split-dt float-dt output-dw"
-set $mod_k "$ex sway-overfocus split-ut float-ut output-uw"
-set $mod_h "$ex sway-overfocus split-lt float-lt output-lw"
-set $mod_l "$ex sway-overfocus split-rt float-rt output-rw"
+set $mod_j "exec --no-startup-id   sway-overfocus split-dt float-dt output-dw"
+set $mod_k "exec --no-startup-id   sway-overfocus split-ut float-ut output-uw"
+set $mod_h "exec --no-startup-id   sway-overfocus split-lt float-lt output-lw"
+set $mod_l "exec --no-startup-id   sway-overfocus split-rt float-rt output-rw"
 
-set $mod1_j "$ex sway-overfocus group-dw float-dt split-dt output-dt"
-set $mod1_k "$ex sway-overfocus group-uw float-ut split-ut output-ut"
-set $mod1_h "$ex sway-overfocus group-lw float-lt split-lt output-lt"
-set $mod1_l "$ex sway-overfocus group-rw float-rt split-rt output-rt"
+set $mod1_j "exec --no-startup-id   sway-overfocus group-dw float-dt split-dt output-dt"
+set $mod1_k "exec --no-startup-id   sway-overfocus group-uw float-ut split-ut output-ut"
+set $mod1_h "exec --no-startup-id   sway-overfocus group-lw float-lt split-lt output-lt"
+set $mod1_l "exec --no-startup-id   sway-overfocus group-rw float-rt split-rt output-rt"
 
 workspace_layout tabbed
 workspace_auto_back_and_forth yes
@@ -346,11 +346,12 @@ bindsym Control+mod1+l   $ex lock -f
 bindsym $mod+F9 $ex  $HOME/.config/polybar/popups/power/power
 
 # Volume control
-bindsym XF86AudioRaiseVolume  $ex change-volume up
-bindsym $mod+plus             $ex change-volume up
-bindsym XF86AudioLowerVolume  $ex change-volume down
-bindsym $mod+minus            $ex change-volume down
-bindsym XF86AudioMute         $ex change-volume mute
+bindsym XF86AudioRaiseVolume        $ex  change-volume up
+bindsym $mod+plus                   $ex  change-volume up
+bindsym $mod+minus                  $ex  change-volume down
+bindsym XF86AudioLowerVolume        $ex  change-volume down
+bindsym Shift+XF86AudioLowerVolume  $ex  change-volume mute
+bindsym XF86AudioMute               $ex  change-volume mute
 
 # Media control
 bindsym XF86AudioPlay          $ex  playerctl play-pause
