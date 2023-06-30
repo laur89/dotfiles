@@ -1,5 +1,7 @@
 #!/bin/sh
 #
+# this file is ran when xstart is executed.
+#
 # see https://goral.net.pl/post/systemd-x-sessions/
 # also https://github.com/vincentbernat/i3wm-configuration/blob/master/dotfiles/xsession
 # to auto-login, see https://vincent.bernat.ch/en/blog/2021-startx-systemd
