@@ -53,8 +53,7 @@ readonly BUILD_DOCK='deb-build-box'              # name of the build container
 
 # just for info, current testing = trixie
 readonly DEB_STABLE=bookworm                    # current _stable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
-# new stable = bookworm   # OK: docker   NOT_OK: seafile(bullseye, but does have bionic&jammy), openvpn3(bullseye, but does have bionic&jammy), terraform=unknown
-readonly DEB_OLDSTABLE=bullseye                   # current _oldstable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
+readonly DEB_OLDSTABLE=bullseye                 # current _oldstable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
 
 #------------------------
 #--- Global Variables ---
@@ -1860,7 +1859,7 @@ setup_additional_apt_keys_and_sources() {
 
     # seafile-client: (from https://help.seafile.com/syncing_client/install_linux_client/):
     #     seafile-drive instructions would be @ https://help.seafile.com/drive_client/drive_client_for_linux/
-    get_apt_key  seafile  https://linux-clients.seafile.com/seafile.asc "deb [arch=amd64 {s}] https://linux-clients.seafile.com/seafile-deb/$DEB_STABLE/ stable main"
+    get_apt_key  seafile  https://linux-clients.seafile.com/seafile.asc "deb [arch=amd64 {s}] https://linux-clients.seafile.com/seafile-deb/$DEB_OLDSTABLE/ stable main"
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
     get_apt_key  charles  https://www.charlesproxy.com/packages/apt/PublicKey "deb [{s}] https://www.charlesproxy.com/packages/apt/ charles-proxy main"
@@ -1876,7 +1875,7 @@ setup_additional_apt_keys_and_sources() {
     get_apt_key  terraform  https://apt.releases.hashicorp.com/gpg "deb [arch=amd64 {s}] https://apt.releases.hashicorp.com $DEB_STABLE main"
 
     # openvpn3:  (from https://openvpn.net/cloud-docs/openvpn-3-client-for-linux/):
-    get_apt_key  openvpn  https://swupdate.openvpn.net/repos/openvpn-repo-pkg-key.pub "deb [arch=amd64 {s}] https://swupdate.openvpn.net/community/openvpn3/repos $DEB_STABLE main"
+    get_apt_key  openvpn  https://swupdate.openvpn.net/repos/openvpn-repo-pkg-key.pub "deb [arch=amd64 {s}] https://swupdate.openvpn.net/community/openvpn3/repos $DEB_OLDSTABLE main"
 
     # signal: (from https://signal.org/en/download/):
     get_apt_key  signal  https://updates.signal.org/desktop/apt/keys.asc "deb [arch=amd64 {s}] https://updates.signal.org/desktop/apt xenial main"
