@@ -50,8 +50,11 @@ readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
 readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
 readonly BUILD_DOCK='deb-build-box'              # name of the build container
-readonly DEB_STABLE=bullseye                    # current _stable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
-readonly DEB_OLDSTABLE=buster                   # current _oldstable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
+
+# just for info, current testing = trixie
+readonly DEB_STABLE=bookworm                    # current _stable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
+# new stable = bookworm   # OK: docker   NOT_OK: seafile(bullseye, but does have bionic&jammy), openvpn3(bullseye, but does have bionic&jammy), terraform=unknown
+readonly DEB_OLDSTABLE=bullseye                   # current _oldstable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
 
 #------------------------
 #--- Global Variables ---
@@ -4529,7 +4532,7 @@ setup_nvim() {
 
     config_coc  # _instead_ of YCM
     py_install neovim-remote     # https://github.com/mhinz/neovim-remote
-    py_install pynvim            # https://github.com/neovim/pynvim
+    #py_install pynvim            # https://github.com/neovim/pynvim  # ! now installed via system pkg python3-pynvim
 }
 
 
@@ -5352,6 +5355,7 @@ install_from_repo() {
         w3m
         tmux
         neovim/unstable
+        python3-pynvim
         libxml2-utils
         pidgin
         weechat
