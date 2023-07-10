@@ -67,9 +67,3 @@ fi
 # provides automatic logout; for debugging puroposes:
 #export TMOUT=120
 
-
-
-# TODO: intellij toobox automatically added this & created .profile.bak of previous version.
-#       annoying as hell, so will keep this here, lest it might retry this stunt again:
-# Added by Toolbox App
-export PATH="$PATH:/home/laur/.local/share/JetBrains/Toolbox/scripts"

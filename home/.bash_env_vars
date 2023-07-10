@@ -324,6 +324,7 @@ for i in \
         "$PYENV_ROOT/bin" \
         "$BASE_PROGS_DIR/clojure/bin" \
         "$HOME/.config/nvim/bundle/vim-iced/bin" \
+        "$HOME/.local/share/JetBrains/Toolbox/scripts" \
             ; do
     if [[ :$PATH: != *:"$i":* && -d "$i" ]]; then
         j+="$i:"
