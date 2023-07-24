@@ -1070,16 +1070,16 @@ aptsrc() { aptsearch "$@"; }  # alias
 aptclean() {
     local apt_lists_dir
 
-    readonly apt_lists_dir="/var/lib/apt/lists"
+    readonly apt_lists_dir='/var/lib/apt/lists'
 
     report "note that sudo passwd is required" "$FUNCNAME"
 
-    sudo apt-get clean
-    sudo apt-get autoremove
+    sudo apt-get  clean
+    sudo apt-get  autoremove
 
     if [[ -d "$apt_lists_dir" ]]; then
         report "deleting contents of [$apt_lists_dir]" "$FUNCNAME"
-        sudo rm -rf "$apt_lists_dir"/*
+        is_dir_empty "$apt_lists_dir" || sudo rm -rf "$apt_lists_dir"/*
     else
         err "[$apt_lists_dir] is not a dir; can't delete the contents in it." "$FUNCNAME"
     fi
@@ -3279,7 +3279,8 @@ __fo() {
             check_progs_installed "$file_mngr" || return 1
             "$file_mngr" "${files[0]}"  # optionally 'cd'
             ;;
-        'inode/x-empty; charset=binary')
+        'inode/x-empty; charset=binary' \
+                | *'charset=us-ascii')
             check_progs_installed "$editor" || return 1
             "$editor" -- "${files[@]}"
             ;;
