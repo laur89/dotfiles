@@ -551,6 +551,9 @@
             elseif has('mac')
                 vn <C-c> y:call system("pbcopy", getreg("\""))<CR>
                 no <leader><C-v> :call setreg("\"",system("pbpaste"))<CR>p
+            elseif has('win32')
+                vn <C-c> y:call system('"%ProgramFiles(x86)%\CopyQ\copyq.exe" add -', getreg("\""))<CR>:call system('"%ProgramFiles(x86)%\CopyQ\copyq.exe" select 0')<CR>
+                no <leader><C-v> :call system("copyq select 0;copyq paste")<CR>  "TODO this bit has not been windowsified yet
             endif
         """ }}}
 
