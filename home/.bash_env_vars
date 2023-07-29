@@ -65,7 +65,11 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export BASE_DATA_DIR='/data'
     export BASE_PROGS_DIR="$BASE_DATA_DIR/progs"
     export BASE_DEPS_LOC="$BASE_PROGS_DIR/deps"             # hosting stuff like homeshick, bash-git-prompt...
-    export COMMON_CASTLE="$BASE_DATA_DIR/progs/deps/homesick/repos/dotfiles"
+
+    # !! note homeshick env vars are likely also defined/duplicated in our install bootstrap script !!
+    export BASE_HOMESICK_REPOS_LOC="$HOME/.homesick/repos"  # !! keep real location in $HOME! otherwise some apparmor whitelisting won't work (eg for msmtp)
+    export COMMON_DOTFILES="$BASE_HOMESICK_REPOS_LOC/dotfiles"
+    export COMMON_PRIVATE_DOTFILES="$BASE_HOMESICK_REPOS_LOC/private-common"
 
     # golang stuff:
     export GOPATH="$BASE_DATA_DIR/.repos/go"  # .repos/ will likely contain stuff like m2, go, etc repos...
