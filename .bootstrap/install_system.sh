@@ -75,8 +75,6 @@ EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%b-%y--%R).log" \
         || readonly EXECUTION_LOG="$HOME/installation-exe.log"  # do not create logfile here! otherwise cleanup()
                                                                 # picks it up and reports of its existence, opening
                                                                 # up for false positives.
-PRIVATE_CASTLE=''   # installation specific private castle location (eg for 'work' or 'personal')
-PLATFORM_CASTLE=''  # platform-speific castle location for machine-specific configs; optional
 SYSCTL_CHANGED=0       # states whether sysctl config got changed
 
 #------------------------
@@ -86,9 +84,13 @@ readonly BASE_DATA_DIR="/data"  # try to keep this value in sync with equivalent
 readonly BASE_PROGS_DIR="$BASE_DATA_DIR/progs"
 readonly BASE_DEPS_LOC="$BASE_PROGS_DIR/deps"             # hosting stuff like ~homeshick~, bash-git-prompt...
 readonly BASE_BUILDS_DIR="$BASE_PROGS_DIR/custom_builds"  # hosts our built progs and/or their .deb packages;
-readonly BASE_HOMESICK_REPOS_LOC="$HOME/.homesick/repos"  # keep real location in $HOME! otherwise some apparmor whitelisting won't work (eg for msmtp)
+# !! note homeshick env vars are likely also defined/duplicated in our env_var files !!
+readonly BASE_HOMESICK_REPOS_LOC="$HOME/.homesick/repos"  # !! keep real location in $HOME! otherwise some apparmor whitelisting won't work (eg for msmtp)
 readonly COMMON_DOTFILES="$BASE_HOMESICK_REPOS_LOC/dotfiles"
 readonly COMMON_PRIVATE_DOTFILES="$BASE_HOMESICK_REPOS_LOC/private-common"
+PRIVATE__DOTFILES=''   # installation specific private castle location (eg for 'work' or 'personal')
+PLATFORM_DOTFILES=''   # platform-speific castle location for machine-specific configs; optional
+
 readonly SOME_PACKAGE_IGNORED_EXIT_CODE=199
 
 readonly SELF="${0##*/}"
@@ -130,7 +132,7 @@ validate_and_init() {
     check_connection && CONNECTED=1 || CONNECTED=0
     [[ "$CONNECTED" -eq 0 && "$ALLOW_OFFLINE" -ne 1 ]] && { err "no internet connection. abort."; exit 1; }
 
-    # need to define PRIVATE_CASTLE here, as otherwise 'single-step' mode of this
+    # need to define PRIVATE__DOTFILES here, as otherwise 'single-step' mode of this
     # script might fail. be sure the repo names are in sync with the repos actually
     # pulled in fetch_castles().
     case "$PROFILE" in
@@ -139,14 +141,14 @@ validate_and_init() {
                 confirm "you selected [${COLORS[RED]}${COLORS[BOLD]}$PROFILE${COLORS[OFF]}] profile on non-work machine; sure you want to continue?" || exit
             fi
 
-            PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/work_dotfiles"
+            PRIVATE__DOTFILES="$BASE_HOMESICK_REPOS_LOC/work_dotfiles"
             ;;
         personal)
             if [[ "$__ENV_VARS_LOADED_MARKER_VAR" == loaded ]] && __is_work; then
                 confirm "you selected [${COLORS[RED]}${COLORS[BOLD]}$PROFILE${COLORS[OFF]}] profile on work machine; sure you want to continue?" || exit
             fi
 
-            PRIVATE_CASTLE="$BASE_HOMESICK_REPOS_LOC/personal-dotfiles"
+            PRIVATE__DOTFILES="$BASE_HOMESICK_REPOS_LOC/personal-dotfiles"
             ;;
         *)
             err "unsupported PROFILE [$PROFILE]"
@@ -168,14 +170,14 @@ validate_and_init() {
     fi
 
     if [[ -n "$PLATFORM" ]]; then
-        PLATFORM_CASTLE="${HOSTNAME_TO_PLATFORM[$PLATFORM]}"
+        PLATFORM_DOTFILES="${HOSTNAME_TO_PLATFORM[$PLATFORM]}"
 
         # TODO: is this check valid? maybe prompt instead?:
         is_native || { err "platform selected on non-native setup - makes no sense"; exit 1; }
     fi
 
-    report "private castle defined as [$PRIVATE_CASTLE]"
-    report "platform castle defined as [$PLATFORM_CASTLE]"
+    report "private castle defined as [$PRIVATE__DOTFILES]"
+    report "platform castle defined as [$PLATFORM_DOTFILES]"
 
     # verify we have our key(s) set up and available:
     if is_ssh_key_available; then
@@ -255,7 +257,7 @@ install_acpi_events() {
     )
 
     is_laptop && acpi_src+=("$COMMON_DOTFILES/backups/acpi_event_triggers/laptop")
-    [[ -n "$PLATFORM" ]] && acpi_src+=("$PLATFORM_CASTLE/acpi_event_triggers")
+    [[ -n "$PLATFORM" ]] && acpi_src+=("$PLATFORM_DOTFILES/acpi_event_triggers")
 
     if ! [[ -d "$acpi_target" ]]; then
         err "[$acpi_target] dir does not exist; acpi event triggers won't be installed"
@@ -283,11 +285,11 @@ setup_udev() {
     readonly udev_target='/etc/udev/rules.d'
     udev_src=(
         "$COMMON_PRIVATE_DOTFILES/backups/udev"
-        "$PRIVATE_CASTLE/backups/udev"
+        "$PRIVATE__DOTFILES/backups/udev"
     )
 
     is_laptop && udev_src+=("$COMMON_PRIVATE_DOTFILES/backups/udev/laptop")
-    [[ -n "$PLATFORM" ]] && udev_src+=("$PLATFORM_CASTLE/udev")
+    [[ -n "$PLATFORM" ]] && udev_src+=("$PLATFORM_DOTFILES/udev")
 
     if ! [[ -d "$udev_target" ]]; then
         err "[$udev_target] is not a dir; skipping udev file(s) installation."
@@ -371,15 +373,15 @@ setup_systemd() {
     readonly usr_sysd_target="$HOME/.config/systemd/user"
     global_sysd_src=(
         "$COMMON_PRIVATE_DOTFILES/backups/systemd/global"
-        "$PRIVATE_CASTLE/backups/systemd/global"
+        "$PRIVATE__DOTFILES/backups/systemd/global"
     )
     usr_sysd_src=(
         "$COMMON_PRIVATE_DOTFILES/backups/systemd/user"
-        "$PRIVATE_CASTLE/backups/systemd/user"
+        "$PRIVATE__DOTFILES/backups/systemd/user"
     )
 
     is_laptop && global_sysd_src+=("$COMMON_PRIVATE_DOTFILES/backups/systemd/global/laptop") && usr_sysd_src+=("$COMMON_PRIVATE_DOTFILES/backups/systemd/user/laptop")
-    [[ -n "$PLATFORM" ]] && global_sysd_src+=("$PLATFORM_CASTLE/systemd/global") && usr_sysd_src+=("$PLATFORM_CASTLE/systemd/user")
+    [[ -n "$PLATFORM" ]] && global_sysd_src+=("$PLATFORM_DOTFILES/systemd/global") && usr_sysd_src+=("$PLATFORM_DOTFILES/systemd/user")
 
     if ! [[ -d "$global_sysd_target" ]]; then
         err "[$global_sysd_target] is not a dir; skipping systemd file(s) installation."
@@ -464,7 +466,7 @@ setup_hosts() {
 
     readonly hosts_file_dest='/etc'
     readonly tmpfile="$TMP_DIR/hosts.head"  # note result file won't be 'hosts', but 'hosts.head'
-    readonly file="$PRIVATE_CASTLE/backups/hosts-header.tmpl"
+    readonly file="$PRIVATE__DOTFILES/backups/hosts-header.tmpl"
 
     _extract_current_hostname_line() {
         local file current
@@ -569,7 +571,7 @@ setup_crontab() {
 
     readonly cron_dir='/etc/cron.d'  # where crontab will be installed at
     readonly tmpfile="$TMP_DIR/crontab"
-    readonly file="$PRIVATE_CASTLE/backups/crontab"
+    readonly file="$PRIVATE__DOTFILES/backups/crontab"
     readonly weekly_crondir='/etc/cron.weekly'
 
     if ! [[ -d "$cron_dir" ]]; then
@@ -1394,7 +1396,7 @@ setup_dirs() {
                 ; do
         if ! [[ -d "$dir" ]]; then
             report "[$dir] does not exist, creating..."
-            execute "mkdir -- $dir"
+            execute "mkdir -p -- $dir"
         fi
     done
 
@@ -1483,18 +1485,18 @@ fetch_castles() {
     # common public castles:
     clone_or_link_castle -H dotfiles laur89 github.com || { err "failed pulling public dotfiles; it's required!"; return 1; }
 
-    # !! if you change private repos, make sure you update PRIVATE_CASTLE definitions @ validate_and_init()!
+    # !! if you change private repos, make sure you update PRIVATE__DOTFILES definitions @ validate_and_init()!
     case "$PROFILE" in
         work)
             export GIT_SSL_NO_VERIFY=1
             local host user repo u
             host=git.nonprod.williamhill.plc
             user=laliste
-            repo="$(basename -- "$PRIVATE_CASTLE")"
+            repo="$(basename -- "$PRIVATE__DOTFILES")"
             if clone_or_link_castle -H "$repo" "$user" "$host"; then
                 for u in "git@$host:$user/$repo.git"  "git@github.com:laur89/work-dots-mirror.git"; do
-                    if ! grep -iq "pushurl.*$u" "$PRIVATE_CASTLE/.git/config"; then  # need if-check as 'set-url --add' is not idempotent; TODO: create ticket for git?
-                        execute "git -C '$PRIVATE_CASTLE' remote set-url --add --push origin '$u'"
+                    if ! grep -iq "pushurl.*$u" "$PRIVATE__DOTFILES/.git/config"; then  # need if-check as 'set-url --add' is not idempotent; TODO: create ticket for git?
+                        execute "git -C '$PRIVATE__DOTFILES' remote set-url --add --push origin '$u'"
                     fi
                 done
             else
@@ -1504,7 +1506,7 @@ fetch_castles() {
             unset GIT_SSL_NO_VERIFY
             ;;
         personal)
-            clone_or_link_castle -H "$(basename -- "$PRIVATE_CASTLE")" layr bitbucket.org || err "failed pulling personal dotfiles; won't abort"
+            clone_or_link_castle -H "$(basename -- "$PRIVATE__DOTFILES")" layr bitbucket.org || err "failed pulling personal dotfiles; won't abort"
             ;;
         *)
             err "unexpected \$PROFILE [$PROFILE]"; exit 1
@@ -1512,7 +1514,7 @@ fetch_castles() {
     esac
 
     if [[ -n "$PLATFORM" ]]; then
-        clone_or_link_castle -H "$(basename -- "$PLATFORM_CASTLE")" laur89 github.com || err "failed pulling platform-specific dotfiles for [$PLATFORM]; won't abort"
+        clone_or_link_castle -H "$(basename -- "$PLATFORM_DOTFILES")" laur89 github.com || err "failed pulling platform-specific dotfiles for [$PLATFORM]; won't abort"
     fi
 
     #while true; do
@@ -1563,7 +1565,7 @@ setup_homesick() {
     fetch_castles || return 1
 
     # just in case check if any of the castles are still tracking https instead of ssh:
-    https_castles="$($BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick list | grep '\bhttps://\b')"
+    https_castles="$("$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick" list | grep -i '\bhttps://\b')"
     if [[ -n "$https_castles" ]]; then
         err "fyi, these homesick castles are for some reason still tracking https remotes:"
         report "$https_castles"
