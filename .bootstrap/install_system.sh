@@ -3591,7 +3591,15 @@ install_webdev() {
     install_asdf
 
     if ! command -v node >/dev/null 2>&1; then  # only proceed if node hasn't already been installed
-        asdf install nodejs latest || err "installing nodejs 'latest' version failed"
+        local ver f
+        ver="$(asdf latest nodejs)"
+        f="$HOME/.tool-versions"
+        if [[ -f "$f" ]]; then
+            execute "sed -i --follow-symlinks '/^nodejs/d' '$f'"  # delete previous value
+        fi
+
+        echo "nodejs $ver" >> "$f"
+        asdf install nodejs "$ver" || err "installing nodejs '$ver' version failed"
     fi
 
     # make sure the constant link to latest node exec ($NODE_LOC) is set up (normally managed by .bashrc, but might not have been created, as this is install_sys).
