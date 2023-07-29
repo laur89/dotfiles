@@ -561,7 +561,12 @@ setup_apt() {
         execute "sudo cp -- '$file' '$apt_dir/apt.conf.d'"
     done
 
-    retry 2 "sudo apt-get --yes update" || err "apt-get update failed with $?"
+    retry 2 "sudo apt-get --allow-releaseinfo-change  -y update" || err "apt-get update failed with $?"
+
+    if [[ "$MODE" -eq 1 ]]; then
+        retry 2 "sudo apt-get upgrade --without-new-pkgs -y" || err "[apt-get upgrade] failed with $?"
+        retry 2 "sudo apt-get dist-upgrade -y" || err "[apt-get dist-upgrade] failed with $?"
+    fi
 }
 
 
