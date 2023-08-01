@@ -1873,10 +1873,6 @@ setup_additional_apt_keys_and_sources() {
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
     get_apt_key  charles  https://www.charlesproxy.com/packages/apt/PublicKey "deb [{s}] https://www.charlesproxy.com/packages/apt/ charles-proxy main"
 
-    # TODO: migrate yarn to v2 (see https://yarnpkg.com/getting-started/migration#why-should-you-migrate)
-    # yarn:  (from https://yarnpkg.com/en/docs/install#debian-stable):
-    get_apt_key  yarn  https://dl.yarnpkg.com/debian/pubkey.gpg "deb [{s}] https://dl.yarnpkg.com/debian/ stable main"
-
     # kubectl:  (from https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-using-native-package-management):
     get_apt_key  kubernetes  https://packages.cloud.google.com/apt/doc/apt-key.gpg "deb [{s}] https://apt.kubernetes.io/ kubernetes-xenial main"
 
@@ -3626,8 +3622,10 @@ install_webdev() {
     # TODO sass deprecated, use https://github.com/sass/dart-sass instead
     #rb_install sass
 
-    # install yarn:  https://yarnpkg.com/en/docs/install#debian-stable
-    execute "sudo apt-get --no-install-recommends --yes install yarn"
+    # install yarn:  https://yarnpkg.com/getting-started/install
+    execute "corepack enable"
+    execute "corepack prepare yarn@stable --activate"
+    execute "asdf reshim nodejs"
 
     # install rails:
     # this would install it globally; better install new local ver by
