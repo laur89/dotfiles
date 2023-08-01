@@ -1269,20 +1269,22 @@ install_deps() {
     # keepass rofi/demnu tool (similar to passhole (aka ph), but w/ rofi gui)
     py_install keepmenu     # https://github.com/firecat53/keepmenu
 
-    #  TODO: spotify extensions need to be installed globally??
-    # mopidy-youtube        # https://mopidy.com/ext/youtube/
-    install_block  gstreamer1.0-plugins-bad
-    py_install Mopidy-Youtube
+    if is_native; then
+        #  TODO: spotify extensions need to be installed globally??
+        # mopidy-youtube        # https://mopidy.com/ext/youtube/
+        install_block  gstreamer1.0-plugins-bad
+        py_install Mopidy-Youtube
 
-    # mopidy-local        # https://mopidy.com/ext/local/
-    # (provides us with 'mopidy local scan' command)
-    py_install Mopidy-Local
+        # mopidy-local        # https://mopidy.com/ext/local/
+        # (provides us with 'mopidy local scan' command)
+        py_install Mopidy-Local
 
-    # mopidy-soundcloud     # https://mopidy.com/ext/soundcloud/
-    py_install Mopidy-SoundCloud
+        # mopidy-soundcloud     # https://mopidy.com/ext/soundcloud/
+        py_install Mopidy-SoundCloud
 
-    # mopidy-spotify        # https://mopidy.com/ext/spotify/
-    py_install Mopidy-Spotify
+        # mopidy-spotify        # https://mopidy.com/ext/spotify/
+        py_install Mopidy-Spotify
+    fi
 
     # TODO: consider replacing all env/version managers by asdf
     # rbenv & ruby-build: {                             # https://github.com/rbenv/rbenv-installer
@@ -3000,7 +3002,7 @@ install_aws_okta() {  # https://github.com/segmentio/aws-okta
 }
 
 install_saml2aws() {  # https://github.com/Versent/saml2aws
-    install_bin_from_git -N saml2aws -d "$HOME/bin" Versent saml2aws '_linux_amd64.tar.gz'
+    install_bin_from_git -N saml2aws -d "$HOME/bin" Versent saml2aws 'saml2aws_[0-9.]+_linux_amd64.tar.gz'
 }
 
 # kubernetes aws-iam-authenticator (k8s)
@@ -4274,7 +4276,7 @@ py_install() {
     done
     shift "$((OPTIND-1))"
 
-    pkg="$*"
+    pkg="$1"  # pipx doesn't take multiple packages at a time!
     [[ "$github" -eq 1 ]] && pkg="git+ssh://git@github.com/$1/$2.git"  # append @branch for a specific branch
 
     # old way using pip (deprecated for system/global executables):
@@ -5389,7 +5391,6 @@ install_from_repo() {
         msmtp
         msmtp-mta
         thunderbird
-        lightning
         neomutt
         notmuch
         abook
@@ -5444,7 +5445,7 @@ install_from_repo() {
         install_block "$(eval echo "\${$block[@]}")" "${extra_apt_params[$block]}"
         if [[ "$?" -ne 0 && "$?" -ne "$SOME_PACKAGE_IGNORED_EXIT_CODE" ]]; then
             err "one of the main-block installation failed. these are the packages that have failed to install so far:"
-            echo -e "[${PACKAGES_FAILED_TO_INSTALL[*]}]"
+            err "[${PACKAGES_FAILED_TO_INSTALL[*]}]"
             confirm -d Y "continue with setup? answering no will exit script" || exit 1
         fi
     done
@@ -5944,10 +5945,13 @@ _sysctl_conf() {
     readonly value="$3"
 
     [[ -d "$sysctl_dir" ]] || { err "[$sysctl_dir] is not a dir. can't change our sysctl value for [$1]"; return 1; }
-    grep -q "^$property\s*=\s*$value\$" "$sysctl_conf" && return 0  # value already set, nothing to do
 
-    # delete all same prop definitions, regardless of its value:
-    [[ -f "$sysctl_conf" ]] && execute "sudo sed -i --follow-symlinks '/^${property}\s*=/d' '$sysctl_conf'"
+    if [[ -f "$sysctl_conf" ]]; then
+        grep -q "^$property\s*=\s*$value\$" "$sysctl_conf" && return 0  # value already set, nothing to do
+        # delete all same prop definitions, regardless of its value:
+        execute "sudo sed -i --follow-symlinks '/^${property}\s*=/d' '$sysctl_conf'"
+    fi
+
     execute "echo $property = $value | sudo tee --append $sysctl_conf > /dev/null"
 
     # mark our sysctl config has changed:
@@ -6482,7 +6486,7 @@ configure_updatedb() {
     paths='/mnt'  # space-separated paths to be added to PRUNEPATHS definition
 
     [[ -x "$exe" ]] || { err "[$exe] not found or not an executable"; return 1; }
-    grep -Fq "$conf" "$exe" || { err "[$conf] not referenced in [$exe]"; return 1; }
+    grep -Fq "$conf" "$exe" || { err "[$conf] not referenced in [$exe]!"; return 1; }
 
     [[ -f "$conf" ]] && grep -q '^PRUNEPATHS=' "$conf" && i="$conf" || i="$exe"
     # raw value from within quotes:
@@ -6495,7 +6499,7 @@ configure_updatedb() {
     done
 
     if [[ -n "$modified" ]]; then
-        execute "sudo sed -i --follow-symlinks '/^PRUNEPATHS=.*$/d' '$conf'"  # nuke previous setting
+        [[ -f "$conf" ]] && execute "sudo sed -i --follow-symlinks '/^PRUNEPATHS=.*$/d' '$conf'"  # nuke previous setting
         execute "echo 'PRUNEPATHS=\"$line\"' | sudo tee --append $conf > /dev/null"
     fi
 }
@@ -7081,7 +7085,7 @@ is_thinkpad() {
 is_windows() {
     if [[ -z "$_IS_WIN" ]]; then
         [[ -f /proc/version ]] || { err "/proc/version not a file, cannot test is_windows"; return 2; }
-        grep -qE "(Microsoft|WSL)" /proc/version &>/dev/null
+        grep -qE '([Mm]icrosoft|WSL)' /proc/version &>/dev/null
         readonly _IS_WIN=$?
     fi
 
@@ -7089,7 +7093,7 @@ is_windows() {
 }
 
 
-# Checks whether system is virtualized (including WSL); TODO: unsure if it detects WSL;
+# Checks whether system is virtualized (including WSL)
 #
 # @returns {bool}   true if we're running in virt mode.
 is_virt() {
