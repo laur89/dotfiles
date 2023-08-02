@@ -1971,6 +1971,7 @@ install_progs() {
     is_native && install_nvidia
     is_native && install_amd
     is_native && install_cpu_microcode_pkg
+    #is_native && install_games
 
     post_install_progs_setup
 }
@@ -5831,7 +5832,6 @@ full_install() {
     is_windows || upgrade_kernel  # keep this check is_windows(), not is_native();
     install_fonts
     install_progs
-    is_native && install_games  # TODO: move this step to install_progs()?
     install_deps
     is_interactive && is_native && install_ssh_server_or_client
     is_interactive && is_native && install_nfs_server_or_client
