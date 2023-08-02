@@ -1977,9 +1977,25 @@ install_progs() {
 }
 
 
+install_xonotic() {
+    local ver
+
+    ver="$(curl -Lsf --retry 2 'https://xonotic.org/download/' \
+        | grep -Po '<a href="\Khttps://dl\.xonotic.org/xonotic-[0-9.]+\.zip(?="><i class=".*"></i>\s*xonotic.org</a>.*DE)')"
+
+    [[ -z "$ver" ]] && { err "couldn't resolve xonotic version"; return 1; }
+    install_from_url -D -d "$BASE_PROGS_DIR" xonotic "$ver" || return 1
+    create_link "${BASE_PROGS_DIR}/xonotic/bin/xonotic" "$HOME/bin/"
+
+    # or instead of our custom dl logic above, use snap:
+    #snap_install xonotic
+}
+
+
 install_games() {
-    snap_install xonotic
+    #install_xonotic
     #install_block openttd  # openttd = transport tycoon deluxe
+    true
 }
 
 
