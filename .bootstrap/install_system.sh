@@ -2054,7 +2054,7 @@ install_kernel_modules() {
 # to force ver: apt-get install linux-image-amd64:version
 # check avail vers: apt-cache showpkg linux-image-amd64
 upgrade_kernel() {
-    local package_line kernels_list arch
+    local kernels_list arch
 
     # install kernel meta-packages:
     # NOTE: these meta-packages only required, if using non-stable debian;
@@ -2066,7 +2066,7 @@ upgrade_kernel() {
             linux-image-amd64
             linux-headers-amd64
         '
-        readonly arch="amd64"
+        readonly arch='amd64'
     else
         err "verified we're not running 64bit system. make sure it's correct. skipping kernel meta-package installation."
         sleep 5
@@ -2074,12 +2074,8 @@ upgrade_kernel() {
 
     if is_noninteractive || [[ "$MODE" -ne 0 ]]; then return 0; fi  # only ask for custom kernel ver when we're in manual mode (single task), or we're in noninteractive node
 
-    declare -a kernels_list=()
-
     # search for available kernel images:
-    while IFS= read -r package_line; do
-        kernels_list+=( $(echo "$package_line" | cut -d' ' -f1) )
-    done < <(apt-cache search --names-only "^linux-image-[0-9]+\.[0-9]+\.[0-9]+.*$arch\$" | sort -n)
+    readarray -t kernels_list < <(apt-cache search --names-only "^linux-image-[0-9]+\.[0-9]+\.[0-9]+.*$arch\$" | cut -d' ' -f1 | sort -n)
 
     [[ -z "${kernels_list[*]}" ]] && { err "apt-cache search didn't find any kernel images. skipping kernel upgrade"; sleep 5; return 1; }
 
@@ -5714,6 +5710,7 @@ choose_single_task() {
         install_ssh_server_or_client
         install_nfs_server_or_client
         install_games
+        install_xonotic
         __choose_prog_to_build
     )
 
