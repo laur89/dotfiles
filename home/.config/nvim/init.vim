@@ -3,41 +3,68 @@
 " TODO: check this out: https://github.com/skwp/dotfiles
 " TODO: check out junegunn's vimrc
 " quite sure this was the base config:  https://github.com/timss/vimconf/blob/master/.vimrc
+" @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+" nice vimrc (and general dotfiles): https://github.com/kshenoy/dotfiles
+" also https://dev.to/voyeg3r/my-ever-growing-neovim-init-lua-h0p (lua)
 "
 "
 set nocompatible " Must be the first line
-let g:python3_host_prog = '/usr/bin/python3'
-let g:python_host_prog = '/usr/bin/python2'
+
+" example of defining&using our own OS-identifying args: {{{
+"if !exists('g:os')
+"    if has('win32') || has('win16')
+"        let g:os = 'Windows'
+"    else
+"        let g:os = substitute(system('uname'), '\n', '', '')
+"    endif
+"endif
+"
+"if g:os == 'Darwin'
+"    " do mac stuff
+"endif
+"
+"if g:os == 'Linux'
+"    " do linux stuff
+"endif
+"
+"if g:os == 'Windows'
+"    " do windows stuff
+"endif
+" }}}
+
+if has('unix')
+    let g:python3_host_prog = '/usr/bin/python3'
+    let g:python_host_prog = '/usr/bin/python2'
+endif
 
 " disable LSP features in ALE (covered by coc); needs to be set _before_ plugins are loaded!
 let g:ale_disable_lsp = 1
 let g:ale_virtualtext_cursor = 'current'  " to show the inline errors only on active line
 
+let conf_dir = stdpath('config')
 
 """ vim-plug plugin manager {{{
     """ Automatically setting up, taken from
     """ https://github.com/junegunn/vim-plug/wiki/tips#automatic-installation
         let has_plug=1
-        if empty(glob('~/.config/nvim/autoload/plug.vim'))
+        let data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
+        if empty(glob(data_dir . '/autoload/plug.vim'))
             let has_plug=0
             echo "Installing vim-plug..."
             echo ""
-            silent !curl -fLo ~/.config/nvim/autoload/plug.vim --create-dirs
-                \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+            silent execute '!curl -fLo '.data_dir.'/autoload/plug.vim --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
             autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
-
-            " make directory for the persistent undo storage (not related to vim-plug)...
-            silent !mkdir -p $HOME/.config/nvim/undo
         endif
     """ }}}
 
     """ Initialize vim-plug {{{
-            call plug#begin('~/.config/nvim/bundle')
+            call plug#begin()
     """ }}}
 
     """ Local plugins (and only plugins in this file!) {{{
-        if filereadable($HOME."/.config/nvim/nvim.plugins")
-            source $HOME/.config/nvim/nvim.plugins
+
+        if filereadable(conf_dir . '/nvim.plugins')
+            execute 'source '.conf_dir.'/nvim.plugins'
         endif
     """ }}}
 
@@ -223,6 +250,9 @@ let g:ale_virtualtext_cursor = 'current'  " to show the inline errors only on ac
     " syntax highlight for vue components:  " https://github.com/posva/vim-vue
     Plug 'posva/vim-vue', { 'for': 'vue' }
 
+    " syntax highlight for 'just' files:  " https://github.com/NoahTheDuke/vim-just
+    Plug 'NoahTheDuke/vim-just'
+
     " js beautifier:
     "Plug 'jsbeautify'
 
@@ -292,7 +322,7 @@ let g:ale_virtualtext_cursor = 'current'  " to show the inline errors only on ac
 
     """ Installing plugins the first time; quits when done {{{
         if has_plug == 0
-            :silent! PlugInstall
+            :silent! PlugInstall --sync
             :qa
         endif
     """ }}}
@@ -300,8 +330,8 @@ let g:ale_virtualtext_cursor = 'current'  " to show the inline errors only on ac
 
 """ Local leading config, only use for prerequisites as it will be
 """ overwritten by anything below {{{
-    if filereadable($HOME."/.config/nvim/init.first.vim")
-        source $HOME/.config/nvim/init.first.vim
+    if filereadable(conf_dir . '/init.first.vim')
+        execute 'source '.conf_dir.'/init.first.vim'
     endif
 """ }}}
 
@@ -402,7 +432,7 @@ let g:ale_virtualtext_cursor = 'current'  " to show the inline errors only on ac
     " TODO: leader+{p,P} conflict with our other pasting mappings!!!
     let g:yankring_replace_n_pkey = '<leader>p'
     let g:yankring_replace_n_nkey = '<leader>P'
-    let g:yankring_history_dir = '$HOME/.config/nvim'
+    let g:yankring_history_dir = conf_dir
     let g:yankring_max_history = 1000
 
     " yankstack (if using this, perhaps lose the yankring stuff?):
@@ -546,6 +576,7 @@ let g:ale_virtualtext_cursor = 'current'  " to show the inline errors only on ac
 
         " because of our system nvm hack, manually set node path so _a_ node version is discoverable at a constant location:
         let g:coc_node_path = $NODE_LOC
+        "set runtimepath^=/home/laur/dev/coc-clojure  " test local coc extensions/plugins
 
         " Remap <C-f> and <C-b> for scroll float windows/popups:
         if has('nvim-0.4.0') || has('patch-8.2.0750')
@@ -718,17 +749,32 @@ let g:ale_virtualtext_cursor = 'current'  " to show the inline errors only on ac
     let g:rooter_resolve_links = 1
     " change to file's dir if we're dealing w/ non-project file (similar to autochdir):
     let g:rooter_change_directory_for_non_project_files = 'current'
-""" }}}
-
-""" Local ending config, will overwrite anything above. Generally use this. {{{{
-    if filereadable($HOME."/.config/nvim/init.last.vim")
-        source $HOME/.config/nvim/init.last.vim
-    endif
 
     " vim-iced
     " Enable vim-iced's default key mapping
     " This is recommended for newbies
     let g:iced_enable_default_key_mappings = v:true
+    " display one-line docstring to the right of the line; value is which vim mode this should work in: normal/insert/every
+    "let g:iced_enable_auto_document = 'normal'
+    " automatically format on file write:
+    aug VimIcedAutoFormatOnWriting
+      au!
+      " Format whole buffer on writing files:
+      au BufWritePre *.clj,*.cljs,*.cljc,*.edn execute ':IcedFormatSyncAll'
+    
+      " Format only current form on writing files:
+      " au BufWritePre *.clj,*.cljs,*.cljc,*.edn execute ':IcedFormatSync'
+    aug END
+    
+    " vim-sexp
+    " use vim-iced formatting function: (from https://liquidz.github.io/vim-iced/#formatting)
+    let g:sexp_mappings = {'sexp_indent': '', 'sexp_indent_top': ''}
+""" }}}
+
+""" Local ending config, will overwrite anything above. Generally use this. {{{
+    if filereadable(conf_dir . '/init.last.vim')
+        execute 'source '.conf_dir.'/init.last.vim'
+    endif
 """ }}}
 
 " save fold states
