@@ -33,6 +33,10 @@
     enabled = true
 [pull]
     rebase = true
+[push]
+    default = simple
+    ; automatically push _annotated_ tags:
+    followTags = true
 [rebase]
     autoStash = true  ; stashes local changes before rebase, if needed
 [difftool]
@@ -75,10 +79,6 @@
     line-numbers-right-format = "{np:>4}│"
     line-numbers-left-style = blue
     line-numbers-right-style = blue
-[push]
-    default = simple
-    ; automatically push _annotated_ tags:
-	followTags = true
 [alias]
     commt = commit
     st = status
