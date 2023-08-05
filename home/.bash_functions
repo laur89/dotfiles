@@ -2233,7 +2233,7 @@ createUsbIso() {
 
     report "Running dd, writing [$inf] into [$ouf]; this might take a while..." "$FUNCNAME"
     sudo dd if="$inf" of="$ouf" bs=4M status=progress || { err "some error occurred while running dd (err code [$?])." "$FUNCNAME"; }
-    sync
+    sync  # to check sync progress in separate terminal, do  $ watch -d grep -e Dirty: -e Writeback: /proc/meminfo
     #eject $device
 
     # TODO:
@@ -4921,7 +4921,7 @@ copy-progress() {
 
     if [[ "$e" -eq 0 ]]; then
         report "copy succeeded, running sync..."
-        sync && report "sync OK" || err "sync failed w/ $?"
+        sync && report "sync OK" || err "sync failed w/ $?"  # to check sync progress in separate terminal, do  $ watch -d grep -e Dirty: -e Writeback: /proc/meminfo
     else
         err "rsync failed w/ $?"
     fi
