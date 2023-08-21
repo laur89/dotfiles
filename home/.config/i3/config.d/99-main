@@ -546,7 +546,7 @@ for_window [window_role="Preferences"] floating enable
 for_window [window_type="dialog"] floating enable
 for_window [window_type="menu"] floating enable
 for_window [class="^Pavucontrol$"] floating enable
-for_window [class="^KeePassXC?$"] floating enable
+for_window [class="^KeePass(XC)?$"] floating enable
 for_window [class="^vokoscreen(NG)?$"] floating enable
 for_window [class="^flameshot$" instance="^flameshot$" title="^(Open With|Upload image|About)$"] floating enable
 for_window [class="^Galculator$"] floating enable
@@ -581,7 +581,7 @@ for_window [class="^org.remmina.Remmina$" title="^Remmina Preferences$"] floatin
 
 # some other per-app configs:
 #  we occupy first index; note 'scratch_mark' is a pre-set prefix used elsewhere in this config!:
-for_window [class="^KeePassXC?$" title="^(\w+\.kdbx \[Locked\] - )?KeePassXC?$"] mark scratch_mark_0, move scratchpad
+for_window [class="^KeePass(XC)?$" title="^(\w+\.kdbx \[Locked\] - )?KeePass(XC)?$"] mark scratch_mark_0, move scratchpad
 
 # these two are from https://www.reddit.com/r/i3wm/comments/8gh4c0/working_fix_for_focusing_intellij_popups/
 # to solve intellij quirks:
