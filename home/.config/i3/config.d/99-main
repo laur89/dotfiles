@@ -63,8 +63,8 @@ bindsym --whole-window --border $mod+button7 $mod_l
 
 bindsym $mod+period focus output right
 bindsym $mod+comma  focus output left
-bindsym $mod+question focus output down
-bindsym $mod+m focus output up
+bindsym $mod+question focus output up
+bindsym $mod+m focus output down
 
 #bindsym --whole-window --border $mod+button4 $ex i3-cycle-windows
 #bindsym --whole-window --border $mod1+button4 $ex i3-cycle-windows
@@ -178,14 +178,14 @@ bindsym $mod+Ctrl+Shift+h move container to workspace prev_on_output,workspace p
 # Move container to next/prev screen:  # TODO: make mouse/active follow? prolly have to delegate to external prog for this; or open a ticket?
 bindsym $mod+Shift+period move container to output right
 bindsym $mod+Shift+comma move container to output left
-bindsym $mod+Shift+question move container to output down
-bindsym $mod+Shift+m move container to output up
+bindsym $mod+Shift+question move container to output up
+bindsym $mod+Shift+m move container to output down
 
 # Move whole workspace to next/prev screen:
 bindsym $mod+Ctrl+Shift+period move workspace to output right
 bindsym $mod+Ctrl+Shift+comma move workspace to output left
-bindsym $mod+Ctrl+Shift+question move workspace to output down
-bindsym $mod+Ctrl+Shift+m move workspace to output up
+bindsym $mod+Ctrl+Shift+question move workspace to output up
+bindsym $mod+Ctrl+Shift+m move workspace to output down
 
 # Move focused container to workspace; add '; workspace $wn' to navigate there
 bindsym $mod+Shift+1 move container to workspace $w1
@@ -224,8 +224,8 @@ mode "$resize-label" {
 
         bindsym $mod+period focus output right
         bindsym $mod+comma focus output left
-        bindsym $mod+question focus output down
-        bindsym $mod+m focus output up
+        bindsym $mod+question focus output up
+        bindsym $mod+m focus output down
 
         # Change focus between tiling / floating windows
         bindsym $mod+Control+f focus mode_toggle
