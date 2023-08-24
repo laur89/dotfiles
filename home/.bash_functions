@@ -4895,11 +4895,13 @@ ptree() {
 }
 
 
+# when using gnu tools (mv, cp etc) you may also check out progress command (https://github.com/Xfennec/progress)
+# that one won't show aggregate progress though, but the progress of individual file being operated on so likely most useful for large files.
 copy-progress() {
     local i src dest e
 
     if [[ $# -lt 2 ]]; then
-        err "at least 2 args required"
+        err 'at least 2 args required'
         return 1
     fi
     for i in "$@"; do

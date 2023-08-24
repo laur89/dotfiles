@@ -97,6 +97,7 @@ alias gagm=calm
 alias c='clear'
 alias cp='cp -rp'  # TODO: add -i for overwrite prompt? what about scripts that use cp?
 alias scp='scp -rp'
+alias sync-monit='watch -d grep -e Dirty: -e Writeback: /proc/meminfo'
 alias dig='dig +search'  # https://serverfault.com/questions/434581/why-can-host-and-nslookup-resolve-a-name-but-dig-cannot/899996
 #alias dfh='df -h --local -x tmpfs -x devtmpfs -x nfs'  # note we're ignoring tmp & nfs filesystems; see also 'pydf' for py-based prettier df version
 command -v pydf > /dev/null 2>&1 && alias dfh='command pydf -h --local' || alias dfh='df -h --local -x tmpfs -x devtmpfs -x nfs'
