@@ -555,7 +555,7 @@ for_window [class="^Seafile Client$"] floating enable
 for_window [class="^XEyes$"] floating enable
 for_window [class="^XCalc$"] floating enable
 for_window [class="^Nvidia-settings$"] floating enable
-for_window [class="^i3expod\.py$"] fullscreen enable
+for_window [class="^i3expo$"] fullscreen enable
 for_window [class="Artha"] floating enable
 for_window [class="^jetbrains-toolbox$"] floating enable
 for_window [class="^Nm-connection-editor$"] floating enable
@@ -682,7 +682,7 @@ bindsym $mod1+i $ex i3-quickterm --toggle shell
 # ------------------------------
 
 # bind i3expo launcher:
-bindsym $mod1+e $ex killall -s SIGUSR1 i3expod.py
+bindsym $mod1+e $ex killall -s SIGUSR1 i3expo
 
 
 
@@ -699,7 +699,7 @@ bindsym $mod+Tab $ex i3-cycle-workspace.py --switch
 #bindsym $mod+Tab workspace back_and_forth
 
 # start i3expo daemon:
-$exa i3expod.py
+$exa i3expo
 
 # start playerctl daemon:
 $ex playerctld daemon
