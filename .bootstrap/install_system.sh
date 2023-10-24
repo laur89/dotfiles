@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # base version taken from https://github.com/rastasheep/dotfiles/blob/master/script/bootstrap
 #
 # Base installation script intended to be executed on freshly installed
@@ -306,6 +306,10 @@ setup_udev() {
             execute "sudo mv -- '$tmpfile' $udev_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$udev_target] failed w/ $?"; return 1; }
         done
     done
+
+    execute "sudo udevadm control --reload-rules"
+
+    return 0
 }
 
 
@@ -404,7 +408,7 @@ setup_systemd() {
             execute "sudo mv -- '$tmpfile' $global_sysd_target/$filename" || { err "moving [$tmpfile] to [$global_sysd_target] failed"; continue; }
 
             # note do not use the '--now' flag with systemctl enable, nor execute systemctl start,
-            # as some service files might be listening on something like target.sleep - those should't be started on-demand like that!
+            # as some service files might be listening on something like target.sleep - those shouldn't be started on-demand like that!
             if [[ "$filename" == *.service ]]; then
                 execute "sudo systemctl enable '$filename'" || { err "enabling global systemd service [$filename] failed w/ [$?]"; continue; }
             fi
@@ -425,14 +429,14 @@ setup_systemd() {
             execute "mv -- '$tmpfile' $usr_sysd_target/$filename" || { err "moving [$tmpfile] to [$usr_sysd_target] failed"; continue; }
 
             # note do not use the '--now' flag with systemctl enable, nor execute systemctl start,
-            # as some service files might be listening on something like target.sleep - those should't be started on-demand like that!
+            # as some service files might be listening on something like target.sleep - those shouldn't be started on-demand like that!
             if [[ "$filename" == *.service ]]; then
                 execute "systemctl --user enable '$filename'" || { err "enabling user systemd service [$filename] failed w/ [$?]"; continue; }
             fi
         done
     done
 
-    # just incase reload the rules in case existing rules changed:
+    # reload the rules in case existing rules changed:
     execute 'systemctl --user --now daemon-reload'  # --user flag manages the user services under ~/.config/systemd/user/
     execute 'sudo systemctl daemon-reload'
 }
@@ -1044,6 +1048,7 @@ install_deps() {
 
             # TODO: entirety of this function needs a review
             # TODO: lwfinger/rtlwifi_new repo doesn't exist, looks like each device has its own repo now, ie old repo was split up?
+            #       actually, it seems like https://github.com/lwfinger/rtw88 is the new repo?
             __install_rtlwifi_new() {  # custom driver installation, pulling from github
                 local repo tmpdir
 
@@ -1612,10 +1617,12 @@ setup_private_asset_perms() {
             ~/.gcalclirc \
             ~/.gcalcli_oauth \
             ~/.msmtprc \
+            ~/.irssi \
             "$GNUPGHOME" \
             ~/.gist \
             ~/.bash_hist \
             ~/.bash_history_eternal \
+            ~/.config/revolut-py \
                 ; do
         [[ -e "$i" ]] || { err "expected to find [$i], but it doesn't exist; is it normal?"; continue; }
         [[ -d "$i" && "$i" != */ ]] && i+='/'
@@ -1978,14 +1985,17 @@ install_progs() {
 
 
 install_xonotic() {
-    local ver
+    local url
 
-    ver="$(curl -Lsf --retry 2 'https://xonotic.org/download/' \
+    # note we're selecting a mirror URL here:
+    url="$(curl -Lsf --retry 2 'https://xonotic.org/download/' \
         | grep -Po '<a href="\Khttps://dl\.xonotic.org/xonotic-[0-9.]+\.zip(?="><i class=".*"></i>\s*xonotic.org</a>.*DE)')"
 
-    [[ -z "$ver" ]] && { err "couldn't resolve xonotic version"; return 1; }
-    install_from_url -D -d "$BASE_PROGS_DIR" xonotic "$ver" || return 1
-    create_link "${BASE_PROGS_DIR}/xonotic/bin/xonotic" "$HOME/bin/"
+    [[ -z "$url" ]] && { err "couldn't resolve xonotic version"; return 1; }
+    install_from_url -D -d "$BASE_PROGS_DIR" xonotic "$url" || return 1
+
+    # TODO: use glx or sdl script? best try both and benchmark w/ included 'the-big-benchmark'
+    create_link "$BASE_PROGS_DIR/xonotic/xonotic-linux-glx.sh" "$HOME/bin/xonotic"
 
     # or instead of our custom dl logic above, use snap:
     #snap_install xonotic
@@ -2027,6 +2037,8 @@ upgrade_firmware() {
 }
 
 
+# TODO: /etc/modules is still supported by debian, but is an older system/mechanic; perhaps
+# start using /etc/modules-load.d/ instead?
 install_kernel_modules() {
     local conf modules i
 
@@ -2039,11 +2051,12 @@ install_kernel_modules() {
 
     # list of modules to be added to $conf for auto-loading at boot:
     modules=(
+        i2c-dev
         ddcci
     )
 
     # ddcci-dkms gives us DDC support so we can control also external monitor brightness
-    install_block ddcci-dkms || return 1
+    install_block  ddcci-dkms || return 1
 
     for i in "${modules[@]}"; do
         grep -Fxq "$i" "$conf" || execute "echo $i | sudo tee --append $conf > /dev/null"
@@ -2149,7 +2162,6 @@ install_own_builds() {
     #install_copyq
     is_native && install_uhk_agent
     #install_rambox
-    #install_franz
     is_native && install_ferdium
     is_native && install_discord
     install_xournalpp
@@ -2676,12 +2688,6 @@ install_slides() {  # https://github.com/maaslalani/slides
 }
 
 
-install_franz() {  # https://github.com/meetfranz/franz/blob/master/docs/linux.md
-    #install_block 'libx11-dev libxext-dev libxss-dev libxkbfile-dev'
-    install_bin_from_git -N franz meetfranz franz x86_64.AppImage
-}
-
-
 # Franz nag-less fork.
 # might also consider open-source fork of rambox: https://github.com/TheGoddessInari/hamsket
 install_ferdium() {  # https://github.com/ferdium/ferdium-app
@@ -3185,9 +3191,10 @@ install_chrome() {  # https://www.google.com/chrome/?platform=linux
 }
 
 
-# redis manager
-install_redis_desktop_mngr() {  # https://snapcraft.io/install/redis-desktop-manager/debian
-    snap_install redis-desktop-manager
+# redis manager (GUI)
+install_redis_insight() {  # https://redis.com/thank-you/redisinsight-the-best-redis-gui-35/
+    #snap_install  redisinsight
+    install_from_url  redis-insight 'https://download.redisinsight.redis.com/latest/RedisInsight-v2-linux-amd64.deb'
 }
 
 
@@ -3199,7 +3206,7 @@ install_redis_desktop_mngr() {  # https://snapcraft.io/install/redis-desktop-man
 #   https://github.com/zadam/trilium  (also hostable as a server)
 install_vnote() {  # https://github.com/vnotex/vnote/releases
     #install_bin_from_git -N vnote vnotex vnote 'linux-x64_.*zip'
-    install_bin_from_git -N vnote vnotex vnote 'linux-x64_.*AppImage'
+    install_bin_from_git -N vnote -n '*.AppImage' vnotex vnote 'linux-x64_.*.zip'
 }
 
 
@@ -3939,44 +3946,6 @@ install_keybase() {
 }
 
 
-# building instructions from https://github.com/keepassx/keepassx
-install_keepassx() {
-    local tmpdir
-
-    readonly tmpdir="$TMP_DIR/keepassx-build-${RANDOM}"
-    report "building keepassx..."
-
-    export QT_SELECT=qt5  # without defining this, autotype was not working (even the settings were missing for it)
-
-    report "installing keepassx build dependencies..."
-    install_block '
-        build-essential
-        cmake
-        qtbase5-dev
-        libqt5x11extras5-dev
-        qttools5-dev
-        qttools5-dev-tools
-        libgcrypt20-dev
-        zlib1g-dev
-        libxi-dev
-        libxtst-dev
-    ' || { err 'failed to install build deps. abort.'; return 1; }
-
-    execute "git clone ${GIT_OPTS[*]} $KEEPASS_REPO_LOC $tmpdir" || return 1
-
-    execute "mkdir $tmpdir/build"
-    execute "pushd $tmpdir/build" || return 1
-    execute 'cmake ..' || { err; popd; return 1; }
-    execute "make" || { err; popd; return 1; }
-
-    create_deb_install_and_store keepassx || { popd; return 1; }
-
-    execute "popd"
-    execute "sudo rm -rf -- '$tmpdir'"
-    return 0
-}
-
-
 # https://github.com/Raymo111/i3lock-color
 # this is a depency for i3lock-fancy.
 install_i3lock() {
@@ -4127,7 +4096,7 @@ install_brillo() {
 # https://github.com/haimgel/display-switch
 # switches display output when USB device (eg kbd switch) is connected/disconnected
 install_display_switch() {
-    local repo tmpdir ver
+    local repo tmpdir ver group
 
     repo='git@github.com:haimgel/display-switch.git'
     tmpdir="$TMP_DIR/display-switch-${RANDOM}"
@@ -4144,6 +4113,12 @@ install_display_switch() {
     execute popd
     execute "sudo rm -rf -- '$tmpdir'"
     add_to_dl_log  display-switch "$ver"
+
+    # following from https://github.com/haimgel/display-switch#linux-2
+    # note the associated udev rule is in one of castles' udev/ dir
+    group=i2c
+    execute -c 0,9 "sudo groupadd $group" || err
+    addgroup_if_missing "$group"
 }
 
 
@@ -5734,14 +5709,12 @@ __choose_prog_to_build() {
 
     declare -ar choices=(
         install_YCM
-        install_keepassx
         install_keepassxc
         install_keybase
         install_goforit
         install_copyq
         install_uhk_agent
         install_rambox
-        install_franz
         install_slides
         install_ferdium
         install_discord
@@ -5794,7 +5767,7 @@ __choose_prog_to_build() {
         install_p4merge
         install_steam
         install_chrome
-        install_redis_desktop_mngr
+        install_redis_insight
         install_eclipse_mem_analyzer
         install_visualvm
         install_vnote
@@ -6402,8 +6375,8 @@ setup_seafile() {
     select_items -h 'choose libraries to sync' "${libs[@]}" || return
 
     for lib in "${__SELECTED_ITEMS[@]}"; do
-        [[ -z "$user" ]] && read -r -p "enter seafile user (should be mail): " user
-        [[ -z "$passwd" ]] && read -r -p "enter seafile pass: " passwd
+        [[ -z "$user" ]] && read -r -p 'enter seafile user (should be mail): ' user
+        [[ -z "$passwd" ]] && read -r -p 'enter seafile pass: ' passwd
         [[ -z "$user" || -z "$passwd" ]] && { err "user and/or pass were not given"; return 1; }
 
         seaf-cli download-by-name --libraryname "$lib" -s https://seafile.aliste.eu \
@@ -6449,7 +6422,7 @@ setup_cups() {
     [[ -f "$conf2" ]] || { err "cannot configure our user for cups: [$conf2] does not exist; abort;"; return 1; }
     group="$(grep ^SystemGroup "$conf2" | awk '{print $NF}')" || { err "grepping group from [$conf2] failed w/ $?"; return 1; }
     is_single "$group" || { err "found SystemGroup in [$conf2] was unexpected: [$group]"; return 1; }
-    list_contains "$group" root sys && { err "found SystemGroup is [$group] - verify we want to be added to that group"; return 1; }  # failsafe for not adding oursevles to root or sys groups
+    list_contains "$group" root sys && { err "found cups SystemGroup is [$group] - verify we want to be added to that group"; return 1; }  # failsafe for not adding oursevles to root or sys groups
     addgroup_if_missing "$group"
     # }}}
 
@@ -6520,7 +6493,7 @@ addgroup_if_missing() {
     local group
     readonly group="$1"
 
-    id -Gn "$USER" | grep -q "\b$group\b" || execute "sudo adduser $USER $group"
+    id -Gn "$USER" | grep -q "\b${group}\b" || execute "sudo adduser $USER $group"
 }
 
 
