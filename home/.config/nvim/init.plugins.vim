@@ -244,6 +244,9 @@ Plug 'vim-scripts/utl.vim'
 " i3 config syntax highlighting:
 Plug 'mboughaba/i3config.vim'
 
+" reopen file at last edit position
+Plug 'farmergreg/vim-lastplace'
+
 " alternative to fzf: https://github.com/liuchengxu/vim-clap (rust)
 Plug '~/.fzf'
 Plug 'junegunn/fzf.vim'

@@ -204,16 +204,6 @@ endif
         set matchpairs+=<:>                         " for ci< or ci>
         set showmatch                               " shows matching bracket when cursor is over
     """ }}}
-
-    """ Return to last edit position when opening files, ie remember last position. {{{
-        " note there's also a plugin for remembering last position: https://github.com/farmergreg/vim-lastplace
-        augroup LastPosition
-            autocmd! BufReadPost *
-                \ if line("'\"") > 0 && line("'\"") <= line("$") |
-                \     exe "normal! g`\"" |
-                \ endif
-        augroup END
-    """ }}}
 """ }}}
 
 """ Files {{{
