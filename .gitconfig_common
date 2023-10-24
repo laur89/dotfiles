@@ -21,6 +21,10 @@
     ;excludesfile = ~/.gitignore  # no point in setting; global default in NIX is ~/.config/git/ignore, in WIN: %USERPROFILE%\git\ignore
     editor = nvim
     ;editor = nvr --remote-wait-silent
+
+    ; decent read on the line ending subject:
+    ;  - https://stackoverflow.com/a/48384768
+    ;  - https://adaptivepatchwork.com/2012/03/01/mind-the-end-of-your-line/
     ;autocrlf = input
     autocrlf = false
     safecrlf = true
