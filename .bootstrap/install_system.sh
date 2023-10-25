@@ -1896,6 +1896,8 @@ setup_additional_apt_keys_and_sources() {
     get_apt_key  signald  https://signald.org/signald.gpg "deb [arch=amd64 {s}] https://updates.signald.org unstable main"
 
     # estonian open eid: (from https://installer.id.ee/media/install-scripts/install-open-eid.sh):
+    # latest/current key can be found from https://installer.id.ee/media/install-scripts/
+    #
     # note you'll likely want to use the latest ubuntu LTS or latest, period, codename for repo.
     #get_apt_key -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh "deb [{s}] https://installer.id.ee/media/ubuntu/ focal main"
     get_apt_key  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub "deb [{s}] https://installer.id.ee/media/ubuntu/ jammy main"
@@ -5142,7 +5144,6 @@ install_from_repo() {
         ca-certificates
         aptitude
         gdebi
-        snapd
         sudo
         libnotify-bin
         dunst
