@@ -8,7 +8,7 @@ configuration {
     kb-accept-entry: "Return,KP_Enter";
     kb-row-down: [Ctrl-j,Ctrl-n,Down];
     kb-remove-to-eol: "Ctrl-z";
-    kb-row-up: "Ctrl-k,Ctrl-p,Up,ISO_Left_Tab";
+    kb-row-up: "Ctrl-k,Ctrl-p,Up";
 }
 
 @theme "/usr/share/rofi/themes/gruvbox-dark-hard.rasi"
