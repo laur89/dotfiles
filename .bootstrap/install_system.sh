@@ -5318,7 +5318,7 @@ install_from_repo() {
         buku
         chromium
         chromium-sandbox
-        rxvt-unicode-256color
+        rxvt-unicode
         colortest-python
         seafile-gui
         seafile-cli
