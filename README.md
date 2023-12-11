@@ -26,8 +26,10 @@ steps separately apart from the full installation mode.
       more specifically)
     * *Note*: sometimes the daily images are broken, verify the build is passing [here](https://d-i.debian.org/daily-images/daily-build-overview.html)
       before downloading.
-    * If you're installing on a laptop/wifi and need firmware, you might be better
-      off with these [unofficial images w/ firmware](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/weekly-builds/amd64/iso-cd/):
+    * ~~If you're installing on a laptop/wifi and need firmware, you might be better
+      off with these [unofficial images w/ firmware](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/weekly-builds/amd64/iso-cd/):~~
+      - Ignore, as of `bookworm`, [firmware is included in normal installer
+        images](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/)
       - [weekly testing netinst w/ firmware](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/weekly-builds/amd64/iso-cd/firmware-testing-amd64-netinst.iso)
       - OR [daily sid netinst w/ firmware](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/daily-builds/sid_d-i/current/amd64/iso-cd/firmware-testing-amd64-netinst.iso)
         from [this page](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/daily-builds/sid_d-i/current/amd64/iso-cd/)
