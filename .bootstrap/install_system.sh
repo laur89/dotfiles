@@ -1870,7 +1870,6 @@ setup_additional_apt_keys_and_sources() {
 
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
-    # note it's avail also as a snap: $snap install spotify
     get_apt_key  spotify  https://download.spotify.com/debian/pubkey_7A3A762FAFD4A51F.gpg "deb [{s}] http://repository.spotify.com stable non-free"
 
     # seafile-client: (from https://help.seafile.com/syncing_client/install_linux_client/):
@@ -2134,9 +2133,9 @@ install_devstuff() {
     install_kubectx
     install_kube_ps1
     install_sops
-    #is_native && install_bloomrpc
+    is_native && install_grpcui
     #install_postman
-    install_insomnia
+    install_bruno
     install_terragrunt
     install_minikube
     install_coursier
@@ -2179,6 +2178,7 @@ install_own_builds() {
     install_jd
     install_bat
     install_alacritty
+    install_croc
     #install_exa
     #install_synergy  # currently installing from repo
     install_i3
@@ -2891,7 +2891,6 @@ install_file() {
 }
 
 
-# note also available as snap
 install_discord() {  # https://discord.com/download
     install_from_url  discord 'https://discord.com/api/download?platform=linux&format=deb'
 }
@@ -3111,11 +3110,9 @@ install_sops() {  # https://github.com/mozilla/sops
 }
 
 
-# deprecated!
-# better look into https://github.com/fullstorydev/grpcui
-install_bloomrpc() {  # https://github.com/uw-labs/bloomrpc/releases
-    install_deb_from_git uw-labs bloomrpc _amd64.deb  # TODO deb pkg has unmet deps that aren't automatically installed (similar to ferdi)
-    #install_bin_from_git -N bloomrpc uw-labs bloomrpc x86_64.AppImage
+# another GUI client for grpc: https://github.com/getezy/ezy
+install_grpcui() {  # https://github.com/fullstorydev/grpcui
+    install_bin_from_git -N grpcui -d "$HOME/bin" fullstorydev grpcui '_linux_x86_64.tar.gz'
 }
 
 # if build fails, you might be able to salvage something by doing:
@@ -3213,11 +3210,7 @@ install_vnote() {  # https://github.com/vnotex/vnote/releases
 
 
 # https://www.postman.com/downloads/canary/
-#
-# note postman is also available as a snap;
-# TODO: consider ARC (advanced rest clinet) instead: https://install.advancedrestclient.com/install
-# TODO: also consider Insomnia: https://github.com/Kong/insomnia
-install_postman() {  # https://learning.postman.com/docs/getting-started/installation-and-updates/#installing-postman-on-linux
+install_postman() {  # https://learning.postman.com/docs/getting-started/installation/installation-and-updates/#install-postman-on-linux
     local loc target dsk
 
     loc="https://dl.pstmn.io/download/channel/canary/linux_64"
@@ -3241,14 +3234,24 @@ Categories=Development;
 
 # https://github.com/advanced-rest-client/arc-electron/releases/latest
 install_arc() {
-    install_deb_from_git advanced-rest-client arc-electron '-amd64.deb'
+    install_deb_from_git  advanced-rest-client  arc-electron '-amd64.deb'
 }
 
 
-# https://github.com/Kong/insomnia
-# https://github.com/Kong/insomnia/releases/latest
-install_insomnia() {
-    install_deb_from_git Kong insomnia '\\.\\d+\\.\\d+.deb'
+# https://github.com/usebruno/bruno
+#
+# TODO: consider ARC (advanced rest client) instead: https://install.advancedrestclient.com/install
+# TODO: or maybe httpie that apparently now has a GUI as well!
+# TODO also recipeUI: https://github.com/RecipeUI/RecipeUI
+# TODO also hoppscotch: https://hoppscotch.io/ (note it's possible to self-host as well)
+# TODO not verified, but there's also https://kreya.app/ - note it's _not_ FOSS; note it's also not using electron, but 'native webview of the OS': read @ https://kreya.app/blog/how-we-built-kreya/ - note it also does grpc
+# TODO !!!!!!!!!!!!!!!!!!!!: list of alternatives: https://github.com/stepci/awesome-api-clients
+# for automated testing see https://github.com/stepci/stepci
+# TODO also https://github.com/firecamp-dev/firecamp (relatively new as of Nov '23)
+# haven't checked, but also https://github.com/manatlan/reqman
+# there's also CLI client wrapping curl that uses toml-like config: https://github.com/jonaslu/ain
+install_bruno() {
+    install_deb_from_git  usebruno  bruno '_amd64_linux.deb'
 }
 
 
@@ -4283,6 +4286,7 @@ snap_install() {
     execute "sudo snap install $*"
 }
 
+
 install_i3_conf() {
     local conf
 
@@ -5107,6 +5111,7 @@ install_from_repo() {
         pm-utils
         ntfs-3g
         android-file-transfer
+        kdeconnect
         erlang
         cargo
         acpid
@@ -5193,6 +5198,9 @@ install_from_repo() {
         cups-filters
         ipp-usb
         system-config-printer
+        aircrack-ng
+        hashcat
+        reaver
     )
     # removed from above block:
     # -    netdata
@@ -5761,7 +5769,7 @@ __choose_prog_to_build() {
         install_kubectx
         install_kube_ps1
         install_sops
-        install_bloomrpc
+        install_grpcui
         install_grpc_cli
         install_dbeaver
         install_gitkraken
@@ -5774,7 +5782,7 @@ __choose_prog_to_build() {
         install_vnote
         install_postman
         install_arc
-        install_insomnia
+        install_bruno
         install_alacritty
         install_weeslack
         install_weechat_matrix
@@ -5797,6 +5805,7 @@ __choose_prog_to_build() {
         install_display_switch
         install_neovide
         install_asdf
+        install_croc
     )
 
     report "what do you want to build/install?"
@@ -6235,6 +6244,12 @@ install_exodus_wallet() {
     ver="$(grep -Po '.*a href="https://downloads.exodus.com/releases/hashes-exodus-\K[-.0-9]+(?=\.txt)' <<< "$page")"
 
     install_from_url  exodus "https://downloads.exodus.com/releases/exodus-linux-x64-${ver}.deb"
+}
+
+# https://github.com/schollz/croc
+# share files between computers/phones
+install_croc() {
+    install_deb_from_git  schollz  croc  '_Linux-64bit.deb'
 }
 
 
