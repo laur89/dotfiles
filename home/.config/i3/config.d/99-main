@@ -217,6 +217,11 @@ mode "$resize-label" {
         bindsym $mod+h $mod_h
         bindsym $mod+l $mod_l
 
+        bindsym $mod1+j $mod1_j
+        bindsym $mod1+k $mod1_k
+        bindsym $mod1+h $mod1_h
+        bindsym $mod1+l $mod1_l
+
         bindsym --whole-window --border $mod+button5 $mod_j
         bindsym --whole-window --border $mod+button4 $mod_k
         bindsym --whole-window --border $mod+button6 $mod_h
