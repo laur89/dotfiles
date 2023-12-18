@@ -47,6 +47,7 @@ alias goo='googler'
 alias define='googler -n 4 define'
 alias py3='python3'
 alias dunc='ncdu'  # never remember it; if it starts w/ 'du', it'll be more likely to find
+alias wheresthespace='ncdu -x /'  # what's taking up the space? -x avoids cross-fs
 alias dfpy='pydf'
 alias tgo='tmux new -A -s' # start a new tmux session, or attach to it if already exists
 alias ngo='nvim --listen /tmp/nvim_$USER' # start the _main_/master nvim process, listening on given socket; that socket will be used by nvr (neovim-remote)
@@ -97,7 +98,7 @@ alias gagm=calm
 alias c='clear'
 alias cp='cp -rp'  # TODO: add -i for overwrite prompt? what about scripts that use cp?
 alias scp='scp -rp'
-alias sync-monit='watch -d grep -e Dirty: -e Writeback: /proc/meminfo'
+alias sync-monit='watch -d grep -e Dirty: -e Writeback: /proc/meminfo'  # or  $ sar -r 1
 alias dig='dig +search'  # https://serverfault.com/questions/434581/why-can-host-and-nslookup-resolve-a-name-but-dig-cannot/899996
 #alias dfh='df -h --local -x tmpfs -x devtmpfs -x nfs'  # note we're ignoring tmp & nfs filesystems; see also 'pydf' for py-based prettier df version
 command -v pydf > /dev/null 2>&1 && alias dfh='command pydf -h --local' || alias dfh='df -h --local -x tmpfs -x devtmpfs -x nfs'
