@@ -9,6 +9,8 @@
 #
 # note: for all autostart stuff, consider https://github.com/jceb/dex instead;
 #       or better yet, systemd unit files as dex' readme itself suggests;
+#
+# TODO: see https://github.com/infokiller/config-public/blob/master/.my_scripts/desktop_env/set-x11-settings for inspiration
 ##################################
 
 SESSION_STARTFILE="$HOME/.session-startuplist"
@@ -97,7 +99,8 @@ set_keyboard_layout() {
 
 
 # mopidy->ncmpcpp visualizer issue thread: https://github.com/mopidy/mopidy/issues/775
-# TODO: to be deprecated; same issue thread suggests now-supported way of achieving visualisation w/o the fifo hack;
+# TODO: to be deprecated; mopidy now supports udpsink to be used as visualisation stream.
+#       may be useful with non-mopidy MPD servers.
 open_mpd_fifo() {
     local fifo
     readonly fifo='/tmp/mpd.fifo'
@@ -143,9 +146,18 @@ xset fp rehash
 # disable system beep:
 xset -b
 
-# key repeat settings: 200ms repeat delay and repeat speed of 25 key strokes per second:
+# key repeat settings: 200ms (default is like... 660?) repeat delay and repeat speed of 25 key strokes per second:
 xset r rate 200 25
 
+# following taken from https://gist.github.com/tanyuan/55bca522bf50363ae4573d4bdcf06e2e#gnulinux
+# same also explained in https://askubuntu.com/a/1368280/1002165
+# TODO: looks like setxkbmap&xcape commands here could be replaced by uniform solution https://gitlab.com/interception/linux/plugins/caps2esc !!!!!! promising!
+#       note that one is supposedly working also in tty, and doesnt reset whenever devices reset.
+# #########################################
+# make CapsLock behave like Ctrl:
+setxkbmap -option ctrl:nocaps
+# make short-pressed Ctrl behave like Esc:
+xcape -e 'Control_L=Escape'
 
 
 # See policykit käitati tavaliste DE-de puhul /etc/xdg/autostart/polkit-gnome....desktop-ist;
@@ -159,17 +171,20 @@ xset r rate 200 25
 #ResultInactive=no
 #ResultActive=yes
 
-dbus-update-activation-environment --systemd --all || err_display "dbus-update-activation-environment failed w/ $?" "$_SELF"  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=842712 & https://wiki.archlinux.org/index.php/GNOME/Keyring#xinitrc_method
-#/usr/lib/polkit-gnome-authentication-agent-1 &
-(/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 || err_display "polkit-gnome-auth-agent startup failed /w $?" "$_SELF";) &
 
-# keyring is tricky with i3; see https://wiki.archlinux.org/index.php/GNOME/Keyring#PAM_method & https://www.reddit.com/r/archlinux/comments/648dxp/using_gnomekeyring_with_i3/
+# export env variables to dbus & systemd: (we likely shouldn't be doing this: https://unix.stackexchange.com/questions/440044/xinitrc-set-dbus-session-bus-address)
+#dbus-update-activation-environment --all || err_display "dbus-update-activation-environment failed w/ $?" "$_SELF"  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=842712 & https://wiki.archlinux.org/title/GNOME/Keyring#xinitrc
+
+#/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &  # atm started by i3
+
+# keyring is tricky with i3; see https://wiki.archlinux.org/index.php/GNOME/Keyring#PAM_step
 # if you'll return to debugging keyring-not-unlocking-on-login, check these:
 # # https://bbs.archlinux.org/viewtopic.php?id=144783
 # # https://bbs.archlinux.org/viewtopic.php?id=254871
 # # https://capocasa.net/gnome-keyring-daemon-with-i3-and-startx
 eval $(/usr/bin/gnome-keyring-daemon --start --components=gpg,pkcs11,secrets,ssh) || err_display "gnome-keyring-daemon startup failed w/ $?" "$_SELF"
-#sleep 1  # TODO potential race condition here - dunst as root sometimes not picking up config
+#eval $(/usr/bin/gnome-keyring-daemon --replace --components=gpg,pkcs11,secrets,ssh) || err_display "gnome-keyring-daemon startup failed w/ $?" "$_SELF"
+
 export GNOME_KEYRING_CONTROL GNOME_KEYRING_PID GPG_AGENT_INFO SSH_AUTH_SOCK DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
 
 
@@ -308,7 +323,7 @@ check_max_allowed_size "$CUSTOM_LOGDIR" "$allowed_size"
 set_keyboard_layout
 if is_native; then
     enable_smart &
-    open_mpd_fifo
+    #open_mpd_fifo
 fi
 
 unset i x f m n SESSION_STARTFILE AUTOSTART _SELF allowed_size
