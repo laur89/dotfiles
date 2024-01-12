@@ -340,6 +340,7 @@ setup_mail() {
 # TODO: instead of using sed for manipulation, maybe use crudini, as configuration
 #       file appears to be in ini format; eg in there were to be any other section
 #       'sides "Login", then our appending function wouldn't cut it.
+# TODO: shouldn't  /etc/systemd/logind.conf.d/ be used? don't have this dir by default tho
 setup_logind() {
     local logind_conf conf_map key value
 
@@ -1168,7 +1169,7 @@ install_deps() {
 
     # leiningen bash completion:  # https://codeberg.org/leiningen/leiningen/src/branch/main/bash_completion.bash
     #
-    install_from_url -d "$HOME/.bash_completion.d/" lein_bash_completion.bash "https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash" || return 1
+    install_from_url -d "$HOME/.bash_completion.d/" lein_bash_completion.bash "https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash"
 
     # vifm filetype icons: https://github.com/cirala/vifm_devicons.git
     clone_or_pull_repo "cirala" "vifm_devicons" "$BASE_DEPS_LOC"
@@ -1275,6 +1276,10 @@ install_deps() {
     py_install keepmenu     # https://github.com/firecat53/keepmenu
 
     if is_native; then
+        # mopidy-spotify        # https://mopidy.com/ext/mpd/
+        #py_install Mopidy-MPD
+        install_block  mopidy-mpd
+
         #  TODO: spotify extensions need to be installed globally??
         # mopidy-youtube        # https://mopidy.com/ext/youtube/
         install_block  gstreamer1.0-plugins-bad
@@ -1282,31 +1287,37 @@ install_deps() {
 
         # mopidy-local        # https://mopidy.com/ext/local/
         # (provides us with 'mopidy local scan' command)
-        py_install Mopidy-Local
+        #py_install Mopidy-Local
+        install_block  mopidy-local
 
         # mopidy-soundcloud     # https://mopidy.com/ext/soundcloud/
-        py_install Mopidy-SoundCloud
+        #py_install Mopidy-SoundCloud
+        install_block  mopidy-soundcloud
 
         # mopidy-spotify        # https://mopidy.com/ext/spotify/
-        py_install Mopidy-Spotify
+        #py_install Mopidy-Spotify
+        install_block  mopidy-spotify
     fi
 
     # TODO: consider replacing all env/version managers by asdf
     # rbenv & ruby-build: {                             # https://github.com/rbenv/rbenv-installer
-    #   ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki):
+    #   ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki#ubuntudebianmint):
     install_block '
         autoconf
-        bison
+        patch
         build-essential
+        rustc
         libssl-dev
         libyaml-dev
         libreadline6-dev
         zlib1g-dev
+        libgmp-dev
         libncurses5-dev
         libffi-dev
         libgdbm6
         libgdbm-dev
         libdb-dev
+        uuid-dev
     '
     install_from_url_shell  rbenv 'https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer'
     # note rbenv-doctor can be ran to verify installation:  $ install_from_url_shell rbenv-doctor https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-doctor
@@ -2171,6 +2182,7 @@ install_own_builds() {
     install_rga
     install_browsh
     install_vnote
+    install_obsidian
     install_delta
     install_dust
     install_peco
@@ -3180,8 +3192,14 @@ install_p4merge() {  # https://www.perforce.com/downloads/visual-merge-tool
 }
 
 
+# steam-installer
 install_steam() {  # https://store.steampowered.com/about/
-    install_from_url  steam 'https://cdn.akamai.steamstatic.com/client/installer/steam.deb'
+    # either from deb fetched directly from steam...
+    #install_from_url  steam 'https://cdn.akamai.steamstatic.com/client/installer/steam.deb'
+
+    # ...or from apt repos:
+    execute 'dpkg --add-architecture i386'  # as per https://wiki.debian.org/Steam#Installing_Steam
+    install_block -f  steam-installer
 }
 
 
@@ -3203,9 +3221,15 @@ install_redis_insight() {  # https://redis.com/thank-you/redisinsight-the-best-r
 #   https://github.com/notable/notable/
 #   https://github.com/BoostIO/Boostnote
 #   https://github.com/zadam/trilium  (also hostable as a server)
+#   https://github.com/zk-org/zk  plain-text
 install_vnote() {  # https://github.com/vnotex/vnote/releases
     #install_bin_from_git -N vnote vnotex vnote 'linux-x64_.*zip'
     install_bin_from_git -N vnote -n '*.AppImage' vnotex vnote 'linux-x64_.*.zip'
+}
+
+
+install_obsidian() {  # https://github.com/obsidianmd/obsidian-releases/releases
+    install_deb_from_git  obsidianmd  obsidian-releases '_amd64.deb'
 }
 
 
@@ -3407,12 +3431,12 @@ install_terragrunt() {  # https://github.com/gruntwork-io/terragrunt/
 #   1045 - germany3
 #   1260 - denmark
 #
-install_eclipse_mem_analyzer() {  # https://www.eclipse.org/mat/downloads.php
+install_eclipse_mem_analyzer() {  # https://eclipse.dev/mat/downloads.php
     local target loc page dl_url dir mirror ver
 
     target="$BASE_PROGS_DIR/mat"
-    loc='https://www.eclipse.org/mat/downloads.php'
-    mirror=96
+    loc='https://eclipse.dev/mat/downloads.php'
+    mirror=1208  # 1208 = france, 1301,1190,1045 = germany, 1099 = czech
 
     page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
     loc="$(grep -Po '.*a href="\K.*/\d+\.\d+\.\d+.*linux.gtk.x86_64.zip(?=")' <<< "$page")" || { err "parsing download link from [$loc] content failed"; return 1; }
@@ -3435,6 +3459,7 @@ install_eclipse_mem_analyzer() {  # https://www.eclipse.org/mat/downloads.php
     add_to_dl_log  mem_analyzer "$ver"
 }
 
+# lightweight profiling, both for dev & production. see https://visualvm.github.io/
 install_visualvm() {  # https://github.com/oracle/visualvm
     local target dir
 
@@ -3452,7 +3477,7 @@ install_visualvm() {  # https://github.com/oracle/visualvm
 install_bluejeans_via_rpm() {  # https://www.bluejeans.com/downloads#desktop
     local rpm
 
-    rpm="$(fetch_release_from_any -I bluejeans 'https://www.bluejeans.com/downloads#desktop' 'BlueJeans.rpm')" || return $?
+    rpm="$(fetch_release_from_any -I bluejeans 'https://www.bluejeans.com/downloads#desktop' 'BlueJeans_[-0-9.]+\.rpm')" || return $?
     execute "sudo alien --install --to-deb '$rpm'" || return 1
     return 0
 }
@@ -3460,7 +3485,7 @@ install_bluejeans_via_rpm() {  # https://www.bluejeans.com/downloads#desktop
 install_bluejeans() {  # https://www.bluejeans.com/downloads#desktop
     local deb
 
-    deb="$(fetch_release_from_any -I bluejeans 'https://www.bluejeans.com/downloads#desktop' 'BlueJeans.deb')" || return $?
+    deb="$(fetch_release_from_any -I bluejeans 'https://www.bluejeans.com/downloads#desktop' 'BlueJeans_[-0-9.]+\.deb')" || return $?
     execute "sudo apt-get --yes install '$deb'" || return 1
     return 0
 }
@@ -5455,6 +5480,7 @@ install_from_repo() {
 
                 virtualbox
                 virtualbox-dkms
+               	virtualbox-qt
             '
         fi
 
@@ -5578,7 +5604,18 @@ install_nvidia() {
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
 install_block() {
-    local list_to_install extra_apt_params dry_run_failed exit_sig exit_sig_install_failed pkg sig
+    local opt OPTIND noinstall list_to_install extra_apt_params dry_run_failed exit_sig exit_sig_install_failed pkg sig
+
+    noinstall='--no-install-recommends'  # default
+    while getopts 'f' opt; do
+        case "$opt" in
+           f)  # mnemonic: full
+              unset noinstall
+                ;;
+           *) return 1 ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
 
     declare -ar list_to_install=( $1 )
     readonly extra_apt_params="$2"  # optional
@@ -5595,21 +5632,21 @@ install_block() {
             #packages_not_found+=( $pkg )
             #continue
         #fi
-        execute "sudo apt-get -qq --dry-run --no-install-recommends install $extra_apt_params $pkg"
+        execute "sudo apt-get -qq --dry-run ${noinstall:+$noinstall }install $extra_apt_params $pkg"
         sig=$?
 
         if [[ "$sig" -ne 0 ]]; then
             execute 'sudo apt-get --yes update'
             execute 'sudo apt-get --yes autoremove'
 
-            if execute "sudo apt-get -qq --dry-run --no-install-recommends install $extra_apt_params $pkg"; then
+            if execute "sudo apt-get -qq --dry-run ${noinstall:+$noinstall }install $extra_apt_params $pkg"; then
                 #sleep 0.1
-                execute "sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install --no-install-recommends $extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
+                execute "sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
             else
                 dry_run_failed+=( $pkg )
             fi
         else
-            execute "sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install --no-install-recommends $extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
+            execute "sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
         fi
     done
 
@@ -5780,6 +5817,7 @@ __choose_prog_to_build() {
         install_eclipse_mem_analyzer
         install_visualvm
         install_vnote
+        install_obsidian
         install_postman
         install_arc
         install_bruno
@@ -6214,10 +6252,12 @@ install_hblock() {
 # estonian ID card soft; tags: digidoc, id-kaart, id kaart, id card, id-card
 # based on script @ https://github.com/open-eid/linux-installer/blob/master/install-open-eid.sh
 #
+# test browser webeid auth @ https://web-eid.eu/
+#
 # note our setup logic configures apt repo
 # note digidoc4 client executable is likely `qdigidoc4`
 install_open_eid() {
-    install_block 'opensc  open-eid' || return 1
+    install_block -f 'opensc  open-eid' || return 1
     execute 'sudo systemctl enable --now pcscd.socket' || return 1  # note --now flag effectively also starts the service immediately
 
     # Configure Chrome PKCS11 driver for current user, /etc/xdg/autstart/ will init other users on next logon
@@ -6289,6 +6329,8 @@ configure_pulseaudio() {
     readonly confdir='/etc/pulse/default.pa.d'  # additional conf; note files here must have .pa extension
     declare -a conf_lines=('load-module module-equalizer-sink'
                            'load-module module-dbus-protocol'
+                           # this one's for mopidy compatibility: see https://docs.mopidy.com/en/latest/running/service/#system-service-and-pulseaudio
+                           'load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1'
                           )
     declare -a conf_files=("$conf_main")
 
@@ -6404,6 +6446,31 @@ setup_seafile() {
 # from  TODO find debian url for nftables
 enable_fw() {
     execute 'sudo systemctl enable --now nftables.service'
+}
+
+
+# https://docs.mopidy.com/en/latest/running/service/#running-as-a-service
+# !note when running as a service, then 'mopidy cmd' should be ran as 'sudo mopidyctl cmd'
+setup_mopidy() {
+    local mopidy_confdir file
+
+    readonly mopidy_confdir='/etc/mopidy'
+    readonly file="$COMMON_PRIVATE_DOTFILES/backups/mopidy.conf"  # note filename needs to match that of original/destination
+
+    if ! [[ -d "$mopidy_confdir" ]]; then
+        err "[$mopidy_confdir] is not a dir - is mopidy installed?"
+        return 1
+    elif ! [[ -f "$file" ]]; then
+        err "expected mopidy configuration file at [$file] does not exist; won't install it."
+        return 1
+    fi
+
+    backup_original_and_copy_file --sudo "$file" "$mopidy_confdir"
+    # when mopidy is ran as a service, the config file needs to be owned by mopidy user:
+    execute "sudo chown mopidy:root $mopidy_confdir/mopidy.conf" || return 1
+
+    execute "sudo systemctl enable --now mopidy"  # note --now flag effectively also starts the service immediately
+    execute 'sudo mopidyctl local scan'     # update mopidy library;
 }
 
 
@@ -6546,7 +6613,7 @@ post_install_progs_setup() {
     enable_network_manager
     is_native && install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present  # TODO: do we want to install these only on native systems?
     #is_native && execute -i "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
-    is_native && execute 'mopidy local scan'            # update mopidy library;
+    is_native && setup_mopidy
     is_native && execute "sudo sensors-detect --auto"   # answer enter for default values (this is lm-sensors config)
     increase_inotify_watches_limit         # for intellij IDEA
     enable_unprivileged_containers_for_regular_users
