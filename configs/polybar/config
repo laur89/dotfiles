@@ -65,7 +65,8 @@ module-margin-left = 1
 font-0 = Terminus2:pixelsize=12;1
 ;font-1 = SauceCodePro Nerd Font:size=10;1
 font-1 = Droid Sans Mono Nerd Font:size=10;1
-font-2 = DejaVu Sans Mono:size=10;1
+;font-2 = DejaVu Sans Mono:size=10;1
+font-2 = DejaVu Sans:size=10;1
 ;font-1 = FontAwesome:size=10;1
 ;font-2 = FontAwesome5Free:style=Solid:size=10;1
 ;font-3 = FontAwesome5Free:style=Regular:size=10;1
@@ -86,7 +87,7 @@ monitor = ${env:MONITOR:HDMI-1}
 fixed-center = false
 inherit = bar/master
 modules-left = wm
-modules-center = mpd
+;modules-center = mpd
 modules-right = wired-network wireless-network cpu-single-bar ram-vert-bar battery temperature pulseaudio time 
 ;modules-right = wireless-network wired-network weather battery ram cpu temperature volume time 
 ;modules-right = vpn volume filesystem battery wlan weather date power-menu ovpn
