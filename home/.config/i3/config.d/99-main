@@ -704,10 +704,13 @@ bindsym $mod+Tab $ex i3-cycle-workspace.py --switch
 #bindsym $mod+Tab workspace back_and_forth
 
 # start i3expo daemon:
-$exa i3expo
+$exa  i3expo
 
 # start playerctl daemon:
-$ex playerctld daemon
+$ex  playerctld daemon
+
+# start polkit:
+$ex  /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1
 
 # populate DBUS vars.
 # taken from some reddit post: https://www.reddit.com/r/Gentoo/comments/tzdnvn/comment/i3zzvjl/?utm_source=share&utm_medium=web2x&context=3
