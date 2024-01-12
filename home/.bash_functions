@@ -115,6 +115,7 @@ ffind() {
         -x  search for executable files
         -b  search for executable binaries
         -V  search for video files
+        -A  search for audio files
         -P  search for pdf files
         -I  search for image files
         -C  search for doc files (word, excel, opendocument...; NO pdf)
@@ -154,7 +155,7 @@ ffind() {
     caseOptCounter=0
     filetypeCounter=0
 
-    while getopts 'm:isrefdlxbLBDqphVPICt:0Y' opt; do
+    while getopts 'm:isrefdlxbLBDqphVAPICt:0Y' opt; do
         case "$opt" in
            i)
               [[ "$iname_arg" != '-iname' ]] && let caseOptCounter+=1
@@ -184,6 +185,10 @@ ffind() {
               __set_file_type f
               # TODO: should we set size param only if filetype is audio/mp4 (as there's ambiguity between audio & video)?
               extra_params+=' -size +100M'  # search for min. x megs files, so mp4 wouldn't (likely) return audio files
+                ;;
+           A) readonly filetype=1  # A for audio
+              __set_file_rgx 'audio'
+              __set_file_type f
                 ;;
            P) readonly filetype=1
               __set_file_rgx 'application/pdf; charset=binary'
