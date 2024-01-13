@@ -715,6 +715,8 @@ $ex  /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1
 # start udiskie (https://github.com/coldfix/udiskie/wiki/Usage)
 $ex  udiskie
 
+$ex  urxvtd --fork -o -q
+
 # populate DBUS vars.
 # taken from some reddit post: https://www.reddit.com/r/Gentoo/comments/tzdnvn/comment/i3zzvjl/?utm_source=share&utm_medium=web2x&context=3
 #$ex create-desktop-environment.sh
