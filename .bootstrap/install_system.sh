@@ -3419,18 +3419,7 @@ install_terragrunt() {  # https://github.com/gruntwork-io/terragrunt/
     install_bin_from_git -N terragrunt gruntwork-io terragrunt terragrunt_linux_amd64
 }
 
-# download mirrors:
-#   96 - UK
-#   1208 - france
-#   1285 - netherlands
-#   1186 - netherlands2
-#   1156 - sweden
-#   1099 - czech
-#   1190 - germany
-#   17   - germany2
-#   1045 - germany3
-#   1260 - denmark
-#
+
 install_eclipse_mem_analyzer() {  # https://eclipse.dev/mat/downloads.php
     local target loc page dl_url dir mirror ver
 
