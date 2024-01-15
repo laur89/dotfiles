@@ -1246,6 +1246,7 @@ install_deps() {
     py_install scdl          # https://github.com/flyingrub/scdl (soundcloud downloader)
     py_install rtv           # https://github.com/michael-lazar/rtv (reddit reader)  # TODO: active development has ceased
     py_install tldr          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
+    py_install vit           # https://github.com/vit-project/vit (taskwarrior curses-based interface)
                                                                                       #   note its conf is in bash_env_vars
     #py_install maybe         # https://github.com/p-e-w/maybe (check what command would do)
     py_install httpstat       # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
@@ -5249,6 +5250,7 @@ install_from_repo() {
         ntp
         remind
         tkremind
+        taskwarrior
         wyrd
         tree
         hyperfine
