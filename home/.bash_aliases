@@ -4,6 +4,8 @@
 # !!! they are subject to constant change.
 # !!! also be careful aliasing builtins such as 'mkdir' to 'mkdir -p'
 #
+# for more general aliases/aliases accessible from subshells, see https://superuser.com/a/1420612/179401
+#
 #
 # note that fasd generates its own aliases (check from its init cache somewhere in homedir), eg
     #alias a='fasd -a'
