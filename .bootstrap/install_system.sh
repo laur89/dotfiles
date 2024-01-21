@@ -2030,7 +2030,7 @@ upgrade_firmware() {
     local c
 
     # display all devices detected by fwupd:
-    execute 'fwupdmgr get-devices'
+    execute -c 0,2 'fwupdmgr get-devices'
 
     # download latest metadata from LVFS:
     execute -c 0,2 'fwupdmgr refresh'  # note it can exit w/ 2, and saying it was refreshed X time ago; not the case if passing '--force' flag to it
@@ -2190,6 +2190,7 @@ install_own_builds() {
     install_fd
     install_jd
     install_bat
+    install_btop
     install_alacritty
     install_croc
     #install_exa
@@ -2618,7 +2619,12 @@ extract_tarball() {
         execute "pushd -- $tmpdir" || return 1
     fi
 
-    execute "aunpack --extract --quiet '$file'" > /dev/null || { err "extracting [$file] failed w/ $?"; [[ "$standalone" != 1 ]] && popd; return 1; }
+    if [[ "$file" == *.tbz ]]; then  # TODO: aunpack can't unpack tbz
+        execute "tar -xjf '$file'" > /dev/null || { err "extracting [$file] failed w/ $?"; [[ "$standalone" != 1 ]] && popd; return 1; }
+    else
+        execute "aunpack --extract --quiet '$file'" > /dev/null || { err "extracting [$file] failed w/ $?"; [[ "$standalone" != 1 ]] && popd; return 1; }
+    fi
+
     execute "rm -f -- '$file'" || { err; [[ "$standalone" != 1 ]] && popd; return 1; }
 
     dir="$(find "$(pwd -P)" -mindepth 1 -maxdepth 1 -type d)"  # do not verify -d $dir _yet_ - ok to fail if $single_f == 1
@@ -3506,6 +3512,11 @@ install_jd() {  # https://github.com/josephburnett/jd
 # see also https://github.com/eth-p/bat-extras/blob/master/README.md#installation
 install_bat() {  # https://github.com/sharkdp/bat
     install_deb_from_git sharkdp bat 'bat_[-0-9.]+_amd64.deb'
+}
+
+
+install_btop() {  # https://github.com/aristocratos/btop
+    install_bin_from_git -N btop aristocratos btop  'btop-x86_64-linux-musl.tbz'
 }
 
 
@@ -5281,6 +5292,7 @@ install_from_repo() {
         speedcrunch
         calc
         bcal
+        # instead of atool, consider https://github.com/mholt/archiver
         atool
         file-roller
         rar
@@ -5770,6 +5782,7 @@ __choose_prog_to_build() {
         install_fd
         install_jd
         install_bat
+        install_btop
         install_exa
         install_gitin
         install_delta
@@ -7092,7 +7105,7 @@ extract() {
                 ;;
         *.tar) tar xf "$file"
                 ;;
-        *.tbz2) tar xjf "$file"
+        *.tbz|*.tbz2) tar xjf "$file"
                 ;;
         *.tgz) tar xzf "$file"
                 ;;
@@ -7247,13 +7260,11 @@ is_x() {
 #
 # @returns {bool}  true, if provided url was a valid url.
 is_valid_url() {
-    local url regex
+    local regex
 
-    readonly url="$1"
+    readonly regex='^(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
 
-    readonly regex='(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
-
-    [[ "$url" =~ $regex ]]
+    [[ "$1" =~ $regex ]]
 }
 
 
