@@ -2030,7 +2030,7 @@ extract() {
                         ;;
         *.tar)       __create_target_dir && tar xf "$file" -C "$file_without_extension" || return 1
                         ;;
-        *.tbz2)      __create_target_dir && tar xjf "$file" -C "$file_without_extension" || return 1
+        *.tbz|*.tbz2)__create_target_dir && tar xjf "$file" -C "$file_without_extension" || return 1
                         ;;
         *.tgz)       __create_target_dir && tar xzf "$file" -C "$file_without_extension" || return 1
                         ;;
