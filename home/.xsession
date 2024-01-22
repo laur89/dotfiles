@@ -1,15 +1,18 @@
-#!/bin/sh
-#
+#!/usr/bin/env sh
+############################
+# from https://github.com/infokiller/config-public/blob/master/.xsession
 # this file is ran when xstart is executed.
+# some documentation: https://wiki.debian.org/Xsession
 #
-# see https://goral.net.pl/post/systemd-x-sessions/
-# also https://github.com/vincentbernat/i3wm-configuration/blob/master/dotfiles/xsession
-# to auto-login, see https://vincent.bernat.ch/en/blog/2021-startx-systemd
+# note it's possible, at least on Debian, that this file would not get executed if
+# ~/.xsessionrc exists; see https://wiki.debian.org/Xsession#User_configuration
+############################
 
-systemctl --user import-environment
-systemctl --user daemon-reload
+# This file is usually sourced from the display manager (at least this is the
+# case with LightDM). However, the xsession script assumes it's executed in
+# bash, and the display manager may use another shell. In addition, some things
+# are better when the script is executed in isolation- for example, reported
+# line numbers. Therefore, the actual xsession is executed from this script,
+# where it will be executed in an isolated and guaranteed bash environment.
+exec "$HOME/.xsession_real" "$@"
 
-#source "$HOME/.common_startup"
-
-# note we add the 'wait' flag, which disallows immediate exit, which in turn would stop X session right after it.
-exec systemctl --user start --wait xsession.target
