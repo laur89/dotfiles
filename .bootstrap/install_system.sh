@@ -299,7 +299,7 @@ setup_udev() {
     for dir in "${udev_src[@]}"; do
         [[ -d "$dir" ]] || continue
         for file in "$dir/"*; do
-            [[ -f "$file" && "$file" == *.rules ]] || continue  # note we require '.rules' suffix
+            [[ -s "$file" && "$file" == *.rules ]] || continue  # note we require '.rules' suffix
             tmpfile="$TMP_DIR/.udev_setup-$(basename -- "$file")"
             execute "cp -- '$file' '$tmpfile'" || return 1
             execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
@@ -308,6 +308,44 @@ setup_udev() {
     done
 
     execute "sudo udevadm control --reload-rules"
+
+    return 0
+}
+
+
+setup_pm() {
+    local pm_src pm_target file dir pm_state_dir tmpfile target
+
+    readonly pm_target='/etc/pm'
+    pm_src=(
+        "$COMMON_PRIVATE_DOTFILES/backups/pm"
+        "$PRIVATE__DOTFILES/backups/pm"
+    )
+
+    is_laptop && pm_src+=("$COMMON_PRIVATE_DOTFILES/backups/pm/laptop")
+    [[ -n "$PLATFORM" ]] && pm_src+=("$PLATFORM_DOTFILES/pm")
+
+    if ! [[ -d "$pm_target" ]]; then
+        err "[$pm_target] is not a dir; skipping pm file(s) installation."
+        return 1
+    fi
+
+    for dir in "${pm_src[@]}"; do
+        [[ -d "$dir" ]] || continue
+        for pm_state_dir in "$dir/"*.d; do
+            [[ -d "$pm_state_dir" ]] || { err "[$pm_state_dir] not a dir"; continue; }
+            target="$pm_target/$(basename -- "$pm_state_dir")"  # e.g. /etc/pm/sleep.d, ...power.d
+            [[ -d "$target" ]] || { err "[$target] does not exist. should we just create it?"; continue; }
+
+            for file in "$pm_state_dir/"*; do
+                [[ -s "$file" ]] || continue
+                tmpfile="$TMP_DIR/.pm_setup-${RANDOM}-$(basename -- "$file")"
+                execute "cp -- '$file' '$tmpfile'" || return 1
+                execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
+                execute "sudo mv -- '$tmpfile' $target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$target] failed w/ $?"; return 1; }
+            done
+        done
+    done
 
     return 0
 }
@@ -1687,6 +1725,7 @@ setup_config_files() {
     setup_pam_login
     setup_logind
     is_native && setup_udev
+    is_native && setup_pm
     is_native && install_kernel_modules   # TODO: does this belong in setup_config_files()?
     #is_native && setup_smartd  #TODO: uncomment once finished!
     setup_mail
