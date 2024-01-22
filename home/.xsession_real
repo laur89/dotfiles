@@ -15,8 +15,12 @@
 
 
 # shellcheck disable=SC2155
-readonly REPO_ROOT="$([[ ${CONFIG_GET_ROOT:-0} == 1 ]] && config-repo-root "${BASH_SOURCE[0]}" || echo "${HOME}")"
-readonly DESKTOP_ENV_UTILS_DIR="${REPO_ROOT}/.my_scripts/desktop_env"
+#readonly REPO_ROOT="$([[ ${CONFIG_GET_ROOT:-0} == 1 ]] && config-repo-root "${BASH_SOURCE[0]}" || echo "${HOME}")"
+#readonly DESKTOP_ENV_UTILS_DIR="${REPO_ROOT}/.my_scripts/desktop_env"
+
+source /etc/.global-bash-init; _init || exit 1  # needs to be very first for the env vars
+
+readonly SET_X11_SETTINGS="$BASE_DATA_DIR/dev/scripts/system/set-x11-settings"  # note this is also defined in /etc/pm.d/sleep.d/99_sleep_reset_keyboard, just fyi
 
 _command_exists() {
   # shellcheck disable=SC2317
@@ -39,6 +43,7 @@ _log_boxed_message() {
   } 1>&2
 }
 
+# note this guy doesn't exist for debian
 _load_system_config() {
   # Source additional system config. Arch wiki notes it should be done:
   # https://wiki.archlinux.org/index.php/Xinit#xinitrc
@@ -66,6 +71,7 @@ _set_gdk_scaling() {
   export GDK_DPI_SCALE="${gdk3_dpi_scale}"
 }
 
+
 _setup_environment() {
   # Source .profile so that its settings will apply to graphical logins from a
   # display manager (which is my default login procedure).
@@ -73,31 +79,35 @@ _setup_environment() {
   # since some display managers like xdm source this file without a controlling
   # terminal. For more background see: https://wiki.debian.org/DotFiles
   # shellcheck source=../../.profile
-  source "${REPO_ROOT}/.profile"
+  #source "${REPO_ROOT}/.profile"  # commented out as we're not using a display manager
 
   # Directory for storing KDE configuration and data. By default this is
   # ${HOME}/.kde4. See also:
   # https://userbase.kde.org/KDE_System_Administration/KDE_Filesystem_Hierarchy
-  export KDEHOME="${HOME}/.local/kde"
+  #export KDEHOME="${HOME}/.local/kde"  # not using KDE
   # Configures QT applications to use qt5ct (a configuration app) for the theme.
-  export QT_QPA_PLATFORMTHEME="qt5ct"
+  #export QT_QPA_PLATFORMTHEME="qt5ct"  # we set it in env vars
 
   # Set ibus as the input method for GTK and QT. See also:
   # https://unix.stackexchange.com/questions/260601/understanding-setting-up-different-input-methods
+  # TODO: move these env vars to env_vars?:
   export GTK_IM_MODULE='ibus'
   export QT_IM_MODULE='ibus'
   export XMODIFIERS='@im=ibus'
 
   # Reduce clutter in home directory.
-  export XAUTHORITY="${XDG_RUNTIME_DIR}/Xauthority"
-  [[ -e "${HOME}/.Xauthority" ]] && mv -f "${HOME}/.Xauthority" "${XAUTHORITY}"
+  if [[ -e "${HOME}/.Xauthority" ]]; then
+    export XAUTHORITY="${XDG_RUNTIME_DIR}/Xauthority"
+    mv -f "${HOME}/.Xauthority" "${XAUTHORITY}"
+  fi
 
-  _set_gdk_scaling
+  #_set_gdk_scaling  # TODO: do we need this?
 
   # Export environment variables to dbus and systemd. Critical for things that
   # rely on DISPLAY, XAUTHORITY, PATH, etc, but also important for stuff like
   # GNUPG_HOME and GDK_SCALE.
-  dbus-update-activation-environment --systemd --all
+  #dbus-update-activation-environment --systemd --all   # TODO this command errors
+
   # NOTE: As of 2019-05-24, there seems to be a race condition between the
   # updating of the environment and the start of services from
   # i3-session.target.  This is evident when hovering with the mouse over the
@@ -110,22 +120,31 @@ _setup_environment() {
   # NOTE: As of 2019-06-02, this systemctl command doesn't improve things and
   # there are still issues with the environment not being fully set before copyq
   # and usbguard-applet are launched.
-  # systemctl --user --wait import-environment
+  #
+  # NOTE: from laur 2024 - import-environment does log out 'Calling import-environment without a list of variable names is deprecated.',
+  #       but without it i3 wouldn't have proper PATH set, causing programs referenced from
+  #       e.g. ~/bin to not be found
+   systemctl --user --wait import-environment
+   #systemctl --user daemon-reload
 }
 
 main() {
   # Logging for every line executed in the xsession script.
   _log_executed_lines
   _log_boxed_message 'Logging to systemd journal'
-  _load_system_config
+  #_load_system_config  # is this arch-specific?
   _setup_environment
+
   # shellcheck source=./set-x11-settings
-  "${DESKTOP_ENV_UTILS_DIR}/set-x11-settings"
+  "$SET_X11_SETTINGS"
+
   # Start i3 and user services and block till i3 exits, as expected by the
   # display manager. Note that i3-session.target pulls i3, but it doesn't affect
   # the later command that waits for i3 to terminate.
   # (sleep 10 && "${REPO_ROOT}/submodules/desktop/activitywatch/dist/aw-qt") &
-  systemctl --user start --wait i3-session.target
+
+  # note we add the 'wait' flag, which disallows immediate exit, which in turn would stop X session right after it.
+  systemctl --user start --wait xsession.target
 }
 
 main "$@"
