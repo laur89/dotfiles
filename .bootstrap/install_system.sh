@@ -1860,7 +1860,7 @@ update_clock() {
 
 
 get_apt_key() {
-    local name url src_entry keyfile k grp_ptrn opt OPTIND
+    local name url src_entry keyfile f k grp_ptrn opt OPTIND
 
     while getopts 'gk:' opt; do
         case "$opt" in
@@ -1875,29 +1875,32 @@ get_apt_key() {
     url="$2"  # either keyfile or keyserver, depending on whether -k is used; with -g flag it's a file that contains the PGP key, together with other content (likely an installer script)
     src_entry="$3"
     keyfile="$APT_KEY_DIR/${name}.gpg"
+    f="/tmp/.apt-key_${name}-${RANDOM}.gpg"
 
     # create (arbitrary) dir for our apt keys:
     [[ -d "$APT_KEY_DIR" ]] || execute "sudo mkdir -- $APT_KEY_DIR" || return 1
 
     if [[ -n "$k" ]]; then
-        execute "sudo gpg --no-default-keyring --keyring $keyfile --keyserver $url --recv-keys $k" || return 1
+        execute "sudo gpg --no-default-keyring --keyring $f --keyserver $url --recv-keys $k" || return 1
     elif [[ -n "$grp_ptrn" ]]; then
-        execute "wget -q -O - '$url' | grep -Pzo -- '(?s)$grp_ptrn' | gpg --dearmor | sudo tee $keyfile > /dev/null" || return 1
+        execute "wget -q -O - '$url' | grep -Pzo -- '(?s)$grp_ptrn' | gpg --dearmor | sudo tee $f > /dev/null" || return 1
     else
         # either single-conversion command, if it works...:
-        execute "wget -q -O - '$url' | gpg --dearmor | sudo tee $keyfile > /dev/null" || return 1
+        execute "wget -q -O - '$url' | gpg --dearmor | sudo tee $f > /dev/null" || return 1
 
         # ...or lengthier (but safer?) multi-step conversion:
-        #local f tmp_ring
-        #f="/tmp/.gpg-apt-key-${RANDOM}"
+        #local tmp_ring
         #tmp_ring="/tmp/temp-keyring-${RANDOM}.gpg"
         #execute "curl -fsL -o '$f' '$url'" || return 1
 
         #execute "gpg --no-default-keyring --keyring $tmp_ring --import $f" || return 1
-        #execute "gpg --no-default-keyring --keyring $tmp_ring --export --output $keyfile" || return 1
-        #rm -- "$tmp_ring" "$f"
+        #rm -- "$f"  # unsure if this is needed or not for the following gpg --output command
+        #execute "gpg --no-default-keyring --keyring $tmp_ring --export --output $f" || return 1
+        #rm -- "$tmp_ring"
     fi
 
+    [[ -s "$f" ]] || { err "imported keyfile [$f] does not exist"; return 1; }
+    execute "sudo mv -- '$f' '$keyfile'" || return 1
     src_entry="${src_entry//\{s\}/signed-by=$keyfile}"
     execute "echo '$src_entry' | sudo tee /etc/apt/sources.list.d/${name}.list > /dev/null" || return 1
 }
@@ -1949,8 +1952,11 @@ setup_additional_apt_keys_and_sources() {
     # latest/current key can be found from https://installer.id.ee/media/install-scripts/
     #
     # note you'll likely want to use the latest ubuntu LTS or latest, period, codename for repo.
-    #get_apt_key -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh "deb [{s}] https://installer.id.ee/media/ubuntu/ focal main"
+    #get_apt_key -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh "deb [{s}] https://installer.id.ee/media/ubuntu/ jammy main"
     get_apt_key  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub "deb [{s}] https://installer.id.ee/media/ubuntu/ jammy main"
+
+    # mozilla/firefox:  https://support.mozilla.org/en-US/kb/install-firefox-linux#w_install-firefox-deb-package-for-debian-based-distributions
+    get_apt_key  mozilla  https://packages.mozilla.org/apt/repo-signing-key.gpg "deb [{s}] https://packages.mozilla.org/apt mozilla main"
 
     execute 'sudo apt-get --yes update'
 }
@@ -5389,7 +5395,7 @@ install_from_repo() {
     )
 
     declare -ar block3=(
-        firefox/unstable
+        firefox
         buku
         chromium
         chromium-sandbox
