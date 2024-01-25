@@ -5984,6 +5984,7 @@ remind_manually_installed_progs() {
         'ublock whitelist (should be saved somewhere)'
         'import keepass-xc browser plugin config'
         'install tridactyl native messenger/executable (:installnative)'
+        'set the firefox config, see details @ setup_firefox()'
         'install/load chromium Surfingkeys plugin config from [https://github.com/laur89/surfingkeys-config/]'
         'setup default keyring via seahorse'
         'update system firmware'
@@ -6586,9 +6587,11 @@ setup_firefox() {
     execute popd
     # }
 
+    # !!!!!!!!!!!!!!!! DO NOT MISS THESE !!!!!!!!!!!!!!!!
     # manual edits in about:config:
     # -  toolkit.cosmeticAnimations.enabled -> false   # remove fullscreen animation
-    # -  full-screen-api.ignore-widgets -> true  # remove window decorations in non-fullscreen; note it still requires F11 toggle!
+    # -  full-screen-api.ignore-widgets -> true        # remove window decorations in non-fullscreen; note it still requires F11 toggle!
+    # !!!!!!!!!!!!!!!! DO NOT MISS THESE !!!!!!!!!!!!!!!!
 }
 
 

@@ -325,10 +325,10 @@ mode "$mode_gaps_outer" {
 # workspace $w1 output LVDS1
 
 # Lock screen
-bindsym Control+mod1+l   $ex lock -f
-# maybe would be better to trigger via xset, as otherwise xss-lock would not about the locking state:
+#bindsym Control+mod1+l   $ex  lock -f
+# or maybe would be better to trigger via xset, as otherwise xss-lock would not about the locking state:
 # note instead of 'xset s activate' you could also use 'loginctl lock-session', assuming systemd usage.
-#bindsym Control+mod1+l $ex xset s activate
+bindsym Control+mod1+l   $ex  xset s activate
 #
 # first switch to likely-unused ws to avoid typing passwd for the world:
 #bindsym Control+mod1+Delete $ex i3-msg workspace $w8 && /usr/local/bin/lock
@@ -568,7 +568,7 @@ for_window [class="^Blueman-.*"] floating enable
 for_window [class="^System-config-printer.py$"] floating enable
 for_window [class="^Magnus$"] floating enable
 for_window [class="^Gnome-usage$"] floating enable
-for_window [class="^Firefox$" title="^About Mozilla Firefox$"] floating enable
+for_window [class="^[fF]irefox$" title="^About Mozilla Firefox$"] floating enable
 # 'Toplevel' class is the class of various popup windows of tkremind:
 for_window [class="^Toplevel$"] floating enable
 for_window [class="^Steam$" title="^(Steam - News|Friends List)"] floating enable
@@ -613,7 +613,7 @@ for_window [class="^jetbrains-" title="^Import .*Settings From"] floating enable
 # Starting apps on a specific workspace {{{
 assign [class="^Tor Browser$"]           $w1
 # we don't want to include instance such as 'Dialog', which is eg the download prompt:
-assign [class="^Firefox$" instance="^Navigator$"]  $w1
+assign [class="^[fF]irefox$" instance="^Navigator$"]  $w1
 assign [class="^Zathura"]                $w3
 assign [class="^mpv$"]                   $w4
 assign [class="^VirtualBox$"]            $w7
@@ -707,15 +707,7 @@ bindsym $mod+Tab $ex i3-cycle-workspace.py --switch
 $exa  i3expo
 
 # start playerctl daemon:
-$ex  playerctld daemon
-
-# start polkit:
-$ex  /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1
-
-# start udiskie (https://github.com/coldfix/udiskie/wiki/Usage)
-$ex  udiskie
-
-$ex  urxvtd --fork -o -q
+#$ex  playerctld daemon  !! looks like already started by systemd!
 
 # populate DBUS vars.
 # taken from some reddit post: https://www.reddit.com/r/Gentoo/comments/tzdnvn/comment/i3zzvjl/?utm_source=share&utm_medium=web2x&context=3
