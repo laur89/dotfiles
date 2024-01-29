@@ -2219,6 +2219,7 @@ install_own_builds() {
     #install_goforit
     #install_copyq
     is_native && install_uhk_agent
+    is_native && install_ddcutil
     install_keyd
     #install_rambox
     is_native && install_ferdium
@@ -2595,8 +2596,8 @@ install_deb_from_git() {
 #
 # Also note the operation is successful only if a single directory gets extracted out.
 #
-#   -S   see doc on extract_tarball()
-#   -T|Z see doc on fetch_release_from_git()
+#   -S     see doc on extract_tarball()
+#   -T|Z   see doc on fetch_release_from_git()
 #
 # $1 - git user
 # $2 - git repo
@@ -3900,6 +3901,48 @@ install_keyd() {
     # put package on hold so they don't get overridden by apt-upgrade:
     execute 'sudo apt-mark hold  keyd'
     [[ -s "$conf_src" ]] && execute "sudo cp -- '$conf_src' '$conf_target'"
+
+    execute "popd"
+    execute "sudo rm -rf -- '$dir'"
+    return 0
+}
+
+
+# https://github.com/rockowitz/ddcutil
+# https://www.ddcutil.com/building/
+install_ddcutil() {
+    local dir
+
+    dir="$(fetch_extract_tarball_from_git -T  rockowitz ddcutil)" || return 1
+
+    report "installing ddcutil build dependencies..."
+    install_block '
+        i2c-tools
+        libglib2.0-0
+        libgudev-1.0-0
+        libusb-1.0-0
+        libudev1
+        libdrm2
+        libjansson4
+        libxrandr2
+        hwdata
+        libc6-dev
+        libglib2.0-dev
+        libusb-1.0-0-dev
+        libudev-dev
+        libxrandr-dev
+        libdrm-dev
+        libjansson-dev
+    ' || { err 'failed to install build deps. abort.'; return 1; }
+    execute "pushd $dir" || return 1
+    execute 'autoreconf --force --install' || { err; popd; return 1; }
+    execute './configure' || { err; popd; return 1; }
+    execute make || { err; popd; return 1; }
+
+    create_deb_install_and_store  ddcutil  # TODO: note still using checkinstall
+
+    # put package on hold so they don't get overridden by apt-upgrade:
+    execute 'sudo apt-mark hold  ddcutil'
 
     execute "popd"
     execute "sudo rm -rf -- '$dir'"
@@ -5843,6 +5886,7 @@ __choose_prog_to_build() {
         install_copyq
         install_uhk_agent
         install_keyd
+        install_ddcutil
         install_rambox
         install_slides
         install_ferdium
