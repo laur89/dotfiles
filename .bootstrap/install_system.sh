@@ -2388,20 +2388,23 @@ switch_jdk_versions() {
 #  - https://github.com/OhMyMndy/bin-get
 #  - https://github.com/wimpysworld/deb-get
 fetch_release_from_git() {
-    local opt loc id OPTIND dl_url opts
+    local opt loc id OPTIND dl_url opts selector
 
     opts=()
-    while getopts 'UsF:n:' opt; do
+    while getopts 'UsF:n:TZ' opt; do
         case "$opt" in
             U|s) opts+=("-$opt") ;;
             F|n) opts+=("-$opt" "$OPTARG") ;;
+            T) selector='.tarball_url' ;;
+            Z) selector='.zipball_url' ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
+    [[ -z "$selector" ]] && selector=".assets[] | select(.name|test(\"$3\$\")) | .browser_download_url"
     readonly loc="https://api.github.com/repos/$1/$2/releases/latest"
-    dl_url="$(curl -fsSL "$loc" | jq -er ".assets[] | select(.name|test(\"$3\$\")) | .browser_download_url")" || { err "asset url resolution from [$loc] failed w/ $?"; return 1; }
+    dl_url="$(curl -fsSL "$loc" | jq -er "$selector")" || { err "asset url resolution from [$loc] failed w/ $?"; return 1; }
     readonly id="github-$1-$2${4:+-$4}"  # note we append name to the id when defined (same repo might contain multiple binaries)
 
     if ! is_valid_url "$dl_url"; then
@@ -2599,17 +2602,18 @@ install_deb_from_git() {
 #                   _single_ dir in the result.
 # @returns {bool} true, if we found a _single_ dir in result
 fetch_extract_tarball_from_git() {
-    local opt i OPTIND standalone
+    local opt i OPTIND standalone downstream_opts
 
-    while getopts 'S' opt; do
+    while getopts 'STZ' opt; do
         case "$opt" in
             S) standalone='-S' ;;
+            T|Z) downstream_opts+="$opt" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
-    i="$(fetch_release_from_git -U "$1" "$2" "$3")" || return $?
+    i="$(fetch_release_from_git -U$downstream_opts "$1" "$2" "$3")" || return $?
     extract_tarball  $standalone "$i"
 }
 
@@ -3879,7 +3883,7 @@ install_uhk_agent() {
 install_keyd() {
     local dir
 
-    dir="$(fetch_extract_tarball_from_git  rvaiya  keyd  'v\\d+\\.\\d+.*\\.tar\\.gz')" || return 1
+    dir="$(fetch_extract_tarball_from_git  -T rvaiya  keyd)" || return 1
 
     execute "pushd $dir" || return 1
     execute make || { err; popd; return 1; }
