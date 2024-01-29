@@ -2219,6 +2219,7 @@ install_own_builds() {
     #install_goforit
     #install_copyq
     is_native && install_uhk_agent
+    install_keyd
     #install_rambox
     is_native && install_ferdium
     is_native && install_discord
@@ -3870,6 +3871,28 @@ install_copyq() {
 # https://github.com/UltimateHackingKeyboard/agent
 install_uhk_agent() {
     install_bin_from_git -N agent UltimateHackingKeyboard agent linux-x86_64.AppImage
+}
+
+
+# https://github.com/rvaiya/keyd
+# https://github.com/rvaiya/keyd#from-source
+install_keyd() {
+    local dir
+
+    dir="$(fetch_extract_tarball_from_git  rvaiya  keyd  'v\\d+\\.\\d+.*\\.tar\\.gz')" || return 1
+
+    execute "pushd $dir" || return 1
+    execute make || { err; popd; return 1; }
+
+    create_deb_install_and_store  keyd  # TODO: note still using checkinstall
+    execute 'sudo systemctl enable --now keyd' || return 1  # note --now flag effectively also starts the service immediately
+
+    # put package on hold so they don't get overridden by apt-upgrade:
+    execute 'sudo apt-mark hold  keyd'
+
+    execute "popd"
+    execute "sudo rm -rf -- '$dir'"
+    return 0
 }
 
 
@@ -5808,6 +5831,7 @@ __choose_prog_to_build() {
         install_goforit
         install_copyq
         install_uhk_agent
+        install_keyd
         install_rambox
         install_slides
         install_ferdium
