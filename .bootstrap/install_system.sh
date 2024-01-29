@@ -2379,6 +2379,9 @@ switch_jdk_versions() {
 
 
 
+# -T  - instead of grepping via asset rgx, go with the latest tarball
+# -Z  - instead of grepping via asset rgx, go with the latest zipball
+#
 # $1 - git user
 # $2 - git repo
 # $3 - asset regex to be used (for jq's test()) to parse correct item from git /releases page
@@ -2593,6 +2596,7 @@ install_deb_from_git() {
 # Also note the operation is successful only if a single directory gets extracted out.
 #
 #   -S   see doc on extract_tarball()
+#   -T|Z see doc on fetch_release_from_git()
 #
 # $1 - git user
 # $2 - git repo
@@ -3881,9 +3885,11 @@ install_uhk_agent() {
 # https://github.com/rvaiya/keyd
 # https://github.com/rvaiya/keyd#from-source
 install_keyd() {
-    local dir
+    local dir conf_src conf_target
 
     dir="$(fetch_extract_tarball_from_git  -T rvaiya  keyd)" || return 1
+    conf_src="$COMMON_DOTFILES/backups/keyd.conf"
+    conf_target='/etc/keyd/default.conf'
 
     execute "pushd $dir" || return 1
     execute make || { err; popd; return 1; }
@@ -3893,6 +3899,7 @@ install_keyd() {
 
     # put package on hold so they don't get overridden by apt-upgrade:
     execute 'sudo apt-mark hold  keyd'
+    [[ -s "$conf_src" ]] && execute "sudo cp -- '$conf_src' '$conf_target'"
 
     execute "popd"
     execute "sudo rm -rf -- '$dir'"
