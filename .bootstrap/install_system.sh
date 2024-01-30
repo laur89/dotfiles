@@ -2107,11 +2107,17 @@ install_kernel_modules() {
         return 1
     fi
 
+    # note as per https://wiki.archlinux.org/title/Backlight:
+    #   > Using ddcci and i2c-dev simultaneously may result in resource conflicts such as a Device or resource busy error.
+    #
     # list of modules to be added to $conf for auto-loading at boot:
     modules=(
-        i2c-dev
         ddcci
     )
+
+    # from https://www.ddcutil.com/kernel_module/: only load
+    # i2c on demand if it's not already loaded into kernel:
+    grep -q  i2c-dev.ko  "/lib/modules/$(uname -r)/modules.builtin" || modules+=(i2c-dev)
 
     # ddcci-dkms gives us DDC support so we can control also external monitor brightness
     install_block  ddcci-dkms || return 1
@@ -3910,8 +3916,10 @@ install_keyd() {
 
 # https://github.com/rockowitz/ddcutil
 # https://www.ddcutil.com/building/
+#
+# pre-built binaries avail @ https://www.ddcutil.com/install/#prebuilt-packages-maintained-by-the-ddcutil-project
 install_ddcutil() {
-    local dir
+    local dir group
 
     dir="$(fetch_extract_tarball_from_git -T  rockowitz ddcutil)" || return 1
 
@@ -3946,6 +3954,11 @@ install_ddcutil() {
 
     execute "popd"
     execute "sudo rm -rf -- '$dir'"
+
+    # following from https://www.ddcutil.com/i2c_permissions/
+    group=i2c
+    execute -c 0,9 "sudo groupadd $group" || err
+    addgroup_if_missing "$group"
     return 0
 }
 
@@ -4210,7 +4223,7 @@ install_betterlockscreen() {  # https://github.com/pavanjadhaw/betterlockscreen
 #
 # alternatives:
 # - https://gitlab.com/cameronnemo/brillo  - untested, but looks to be working on multiple devices at same time!
-# - https://github.com/haikarainen/light
+# - https://github.com/haikarainen/light  - project is EOL
 # - https://github.com/Hummer12007/brightnessctl
 #
 # TODO need to install  ddcci-dkms  pkg and load ddcci module to get external display evices listed under /sys
@@ -4248,6 +4261,7 @@ install_brillo() {
 
 # https://github.com/haimgel/display-switch
 # switches display output when USB device (eg kbd switch) is connected/disconnected
+# similar solution without display_switch: https://www.reddit.com/r/linux/comments/102bwkc/automatically_switching_screen_input_when/
 install_display_switch() {
     local repo tmpdir ver group
 
