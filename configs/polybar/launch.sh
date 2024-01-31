@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# https://github.com/jaagr/polybar/wiki
+# https://github.com/polybar/polybar/wiki
 #################################################
 
 # Terminate already running bar instances
