@@ -2119,7 +2119,7 @@ install_kernel_modules() {
     # i2c on demand if it's not already loaded into kernel:
     grep -q  i2c-dev.ko  "/lib/modules/$(uname -r)/modules.builtin" || modules+=(i2c-dev)
 
-    # ddcci-dkms gives us DDC support so we can control also external monitor brightness
+    # ddcci-dkms gives us DDC support so we can control also external monitor brightness (via brillo et al; not related to i2c-dev/ddcutil)
     install_block  ddcci-dkms || return 1
 
     for i in "${modules[@]}"; do
@@ -4233,6 +4233,9 @@ install_acpilight() {
 
 
 # https://gitlab.com/cameronnemo/brillo
+#
+# note ddcci-dkms is required to change external monitor brightness; never managed
+# to get it to work, still using ddcutil for externals.
 install_brillo() {
     local repo tmpdir ver
 
