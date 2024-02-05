@@ -19,15 +19,6 @@ if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
 fi
 # =====================================================================
 
-# execute command in the background with no completion status to our parent shell.
-#
-# from https://stackoverflow.com/a/51061046/1803648
-# e.g. silent_background sleep 3
-silent_background() {
-    { 2>&3 "$@"& } 3>&2 2>/dev/null
-    disown &>/dev/null  # Prevent whine if job has already completed
-}
-
 
 # gnu find wrapper.
 # find files or dirs based on name or type
