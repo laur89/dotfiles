@@ -2249,7 +2249,7 @@ install_own_builds() {
     #install_exa
     #install_synergy  # currently installing from repo
     install_i3
-    install_polybar
+    #install_polybar  # currently installing from repo
     install_gruvbox_gtk_theme
     #install_weeslack
     install_gomuks
@@ -4519,6 +4519,8 @@ install_i3_deps() {
 # the ./build.sh version
 # https://github.com/polybar/polybar/wiki/Compiling
 # https://github.com/polybar/polybar
+#
+# note testing might have new enough package these days: https://packages.debian.org/testing/polybar
 install_polybar() {
     local dir
 
@@ -5509,6 +5511,7 @@ install_from_repo() {
         inkscape
         xsel
         wmctrl
+        polybar
         xdotool
         python3-xlib
         exuberant-ctags
