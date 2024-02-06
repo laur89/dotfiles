@@ -14,7 +14,7 @@ TRAY_MONITOR_PREFERENCE=(
 source /etc/.global-bash-init; _init || exit 1  # needs to be very first for the env vars
 
 # Terminate already running bar instances
-polybar-msg cmd quit  # requires IPC to be enabled
+polybar-msg cmd quit  # requires IPC to be enabled per bar in config
 #killall -q polybar
 
 # Wait until the processes have been shut down
@@ -40,12 +40,18 @@ done
 
 # note we pass env vars that are to be referenced in polybar config (WIRELESS/MONITOR...):
 for m in "${MONITORS[@]}"; do
-    #WIRELESS="$w" MONITOR="$m" polybar --reload "$SELECTED_BAR" &
-    #WIRELESS="$w" MONITOR="$m" polybar --reload bar2 &  # in case you're running more than one bar
+    bar="$SELECTED_BAR"
+    [[ "$tray_output" == "$m" ]] && bar+='-primary'
 
+    # either launch via silent_background()...
     unset WIRELESS  MONITOR
     export WIRELESS="$w"  MONITOR="$m"
-    silent_background  polybar --reload "$SELECTED_BAR"
+    silent_background  polybar --reload "$bar"
+    # ...or simply background here:
+    #WIRELESS="$w" MONITOR="$m" polybar --reload "$bar" &
+    #WIRELESS="$w" MONITOR="$m" polybar --reload bar2 &  # in case you're running more than one bar
+    # to log:
+    #polybar i3_bar 2>&1 | tee -a /tmp/polybar1.log & disown
 done
 
 # note you might appreciate 'pin-workspaces = true' config w/ multi-setup
