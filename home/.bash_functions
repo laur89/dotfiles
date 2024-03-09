@@ -3317,6 +3317,14 @@ setromaniatime() {
     __settz Europe/Bucharest
 }
 
+setturkeytime() {
+    __settz Asia/Istanbul
+}
+
+setgeorgiatime() {
+    __settz Asia/Tbilisi
+}
+
 setestoniatime() {
     __settz Europe/Tallinn
 }
