@@ -36,8 +36,7 @@ case "$input" in
         if is_windows; then
             i3 &
         else  # both native & virt:
-            # use dbus-run-session, see https://github.com/flexibeast/guides/blob/master/dbus-on-void.md :
-            #exec dbus-run-session  i3  # this is to make sure certain dbus env vars are set
+            #exec dbus-run-session  i3  # this is to make sure certain dbus env vars are set; see https://github.com/flexibeast/guides/blob/master/dbus-and-x-sessions.md
             exec i3  # simple, dummy way; should always work
 
             #exec i3 --shmlog-size=26214400  # enable logging; to enable logging on the fly, do:  i3-msg 'debuglog on; shmlog on; reload'
