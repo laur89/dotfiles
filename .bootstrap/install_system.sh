@@ -1924,7 +1924,7 @@ setup_additional_apt_keys_and_sources() {
 
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
-    get_apt_key  spotify  https://download.spotify.com/debian/pubkey_7A3A762FAFD4A51F.gpg "deb [{s}] http://repository.spotify.com stable non-free"
+    get_apt_key  spotify  https://download.spotify.com/debian/pubkey_6224F9941A8AA6D1.gpg "deb [{s}] http://repository.spotify.com stable non-free"
 
     # seafile-client: (from https://help.seafile.com/syncing_client/install_linux_client/):
     #     seafile-drive instructions would be @ https://help.seafile.com/drive_client/drive_client_for_linux/
@@ -1932,9 +1932,6 @@ setup_additional_apt_keys_and_sources() {
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
     get_apt_key  charles  https://www.charlesproxy.com/packages/apt/PublicKey "deb [{s}] https://www.charlesproxy.com/packages/apt/ charles-proxy main"
-
-    # kubectl:  (from https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-using-native-package-management):
-    get_apt_key  kubernetes  https://packages.cloud.google.com/apt/doc/apt-key.gpg "deb [{s}] https://apt.kubernetes.io/ kubernetes-xenial main"
 
     # terraform:  (from https://www.terraform.io/downloads):
     get_apt_key  terraform  https://apt.releases.hashicorp.com/gpg "deb [arch=amd64 {s}] https://apt.releases.hashicorp.com $DEB_STABLE main"
@@ -2203,9 +2200,7 @@ install_devstuff() {
     install_minikube
     install_coursier
 
-    install_block '
-        kubectl
-    '
+    install_kubectl
 }
 
 
@@ -2246,7 +2241,7 @@ install_own_builds() {
     install_btop
     install_alacritty
     install_croc
-    #install_exa
+    install_eza
     #install_synergy  # currently installing from repo
     install_i3
     #install_polybar  # currently installing from repo
@@ -2810,8 +2805,8 @@ resolve_ver() {
         [[ "${#v}" -ge "$n" ]]
     }
 
-    hdrs="$(curl -Ls --fail --retry 3 --head -o /dev/stdout "$url")"
-    ver="$(grep -iPo '^etag:\s*"*\K\S+' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
+    hdrs="$(curl -Ls --fail --retry 2 --head -o /dev/stdout "$url")"
+    ver="$(grep -iPo '^etag:\s*"*\K\S+(?=")' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
     if [[ "${#ver}" -le 5 ]]; then
         ver="$(grep -iPo '^location:\s*\K\S+' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
         if [[ "${#ver}" -le 5 ]]; then
@@ -3156,6 +3151,11 @@ install_octant() {  # https://github.com/vmware-tanzu/octant
 # for usecase, see https://medium.com/bench-engineering/deploying-kubernetes-clusters-with-kops-and-terraform-832b89250e8e
 install_kops() {  # https://github.com/kubernetes/kops/
     install_bin_from_git -N kops -d "$HOME/bin"  kubernetes  kops  kops-linux-amd64
+}
+
+# kubectl:  https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-kubectl-binary-with-curl-on-linux
+install_kubectl() {
+    install_from_url  kubectl  "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 }
 
 # kubectx - kubernetes contex swithcher
@@ -3549,13 +3549,12 @@ install_bluejeans() {  # https://www.bluejeans.com/downloads#desktop
 
 
 # https://github.com/kubernetes/minikube
-install_minikube() {  # https://kubernetes.io/docs/tasks/tools/install-minikube/
+install_minikube() {  # https://minikube.sigs.k8s.io/docs/start/
     # from github releases...:
-    install_deb_from_git kubernetes minikube 'minikube_[-0-9.]+.*_amd64.deb'
+    install_deb_from_git  kubernetes  minikube  'minikube_[-0-9.]+.*_amd64.deb'
 
     # ...or from k8s page:  (https://minikube.sigs.k8s.io/docs/start/):
-    #curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
-    #sudo dpkg -i minikube_latest_amd64.deb
+    #install_from_url  minikube  "https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb"
 }
 
 
@@ -3582,9 +3581,8 @@ install_btop() {  # https://github.com/aristocratos/btop
 
 
 # modern ls replacement written in rust
-# TODO: project dead? see https://github.com/ogham/exa/issues/621
-install_exa() {  # https://github.com/ogham/exa
-    install_bin_from_git -N exa -d "$HOME/bin"  ogham  exa 'exa-linux-x86_64-.*.zip'
+install_eza() {  # https://github.com/eza-community/eza
+    install_bin_from_git -N eza -d "$HOME/bin"  eza-community  eza 'eza_x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
@@ -5139,6 +5137,7 @@ install_fonts() {
         xfonts-base
         xbitmaps
         fonts-firacode
+        fonts-font-awesome
     '
 
     is_native && install_block 'fontforge gucharmap'
@@ -5927,7 +5926,7 @@ __choose_prog_to_build() {
         install_jd
         install_bat
         install_btop
-        install_exa
+        install_eza
         install_gitin
         install_delta
         install_dust
