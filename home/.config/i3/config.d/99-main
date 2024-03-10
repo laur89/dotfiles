@@ -365,8 +365,8 @@ bindsym Control+XF86AudioNext  $ex  playerctl play-pause
 
 bindsym XF86AudioNext        $ex  playerctl next
 bindsym XF86AudioPrev        $ex  playerctl previous
-bindsym Shift+XF86AudioNext  $ex  playerctl position 5+
-bindsym Shift+XF86AudioPrev  $ex  playerctl position 5-
+bindsym Shift+XF86AudioNext  $ex  playerctl position 10+
+bindsym Shift+XF86AudioPrev  $ex  playerctl position 10-
 
 # Brightness control
 bindsym XF86MonBrightnessUp   $ex  change-brightness up
