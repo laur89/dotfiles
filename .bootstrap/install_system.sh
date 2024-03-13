@@ -5276,7 +5276,6 @@ install_from_repo() {
         smartmontools
         pm-utils
         ntfs-3g
-        android-file-transfer
         kdeconnect
         erlang
         cargo
