@@ -14,11 +14,11 @@ TRAY_MONITOR_PREFERENCE=(
 source /etc/.global-bash-init; _init || exit 1  # needs to be very first for the env vars
 
 # Terminate already running bar instances
-polybar-msg cmd quit  # requires IPC to be enabled per bar in config
-#killall -q polybar
+#polybar-msg cmd quit  # requires IPC to be enabled per bar in config; TODO: unconfirmed, but feels like this messes w/ copyq
+killall -q polybar
 
 # Wait until the processes have been shut down
-while pgrep -u "$UID" -x polybar >/dev/null; do sleep 1; done
+while pgrep -u "$UID" -x polybar >/dev/null; do sleep 0.5; done
 
 # Launch bar(s):
 ####### default launcher:
