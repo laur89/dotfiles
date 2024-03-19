@@ -5128,6 +5128,7 @@ install_fonts() {
 
     install_block '
         fonts-noto
+        fonts-noto-color-emoji
         ttf-mscorefonts-installer
         xfonts-75dpi
         xfonts-75dpi-transcoded
