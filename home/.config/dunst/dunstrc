@@ -1,5 +1,5 @@
 [global]
-    font = "Droid Sans 9"
+    font = "Hack Nerd Font Mono 9"
     markup = full
     format = "<b>%s</b>\n%b"
     sort = yes
