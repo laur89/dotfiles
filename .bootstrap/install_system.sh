@@ -351,6 +351,13 @@ setup_pm() {
 }
 
 
+# https://flatpak.org/setup/Debian
+install_flatpak() {
+    install_block flatpak || return 1
+    execute 'sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo'
+}
+
+
 # see https://wiki.archlinux.org/index.php/S.M.A.R.T.
 #
 # TODO: maybe instead of systemctl, enable smartd via     sudo vim /etc/default/smartmontools. Uncomment the line start_smartd=yes.   ?
@@ -1815,6 +1822,7 @@ setup() {
     setup_install_log_file
 
     setup_dirs  # has to come after $SHELL_ENVS sourcing so the env vars are in place
+    install_flatpak
     setup_config_files
     setup_additional_apt_keys_and_sources
 
@@ -1836,10 +1844,10 @@ setup() {
 update_clock() {
     local src remote_time diff
 
-    src='https://www.google.com/'  # external source whose http headers to extract time from
+    src='https://www.google.com'  # external source whose http headers to extract time from
 
     if [[ "$CONNECTED" -eq 0 ]]; then
-        report "we're note connected to net, skipping $FUNCNAME()..."
+        report "we're not connected to net, skipping $FUNCNAME()..."
         return 0
     fi
 
@@ -1852,7 +1860,7 @@ update_clock() {
     if [[ "${diff#-}" -gt 30 ]]; then
         report "system time diff to remote source is [${diff}s] - updating clock..."
         # IIRC, input format to date -s here is important:
-        execute "sudo date -s '$(date -d @$remote_time '+%Y-%m-%d %H:%M:%S')'" || { err "setting system time failed w/ $?"; return 1; }
+        execute "sudo date -s '$(date -d @${remote_time} '+%Y-%m-%d %H:%M:%S')'" || { err "setting system time w/ date failed w/ $?"; return 1; }
     fi
 
     return 0
@@ -2028,6 +2036,7 @@ install_progs() {
 
     install_webdev
     install_from_repo
+    install_from_flatpak
     install_own_builds  # has to be after install_from_repo()
 
     is_native && install_nvidia
@@ -4445,6 +4454,26 @@ rb_install() {
 }
 
 
+fp_install() {
+    local opt name ref remote OPTIND
+
+    while getopts 'n:' opt; do
+        case "$opt" in
+            n) name="$OPTARG" ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    ref="$1"
+    remote="${2:-flathub}"
+
+    name="${name:-$ref}"
+    execute "flatpak install -y --noninteractive '$remote' '$ref'" || return 1
+    create_link "/var/lib/flatpak/exports/bin/$ref" "$HOME/bin/$name"
+}
+
+
 snap_install() {
     execute "sudo snap install $*"
 }
@@ -5506,7 +5535,6 @@ install_from_repo() {
         geeqie
         gthumb
         imagemagick
-        pinta
         inkscape
         xsel
         wmctrl
@@ -5642,6 +5670,12 @@ install_from_repo() {
     if is_native && is_laptop; then
         install_block pulseaudio-module-bluetooth
     fi
+}
+
+
+install_from_flatpak() {
+    # https://flathub.org/apps/com.github.PintaProject.Pinta
+    fp_install -n pinta  'com.github.PintaProject.Pinta'
 }
 
 # install/update the guest-utils/guest-additions.
@@ -5876,6 +5910,7 @@ choose_single_task() {
         install_nfs_server_or_client
         install_games
         install_xonotic
+        install_from_flatpak
         __choose_prog_to_build
     )
 
@@ -6031,6 +6066,7 @@ quick_refresh() {
     install_progs
     install_deps
     execute 'pipx  upgrade-all'
+    execute 'flatpak -y --noninteractive update'
 }
 
 
@@ -6044,6 +6080,7 @@ quicker_refresh() {
     post_install_progs_setup
     install_deps  # TODO: do we want this with mode=3?
     execute 'pipx  upgrade-all'
+    execute 'flatpak -y --noninteractive update'
 }
 
 
