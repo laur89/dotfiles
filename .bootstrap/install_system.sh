@@ -61,7 +61,7 @@ readonly DEB_OLDSTABLE=bullseye                 # current _oldstable_ release co
 IS_SSH_SETUP=0       # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=''  # only select_items() *writes* into this one.
 PROFILE=''           # work || personal
-MODE=''              # which operation mode we're in; will be defined as 1 || 0 || 2, needs to be first set to empty!
+MODE=''              # which operation mode we're in; will be defined as 0-3, needs to be first set to empty!
 ALLOW_OFFLINE=0      # whether script is allowed to run when we're offline
 CONNECTED=0          # are we connected to the web? 1 || 0
 GIT_RLS_LOG=''       # log of all installed/fetched assets from git releases/latest page; will be defined later on at init;
@@ -1822,7 +1822,7 @@ setup() {
     setup_install_log_file
 
     setup_dirs  # has to come after $SHELL_ENVS sourcing so the env vars are in place
-    install_flatpak
+    [[ "$MODE" -eq 1 ]] && install_flatpak
     setup_config_files
     setup_additional_apt_keys_and_sources
 
@@ -6063,6 +6063,7 @@ quick_refresh() {
     readonly MODE=2
 
     setup
+
     install_progs
     install_deps
     execute 'pipx  upgrade-all'
@@ -6076,8 +6077,10 @@ quicker_refresh() {
     readonly MODE=3
 
     setup
-    install_own_builds
-    post_install_progs_setup
+
+    install_own_builds        # from install_progs()
+    post_install_progs_setup  # from install_progs()
+
     install_deps  # TODO: do we want this with mode=3?
     execute 'pipx  upgrade-all'
     execute 'flatpak -y --noninteractive update'
@@ -6136,14 +6139,17 @@ remind_manually_installed_progs() {
 }
 
 
-# as per    https://confluence.jetbrains.com/display/IDEADEV/Inotify+Watches+Limit
+# as per    https://intellij-support.jetbrains.com/hc/en-us/articles/15268113529362-Inotify-Watches-Limit-Linux
 increase_inotify_watches_limit() {
-    _sysctl_conf '60-jetbrains.conf' 'fs.inotify.max_user_watches' 524288
+    _sysctl_conf '60-jetbrains.conf' 'fs.inotify.max_user_watches' 1048576
 }
 
 
 # as per    https://wiki.archlinux.org/index.php/Linux_Containers#Enable_support_to_run_unprivileged_containers_(optional)
 # i _think_ this issue popped up w/ after 'Franz' or 'notable' started using electron v5+
+#
+# see also https://www.baeldung.com/linux/kernel-enable-user-namespaces
+# TODO: this _should'nt_ be needed anymore on debian: https://www.debian.org/releases/bullseye/amd64/release-notes/ch-information.en.html#linux-user-namespaces
 #
 # this is needed eg for electron v5+ to enable sandboxing; eg see
 #    https://github.com/electron/electron/issues/17972
@@ -6164,7 +6170,7 @@ _sysctl_conf() {
     [[ -d "$sysctl_dir" ]] || { err "[$sysctl_dir] is not a dir. can't change our sysctl value for [$1]"; return 1; }
 
     if [[ -f "$sysctl_conf" ]]; then
-        grep -q "^$property\s*=\s*$value\$" "$sysctl_conf" && return 0  # value already set, nothing to do
+        grep -q "^${property}\s*=\s*${value}\$" "$sysctl_conf" && return 0  # value already set, nothing to do
         # delete all same prop definitions, regardless of its value:
         execute "sudo sed -i --follow-symlinks '/^${property}\s*=/d' '$sysctl_conf'"
     fi
@@ -6216,7 +6222,7 @@ setup_docker() {
         execute 'sudo update-grub'
     }
 
-    addgroup_if_missing docker               # add user to docker group
+    addgroup_if_missing  docker               # add user to docker group
     #execute "sudo gpasswd -a ${USER} docker"  # add user to docker group
     #execute "newgrp docker"  # log us into the new group; !! will stop script execution
     _add_kernel_option
@@ -6779,7 +6785,7 @@ setup_swappiness() {
     local target current
 
     readonly target=0
-    current="$(cat /proc/sys/vm/swappiness)"
+    current="$(cat -- /proc/sys/vm/swappiness)"
     is_digit "$current" || { err "couldn't find current swappiness value, not a digit: [$current]"; return 1; }
     [[ "$target" -eq "$current" ]] && return 0
 
@@ -6801,7 +6807,7 @@ post_install_progs_setup() {
     is_native && install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present  # TODO: do we want to install these only on native systems?
     #is_native && execute -i "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
     is_native && setup_mopidy
-    is_native && execute "sudo sensors-detect --auto"   # answer enter for default values (this is lm-sensors config)
+    is_native && execute 'sudo sensors-detect --auto'   # answer enter for default values (this is lm-sensors config)
     increase_inotify_watches_limit         # for intellij IDEA
     enable_unprivileged_containers_for_regular_users
     setup_docker
@@ -7887,7 +7893,7 @@ update_clock || exit 1  # needs to be done _after_ check_dependencies as update_
 
 choose_step
 
-if [[ "$SYSCTL_CHANGED" -eq 1 ]]; then execute "sudo sysctl -p --system"; fi
+if [[ "$SYSCTL_CHANGED" -eq 1 ]]; then execute 'sudo sysctl -p --system'; fi
 
 exit
 
