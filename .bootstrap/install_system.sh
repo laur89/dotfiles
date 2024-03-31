@@ -1385,7 +1385,7 @@ install_deps() {
     fi
 
     # some py deps requred by scripts:  # TODO: should we not install these via said scripts' requirements.txt file instead?
-    py_install exchangelib vobject icalendar arrow
+    #py_install exchangelib vobject icalendar arrow
     # note: if exchangelib fails with something like
                 #In file included from src/kerberos.c:19:0:
                 #src/kerberosbasic.h:17:27: fatal error: gssapi/gssapi.h: No such file or directory
@@ -5324,7 +5324,7 @@ install_from_repo() {
         fwupd
     )
     # old/deprecated block1_nonwin:
-    #    ufw - iptables frontend, debian now on nftables instead
+    #    ufw - iptables frontend, debian now on nftables instead; think this is wrong, nowadays it uses nftables... so it's either this of firewalld
     #    gufw
     #
 
