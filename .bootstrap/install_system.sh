@@ -55,6 +55,7 @@ readonly BUILD_DOCK='deb-build-box'              # name of the build container
 readonly DEB_STABLE=bookworm                    # current _stable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
 readonly DEB_OLDSTABLE=bullseye                 # current _oldstable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
 
+readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:104.0) Gecko/20100101 Firefox/104.0'
 #------------------------
 #--- Global Variables ---
 #------------------------
@@ -1891,10 +1892,10 @@ get_apt_key() {
     if [[ -n "$k" ]]; then
         execute "sudo gpg --no-default-keyring --keyring $f --keyserver $url --recv-keys $k" || return 1
     elif [[ -n "$grp_ptrn" ]]; then
-        execute "wget -q -O - '$url' | grep -Pzo -- '(?s)$grp_ptrn' | gpg --dearmor | sudo tee $f > /dev/null" || return 1
+        execute "wget --user-agent='$USER_AGENT' -q -O - '$url' | grep -Pzo -- '(?s)$grp_ptrn' | gpg --dearmor | sudo tee $f > /dev/null" || return 1
     else
         # either single-conversion command, if it works...:
-        execute "wget -q -O - '$url' | gpg --dearmor | sudo tee $f > /dev/null" || return 1
+        execute "wget --user-agent='$USER_AGENT' -q -O - '$url' | gpg --dearmor | sudo tee $f > /dev/null" || return 1
 
         # ...or lengthier (but safer?) multi-step conversion:
         #local tmp_ring
@@ -2453,7 +2454,7 @@ _fetch_release_common() {
     tmpdir="$(mktemp -d "release-from-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     report "fetching [$dl_url]..."
-    execute "wget --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
+    execute "wget --user-agent='$USER_AGENT' --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
     file="$(find "$tmpdir" -type f)"
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
@@ -2498,7 +2499,7 @@ resolve_dl_urls() {
     grep_tail="$2"
 
     domain="$(grep -Po '^https?://([^/]+)(?=)' <<< "$loc")"
-    page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
+    page="$(wget "$loc" --user-agent="$USER_AGENT" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
     readonly dl_url="$(grep -Po '.*a href="\K'"$grep_tail"'(?=")' <<< "$page" | sort --unique)"
 
     if [[ -z "$dl_url" ]]; then
@@ -2672,7 +2673,7 @@ extract_tarball() {
 
     if is_valid_url "$file"; then
         tmpdir="$(mktemp -d "tarball-download-extract-XXXXX" -p "$TMP_DIR")" || { err "unable to create tempdir with \$ mktemp"; return 1; }
-        execute "wget --content-disposition -q --directory-prefix=$tmpdir '$file'" || { err "wgetting [$file] failed with $?"; return 1; }
+        execute "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$file'" || { err "wgetting [$file] failed with $?"; return 1; }
         file="$(find "$tmpdir" -mindepth 1 -maxdepth 1 -type f)"
     fi
 
@@ -2870,7 +2871,7 @@ install_from_url() {
     fi
 
     tmpdir="$(mktemp -d "install-from-url-${name}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-    execute "wget --content-disposition -q --directory-prefix=$tmpdir '$loc'" || { err "wgetting [$loc] failed with $?"; return 1; }
+    execute "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$loc'" || { err "wgetting [$loc] failed with $?"; return 1; }
     file="$(find "$tmpdir" -type f)"
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
@@ -3495,7 +3496,7 @@ install_eclipse_mem_analyzer() {  # https://eclipse.dev/mat/downloads.php
     loc='https://eclipse.dev/mat/downloads.php'
     mirror=1208  # 1208 = france, 1301,1190,1045 = germany, 1099 = czech
 
-    page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
+    page="$(wget "$loc" -q --user-agent="$USER_AGENT" -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
     loc="$(grep -Po '.*a href="\K.*/\d+\.\d+\.\d+.*linux.gtk.x86_64.zip(?=")' <<< "$page")" || { err "parsing download link from [$loc] content failed"; return 1; }
     is_valid_url "$loc" || { err "[$loc] is not a valid link"; return 1; }
 
@@ -3504,7 +3505,7 @@ install_eclipse_mem_analyzer() {  # https://eclipse.dev/mat/downloads.php
 
     loc+="&mirror_id=$mirror"
     # now need to parse link again from the download page...
-    page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
+    page="$(wget "$loc" -q --user-agent="$USER_AGENT" -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
     dl_url="$(grep -Poi 'If the download doesn.t start.*a href="\K.*(?=")' <<< "$page")" || { err "parsing final download link from [$loc] content failed"; return 1; }
     is_valid_url "$dl_url" || { err "[$dl_url] is not a valid download link"; return 1; }
 
@@ -3636,7 +3637,7 @@ install_rambox() {  # https://github.com/ramboxapp/community-edition/wiki/Instal
     install_block 'libappindicator1' || { err "rambox deps install_block failed" "$FUNCNAME"; return 1; }
 
     execute "pushd -- $tmpdir" || return 1
-    page="$(wget "$rambox_url" -q -O -)" || { err "wgetting [$rambox_url] failed"; return 1; }
+    page="$(wget "$rambox_url" -q --user-agent="$USER_AGENT" -O -)" || { err "wgetting [$rambox_url] failed"; return 1; }
     rambox_dl="$(grep -Po '.*a href="\Khttp.*linux_64.*deb(?=".*$)' <<< "$page")" || { err "parsing rambox download link failed"; return 1; }
     is_valid_url "$rambox_dl" || { err "[$rambox_dl] is not a valid download link"; return 1; }
 
@@ -6464,7 +6465,7 @@ install_exodus_wallet() {
     local loc page ver
 
     loc='https://www.exodus.com/download/'
-    page="$(wget "$loc" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
+    page="$(wget "$loc" -q --user-agent="$USER_AGENT" -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
     ver="$(grep -Po '.*a href="https://downloads.exodus.com/releases/hashes-exodus-\K[-.0-9]+(?=\.txt)' <<< "$page")"
 
     install_from_url  exodus "https://downloads.exodus.com/releases/exodus-linux-x64-${ver}.deb"
@@ -7056,7 +7057,7 @@ check_connection() {
 
     # Check whether the client is connected to the internet:
     # TODO: keep '--no-check-certificate' by default?
-    wget --no-check-certificate -q --spider --timeout=$timeout -- "$ip" > /dev/null 2>&1  # works in networks where ping is not allowed
+    wget --no-check-certificate -q --user-agent="$USER_AGENT" --spider --timeout=$timeout -- "$ip" > /dev/null 2>&1  # works in networks where ping is not allowed
 }
 
 
