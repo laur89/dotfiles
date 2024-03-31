@@ -2190,7 +2190,6 @@ install_devstuff() {
     #install_gitkraken
     #install_oracle_jdk  # start using sdkman (or something similar)
 
-    install_aws_okta
     install_saml2aws
     install_aia
     install_kustomize
@@ -3091,14 +3090,6 @@ install_rga() {  # https://github.com/phiresky/ripgrep-all#debian-based
 
 install_browsh() {  # https://github.com/browsh-org/browsh/releases
     install_deb_from_git browsh-org browsh _linux_amd64.deb
-}
-
-
-# note it's no longer actively maintained; consider replacing w/ https://github.com/Versent/saml2aws
-# tag: aws
-install_aws_okta() {  # https://github.com/segmentio/aws-okta
-    #install_deb_from_git segmentio aws-okta _amd64.deb  # TODO: deb no longer released? dunno, eg 1.0.4 had it avail
-    install_bin_from_git -N aws-okta -d "$HOME/bin" segmentio aws-okta linux-amd64
 }
 
 install_saml2aws() {  # https://github.com/Versent/saml2aws
@@ -5976,7 +5967,6 @@ __choose_prog_to_build() {
         install_polybar
         install_oracle_jdk
         install_skype
-        install_aws_okta
         install_saml2aws
         install_aia
         install_kustomize
