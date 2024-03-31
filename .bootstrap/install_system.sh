@@ -3132,7 +3132,7 @@ install_krew() {  # https://github.com/kubernetes-sigs/krew
 #
 # tag: aws, k8s, kubernetes
 install_popeye() {  # https://github.com/derailed/popeye
-    install_bin_from_git -N popeye -d "$HOME/bin"  derailed  popeye  _Linux_x86_64.tar.gz
+    install_bin_from_git -N popeye -d "$HOME/bin"  derailed  popeye  _linux_amd64.tar.gz
 }
 
 # kubernetes cluster analyzer for better comprehension (introspective tooling, cluster
