@@ -3114,7 +3114,7 @@ install_kustomize() {  # https://github.com/kubernetes-sigs/kustomize
 # kubernetes (k8s) cli management
 # tag: aws, k8s, kubernetes
 install_k9s() {  # https://github.com/derailed/k9s
-    install_bin_from_git -N k9s -d "$HOME/bin"  derailed  k9s  _Linux_x86_64.tar.gz
+    install_bin_from_git -N k9s -d "$HOME/bin"  derailed  k9s  _linux_amd64.tar.gz
 }
 
 # krew (kubectl plugins package manager)
