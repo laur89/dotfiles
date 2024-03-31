@@ -6303,6 +6303,9 @@ setup_dnsmasq() {
 
 
 # verify the hosts: line has the ordering we'd expect
+#
+# note https://manpages.debian.org/testing/libnss-myhostname/nss-myhostname.8.en.html states:
+# > It is recommended to place "myhostname" after "file" and before "dns"
 setup_nsswitch() {
     local conf target
 
