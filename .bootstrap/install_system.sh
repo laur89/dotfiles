@@ -6462,7 +6462,7 @@ install_exodus_wallet() {
 # https://github.com/schollz/croc
 # share files between computers/phones
 install_croc() {
-    install_deb_from_git  schollz  croc  '_Linux-64bit.deb'
+    install_bin_from_git -N croc -n croc  schollz  croc  '_Linux-64bit.tar.gz'
 }
 
 
