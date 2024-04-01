@@ -3074,6 +3074,7 @@ install_rga() {  # https://github.com/phiresky/ripgrep-all#debian-based
 }
 
 
+# headless firefox in a terminal
 install_browsh() {  # https://github.com/browsh-org/browsh/releases
     install_deb_from_git browsh-org browsh _linux_amd64.deb
 }
@@ -4717,7 +4718,8 @@ setup_nvim() {
 
 # https://github.com/neovide/neovide
 install_neovide() {  # rust-based GUI front-end to neovim
-    install_bin_from_git -N neovide -n neovide  neovide neovide 'neovide.tar.gz'
+    # alternative asset:   neovide.AppImage
+    install_bin_from_git -N neovide -n neovide  neovide neovide 'linux-x86_64.tar.gz'
 }
 
 
