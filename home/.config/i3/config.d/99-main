@@ -614,7 +614,7 @@ for_window [class="^jetbrains-" title="^Import .*Settings From"] floating enable
 assign [class="^Tor Browser$"]           $w1
 # we don't want to include instance such as 'Dialog', which is eg the download prompt:
 assign [class="^[fF]irefox$" instance="^Navigator$"]  $w1
-assign [class="^Zathura"]                $w3
+#assign [class="^Zathura"]                $w3
 assign [class="^mpv$"]                   $w4
 assign [class="^VirtualBox$"]            $w7
 assign [class="^Gimp$"]                  $w8
