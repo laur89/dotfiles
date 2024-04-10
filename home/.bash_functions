@@ -1155,7 +1155,7 @@ upgrade() {
         rep_ running apt-get autoclean && \
         apt-get autoclean -y || exit 1
 
-        # nuke removed packages' configs:
+        # nuke removed packages' configs:  TODO: isn't there 'apt-get autopurge' for this? note autopurge is same as 'autoremove --purge'
         __prgs_to_purge="\$(dpkg -l | awk '/^rc/ { print \$2 }')" || exit 1
 
         if [[ -n "\$__prgs_to_purge" ]]; then
