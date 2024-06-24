@@ -195,7 +195,7 @@ validate_and_init() {
     sudo -v || { clear; err "is user in sudoers file? is sudo installed? if not, then [su && apt-get install sudo]"; exit 2; }
     clear
 
-    # keep-alive: update existing `sudo` time stamp
+    # keep-alive: update existing `sudo` time stamp; search tags:  keep sudo, keepsudo, staysudo stay sudo
     while true; do sudo -n true; sleep 30; kill -0 "$$" || exit; done 2>/dev/null &
 }
 
@@ -387,6 +387,9 @@ setup_mail() {
 #       file appears to be in ini format; eg in there were to be any other section
 #       'sides "Login", then our appending function wouldn't cut it.
 # TODO: shouldn't  /etc/systemd/logind.conf.d/ be used? don't have this dir by default tho
+#       note: we best start using conf.d/ dir, as every upstream update to
+#       logind.conf otherwise conflicts and asks whether we want to install the
+#       updated version or keep our old/modified one
 setup_logind() {
     local logind_conf conf_map key value
 
@@ -701,6 +704,28 @@ backup_original_and_copy_file() {
     fi
 
     execute "$sudo cp -- '$file' '$dest_dir'"
+}
+
+
+# !! note the importance of optional trailing slash for $install_dir param;
+clone_repo_subdir() {
+    local user repo path install_dir hub tmpdir
+
+    readonly user="$1"
+    readonly repo="$2"
+    readonly path="${3#/}"  # note remove leading slash
+    install_dir="$4"  # if has trailing / then $repo won't be appended, eg pass './' to clone to $PWD
+    readonly hub=${5:-github.com}  # OPTIONAL; defaults to github.com;
+
+    [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
+    [[ "$install_dir" != */ ]] && install_dir="${install_dir}/$(basename -- "$path")"
+
+    tmpdir="$TMP_DIR/$repo-${user}-${RANDOM}"
+    execute "git clone -n --depth=1 --filter=tree:0 https://$hub/$user/${repo}.git '$tmpdir'" || { err "cloning [$hub/$user/$repo] failed w/ $?"; return 1; }
+    execute "git -C '$tmpdir' sparse-checkout set --no-cone $path" || return 1
+    execute "git -C '$tmpdir' checkout" || return 1
+    execute "mv --force -- '$tmpdir/$path' '$install_dir'" || return 1
+    #execute "git -C '$install_dir' pull" || return 1
 }
 
 
@@ -1087,6 +1112,17 @@ install_deps() {
         fi
     }
 
+    _install_vifm_deps() {
+        local plugins_dir plugin
+
+        readonly plugins_dir="$HOME/.config/vifm/plugins"
+        [[ -d "$plugins_dir" ]] || { err "[$plugins_dir] not a dir, can't install vifm plugin(s)"; return 1; }
+
+        for plugin in 'ueberzug'; do
+            clone_repo_subdir  vifm vifm "data/plugins/$plugin" "$plugins_dir"
+        done
+    }
+
     _install_laptop_deps() {  # TODO: does this belong in install_deps()?
         is_laptop || return
 
@@ -1250,6 +1286,8 @@ install_deps() {
 
     # tmux plugin manager:
     _install_tmux_deps; unset _install_tmux_deps
+    # vifm plugins:
+    _install_vifm_deps; unset _install_vifm_deps
 
     # install scala apps (requires coursier):
     # giter8    # http://www.foundweekends.org/giter8/setup.html
@@ -1288,7 +1326,6 @@ install_deps() {
 
     # this needs apt-get install  python-imaging ?:
     py_install img2txt.py    # https://github.com/hit9/img2txt  (for ranger)
-    py_install ueberzug      # https://github.com/seebye/ueberzug  (display images in terminal)
     py_install scdl          # https://github.com/flyingrub/scdl (soundcloud downloader)
     py_install rtv           # https://github.com/michael-lazar/rtv (reddit reader)  # TODO: active development has ceased
     py_install tldr          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
@@ -1296,7 +1333,7 @@ install_deps() {
                                                                                       #   note its conf is in bash_env_vars
     #py_install maybe         # https://github.com/p-e-w/maybe (check what command would do)
     py_install httpstat       # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
-    py_install tendo          # https://github.com/pycontribs/tendo  py utils, eg singleton (lockfile management)
+    py_install tendo          # https://github.com/pycontribs/tendo  py utils, eg singleton (lockfile management); TODO: not a lib, so pipx fails
     py_install yamllint       # https://github.com/adrienverge/yamllint
     py_install awscli         # https://docs.aws.amazon.com/en_pv/cli/latest/userguide/install-linux.html#install-linux-awscli
 
@@ -1845,7 +1882,8 @@ setup() {
 update_clock() {
     local src remote_time diff
 
-    src='https://www.google.com'  # external source whose http headers to extract time from
+    src='https://1.1.1.1'  # external source whose http headers to extract time from
+    #src='https://www.google.com'  # external source whose http headers to extract time from
 
     if [[ "$CONNECTED" -eq 0 ]]; then
         report "we're not connected to net, skipping $FUNCNAME()..."
@@ -2104,6 +2142,8 @@ upgrade_firmware() {
 
 # TODO: /etc/modules is still supported by debian, but is an older system/mechanic; perhaps
 # start using /etc/modules-load.d/ instead?
+#
+# Note: dashes & underscores are interchangeable in module names.
 install_kernel_modules() {
     local conf modules i
 
@@ -2114,7 +2154,7 @@ install_kernel_modules() {
         return 1
     fi
 
-    # note as per https://wiki.archlinux.org/title/Backlight:
+    # note as per https://wiki.archlinux.org/title/Backlight :
     #   > Using ddcci and i2c-dev simultaneously may result in resource conflicts such as a Device or resource busy error.
     #
     # list of modules to be added to $conf for auto-loading at boot:
@@ -2122,11 +2162,12 @@ install_kernel_modules() {
         ddcci
     )
 
-    # from https://www.ddcutil.com/kernel_module/: only load
+    # from https://www.ddcutil.com/kernel_module/ : only load
     # i2c on demand if it's not already loaded into kernel:
     grep -q  i2c-dev.ko  "/lib/modules/$(uname -r)/modules.builtin" || modules+=(i2c-dev)
 
     # ddcci-dkms gives us DDC support so we can control also external monitor brightness (via brillo et al; not related to i2c-dev/ddcutil)
+    # note project is @ https://gitlab.com/ddcci-driver-linux/ddcci-driver-linux
     install_block  ddcci-dkms || return 1
 
     for i in "${modules[@]}"; do
@@ -2260,6 +2301,7 @@ install_own_builds() {
     is_native && install_slack_term
     install_slack
     install_veracrypt
+    install_ueberzugpp
     #install_hblock
     install_open_eid
     install_binance
@@ -2394,7 +2436,7 @@ switch_jdk_versions() {
 #
 # $1 - git user
 # $2 - git repo
-# $3 - asset regex to be used (for jq's test()) to parse correct item from git /releases page
+# $3 - asset regex to be used (for jq's test()) to parse correct item from git /releases page. note jq requires most likely double-backslashes!
 # $4 - what to rename resulting file as (optional)
 #
 # see also:
@@ -2499,7 +2541,7 @@ resolve_dl_urls() {
 
     domain="$(grep -Po '^https?://([^/]+)(?=)' <<< "$loc")"
     page="$(wget "$loc" --user-agent="$USER_AGENT" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
-    readonly dl_url="$(grep -Po '.*a href="\K'"$grep_tail"'(?=")' <<< "$page" | sort --unique)"
+    readonly dl_url="$(grep -Po '.* href="\K'"$grep_tail"'(?=")' <<< "$page" | sort --unique)"
 
     if [[ -z "$dl_url" ]]; then
         err "no urls found from [$loc] for pattern [$grep_tail]"
@@ -2789,6 +2831,16 @@ install_xournalpp() {  # https://github.com/xournalpp/xournalpp
 }
 
 
+# ueberzug drop-in replacement written in c++
+install_ueberzugpp() {  # https://github.com/jstkdng/ueberzugpp
+    local deb
+
+    deb="$(fetch_release_from_any -I ueberzugpp 'https://software.opensuse.org/download.html?project=home%3Ajustkidding&package=ueberzugpp#directDebian' 'Debian_Testing.*[-0-9.]+_amd64\.deb')" || return $?
+    execute "sudo apt-get --yes install '$deb'" || return 1
+    return 0
+}
+
+
 resolve_ver() {
     local url ver hdrs
 
@@ -3007,14 +3059,14 @@ install_slack_term() {  # https://github.com/jpbruinsslot/slack-term
 
 
 # TODO: looks like after initial installation apt keeps updating it automatically?!
-install_slack() {  # https://slack.com/intl/en-es/help/articles/212924728-Download-Slack-for-Linux--beta-
+install_slack() {  # https://slack.com/help/articles/212924728-Download-Slack-for-Linux--beta-
     # snap version:
     #snap_install slack
 
     # ...or deb:
     local deb
 
-    deb="$(fetch_release_from_any -I slack 'https://slack.com/intl/en-gb/downloads/instructions/ubuntu' '-amd64.deb')" || return $?
+    deb="$(fetch_release_from_any -I slack 'https://slack.com/downloads/instructions/linux?ddl=1&build=deb' '-amd64\.deb')" || return $?
     execute "sudo apt-get --yes install '$deb'" || return 1
     return 0
 }
@@ -3654,6 +3706,7 @@ install_rambox() {  # https://github.com/ramboxapp/community-edition/wiki/Instal
 
 
 # note skype is also available as a snap (sudo snap install skype), tho the snap version seemed tad buggy/unstable
+# !!! as of Dec '23 deb/rpm pkgs no longer distributed, only snap is avail: https://www.reddit.com/r/skype/comments/1861hvo/skype_for_linux_distribution_method_change/
 install_skype() {  # https://wiki.debian.org/skype
                    # https://www.skype.com/en/get-skype/
 
@@ -5459,7 +5512,7 @@ install_from_repo() {
         meld
         at-spi2-core
         pastebinit
-        keepassxc
+        keepassxc-full
         gnupg
         dirmngr
         direnv
@@ -5510,7 +5563,7 @@ install_from_repo() {
         libreoffice
         zathura
         feh
-        sxiv
+        nsxiv
         geeqie
         gthumb
         imagemagick
@@ -5525,7 +5578,6 @@ install_from_repo() {
         ranger
         vifm
         screenfetch
-        neofetch
         maim
         flameshot
         ffmpeg
@@ -5997,6 +6049,7 @@ __choose_prog_to_build() {
         install_minikube
         install_gruvbox_gtk_theme
         install_veracrypt
+        install_ueberzugpp
         install_hblock
         install_open_eid
         install_binance
@@ -6126,6 +6179,16 @@ increase_inotify_watches_limit() {
 }
 
 
+## increase the max nr of open file in system. (for intance node might compline otherwise).
+## see https://github.com/paulmillr/chokidar/issues/45
+## and http://stackoverflow.com/a/21536041/1803648
+# https://forums.debian.net/viewtopic.php?t=159383
+increase_ulimit() {
+    true
+    #_sysctl_conf '20-no-files.conf' 'fs.file-max' 65535
+}
+
+
 # as per    https://wiki.archlinux.org/index.php/Linux_Containers#Enable_support_to_run_unprivileged_containers_(optional)
 # i _think_ this issue popped up w/ after 'Franz' or 'notable' started using electron v5+
 #
@@ -6226,15 +6289,6 @@ setup_tcpdump() {
     execute "sudo chmod 0750 $tcpd" || return 1
     execute "sudo setcap 'CAP_NET_RAW+eip' $tcpd" || return 1
 }
-
-
-## increase the max nr of open file in system. (for intance node might compline otherwise).
-## see https://github.com/paulmillr/chokidar/issues/45
-## and http://stackoverflow.com/a/21536041/1803648
-#function increase_ulimit() {
-    #readonly ulimit=3000
-    #execute "newgrp docker"  # log us into the new group; !! will stop script execution
-#}
 
 
 # make sure resolvconf (or openresolv?) pkg is installed for seamless resolv config updates & dnsmasq usage (as per https://unix.stackexchange.com/a/406724/47501)
@@ -6793,6 +6847,7 @@ post_install_progs_setup() {
     is_native && setup_mopidy
     is_native && execute 'sudo sensors-detect --auto'   # answer enter for default values (this is lm-sensors config)
     increase_inotify_watches_limit         # for intellij IDEA
+    #increase_ulimit
     enable_unprivileged_containers_for_regular_users
     setup_docker
     setup_tcpdump
@@ -7873,7 +7928,7 @@ check_dependencies
 # we need to make sure our system clock is roughly right; otherwise stuff like apt-get might start failing:
 #is_native || execute "rdate -s tick.greyware.com"
 #is_native || execute "tlsdate -V -n -H encrypted.google.com"
-update_clock || exit 1  # needs to be done _after_ check_dependencies as update_clock() uses some
+is_native || update_clock || exit 1  # needs to be done _after_ check_dependencies as update_clock() uses some
 
 choose_step
 
