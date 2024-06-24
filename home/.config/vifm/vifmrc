@@ -58,7 +58,7 @@ filetype *.[1-8] man ./%c
 
 " Images
 fileviewer *.jpg,*.jpeg,*.png,*.ico vifmimg draw %px %py %pw %ph %c %pc vifmimg clear
-filextype *.bmp,*.jpg,*.jpeg,*.png,*.ico,*.gif,*.xpm  rotdir %f 2>/dev/null | sxiv -ia 2>/dev/null &
+filextype *.bmp,*.jpg,*.jpeg,*.png,*.ico,*.gif,*.xpm  rotdir %f 2>/dev/null | nsxiv -ia 2>/dev/null &
 
 filextype *.svg inkscape %f 2>/dev/null &
 filextype *.xcf gimp %f 2>/dev/null &
