@@ -618,6 +618,7 @@ for_window [class="^install4j-jclient-Launcher$" instance="^sun-awt-X11-XFramePe
 assign [class="^Tor Browser$"]           $w1
 # we don't want to include instance such as 'Dialog', which is eg the download prompt:
 assign [class="^[fF]irefox$" instance="^Navigator$"]  $w1
+assign [class="^jetbrains-(idea|studio)$"]       $w2
 #assign [class="^Zathura"]                $w3
 assign [class="^mpv$"]                   $w4
 assign [class="^VirtualBox$"]            $w7
@@ -626,7 +627,6 @@ assign [class="^Wireshark"]              $w8
 assign [class="^Pcmanfm"]                $w8
 assign [class="^burp-StartBurp"]         $w8
 assign [class="^OWASP ZAP"]              $w8
-assign [class="^jetbrains-studio"]       $w8
 assign [class="^Deluge"]                 $w8
 # IBKR:
 #assign [class="^install4j-jclient-Launcher$"]                 $w8
