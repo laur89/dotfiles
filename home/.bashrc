@@ -539,7 +539,7 @@ if [[ "$(realpath -- "$NODE_LOC")" != "$_latest_node_ver" && -x "$_latest_node_v
 fi
 unset _latest_node_ver
 ########################################## /asdf
-# generate .Xauth to be passed to (and used by) GUI docker gui containers:
+# generate .Xauth to be passed to (and used by) GUI docker containers:
 export XAUTH='/tmp/.docker.xauth'
 if [[ ! -s "$XAUTH" && -n "$DISPLAY" ]]; then  # TODO: also check for is_x()?
     touch "$XAUTH"

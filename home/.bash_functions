@@ -3189,7 +3189,7 @@ __fo() {
     local pdf_viewer office image_editor pager i
 
     editor="$EDITOR"
-    image_viewer="sxiv"
+    image_viewer="nsxiv"
     video_player="mpv"
     file_mngr="vifm"
     pdf_viewer="zathura"

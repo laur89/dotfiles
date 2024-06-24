@@ -53,7 +53,7 @@ alias wheresthespace='ncdu -x /'  # what's taking up the space? -x avoids cross-
 alias dfpy='pydf'
 alias tgo='tmux new -A -s' # start a new tmux session, or attach to it if already exists
 alias ngo='nvim --listen /tmp/nvim_$USER' # start the _main_/master nvim process, listening on given socket; that socket will be used by nvr (neovim-remote)
-alias got='tgo'
+#alias got='tgo'  # unused IMO
 alias gist='gist --private --copy'
 alias tkremind='tkremind -m -b1'
 alias lofi='mpv --no-video https://youtu.be/jfKfPfyJRdk'  # play lo-fi music
@@ -82,6 +82,7 @@ alias logout="pkill -TERM -u $(whoami) & sleep 5 && pkill -KILL -u $(whoami) && 
 #alias logout="pkill -u $USER"   # by default pkill sends SIGTERM signal
 #alias logout='kill -9 -1' # kill all processes *you* can kill
 command -v batcat > /dev/null 2>&1 && alias bat=batcat  # on ubuntu/debian, bat installs as batcat command
+command -v nsxiv > /dev/null 2>&1 && alias sxiv=nsxiv
 alias fd="fd --hidden --exclude '.git'"  # TODO: consider adding --no-ignore option to bypass gitignore, fdignore et al
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
