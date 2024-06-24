@@ -1,4 +1,4 @@
-# first bunch is from Luke's repo (https://github.com/LukeSmithxyz/voidrice/blob/archi3/.config/mimeapps.list):
+# first bunch is from Luke's repo (https://github.com/LukeSmithxyz/voidrice/blob/master/.config/mimeapps.list):
 [Default Applications]
 x-scheme-handler/magnet=torrent.desktop;
 x-scheme-handler/mailto=mail.desktop;

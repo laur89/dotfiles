@@ -1,0 +1,5 @@
+# from https://github.com/LukeSmithxyz/voidrice/blob/master/.local/share/applications/video.desktop
+[Desktop Entry]
+Type=Application
+Name=Video viewer
+Exec=/usr/bin/mpv -quiet %f

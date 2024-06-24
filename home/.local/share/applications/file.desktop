@@ -1,0 +1,5 @@
+# from https://github.com/LukeSmithxyz/voidrice/blob/master/.local/share/applications/file.desktop
+[Desktop Entry]
+Type=Application
+Name=File Manager
+Exec=/usr/local/bin/st -e lfub %u

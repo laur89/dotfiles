@@ -1,5 +1,5 @@
-# from https://github.com/LukeSmithxyz/voidrice/blob/archi3/.local/share/applications/img.desktop
+# from https://github.com/LukeSmithxyz/voidrice/blob/master/.local/share/applications/img.desktop
 [Desktop Entry]
 Type=Application
 Name=Image viewer
-Exec=/usr/bin/sxiv -a %u
+Exec=/usr/bin/nsxiv -a %u
