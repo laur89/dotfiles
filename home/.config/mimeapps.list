@@ -12,6 +12,9 @@ image/gif=img.desktop;
 application/rss+xml=rss.desktop
 x-scheme-handler/jetbrains=jetbrains-toolbox.desktop
 x-scheme-handler/postman=PostmanCanary.desktop
+video/x-matroska=video.desktop
+video/mp4=video.desktop
+inode/directory=file.desktop
 # from here, firefox added:
 x-scheme-handler/http=firefox.desktop
 x-scheme-handler/https=firefox.desktop
