@@ -14,7 +14,7 @@ application/ods; libreoffice %s ; copiousoutput
 #image/*                  ; ~/bin/muttshowimage.sh %s                       ; copiousoutput
 #image/*                  ; ~/bin/muttshowimage2.sh %s                       ; copiousoutput
 #image/*; feh %s
-image/*                  ; sxiv %s
+image/*                  ; nsxiv %s
 audio/*                  ; /usr/bin/mplayer %s                             ; copiousoutput
 video/*                  ; /usr/bin/mplayer %s                             ; copiousoutput
 
