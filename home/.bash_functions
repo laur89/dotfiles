@@ -3443,14 +3443,13 @@ dirsum() { sumtree "$@"; }
 #
 # @returns {bool}  true if nodes are the same, else false
 is_same() {
-    local first sum benchmark_sum n t
+    local sum benchmark_sum n t
 
     if [[ "$#" -le 1 ]]; then
         err "at least 2 nodes whose equality to compare required"
         return 1
     fi
 
-    first=1
     for n in "$@"; do
         if [[ ! -e "$n" ]]; then
             err "[$n] does not exist, abort"; return 1
@@ -3458,7 +3457,7 @@ is_same() {
             err "do not pass / as a node"; return 1
         fi
 
-        if [[ "$first" -eq 1 ]]; then
+        if [[ -z "$t" ]]; then  # i.e. first run
             if [[ -f "$n" ]]; then
                 check_progs_installed md5sum || return 1
                 readonly t=f
@@ -3467,15 +3466,12 @@ is_same() {
             else
                 err "only dirs and files supported"; return 1
             fi
-
-            first=0
         elif [[ "$t" == f && ! -f "$n" ]] || [[ "$t" == d && ! -d "$n" ]]; then
             err "all passed nodes need to be of same type"
             return 1
         fi
     done
 
-    first=1
     for n in "$@"; do
         if [[ "$t" == f ]]; then
             sum="$(md5sum -- "$n" | cut -d' ' -f 1)" || { err "md5suming [$n] failed with $?"; return 1; }
@@ -3485,10 +3481,8 @@ is_same() {
 
         [[ -z "$sum" ]] && { err "empty checksum for [$n]"; return 1; }
 
-        [[ "$first" -eq 0 && "$sum" != "$benchmark_sum" ]] && return 1
+        [[ -n "$benchmark_sum" && "$sum" != "$benchmark_sum" ]] && return 1
         benchmark_sum="$sum"
-
-        first=0
     done
 
     return 0
