@@ -6161,6 +6161,7 @@ remind_manually_installed_progs() {
         'setup default keyring via seahorse'
         'update system firmware'
         'download seafile libraries'
+        'setup Signal backup - follow reddit thread & finally _manually_ create link to our seafile lib'
     )
 
     for i in "${progs[@]}"; do
@@ -6624,7 +6625,7 @@ _init_seafile_cli() {
 }
 
 
-# https://download.seafile.com/published/seafile-user-manual/backup/syncing_client/linux-cli.md
+# https://help.seafile.com/syncing_client/linux-cli/
 #
 # this is only to be invoked manually.
 # note the client daemon needs to be running _prior_ to downloading the libraries.
@@ -6642,7 +6643,7 @@ setup_seafile() {
 
     readonly ccnet_conf="$HOME/.ccnet"
     readonly parent_dir="$BASE_DATA_DIR/seafile"  # where libraries will be downloaded into
-    readonly libs_conf=(main secrets notes)  # list of seafile libraries to sync with
+    readonly libs_conf=(main secrets notes signal)  # list of seafile libraries to sync with
 
     is_noninteractive && { err "do not exec $FUNCNAME() in non-interactive mode"; return 1; }
     _init_seafile_cli || return 1
