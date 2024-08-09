@@ -3476,6 +3476,7 @@ is_same() {
         if [[ "$t" == f ]]; then
             sum="$(md5sum -- "$n" | cut -d' ' -f 1)" || { err "md5suming [$n] failed with $?"; return 1; }
         else  # we're comparing directories
+            # note sumtree() is our own function
             sum="$(sumtree -- "$n" | cut -d' ' -f 1)" || { err "sumtreeing [$n] failed with $?"; return 1; }
         fi
 

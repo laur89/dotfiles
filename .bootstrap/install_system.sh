@@ -718,7 +718,12 @@ clone_repo_subdir() {
     readonly hub=${5:-github.com}  # OPTIONAL; defaults to github.com;
 
     [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
-    [[ "$install_dir" != */ ]] && install_dir="${install_dir}/$(basename -- "$path")"
+    if [[ "$install_dir" != */ ]]; then
+        install_dir="${install_dir}/$(basename -- "$path")"
+        if [[ -d "$install_dir" ]]; then
+            rm -rf -- "$install_dir" || { err "removing existing install_dir [$install_dir] failed w/ $?" "$FUNCNAME"; return 1; }
+        fi
+    fi
 
     tmpdir="$TMP_DIR/$repo-${user}-${RANDOM}"
     execute "git clone -n --depth=1 --filter=tree:0 https://$hub/$user/${repo}.git '$tmpdir'" || { err "cloning [$hub/$user/$repo] failed w/ $?"; return 1; }
@@ -1964,7 +1969,7 @@ setup_additional_apt_keys_and_sources() {
     # deb-line is from https://apt.mopidy.com/${DEB_OLDSTABLE}.list:
     get_apt_key  mopidy  https://apt.mopidy.com/mopidy.gpg "deb [{s}] https://apt.mopidy.com/ $DEB_OLDSTABLE main contrib non-free"
 
-    # docker:  (from https://docs.docker.com/install/linux/docker-ce/debian/):
+    # docker:  (from https://docs.docker.com/engine/install/debian/):
     # note we have to use hard-coded stable codename instead of 'testing' or testing codename,
     # as https://download.docker.com/linux/debian/dists/ doesn't have 'em;
     get_apt_key  docker  https://download.docker.com/linux/debian/gpg "deb [arch=amd64 {s}] https://download.docker.com/linux/debian $DEB_STABLE stable"
@@ -2168,7 +2173,7 @@ install_kernel_modules() {
 
     # ddcci-dkms gives us DDC support so we can control also external monitor brightness (via brillo et al; not related to i2c-dev/ddcutil)
     # note project is @ https://gitlab.com/ddcci-driver-linux/ddcci-driver-linux
-    install_block  ddcci-dkms || return 1
+    #install_block  ddcci-dkms || return 1  # TODO: re-enable once 0.4.5 is avail, otherwise linux img doesn't build; was fixed in https://gitlab.com/ddcci-driver-linux/ddcci-driver-linux/-/issues/39
 
     for i in "${modules[@]}"; do
         grep -Fxq "$i" "$conf" || execute "echo $i | sudo tee --append $conf > /dev/null"
@@ -5402,7 +5407,7 @@ install_from_repo() {
         curl
         httpie
         lshw
-        fuse
+        fuse3
         fuseiso
         parallel
         progress
@@ -5646,7 +5651,8 @@ install_from_repo() {
         docker-ce
         docker-ce-cli
         containerd.io
-        docker-compose
+        docker-buildx-plugin
+        docker-compose-plugin
         mitmproxy
         charles-proxy
         terraform
@@ -6186,6 +6192,7 @@ increase_inotify_watches_limit() {
 # https://forums.debian.net/viewtopic.php?t=159383
 increase_ulimit() {
     true
+    # TODO: I think setting this is not needed, given $ cat /proc/sys/fs/file-max      already reports max value?:
     #_sysctl_conf '20-no-files.conf' 'fs.file-max' 65535
 }
 
@@ -6241,11 +6248,12 @@ add_manpath() {
 
 
 # note: if you don't want to install docker from the debian's own repo (docker.io),
-# follow this instruction:  https://docs.docker.com/engine/installation/linux/debian/
+# follow this instruction:  https://docs.docker.com/engine/install/debian/
 #
 # (refer to proglist2 if docker complains about memory swappiness not supported.)
 #
 # add our user to docker group so it could be run as non-root:
+# see https://docs.docker.com/engine/install/linux-postinstall/
 setup_docker() {
 
     # see https://github.com/docker/for-linux/issues/58 (without it container exits with 139):
@@ -6855,14 +6863,15 @@ post_install_progs_setup() {
     setup_nvim
     is_native && addgroup_if_missing wireshark               # add user to wireshark group, so it could be run as non-root;
                                                 # (implies wireshark is installed with allowing non-root users
-                                                # to capture packets - it asks this during installation); see https://code.wireshark.org/review/gitweb?p=wireshark.git;a=blob_plain;f=debian/README.Debian
+                                                # to capture packets - it asks this during installation); see https://github.com/wireshark/wireshark/blob/master/packaging/debian/README.Debian
                                                 # if wireshark is installed manually/interactively, then installer asks whether
                                                 # non-root users should be allowed to dump packets; this can later be reconfigured
                                                 # by running  $ sudo dpkg-reconfigure wireshark-common
-                                                # TODO: in order to avoid this extra step, see how to preseed debconf database
+                                                # TODO: in order to avoid this extra step, see how to preseed debconf database.
                                                 # basically: install manually, then extract debconf stuff: $debconf-get-selections | grep wireshark
                                                 # then before auto-install, set it via :$ echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections
                                                 # see also https://unix.stackexchange.com/a/96227
+                                                # note debconf-get-selections is provided by debconf-utils pkg;
 
     #execute "newgrp wireshark"                  # log us into the new group; !! will stop script execution
     is_native && addgroup_if_missing vboxusers   # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
@@ -7103,7 +7112,8 @@ check_connection() {
 
     # Check whether the client is connected to the internet:
     # TODO: keep '--no-check-certificate' by default?
-    wget --no-check-certificate -q --user-agent="$USER_AGENT" --spider --timeout=$timeout -- "$ip" > /dev/null 2>&1  # works in networks where ping is not allowed
+    wget --no-check-certificate -q --user-agent="$USER_AGENT" --spider \
+        --timeout=$timeout -- "$ip" > /dev/null 2>&1  # works in networks where ping is not allowed
 }
 
 
