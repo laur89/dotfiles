@@ -34,7 +34,6 @@ set statusline="  Hint: %z%= %A %10u:%-7g %15s %20d  "
 " ------------------------------------------------------------------------------
 " Pdf
 filextype *.pdf,*.ps,*.eps,*.ps.gz,*.djvu,*.epub zathura %f 2>/dev/null &,
-"fileviewer *.pdf pdftotext -l 1 -nopgbrk %c -
 fileviewer *.pdf
     \ vifmimg pdf %px %py %pw %ph %c
     \ %pc
@@ -103,6 +102,10 @@ fileview */ tree %c -C -L 1 --dirsfirst
 fileview .*/ tree %c -C -L 1 --dirsfirst
 fileview ../ tree %c -C -L 1 --dirsfirst
 fileviewer *.html w3m -dump %c
+fileviewer <font/*>
+    \ vifmimg font %px %py %pw %ph %c
+    \ %pc
+    \ vifmimg clear
 filextype *.html,*.htm firefox %f 2>/dev/null &
 
 " Object
