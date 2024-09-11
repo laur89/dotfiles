@@ -34,7 +34,21 @@ set statusline="  Hint: %z%= %A %10u:%-7g %15s %20d  "
 " ------------------------------------------------------------------------------
 " Pdf
 filextype *.pdf,*.ps,*.eps,*.ps.gz,*.djvu,*.epub zathura %f 2>/dev/null &,
-fileviewer *.pdf pdftotext -l 1 -nopgbrk %c -
+"fileviewer *.pdf pdftotext -l 1 -nopgbrk %c -
+fileviewer *.pdf
+    \ vifmimg pdf %px %py %pw %ph %c
+    \ %pc
+    \ vifmimg clear
+
+fileviewer *.djvu
+    \ vifmimg djvu %px %py %pw %ph %c
+    \ %pc
+    \ vifmimg clear
+
+fileviewer *.epub
+    \ vifmimg epub %px %py %pw %ph %c
+    \ %pc
+    \ vifmimg clear
 
 " PostScript
 "filextype *.ps,*.eps,*.ps.gz
