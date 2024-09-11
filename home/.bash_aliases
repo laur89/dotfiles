@@ -211,13 +211,13 @@ alias gitaa='git aa'
 alias gitb='git b'
 alias gitp='git pull'
 alias gitpsh='git push'
-alias gitdi='git difftool --dir-diff'                    # diff only unstaged files
-alias gitdi-all='git difftool --dir-diff HEAD'           # also diff staged files
-alias gitdi-staged='git difftool --dir-diff --cached'    # --cached == --staged, as in diff only staged files
-alias gitdi-prev='git difftool --dir-diff HEAD^ HEAD'    # local last commit against current index (as in last commit; shows what was changed with last commit); does NOT include current uncommited changes);
-alias gitdi-commit='git showtool'  # diff specific commit, or HEAD, if no arg was given
+alias gitdi='{ git difftool --dir-diff 2>&3 & disown; } 3>&2 2>/dev/null'                    # diff only unstaged files
+alias gitdi-all='{ git difftool --dir-diff HEAD 2>&3 & disown; } 3>&2 2>/dev/null'           # also diff staged files
+alias gitdi-staged='{ git difftool --dir-diff --cached 2>&3 & disown; } 3>&2 2>/dev/null'    # --cached == --staged, as in diff only staged files
+alias gitdi-prev='{ git difftool --dir-diff HEAD^ HEAD 2>&3 & disown; } 3>&2 2>/dev/null'    # local last commit against current index (as in last commit; shows what was changed with last commit); does NOT include current uncommited changes);
+alias gitdi-commit='{ git showtool 2>&3 & disown; } 3>&2 2>/dev/null'  # diff specific commit, or HEAD, if no arg was given
 #alias gitdi-stashed='git difftool --dir-diff stash@{0}^!'  # diff stash against its parent;
-alias gitdi-stashed='git difftool --dir-diff stash@{0}^ stash@{0}'  # diff stash against its parent;
+alias gitdi-stashed='{ git difftool --dir-diff stash@{0}^ stash@{0} 2>&3 & disown; } 3>&2 2>/dev/null'  # diff stash against its parent;
 alias git-root='is_git && __grt="$(git rev-parse --show-toplevel)" && [[ -n "$__grt" ]] && cd -- "$__grt" && unset __grt || { err "are you in a git repo?"; unset __grt; }'  # go to project root
 alias grt='git-root'
 alias gpushall='is_git || err "not in a git repo" && { git push --tags && git checkout master && git push && git checkout develop && git push; }'
