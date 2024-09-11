@@ -65,6 +65,10 @@ fileviewer <video/*>
     \ vifmimg video %px %py %pw %ph %c
     \ %pc
     \ vifmimg clear
+fileviewer <audio/*>
+    \ vifmimg audio %px %py %pw %ph %c
+    \ %pc
+    \ vifmimg clear
 
 " Archive
 fileview *.zip,*.rar,*.tar.gz,*.tgz,*.tar.bz2,*.tbz2,*.tar.txz,*.txz,*.7z atool -l %f
