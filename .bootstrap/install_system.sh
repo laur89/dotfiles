@@ -213,7 +213,7 @@ check_dependencies() {
             git cmp wc wget curl tar unzip atool \
             realpath dirname basename head tee jq \
             gpg mktemp file date alien id html2text \
-            pwd \
+            pwd uniq sort \
                 ; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
@@ -1332,7 +1332,7 @@ install_deps() {
     # this needs apt-get install  python-imaging ?:
     py_install img2txt.py    # https://github.com/hit9/img2txt  (for ranger)
     py_install scdl          # https://github.com/flyingrub/scdl (soundcloud downloader)
-    py_install rtv           # https://github.com/michael-lazar/rtv (reddit reader)  # TODO: active development has ceased
+    py_install rtv           # https://github.com/michael-lazar/rtv (reddit reader)  # TODO: active development has ceased; alternatives @ https://gist.github.com/michael-lazar/8c31b9f637c3b9d7fbdcbb0eebcf2b0a
     py_install tldr          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
     py_install vit           # https://github.com/vit-project/vit (taskwarrior curses-based interface)
                                                                                       #   note its conf is in bash_env_vars
@@ -6776,9 +6776,12 @@ setup_firefox() {
     # }
 
     # !!!!!!!!!!!!!!!! DO NOT MISS THESE !!!!!!!!!!!!!!!!
-    # manual edits in about:config:
+    # manual edits in about:config :
     # -  toolkit.cosmeticAnimations.enabled -> false   # remove fullscreen animation
     # -  full-screen-api.ignore-widgets -> true        # remove window decorations in non-fullscreen; note it still requires F11 toggle!
+    # - change these 2 pre-existing values to 127.0.0.1:  # TODO: is it really needed? those addresses could already be blocked by hosts?
+    #   - toolkit.telemetry.dap_leader
+    #   - toolkit.telemetry.dap_helper
     # !!!!!!!!!!!!!!!! DO NOT MISS THESE !!!!!!!!!!!!!!!!
 }
 
@@ -7451,12 +7454,12 @@ is_64_bit() {
 
 
 is_intel_cpu() {
-    grep vendor < /proc/cpuinfo | uniq | grep -iq intel
+    grep vendor /proc/cpuinfo | uniq | grep -iq intel
 }
 
 
 is_amd_cpu() {
-    grep vendor < /proc/cpuinfo | uniq | grep -iq amd
+    grep vendor /proc/cpuinfo | uniq | grep -q AMD
 }
 
 
