@@ -2,4 +2,5 @@
 [Desktop Entry]
 Type=Application
 Name=File Manager
-Exec=/usr/local/bin/st -e lfub %u
+#Exec=/usr/bin/urxvtc -e sh -c "vifm %u"
+Exec=/usr/bin/urxvtc -e vifm %u
