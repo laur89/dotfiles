@@ -3137,7 +3137,7 @@ foc() {
         matches+=("$i")
     done < <(ffind --_skip_msgs "$opts" "$@")
 
-    report "found ${#matches[@]} files; stored in \$_FOUND_FILES global array." "$FUNCNAME"
+    report "found ${#matches[@]} files; stored in \$_FOUND_FILES arr." "$FUNCNAME"
     _FOUND_FILES=("${matches[@]}")
 
     return

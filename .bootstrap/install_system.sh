@@ -1123,6 +1123,7 @@ install_deps() {
         readonly plugins_dir="$HOME/.config/vifm/plugins"
         [[ -d "$plugins_dir" ]] || { err "[$plugins_dir] not a dir, can't install vifm plugin(s)"; return 1; }
 
+        # TODO: is this needed, given we already install ueberzugpp and are using the vifmimg script?
         for plugin in 'ueberzug'; do
             clone_repo_subdir  vifm vifm "data/plugins/$plugin" "$plugins_dir"
         done
@@ -2006,6 +2007,9 @@ setup_additional_apt_keys_and_sources() {
 
     # mozilla/firefox:  https://support.mozilla.org/en-US/kb/install-firefox-linux#w_install-firefox-deb-package-for-debian-based-distributions
     get_apt_key  mozilla  https://packages.mozilla.org/apt/repo-signing-key.gpg "deb [{s}] https://packages.mozilla.org/apt mozilla main"
+
+    # gh: (from https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt):
+    get_apt_key  gh  https://cli.github.com/packages/githubcli-archive-keyring.gpg "deb [arch=amd64 {s}] https://cli.github.com/packages stable main"
 
     execute 'sudo apt-get --yes update'
 }
@@ -5656,6 +5660,7 @@ install_from_repo() {
         mitmproxy
         charles-proxy
         terraform
+        gh
     )
     # old/deprecated block4:
 
