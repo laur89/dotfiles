@@ -1987,6 +1987,7 @@ setup_additional_apt_keys_and_sources() {
     get_apt_key  charles  https://www.charlesproxy.com/packages/apt/PublicKey "deb [{s}] https://www.charlesproxy.com/packages/apt/ charles-proxy main"
 
     # terraform:  (from https://www.terraform.io/downloads):
+    # note there's open-source terraform fork  OpenTofu
     get_apt_key  terraform  https://apt.releases.hashicorp.com/gpg "deb [arch=amd64 {s}] https://apt.releases.hashicorp.com $DEB_STABLE main"
 
     # openvpn3:  (from https://openvpn.net/cloud-docs/openvpn-3-client-for-linux/):
@@ -6651,6 +6652,7 @@ _init_seafile_cli() {
 #  - seaf-cli list [--json]  -> info about synced libraries
 #  - seaf-cli list-remote
 #  - seaf-cli status  -> see download/sync status of libraries
+#  - seaf-cli desync -d /path/to/local/library  -> desync with server
 setup_seafile() {
     local ccnet_conf parent_dir libs_conf libs lib user passwd
 

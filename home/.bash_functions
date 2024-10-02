@@ -3246,7 +3246,7 @@ __fo() {
             if [[ "$count" -gt 1 || "$(wc -l < "${files[0]}")" -gt 2 ]]; then  # note if more than 2 lines we also assume it's already formatted;
                 # note we're assuming it's already formatted if more than 2 lines;
                 check_progs_installed "$editor" || return 1
-                "$editor" -- "${files[@]}"
+                "$editor" < /dev/tty -- "${files[@]}"
             else
                 xmlformat "${files[@]}"
             fi
@@ -3262,7 +3262,7 @@ __fo() {
                 "$pager" -- "${files[@]}"
             else
                 check_progs_installed "$editor" || return 1
-                "$editor" -- "${files[@]}"
+                "$editor" < /dev/tty -- "${files[@]}"
             fi
             ;;
         application/pdf*)
@@ -3272,7 +3272,7 @@ __fo() {
         application/x-elc* \
                 | application/*json*)  # TODO: what exactly is x-elc*?
             check_progs_installed "$editor" || return 1
-            "$editor" -- "${files[@]}"
+            "$editor" < /dev/tty -- "${files[@]}"
             ;;
         'application/x-executable; charset=binary'*)
             [[ "$count" -gt 1 ]] && { report "won't execute multiple files! select one please" "${FUNCNAME[1]}"; return 1; }
@@ -3288,7 +3288,7 @@ __fo() {
         'inode/x-empty; charset=binary' \
                 | *'charset=us-ascii')
             check_progs_installed "$editor" || return 1
-            "$editor" -- "${files[@]}"
+            "$editor" < /dev/tty -- "${files[@]}"
             ;;
         # try keeping doc files' definitions in sync with the ones in ffind()
         'application/msword; charset=binary' \
