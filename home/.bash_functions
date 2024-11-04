@@ -343,7 +343,7 @@ ffind() {
 
     if [[ -n "$maxDepth" ]]; then
         if ! is_digit "$maxDepth" || [[ "$maxDepth" -le 0 ]]; then
-            err "maxdepth (the -m flag) arg value has to be a positive digit, but was [$maxDepth]" "$FUNCNAME"
+            err "maxdepth (-m flag) arg value has to be a positive digit, but was [$maxDepth]" "$FUNCNAME"
             echo -e "$usage"
             return 1
         fi
@@ -1270,8 +1270,8 @@ ffstr() {
         case "$opt" in
            i)
               [[ "$iname_arg" != '-iname' ]] && let caseOptCounter+=1
-              iname_arg="-iname"
-              grepcase=" -i "
+              iname_arg='-iname'
+              grepcase=' -i '
                 ;;
            s)
               [[ "$force_case" -ne 1 ]] && let caseOptCounter+=1
@@ -1282,7 +1282,7 @@ ffstr() {
                 ;;
            m) maxDepth="$OPTARG"
                 ;;
-           L) follow_links="-L"
+           L) follow_links='-L'
                 ;;
            c) collect_files=1
                 ;;
@@ -1367,7 +1367,7 @@ ffstr() {
 
     if [[ -n "$maxDepth" ]]; then
         if ! is_digit "$maxDepth" || [[ "$maxDepth" -le 0 ]]; then
-            err "maxdepth (the -m flag) arg value has to be a positive digit, but was [$maxDepth]" "$FUNCNAME"
+            err "maxdepth (-m flag) arg value has to be a positive digit, but was [$maxDepth]" "$FUNCNAME"
             echo -e "$usage"
             return 1
         fi
@@ -1380,12 +1380,12 @@ ffstr() {
     # as find doesn't support smart case, provide it yourself:
     if [[ "$(tolowercase "$pattern")" == "$pattern" ]]; then
         # provided pattern was lowercase, make it case insensitive:
-        grepcase=" -i "
+        grepcase=' -i '
     fi
 
     if [[ -n "$file_pattern" && "$(tolowercase "$file_pattern")" == "$file_pattern" ]]; then
         # provided pattern was lowercase, make it case insensitive:
-        iname_arg="-iname"
+        iname_arg='-iname'
     fi
 
     [[ "$force_case" -eq 1 ]] && unset grepcase iname_arg
@@ -1423,8 +1423,12 @@ ffstr() {
             _FOUND_FILES+=("$i")
         done < <(__find_fun "$file_pattern" | xargs -0 grep -Esl --null --color=never ${grepcase} -- "$pattern")
 
-        report "found ${#_FOUND_FILES[@]} files containing [$pattern]; stored in \$_FOUND_FILES global array." "$FUNCNAME"
-        [[ "${#_FOUND_FILES[@]}" -eq 0 ]] && return 1
+        if [[ "${#_FOUND_FILES[@]}" -eq 0 ]]; then
+            report "found no files containing [$pattern]" "$FUNCNAME"
+            return 1
+        else
+            report "found ${#_FOUND_FILES[@]} files containing [$pattern]; stored in \$_FOUND_FILES global array." "$FUNCNAME"
+        fi
 
         [[ "$open_files" -eq 1 ]] && __fo "${_FOUND_FILES[@]}"
     else
@@ -1619,7 +1623,7 @@ astr() {
 
     if [[ -n "$maxDepth" ]]; then
         if ! is_digit "$maxDepth" || [[ "$maxDepth" -le 0 ]]; then
-            err "maxdepth (the -m flag) arg value has to be a positive digit, but was [$maxDepth]" "$FUNCNAME"
+            err "maxdepth (-m flag) arg value has to be a positive digit, but was [$maxDepth]" "$FUNCNAME"
             echo -e "$usage"
             return 1
         fi

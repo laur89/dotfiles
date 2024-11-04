@@ -288,6 +288,7 @@ _running_dock_by_name() {
         return 0
         #fzf --select-1 --multi --exit-0 --print0 <<< "${name_to_id[@]}"
     else
+        # note following still displays the entire [ps] output, not just container IDs
         docker ps --no-trunc | grep -i "$input"
     fi
 }
