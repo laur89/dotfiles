@@ -135,7 +135,7 @@ export HISTFILESIZE=50000
 #export HISTCONTROL=ignoredups
 export HISTCONTROL=ignoreboth:erasedups
 #export HISTIGNORE='ls:bg:fg:c:lt:lat:latr:ltr:fhd:fh*:history*'  # ignore commands from history
-export HISTIGNORE='?:??:fhd:history:lat:ltr:latr'  # ignore commands from history
+export HISTIGNORE='?:??:fhd:history:lat:ltr:latr:;*'  # ignore commands from history
 export HISTTIMEFORMAT='%F %T '
 
 # ---------------------------------------
