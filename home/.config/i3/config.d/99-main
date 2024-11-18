@@ -46,10 +46,12 @@ popup_during_fullscreen smart
 #bindsym $mod+d exec  dmenu_run -b -nf "#839496" -sb "#b58900" -sf "#002b36" -nb "#002b36" -fn "tewi-8"
 
 # Start Rofi:
+#bindsym $mod+space $ex rofi -show combi -sorting-method fzf \
 bindsym $mod+space $ex rofi -show combi \
 -combi-modi 'window#drun#run' -modi combi#ssh -sidebar-mode
 # rofi-tmux (aka rft):
-bindsym $mod+Shift+space $ex rft sw
+#bindsym $mod+Shift+space  $ex rft sw  # invoking via client; prefer signal invocation if possible
+bindsym $mod+Shift+space  $ex killall -s SIGUSR1 rft-daemon
 
 bindsym $mod+j $mod_j
 bindsym $mod+k $mod_k
