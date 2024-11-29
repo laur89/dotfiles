@@ -148,11 +148,9 @@
 
     new-branch = checkout -b
     branch-new = checkout -b
-    branch-delete = branch -D ; deletes local branch
-    delete-branch = branch -D
-    delete-branch-remote = push origin --delete
-    delete-remote-branch = push origin --delete
-    branch-delete-remote = push origin --delete
+    branch-delete = "!brnchdlt () { b=$1; git branch -D "$b" && git push origin --delete "$b"; }; brnchdlt"  # delete branch locally & on the remote
+    ;branch-delete = branch -D -r -f  # delete branch locally & on the remote
+    delete-branch = branch-delete
 
 [gitflow "branch"]
     master = master
