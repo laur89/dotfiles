@@ -1191,6 +1191,7 @@ install_deps() {
         # xinput is for input device configuration; see  https://wiki.archlinux.org/index.php/Libinput
         # evtest can display pressure and placement of touchpad input in realtime; note it cannot run together w/ xserver, so better ctrl+alt+F2 to another tty
         # TODO: doesn't xinput depend on synaptic driver, ie it doesnt work with the newer libinput driver?
+        # note: blueman lists bluez as dep, that contains the daemon for bt devices
         install_block '
             libinput-tools
             xinput
@@ -5394,7 +5395,6 @@ install_from_repo() {
     #    gufw
     #
 
-    # consider apulse instead of pulseaudio;
     # TODO: xorg needs to be pulled into non-win (but still has to be installed for virt!) block:
     # TODO: replace compton w/ picom or ibhagwan/picom? compton seems unmaintained since 2017
     declare -ar block1=(
@@ -5402,10 +5402,10 @@ install_from_repo() {
         x11-apps
         xinit
         alsa-utils
-        pulseaudio
+        pipewire
+        pipewire-audio
         pavucontrol
         pulsemixer
-        pulseaudio-equalizer
         pasystray
         ca-certificates
         aptitude
@@ -5730,10 +5730,6 @@ install_from_repo() {
 
     if is_virtualbox; then
         install_vbox_guest
-    fi
-
-    if is_native && is_laptop; then
-        install_block pulseaudio-module-bluetooth
     fi
 }
 
@@ -6583,73 +6579,6 @@ configure_ntp_for_work() {
 }
 
 
-# configure pulseaudio - enable additional modules (eg equalizer, bt...)
-#
-# see https://wiki.debian.org/PulseAudio#Dynamically_enable.2Fdisable
-# to dynamically enable/disable pulseaudio;
-#
-# TODO: should we wrap 'load-module' lines between .ifexists & .endif?
-# TODO2: read up on noise cancellation (eg 'module-echo-cancel')
-configure_pulseaudio() {
-    local conf_main confdir target conf_files conf_lines i
-
-    readonly conf_main='/etc/pulse/default.pa'
-    readonly confdir='/etc/pulse/default.pa.d'  # additional conf; note files here must have .pa extension
-    declare -a conf_lines=('load-module module-equalizer-sink'
-                           'load-module module-dbus-protocol'
-                           # this one's for mopidy compatibility: see https://docs.mopidy.com/en/latest/running/service/#system-service-and-pulseaudio
-                           'load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1'
-                          )
-    declare -a conf_files=("$conf_main")
-
-    if [[ -d "$confdir" ]]; then
-        if ! is_dir_empty "$confdir"; then
-            for i in "$confdir/"*; do
-                [[ -f "$i" ]] && conf_files+=("$i")
-            done
-        fi
-
-        target="$confdir/${HOSTNAME}.pa"
-    else
-        target="$conf_main"
-    fi
-
-    # another modules to consider:
-    # - pactl load-module module-loopback - hear mic input; https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/User/Modules/#module-loopback
-
-    # make bluetooth (headset) device connection possible:
-    # http://askubuntu.com/questions/801404/bluetooth-connection-failed-blueman-bluez-errors-dbusfailederror-protocol-no
-    # https://zach-adams.com/2014/07/bluetooth-audio-sink-stream-setup-failed/
-    is_laptop && is_native && conf_lines+=('load-module module-bluetooth-discover')
-
-    [[ -f "$conf_main" ]] || { err "[$conf_main] is not a valid file; is pulseaudio installed?"; return 1; }
-
-    for i in "${conf_lines[@]}"; do
-        if ! grep -qFx "$i" "${conf_files[@]}"; then
-            report "adding [$i] to $target"
-            execute "echo $i | sudo tee --append $target > /dev/null"
-        fi
-    done
-
-    # change module-bluetooth-policy to change how headset profile is changed: (see https://www.reddit.com/r/linux/comments/at0zo0/til_that_since_2017_its_possible_in_pulseaudio_to/)
-    # documentation @ https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/User/Modules/#module-bluetooth-policy
-    _change_bt_policy() {
-        local line param
-
-        param='auto_switch=2'  # note mode 1 is the default used by this module
-        line="$(grep -Po '^load-module module-bluetooth-policy\K.*' "$conf_main")" || return 0  # return if we do not have module-bluetooth-policy in our conf
-        if [[ -n "$line" ]] && ! is_single "$line"; then
-            err "[$conf_main] contained more than 1 line(s) containing opt: [$line]"
-            return 1
-        fi
-        grep -Fq "$param" <<< "$line" && report "[$param] BT option already set in [$conf_main]" && return 0
-        execute "sudo sed -i --follow-symlinks 's/^load-module module-bluetooth-policy.*$/load-module module-bluetooth-policy$line $param/g' $conf_main" || { err; return 1; }
-    }
-
-    _change_bt_policy
-}
-
-
 _init_seafile_cli() {
     local ccnet_conf parent_dir
 
@@ -6914,7 +6843,6 @@ post_install_progs_setup() {
     is_virtualbox && addgroup_if_missing vboxsf  # add user to vboxsf group (to be able to access mounted shared folders);
     #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
     #configure_ntp_for_work  # TODO: confirm if ntp needed in WSL
-    configure_pulseaudio  # TODO see if works in WSL
     is_native && enable_fw
     is_native && setup_cups
     setup_nsswitch
