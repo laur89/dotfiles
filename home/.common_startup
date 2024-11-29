@@ -2,7 +2,7 @@
 # handles basic system startup.
 # note that services to be started are handled by different file, imported here.
 #
-# this file is launched/sourced by .xinputrc
+# this file is launched/sourced by .xinitrc
 #
 # according to https://wiki.archlinux.org/index.php/Xinit#Starting_applications_without_a_window_manager,
 # this file should *at least* contain the last block of /etc/X11/xinit/xinitrc
@@ -121,17 +121,17 @@ open_mpd_fifo() {
 #
 # for monitoring xrandr events, you might want to consider https://github.com/jceb/srandrd
 # (note udev does not appear to be working for screen connect/disconnect; in fact, doesn't udev rule trigger _after_ xrandr hooks 'em up?)
-(
-    #check_progs_installed detect_displays.sh && detect_displays.sh
-    if is_work && ! is_laptop; then
-        #check_progs_installed xrandr && xrandr --output DP-3 --rotate left
-        # this one works with nvidia drivers installed:
-        xrandr --output DP-7 --mode 1920x1200 --pos 3840x0 --rotate left --output DP-6 --off \
-            --output DP-5 --primary --mode 1920x1200 --pos 0x312 --rotate normal \
-            --output DP-4 --mode 1920x1200 --pos 1920x312 --rotate normal \
-            --output DP-3 --off --output DP-2 --off --output DP-1 --off --output DP-0 --off
-    fi
-) &
+#(
+    ##check_progs_installed detect_displays.sh && detect_displays.sh
+    #if is_work && ! is_laptop; then
+        ##check_progs_installed xrandr && xrandr --output DP-3 --rotate left
+        ## this one works with nvidia drivers installed:
+        #xrandr --output DP-7 --mode 1920x1200 --pos 3840x0 --rotate left --output DP-6 --off \
+            #--output DP-5 --primary --mode 1920x1200 --pos 0x312 --rotate normal \
+            #--output DP-4 --mode 1920x1200 --pos 1920x312 --rotate normal \
+            #--output DP-3 --off --output DP-2 --off --output DP-1 --off --output DP-0 --off
+    #fi
+#) &
 
 # Load bitmap fonts:
 xset +fp ~/.fonts
@@ -146,7 +146,7 @@ xset fp rehash
 # disable system beep:
 xset -b
 
-# key repeat settings: 200ms (default is like... 660?) repeat delay and repeat speed of 25 key strokes per second:
+# key repeat settings: 200ms (default is like... 660?) repeat delay and repeat speed of 25 (default) key strokes per second:
 xset r rate 200 25
 
 # following taken from https://gist.github.com/tanyuan/55bca522bf50363ae4573d4bdcf06e2e#gnulinux
@@ -182,7 +182,10 @@ xcape -e 'Control_L=Escape'
 # # https://bbs.archlinux.org/viewtopic.php?id=144783
 # # https://bbs.archlinux.org/viewtopic.php?id=254871
 # # https://capocasa.net/gnome-keyring-daemon-with-i3-and-startx
-eval $(/usr/bin/gnome-keyring-daemon --start --components=gpg,pkcs11,secrets,ssh) || err_display "gnome-keyring-daemon startup failed w/ $?" "$_SELF"
+#eval $(/usr/bin/gnome-keyring-daemon --start --components=gpg,pkcs11,secrets,ssh) || err_display "gnome-keyring-daemon startup failed w/ $?" "$_SELF"
+# TODO!: verify above keyring-daemon eval is needed, suspect systemd is already starting it. currently running process we have is
+# laur        2555    2535  0  2023 ?        00:00:02 /usr/bin/gnome-keyring-daemon --foreground --components=pkcs11,secrets --control-directory=/run/user/1000/keyring
+# laur        2535       1  0  2023 ?        00:00:02 /usr/lib/systemd/systemd --user --deserialize=8
 #eval $(/usr/bin/gnome-keyring-daemon --replace --components=gpg,pkcs11,secrets,ssh) || err_display "gnome-keyring-daemon startup failed w/ $?" "$_SELF"
 
 export GNOME_KEYRING_CONTROL GNOME_KEYRING_PID GPG_AGENT_INFO SSH_AUTH_SOCK DBUS_SESSION_BUS_ADDRESS DBUS_SESSION_BUS_PID
@@ -301,10 +304,11 @@ done
 
 # NOTE: after synaptic got phased out by libinput, this does not seem to be required
 # anomore. YMMV.
+# i _think_ libinput-based configuration is done /usr/share/X11/xorg.conf.d/40-libinput.conf (see https://askubuntu.com/a/1120858/1002165)
 #
 # synaptics/touchpad:
-# list devices:  libinput-list-devices
-# list device props: xinput list-props 'SynPS/2 Synaptics TouchPad'  <-- latter arg is the device name
+# list devices:  $ libinput list-devices
+# list device props: xinput list-props 'SynPS/2 Synaptics TouchPad'  <-- latter arg is the device name; can also use ID instead of the name
 # set prop: 'xinput set-prop device-number option-number setting' eg xinput set-prop 'SynPS/2 Synaptics TouchPad' 297 1
 #if is_laptop && check_progs_installed xinput; then
     ## OLD, synaptic-based config (pre libinput):

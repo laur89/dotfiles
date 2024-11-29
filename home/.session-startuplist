@@ -12,9 +12,9 @@ declare -a PROGS=(
     davmail
     keepassxc
     copyq
-    xfce4-volumed
     redshift
     devmon
+    udiskie
 )
 # (temporarily) deactivated:
 # mopidy
@@ -78,22 +78,23 @@ done
 #fi
 
 if ! is_proc_running seaf-daemon && ! is_work; then
-    seaf-cli start &
+    seaf-cli start
 fi
 
 #if ! is_proc_running xscreensaver; then
     #xscreensaver -no-splash &
     #echo "Launching xscreensaver..."
 #fi
+
 # TODO: modify our delay_screensaver to also send $xset s reset (see manpage for exact cmd)
 # so it works also with xss, not only xscreensaver!
 #
 # for dimming ,see xrandr (https://unix.stackexchange.com/a/181501/47501)
 if is_native && ! is_proc_running xss-lock; then
-    #xss-lock -- lock -n &   # lock here is i3lock-fancy
+    #xss-lock -- lock -n &   # 'lock' here is i3lock-fancy
     # READ xss-lock manual!!
     #
-    # if you first want to do notif/screen dimmin, followed by lock:
+    # if you first want to do notif/screen dimming, followed by lock:
     # note with this you gotta provide dim command, otherwise your lock command will be
     # executed after the first timeout/param, not second; if you don't care about dim delay,
     # but only lock, then just give 'xset s <delay>' (ie /wo the second period);
@@ -106,9 +107,16 @@ if is_native && ! is_proc_running xss-lock; then
     # - for LCD screens "put to sleep after" & "switch off after" are likely the same, they matter for CRT,
     #   but for LCDs it cuts the power w/o locking;
     # - xfce4-pwer-mngr power mngmnt options are explained @ https://superuser.com/a/727503
+    # - for further xset option explanations, see https://askubuntu.com/a/515936/1002165 and/or https://raspberrypi.stackexchange.com/a/100347/4045
     xset s 300
     #xss-lock -n /home/laur/bri.sh -- /data/progs/deps/homesick/repos/private-common/scripts/system/i3lock.sh &
-    xss-lock -- lock &  # note this should be kept in-sync with your wm keybinding
+
+    # see also --transfer-sleep-lock   opt
+    xss-lock --ignore-sleep -- lock &  # note this should be kept in-sync with your wm keybinding
+                                       # also note we're providing --ignore-sleep, as we're registering
+                                       # our own locking command via systemd; this is to handle the
+                                       # locking/not-locking behavior of in trusted/untrusted networks;
+                                       # in short, we always want to force-lock on suspend/hibernate.
 
     # TODO: at least w/ xfce4-pwr-mngr it was difficult to get the lock to trigger
     # with this - screen was turned off after 'put to sleep after' and/or 'switch off after',
@@ -124,9 +132,11 @@ fi
 if is_native && ! is_proc_running picom; then
     echo "Launching compton/picom..."
     # note -b|--daemon option causes crashes/hangs with some drivers: (https://github.com/chjj/compton/issues/176)
-    picom --config ~/.config/picom.conf &  #--daemon
+    #picom --config ~/.config/picom.conf &  #--daemon
 fi
 
+
+# TODO: is syndaemon still a thing with the new libinput drivers?
 if is_native && is_laptop && ! is_proc_running syndaemon; then
     syndaemon -d -t -K -i 1.5
     echo "Launching syndaemon..."
