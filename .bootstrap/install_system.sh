@@ -6679,7 +6679,7 @@ _init_seafile_cli() {
 #  - seaf-cli status  -> see download/sync status of libraries
 #  - seaf-cli desync -d /path/to/local/library  -> desync with server
 setup_seafile() {
-    local ccnet_conf parent_dir libs lib user passwd
+    local ccnet_conf parent_dir libs lib user passwd libs_conf
 
     readonly ccnet_conf="$HOME/.ccnet"
     readonly parent_dir="$BASE_DATA_DIR/seafile"  # where libraries will be downloaded into
@@ -6694,8 +6694,9 @@ setup_seafile() {
     fi
 
     # filter out libs we've already synced with:
-    [[ "${#SEAFILE_LIBS[@]}" -eq 0 ]] && err "env var SEAFILE_LIBS[@] is empty - misconfiguration?"  # sanity
-    for lib in "${SEAFILE_LIBS[@]}"; do
+    IFS=, read -ra libs_conf <<< "$SEAFILE_LIBS"
+    [[ "${#libs_conf[@]}" -eq 0 ]] && err "env var SEAFILE_LIBS is empty - misconfiguration?"  # sanity
+    for lib in "${libs_conf[@]}"; do
         [[ -d "$parent_dir/$lib" ]] && continue
         libs+=("$lib")
     done
