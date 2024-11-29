@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 #
+# 2024 TODO: consider using tmux-yank plugin instead, as suggested by https://github.com/samoshkin/tmux-config/issues/23
+#
 # from https://github.com/samoshkin/tmux-config/blob/master/tmux/yank.sh
 # note it's really based on
 #   https://medium.com/free-code-camp/tmux-in-practice-integration-with-system-clipboard-bcd72c62ff7b
