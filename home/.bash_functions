@@ -1424,10 +1424,10 @@ ffstr() {
         done < <(__find_fun "$file_pattern" | xargs -0 grep -Esl --null --color=never ${grepcase} -- "$pattern")
 
         if [[ "${#_FOUND_FILES[@]}" -eq 0 ]]; then
-            report "found no files containing [$pattern]" "$FUNCNAME"
+            report "found no files containing [${COLORS[RED]}${COLORS[BOLD]}${pattern}${COLORS[OFF]}]" "$FUNCNAME"
             return 1
         else
-            report "found ${#_FOUND_FILES[@]} files containing [$pattern]; stored in \$_FOUND_FILES global array." "$FUNCNAME"
+            report "found ${#_FOUND_FILES[@]} files containing [${COLORS[GREEN]}${COLORS[BOLD]}${pattern}${COLORS[OFF]}]; stored in \$_FOUND_FILES global array." "$FUNCNAME"
         fi
 
         [[ "$open_files" -eq 1 ]] && __fo "${_FOUND_FILES[@]}"
@@ -2595,6 +2595,7 @@ gut() {
 
     readonly tag="$*"
 
+    is_git || { err "not in git repo" "$FUNCNAME"; return 1; }
     [[ -z "$tag" ]] && { err "need to provide tag to delete." "$FUNCNAME"; return 1; }
     git_tag_exists "$tag" || { err "tag [$tag] does not exist. abort." "$FUNCNAME"; return 1; }
     git tag -d "$tag" || { err "deleting tag [$tag] locally failed. abort." "$FUNCNAME"; return 1; }
@@ -2606,6 +2607,7 @@ gut() {
 glt() {
     local last_tag
 
+    is_git || { err "not in git repo" "$FUNCNAME"; return 1; }
     last_tag="$(get_git_last_tag)" || return 1
 
     [[ -z "$last_tag" ]] && { report "no tags found"; return 1; }
