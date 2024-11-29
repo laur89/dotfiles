@@ -31,6 +31,7 @@ endif
 set statusline="  Hint: %z%= %A %10u:%-7g %15s %20d  "
 
 " filetypes
+" with slow media preview, see issue https://github.com/vifm/vifm/issues/954
 " ------------------------------------------------------------------------------
 " Pdf
 filextype *.pdf,*.ps,*.eps,*.ps.gz,*.djvu,*.epub zathura %f 2>/dev/null &,
