@@ -308,6 +308,9 @@ export PYENV_ROOT="$HOME/.pyenv"
 # opt-out of .NET telemetry sending:
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 
+# seafile libraries: (likley referenced by our install bootstrap & other seafile-related script(s)):
+export SEAFILE_LIBS='main,secrets,notes,signal'  # list of seafile libraries to sync with
+
 ###############################
 # perl modules (note PATH addition happens below):
 export PERL_BASE="$BASE_PROGS_DIR/perl"
