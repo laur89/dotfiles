@@ -79,6 +79,8 @@ set mark-symlinked-directories On
 set colored-completion-prefix On
 # Color the common prefix in menu-complete
 set menu-complete-display-prefix On
+# do not echo ctrl chars, e.g. ^C after ctrl+c is pressed:
+set echo-control-characters off
 
 
 # Macros:
