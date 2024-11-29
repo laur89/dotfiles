@@ -417,8 +417,6 @@ setup_logind() {
 }
 
 
-# TODO: shouldn't it be COMMON_PRIVATE_DOTFILES/backups?
-#
 # to temporarily disable lid-switch events:   systemd-inhibit --what=handle-lid-switch sleep 1d
 setup_systemd() {
     local global_sysd_src usr_sysd_src global_sysd_target usr_sysd_target file dir tmpfile filename
@@ -1888,8 +1886,8 @@ setup() {
 update_clock() {
     local src remote_time diff
 
-    src='https://1.1.1.1'  # external source whose http headers to extract time from
-    #src='https://www.google.com'  # external source whose http headers to extract time from
+    src='http://1.1.1.1'  # external source whose http headers to extract time from
+    #src='http://www.google.com'  # external source whose http headers to extract time from
 
     if [[ "$CONNECTED" -eq 0 ]]; then
         report "we're not connected to net, skipping $FUNCNAME()..."
@@ -1979,9 +1977,10 @@ setup_additional_apt_keys_and_sources() {
     # spotify: (from https://www.spotify.com/es/download/linux/):
     get_apt_key  spotify  https://download.spotify.com/debian/pubkey_6224F9941A8AA6D1.gpg "deb [{s}] http://repository.spotify.com stable non-free"
 
+    # !!! "Since 9.0.7 version, we only provide official packages in AppImage format" !!!
     # seafile-client: (from https://help.seafile.com/syncing_client/install_linux_client/):
     #     seafile-drive instructions would be @ https://help.seafile.com/drive_client/drive_client_for_linux/
-    get_apt_key  seafile  https://linux-clients.seafile.com/seafile.asc "deb [arch=amd64 {s}] https://linux-clients.seafile.com/seafile-deb/$DEB_OLDSTABLE/ stable main"
+    #get_apt_key  seafile  https://linux-clients.seafile.com/seafile.asc "deb [arch=amd64 {s}] https://linux-clients.seafile.com/seafile-deb/$DEB_OLDSTABLE/ stable main"
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
     get_apt_key  charles  https://www.charlesproxy.com/packages/apt/PublicKey "deb [{s}] https://www.charlesproxy.com/packages/apt/ charles-proxy main"
@@ -2283,6 +2282,8 @@ install_own_builds() {
     is_native && install_ddcutil
     install_keyd
     #install_rambox
+    install_seafile_cli
+    # TODO: why are ferdium&discord behind is_native?
     is_native && install_ferdium
     is_native && install_discord
     install_xournalpp
@@ -2594,7 +2595,7 @@ resolve_dl_urls() {
 # in the extracted result) if it's archived/compressed; pass -U to skip that step.
 #
 # -U     - skip extracting if archive and pass compressed/tarred ball as-is.
-# -s     - skip adding fetched asset in $GIT_RLS_LOG; TODO: can't find any users, maybe deprecate?
+# -s     - skip adding fetched asset in $GIT_RLS_LOG
 # -n     - filename pattern to be used by find; works together w/ -F;
 # -F     - $file output pattern to grep for in order to filter for specific
 #          single file from unpacked tarball (meaning it's pointless when -U is given);
@@ -2832,6 +2833,34 @@ install_ferdium() {  # https://github.com/ferdium/ferdium-app
 }
 
 
+# https://help.seafile.com/syncing_client/install_linux_client/
+# !!! "Since 9.0.7 version, we only provide official packages in AppImage format" !!!
+#
+# note url is like https://s3.eu-central-1.amazonaws.com/download.seadrive.org/Seafile-cli-x86_64-9.0.8.AppImage
+install_seafile_cli() {
+    local bin
+
+    bin="$(fetch_release_from_any -I seafile-cli 'https://www.seafile.com/en/download/' 'Seafile-cli-x86_64-[0-9.]+AppImage')" || return $?
+    execute "chmod +x '$bin'" || return 1
+    execute "sudo mv -- '$bin'  /usr/local/bin/seaf-cli" || err
+    return 0
+}
+
+
+# https://help.seafile.com/syncing_client/install_linux_client/
+# !!! "Since 9.0.7 version, we only provide official packages in AppImage format" !!!
+#
+# note url is like  https://s3.eu-central-1.amazonaws.com/download.seadrive.org/Seafile-x86_64-9.0.8.AppImage
+install_seafile_gui() {
+    local bin
+
+    bin="$(fetch_release_from_any -I seafile-gui 'https://www.seafile.com/en/download/' 'Seafile-x86_64-[0-9.]+AppImage')" || return $?
+    execute "chmod +x '$bin'" || return 1
+    execute "sudo mv -- '$bin'  /usr/local/bin/seafile-gui" || err
+    return 0
+}
+
+
 # Xournalpp is a handwriting notetaking app; I'm using it for PDF document annotation
 # (ie providing that fake handwritten signature).
 #
@@ -2942,7 +2971,7 @@ install_from_url() {
 }
 
 
-# pull given $loc and pipe it to a shell for installation
+# curl given $loc and pipe it to a $shell for installation
 install_from_url_shell() {
     local opt OPTIND shell name loc ver
 
@@ -4540,15 +4569,10 @@ install_i3_deps() {
     #py_install i3ipc      # https://github.com/altdesktop/i3ipc-python
 
     # rofi-tmux (aka rft):
-    #py_install rofi-tmux  # https://github.com/viniarck/rofi-tmux  # TODO use this as soon as/if our PR is accepted; or not, it's rather slow to start
-    #py_install -g laur89 rofi-tmux  # https://github.com/laur89/rofi-tmux (note it includes i3 integration); aka rtf;  this version is extension of the original
-    clone_or_pull_repo "laur89" "rofi-tmux" "$BASE_DEPS_LOC"
-    #execute "pip3 install --user -r ${BASE_DEPS_LOC}/rofi-tmux/requirements.txt"  # as we're not installing rft w/ pip, we need to manually install deps
-    create_link "${BASE_DEPS_LOC}/rofi-tmux/rft/main.py" "$HOME/bin/rft"
+    py_install rofi-tmux-ng  # https://github.com/laur89/rofi-tmux-ng
 
-    # install rofi-tmux/rft dependencies:
-    py_install -g bcbnz  python-rofi
-
+    # install i3expo:
+    py_install  i3expo
 
     # i3ass  # https://github.com/budlabs/i3ass/
     clone_or_pull_repo budlabs i3ass "$BASE_DEPS_LOC"
@@ -5567,8 +5591,6 @@ install_from_repo() {
         chromium-sandbox
         rxvt-unicode
         colortest-python
-        seafile-gui
-        seafile-cli
         geany
         libreoffice
         zathura
@@ -5990,6 +6012,8 @@ __choose_prog_to_build() {
         install_ddcutil
         install_rambox
         install_slides
+        install_seafile_cli
+        install_seafile_gui
         install_ferdium
         install_discord
         install_zoom
@@ -6635,6 +6659,7 @@ _init_seafile_cli() {
     [[ -d "$parent_dir" ]] || { err "[$parent_dir] is not a valid dir, abort" "$FUNCNAME"; return 1; }
     [[ -f "$ccnet_conf/seafile.ini" && -d "$(cat "$ccnet_conf/seafile.ini")" ]] && return 0  # everything seems set, no need to init
 
+    check_progs_installed  seaf-cli || return 1
     seaf-cli init -c "$ccnet_conf" -d "$parent_dir" || { err "[seaf-cli init] failed w/ $?"; return 1; }
 }
 
@@ -6654,11 +6679,10 @@ _init_seafile_cli() {
 #  - seaf-cli status  -> see download/sync status of libraries
 #  - seaf-cli desync -d /path/to/local/library  -> desync with server
 setup_seafile() {
-    local ccnet_conf parent_dir libs_conf libs lib user passwd
+    local ccnet_conf parent_dir libs lib user passwd
 
     readonly ccnet_conf="$HOME/.ccnet"
     readonly parent_dir="$BASE_DATA_DIR/seafile"  # where libraries will be downloaded into
-    readonly libs_conf=(main secrets notes signal)  # list of seafile libraries to sync with
 
     is_noninteractive && { err "do not exec $FUNCNAME() in non-interactive mode"; return 1; }
     _init_seafile_cli || return 1
@@ -6670,7 +6694,8 @@ setup_seafile() {
     fi
 
     # filter out libs we've already synced with:
-    for lib in "${libs_conf[@]}"; do
+    [[ "${#SEAFILE_LIBS[@]}" -eq 0 ]] && err "env var SEAFILE_LIBS[@] is empty - misconfiguration?"  # sanity
+    for lib in "${SEAFILE_LIBS[@]}"; do
         [[ -d "$parent_dir/$lib" ]] && continue
         libs+=("$lib")
     done
