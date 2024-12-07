@@ -1265,10 +1265,10 @@ install_deps() {
     # git-fuzzy (yet another git fzf tool)   # https://github.com/bigH/git-fuzzy
     clone_or_pull_repo "bigH" "git-fuzzy" "$BASE_DEPS_LOC"
 
-    # notify-send with additional features  # https://github.com/vlevit/notify-send.sh
+    # notify-send with additional features  # https://github.com/M3TIOR/notify-send.sh
     # note it depends on libglib2.0-bin (should be already installed):   install_block libglib2.0-bin
-    clone_or_pull_repo "vlevit" "notify-send.sh" "$BASE_DEPS_LOC"
-    create_link "${BASE_DEPS_LOC}/notify-send.sh/notify-send.sh" "$HOME/bin/"
+    clone_or_pull_repo  M3TIOR  "notify-send.sh" "$BASE_DEPS_LOC"
+    create_link "${BASE_DEPS_LOC}/notify-send.sh/src/notify-send.sh" "$HOME/bin/"
 
 
     # diff-so-fancy - human-readable git diff:  # https://github.com/so-fancy/diff-so-fancy#install
