@@ -148,7 +148,7 @@
 
     new-branch = checkout -b
     branch-new = checkout -b
-    branch-delete = "!brnchdlt () { b=$1; git branch -D "$b" && git push origin --delete "$b"; }; brnchdlt"  # delete branch locally & on the remote
+    branch-delete = "!brnchdlt () { b=$1; git branch -D "$b" && git push origin --delete "$b"; }; brnchdlt $1"  # delete branch locally & on the remote
     ;branch-delete = branch -D -r -f  # delete branch locally & on the remote
     delete-branch = branch-delete
 

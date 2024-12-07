@@ -213,7 +213,7 @@ check_dependencies() {
             git cmp wc wget curl tar unzip atool \
             realpath dirname basename head tee jq \
             gpg mktemp file date alien id html2text \
-            pwd uniq sort \
+            pwd uniq sort xxd \
                 ; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
@@ -7341,6 +7341,24 @@ is_laptop() {
     [[ -d "$pwr_supply_dir" ]] || { err "$pwr_supply_dir is not a valid dir! cannot decide if we're a laptop; assuming we're not. abort." "$FUNCNAME"; sleep 5; return 1; }
 
     find "$pwr_supply_dir" -mindepth 1 -maxdepth 1 -name 'BAT*' -print -quit | grep -q .
+}
+
+
+# see https://unix.stackexchange.com/a/630956
+#     https://github.com/AppImage/AppImageSpec/blob/master/draft.md#type-2-image-format
+is_appimage() {
+    local file i
+
+    readonly file="$1"
+
+    [[ $# -ne 1 ]] && { err "exactly 1 argument (node name) required." "$FUNCNAME"; return 1; }
+    [[ -f "$file" ]] || { err "[$file] is not a valid file." "$FUNCNAME"; return 1; }
+    check_progs_installed  xxd || return 2
+
+    #i="$(xxd "$file" 2>/dev/null | head -1)"   # note likely exits w/ code 3
+    i="$(xxd -l 12 -- "$file")"
+    #grep -q '^00000000: 7f45 4c46 0201 0100 4149 0200' <<< "$i"    # only verifies appimage type 2 format, i.e. w/ magix hex 0x414902
+    grep -q '^00000000: 7f45 4c46 0201 0100 4149 0[12]00' <<< "$i"  # also includes appimage type 1 format, i.e. w/ magic hex 0x414901
 }
 
 
