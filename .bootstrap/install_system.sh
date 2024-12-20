@@ -17,7 +17,6 @@ set -o pipefail
 shopt -s nullglob       # unmatching globs to expand into empty string/list instead of being left unexpanded
 
 readonly TMP_DIR='/tmp'
-readonly CLANG_LLVM_LOC='http://releases.llvm.org/6.0.0/clang+llvm-6.0.0-x86_64-linux-gnu-debian8.tar.xz'  # http://llvm.org/releases/download.html;  https://apt.llvm.org/building-pkgs.php
 readonly I3_REPO_LOC='https://github.com/i3/i3'
 readonly I3_LOCK_LOC='https://github.com/Raymo111/i3lock-color'       # i3lock-color
 readonly I3_LOCK_FANCY_LOC='https://github.com/meskarune/i3lock-fancy'    # i3lock-fancy
@@ -1334,11 +1333,10 @@ install_deps() {
     py_install scdl          # https://github.com/flyingrub/scdl (soundcloud downloader)
     py_install rtv           # https://github.com/michael-lazar/rtv (reddit reader)  # TODO: active development has ceased; alternatives @ https://gist.github.com/michael-lazar/8c31b9f637c3b9d7fbdcbb0eebcf2b0a
     py_install tldr          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
-    py_install vit           # https://github.com/vit-project/vit (taskwarrior curses-based interface)
+    py_install vit           # https://github.com/vit-project/vit (curses-based interface for taskwarrior (a todo list mngr we install from apt; executable is called 'task'))
                                                                                       #   note its conf is in bash_env_vars
     #py_install maybe         # https://github.com/p-e-w/maybe (check what command would do)
     py_install httpstat       # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
-    py_install tendo          # https://github.com/pycontribs/tendo  py utils, eg singleton (lockfile management); TODO: not a lib, so pipx fails
     py_install yamllint       # https://github.com/adrienverge/yamllint
     py_install awscli         # https://docs.aws.amazon.com/en_pv/cli/latest/userguide/install-linux.html#install-linux-awscli
 
@@ -5138,14 +5136,15 @@ install_YCM() {  # the quick-and-not-dirty install.py way
     #readonly ycm_third_party_rootdir="$ycm_plugin_root/third_party/ycmd/third_party"
 
     #function __fetch_libclang() {
-        #local tmpdir tarball dir
+        #local tmpdir tarball dir clang_llvm_loc
 
         #tmpdir="$(mktemp -d "ycm-tempdir-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-        #readonly tarball="$(basename -- "$CLANG_LLVM_LOC")"
+        #clang_llvm_loc='https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz'  # https://github.com/llvm/llvm-project/releases ; http://llvm.org/releases/download.html ;  https://apt.llvm.org/building-pkgs.php
+        #readonly tarball="$(basename -- "$clang_llvm_loc")"
 
         #execute "pushd -- $tmpdir" || return 1
-        #report "fetching [$CLANG_LLVM_LOC]"
-        #execute "wget '$CLANG_LLVM_LOC'" || { err "wgetting [$CLANG_LLVM_LOC] failed."; return 1; }
+        #report "fetching [$clang_llvm_loc]"
+        #execute "wget '$clang_llvm_loc'" || { err "wgetting [$clang_llvm_loc] failed."; return 1; }
         #extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
         #dir="$(find . -mindepth 1 -maxdepth 1 -type d)"
         #[[ -d "$dir" ]] || { err "couldn't find unpacked clang directory"; return 1; }
@@ -5741,6 +5740,9 @@ install_from_flatpak() {
     # https://flathub.org/apps/engineer.atlas.Nyxt
     # web browser written in LISP
     fp_install -n nyxt  'engineer.atlas.Nyxt'
+
+    # https://github.com/saivert/pwvucontrol
+    fp_install -n pwvucontrol  'com.saivert.pwvucontrol'
 }
 
 # install/update the guest-utils/guest-additions.
@@ -6481,6 +6483,7 @@ install_gtk_numix() {
 }
 
 
+# TODO: 3ximus' repo hasn't been changed since '17, consider https://github.com/Fausto-Korpsvart/Gruvbox-GTK-Theme
 install_gruvbox_gtk_theme() {
     clone_or_pull_repo "3ximus" "gruvbox-gtk" "$HOME/.themes"  # https://github.com/3ximus/gruvbox-gtk.git
 }
