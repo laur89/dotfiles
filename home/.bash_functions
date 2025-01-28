@@ -1080,9 +1080,10 @@ aptclean() {
 
     report "note that sudo passwd is required" "$FUNCNAME"
 
-    sudo apt-get  clean
-    sudo apt-get  autoremove
+    sudo apt-get clean
+    sudo apt-get autoremove
 
+    # TODO: instead of nuking $apt_lists_dir, consider   apt-get distclean
     if [[ -d "$apt_lists_dir" ]]; then
         report "deleting contents of [$apt_lists_dir]" "$FUNCNAME"
         is_dir_empty "$apt_lists_dir" || sudo rm -rf "$apt_lists_dir"/*
@@ -1141,28 +1142,26 @@ upgrade() {
     sudo -s -- <<EOF
         rep_() { echo -e "\033[1m -> \$*...\033[0m"; }
 
-        rep_ running apt-get clean && \
-        apt-get clean -y && \
+        rep_ running apt-get autoclean && \
+        apt-get autoclean -y && \
         rep_ running apt-get ${full:+--allow-releaseinfo-change }update && \
         apt-get ${full:+--allow-releaseinfo-change} -y update && \
         rep_ running apt-get upgrade --without-new-pkgs && \
-        apt-get upgrade --without-new-pkgs -y && \
+        NEEDRESTART_MODE=l  apt-get upgrade --without-new-pkgs -y && \
         rep_ running apt-get dist-upgrade && \
-        apt-get dist-upgrade -y && \
-        #apt full-upgrade  # alternative to apt-get dist-upgrade
-        rep_ running apt-get autoremove && \
-        apt-get autoremove -y && \
-        rep_ running apt-get autoclean && \
-        apt-get autoclean -y || exit 1
+        NEEDRESTART_MODE=l  apt-get dist-upgrade -y && \
+        #NEEDRESTART_MODE=l  apt full-upgrade  # alternative to apt-get dist-upgrade
+        rep_ running apt-get autoremove --purge && \
+        NEEDRESTART_MODE=l  apt-get autoremove --purge -y || exit \$?
 
         # nuke removed packages' configs:  TODO: isn't there 'apt-get autopurge' for this? note autopurge is same as 'autoremove --purge'
-        __prgs_to_purge="\$(dpkg -l | awk '/^rc/ { print \$2 }')" || exit 1
+        #__prgs_to_purge="\$(dpkg -l | awk '/^rc/ { print \$2 }')" || exit \$?
 
-        if [[ -n "\$__prgs_to_purge" ]]; then
-            rep_ running apt-get purge
-            apt-get -y purge \$__prgs_to_purge
-            exit \$?
-        fi
+        #if [[ -n "\$__prgs_to_purge" ]]; then
+            #rep_ running apt-get purge
+            #NEEDRESTART_MODE=l  apt-get -y purge \$__prgs_to_purge
+            #exit \$?
+        #fi
 EOF
 
     res="$?"
@@ -3343,14 +3342,17 @@ setspaintime() {
     __settz Europe/Madrid
 }
 
+# as per /usr/share/doc/tzdata/README.Debian
 __settz() {
-    local tz
+    local tz zonedir
 
     readonly tz="$*"
+    readonly zonedir='/usr/share/zoneinfo'  # as per file/docs above
 
     check_progs_installed timedatectl || return 1
     [[ -z "$tz" ]] && { err "provide a timezone to switch to (e.g. Europe/Madrid)." "${FUNCNAME[1]}"; return 1; }
-    [[ "$tz" =~ ^[A-Z][a-z]+/[A-Z][a-z]+$ ]] || { err "invalid timezone format; has to be in a format like [Europe/Madrid]" "${FUNCNAME[1]}"; return 1; }
+    [[ "$tz" =~ ^[A-Z][a-z]+/[-_A-Za-z]+$ ]] || { err "invalid timezone format; has to be in a format like [Europe/Madrid]" "${FUNCNAME[1]}"; return 1; }
+    [[ -e "$zonedir/$tz" ]] || { err "[$zonedir/$tz] does not exist; sure about your tz?" "${FUNCNAME[1]}"; return 1; }
 
     timedatectl set-timezone "$tz" || { err "setting tz to [$tz] failed (code $?)" "${FUNCNAME[1]}"; return 1; }
 }
