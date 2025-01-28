@@ -60,7 +60,8 @@ steps separately apart from the full installation mode.
 1. sudo apt-get update
 1. execute script:
     * `./install_system.sh -F personal|work`
-    * optionally pass `-N` option for non-interactive (ie standalone) mode
+    * optionally pass `-N` option for non-interactive (ie standalone) mode,
+      e.g. `./install_system.sh -N personal`
 
 ### Single task:
 

@@ -382,6 +382,40 @@ setup_mail() {
 }
 
 
+#
+setup_needrestart() {
+    local src_dirs target_confdir file dir tmpfile filename
+
+    readonly target_confdir='/etc/needrestart/conf.d'
+    src_dirs=(
+        "$COMMON_PRIVATE_DOTFILES/backups/needrestart"
+        "$PRIVATE__DOTFILES/backups/needrestart"
+    )
+
+    is_laptop && src_dirs+=("$COMMON_PRIVATE_DOTFILES/backups/needrestart/laptop")
+    #[[ -n "$PLATFORM" ]] && src_dirs+=("$PLATFORM_DOTFILES/systemd/global")
+
+    if ! [[ -d "$target_confdir" ]]; then
+        err "[$target_confdir] is not a dir; skipping needrestart file(s) installation"
+        return 1
+    fi
+
+    for dir in "${src_dirs[@]}"; do
+        [[ -d "$dir" ]] || continue
+        for file in "$dir/"*; do
+            [[ -f "$file" && "$file" =~ \.(conf)$ ]] || continue  # note we require certain suffix
+            filename="$(basename -- "$file")"
+            tmpfile="$TMP_DIR/.needrestart_setup-$filename"
+            filename="${filename/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
+
+            execute "cp -- '$file' '$tmpfile'" || { err "copying needrestart file [$file] failed"; continue; }
+            execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || { err "sed-ing needrestart file [$file] failed"; continue; }
+            execute "sudo mv -- '$tmpfile' $target_confdir/$filename" || { err "moving [$tmpfile] to [$target_confdir] failed"; continue; }
+        done
+    done
+}
+
+
 # TODO: instead of using sed for manipulation, maybe use crudini, as configuration
 #       file appears to be in ini format; eg in there were to be any other section
 #       'sides "Login", then our appending function wouldn't cut it.
@@ -1440,6 +1474,7 @@ install_deps() {
     py_install gcalcli  # tag: gagenda
 
     # flashfocus - flash window when focus changes  https://github.com/fennerm/flashfocus
+    # note on X systems it requires a compositor (e.g. picom) to be effective.
     install_block 'libxcb-render0-dev libffi-dev python-cffi'
     py_install flashfocus
 
@@ -1770,6 +1805,7 @@ setup_config_files() {
     #setup_ssh_config   # better stick to ~/.ssh/config, rite?  # TODO
     setup_hosts
     setup_systemd
+    setup_needrestart
     setup_pam_login
     setup_logind
     is_native && setup_udev
@@ -2350,7 +2386,7 @@ bc_install() {
     local progs
 
     declare -ra progs=("$@")
-    bc_exe "DEBIAN_FRONTEND=noninteractive apt-get --yes install ${progs[*]}" || return 1
+    bc_exe "DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${progs[*]}" || return 1
 }
 
 
@@ -3041,7 +3077,7 @@ install_file() {
 
     ftype="$(file -iLb -- "$file")"
     if [[ "$ftype" == *"debian.binary-package; charset=binary" ]]; then
-        execute "sudo apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
+        execute "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
         execute "rm -f -- '$file'"
     elif [[ "$ftype" == *'executable; charset=binary' || "$ftype" == 'text/x-shellscript; charset=utf-8' ]]; then
         _rename || return 1
@@ -5886,12 +5922,12 @@ install_block() {
 
             if execute "sudo apt-get -qq --dry-run ${noinstall:+$noinstall }install $extra_apt_params $pkg"; then
                 #sleep 0.1
-                execute "sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
+                execute "sudo  DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
             else
                 dry_run_failed+=( $pkg )
             fi
         else
-            execute "sudo DEBIAN_FRONTEND=noninteractive apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
+            execute "sudo  DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
         fi
     done
 
