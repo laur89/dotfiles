@@ -2010,7 +2010,7 @@ setup_additional_apt_keys_and_sources() {
 
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
-    get_apt_key  spotify  https://download.spotify.com/debian/pubkey_6224F9941A8AA6D1.gpg "deb [{s}] http://repository.spotify.com stable non-free"
+    get_apt_key  spotify  https://download.spotify.com/debian/pubkey_C85668DF69375001.gpg "deb [{s}] http://repository.spotify.com stable non-free"
 
     # !!! "Since 9.0.7 version, we only provide official packages in AppImage format" !!!
     # seafile-client: (from https://help.seafile.com/syncing_client/install_linux_client/):
@@ -2031,7 +2031,8 @@ setup_additional_apt_keys_and_sources() {
     get_apt_key  signal  https://updates.signal.org/desktop/apt/keys.asc "deb [arch=amd64 {s}] https://updates.signal.org/desktop/apt xenial main"
 
     # signald: (from https://signald.org/articles/install/debian/):
-    get_apt_key  signald  https://signald.org/signald.gpg "deb [arch=amd64 {s}] https://updates.signald.org unstable main"
+    # TODO: using http instead of https as per note in https://signald.org/articles/install/debian/ (apt-update gives error otherwise)
+    get_apt_key  signald  https://signald.org/signald.gpg "deb [arch=amd64 {s}] http://updates.signald.org unstable main"
 
     # estonian open eid: (from https://installer.id.ee/media/install-scripts/install-open-eid.sh):
     # latest/current key can be found from https://installer.id.ee/media/install-scripts/
@@ -5752,7 +5753,7 @@ install_from_repo() {
 
                 virtualbox
                 virtualbox-dkms
-               	virtualbox-qt
+                virtualbox-qt
             '
         fi
 
