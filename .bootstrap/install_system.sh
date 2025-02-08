@@ -618,10 +618,8 @@ setup_apt() {
 
     readonly apt_dir='/etc/apt'
 
-    [[ -d "$apt_dir" ]] || { err "[$apt_dir] is not a dir; skipping apt conf installation."; return 1; }
-
+    [[ -d "$apt_dir" ]] || { err "[$apt_dir] is not a dir; skipping apt conf installation"; return 1; }
     for file in \
-            sources.list \
             preferences \
             apt.conf \
                 ; do
@@ -629,6 +627,15 @@ setup_apt() {
 
         [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it."; continue; }
         backup_original_and_copy_file --sudo "$file" "$apt_dir"
+    done
+
+    for file in \
+            debian.sources \
+                ; do
+        file="$COMMON_DOTFILES/backups/apt_conf/$file"
+
+        [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it"; continue; }
+        backup_original_and_copy_file --sudo "$file" "$apt_dir/sources.list.d"
     done
 
     # NOTE: 02periodic _might_ be duplicating the unattended-upgrades activation
@@ -642,7 +649,7 @@ setup_apt() {
                 ; do
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
-        [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it."; continue; }
+        [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it"; continue; }
         execute "sudo cp -- '$file' '$apt_dir/apt.conf.d'"
     done
 
@@ -1945,39 +1952,44 @@ update_clock() {
 }
 
 
-get_apt_key() {
-    local name url src_entry keyfile f k grp_ptrn opt OPTIND
+create_apt_source() {
+    local name key_url uris suites components keyfile f target_src k grp_ptrn arch opt OPTIND
 
-    while getopts 'gk:' opt; do
+    while getopts 'gak:' opt; do
         case "$opt" in
-            g) grp_ptrn='-----BEGIN PGP PUBLIC KEY BLOCK-----.*END PGP PUBLIC KEY BLOCK-----' ;;  # PGP is embedded in a file at $url and needs to be grepped out first
-            k) k="$OPTARG" ;;
+            g) grp_ptrn='-----BEGIN PGP PUBLIC KEY BLOCK-----.*END PGP PUBLIC KEY BLOCK-----' ;;  # PGP is embedded in a file at $key_url and needs to be grepped out first
+            a) arch=amd64 ;;
+            k) k="$OPTARG" ;;  # means $key_url is a keyserver
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
     name="$1"
-    url="$2"  # either keyfile or keyserver, depending on whether -k is used; with -g flag it's a file that contains the PGP key, together with other content (likely an installer script)
-    src_entry="$3"
+    key_url="$2"  # either keyfile or keyserver, depending on whether -k is used; with -g flag it's a file that contains the PGP key, together with other content (likely an installer script)
+    uris="$3"  # 3-5 are already for the source file definition
+    suites="$4"
+    components="$5"
+
     keyfile="$APT_KEY_DIR/${name}.gpg"
     f="/tmp/.apt-key_${name}-${RANDOM}.gpg"
+    target_src="/etc/apt/sources.list.d/${name}.sources"
 
     # create (arbitrary) dir for our apt keys:
     [[ -d "$APT_KEY_DIR" ]] || execute "sudo mkdir -- $APT_KEY_DIR" || return 1
 
     if [[ -n "$k" ]]; then
-        execute "sudo gpg --no-default-keyring --keyring $f --keyserver $url --recv-keys $k" || return 1
+        execute "sudo gpg --no-default-keyring --keyring $f --keyserver $key_url --recv-keys $k" || return 1
     elif [[ -n "$grp_ptrn" ]]; then
-        execute "wget --user-agent='$USER_AGENT' -q -O - '$url' | grep -Pzo -- '(?s)$grp_ptrn' | gpg --dearmor | sudo tee $f > /dev/null" || return 1
+        execute "wget --user-agent='$USER_AGENT' -q -O - '$key_url' | grep -Pzo -- '(?s)$grp_ptrn' | gpg --dearmor | sudo tee $f > /dev/null" || return 1
     else
         # either single-conversion command, if it works...:
-        execute "wget --user-agent='$USER_AGENT' -q -O - '$url' | gpg --dearmor | sudo tee $f > /dev/null" || return 1
+        execute "wget --user-agent='$USER_AGENT' -q -O - '$key_url' | gpg --dearmor | sudo tee $f > /dev/null" || return 1
 
         # ...or lengthier (but safer?) multi-step conversion:
         #local tmp_ring
         #tmp_ring="/tmp/temp-keyring-${RANDOM}.gpg"
-        #execute "curl -fsL -o '$f' '$url'" || return 1
+        #execute "curl -fsL -o '$f' '$key_url'" || return 1
 
         #execute "gpg --no-default-keyring --keyring $tmp_ring --import $f" || return 1
         #rm -- "$f"  # unsure if this is needed or not for the following gpg --output command
@@ -1987,8 +1999,15 @@ get_apt_key() {
 
     [[ -s "$f" ]] || { err "imported keyfile [$f] does not exist"; return 1; }
     execute "sudo mv -- '$f' '$keyfile'" || return 1
-    src_entry="${src_entry//\{s\}/signed-by=$keyfile}"
-    execute "echo '$src_entry' | sudo tee /etc/apt/sources.list.d/${name}.list > /dev/null" || return 1
+
+cat <<EOF | sudo tee "$target_src" > /dev/null
+Types: deb
+URIs: $uris
+Suites: $suites
+Components: $components
+Signed-By: $keyfile
+EOF
+[[ -n "$arch" ]] && echo "Architectures: $arch" | sudo tee -a "$target_src" > /dev/null
 }
 
 
@@ -2001,51 +2020,50 @@ setup_additional_apt_keys_and_sources() {
 
     # mopidy: (from https://docs.mopidy.com/en/latest/installation/debian/):
     # deb-line is from https://apt.mopidy.com/${DEB_OLDSTABLE}.list:
-    get_apt_key  mopidy  https://apt.mopidy.com/mopidy.gpg "deb [{s}] https://apt.mopidy.com/ $DEB_OLDSTABLE main contrib non-free"
+    create_apt_source  mopidy  https://apt.mopidy.com/mopidy.gpg  https://apt.mopidy.com/ $DEB_OLDSTABLE 'main contrib non-free'
 
     # docker:  (from https://docs.docker.com/engine/install/debian/):
     # note we have to use hard-coded stable codename instead of 'testing' or testing codename,
     # as https://download.docker.com/linux/debian/dists/ doesn't have 'em;
-    get_apt_key  docker  https://download.docker.com/linux/debian/gpg "deb [arch=amd64 {s}] https://download.docker.com/linux/debian $DEB_STABLE stable"
-
+    create_apt_source -a  docker  https://download.docker.com/linux/debian/gpg  https://download.docker.com/linux/debian/ $DEB_STABLE stable
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
-    get_apt_key  spotify  https://download.spotify.com/debian/pubkey_C85668DF69375001.gpg "deb [{s}] http://repository.spotify.com stable non-free"
+    create_apt_source  spotify  https://download.spotify.com/debian/pubkey_C85668DF69375001.gpg  http://repository.spotify.com/ stable non-free
 
     # !!! "Since 9.0.7 version, we only provide official packages in AppImage format" !!!
     # seafile-client: (from https://help.seafile.com/syncing_client/install_linux_client/):
     #     seafile-drive instructions would be @ https://help.seafile.com/drive_client/drive_client_for_linux/
-    #get_apt_key  seafile  https://linux-clients.seafile.com/seafile.asc "deb [arch=amd64 {s}] https://linux-clients.seafile.com/seafile-deb/$DEB_OLDSTABLE/ stable main"
+    #create_apt_source -a  seafile  https://linux-clients.seafile.com/seafile.asc  https://linux-clients.seafile.com/seafile-deb/$DEB_OLDSTABLE/ stable main
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
-    get_apt_key  charles  https://www.charlesproxy.com/packages/apt/PublicKey "deb [{s}] https://www.charlesproxy.com/packages/apt/ charles-proxy main"
+    create_apt_source  charles  https://www.charlesproxy.com/packages/apt/PublicKey  https://www.charlesproxy.com/packages/apt/ charles-proxy main
 
     # terraform:  (from https://www.terraform.io/downloads):
     # note there's open-source terraform fork  OpenTofu
-    get_apt_key  terraform  https://apt.releases.hashicorp.com/gpg "deb [arch=amd64 {s}] https://apt.releases.hashicorp.com $DEB_STABLE main"
+    create_apt_source -a  terraform  https://apt.releases.hashicorp.com/gpg  https://apt.releases.hashicorp.com/ $DEB_STABLE main
 
     # openvpn3:  (from https://openvpn.net/cloud-docs/openvpn-3-client-for-linux/):
-    get_apt_key  openvpn  https://swupdate.openvpn.net/repos/openvpn-repo-pkg-key.pub "deb [arch=amd64 {s}] https://swupdate.openvpn.net/community/openvpn3/repos $DEB_OLDSTABLE main"
+    create_apt_source -a  openvpn  https://swupdate.openvpn.net/repos/openvpn-repo-pkg-key.pub  https://swupdate.openvpn.net/community/openvpn3/repos/ $DEB_OLDSTABLE main
 
     # signal: (from https://signal.org/en/download/):
-    get_apt_key  signal  https://updates.signal.org/desktop/apt/keys.asc "deb [arch=amd64 {s}] https://updates.signal.org/desktop/apt xenial main"
+    create_apt_source -a  signal  https://updates.signal.org/desktop/apt/keys.asc  https://updates.signal.org/desktop/apt/ xenial main
 
     # signald: (from https://signald.org/articles/install/debian/):
     # TODO: using http instead of https as per note in https://signald.org/articles/install/debian/ (apt-update gives error otherwise)
-    get_apt_key  signald  https://signald.org/signald.gpg "deb [arch=amd64 {s}] http://updates.signald.org unstable main"
+    create_apt_source -a  signald  https://signald.org/signald.gpg  http://updates.signald.org/ unstable main
 
     # estonian open eid: (from https://installer.id.ee/media/install-scripts/install-open-eid.sh):
     # latest/current key can be found from https://installer.id.ee/media/install-scripts/
     #
     # note you'll likely want to use the latest ubuntu LTS or latest, period, codename for repo.
-    #get_apt_key -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh "deb [{s}] https://installer.id.ee/media/ubuntu/ jammy main"
-    get_apt_key  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub "deb [{s}] https://installer.id.ee/media/ubuntu/ jammy main"
+    #create_apt_source -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh  https://installer.id.ee/media/ubuntu/ jammy main
+    create_apt_source  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub  https://installer.id.ee/media/ubuntu/ jammy main
 
     # mozilla/firefox:  https://support.mozilla.org/en-US/kb/install-firefox-linux#w_install-firefox-deb-package-for-debian-based-distributions
-    get_apt_key  mozilla  https://packages.mozilla.org/apt/repo-signing-key.gpg "deb [{s}] https://packages.mozilla.org/apt mozilla main"
+    create_apt_source  mozilla  https://packages.mozilla.org/apt/repo-signing-key.gpg  https://packages.mozilla.org/apt/ mozilla main
 
     # gh: (from https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt):
-    get_apt_key  gh  https://cli.github.com/packages/githubcli-archive-keyring.gpg "deb [arch=amd64 {s}] https://cli.github.com/packages stable main"
+    create_apt_source -a  gh  https://cli.github.com/packages/githubcli-archive-keyring.gpg  https://cli.github.com/packages/ stable main
 
     execute 'sudo apt-get --yes update'
 }
@@ -4004,6 +4022,8 @@ install_uhk_agent() {
 
 # https://github.com/rvaiya/keyd
 # https://github.com/rvaiya/keyd#from-source
+#
+# TODO: consider kanata as alternative: https://github.com/jtroo/kanata
 install_keyd() {
     local dir conf_src conf_target
 
