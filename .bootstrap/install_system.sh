@@ -1968,12 +1968,18 @@ create_apt_source() {
     name="$1"
     key_url="$2"  # either keyfile or keyserver, depending on whether -k is used; with -g flag it's a file that contains the PGP key, together with other content (likely an installer script)
     uris="$3"  # 3-5 are already for the source file definition
-    suites="$4"
+    suites="$4"  # if ends w/ a slash, then no $components may be defined!
     components="$5"
 
     keyfile="$APT_KEY_DIR/${name}.gpg"
     f="/tmp/.apt-key_${name}-${RANDOM}.gpg"
     target_src="/etc/apt/sources.list.d/${name}.sources"
+
+    if [[ "$suites" == */ ]]; then
+        [[ -n "$components" ]] && { err "if [Suites:] is a path (i.e. ends w/ a slash), then [Components:] must be empty!"; return 1; }
+    else
+        [[ -z "$components" ]] && { err "if [Suites:] is not a path (i.e. doesn't end w/ a slash), then [Components:] must be included"; return 1; }
+    fi
 
     # create (arbitrary) dir for our apt keys:
     [[ -d "$APT_KEY_DIR" ]] || execute "sudo mkdir -- $APT_KEY_DIR" || return 1
@@ -2000,14 +2006,14 @@ create_apt_source() {
     [[ -s "$f" ]] || { err "imported keyfile [$f] does not exist"; return 1; }
     execute "sudo mv -- '$f' '$keyfile'" || return 1
 
-cat <<EOF | sudo tee "$target_src" > /dev/null
+    cat <<EOF | sudo tee "$target_src" > /dev/null
 Types: deb
 URIs: $uris
 Suites: $suites
-Components: $components
 Signed-By: $keyfile
 EOF
-[[ -n "$arch" ]] && echo "Architectures: $arch" | sudo tee -a "$target_src" > /dev/null
+    [[ -n "$components" ]] && echo "Components: $components" | sudo tee -a "$target_src" > /dev/null
+    [[ -n "$arch" ]] && echo "Architectures: $arch" | sudo tee -a "$target_src" > /dev/null
 }
 
 
@@ -2056,8 +2062,8 @@ setup_additional_apt_keys_and_sources() {
     # latest/current key can be found from https://installer.id.ee/media/install-scripts/
     #
     # note you'll likely want to use the latest ubuntu LTS or latest, period, codename for repo.
-    #create_apt_source -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh  https://installer.id.ee/media/ubuntu/ jammy main
-    create_apt_source  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub  https://installer.id.ee/media/ubuntu/ jammy main
+    #create_apt_source -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh  https://installer.id.ee/media/ubuntu/ noble main
+    create_apt_source  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub  https://installer.id.ee/media/ubuntu/ noble main
 
     # mozilla/firefox:  https://support.mozilla.org/en-US/kb/install-firefox-linux#w_install-firefox-deb-package-for-debian-based-distributions
     create_apt_source  mozilla  https://packages.mozilla.org/apt/repo-signing-key.gpg  https://packages.mozilla.org/apt/ mozilla main

@@ -45,10 +45,10 @@ Components: main contrib non-free non-free-firmware
 Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 
 
-# jessie-backports, previously on backports.debian.org
+# bookworm-backports, previously on backports.debian.org
 # do NOT use backports if on testing; testing doesnt have those:
-#deb http://deb.debian.org/debian jessie-backports main contrib non-free
-#deb-src http://deb.debian.org/debian jessie-backports main contrib non-free
+#deb http://deb.debian.org/debian bookworm-backports main contrib non-free
+#deb-src http://deb.debian.org/debian bookworm-backports main contrib non-free
 
-# archive (for old fonts for instance):
-#deb http://archive.debian.org/debian-archive/debian woody main
+# archive (for old fonts for instance):  (see https://www.debian.org/distrib/archive)
+#deb http://archive.debian.org/debian-archive/debian/ woody main non-free
