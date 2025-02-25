@@ -2335,17 +2335,20 @@ mkgit() {
            h) echo -e "$usage";
               return 0
               ;;
-           g) user="laur89"
+           g) user=laur89
               namespace="$user"
               repo="github.com"
               let mainOptCounter+=1
               ;;
-           b) user="layr"  # TODO broken (at least for auth) as user has changed
+           b) user=layr
               namespace="$user"
               repo="bitbucket.org"
               let mainOptCounter+=1
               ;;
-           w) user="laliste"
+           w) err 'work profile not enabled';
+              return 1
+
+              user=laliste
               repo="$(getnetrc "${user}@git.url.workplace")"
               let mainOptCounter+=1
               ;;
@@ -2394,7 +2397,7 @@ mkgit() {
     elif [[ "$project_name" == */* ]]; then
         err "project name [$project_name] contains slashes." "$FUNCNAME"
         return 1
-    elif ! check_connection "$repo"; then
+    elif ! check_connection -w "$repo"; then  # -w as bitbucket.org doesn't respond to ping
         err "no connection to [$repo]" "$FUNCNAME"
         return 1
     fi
@@ -2466,11 +2469,11 @@ mkgit() {
                     -o "$curl_output")"
                 ;;
             'bitbucket.org')
-                # note: auth $user needs to be the one you actually log in with, user in url can/has to be the old username (layr)
                 readonly http_statuscode="$(curl --fail -sSL -X POST \
                     -w '%{http_code}' \
                     --max-time 5 --connect-timeout 2 \
-                    -H "Content-Type: application/json" \
+                    -H 'Content-Type: application/json' \
+                    -H 'Accept: application/json' \
                     -u "$user:$passwd" \
                     "https://api.bitbucket.org/2.0/repositories/$user/$project_name" \
                     -d "{ \"scm\": \"git\", \"is_private\": $is_private, \"fork_policy\": \"no_public_forks\" }" \
