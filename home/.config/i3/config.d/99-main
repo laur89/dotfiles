@@ -686,7 +686,8 @@ bindsym $mod+Control+Shift+z $ex i3-scratch-marker.sh scratch_mark
 # ------------------------------
 # 2nd ver, using i3-quickterm:
 $exa i3-quickterm --daemon
-bindsym $mod1+i $ex i3-quickterm --toggle shell
+#bindsym $mod1+i $ex i3-quickterm shell
+bindsym $mod1+i $ex killall -s SIGUSR1 i3-quickterm
 # ------------------------------
 
 # bind i3expo launcher:
