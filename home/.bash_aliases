@@ -48,6 +48,7 @@ alias googler='googler --lang en'
 alias goo='googler'
 alias define='googler -n 4 define'
 alias py3='python3'
+alias ipy='ipython3 --no-banner --no-confirm-exit'
 alias dunc='ncdu'  # never remember it; if it starts w/ 'du', it'll be more likely to find
 alias wheresthespace='ncdu -x /'  # what's taking up the space? -x avoids cross-fs
 alias dfpy='pydf'
