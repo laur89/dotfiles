@@ -1968,7 +1968,7 @@ create_apt_source() {
     name="$1"
     key_url="$2"  # either keyfile or keyserver, depending on whether -k is used; with -g flag it's a file that contains the PGP key, together with other content (likely an installer script)
     uris="$3"  # 3-5 are already for the source file definition
-    suites="$4"  # if ends w/ a slash, then no $components may be defined!
+    suites="$4"
     components="$5"
 
     keyfile="$APT_KEY_DIR/${name}.gpg"
@@ -2184,15 +2184,15 @@ install_games() {
 # https://github.com/fwupd/fwupd
 # depends on the fwupd package
 #
-# TODO: better run this manually, i think? or only run if in interactive mode and explicitly ask before running 'update'?
+# note this is only manually executed, not during automatic install/upgrades
 upgrade_firmware() {
     local c
 
     # display all devices detected by fwupd:
-    execute -c 0,2 'fwupdmgr get-devices'
+    execute -c 0,2 'fwupdmgr get-devices' || return 1
 
     # download latest metadata from LVFS:
-    execute -c 0,2 'fwupdmgr refresh'  # note it can exit w/ 2, and saying it was refreshed X time ago; not the case if passing '--force' flag to it
+    execute -c 0,2 'fwupdmgr refresh' || return 1  # note it can exit w/ 2, and saying it was refreshed X time ago; not the case if passing '--force' flag to it
 
     # if updates are available, they'll be displayed:
     execute -c 0,2 -r 'fwupdmgr get-updates'
@@ -2887,7 +2887,8 @@ install_slides() {  # https://github.com/maaslalani/slides
 
 
 # Franz nag-less fork.
-# might also consider open-source fork of rambox: https://github.com/TheGoddessInari/hamsket
+# might also consider free rambox: https://rambox.app/download-linux/
+# another alternative: https://github.com/getstation/desktop-app
 install_ferdium() {  # https://github.com/ferdium/ferdium-app
     install_deb_from_git ferdium ferdium-app '-amd64.deb'
 }
@@ -3423,17 +3424,22 @@ install_redis_insight() {  # https://redis.com/thank-you/redisinsight-the-best-r
 
 # other noting alternatives:
 #   https://github.com/pbek/QOwnNotes  (also c++, qt-based like vnotes)
-#   https://github.com/laurent22/joplin/
-#   https://github.com/notable/notable/
-#   https://github.com/BoostIO/Boostnote
+#   https://github.com/laurent22/joplin/ (still actively developed as of '25)
+#   https://github.com/notable/notable/ (dead? last commit early '23)
+#   https://github.com/BoostIO/BoostNote-App (last commit '22)
 #   https://github.com/zadam/trilium  (also hostable as a server)
-#   https://github.com/zk-org/zk  plain-text
+#   https://github.com/zk-org/zk  plain-text CLI too to maintain a plain text Zettelkasten or personal wiki.
+#   https://github.com/TiddlyWiki/TiddlyWiki5
+#   https://github.com/jakewvincent/mkdnflow.nvim - navigate markdown wikis
+#   https://github.com/lervag/wiki.vim
+#   # obsidian
 install_vnote() {  # https://github.com/vnotex/vnote/releases
     #install_bin_from_git -N vnote vnotex vnote 'linux-x64_.*zip'
     install_bin_from_git -N vnote -n '*.AppImage' vnotex vnote 'linux-x64_.*.zip'
 }
 
 
+# note there's this for vim: https://github.com/epwalsh/obsidian.nvim
 install_obsidian() {  # https://github.com/obsidianmd/obsidian-releases/releases
     install_deb_from_git  obsidianmd  obsidian-releases '_amd64.deb'
 }
@@ -3806,6 +3812,7 @@ install_rambox() {  # https://github.com/ramboxapp/community-edition/wiki/Instal
 
 # note skype is also available as a snap (sudo snap install skype), tho the snap version seemed tad buggy/unstable
 # !!! as of Dec '23 deb/rpm pkgs no longer distributed, only snap is avail: https://www.reddit.com/r/skype/comments/1861hvo/skype_for_linux_distribution_method_change/
+# !!! skype sunset as of May '25
 install_skype() {  # https://wiki.debian.org/skype
                    # https://www.skype.com/en/get-skype/
 
@@ -4641,11 +4648,8 @@ install_i3_deps() {
     create_link -c "${BASE_DEPS_LOC}/i3ass/src" "$HOME/bin/"
 
 
-    # install i3-quickterm   # https://github.com/lbonn/i3-quickterm
-    #curl --fail --output "$f" 'https://raw.githubusercontent.com/lbonn/i3-quickterm/master/i3_quickterm/main.py' \  # TODO: enable this one if/when PR is accepted
-    curl --fail --output "$f" 'https://raw.githubusercontent.com/laur89/i3-quickterm/master/i3-quickterm' \
-            && execute "chmod +x -- '$f'" \
-            && execute "mv -- '$f' $HOME/bin/i3-quickterm" || err "installing i3-quickterm failed /w $?"
+    # install i3-quickterm   # https://github.com/laur89/i3-quickterm
+    py_install  i3-qt
 
     # install i3-cycle-windows   # https://github.com/DavsX/dotfiles/blob/master/bin/i3_cycle_windows
     # this script defines a 'next' window, so we could bind it to someting like super+mouse_wheel;
@@ -5466,7 +5470,6 @@ install_from_repo() {
         alsa-utils
         pipewire
         pipewire-audio
-        pavucontrol
         pulsemixer
         pasystray
         ca-certificates
@@ -6664,9 +6667,9 @@ _init_seafile_cli() {
 # this is only to be invoked manually.
 # note the client daemon needs to be running _prior_ to downloading the libraries.
 #
-# This should leave us with a situation where
-#  - $BASE_DATA_DIR/seafile       contains our library directories
-#  - $BASE_DATA_DIR/seafile-data  contains seafile's own metadata (we don't interact with ourselves)
+# This function should leave us with a situation where
+#  - $BASE_DATA_DIR/seafile/       contains our library directories
+#  - $BASE_DATA_DIR/seafile-data/  contains seafile's own metadata (we don't interact with ourselves)
 #
 # useful commands:
 #  - seaf-cli list [--json]  -> info about synced libraries
@@ -6703,7 +6706,7 @@ setup_seafile() {
         [[ -z "$passwd" ]] && read -r -p 'enter seafile pass: ' passwd
         [[ -z "$user" || -z "$passwd" ]] && { err "user and/or pass were not given"; return 1; }
 
-        seaf-cli download-by-name --libraryname "$lib" -s https://seafile.aliste.eu \
+        seaf-cli download-by-name --libraryname "$lib" -s 'https://seafile.aliste.eu' \
             -d "$parent_dir" -u "$user" -p "$passwd" || { err "[seaf-cli download-by-name] for lib [$lib] failed w/ $?"; continue; }
     done
 }
@@ -7192,7 +7195,7 @@ execute() {
            r) retain_code=1
                 ;;
            c)
-              IFS="," read -ra ok_codes <<< "$OPTARG"
+              IFS=',' read -ra ok_codes <<< "$OPTARG"
               for ok_code in "${ok_codes[@]}"; do
                 is_digit "$ok_code" || { err "non-digit ok_code arg passed to ${FUNCNAME}: [$ok_code]"; return 1; }
                 [[ "${#ok_code}" -gt 3 ]] && { err "too long ok_code arg passed to ${FUNCNAME}: [$ok_code]"; return 1; }
