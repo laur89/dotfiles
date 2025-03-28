@@ -80,6 +80,23 @@ This mode is to be ran periodically to build/install software; note it also incl
 non-standard sources, such as github releases/ pages, and being directly built from
 source.
 
+Troubleshooting
+---------------
+
+- dark theme not set.
+in eary '25 it
+started defaulting to light theme again until `gsettings set org.gnome.desktop.interface color-scheme prefer-dark`
+was ran; could be [gtk4](https://wiki.archlinux.org/title/GTK#Dark_theme_variant) thing.
+gsettings likely has (a binary!) config file at `~/.config/dconf/user`.
+For GUI dconf editor install `dconf-editor` pkg.
+    - note it's a binary file, [which should not be replaced while logged in](https://askubuntu.com/a/984214),
+    so be careful if storing it in our dotfiles/git repo.
+        - u/muru's reply below it shows a way to configure it via text files
+            system-wide under `/etc/dconf/db/database.d/`
+    - there's also [this askubuntu answer](https://askubuntu.com/a/875922) that
+        might be relevant;
+    - as always, Arch' [wiki on GTK](https://wiki.archlinux.org/title/GTK) is good.
+
 ### TODO
 
 1. delay homeshick repos' https->ssh change to later stages; otherwise
