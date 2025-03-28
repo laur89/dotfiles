@@ -97,6 +97,9 @@ For GUI dconf editor install `dconf-editor` pkg.
         might be relevant;
     - as always, Arch' [wiki on GTK](https://wiki.archlinux.org/title/GTK) is good.
 
+- for uniform GTK & QT look, see [this arch wiki](https://wiki.archlinux.org/title/Uniform_look_for_Qt_and_GTK_applications)
+- for theming under Wayland, read [this!](https://github.com/swaywm/sway/wiki/GTK-3-settings-on-Wayland)
+
 ### TODO
 
 1. delay homeshick repos' https->ssh change to later stages; otherwise
