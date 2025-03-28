@@ -119,6 +119,11 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     #export GTK2_RC_FILES="$HOME/.config/gtk-2.0/gtkrc"
     export GTK2_RC_FILES=$HOME/.gtkrc-2.0
 
+    # disable portal, as suggested here: https://wiki.archlinux.org/title/GTK#GTK_3_and_GTK_4
+    # (note it points to commit https://gitlab.gnome.org/GNOME/libadwaita/-/commit/e715fae6a509db006a805af816f9d163f81011ef)
+    # !! only set this if not using portal !! (for portals see https://flatpak.github.io/xdg-desktop-portal/)
+    #export ADW_DISABLE_PORTAL=1
+
     # Make QT automatically scale according to screen DPI (from https://github.com/vincentbernat/i3wm-configuration/blob/master/dotfiles/xsession )
     export QT_AUTO_SCREEN_SCALE_FACTOR=1
     export QT_QPA_PLATFORMTHEME=qt5ct
