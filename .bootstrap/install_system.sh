@@ -2347,7 +2347,6 @@ install_own_builds() {
     #install_copyq
     is_native && install_uhk_agent
     is_native && install_ddcutil
-    install_keyd
     #install_rambox
     install_seafile_cli
     # TODO: why are ferdium&discord behind is_native?
@@ -4044,25 +4043,20 @@ install_uhk_agent() {
 # https://github.com/rvaiya/keyd#from-source
 #
 # TODO: consider kanata as alternative: https://github.com/jtroo/kanata
-install_keyd() {
-    local dir conf_src conf_target
+setup_keyd() {
+    local conf_src conf_target xcomp
 
-    dir="$(fetch_extract_tarball_from_git  -T rvaiya  keyd)" || return 1
     conf_src="$COMMON_DOTFILES/backups/keyd.conf"
     conf_target='/etc/keyd/default.conf'
+    xcomp='/usr/share/keyd/keyd.compose'
 
-    execute "pushd $dir" || return 1
-    execute make || { err; popd; return 1; }
+    if [[ -s "$conf_src" ]]; then
+        create_link    "$xcomp" "$HOME/.XCompose"
+        create_link -s "$xcomp" '/root/.XCompose'
+    fi
 
-    create_deb_install_and_store  keyd  # TODO: note still using checkinstall
-    execute 'sudo systemctl enable --now keyd' || return 1  # note --now flag effectively also starts the service immediately
+    [[ -s "$xcomp" ]] && execute "sudo cp -- '$conf_src' '$conf_target'"
 
-    # put package on hold so they don't get overridden by apt-upgrade:
-    execute 'sudo apt-mark hold  keyd'
-    [[ -s "$conf_src" ]] && execute "sudo cp -- '$conf_src' '$conf_target'"
-
-    execute "popd"
-    execute "sudo rm -rf -- '$dir'"
     return 0
 }
 
@@ -5513,6 +5507,7 @@ install_from_repo() {
         parallel
         progress
         md5deep
+        keyd
     )
 
     # for .NET dev, consider also nuget pkg;
@@ -6081,7 +6076,6 @@ __choose_prog_to_build() {
         install_goforit
         install_copyq
         install_uhk_agent
-        install_keyd
         install_ddcutil
         install_rambox
         install_slides
@@ -6904,6 +6898,7 @@ post_install_progs_setup() {
     setup_docker
     setup_tcpdump
     setup_nvim
+    setup_keyd
     is_native && addgroup_if_missing wireshark               # add user to wireshark group, so it could be run as non-root;
                                                 # (implies wireshark is installed with allowing non-root users
                                                 # to capture packets - it asks this during installation); see https://github.com/wireshark/wireshark/blob/master/packaging/debian/README.Debian
