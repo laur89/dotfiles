@@ -5508,6 +5508,7 @@ install_from_repo() {
         progress
         md5deep
         keyd
+        dconf-cli
     )
 
     # for .NET dev, consider also nuget pkg;
