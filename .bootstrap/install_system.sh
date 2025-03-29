@@ -376,6 +376,13 @@ setup_smartd() {
 }
 
 
+# needed for wayland, see https://github.com/swaywm/sway/wiki/GTK-3-settings-on-Wayland
+# also read this: https://wiki.archlinux.org/title/GTK#Wayland_backend
+setup_gtk() {
+    true  # TODO
+}
+
+
 # TODO: set up msmtprc for system (/etc/msmtprc ?) so sendmail works; don't forget to add aliases, eg 'smart_mail_alias'; refer to arch wiki for more info
 setup_mail() {
     true
@@ -5606,6 +5613,8 @@ install_from_repo() {
         gnome-themes-standard
         arc-theme
         numix-gtk-theme
+        greybird-gtk-theme
+        materia-gtk-theme
         numix-icon-theme
         faba-icon-theme
         meld
@@ -6252,8 +6261,8 @@ remind_manually_installed_progs() {
         'sdkman - jdk, maven, gradle, leiningen...'
         'any custom certs'
         'install tmux plugins (prefix+I)'
-        'ublock origin additional configs (est, social media, ...)'
-        'ublock whitelist (should be saved somewhere)'
+        'ublock additional configs (est, social media, ...)'
+        'ublock whitelist, filters (should be saved somewhere)'
         'import keepass-xc browser plugin config'
         'install tridactyl native messenger/executable (:installnative)'
         'set the firefox config, see details @ setup_firefox()'
