@@ -5471,6 +5471,7 @@ install_from_repo() {
         alsa-utils
         pipewire
         pipewire-audio
+        easyeffects
         pulsemixer
         pasystray
         ca-certificates
@@ -5509,6 +5510,7 @@ install_from_repo() {
         md5deep
         keyd
         dconf-cli
+        dconf-editor
     )
 
     # for .NET dev, consider also nuget pkg;
@@ -5604,6 +5606,8 @@ install_from_repo() {
         p7zip
         dos2unix
         lxappearance
+        qt5ct
+        qt6ct
         gtk2-engines-murrine
         gtk2-engines-pixbuf
         gnome-themes-standard
@@ -5778,6 +5782,7 @@ install_from_repo() {
     done
 
 
+    # TODO: replace virtualbox by KVM & https://virt-manager.org/
     if [[ "$PROFILE" == work ]]; then
         if is_native; then
             install_block '
