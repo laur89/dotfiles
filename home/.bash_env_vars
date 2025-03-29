@@ -1,5 +1,7 @@
 # defines the COMMON env vars that should be included in each shell session.
 #
+# see also: https://github.com/vincentbernat/i3wm-configuration/blob/master/dotfiles/xsession
+#
 # !! might be used by root as well!
 #
 export MAIN_SYSTEM_USER=laur
@@ -124,9 +126,16 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # !! only set this if not using portal !! (for portals see https://flatpak.github.io/xdg-desktop-portal/)
     #export ADW_DISABLE_PORTAL=1
 
+    # supporess warnings about accessibility bus (see https://wiki.archlinux.org/title/GTK#Suppress_warning_about_accessibility_bus)
+    export NO_AT_BRIDGE=1
+
     # Make QT automatically scale according to screen DPI (from https://github.com/vincentbernat/i3wm-configuration/blob/master/dotfiles/xsession )
+    #     Qt HiDPI:  https://doc.qt.io/qt-6/highdpi.html
+    #     arch wiki: https://wiki.archlinux.org/title/HiDPI#Qt_5
+    export QT_ENABLE_HIGHDPI_SCALING=1
     export QT_AUTO_SCREEN_SCALE_FACTOR=1
-    export QT_QPA_PLATFORMTHEME=qt5ct
+    # TODO: should we wrap this env var around something like [if wm = i3]?:
+    export QT_QPA_PLATFORMTHEME=qt5ct:qt6ct
 
     # see https://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
     # NOTE:  make sure you know what you do; eg setting XDG_DATA_DIRS below effed up meld
@@ -137,6 +146,10 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
 
     export XDG_CACHE_HOME="/home/$USER/.cache"
     export XDG_DOWNLOAD_DIR="/home/$USER/Downloads"
+
+    # these from https://github.com/vincentbernat/i3wm-configuration/blob/master/dotfiles/xsession
+    export XDG_SESSION_DESKTOP=i3
+    export XDG_CURRENT_DESKTOP=i3  # TODO: should this be set to 'GNOME' instead, as per https://wiki.archlinux.org/title/Qt#Configuration_of_Qt_5/6_applications_under_environments_other_than_KDE_Plasma ?
 
     #export POWERLINE_CONFIG_COMMAND="powerline-config"
     ## /usr/local/bin/powerline-config
@@ -166,6 +179,9 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # which diff-so-fancy (git differ) executable to use; referenced eg by some functions in ~/.bash_functions:
     export _DSF='delta'  # alternatively: diff-so-fancy
 
+    # set SUDO_ASKPASS so vim/nvim w!! command can save file as sudo: (from https://stackoverflow.com/a/79329426/1803648)
+    export SUDO_ASKPASS=$(which ssh-askpass)
+
     export _MAX_STARTING_VOL_FOR_EARPHONES=70
     export _PROJECTS_DIR="$HOME/dev/projects"  # NOTE: .gitconf_work more likely than not depends on this value
 fi
@@ -173,8 +189,7 @@ fi
 command -v nvim > /dev/null 2>&1 && export EDITOR=nvim || export EDITOR=vim
 export VISUAL="$EDITOR"  # note gvim doesn't play well with some stuff, eg with 'crontab -e';
 export PAGER=less
-export BROWSER=/usr/bin/firefox
-export DEITY=
+[ -n "$DISPLAY" ] && export BROWSER=/usr/bin/firefox || export BROWSER=links2
 
 # Colorize less (from http://unix.stackexchange.com/questions/119/colors-in-man-pages)
 # get color support for less:
