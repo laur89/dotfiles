@@ -458,6 +458,10 @@ setup_logind() {
 
 
 # to temporarily disable lid-switch events:   systemd-inhibit --what=handle-lid-switch sleep 1d
+# Note: for env variables, see https://wiki.archlinux.org/title/Systemd/User#Environment_variables
+#       likely reasonable to create .conf file in ~/.config/environment.d/ dir
+#       alternatively, we already call $ systemctl --user --wait import-environment
+#       from our .xsession file
 setup_systemd() {
     local global_sysd_src usr_sysd_src global_sysd_target usr_sysd_target file dir tmpfile filename
 
@@ -5468,6 +5472,7 @@ install_from_repo() {
         xorg
         x11-apps
         xinit
+        ssh-askpass
         alsa-utils
         pipewire
         pipewire-audio
