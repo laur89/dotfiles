@@ -121,10 +121,19 @@ _setup_environment() {
   #       but without it i3 wouldn't have proper PATH set, causing programs referenced from
   #       e.g. ~/bin to not be found
    systemctl --user --wait import-environment
-   #systemctl --user daemon-reload
+   systemctl --user daemon-reload
 }
 
 main() {
+  local _dconf
+
+  _dconf="$HOME/.config/dconf/dconf.ini"
+
+  if [[ -s "$_dconf" ]]; then
+    # see https://github.com/vincentbernat/i3wm-configuration/blob/master/dotfiles/xsession
+    dconf load / < "$_dconf"
+  fi
+
   # Logging for every line executed in the xsession script.
   _log_executed_lines
   _log_boxed_message 'Logging to systemd journal'
