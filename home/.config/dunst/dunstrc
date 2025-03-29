@@ -14,7 +14,7 @@
     width = 300
     #height = 5
     height = 300
-    offset = 6x20
+    offset = (6, 20)
     #offset = 10x50
     origin = bottom-right
     #notification_height = 50  # Deprecated
