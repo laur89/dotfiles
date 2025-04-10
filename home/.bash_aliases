@@ -375,3 +375,5 @@ alias install='sudo apt-get install'
 alias uninstall='sudo apt-get remove'
 alias uinstall='sudo apt-get remove'
 alias reinstall='sudo apt-get --reinstall install'
+
+alias send-clipboard='kdeconnect-cli -n "$PHONE_NAME" --send-clipboard'  # PHONE_NAME defined in env vars

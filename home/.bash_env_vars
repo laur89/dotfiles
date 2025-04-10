@@ -184,6 +184,8 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
 
     export _MAX_STARTING_VOL_FOR_EARPHONES=70
     export _PROJECTS_DIR="$HOME/dev/projects"  # NOTE: .gitconf_work more likely than not depends on this value
+
+    export PHONE_NAME='POCO F5'  # as defined in kde-connect; likley some bash aliases and/or functions depend on it
 fi
 
 command -v nvim > /dev/null 2>&1 && export EDITOR=nvim || export EDITOR=vim
