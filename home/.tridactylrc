@@ -24,6 +24,11 @@ set hintchars 1234567890
 " Make gu take you back to subreddit from comments
 bindurl reddit.com gu urlparent 3
 
+" Make gu take you back to project root:
+"alias urlparent_fromroot js -p tri.excmds.urlparent(location.pathname.split("/").filter(s=>s).length-JS_ARG)
+"bindurl ^https:\/\/github\.com\/([^/]+\/){3} gu urlparent_fromroot 2
+bindurl ^https:\/\/github\.com\/([^/]+\/){3} gu js window.location.href=window.location.href.match(/^https:\/\/github\.com\/([^/]+\/){2}/)[0]
+
 " note hintdelay was introduced in https://github.com/tridactyl/tridactyl/commit/aaa0016fc5e5e160462555ab8ec517dcf9e7421e
 " Defaults to 300ms; this is especially beneficial in vimperator hintmode
 "set hintdelay 100
