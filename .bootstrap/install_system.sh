@@ -1784,7 +1784,7 @@ setup_private_asset_perms() {
 
 # sets:
 # - global PS1
-# - _init() definition for convenienve in scripts
+# - shell init glue code under /etc
 setup_global_bash_settings() {
     local global_bashrc global_profile ps1
 
@@ -1802,7 +1802,7 @@ setup_global_bash_settings() {
     execute "sudo sed -i --follow-symlinks '/^PS1=.*# own-ps1-def-marker$/d' '$global_bashrc'"
     execute "echo '$ps1' | sudo tee --append $global_bashrc > /dev/null"
 
-    ## add the script _init() function for convenience/global access: (idea from https://www.reddit.com/r/bash/comments/jb6n65/is_there_a_file_that_all_shell_sessions_source/g8up3wi)
+    ## add the script shell init glue code under /etc for convenience/global access:
     # note this one only covers _interactive_ shells...:
     grep -q 'global_init_marker$' "$global_bashrc" || execute "echo 'source /etc/.global-bash-init  # global_init_marker' | sudo tee --append $global_bashrc > /dev/null"
     # ...and this one only covers _non-interactive_ shells (note cron still isn't covered!)
@@ -2045,6 +2045,7 @@ setup_additional_apt_keys_and_sources() {
     create_apt_source -a  docker  https://download.docker.com/linux/debian/gpg  https://download.docker.com/linux/debian/ $DEB_STABLE stable
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
+    # consider also https://github.com/SpotX-Official/SpotX-Bash to patch the client
     create_apt_source  spotify  https://download.spotify.com/debian/pubkey_C85668DF69375001.gpg  http://repository.spotify.com/ stable non-free
 
     # !!! "Since 9.0.7 version, we only provide official packages in AppImage format" !!!
@@ -2387,6 +2388,8 @@ install_own_builds() {
     install_open_eid
     install_binance
     install_exodus_wallet
+    install_revanced
+    install_apkeditor
 
     #install_dwm
     is_native && install_i3lock
@@ -2857,6 +2860,8 @@ download_git_raw() {
 
 # Fetch a file from given github /releases page, and install the binary
 #
+# -U                - do not upack the compressed/archived asset
+# -A                - install file as-is, do not derive method from mime
 # -d /target/dir    - dir to install pulled binary in, optional
 # -N binary_name    - what to name pulled binary to, optional; TODO: should it not be mandatory - otherwise filename changes w/ each new version?
 # -n, -F            - see _fetch_release_common()/fetch_release_from_any()
@@ -2864,13 +2869,17 @@ download_git_raw() {
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
 install_bin_from_git() {
-    local opt bin target name OPTIND fetch_git_args
+    local opt bin target name OPTIND fetch_git_args install_file_args
 
     # as to why we include 'sharedlib', see https://gitlab.freedesktop.org/xdg/shared-mime-info/-/issues/11
     fetch_git_args=(-F 'application/x-(pie-)?(sharedlib|executable)')
     target='/usr/local/bin'  # default
-    while getopts 'N:d:n:F:' opt; do
+    declare -a install_file_args
+    while getopts 'UAN:d:n:F:' opt; do
         case "$opt" in
+            U) install_file_args+=("-$opt")
+               fetch_git_args+=("-$opt") ;;
+            A) install_file_args+=("-$opt") ;;
             N) name="$OPTARG" ;;
             d) target="$OPTARG" ;;
             n|F) fetch_git_args+=("-$opt" "$OPTARG") ;;
@@ -2880,10 +2889,11 @@ install_bin_from_git() {
     shift "$((OPTIND-1))"
 
     [[ -d "$target" ]] || { err "[$target] not a dir, can't install [$1/$2]"; return 1; }
+    install_file_args+=(-d "$target")
 
     # note: some of (think rust?) binaries' mime is 'application/x-sharedlib', not /x-executable
     bin="$(fetch_release_from_git "${fetch_git_args[@]}" "$1" "$2" "$3" "$name")" || return 1
-    install_file -d "$target" "$bin" || return 1
+    install_file "${install_file_args[@]}" "$bin" || return 1
 }
 
 
@@ -2899,6 +2909,7 @@ install_slides() {  # https://github.com/maaslalani/slides
 # Franz nag-less fork.
 # might also consider free rambox: https://rambox.app/download-linux/
 # another alternative: https://github.com/getstation/desktop-app
+#                      https://github.com/beeper <- selfhostable built on matrix?
 install_ferdium() {  # https://github.com/ferdium/ferdium-app
     install_deb_from_git ferdium ferdium-app '-amd64.deb'
 }
@@ -3075,17 +3086,18 @@ install_from_url_shell() {
 
 
 install_file() {
-    local opt OPTIND ftype single_f target file_filter noextract name_filter file name
+    local opt OPTIND ftype single_f target file_filter noextract name_filter file name asis
 
     target='/usr/local/bin'  # default
     single_f='-s'  # ie default to installing/extracting a single file in case tarball is provided
-    while getopts 'd:DUF:n:' opt; do
+    while getopts 'd:DUF:n:A' opt; do
         case "$opt" in
             d) target="$OPTARG" ;;
             D) unset single_f ;;  # mnemonic: directory; ie we want the "whole directory" in case $file is tarball
             F) file_filter="$OPTARG" ;;  # no use if -D or -U is used
             U) noextract=1 ;;  # if, for whatever the reason, an archive/tarball should not be unpacked
             n) name_filter="$OPTARG" ;;  # no use if -D or -U is used
+            A) asis=TRUE ;;  # install file as-is, do not derive method from mime
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -3111,7 +3123,8 @@ install_file() {
         return 0
     }
 
-    ftype="$(file -iLb -- "$file")"
+    [[ -n "$asis" ]] && ftype='text/plain; charset=' || ftype="$(file -iLb -- "$file")"  # mock as-is filetype to enable simple file move logic
+
     if [[ "$ftype" == *"debian.binary-package; charset=binary" ]]; then
         execute "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
         execute "rm -f -- '$file'"
@@ -3833,6 +3846,8 @@ install_skype() {  # https://wiki.debian.org/skype
 
 # https://asdf-vm.com/guide/getting-started.html
 # node (and others) version manager
+# alternatives:
+#   nodejs: https://github.com/Schniz/fnm
 install_asdf() {
     clone_or_pull_repo  asdf-vm asdf "$ASDF_DIR/"
 
@@ -4599,7 +4614,7 @@ rb_install() {
 
 
 fp_install() {
-    local opt name ref remote OPTIND
+    local opt name ref bin remote OPTIND
 
     while getopts 'n:' opt; do
         case "$opt" in
@@ -4614,7 +4629,10 @@ fp_install() {
 
     name="${name:-$ref}"
     execute "flatpak install -y --noninteractive '$remote' '$ref'" || return 1
-    create_link "/var/lib/flatpak/exports/bin/$ref" "$HOME/bin/$name"
+
+    bin="/var/lib/flatpak/exports/bin/$ref"
+    [[ -s "$bin" ]] || { err "[$bin] does not exist, cannot create shortcut link for [$name]"; return 1; }  # sanity
+    create_link "$bin" "$HOME/bin/$name"
 }
 
 
@@ -5435,7 +5453,7 @@ install_fonts() {
 # majority of packages get installed at this point;
 install_from_repo() {
     local block blocks block1 block2 block3 block4 block5 extra_apt_params
-    local block1_nonwin block2_nonwin block3_nonwin
+    local block1_nonwin block2_nonwin block3_nonwin block4_nonwin
 
     declare -A extra_apt_params=(
     )
@@ -5612,6 +5630,7 @@ install_from_repo() {
         dos2unix
         lxappearance
         qt5ct
+        qt5-style-plugins
         qt6ct
         gtk2-engines-murrine
         gtk2-engines-pixbuf
@@ -5736,6 +5755,11 @@ install_from_repo() {
     #         kazam (doesn't play well w/ i3)
     #
 
+    declare -ar block4_nonwin=(
+        adb
+    )
+
+    # redshift alternative: https://gitlab.com/chinstrap/gammastep
     declare -ar block4=(
         atool
         highlight
@@ -5773,7 +5797,7 @@ install_from_repo() {
     )
 
     blocks=()
-    is_native && blocks=(block1_nonwin block2_nonwin block3_nonwin)
+    is_native && blocks=(block1_nonwin block2_nonwin block3_nonwin block4_nonwin)
     blocks+=(block1 block2 block3 block4 block5)
 
     execute "sudo apt-get --yes update"
@@ -5815,8 +5839,15 @@ install_from_repo() {
 
 
 install_from_flatpak() {
+    local i
+
     # https://flathub.org/apps/com.github.PintaProject.Pinta
-    fp_install -n pinta  'com.github.PintaProject.Pinta'
+    i='com.github.PintaProject.Pinta'
+    if fp_install -n pinta  "$i"; then
+        # enable pinta access to /tmp, as we need file IO in /tmp
+        # due to our screenshooter: (see https://github.com/PintaProject/Pinta/issues/1357)
+        execute "sudo flatpak override $i --filesystem=/tmp"
+    fi
 
     # https://flathub.org/apps/engineer.atlas.Nyxt
     # web browser written in LISP
@@ -6168,12 +6199,15 @@ __choose_prog_to_build() {
         install_open_eid
         install_binance
         install_exodus_wallet
+        install_revanced
+        install_apkeditor
         install_vbox_guest
         install_brillo
         install_display_switch
         install_neovide
         install_asdf
         install_croc
+        install_android_command_line_tools
     )
 
     report "what do you want to build/install?"
@@ -6633,6 +6667,41 @@ install_exodus_wallet() {
     install_from_url  exodus "https://downloads.exodus.com/releases/exodus-linux-x64-${ver}.deb"
 }
 
+
+install_revanced() {
+    local d
+    d="$BASE_DEPS_LOC/revanced"
+    [[ -d "$d" ]] || mkdir "$d"
+
+    install_bin_from_git -UA -N revanced.jar -d "$d"  ReVanced  revanced-cli 'all.jar'
+    install_bin_from_git -UA -N patches.rvp  -d "$d"  ReVanced  revanced-patches  'patches-.*.rvp'
+}
+
+
+install_apkeditor() {
+    local d
+    d="$BASE_DEPS_LOC/apkeditor"
+    [[ -d "$d" ]] || mkdir "$d"
+
+    install_bin_from_git -UA -N apkeditor.jar -d "$d"  REAndroid  APKEditor 'APKEditor-.*.jar'
+}
+
+
+# note this gives us sdkmanager that can be used to install whatever else;
+# see  $ sdkmanager --list     for avail/installed packages
+install_android_command_line_tools() {
+    local target f
+
+    target="$BASE_PROGS_DIR/android/cmdline-tools"
+    [[ -d "$target" ]] || mkdir -p -- "$target"
+
+    f="$(fetch_release_from_any -U -I android-command-line-tools 'https://developer.android.com/studio#command-line-tools-only' 'commandlinetools-linux-[0-9]+_latest.zip')" || return $?
+    f="$(extract_tarball "$f")" || return 1
+    [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }  # rm previous installation
+    execute "mv -- '$f' '$target'" || return 1
+}
+
+
 # https://github.com/schollz/croc
 # share files between computers/phones
 install_croc() {
@@ -6993,7 +7062,7 @@ is_installed() {
 
     [[ -z "$ver" ]] && { err "empty ver passed to ${FUNCNAME}() by ${FUNCNAME[1]}()"; return 2; }  # sanity
     if grep -Fq "$ver" "$GIT_RLS_LOG" 2>/dev/null; then
-        report "[${COLORS[GREEN]}$ver${COLORS[OFF]}] already encountered, skipping ${name:+${COLORS[YELLOW]}$name${COLORS[OFF]} }installation..."
+        report "[${COLORS[GREEN]}$ver${COLORS[OFF]}] already processed, skipping ${name:+${COLORS[YELLOW]}$name${COLORS[OFF]} }installation..."
         return 0
     fi
 
