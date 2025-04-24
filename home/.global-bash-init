@@ -1,9 +1,7 @@
-
-_init() {
     if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != loaded ]]; then
         user_envs=/etc/.bash_env_vars
 
-        if [[ -r "$user_envs" ]]; then
+        if [[ -s "$user_envs" ]]; then
             source "$user_envs"
         else
             echo -e "\n    ERROR: env vars file [$user_envs] not found! Abort."
@@ -14,15 +12,10 @@ _init() {
 
     # import common:
     if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
-        if [[ -r "$_SCRIPTS_COMMONS" ]]; then
+        if [[ -s "$_SCRIPTS_COMMONS" ]]; then
             source "$_SCRIPTS_COMMONS"
         else
             echo -e "\n    ERROR: common file [$_SCRIPTS_COMMONS] not found! Abort."
             return 1
         fi
     fi
-
-    return 0
-}
-
-export -f _init

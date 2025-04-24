@@ -4,8 +4,7 @@
 # Note this script's stdout will be set as i3 config file!
 #####################################
 
-source /etc/.global-bash-init
-_init || exit 1
+source /etc/.global-bash-init || exit 1
 ###############
 
 

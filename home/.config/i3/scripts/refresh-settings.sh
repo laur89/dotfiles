@@ -5,8 +5,7 @@ SCRIPT_DIR="$(realpath -- "$(dirname -- "${BASH_SOURCE[0]}")")"  # note realpath
 DIR_UP="$(dirname -- "$SCRIPT_DIR")"
 #####################################
 
-source /etc/.global-bash-init
-_init || exit 1
+source /etc/.global-bash-init || exit 1
 ###############
 
 

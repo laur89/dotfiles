@@ -11,7 +11,7 @@ TRAY_MONITOR_PREFERENCE=(
     eDP
 )
 
-source /etc/.global-bash-init; _init || exit 1  # needs to be very first for the env vars
+source /etc/.global-bash-init || exit 1
 
 # Terminate already running bar instances
 #polybar-msg cmd quit  # requires IPC to be enabled per bar in config; TODO: unconfirmed, but feels like this messes w/ copyq

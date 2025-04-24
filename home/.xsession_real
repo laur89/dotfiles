@@ -14,7 +14,7 @@
 #readonly REPO_ROOT="$([[ ${CONFIG_GET_ROOT:-0} == 1 ]] && config-repo-root "${BASH_SOURCE[0]}" || echo "${HOME}")"
 #readonly DESKTOP_ENV_UTILS_DIR="${REPO_ROOT}/.my_scripts/desktop_env"
 
-source /etc/.global-bash-init; _init || exit 1  # needs to be very first for the env vars
+source /etc/.global-bash-init || exit 1
 
 readonly SET_X11_SETTINGS="$BASE_DATA_DIR/dev/scripts/system/set-x11-settings"  # note this is also defined in /etc/pm.d/sleep.d/99_sleep_reset_keyboard, just fyi
 

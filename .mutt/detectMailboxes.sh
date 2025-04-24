@@ -6,8 +6,7 @@
 # hostnames are configured in .bash_env_vars
 #
 ########################################################################
-source /etc/.global-bash-init
-_init || exit 1
+source /etc/.global-bash-init || exit 1
 
 ########################################################################
 readonly PERSONAL_BOX=~/.mutt/accounts/mailboxes.personal
