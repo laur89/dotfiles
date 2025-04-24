@@ -341,7 +341,10 @@ export PERL_MB_OPT="--install_base $PERL_BASE"
 export PERL5LIB="$PERL_BASE/lib/perl5"
 #export MANPATH="$PERL_BASE/man${MANPATH:+:$MANPATH}"
 ###############################
+# android sdk installed via apt:
+[[ -d "$BASE_PROGS_DIR/android" ]] && export ANDROID_HOME="$BASE_PROGS_DIR/android"
 
+# Note  "$ANDROID_HOME/platform-tools"  would give us tools such as adb, but atm we install it from apt
 # add additional locations to PATH if not already present:
 j=''
 for i in \
@@ -356,6 +359,7 @@ for i in \
         "$HOME/.rbenv/bin" \
         "$HOME/.yarn/bin" \
         /usr/local/go/bin \
+        "$ANDROID_HOME/cmdline-tools/bin" \
         "$GOPATH/bin" \
         "${KREW_ROOT:-$HOME/.krew}/bin" \
         "$BASE_DEPS_LOC/git-fuzzy/bin" \
