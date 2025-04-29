@@ -2373,6 +2373,7 @@ install_own_builds() {
     install_btop
     install_alacritty
     install_croc
+    install_kanata
     install_eza
     #install_synergy  # currently installing from repo
     install_i3
@@ -2862,8 +2863,9 @@ download_git_raw() {
 #
 # -U                - do not upack the compressed/archived asset
 # -A                - install file as-is, do not derive method from mime
+# -O, -P            - see install_file()
 # -d /target/dir    - dir to install pulled binary in, optional
-# -N binary_name    - what to name pulled binary to, optional; TODO: should it not be mandatory - otherwise filename changes w/ each new version?
+# -N binary_name    - what to name pulled binary to, optional; TODO: should it not be mandatory - otherwise filename changes w/ each new version? A: binary filenames say constant on some projects
 # -n, -F            - see _fetch_release_common()/fetch_release_from_any()
 # $1 - git user
 # $2 - git repo
@@ -2875,11 +2877,12 @@ install_bin_from_git() {
     fetch_git_args=(-F 'application/x-(pie-)?(sharedlib|executable)')
     target='/usr/local/bin'  # default
     declare -a install_file_args
-    while getopts 'UAN:d:n:F:' opt; do
+    while getopts 'UAN:d:n:F:O:P:' opt; do
         case "$opt" in
             U) install_file_args+=("-$opt")
                fetch_git_args+=("-$opt") ;;
             A) install_file_args+=("-$opt") ;;
+            O|P) install_file_args+=("-$opt" "$OPTARG") ;;
             N) name="$OPTARG" ;;
             d) target="$OPTARG" ;;
             n|F) fetch_git_args+=("-$opt" "$OPTARG") ;;
@@ -3086,17 +3089,19 @@ install_from_url_shell() {
 
 
 install_file() {
-    local opt OPTIND ftype single_f target file_filter noextract name_filter file name asis
+    local opt OPTIND ftype single_f target file_filter noextract name_filter owner perms file name asis
 
     target='/usr/local/bin'  # default
     single_f='-s'  # ie default to installing/extracting a single file in case tarball is provided
-    while getopts 'd:DUF:n:A' opt; do
+    while getopts 'd:DUF:n:O:P:A' opt; do
         case "$opt" in
             d) target="$OPTARG" ;;
             D) unset single_f ;;  # mnemonic: directory; ie we want the "whole directory" in case $file is tarball
             F) file_filter="$OPTARG" ;;  # no use if -D or -U is used
             U) noextract=1 ;;  # if, for whatever the reason, an archive/tarball should not be unpacked
             n) name_filter="$OPTARG" ;;  # no use if -D or -U is used
+            O) owner="$OPTARG" ;;  # chown
+            P) perms="$OPTARG" ;;  # chmod
             A) asis=TRUE ;;  # install file as-is, do not derive method from mime
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
@@ -3120,7 +3125,18 @@ install_file() {
             execute "mv -- '$file' '$tmpdir/$name'" || { err "renaming [$file] to [$tmpdir/$name] failed"; return 1; }
             file="$tmpdir/$name"
         fi
+
+        _owner_perms
         return 0
+    }
+
+    _owner_perms() {
+        if [[ -n "$owner" ]]; then
+            execute "sudo chown -R $owner  $file" || return 1
+        fi
+        if [[ -n "$perms" ]]; then
+            execute "sudo chmod -R $perms  $file" || return 1
+        fi
     }
 
     [[ -n "$asis" ]] && ftype='text/plain; charset=' || ftype="$(file -iLb -- "$file")"  # mock as-is filetype to enable simple file move logic
@@ -3129,8 +3145,8 @@ install_file() {
         execute "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
         execute "rm -f -- '$file'"
     elif [[ "$ftype" == *'executable; charset=binary' || "$ftype" == 'text/x-shellscript; charset=utf-8' ]]; then
-        _rename || return 1
         execute "chmod +x '$file'" || return 1
+        _rename || return 1
         execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
     elif [[ "$ftype" == 'text/plain; charset='* ]]; then  # same as executable/binary above, but do not set executable flag
         _rename || return 1
@@ -3149,6 +3165,7 @@ install_file() {
 }
 
 
+# note it's also avail as a flatpak: https://flathub.org/apps/com.discordapp.Discord
 install_discord() {  # https://discord.com/download
     install_from_url  discord 'https://discord.com/api/download?platform=linux&format=deb'
 }
@@ -4061,7 +4078,12 @@ install_uhk_agent() {
 # https://github.com/rvaiya/keyd
 # https://github.com/rvaiya/keyd#from-source
 #
-# TODO: consider kanata as alternative: https://github.com/jtroo/kanata
+# alternatives:
+#  - https://github.com/jtroo/kanata
+#    - its readme lists bunch of other alternatives
+#  - https://github.com/kmonad/kmonad
+#
+#  For both keyd & kanata config examples, see https://github.com/argenkiwi/kenkyo/
 setup_keyd() {
     local conf_src conf_target xcomp
 
@@ -4077,6 +4099,27 @@ setup_keyd() {
     [[ -s "$xcomp" ]] && execute "sudo cp -- '$conf_src' '$conf_target'"
 
     return 0
+}
+
+
+# https://github.com/jtroo/kanata
+#    - its readme lists bunch of other alternatives
+#
+# for quick debug, run as  $ sudo -u kanata kanata --cfg /path/to/conf.kbd
+install_kanata() {
+    local conf_src conf_base
+
+    conf_src="$COMMON_DOTFILES/backups/kanata.kbd"
+    conf_target='/etc/kanata/'  # note this path is referenced in relevant systemd service file
+
+    # note group & user are also referenced in relevant systemd & udev files
+    add_group uinput
+    add_user  kanata  'input,uinput'
+
+    [[ -d "$conf_target" ]] || execute "mkdir -- '$conf_target'" || return 1
+    [[ -s "$conf_src" ]] && execute "sudo cp -- '$conf_src' '$conf_target'"
+
+    install_bin_from_git -N kanata -O root:kanata -P 754  jtroo kanata 'kanata'
 }
 
 
@@ -4123,8 +4166,8 @@ install_ddcutil() {
 
     # following from https://www.ddcutil.com/i2c_permissions/
     group=i2c
-    execute -c 0,9 "sudo groupadd $group" || err
-    addgroup_if_missing "$group"
+    add_group "$group"
+    add_to_group "$group"
     return 0
 }
 
@@ -4453,8 +4496,8 @@ install_display_switch() {
     # following from https://github.com/haimgel/display-switch#linux-2
     # note the associated udev rule is in one of castles' udev/ dir
     group=i2c
-    execute -c 0,9 "sudo groupadd $group" || err
-    addgroup_if_missing "$group"
+    add_group "$group"
+    add_to_group "$group"
 }
 
 
@@ -5471,6 +5514,7 @@ install_from_repo() {
         xsensors
         hardinfo
         inxi
+        fastfetch
         macchanger
         nftables
         firewalld
@@ -5531,7 +5575,6 @@ install_from_repo() {
         parallel
         progress
         md5deep
-        keyd
         dconf-cli
         dconf-editor
     )
@@ -6207,6 +6250,7 @@ __choose_prog_to_build() {
         install_neovide
         install_asdf
         install_croc
+        install_kanata
         install_android_command_line_tools
     )
 
@@ -6417,7 +6461,7 @@ setup_docker() {
         execute 'sudo update-grub'
     }
 
-    addgroup_if_missing  docker               # add user to docker group
+    add_to_group  docker               # add user to docker group
     #execute "sudo gpasswd -a ${USER} docker"  # add user to docker group
     #execute "newgrp docker"  # log us into the new group; !! will stop script execution
     _add_kernel_option
@@ -6435,7 +6479,7 @@ setup_tcpdump() {
 
     [[ -x "$tcpd" ]] || { err "[$tcpd] exec does not exist"; return 1; }
 
-    addgroup_if_missing tcpdump
+    add_to_group tcpdump
     execute "sudo chown root:tcpdump $tcpd" || return 1
     execute "sudo chmod 0750 $tcpd" || return 1
     execute "sudo setcap 'CAP_NET_RAW+eip' $tcpd" || return 1
@@ -6858,7 +6902,7 @@ setup_cups() {
     group="$(grep ^SystemGroup "$conf2" | awk '{print $NF}')" || { err "grepping group from [$conf2] failed w/ $?"; return 1; }
     is_single "$group" || { err "found SystemGroup in [$conf2] was unexpected: [$group]"; return 1; }
     list_contains "$group" root sys && { err "found cups SystemGroup is [$group] - verify we want to be added to that group"; return 1; }  # failsafe for not adding oursevles to root or sys groups
-    addgroup_if_missing "$group"
+    add_to_group "$group"
     # }}}
 
     [[ "$should_restart" -eq 1 ]] && execute 'sudo service cups restart'
@@ -6929,11 +6973,33 @@ configure_updatedb() {
 }
 
 
-addgroup_if_missing() {
+# add user to given group, if not already in it
+add_to_group() {
     local group
     readonly group="$1"
 
-    id -Gn "$USER" | grep -q "\b${group}\b" || execute "sudo adduser $USER $group"
+    if ! id -Gn "$USER" | grep -q "\b${group}\b"; then
+        execute "sudo adduser $USER $group" || return $?
+    fi
+}
+
+
+add_group() {
+    # note exit 9 means group exists
+    execute -c 0,9 "sudo groupadd $1" || return $?
+}
+
+
+add_user() {
+    local user groups
+    user="$1"
+    groups="$2"  # optional; additional groups to add user to, comma-separated
+
+    if ! id -- "$user" 2>/dev/null; then
+        # note useradd exits w/ 9 just like groupadd if target already exists
+        execute "sudo useradd --no-create-home ${groups:+--groups $groups} --shell /bin/false --user-group $user" || return $?
+    fi
+    return 0
 }
 
 
@@ -6978,8 +7044,8 @@ post_install_progs_setup() {
     setup_docker
     setup_tcpdump
     setup_nvim
-    setup_keyd
-    is_native && addgroup_if_missing wireshark               # add user to wireshark group, so it could be run as non-root;
+    #setup_keyd
+    is_native && add_to_group wireshark               # add user to wireshark group, so it could be run as non-root;
                                                 # (implies wireshark is installed with allowing non-root users
                                                 # to capture packets - it asks this during installation); see https://github.com/wireshark/wireshark/blob/master/packaging/debian/README.Debian
                                                 # if wireshark is installed manually/interactively, then installer asks whether
@@ -6992,14 +7058,14 @@ post_install_progs_setup() {
                                                 # note debconf-get-selections is provided by debconf-utils pkg;
 
     #execute "newgrp wireshark"                  # log us into the new group; !! will stop script execution
-    is_native && addgroup_if_missing vboxusers   # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
-    is_virtualbox && addgroup_if_missing vboxsf  # add user to vboxsf group (to be able to access mounted shared folders);
+    is_native && add_to_group vboxusers   # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
+    is_virtualbox && add_to_group vboxsf  # add user to vboxsf group (to be able to access mounted shared folders);
     #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
     #configure_ntp_for_work  # TODO: confirm if ntp needed in WSL
     is_native && enable_fw
     is_native && setup_cups
     setup_nsswitch
-    #addgroup_if_missing fuse  # not needed anymore?
+    #add_to_group fuse  # not needed anymore?
     setup_firefox
     configure_updatedb
 
