@@ -2,6 +2,11 @@
     Kanata
     good examples of configs:
       - https://github.com/argenkiwi/kenkyo/blob/main/kanata/kanata.kbd
+      - https://github.com/mhantsch/maxtend/tree/main/kanata
+      - https://github.com/jtroo/kanata/blob/main/cfg_samples/kanata.kbd (official)
+
+keydefs in here: https://github.com/jtroo/kanata/blob/main/parser/src/keys/mod.rs
+ ######################################################################
 |#
 
 
@@ -11,88 +16,65 @@
 )
 
 (defsrc
-  q w e r t y u i o p
-  a s d f g h j k l ;
-  z x c v b n m , . /
-         spc
+       q w e r t y u i o p
+  caps a s d f g h j k l ;
+       z x c v b n m , . /
+              spc
+)
+
+(defvar
+  streak-count 3
+  streak-time 325
+  tap-timeout 200
+  hold-timeout 500
+  chord-timeout 50
 )
 
 (deftemplate charmod (char mod)
   (switch
-    ((key-timing 3 less-than 325)) $char break
-    () (tap-hold-release-timeout 200 500 $char $mod $char) break
+    ((key-timing $streak-count less-than $streak-time)) $char break
+    () (tap-hold-release-timeout $tap-timeout $hold-timeout $char $mod $char) break
   )
 )
+
 
 (defvirtualkeys
   shift (multi (layer-switch main) lsft)
   clear (multi (layer-switch main) (on-press release-virtualkey shift))
 )
 
-(defchords mtl 50
-  (w  ) w
-  (  e) e
-  (w e) esc
+(defalias
+  ;; tap for caps lock, hold for left control:
+  cap (tap-hold 200 200 caps lctl)
 )
 
-(defchords mtr 50
-  (i  ) i
-  (  o) o
-  (i o) bspc
-)
-
-(defchords mbl 50
-  (x  ) (t! charmod x ralt)
-  (  c) c
-  (x c) tab
-)
-
-(defchords mbr 50
-  (,  ) ,
-  (  .) (t! charmod . ralt)
-  (, .) ret
-)
+;; note we can use deflayermap instead of deflayers:
+;;  (deflayer qwerty
+;;  ....
+;;  )
 
 (deflayermap (main)
-  w (chord mtl w)
-  e (chord mtl e)
-  i (chord mtr i)
-  o (chord mtr o)
-  a (t! charmod a lmet)
-  s (t! charmod s lalt)
-  d (t! charmod d lsft)
-  f (t! charmod f lctl)
-  j (t! charmod j rctl)
-  k (t! charmod k rsft)
-  l (t! charmod l lalt)
-  ; (t! charmod ; rmet)
-  z (t! charmod z lctl)
-  x (chord mbl x)
-  c (chord mbl c)
-  v (t! charmod v (layer-while-held fumbol))
-  m (t! charmod m (layer-while-held fumbol))
-  , (chord mbr ,)
-  . (chord mbr .)
-  / (t! charmod / rctl)
+  caps @cap
   spc (t! charmod spc (multi (layer-switch extend) (on-release tap-virtualkey clear)))
 )
 
 (deflayermap (extend)
-  e (layer-switch fumbol)
-  r (on-press press-virtualkey shift)
+  ;;e (layer-switch fumbol)
+  r (on-press press-virtualkey shift)  ;; switchess to shift layer
   y ins
   u home
-  i up
+  ;;i up
   o end
   p pgup
   a lmet
   s lalt
   d lsft
   f lctl
-;;g comp ;; Enable if not MacOS.
-  h esc
-  j left
-  k down
+  g comp ;; context menu key. Enable if not MacOS.
+;;h esc
+  h left
+  j down
+  k up
   l rght
   ; pgdn
   z mute
@@ -105,64 +87,3 @@
   . del
   / ret
 )
-
-(defchords ftl 50
-  (w  ) f2
-  (  e) f3
-  (w e) esc
-)
-
-(defchords ftr 50
-  (i  ) f8
-  (  o) f9
-  (i o) bspc
-)
-
-(defchords fbl 50
-  (x  ) (t! charmod ` ralt)
-  (  c) -
-  (x c) tab
-)
-
-(defchords fbr 50
-  (,  ) [
-  (  .) (t! charmod ] ralt)
-  (, .) ret
-)
-
-(deflayermap (fumbol)
-  q f1
-  w (chord ftl w)
-  e (chord ftl e)
-  r f4
-  t f5
-  y f6
-  u f7
-  i (chord ftr i)
-  o (chord ftr o)
-  p f10
-  [ f11
-  ] f12
-  \ f13
-  a (t! charmod 1 lmet)
-  s (t! charmod 2 lalt)
-  d (t! charmod 3 lsft)
-  f (t! charmod 4 lctl)
-  g 5
-  h 6
-  j (t! charmod 7 rctl)
-  k (t! charmod 8 rsft)
-  l (t! charmod 9 lalt)
-  ; (t! charmod 0 rmet)
-  z (t! charmod lsgt lctl)
-  x (chord fbl x)
-  c (chord fbl c)
-  v =
-  b f11
-  n f12
-  m '
-  , (chord fbr ,)
-  . (chord fbr .)
-  / (t! charmod \ lctl)
-)
-
