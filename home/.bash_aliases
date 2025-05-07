@@ -377,3 +377,5 @@ alias uinstall='sudo apt-get remove'
 alias reinstall='sudo apt-get --reinstall install'
 
 alias send-clipboard='kdeconnect-cli --name "$PHONE_NAME" --send-clipboard'  # PHONE_NAME defined in env vars
+
+alias neofetch=fastfetch
