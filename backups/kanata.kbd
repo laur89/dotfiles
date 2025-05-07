@@ -13,6 +13,7 @@ keydefs in here: https://github.com/jtroo/kanata/blob/main/parser/src/keys/mod.r
 (defcfg
   process-unmapped-keys no
   concurrent-tap-hold yes
+  ;;log-layer-changes yes
 )
 
 (defsrc
@@ -31,6 +32,7 @@ keydefs in here: https://github.com/jtroo/kanata/blob/main/parser/src/keys/mod.r
 )
 
 (deftemplate charmod (char mod)
+  ;; reason for this switch block & key-timing is @ https://github.com/jtroo/kanata/discussions/1455
   (switch
     ((key-timing $streak-count less-than $streak-time)) $char break
     () (tap-hold-release-timeout $tap-timeout $hold-timeout $char $mod $char) break
@@ -46,6 +48,8 @@ keydefs in here: https://github.com/jtroo/kanata/blob/main/parser/src/keys/mod.r
 (defalias
   ;; tap for caps lock, hold for left control:
   cap (tap-hold 200 200 caps lctl)
+
+  ;;tab (tap-hold $tt $ht tab (layer-while-held extend))
 )
 
 ;; note we can use deflayermap instead of deflayers:
