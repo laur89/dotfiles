@@ -3301,6 +3301,7 @@ __fo() {
         # try keeping doc files' definitions in sync with the ones in ffind()
         'application/msword; charset=binary' \
                 | 'application/'*'opendocument'*'; charset=binary' \
+                | 'application/'*'officedocument'*'; charset=binary' \
                 | 'application/'*'ms-office; charset=binary' \
                 | 'application/'*'ms-excel; charset=binary')
             check_progs_installed "$office" || return 1
