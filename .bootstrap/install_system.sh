@@ -353,7 +353,7 @@ setup_pm() {
 
 # https://flatpak.org/setup/Debian
 install_flatpak() {
-    install_block flatpak || return 1
+    install_block flatpak flatseal || return 1  # flatseal is GUI app to manage perms
     execute 'sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo'
 }
 
@@ -557,6 +557,65 @@ setup_pam_login() {
 }
 
 
+# https://wiki.debian.org/AppArmor/HowToUse
+# note profiles from apparmor-profiles are not installed by default; to do that, don
+# $ sudo cp /usr/share/apparmor/extra-profiles/usr.bin.example /etc/apparmor.d/   # to install profile
+# $ sudo aa-complain /etc/apparmor.d/usr.bin.example   # set profile to complain mode
+#
+# good resource: https://documentation.ubuntu.com/server/how-to/security/apparmor/index.html
+# note minor changes to profiles can be done under /etc/apparmor.d/local/
+# some commands:
+#   - view current status of aa profles:
+#     sudo apparmor_status
+#   - place profile into complain mode:
+#     sudo aa-complain /path-to-bin
+#   - place profile into enforce mode:
+#     sudo aa-enforce /path-to-bin
+#   - load a profile into kernel; -r option makes modifications to take effect:
+#     sudo apparmor_parser -r /etc/apparmor.d/profile.name
+#   - reload all profiles:
+#     sudo systemctl reload apparmor.service
+#   - scan apparomor audit messages, review them & update the profiles:
+#     sudo aa-logprof
+setup_apparmor() {
+    local aa_notif_desktop
+
+    aa_notif_desktop=/etc/xdg/autostart/aa-notify.desktop
+
+    [[ "$(cat /sys/module/apparmor/parameters/enabled)" != Y ]] && err "apparmor not enabled!!"  # sanity
+    add_to_group adm  # adm used for system monitoring tasks; members cna read log files etc
+
+    # as per https://wiki.debian.org/AppArmor/HowToUse :
+    # if auditd is installed, then aa-notify desktop should be modified to use auditd log:
+    if [[ -s "$aa_notif_desktop" ]]; then
+        local cmd='Exec=sudo aa-notify -p -f /var/log/audit/audit.log'
+        if ! grep -Fxq "$cmd" "$aa_notif_desktop"; then
+            execute "sudo sed -i --follow-symlinks 's/^Exec=/#Exec=/g' $aa_notif_desktop"  # comment original one out
+            execute "echo $cmd | sudo tee --append $aa_notif_desktop > /dev/null"
+        fi
+    else
+        err "[$aa_notif_desktop] not a file - is apparmor-notify pkg installed?"
+    fi
+}
+
+
+# note it should be automatically installed as flatpak dependency.
+#
+# other alternatives:
+# - firejail; larger attack surface (https://madaidans-insecurities.github.io/linux.html#firejail), but _way_ easier to use
+#   - https://github.com/netblue30/firejail
+#   - comparison to bubblewrap, docker etc: https://github.com/netblue30/firejail/wiki/Frequently-Asked-Questions#how-does-it-compare-with-docker-lxc-nspawn-bubblewrap
+# - am: (appimage package manager that also does sandboxing)  https://github.com/ivan-hc/AM
+# - systemd-nspawn
+# - good hackernews on the topic: https://news.ycombinator.com/item?id=36681912
+# see also:
+# - https://github.com/igo95862/bubblejail
+# - https://gist.github.com/ageis/f5595e59b1cddb1513d1b425a323db04  (hardening via systemd)
+setup_bubblewrap() {
+    true
+}
+
+
 setup_hosts() {
     local hosts_file_dest file current_hostline tmpfile
 
@@ -734,7 +793,8 @@ backup_original_and_copy_file() {
     [[ "$dest_dir" == *.d ]] && err "sure we want to be backing up in [$dest_dir]?" "$FUNCNAME"
 
     # back up the destination file, if it already exists and differs from new content:
-    if $sudo test -f "$dest_dir/$filename" && ! $sudo cmp -s "$file" "$dest_dir/$filename"; then
+    if $sudo test -f "$dest_dir/$filename"; then
+        $sudo cmp -s "$file" "$dest_dir/$filename" && return 0  # same contents, bail
         declare -a old_suffixes
 
         # collect older .orig files' suffixes and increment latest value for the new file:
@@ -1823,6 +1883,7 @@ setup_config_files() {
     #setup_ssh_config   # better stick to ~/.ssh/config, rite?  # TODO
     setup_hosts
     setup_systemd
+    setup_apparmor
     setup_needrestart
     setup_pam_login
     setup_logind
@@ -3456,6 +3517,9 @@ install_chrome() {  # https://www.google.com/chrome/?platform=linux
 
 
 # redis manager (GUI)
+# TODO: automated install broken? see https://redis.io/downloads/
+#
+# to build from source: https://github.com/RedisInsight/RedisInsight/wiki/How-to-build-and-contribute
 install_redis_insight() {  # https://redis.com/thank-you/redisinsight-the-best-redis-gui-35/
     #snap_install  redisinsight
     install_from_url  redis-insight 'https://download.redisinsight.redis.com/latest/RedisInsight-v2-linux-amd64.deb'
@@ -5522,6 +5586,18 @@ install_from_repo() {
         udisks2
         udiskie
         fwupd
+        apparmor-utils
+        apparmor-profiles
+        apparmor-profiles-extra
+        apparmor-notify
+        auditd
+        # systemd-container gives us systemd-nspawn command, see https://wiki.debian.org/nspawn
+        systemd-container
+        # haveged is a entropy daemon using jitter-entropy method to populate entropy pool;
+        # some systems might start up slowly as entropy device is starved. see e.g. https://lwn.net/Articles/800509/, https://serverfault.com/a/986327
+        # edit: should not be needed, as jitter entropy collecter was introduced
+        # already in kernel 5.4: https://wiki.debian.org/BoottimeEntropyStarvation
+        #haveged
     )
     # old/deprecated block1_nonwin:
     #    ufw - iptables frontend, debian now on nftables instead; think this is wrong, nowadays it uses nftables... so it's either this of firewalld
@@ -6082,12 +6158,12 @@ choose_step() {
            *) exit 1 ;;
        esac
     else  # mode not provided
-       select_items -s -h 'what do you want to do' full-install single-task update fast-update
+       select_items -s -h 'what do you want to do' single-task update fast-update full-install
        case "$__SELECTED_ITEMS" in
-          'full-install' ) full_install ;;
           'single-task'  ) choose_single_task ;;
           'update'       ) quick_refresh ;;
           'fast-update'  ) quicker_refresh ;;
+          'full-install' ) full_install ;;
           ''             ) exit 0 ;;
           *) err "unsupported choice [$__SELECTED_ITEMS]"
              exit 1
@@ -6110,6 +6186,7 @@ choose_single_task() {
 
     # note choices need to be valid functions
     declare -a choices=(
+        __choose_prog_to_build
         setup
         setup_homesick
         setup_seafile
@@ -6133,7 +6210,6 @@ choose_single_task() {
         install_games
         install_xonotic
         install_from_flatpak
-        __choose_prog_to_build
     )
 
     if is_virtualbox; then
@@ -8161,7 +8237,7 @@ exit
 
 # common debugging:
 #   sudo dmesg | grep -i apparmor | grep -i denied  <- shows if some stuff is blocked by apparmor (eg we had this issue with msmtp if .msmtprc was under /data, not somewhere under $HOME)
-#   journalctl -u apparmor   <- eg when at boot-time it compalined 'Failed to load AppArmor profiles'
+#   sudo journalctl -u apparmor   <- eg when at boot-time it compalined 'Failed to load AppArmor profiles'
 
 # TODOS:
 # - if apt-get update fails, then we should fail script fast?
