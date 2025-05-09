@@ -5848,7 +5848,6 @@ install_from_repo() {
         nheko
         signal-desktop
         signald
-        telegram-desktop
         lxrandr
         arandr
         autorandr
@@ -5972,6 +5971,9 @@ install_from_flatpak() {
 
     # https://flathub.org/apps/com.discordapp.Discord
     fp_install -n discord  'com.discordapp.Discord'
+
+    # https://flathub.org/apps/org.telegram.desktop
+    fp_install -n telegram  'org.telegram.desktop'
 }
 
 # install/update the guest-utils/guest-additions.
