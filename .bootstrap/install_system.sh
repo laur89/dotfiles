@@ -2417,7 +2417,6 @@ install_own_builds() {
     install_seafile_cli
     # TODO: why are ferdium&discord behind is_native?
     is_native && install_ferdium
-    is_native && install_discord
     install_xournalpp
     #install_zoxide
     install_ripgrep
@@ -3223,12 +3222,6 @@ install_file() {
         execute "rm -f -- '$file'"
         return 1
     fi
-}
-
-
-# note it's also avail as a flatpak: https://flathub.org/apps/com.discordapp.Discord
-install_discord() {  # https://discord.com/download
-    install_from_url  discord 'https://discord.com/api/download?platform=linux&format=deb'
 }
 
 
@@ -5715,6 +5708,7 @@ install_from_repo() {
         synaptic
         apt-file
         apt-show-versions
+        # TODO: package no more?
         apt-xapian-index
         unattended-upgrades
         apt-listchanges
@@ -5849,6 +5843,7 @@ install_from_repo() {
         weechat
         bitlbee
         bitlbee-libpurple
+        # libpurple/Pidgin plugin for Discord:
         purple-discord
         nheko
         signal-desktop
@@ -5974,6 +5969,9 @@ install_from_flatpak() {
 
     # https://github.com/saivert/pwvucontrol
     fp_install -n pwvucontrol  'com.saivert.pwvucontrol'
+
+    # https://flathub.org/apps/com.discordapp.Discord
+    fp_install -n discord  'com.discordapp.Discord'
 }
 
 # install/update the guest-utils/guest-additions.
@@ -6243,7 +6241,6 @@ __choose_prog_to_build() {
         install_seafile_cli
         install_seafile_gui
         install_ferdium
-        install_discord
         install_zoom
         install_xournalpp
         install_zoxide
