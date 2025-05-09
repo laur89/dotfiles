@@ -1,3 +1,7 @@
+# see also /usr/share/doc/wyrd/examples/wyrdrc
+# others' dotfiles:
+# - https://github.com/joshaw/dotfiles2/blob/master/wyrdrc
+#
 include "/etc/wyrdrc"
 
 # command for editing an old appointment, given a line number %line% and filename %file%
