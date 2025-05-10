@@ -3541,7 +3541,7 @@ install_redis_insight() {  # https://redis.com/thank-you/redisinsight-the-best-r
 #   # obsidian
 install_vnote() {  # https://github.com/vnotex/vnote/releases
     #install_bin_from_git -N vnote vnotex vnote 'linux-x64_.*zip'
-    install_bin_from_git -N vnote -n '*.AppImage' vnotex vnote 'linux-x64_.*.zip'
+    install_bin_from_git -N vnote -n '*.AppImage' vnotex vnote 'linux-x64.AppImage.zip'
 }
 
 
