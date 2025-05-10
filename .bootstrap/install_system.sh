@@ -352,9 +352,18 @@ setup_pm() {
 
 
 # https://flatpak.org/setup/Debian
+# https://docs.flathub.org/docs/for-users/verification
+#   (note providing --user flag would make it per-user, skipping need for sudo)
+#
+# useful commands:
+#   flatpak list --show-details
 install_flatpak() {
     install_block flatpak flatseal || return 1  # flatseal is GUI app to manage perms
-    execute 'sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo'
+    #execute 'sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo'
+
+    # only include the 'verified' packages, taken from this secureblue comment:
+    # https://www.reddit.com/r/linux/comments/1bq9d3b/flathub_now_marks_unverified_apps/kx1adws/ :
+    execute 'sudo flatpak remote-add --if-not-exists --subset=verified flathub-verified https://flathub.org/repo/flathub.flatpakrepo'
 }
 
 
@@ -4725,7 +4734,7 @@ fp_install() {
     shift "$((OPTIND-1))"
 
     ref="$1"
-    remote="${2:-flathub}"
+    remote="${2:-flathub-verified}"
 
     name="${name:-$ref}"
     execute "flatpak install -y --noninteractive '$remote' '$ref'" || return 1
@@ -5783,6 +5792,7 @@ install_from_repo() {
         ncmpc
         audacity
         mpv
+        # video editor:
         kdenlive
         frei0r-plugins
         gimp
