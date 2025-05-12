@@ -472,7 +472,7 @@ setup_logind() {
 #       alternatively, we already call $ systemctl --user --wait import-environment
 #       from our .xsession file
 setup_systemd() {
-    local global_sysd_src usr_sysd_src global_sysd_target usr_sysd_target file dir tmpfile filename
+    local global_sysd_src usr_sysd_src global_sysd_target usr_sysd_target dir
 
     readonly global_sysd_target='/etc/systemd/system'
     readonly usr_sysd_target="$HOME/.config/systemd/user"
@@ -493,53 +493,70 @@ setup_systemd() {
         return 1
     fi
 
-    [[ -d "$usr_sysd_target" ]] || mkdir -p "$usr_sysd_target"
+    [[ -d "$usr_sysd_target" ]] || mkdir -p "$usr_sysd_target" || { err "mkdir [$usr_sysd_target] failed w/ $?"; return 1; }
 
-    # global systemd files:
-    for dir in "${global_sysd_src[@]}"; do
-        [[ -d "$dir" ]] || continue
+    __var_expand_move() {
+        local in out tmpfile
+        in="$1"; out="$2"
+        tmpfile="$TMP_DIR/.sysd_setup-$RANDOM"
+
+        [[ -s "$in" ]] || { err "infile [$in] not a non-empty file, abort"; return 1; }  # sanity
+        execute "cat -- '$in' > '$tmpfile'" || { err "cat-ing systemd file [$in] failed"; return $?; }  # note we cat instead of cp here, as those files are possibly links
+        execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || { err "sed-ing systemd file [$in] failed"; return $?; }
+        execute "mv -- '$tmpfile' $out" || { err "moving [$tmpfile] to [$out] failed"; return $?; }
+        return 0
+    }
+
+    __process() {
+        local usr sudo dir tdir file fname indir fname t
+        sudo=TRUE
+
+        [[ "$1" == '--user' ]] && { readonly usr='--user'; unset sudo; shift; }
+        readonly dir="$1"; readonly tdir="$2"  # indir, target_dir
+
+        [[ -d "$dir" ]] || return 1
         for file in "$dir/"*; do
-            [[ -f "$file" && "$file" =~ \.(service|target|unit)$ ]] || continue  # note we require certain suffix
-            filename="$(basename -- "$file")"
-            tmpfile="$TMP_DIR/.sysd_setup-$filename"
-            filename="${filename/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
+            [[ -f "$file" && "$file" =~ \.(service|target|unit)$ ]] || continue  # note we require certain suffixes
+            fname="$(basename -- "$file")"
+            fname="${fname/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
+            __var_expand_move "$file" "$tdir/$fname" || continue
 
-            execute "cp -- '$file' '$tmpfile'" || { err "copying systemd file [$file] failed"; continue; }
-            execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || { err "sed-ing systemd file [$file] failed"; continue; }
-            execute "sudo mv -- '$tmpfile' $global_sysd_target/$filename" || { err "moving [$tmpfile] to [$global_sysd_target] failed"; continue; }
+            # now migrate the optional per-service configs/overrides from service.d/ dir:
+            indir="${file}.d"
+            t="$tdir/${fname}.d"
+            if [[ -d "$indir" ]] && ! is_dir_empty "$indir"; then
+                for file in "$indir/"*; do  # note we override original $file here
+                    [[ -s "$file" && "$file" =~ \.(conf)$ ]] || continue  # note we require certain suffix
+                    fname="$(basename -- "$file")"
+                    #fname="${fname/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
+                    [[ -d "$t" ]] || mkdir -- "$t" || { err "[mkdir $t] failed w/ $?"; continue; }
+                    __var_expand_move "$file" "$t/$fname" || continue
+                done
+            fi
 
             # note do not use the '--now' flag with systemctl enable, nor execute systemctl start,
             # as some service files might be listening on something like target.sleep - those shouldn't be started on-demand like that!
-            if [[ "$filename" == *.service ]]; then
-                execute "sudo systemctl enable '$filename'" || { err "enabling global systemd service [$filename] failed w/ [$?]"; continue; }
+            if [[ "$fname" == *.service ]]; then
+                execute "${sudo:+sudo }systemctl $usr enable '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd service [$fname] failed w/ [$?]"; continue; }
             fi
         done
+    }
+
+    # global/system systemd files:
+    for dir in "${global_sysd_src[@]}"; do
+        __process "$dir" "$global_sysd_target" || continue
     done
 
     # user systemd files:
     for dir in "${usr_sysd_src[@]}"; do
-        [[ -d "$dir" ]] || continue
-        for file in "$dir/"*; do
-            [[ -f "$file" && "$file" =~ \.(service|target|unit)$ ]] || continue  # note we require certain suffix
-            filename="$(basename -- "$file")"
-            tmpfile="$TMP_DIR/.sysd_setup-$filename"
-            filename="${filename/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
-
-            execute "cp -- '$file' '$tmpfile'" || { err "copying systemd file [$file] failed"; continue; }
-            execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || { err "sed-ing systemd file [$file] failed"; continue; }
-            execute "mv -- '$tmpfile' $usr_sysd_target/$filename" || { err "moving [$tmpfile] to [$usr_sysd_target] failed"; continue; }
-
-            # note do not use the '--now' flag with systemctl enable, nor execute systemctl start,
-            # as some service files might be listening on something like target.sleep - those shouldn't be started on-demand like that!
-            if [[ "$filename" == *.service ]]; then
-                execute "systemctl --user enable '$filename'" || { err "enabling user systemd service [$filename] failed w/ [$?]"; continue; }
-            fi
-        done
+        __process --user "$dir" "$usr_sysd_target" || continue
     done
 
     # reload the rules in case existing rules changed:
     execute 'systemctl --user --now daemon-reload'  # --user flag manages the user services under ~/.config/systemd/user/
     execute 'sudo systemctl daemon-reload'
+
+    unset __var_expand_move __process
 }
 
 # unlock default keyring on login
@@ -5713,6 +5730,7 @@ install_from_repo() {
         taskwarrior
         wyrd
         tree
+        # cli benchmarking tool:
         hyperfine
         synaptic
         apt-file
@@ -5961,6 +5979,9 @@ install_from_repo() {
 }
 
 
+# commands:
+# - flatpak info --show-permissions com.github.PintaProject.Pinta
+# - flatpak permission-show com.github.PintaProject.Pinta
 install_from_flatpak() {
     local i
 
