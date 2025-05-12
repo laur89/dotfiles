@@ -88,6 +88,7 @@ alias fd="fd --hidden --exclude '.git'"  # TODO: consider adding --no-ignore opt
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='grep -E --color=auto'
+alias igrep='grep -i --color=auto'
 command -v ncal > /dev/null 2>&1 && alias cal='ncal -bM -A 1 -B 1'  # same as [ncal -bM3]
 alias caly='cal -y'  # year view
 alias gagenda='gcalcli agenda "$(date "+%F %R")"  "$(date -d tomorrow "+%F 00:00")" --details=url --details=end --military'

@@ -792,8 +792,8 @@ setup_crontab() {
                 hosts-block-update \
                     ; do
             i="$BASE_DATA_DIR/dev/scripts/$i"
-            if ! [[ -f "$i" ]]; then
-                err "[$i] does not exist, can't dump in $weekly_crondir..."
+            if ! [[ -s "$i" ]]; then
+                err "[$i] does not exist, can't dump into $weekly_crondir..."
                 continue
             fi
 
@@ -880,7 +880,7 @@ clone_or_pull_repo() {
     readonly hub=${4:-github.com}  # OPTIONAL; defaults to github.com;
 
     [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
-    [[ "$install_dir" != */ ]] && install_dir="${install_dir}/$repo"
+    [[ "$install_dir" != */ ]] && install_dir+="/$repo"
 
     if ! [[ -d "$install_dir/.git" ]]; then
         execute "git clone --recursive -j8 https://$hub/$user/${repo}.git '$install_dir'" || { err "cloning [$hub/$user/$repo] failed w/ $?"; return 1; }
@@ -7025,6 +7025,8 @@ setup_firefox() {
 
     # install tridactyl native messenger:  https://github.com/tridactyl/tridactyl#extra-features
     #                                      https://github.com/tridactyl/native_messenger
+    # TODO: do we want this? increases attack surface?
+    # TODO 2: does ff in flatpak even support this? note native messaging portal is not working in flatpak as of '25: https://github.com/flatpak/xdg-desktop-portal/issues/655
     execute 'curl -fsSL https://raw.githubusercontent.com/tridactyl/native_messenger/master/installers/install.sh -o /tmp/trinativeinstall.sh && sh /tmp/trinativeinstall.sh master'  # 'master' refers to git ref/tag; can also remove that arg, so latest tag is installed instead.
 
 
@@ -7080,7 +7082,7 @@ configure_updatedb() {
 }
 
 
-# add user to given group, if not already in it
+# add our USER to given group, if not already in it
 add_to_group() {
     local group
     readonly group="$1"
@@ -7124,7 +7126,7 @@ setup_swappiness() {
     readonly target=0
     current="$(cat -- /proc/sys/vm/swappiness)"
     is_digit "$current" || { err "couldn't find current swappiness value, not a digit: [$current]"; return 1; }
-    [[ "$target" -eq "$current" ]] && return 0
+    [[ "$target" == "$current" ]] && return 0
 
     _sysctl_conf '50-swappiness.conf' 'vm.swappiness' "$target"
 }
