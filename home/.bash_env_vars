@@ -134,6 +134,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     #     arch wiki: https://wiki.archlinux.org/title/HiDPI#Qt_5
     export QT_ENABLE_HIGHDPI_SCALING=1
     export QT_AUTO_SCREEN_SCALE_FACTOR=1
+    export QT_SCALE_FACTOR_ROUNDING_POLICY=PassThrough
     # TODO: should we wrap this env var around something like [if wm = i3]?:
     export QT_QPA_PLATFORMTHEME=qt5ct:qt6ct
 
