@@ -510,10 +510,10 @@ setup_systemd() {
     }
 
     __process() {
-        local usr sudo dir tdir file fname indir fname t
+        local usr sudo dir tdir file fname indir t fname
         sudo='--sudo'
 
-        [[ "$1" == '--user' ]] && { readonly usr='--user'; unset sudo; shift; }
+        [[ "$1" == '--user' ]] && { readonly usr=TRUE; unset sudo; shift; }
         readonly dir="$1"; readonly tdir="$2"  # indir, target_dir
 
         [[ -d "$dir" ]] || return 1
@@ -525,20 +525,19 @@ setup_systemd() {
 
             # now migrate the optional per-service configs/overrides from service.d/ dir:
             indir="${file}.d"
-            t="$tdir/${fname}.d"
-            if [[ -d "$indir" ]] && ! is_dir_empty "$indir"; then
+            if [[ -d "$indir" ]]; then
+                t="$tdir/${fname}.d"
                 for file in "$indir/"*; do  # note we override original $file here
                     [[ -s "$file" && "$file" =~ \.(conf)$ ]] || continue  # note we require certain suffix
-                    fname="$(basename -- "$file")"
                     [[ -d "$t" ]] || mkdir -- "$t" || { err "[mkdir $t] failed w/ $?"; continue; }
-                    __var_expand_move $sudo "$file" "$t/$fname" || continue
+                    __var_expand_move $sudo "$file" "$t/$(basename -- "$file")" || continue
                 done
             fi
 
             # note do not use the '--now' flag with systemctl enable, nor execute systemctl start,
             # as some service files might be listening on something like target.sleep - those shouldn't be started on-demand like that!
             if [[ "$fname" == *.service ]]; then
-                execute "${sudo:+sudo }systemctl $usr enable '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd service [$fname] failed w/ [$?]"; continue; }
+                execute "${sudo:+sudo }systemctl ${usr:+--user }enable '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd service [$fname] failed w/ [$?]"; continue; }
             fi
         done
     }
@@ -732,6 +731,7 @@ setup_apt() {
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
         [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it"; continue; }
+        # TODO: is it safe to create backup into ...d/ dir?:
         backup_original_and_copy_file --sudo "$file" "$apt_dir/sources.list.d"
     done
 
@@ -817,7 +817,7 @@ backup_original_and_copy_file() {
     readonly filename="$(basename -- "$file")"
 
     $sudo test -d "$dest_dir" || { err "second arg [$dest_dir] was not a dir" "$FUNCNAME"; return 1; }
-    [[ "$dest_dir" == *.d ]] && err "sure we want to be backing up in [$dest_dir]?" "$FUNCNAME"
+    [[ "$dest_dir" == *.d ]] && err "sure we want to be backing up in [$dest_dir]?" "$FUNCNAME"  # sanity
 
     # back up the destination file, if it already exists and differs from new content:
     if $sudo test -f "$dest_dir/$filename"; then
