@@ -496,20 +496,22 @@ setup_systemd() {
     [[ -d "$usr_sysd_target" ]] || mkdir -p "$usr_sysd_target" || { err "mkdir [$usr_sysd_target] failed w/ $?"; return 1; }
 
     __var_expand_move() {
-        local in out tmpfile
+        local sudo in out tmpfile
+        [[ "$1" == --sudo ]] && { shift; readonly sudo=TRUE; }
+
         in="$1"; out="$2"
         tmpfile="$TMP_DIR/.sysd_setup-$RANDOM"
 
         [[ -s "$in" ]] || { err "infile [$in] not a non-empty file, abort"; return 1; }  # sanity
         execute "cat -- '$in' > '$tmpfile'" || { err "cat-ing systemd file [$in] failed"; return $?; }  # note we cat instead of cp here, as those files are possibly links
         execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || { err "sed-ing systemd file [$in] failed"; return $?; }
-        execute "mv -- '$tmpfile' $out" || { err "moving [$tmpfile] to [$out] failed"; return $?; }
+        execute "${sudo:+sudo }mv -- '$tmpfile' $out" || { err "moving [$tmpfile] to [$out] failed"; return $?; }
         return 0
     }
 
     __process() {
         local usr sudo dir tdir file fname indir fname t
-        sudo=TRUE
+        sudo='--sudo'
 
         [[ "$1" == '--user' ]] && { readonly usr='--user'; unset sudo; shift; }
         readonly dir="$1"; readonly tdir="$2"  # indir, target_dir
@@ -519,7 +521,7 @@ setup_systemd() {
             [[ -f "$file" && "$file" =~ \.(service|target|unit)$ ]] || continue  # note we require certain suffixes
             fname="$(basename -- "$file")"
             fname="${fname/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
-            __var_expand_move "$file" "$tdir/$fname" || continue
+            __var_expand_move $sudo "$file" "$tdir/$fname" || continue
 
             # now migrate the optional per-service configs/overrides from service.d/ dir:
             indir="${file}.d"
@@ -528,9 +530,8 @@ setup_systemd() {
                 for file in "$indir/"*; do  # note we override original $file here
                     [[ -s "$file" && "$file" =~ \.(conf)$ ]] || continue  # note we require certain suffix
                     fname="$(basename -- "$file")"
-                    #fname="${fname/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
                     [[ -d "$t" ]] || mkdir -- "$t" || { err "[mkdir $t] failed w/ $?"; continue; }
-                    __var_expand_move "$file" "$t/$fname" || continue
+                    __var_expand_move $sudo "$file" "$t/$fname" || continue
                 done
             fi
 
