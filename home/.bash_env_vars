@@ -102,8 +102,8 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     #NODE_PATH="$NPM_PACKAGES/lib/node_modules:$NODE_PATH"
 
     export NVM_DIR="$HOME/.nvm"  # do not change location, keep _non-linked_ .nvm/ under ~
-    export ASDF_DIR="$BASE_DEPS_LOC/asdf"
-    export ASDF_DATA_DIR="$ASDF_DIR"
+    export ASDF_DIR="$BASE_DEPS_LOC/asdf"  # https://asdf-vm.com/manage/configuration.html#asdf-dir
+    export ASDF_DATA_DIR="$ASDF_DIR"  # defaults to $HOME/.asdf
 
     # set our own-used link to latest node version (managed by .bashrc):
     #export NODE_LOC="$NVM_DIR/latest"  # when unsing nvm
@@ -370,6 +370,7 @@ for i in \
         "$HOME/.config/nvim/bundle/vim-iced/bin" \
         "$HOME/.local/share/JetBrains/Toolbox/scripts" \
         "$PERL_BASE/bin" \
+        "${ASDF_DATA_DIR:-$HOME/.asdf}/shims" \
             ; do
     if [[ :$PATH: != *:"$i":* && -d "$i" ]]; then
         j+="$i:"

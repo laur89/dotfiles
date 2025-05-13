@@ -524,9 +524,8 @@ unset _forgit
 #[[ -s "$NVM_DIR/nvm.sh" && ";${PROMPT_COMMAND};" != *';_enter_dir;'* ]] && export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
 ########################################## /nvm
 ########################################## asdf
-if [[ -s "$ASDF_DIR/asdf.sh" ]]; then
-    source "$ASDF_DIR/asdf.sh"
-    source "$ASDF_DIR/completions/asdf.bash"
+if command -v asdf >/dev/null 2>/dev/null; then
+    source <(asdf completion bash)
 fi
 
 # some nvim plugins require node to be on PATH; configure a constant link so plugins et al can be pointed at it;
@@ -535,13 +534,15 @@ fi
 # note we have equivalent logic in install_system.sh as well!
 #
 # eg some nvim plugin(s) might reference $NODE_LOC
-_latest_node_ver="$(find "$ASDF_DATA_DIR/installs/nodejs/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
-if [[ "$(realpath -- "$NODE_LOC")" != "$_latest_node_ver" && -x "$_latest_node_ver" ]]; then
-    ln -sf -- "$_latest_node_ver" "$NODE_LOC"
+if [[ -d "$ASDF_DATA_DIR/installs/nodejs" ]]; then
+    _latest_node_ver="$(find "$ASDF_DATA_DIR/installs/nodejs/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
+    if [[ ! -f "$NODE_LOC" ]] || [[ "$(realpath -- "$NODE_LOC")" != "$_latest_node_ver" ]]; then
+        [[ -x "$_latest_node_ver" ]] && ln -sf -- "$_latest_node_ver" "$NODE_LOC"
+    fi
+    unset _latest_node_ver
 fi
-unset _latest_node_ver
 ########################################## /asdf
-# generate .Xauth to be passed to (and used by) GUI docker containers:
+# generate .Xauth to be passed to (and used by) GUI (docker) containers:
 export XAUTH='/tmp/.docker.xauth'
 if [[ ! -s "$XAUTH" && -n "$DISPLAY" ]]; then  # TODO: also check for is_x()?
     touch "$XAUTH"
