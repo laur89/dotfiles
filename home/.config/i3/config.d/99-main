@@ -382,8 +382,8 @@ bindsym Print $ex   screenshot.sh #--auto
 #bindsym $mod+b exec firefox
 
 # keycode 34 = ü on et, [ on us keymap:
-bindcode Control+34  $ex copyq toggle
-bindsym  $mod1+o     $ex copyq toggle
+bindcode Control+34  $ex copyq toggle  >/dev/null
+bindsym  $mod1+o     $ex copyq toggle  >/dev/null
 
 ##################################
 ## Custom colors (from xresources):
