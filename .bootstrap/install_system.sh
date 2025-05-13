@@ -1447,7 +1447,7 @@ install_deps() {
     fi
 
     # sdkman:  # https://sdkman.io/
-    # TODO: consider replacing all env/version managers by asdf
+    # TODO: consider replacing all env/version managers by asdf or mise
     if [[ -d "$HOME/.sdkman" ]]; then  # already installed; note if you'd add some config from that dir to homeshick, then this check would effectively become invalid!
         #execute 'sdk selfupdate'  # will fail, as 'sdk' is a function imported in .bashrc
         true  # pass
@@ -1531,7 +1531,7 @@ install_deps() {
         install_block  mopidy-spotify
     fi
 
-    # TODO: consider replacing all env/version managers by asdf
+    # TODO: consider replacing all env/version managers by asdf or mise
     # rbenv & ruby-build: {                             # https://github.com/rbenv/rbenv-installer
     #   ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki#ubuntudebianmint):
     install_block '
@@ -1556,7 +1556,7 @@ install_deps() {
     # }
 
     # pyenv  # https://github.com/pyenv/pyenv-installer
-    # TODO: consider replacing all env/version managers by asdf
+    # TODO: consider replacing all env/version managers by asdf or mise
     if [[ -d "$PYENV_ROOT" ]]; then  # already installed
         execute 'pyenv update'
     else
@@ -3950,20 +3950,20 @@ install_skype() {  # https://wiki.debian.org/skype
 # https://asdf-vm.com/guide/getting-started.html
 # node (and others) version manager
 # alternatives:
-#   nodejs: https://github.com/Schniz/fnm
+#   - https://github.com/Schniz/fnm (nodejs)
+#   - https://github.com/jdx/mise
 install_asdf() {
-    clone_or_pull_repo  asdf-vm asdf "$ASDF_DIR/"
+    [[ -d "$ASDF_DIR" ]] || execute "mkdir -- '$ASDF_DIR'" || return 1
+    install_bin_from_git -N asdf asdf-vm asdf '-linux-amd64.tar.gz'
 
-    if ! command -v asdf >/dev/null 2>&1 && [[ -s "$ASDF_DIR/asdf.sh" ]]; then
-        source "$ASDF_DIR/asdf.sh"
-    fi
-
-    command -v asdf >/dev/null 2>&1 || return 1  # sanity
+    command -v asdf >/dev/null 2>&1 || { err 'asdf not on PATH??'; return 1; }  # sanity
 
     # asdf plugins:
     if ! [[ -d "$ASDF_DATA_DIR/plugins/nodejs" ]]; then
         asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git || err "asdf [nodejs] plugin addition failed w/ $?"
     fi
+
+    asdf plugin update --all
 }
 
 
