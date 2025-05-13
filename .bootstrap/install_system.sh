@@ -251,7 +251,7 @@ check_dependencies() {
 install_acpi_events() {
     local file dir  acpi_target  acpi_src  tmpfile
 
-    readonly acpi_target="/etc/acpi/events"
+    readonly acpi_target='/etc/acpi/events'
     acpi_src=(
         "$COMMON_DOTFILES/backups/acpi_event_triggers"
     )
@@ -496,16 +496,18 @@ setup_systemd() {
     [[ -d "$usr_sysd_target" ]] || mkdir -p "$usr_sysd_target" || { err "mkdir [$usr_sysd_target] failed w/ $?"; return 1; }
 
     __var_expand_move() {
-        local sudo in out tmpfile
+        local sudo in outf tmpfile
         [[ "$1" == --sudo ]] && { shift; readonly sudo=TRUE; }
 
-        in="$1"; out="$2"
+        in="$1"; outf="$2"
         tmpfile="$TMP_DIR/.sysd_setup-$RANDOM"
 
         [[ -s "$in" ]] || { err "infile [$in] not a non-empty file, abort"; return 1; }  # sanity
         execute "cat -- '$in' > '$tmpfile'" || { err "cat-ing systemd file [$in] failed"; return $?; }  # note we cat instead of cp here, as those files are possibly links
         execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || { err "sed-ing systemd file [$in] failed"; return $?; }
-        execute "${sudo:+sudo }mv -- '$tmpfile' $out" || { err "moving [$tmpfile] to [$out] failed"; return $?; }
+
+        [[ -f "$outf" ]] && ${sudo:+sudo} cmp -s "$tmpfile" "$outf" && return 0  # same contents, bail -- no need to update modified timestamp
+        execute "${sudo:+sudo }mv -- '$tmpfile' $outf" || { err "moving [$tmpfile] to [$outf] failed"; return $?; }
         return 0
     }
 
@@ -513,7 +515,7 @@ setup_systemd() {
         local usr sudo dir tdir file fname indir t fname
         sudo='--sudo'
 
-        [[ "$1" == '--user' ]] && { readonly usr=TRUE; unset sudo; shift; }
+        [[ "$1" == --user ]] && { readonly usr=TRUE; unset sudo; shift; }
         readonly dir="$1"; readonly tdir="$2"  # indir, target_dir
 
         [[ -d "$dir" ]] || return 1
@@ -528,7 +530,7 @@ setup_systemd() {
             if [[ -d "$indir" ]]; then
                 t="$tdir/${fname}.d"
                 for file in "$indir/"*; do  # note we override original $file here
-                    [[ -s "$file" && "$file" =~ \.(conf)$ ]] || continue  # note we require certain suffix
+                    [[ -s "$file" && "$file" == *.conf ]] || continue  # note we require certain suffix
                     [[ -d "$t" ]] || mkdir -- "$t" || { err "[mkdir $t] failed w/ $?"; continue; }
                     __var_expand_move $sudo "$file" "$t/$(basename -- "$file")" || continue
                 done
@@ -548,6 +550,10 @@ setup_systemd() {
     done
 
     # user systemd files:
+    #
+    # Note that user services will only run while a user is logged in unless you
+    # explicitly enable them to run at boot with $ loginctl enable-linger <username>.
+    # "linger" means remain after logout, but also start at boot.
     for dir in "${usr_sysd_src[@]}"; do
         __process --user "$dir" "$usr_sysd_target" || continue
     done
@@ -5954,6 +5960,8 @@ install_from_repo() {
 
 
     # TODO: replace virtualbox by KVM & https://virt-manager.org/
+    # another alternatives:
+    # - https://flathub.org/apps/org.gnome.Boxes
     if [[ "$PROFILE" == work ]]; then
         if is_native; then
             install_block '
@@ -7060,7 +7068,7 @@ configure_updatedb() {
 
     exe='/etc/cron.daily/locate'  # cron task that executes updatedb
     conf='/etc/updatedb.findutils.cron.local'  # file customizing $exe
-    paths='/mnt'  # space-separated paths to be added to PRUNEPATHS definition
+    paths=('/mnt')  # paths to be added to PRUNEPATHS definition
 
     [[ -x "$exe" ]] || { err "[$exe] not found or not an executable"; return 1; }
     grep -Fq "$conf" "$exe" || { err "[$conf] not referenced in [$exe]!"; return 1; }
@@ -7069,7 +7077,7 @@ configure_updatedb() {
     # raw value from within quotes:
     line="$(grep -Po '^PRUNEPATHS="\K.*(?="$)' "$i")" || { err "no PRUNEPATHS found in [$i]"; return 1; }
 
-    for i in $paths; do
+    for i in "${paths[@]}"; do
         [[ "$line" =~ ([[:space:]]|^)"$i"([[:space:]]|$) ]] && continue  # path already included
         line+=" $i"
         modified=TRUE
@@ -7106,7 +7114,7 @@ add_user() {
 
     if ! id -- "$user" 2>/dev/null; then
         # note useradd exits w/ 9 just like groupadd if target already exists
-        execute "sudo useradd --no-create-home ${groups:+--groups $groups} --shell /bin/false --user-group $user" || return $?
+        execute "sudo useradd --no-create-home ${groups:+--groups $groups }--shell /bin/false --user-group $user" || return $?
     fi
     return 0
 }
@@ -7714,6 +7722,8 @@ is_windows() {
 
 
 # Checks whether system is virtualized (including WSL)
+#
+# TODO: does it detect KVM?
 #
 # @returns {bool}   true if we're running in virt mode.
 is_virt() {
