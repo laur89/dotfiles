@@ -1604,17 +1604,13 @@ install_deps() {
     # install npm_modules:
     # https://github.com/FredrikNoren/ungit
     # https://github.com/dominictarr/JSON.sh
-    # https://github.com/sindresorhus/speed-test
     # https://github.com/sindresorhus/fast-cli
-    # https://github.com/riyadhalnur/weather-cli
     #
     execute "$NPM_PRFX npm install -g \
         neovim \
         ungit \
         JSON.sh \
-        speed-test \
         fast-cli \
-        weather-cli \
     "
 }
 
