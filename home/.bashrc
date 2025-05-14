@@ -134,7 +134,6 @@ export HISTFILESIZE=50000
 # ignore dups:
 #export HISTCONTROL=ignoredups
 export HISTCONTROL=ignoreboth:erasedups
-#export HISTIGNORE='ls:bg:fg:c:lt:lat:latr:ltr:fhd:fh*:history*'  # ignore commands from history
 export HISTIGNORE='?:??:fhd:history:lat:ltr:latr:;*'  # ignore commands from history
 export HISTTIMEFORMAT='%F %T '
 
@@ -272,11 +271,10 @@ unset _homes
 #
 # alternatively consider https://github.com/starship/starship
 
-##########################################
-# prompt: ################################
+########################################## bash-prompt
 # if using bash-git-prompt; ...
 
-_BGPRMPT="$HOME/.bash-git-prompt/gitprompt.sh"
+_BGPRMPT="$BASE_DEPS_LOC/bash-git-prompt/gitprompt.sh"
 if [[ -f "$_BGPRMPT" ]]; then
     # add lazy-loaded/dynamic extra content to git-prompt, eg kube-ps1:
     # !! note this guy's only called/shown when we're in git repo, unless GIT_PROMPT_ONLY_IN_REPO=0 !!
@@ -288,7 +286,7 @@ if [[ -f "$_BGPRMPT" ]]; then
     #GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # this would be used if we didn't show vi mode in inputrc
     GIT_PROMPT_END='\n'  # used when we're showing vi mode in prompt (expects counterpart/extra config in inputrc)
     GIT_PROMPT_ONLY_IN_REPO=1  # show prompt only if in git repo; if !=1, then eg prompt_callback() gets called&shown everywhere, not only in repos
-    #GIT_PROMPT_THEME=Solarized  # list all w/  git_prompt_list_themes
+    #GIT_PROMPT_THEME=Solarized  # list all w/  $ git_prompt_list_themes
     source "$_BGPRMPT"
 fi
 unset _BGPRMPT
@@ -303,12 +301,12 @@ unset _BGPRMPT
 #fi
 
 
-##########################################
+########################################## /bash-prompt
 #ruby env (rbenv) - enable shims and autocompletion:  (as per `rbenv init` instructions)
 command -v rbenv >/dev/null 2>/dev/null && eval "$(rbenv init -)"
 
-# add local ruby gems to path: (https://guides.rubygems.org/faqs/#user-install)
-# note this needs to exec after rbenv has set the version!
+# add local ruby gems to path: # https://guides.rubygems.org/faqs/#i-installed-gems-with---user-install-and-their-commands-are-not-available
+# note this needs to exec after rbenv (or other shim-based ver manager) has set the version, assuming we use shim-based solution
 if command -v ruby >/dev/null && command -v gem >/dev/null; then
     _rb_pth="$(ruby -r rubygems -e 'puts Gem.user_dir')/bin"
     [[ "$_rb_pth" != /bin && :$PATH: != *:"$_rb_pth":* ]] && export PATH="$_rb_pth:$PATH"
@@ -317,7 +315,7 @@ fi
 
 ##########################################
 # git-flow-competion:
-[[ -e "$HOME/.git-flow-completion" ]] && source "$HOME/.git-flow-completion/git-flow-completion.bash"
+[[ -f "$BASE_DEPS_LOC/git-flow-completion/git-flow-completion.bash" ]] && source "$HOME/.git-flow-completion/git-flow-completion.bash"
 
 ##########################################
 # maven-bash-completion:
@@ -369,7 +367,7 @@ __check_for_change_and_compile_ssh_config() {
         fi
 
         # avoid pointless $stored_md5sum writing:
-        [[ "$modified" -eq 1 || "$stored_md5sum_exist" -ne 0 ]] && echo "$current_md5sum" > "$stored_md5sum"
+        [[ "$modified" == 1 || "$stored_md5sum_exist" -ne 0 ]] && echo -n "$current_md5sum" > "$stored_md5sum"
     fi
 
     return 0
@@ -466,82 +464,28 @@ command -v zoxide > /dev/null && eval "$(zoxide init bash)"
 ########################################## forgit
 # forgit  (https://github.com/wfxr/forgit)
 _forgit="$BASE_DEPS_LOC/forgit/forgit.plugin.sh"
-[[ -s "$_forgit" ]] && source "$_forgit"
+[[ -f "$_forgit" ]] && source "$_forgit"
 unset _forgit
-########################################## nvm
-## nvm (node version manager):  (https://github.com/nvm-sh/nvm#git-install)
-## note . nvm.sh makes new shell startup slow (https://github.com/nvm-sh/nvm/issues/1277);
-## that's why we need to work around this:
-##   https://www.reddit.com/r/node/comments/4tg5jg/lazy_load_nvm_for_faster_shell_start/d5ib9fs/
-##   https://gist.github.com/fl0w/07ce79bd44788f647deab307c94d6922
-#mapfile -t __NODE_GLOBALS < <(find "$NVM_DIR/versions/node/"*/bin/ -maxdepth 1 -mindepth 1 -type l -print0 | xargs --null -n1 basename | sort --unique)
-#__NODE_GLOBALS+=(node nvm yarn)
-#
-## instead of using --no-use flag, load nvm lazily:
-#_load_nvm() {
-#    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-#    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-#}
-#
-#for cmd in "${__NODE_GLOBALS[@]}"; do
-#    eval "function ${cmd}(){ unset -f ${__NODE_GLOBALS[*]}; _load_nvm; unset -f _load_nvm; ${cmd} \"\$@\"; }"
-#done
-#unset cmd __NODE_GLOBALS
-#
-## some nvim plugins require node to be on PATH; configure a constant link so plugins et al can be pointed at it;
-## idea is to have access to node executable prior to loading anything from nvm.
-##
-## note we have equivalent logic in install_system.sh as well!
-##
-## eg some nvim plugin(s) might reference $NODE_LOC
-#_latest_node_ver="$(find "$NVM_DIR/versions/node/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
-#if [[ "$(realpath -- "$NODE_LOC")" != "$_latest_node_ver" && -x "$_latest_node_ver" ]]; then
-#    ln -sf -- "$_latest_node_ver" "$NODE_LOC"
-#fi
-#unset _latest_node_ver
-#
-##   from https://stackoverflow.com/a/50378304/1803648
-## Run 'nvm use' automatically every time there's
-## a .nvmrc file in git project root. Also, revert to default
-## version when entering a directory without .nvmrc
-##
-#_enter_dir() {
-#    local d
-#    d=$(git rev-parse --show-toplevel 2>/dev/null)
-#
-#    if [[ "$d" == "$PREV_PWD" ]]; then
-#        return
-#    elif [[ -n "$d" && -f "$d/.nvmrc" ]]; then
-#        nvm use
-#        NVM_DIRTY=1
-#    elif [[ "$NVM_DIRTY" == 1 ]]; then
-#        nvm use default
-#        NVM_DIRTY=0
-#    fi
-#    PREV_PWD="$d"
-#}
-#
-#[[ -s "$NVM_DIR/nvm.sh" && ";${PROMPT_COMMAND};" != *';_enter_dir;'* ]] && export PROMPT_COMMAND="$PROMPT_COMMAND;_enter_dir"
-########################################## /nvm
-########################################## asdf
-if command -v asdf >/dev/null 2>/dev/null; then
-    source <(asdf completion bash)
+########################################## mise
+if command -v mise >/dev/null 2>/dev/null; then
+    eval "$(mise activate bash)"  # https://mise.jdx.dev/installing-mise.html#bash
 fi
 
 # some nvim plugins require node to be on PATH; configure a constant link so plugins et al can be pointed at it;
 # idea is to have access to node executable prior to loading anything from asdf.
 #
 # note we have equivalent logic in install_system.sh as well!
+# not needed when using mise, as it provides a constant tool shim location for us to use.
 #
 # eg some nvim plugin(s) might reference $NODE_LOC
-if [[ -d "$ASDF_DATA_DIR/installs/nodejs" ]]; then
-    _latest_node_ver="$(find "$ASDF_DATA_DIR/installs/nodejs/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
-    if [[ ! -f "$NODE_LOC" ]] || [[ "$(realpath -- "$NODE_LOC")" != "$_latest_node_ver" ]]; then
-        [[ -x "$_latest_node_ver" ]] && ln -sf -- "$_latest_node_ver" "$NODE_LOC"
-    fi
-    unset _latest_node_ver
-fi
-########################################## /asdf
+#if [[ -d "$ASDF_DATA_DIR/installs/nodejs" ]]; then
+#    _latest_node_ver="$(find "$ASDF_DATA_DIR/installs/nodejs/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
+#    if [[ ! -f "$NODE_LOC" ]] || [[ "$(realpath -- "$NODE_LOC")" != "$_latest_node_ver" ]]; then
+#        [[ -x "$_latest_node_ver" ]] && ln -sf -- "$_latest_node_ver" "$NODE_LOC"
+#    fi
+#    unset _latest_node_ver
+#fi
+########################################## /mise
 # generate .Xauth to be passed to (and used by) GUI (docker) containers:
 export XAUTH='/tmp/.docker.xauth'
 if [[ ! -s "$XAUTH" && -n "$DISPLAY" ]]; then  # TODO: also check for is_x()?
@@ -567,68 +511,6 @@ export VIRTUAL_ENV_DISABLE_PROMPT=1  # disable the default virtualenv prompt cha
 __py_virtualenv_ps1() {  # called by PS1
     echo -n "${VIRTUAL_ENV:+${PROMPT_SEGMENT_PREFIX}${COLORS[BOLD]}venv:${COLORS[CYAN]}${VIRTUAL_ENV##*/}${PROMPT_SEGMENT_SUFFIX}}"
 }
-##########################################
-# NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
-###-begin-npm-completion-###
-#
-# npm command completion script
-#
-# Installation: npm completion >> ~/.bashrc  (or ~/.zshrc)
-# Or, maybe: npm completion > /usr/local/etc/bash_completion.d/npm
-#
-
-if type complete &>/dev/null; then
-  _npm_completion () {
-    local words cword
-    if type _get_comp_words_by_ref &>/dev/null; then
-      _get_comp_words_by_ref -n = -n @ -n : -w words -i cword
-    else
-      cword="$COMP_CWORD"
-      words=("${COMP_WORDS[@]}")
-    fi
-
-    local si="$IFS"
-    IFS=$'\n' COMPREPLY=($(COMP_CWORD="$cword" \
-                           COMP_LINE="$COMP_LINE" \
-                           COMP_POINT="$COMP_POINT" \
-                           npm completion -- "${words[@]}" \
-                           2>/dev/null)) || return $?
-    IFS="$si"
-    if type __ltrim_colon_completions &>/dev/null; then
-      __ltrim_colon_completions "${words[cword]}"
-    fi
-  }
-  complete -o default -F _npm_completion npm
-elif type compdef &>/dev/null; then
-  _npm_completion() {
-    local si=$IFS
-    compadd -- $(COMP_CWORD=$((CURRENT-1)) \
-                 COMP_LINE=$BUFFER \
-                 COMP_POINT=0 \
-                 npm completion -- "${words[@]}" \
-                 2>/dev/null)
-    IFS=$si
-  }
-  compdef _npm_completion npm
-elif type compctl &>/dev/null; then
-  _npm_completion () {
-    local cword line point words si
-    read -Ac words
-    read -cn cword
-    let cword-=1
-    read -l line
-    read -ln point
-    si="$IFS"
-    IFS=$'\n' reply=($(COMP_CWORD="$cword" \
-                       COMP_LINE="$line" \
-                       COMP_POINT="$point" \
-                       npm completion -- "${words[@]}" \
-                       2>/dev/null)) || return $?
-    IFS="$si"
-  }
-  compctl -K _npm_completion npm
-fi
-###-end-npm-completion-###
 ########################################## nvr
 # TODO: instead of any nvr functions here, consider https://github.com/carlocab/tmux-nvr instead
 #
@@ -692,12 +574,4 @@ if command -v pyenv >/dev/null 2>/dev/null; then
     eval "$(pyenv init -)"
     eval "$(pyenv virtualenv-init -)"  # enables auto-activation of _pyenv-managed_ virtualenvs; see https://github.com/pyenv/pyenv-virtualenv
 fi
-########################################## sdkman
-# note following is added by script from https://get.sdkman.io/:
-#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
-export SDKMAN_DIR="$HOME/.sdkman"
-if [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]]; then
-    source "$SDKMAN_DIR/bin/sdkman-init.sh"
-fi
-
 ##########################################

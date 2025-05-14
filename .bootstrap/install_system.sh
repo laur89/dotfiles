@@ -1335,11 +1335,15 @@ install_deps() {
         # xinput is for input device configuration; see  https://wiki.archlinux.org/index.php/Libinput
         # evtest can display pressure and placement of touchpad input in realtime; note it cannot run together w/ xserver, so better ctrl+alt+F2 to another tty
         # TODO: doesn't xinput depend on synaptic driver, ie it doesnt work with the newer libinput driver?
+        #       fyi: "xinput is utility to list available input devices, query information about a device and change input device settings"
+        #       note some of our scripts depend on xinput
         # note: blueman lists bluez as dep, that contains the daemon for bt devices
+        # note: evtest is EOL and evemu-record from evemu-tools pkg should be used
         install_block '
             libinput-tools
             xinput
             evtest
+            evemu-tools
             blueman
         '
         # old removed ones:
@@ -1355,11 +1359,9 @@ install_deps() {
     # bash-git-prompt:
     # alternatively consider https://github.com/starship/starship
     clone_or_pull_repo "magicmonty" "bash-git-prompt" "$BASE_DEPS_LOC"
-    create_link "${BASE_DEPS_LOC}/bash-git-prompt" "$HOME/.bash-git-prompt"
 
     # git-flow-completion:  # https://github.com/bobthecow/git-flow-completion
-    clone_or_pull_repo "bobthecow" "git-flow-completion" "$BASE_DEPS_LOC"
-    create_link "${BASE_DEPS_LOC}/git-flow-completion" "$HOME/.git-flow-completion"
+    #clone_or_pull_repo "bobthecow" "git-flow-completion" "$BASE_DEPS_LOC"
 
     # bars (as in bar-charts) in shell:
     #  note: see also https://github.com/sindresorhus/sparkly-cli
@@ -1371,8 +1373,8 @@ install_deps() {
     create_link "${BASE_DEPS_LOC}/imgurbash2/imgurbash2" "$HOME/bin/imgurbash2"
 
     # imgur uploader 2:
-    clone_or_pull_repo "tangphillip" "Imgur-Uploader" "$BASE_DEPS_LOC"  # https://github.com/tangphillip/Imgur-Uploader
-    create_link "${BASE_DEPS_LOC}/Imgur-Uploader/imgur" "$HOME/bin/imgur-uploader"
+    #clone_or_pull_repo "tangphillip" "Imgur-Uploader" "$BASE_DEPS_LOC"  # https://github.com/tangphillip/Imgur-Uploader
+    #create_link "${BASE_DEPS_LOC}/Imgur-Uploader/imgur" "$HOME/bin/imgur-uploader"
 
     # fuzzy file finder/command completer etc:
     clone_or_pull_repo "junegunn" "fzf" "$BASE_DEPS_LOC"  # https://github.com/junegunn/fzf
@@ -1402,8 +1404,8 @@ install_deps() {
     #
     install_from_url -d "$HOME/.bash_completion.d/" lein_bash_completion.bash "https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash"
 
-    # vifm filetype icons: https://github.com/cirala/vifm_devicons.git
-    clone_or_pull_repo "cirala" "vifm_devicons" "$BASE_DEPS_LOC"
+    # vifm filetype icons: https://github.com/thimc/vifm_devicons
+    clone_or_pull_repo "thimc" "vifm_devicons" "$BASE_DEPS_LOC"
     create_link "${BASE_DEPS_LOC}/vifm_devicons" "$HOME/.vifm_devicons"
 
     # git-fuzzy (yet another git fzf tool)   # https://github.com/bigH/git-fuzzy
@@ -1446,32 +1448,10 @@ install_deps() {
         execute 'cs install giter8'
     fi
 
-    # sdkman:  # https://sdkman.io/
-    # TODO: consider replacing all env/version managers by asdf or mise
-    if [[ -d "$HOME/.sdkman" ]]; then  # already installed; note if you'd add some config from that dir to homeshick, then this check would effectively become invalid!
-        #execute 'sdk selfupdate'  # will fail, as 'sdk' is a function imported in .bashrc
-        true  # pass
-    else
-        u='https://get.sdkman.io'
-        is_noninteractive && u+='?rcupdate=false'
-        execute "curl -sf '$u' | bash"  # TODO depends whether win or linux
-        #install_from_url_shell  sdkman 'https://get.sdkman.io'  # TODO: can't use yet, as https://get.sdkman.io doesn't have etag or anything other useful to version by
-    fi
-
     # cheat.sh:  # https://github.com/chubin/cheat.sh#installation
     curl -fsSL "https://cht.sh/:cht.sh" > ~/bin/cht.sh && chmod +x ~/bin/cht.sh || err "curling cheat.sh failed w/ [$?]"
 
     # TODO: following are not deps, are they?:
-    # git-playback; install _either_ of these two (ie either from jianli or mmozuras):
-    py_install git-playback   # https://github.com/jianli/git-playback
-
-    # whatportis: query applications' default port:  (eg  $ whatportis posgresql)
-    py_install whatportis     # https://github.com/ncrocfer/whatportis
-
-    # git-playback:   # https://github.com/mmozuras/git-playback
-    #clone_or_pull_repo "mmozuras" "git-playback" "$BASE_DEPS_LOC"
-    #create_link "${BASE_DEPS_LOC}/git-playback/git-playback.sh" "$HOME/bin/git-playback-sh"
-
 
     # this needs apt-get install  python-imaging ?:
     py_install img2txt.py    # https://github.com/hit9/img2txt  (for ranger)
@@ -1491,8 +1471,7 @@ install_deps() {
     py_install pywal          # https://github.com/dylanaraps/pywal/wiki/Installation
 
     # consider also perl alternative @ https://github.com/pasky/speedread
-    rb_install speed_read  # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
-    rb_install gist        # https://github.com/defunkt/gist  (pastebinit for gists)
+    #rb_install speed_read  # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
 
     py_install update-conf.py # https://github.com/rarylson/update-conf.py  (generate config files from conf.d dirs)
     #py_install starred     # https://github.com/maguowei/starred  - create list of your github starts; note it's updated by CI so no real reason to install it locally
@@ -1530,30 +1509,6 @@ install_deps() {
         #py_install Mopidy-Spotify
         install_block  mopidy-spotify
     fi
-
-    # TODO: consider replacing all env/version managers by asdf or mise
-    # rbenv & ruby-build: {                             # https://github.com/rbenv/rbenv-installer
-    #   ruby-build recommended deps (https://github.com/rbenv/ruby-build/wiki#ubuntudebianmint):
-    install_block '
-        autoconf
-        patch
-        build-essential
-        rustc
-        libssl-dev
-        libyaml-dev
-        libreadline6-dev
-        zlib1g-dev
-        libgmp-dev
-        libncurses5-dev
-        libffi-dev
-        libgdbm6
-        libgdbm-dev
-        libdb-dev
-        uuid-dev
-    '
-    install_from_url_shell  rbenv 'https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer'
-    # note rbenv-doctor can be ran to verify installation:  $ install_from_url_shell rbenv-doctor https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-doctor
-    # }
 
     # pyenv  # https://github.com/pyenv/pyenv-installer
     # TODO: consider replacing all env/version managers by asdf or mise
@@ -1609,7 +1564,6 @@ install_deps() {
     execute "$NPM_PRFX npm install -g \
         neovim \
         ungit \
-        JSON.sh \
         fast-cli \
     "
 }
@@ -2461,6 +2415,7 @@ install_own_builds() {
     install_bat
     install_btop
     install_alacritty
+    install_wezterm
     install_croc
     install_kanata
     install_eza
@@ -2949,6 +2904,9 @@ download_git_raw() {
 
 
 # Fetch a file from given github /releases page, and install the binary
+#
+# TODO: see https://github.com/houseabsolute/ubi
+#       and https://github.com/aquaproj/aqua
 #
 # -U                - do not upack the compressed/archived asset
 # -A                - install file as-is, do not derive method from mime
@@ -3447,8 +3405,9 @@ install_kube_ps1() {  # https://github.com/jonmosco/kube-ps1
 
 # tool for managing secrets (SOPS: Secrets OPerationS)
 # tag: aws
-install_sops() {  # https://github.com/mozilla/sops
-    install_deb_from_git mozilla sops _amd64.deb
+# note also installable via mise
+install_sops() {  # https://github.com/getsops/sops
+    install_deb_from_git getsops sops _amd64.deb
 }
 
 
@@ -3660,6 +3619,12 @@ install_alacritty() {
     execute 'popd'
     execute "sudo rm -rf -- '$dir'"
     return 0
+}
+
+
+# other terms to consider: kitty
+install_wezterm() {
+    pass # TODO
 }
 
 
@@ -3967,49 +3932,57 @@ install_asdf() {
 }
 
 
+# https://github.com/jdx/mise
+# https://mise.jdx.dev/installing-mise.html#github-releases
+#
+# plugins org: https://github.com/mise-plugins
+# available tools: https://mise.jdx.dev/registry.html
+install_mise() {
+    install_bin_from_git -N mise jdx mise '-linux-x64' || return
+    command -v mise >/dev/null 2>&1 || { err '[mise] not on PATH?'; return 1; }  # sanity
+
+    [[ "$MODE" -eq 1 ]] && eval "$(mise activate bash --shims)"  # use shims to load dev tools
+
+    # set up shell autocompletion: https://mise.jdx.dev/installing-mise.html#autocompletion
+    mise use --global usage
+    execute 'mise completion bash --include-bash-completion-lib | sudo tee /etc/bash_completion.d/mise > /dev/null'
+}
+
+
 install_webdev() {
     is_server && { report "we're server, skipping webdev env installation."; return; }
 
-    install_asdf
-
-    if ! command -v node >/dev/null 2>&1; then  # only proceed if node hasn't already been installed
-        local ver f
-        ver="$(asdf latest nodejs)"
-        f="$HOME/.tool-versions"
-        if [[ -f "$f" ]]; then
-            execute "sed -i --follow-symlinks '/^nodejs/d' '$f'"  # delete previous value
-        fi
-
-        echo "nodejs $ver" >> "$f"
-        asdf install nodejs "$ver" || err "installing nodejs '$ver' version failed"
-    fi
+    install_mise
+    mise install  # install the globally-defined tools (and local, if pwd has mise.toml)
 
     # make sure the constant link to latest node exec ($NODE_LOC) is set up (normally managed by .bashrc, but might not have been created, as this is install_sys).
     # eg some nvim plugin(s) might reference $NODE_LOC
-    if [[ -n "$NODE_LOC" && ! -x "$NODE_LOC" ]]; then
-        local _latest_node_ver
-        _latest_node_ver="$(find "$ASDF_DATA_DIR/installs/nodejs/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
-        [[ -x "$_latest_node_ver" ]] && execute "ln -sf -- '$_latest_node_ver' '$NODE_LOC'"
-    fi
+    # (commented out as mise provides constant tool shim)
+    #if [[ -n "$NODE_LOC" && ! -x "$NODE_LOC" ]]; then
+        #local _latest_node_ver
+        #_latest_node_ver="$(find "$ASDF_DATA_DIR/installs/nodejs/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
+        #[[ -x "$_latest_node_ver" ]] && execute "ln -sf -- '$_latest_node_ver' '$NODE_LOC'"
+    #fi
 
     # update npm:
-    execute "$NPM_PRFX npm install npm@latest -g" && sleep 0.2
+    execute "$NPM_PRFX npm install npm@latest -g" && sleep 0.1
+    # NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
+    execute 'npm completion | sudo tee /etc/bash_completion.d/npm > /dev/null'
+
 
     # install npm modules:  # TODO review what we want to install
-    execute "$NPM_PRFX npm install -g \
-        nwb \
-        @vue/cli \
-        typescript \
-    "
+    # note nwb (zero-config development setup) is dead - use vite instead: https://github.com/vitejs/vite
+    #execute "$NPM_PRFX npm install -g \
+        #typescript \
+    #"
 
     # install ruby modules:          # sass: http://sass-lang.com/install
     # TODO sass deprecated, use https://github.com/sass/dart-sass instead
     #rb_install sass
 
     # install yarn:  https://yarnpkg.com/getting-started/install
-    execute "corepack enable"
+    execute "corepack enable"  # note corepack is included w/ node, but is currently opt-in, hence 'enable'
     execute "corepack prepare yarn@stable --activate"
-    execute "asdf reshim nodejs"
 
     # install rails:
     # this would install it globally; better install new local ver by
@@ -5790,7 +5763,7 @@ install_from_repo() {
         keepassxc-full
         gnupg
         dirmngr
-        direnv
+        #direnv  # commented out as it might conflict w/ mise: https://mise.jdx.dev/direnv.html
     )
 
 
@@ -6319,6 +6292,7 @@ __choose_prog_to_build() {
         install_octant
         install_kops
         install_kubectx
+        install_kubectl
         install_kube_ps1
         install_sops
         install_grpcui
@@ -6360,6 +6334,7 @@ __choose_prog_to_build() {
         install_display_switch
         install_neovide
         install_asdf
+        install_mise
         install_croc
         install_kanata
         install_android_command_line_tools
@@ -7473,7 +7448,6 @@ execute() {
 
     >&2 echo -e "${COLORS[GREEN]}-->${COLORS[OFF]} executing [${COLORS[YELLOW]}${cmd}${COLORS[OFF]}]"
     # TODO: collect and log command execution stderr?
-    # TODO: eval?! seriously, were i drunk?
     eval "$cmd"
     readonly exit_sig=$?
 
