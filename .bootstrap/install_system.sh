@@ -3977,7 +3977,7 @@ install_webdev() {
     #"
 
     # install ruby modules:          # sass: http://sass-lang.com/install
-    # TODO sass deprecated, use https://github.com/sass/dart-sass instead
+    # TODO sass deprecated, use https://github.com/sass/dart-sass instead; note there's also sassc (also avail in apk)
     #rb_install sass
 
     # install yarn:  https://yarnpkg.com/getting-started/install
@@ -6727,9 +6727,12 @@ install_gtk_numix() {
 }
 
 
-# TODO: 3ximus' repo hasn't been changed since '17, consider https://github.com/Fausto-Korpsvart/Gruvbox-GTK-Theme
+# https://github.com/Fausto-Korpsvart/Gruvbox-GTK-Theme
 install_gruvbox_gtk_theme() {
-    clone_or_pull_repo "3ximus" "gruvbox-gtk" "$HOME/.themes"  # https://github.com/3ximus/gruvbox-gtk.git
+    install_block 'gtk2-engines-murrine gnome-themes-extra sassc'
+
+    clone_or_pull_repo "Fausto-Korpsvart" "Gruvbox-GTK-Theme" "$BASE_DEPS_LOC"
+    execute "$BASE_DEPS_LOC/Gruvbox-GTK-Theme/install.sh" || err "gruvbox theme installation failed w/ $?"  # TODO: sandbox! needs write access only to ~/.themes
 }
 
 
