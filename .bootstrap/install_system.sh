@@ -5678,7 +5678,6 @@ install_from_repo() {
     # removed from above block:
     # -    netdata
 
-    # TODO: do we want ntp? on systemd systems we have systemd-timesyncd
     declare -ar block2=(
         net-tools  # includes the important tools for controlling the network subsystem of the Linux kernel. This includes arp, ifconfig, netstat, rarp, nameif and route
         dnsutils  # provides dig, nslookup, nsupdate
@@ -5705,7 +5704,7 @@ install_from_repo() {
         tcpflow  # A program like 'tcpdump' shows a summary of packets seen on the wire, but usually doesn't store the data that's actually being transmitted. In contrast, tcpflow reconstructs the actual data streams and stores each flow in a separate file for later analysis; https://github.com/simsong/tcpflow
         #ngrep  # grep for network traffic; https://github.com/jpr5/ngrep
         #ncat
-        ntp
+        systemd-timesyncd
         remind
         tkremind
         wyrd  # ncurses-based frontend for remind; https://gitlab.com/wyrd-calendar/wyrd
