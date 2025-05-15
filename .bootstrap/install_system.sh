@@ -211,7 +211,7 @@ check_dependencies() {
     for prog in \
             git cmp wc wget curl tar unzip atool \
             realpath dirname basename head tee jq \
-            gpg mktemp file date alien id html2text \
+            gpg mktemp file date id html2text \
             pwd uniq sort xxd \
                 ; do
         if ! command -v "$prog" >/dev/null; then
@@ -5626,6 +5626,7 @@ install_from_repo() {
         rofi  # TODO: x11!
         picom  # picom is a compositor for X11; https://github.com/yshui/picom ; for wayland consider https://github.com/WayfireWM/wayfire
         dosfstools  # utilities for making and checking MS-DOS FAT filesystems; https://github.com/dosfstools/dosfstools
+        #alien  # convert LSB, Red Hat, Stampede and Slackware Packages into Debian packages
         #checkinstall
         #build-essential  # If you do not plan to build Debian packages, you don't need this package
         #devscripts  # scripts to make the life of a Debian Package maintainer easier
@@ -5838,9 +5839,9 @@ install_from_repo() {
         python3-pynvim  # Python3 library for scripting Neovim processes through its msgpack-rpc API
         libxml2-utils  # TODO: still needed?
         pidgin
-        weechat
-        bitlbee
-        bitlbee-libpurple
+        weechat  # like irssi but better; https://weechat.org/
+        bitlbee  # IRC to other chat networks gateway; http://www.bitlbee.org/
+        bitlbee-libpurple  # This package contains a version of BitlBee that uses the libpurple instant messaging library instead of built-in code, which adds support for more IM protocols (all protocols supported by Pidgin/Finch)
         purple-discord  # libpurple/Pidgin plugin for Discord
         nheko  # Qt-based chat client for Matrix
         signal-desktop
