@@ -3957,7 +3957,7 @@ install_webdev() {
 
     # make sure the constant link to latest node exec ($NODE_LOC) is set up (normally managed by .bashrc, but might not have been created, as this is install_sys).
     # eg some nvim plugin(s) might reference $NODE_LOC
-    # (commented out as mise provides constant tool shim)
+    #   - (commented out as mise provides constant tool shim)
     #if [[ -n "$NODE_LOC" && ! -x "$NODE_LOC" ]]; then
         #local _latest_node_ver
         #_latest_node_ver="$(find "$ASDF_DATA_DIR/installs/nodejs/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"

@@ -1,0 +1,47 @@
+{
+    "bookmarks": [],
+    "gui_state": {
+        "startupdialog": {
+            "geometry": "AdnQywADAAAAAAqpAAACLQAADmwAAARcAAAKqwAAAj8AAA5qAAAEWgAAAAEAAAAACgAAAAqrAAACPwAADmoAAARa",
+            "width": 960,
+            "height": 540,
+            "x": 2729,
+            "y": 557
+        },
+        "mainview": {
+            "geometry": "AdnQywADAAAAAAeAAAAAJgAAEX8AAAWfAAAHgAAAABQAAA0fAAAESwAAAAECAAAACgAAAAeAAAAAJgAAEX8AAAWf",
+            "width": 2560,
+            "height": 1402,
+            "x": 1920,
+            "y": 38,
+            "lock_layout": false,
+            "windowstate": "AAAA/wAAAAL9AAAAAgAAAAIAAAoAAAACrPwBAAAAA/sAAAAMAFMAdABhAHQAdQBzAQAAAAAAAAFiAAAAWAD////7AAAADABDAG8AbQBtAGkAdAEAAAFlAAAETwAAAK8A/////AAABbcAAARJAAAAoQD////6AAAAAAEAAAAE+wAAABAAQgByAGEAbgBjAGgAZQBzAQAAAAD/////AAAAfAD////7AAAAFABTAHUAYgBtAG8AZAB1AGwAZQBzAQAAAAD/////AAAAoQD////7AAAAEgBGAGEAdgBvAHIAaQB0AGUAcwAAAAAA/////wAAAKAA////+wAAAAwAUgBlAGMAZQBuAHQAAAAAAP////8AAACBAP///wAAAAMAAAoAAAACrPwBAAAAAvsAAAAIAEQAaQBmAGYBAAAAAAAACgAAAABAAP////wAAAAA/////wAAAAAA////+v////8BAAAAAvsAAAAOAEEAYwB0AGkAbwBuAHMAAAAAAP////8AAABGAP////sAAAAOAEMAbwBuAHMAbwBsAGUAAAAAAP////8AAAATAP///wAACgAAAAAAAAAABAAAAAQAAAAIAAAACPwAAAAA",
+            "show_status_filter": false,
+            "toolbars": [],
+            "ref_sort": 0,
+            "show_diff_line_numbers": true,
+            "show_diff_filenames": true,
+            "image_diff_mode": 0,
+            "image_zoom_mode": 0,
+            "word_wrap": true
+        },
+        "preferencesview": {
+            "geometry": "AdnQywADAAAAAAtKAAABUQAADaUAAAQ5AAALTAAAAWMAAA2jAAAENwAAAAEAAAAACgAAAAtMAAABYwAADaMAAAQ3",
+            "width": 600,
+            "height": 725,
+            "x": 2890,
+            "y": 337
+        }
+    },
+    "recent": [
+        {
+            "name": "docker-joal",
+            "path": "/data/dev/docker-joal"
+        },
+        {
+            "name": "lean-charting-api",
+            "path": "/data/dev/lean-charting-api"
+        }
+    ],
+    "copy_formats": []
+}
