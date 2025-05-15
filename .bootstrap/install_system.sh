@@ -5612,13 +5612,14 @@ install_from_repo() {
         pasystray  # PulseAudio controller for the system tray; should work w/ pipewire
         ca-certificates
         aptitude  # ncurses-based cli apt manager; https://wiki.debian.org/Aptitude
+        #nala  # another cli-based apt frontend; https://gitlab.com/volian/nala
+        #gdebi  # GUI local deb file viewer/installer for gnome
         synaptic
         apt-file  # command line tool for searching files contained in packages for the APT packaging system. You can search in which package a file is included or list the contents of a package without installing or fetching it
         apt-show-versions
         apt-xapian-index  # TODO: package no more?
         unattended-upgrades  # automatic installation of security upgrades
         apt-listchanges  # compare a new version of a package with the one currently installed and show what has been changed
-        #gdebi  # GUI local deb file viewer/installer for gnome
         sudo  # https://github.com/sudo-project/sudo
         libnotify-bin  # sends desktop notifications to a notification daemon; provides notify-send
         dunst  # notification-daemon; https://dunst-project.org/
@@ -5637,9 +5638,6 @@ install_from_repo() {
         python3-venv  # venv module for python3
         python3-pip
         pipx  # https://github.com/pypa/pipx
-        python3-wheel  # a wheel is a ZIP-format archive with a specially formatted filename and the `.whl` extension. It is designed to contain all the files for a PEP 376 compatible install in a way that is very close to the on-disk format
-                       # provides a `bdist_wheel` command for setuptools
-        #python3-click  # builds cli interfaces; should not be installed globally!
         python3-i3ipc  # TODO: move installation to one of i3-specific functions?
         flake8  # code checker using pycodestyle and pyflakes; https://github.com/pycqa/flake8  # TODO: superceded by ruff?
         curl
@@ -5698,7 +5696,7 @@ install_from_repo() {
         tcpdump  # dump the traffic on a network; dump the traffic on a network
         tcpflow  # A program like 'tcpdump' shows a summary of packets seen on the wire, but usually doesn't store the data that's actually being transmitted. In contrast, tcpflow reconstructs the actual data streams and stores each flow in a separate file for later analysis; https://github.com/simsong/tcpflow
         #ngrep  # grep for network traffic; https://github.com/jpr5/ngrep
-        #ncat
+        #ncat  # reimplementation of Netcat by the NMAP project; https://nmap.org/
         remind
         tkremind
         wyrd  # ncurses-based frontend for remind; https://gitlab.com/wyrd-calendar/wyrd
