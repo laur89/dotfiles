@@ -5625,11 +5625,11 @@ install_from_repo() {
         rofi  # TODO: x11!
         picom  # picom is a compositor for X11; https://github.com/yshui/picom ; for wayland consider https://github.com/WayfireWM/wayfire
         dosfstools  # utilities for making and checking MS-DOS FAT filesystems; https://github.com/dosfstools/dosfstools
-        checkinstall
-        build-essential  # If you do not plan to build Debian packages, you don't need this package
-        devscripts  # scripts to make the life of a Debian Package maintainer easier
-        equivs
-        cmake
+        #checkinstall
+        #build-essential  # If you do not plan to build Debian packages, you don't need this package
+        #devscripts  # scripts to make the life of a Debian Package maintainer easier
+        #equivs
+        #cmake
         #ruby
         ipython3  # https://github.com/ipython/ipython
         python3
@@ -5819,7 +5819,6 @@ install_from_repo() {
         shellcheck
         #ranger  # CLI File Manager with VI Key Bindings;  https://ranger.github.io/
         vifm
-        #screenfetch  # deprecated by fastfetch;  https://github.com/KittyKatt/screenFetch
         fastfetch  # takes screenshots of your desktop
         maim  # TODO: x11!  - screenshot.sh depends on it
         flameshot  # https://flameshot.org/
