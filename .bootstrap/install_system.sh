@@ -30,15 +30,6 @@ readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX
 readonly GOFORIT_REPO_LOC='https://github.com/Manuel-Kehl/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
 readonly SYNERGY_REPO_LOC='https://github.com/symless/synergy-core.git'    # synergy - share keyboard&mouse between computers on same LAN
-readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/8u172-b11/a58eab1ec242421181065cdc37240b08/jdk-8u172-linux-x64.tar.gz'
-#readonly ORACLE_JDK_LOC='http://download.oracle.com/otn-pub/java/jdk/10.0.1+10/fb4372174a714e6b8c52526dc134031e/jdk-10.0.1_linux-x64_bin.tar.gz'
-                                                                          #       http://www.oracle.com/technetwork/java/javase/downloads/index.html
-                                                                          # jdk8: http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
-                                                                          # jdk9: https://jdk9.java.net/  /  https://jdk9.java.net/download/
-                                                                          # jdk10: http://www.oracle.com/technetwork/java/javase/downloads/jdk10-downloads-4416644.html
-                                                                          # archive: http://www.oracle.com/technetwork/java/javase/archive-139210.html
-readonly JDK_LINK_LOC="/usr/local/jdk_link"      # symlink linking to currently active java installation
-readonly JDK_INSTALLATION_DIR="/usr/local/javas" # dir containing all the installed java versions
 readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
@@ -2355,7 +2346,6 @@ install_devstuff() {
     install_lazydocker
     #install_gitin
     #install_gitkraken
-    #install_oracle_jdk  # start using sdkman (or something similar)
 
     install_saml2aws
     install_aia
@@ -2488,76 +2478,6 @@ prepare_build_container() {  # TODO container build env not used atm
     bc_exe "apt-get --yes update"
     return 0
 }
-
-
-# note that jdk will be installed under $JDK_INSTALLATION_DIR
-# TODO: deprecated
-install_oracle_jdk() {
-    local tarball tmpdir dir
-
-    tmpdir="$(mktemp -d "jdk-tempdir-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-
-    report "fetcing [$ORACLE_JDK_LOC]"
-    execute "pushd -- $tmpdir" || return 1
-
-    execute "curl -L -b 'oraclelicense=a' \
-        '$ORACLE_JDK_LOC' -O" || { err "curling [$ORACLE_JDK_LOC] failed."; return 1; }
-
-    readonly tarball="$(basename -- "$ORACLE_JDK_LOC")"
-    extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
-    dir="$(find . -mindepth 1 -maxdepth 1 -type d)"
-    [[ -d "$dir" ]] || { err "couldn't find unpacked jdk directory"; return 1; }
-
-    [[ -d "$JDK_INSTALLATION_DIR" ]] || execute "sudo mkdir -- $JDK_INSTALLATION_DIR"
-    [[ -d "$JDK_INSTALLATION_DIR/$(basename -- "$dir")" ]] && { report "ver [$(basename -- "$dir")] java already installed"; return 0; }
-    report "installing fetched JDK to [$JDK_INSTALLATION_DIR]"
-    execute "sudo mv -- $dir $JDK_INSTALLATION_DIR/" || { err "could not move extracted jdk dir [$dir] to [$JDK_INSTALLATION_DIR]"; return 1; }
-
-    # change ownership to root:
-    execute "sudo chown -R root:root $JDK_INSTALLATION_DIR/$(basename -- "$dir")"
-
-    # create link:
-    create_link -s "$JDK_INSTALLATION_DIR/$(basename -- "$dir")" "$JDK_LINK_LOC"
-
-    execute "popd"
-    execute "sudo rm -rf -- $tmpdir"
-    return 0
-}
-
-
-# TODO: deprecated
-switch_jdk_versions() {
-    local avail_javas active_java
-
-    [[ -d "$JDK_INSTALLATION_DIR" ]] || { err "[$JDK_INSTALLATION_DIR] does not exist. abort."; return 1; }
-    readarray -d '' avail_javas < <(find "$JDK_INSTALLATION_DIR" -mindepth 1 -maxdepth 1 -type d -print0)
-    [[ $? -ne 0 || -z "${avail_javas[*]}" ]] && { err "discovered no java installations @ [$JDK_INSTALLATION_DIR]"; return 1; }
-    if [[ -h "$JDK_LINK_LOC" ]]; then
-        active_java="$(realpath -- "$JDK_LINK_LOC")"
-        if [[ "${avail_javas[*]}" == "$active_java" ]]; then
-            report "only one active jdk installation, [$active_java] is available, and that is already linked by [$JDK_LINK_LOC]"
-            return 0
-        fi
-
-        readonly active_java="$(basename -- "$active_java")"
-    fi
-
-    while true; do
-        [[ -n "$active_java" ]] && echo && report "current active java: [$active_java]\n"
-        report "select java ver to use (select none to skip the change)\n"
-        select_items -s "${avail_javas[@]}"
-
-        if [[ -n "$__SELECTED_ITEMS" ]]; then
-            [[ -d "$__SELECTED_ITEMS" ]] || { err "[$__SELECTED_ITEMS] is not a valid dir; try again."; continue; }
-            report "selecting [$__SELECTED_ITEMS]..."
-            create_link -s "$__SELECTED_ITEMS" "$JDK_LINK_LOC"
-            break
-        else
-            confirm "no items were selected; skip jdk change?" && return
-        fi
-    done
-}
-
 
 
 # -T  - instead of grepping via asset rgx, go with the latest tarball
@@ -6195,7 +6115,6 @@ choose_single_task() {
         setup_seafile
 
         generate_key
-        switch_jdk_versions
         install_nm_dispatchers
         install_acpi_events
         install_deps
@@ -6276,7 +6195,6 @@ __choose_prog_to_build() {
         install_i3lock_fancy
         install_betterlockscreen
         install_polybar
-        install_oracle_jdk
         install_skype
         install_saml2aws
         install_aia
