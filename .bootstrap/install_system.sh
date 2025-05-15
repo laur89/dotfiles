@@ -5665,12 +5665,6 @@ install_from_repo() {
         gparted  # GNOME partition editor; https://gparted.org/
         gnome-disk-utility  # manage and configure disk drives and media
         gnome-usage  # simple system monitor app for GNOME (cpu, mem, disk space...)
-        cups
-        cups-browsed  # a daemon which browses the Bonjour broadcasts of shared remote CUPS printers and makes the printers available locally
-        cups-filters  # provides additional CUPS filters which are not provided by the CUPS project itself. This includes filters for a PDF based printing workflow
-        ipp-usb  # userland driver for USB devices (printers, scanners, MFC), supporting the IPP over USB protocol; https://github.com/OpenPrinting/ipp-usb
-        system-config-printer
-        #avahi-utils  # allows programs to publish and discover services and hosts running on a local network with no specific configuration. For example you can plug into a network and instantly find printers to print to
         aircrack-ng  # wireless WEP/WPA cracking utilities
         hashcat  # fastest and most advanced password recovery utility
         reaver  # brute force attack tool against Wi-Fi Protected Setup PIN number (WPS); https://github.com/t6x/reaver-wps-fork-t6x
@@ -5684,6 +5678,7 @@ install_from_repo() {
         dnstracer  # determines where a given Domain Name Server (DNS) gets its information from for a given hostname, and follows the chain of DNS servers back to the authoritative answer
         mtr  # mtr combines the functionality of the 'traceroute' and 'ping' programs in a single network diagnostic tool; GUI
         whois  # whois client
+        systemd-timesyncd
         systemd-resolved
         network-manager
         network-manager-gnome
@@ -5704,7 +5699,6 @@ install_from_repo() {
         tcpflow  # A program like 'tcpdump' shows a summary of packets seen on the wire, but usually doesn't store the data that's actually being transmitted. In contrast, tcpflow reconstructs the actual data streams and stores each flow in a separate file for later analysis; https://github.com/simsong/tcpflow
         #ngrep  # grep for network traffic; https://github.com/jpr5/ngrep
         #ncat
-        systemd-timesyncd
         remind
         tkremind
         wyrd  # ncurses-based frontend for remind; https://gitlab.com/wyrd-calendar/wyrd
@@ -5723,6 +5717,14 @@ install_from_repo() {
         libpam-gnome-keyring  # PAM module to unlock the GNOME keyring upon login
         policykit-1-gnome  # provides a D-Bus session bus service that is used to bring up authentication dialogs used for obtaining privileges
                            # TODO: removed/dropped from debian, as it's no longer maintained??
+                           #
+                           # - forum thread https://forums.bunsenlabs.org/viewtopic.php?id=8595&p=2 discusses it:
+                           #     - consensus as of May seems to be: lxpolit, or mate-polit (as latter is gtk3)
+                           #         - also said "if xfce-polkit makes it to Trixie in time, might be worth considering."
+                           #     - replace w/ lxqt-policykit or lxpolkit or polkit-kde-agent-1 or mate-polkit or ukui-polkit (last seems unmaintained as well)
+                           #         - there's also xfce-polkit, but gh repo seen last update 3y ago
+                           #         - think lxpolit is the winner! other suggestion is mate-polkit (in https://forums.bunsenlabs.org/viewtopic.php?id=8595)
+                           #         - what about polkitd - what does it provicde? text-based, not graphical?
         libsecret-tools  # can be used to store and retrieve passwords for desktop applications; provides us w/ 'secret-tool' cmd for interfacing w/ keyring
         gsimplecal
         khal  # https://github.com/pimutils/khal - CLI calendar program, able to sync w/ caldav servers through vdirsyncer
@@ -6096,6 +6098,7 @@ install_block() {
 
     declare -ar list_to_install=( $1 )
     readonly extra_apt_params="$2"  # optional
+
     declare -a dry_run_failed=()
     exit_sig=0  # default
 
@@ -6211,6 +6214,7 @@ choose_single_task() {
         install_games
         install_xonotic
         install_from_flatpak
+        install_setup_printing
     )
 
     if is_virtualbox; then
@@ -6957,12 +6961,27 @@ setup_mopidy() {
 # cups web interface @ http://localhost:631/
 # note our configured printers are stored in /etc/cups/printers.conf  !
 # see also https://github.com/openprinting/cups
-setup_cups() {
-    local conf_file conf2 group should_restart
+install_setup_printing() {
+    local conf_file conf2 group should_restart pkgs
 
     readonly conf_file='/etc/cups/cupsd.conf'
     readonly conf2='/etc/cups/cups-files.conf'
     should_restart=0
+
+    pkgs=(
+        cups
+        cups-browsed  # a daemon which browses the Bonjour broadcasts of shared remote CUPS printers and makes the printers available locally
+        cups-filters  # provides additional CUPS filters which are not provided by the CUPS project itself. This includes filters for a PDF based printing workflow
+        ipp-usb  # userland driver for USB devices (printers, scanners, MFC), supporting the IPP over USB protocol; https://github.com/OpenPrinting/ipp-usb
+        system-config-printer  # graphical interface to configure the printing system; https://github.com/OpenPrinting/system-config-printer
+        #avahi-utils  # allows programs to publish and discover services and hosts running on a local network with no specific configuration. For example you can plug into a network and instantly find printers to print to
+    )
+
+    if ! is_native; then
+        confirm "we're not native, sure you want to install printing stack?" || return
+    fi
+
+    install_block "$(eval echo "\${$pkgs[@]}")" || return 1
 
     [[ -f "$conf_file" ]] || { err "cannot configure cupsd: [$conf_file] does not exist; abort;"; return 1; }
 
@@ -7146,7 +7165,6 @@ post_install_progs_setup() {
     #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
     #configure_ntp_for_work  # TODO: confirm if ntp needed in WSL
     is_native && enable_fw
-    is_native && setup_cups
     setup_nsswitch
     #add_to_group fuse  # not needed anymore?
     setup_firefox
@@ -7287,7 +7305,7 @@ confirm() {
     readonly msg=${1:+"\n$1"}
 
     while true; do
-        [[ -n "$msg" ]] && echo -e "$msg"
+        [[ -n "$msg" ]] && >&2 echo -e "$msg"
 
         if is_noninteractive; then
             read -r -t "$timeout" yno
@@ -7302,7 +7320,7 @@ confirm() {
                 return 0
                 ;;
             N | NO )
-                echo "Abort.";
+                >&2 echo "Abort.";
                 return 1
                 ;;
             *)
