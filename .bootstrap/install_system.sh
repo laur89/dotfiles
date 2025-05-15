@@ -25,7 +25,6 @@ readonly PWRLINE_FONTS_REPO_LOC='https://github.com/powerline/fonts'
 readonly POLYBAR_REPO_LOC='https://github.com/polybar/polybar.git'    # polybar
 readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - yeah.
 readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
-readonly RAMBOX_REPO_LOC='https://github.com/ramboxapp/community-edition.git'  # closed source franz alt.
 readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX - open password manager forked from keepass project
 readonly GOFORIT_REPO_LOC='https://github.com/Manuel-Kehl/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
@@ -2386,7 +2385,6 @@ install_own_builds() {
     #install_copyq
     is_native && install_uhk_agent
     is_native && install_ddcutil
-    #install_rambox
     install_seafile_cli
     # TODO: why are ferdium&discord behind is_native?
     is_native && install_ferdium
@@ -3774,50 +3772,6 @@ install_delta() {  # https://github.com/dandavison/delta
 # ncdu-like FS usage viewer, in rust (name is 'du + rust')
 install_dust() {  # https://github.com/bootandy/dust
     install_deb_from_git  bootandy  dust  '_amd64.deb'
-}
-
-
-# TODO: logic needs to be updated; think nowadays it's on a snap?
-install_rambox() {  # https://github.com/ramboxapp/community-edition/wiki/Install-on-Linux
-    local tmpdir tarball rambox_url rambox_dl page dir ver inst_loc
-
-    is_server && { report "we're server, skipping rambox installation."; return; }
-
-    tmpdir="$(mktemp -d "rambox-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-    readonly rambox_url='http://rambox.pro/#download'
-    readonly inst_loc="$BASE_PROGS_DIR/rambox"
-
-    report "setting up rambox"
-    install_block 'libappindicator1' || { err "rambox deps install_block failed" "$FUNCNAME"; return 1; }
-
-    execute "pushd -- $tmpdir" || return 1
-    page="$(wget "$rambox_url" -q --user-agent="$USER_AGENT" -O -)" || { err "wgetting [$rambox_url] failed"; return 1; }
-    rambox_dl="$(grep -Po '.*a href="\Khttp.*linux_64.*deb(?=".*$)' <<< "$page")" || { err "parsing rambox download link failed"; return 1; }
-    is_valid_url "$rambox_dl" || { err "[$rambox_dl] is not a valid download link"; return 1; }
-
-    report "fetching [$rambox_dl]"
-    execute "wget '$rambox_dl'" || { err "wgetting [$rambox_dl] failed."; return 1; }
-    tarball="$(find . -type f)"
-    [[ -f "$tarball" ]] || { err "couldn't find downloaded file"; return 1; }
-    execute "tar xzf '$tarball'" || { err "extracting [$tarball] failed."; return 1; }  # since file extension is unknown
-    execute "rm -- '$tarball'" || { err "removing [$tarball] failed"; return 1; }
-    dir="$(find . -mindepth 1 -maxdepth 1 -type d)"
-    [[ -d "$dir" ]] || { err "couldn't find unpacked rambox"; return 1; }
-    ver="$(basename -- "$dir")"
-    [[ -e "$inst_loc/installations/$ver" ]] && { report "[$ver] already exists, skipping"; return 0; }
-    [[ -d "$inst_loc/installations" ]] || execute "mkdir -p -- '$inst_loc/installations'" || { err "rambox dir creation failed"; return 1; }
-
-    mv -- "$dir" "$inst_loc/installations/"
-    execute "pushd -- $inst_loc" || return 1
-    clear_old_vers
-    [[ -h rambox ]] && rm -- rambox
-    create_link "installations/$ver/rambox" rambox
-    create_link "$inst_loc/rambox" "$HOME/bin/rambox"
-
-    execute "popd; popd"
-    execute "sudo rm -rf -- '$tmpdir'"
-
-    return 0
 }
 
 
@@ -6161,7 +6115,6 @@ __choose_prog_to_build() {
         install_copyq
         install_uhk_agent
         install_ddcutil
-        install_rambox
         install_slides
         install_seafile_cli
         install_seafile_gui
