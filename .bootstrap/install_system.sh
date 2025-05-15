@@ -25,10 +25,8 @@ readonly PWRLINE_FONTS_REPO_LOC='https://github.com/powerline/fonts'
 readonly POLYBAR_REPO_LOC='https://github.com/polybar/polybar.git'    # polybar
 readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - yeah.
 readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
-readonly KEEPASS_REPO_LOC='https://github.com/keepassx/keepassx.git'  # keepassX - open password manager forked from keepass project
 readonly GOFORIT_REPO_LOC='https://github.com/Manuel-Kehl/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
-readonly SYNERGY_REPO_LOC='https://github.com/symless/synergy-core.git'    # synergy - share keyboard&mouse between computers on same LAN
 readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
@@ -2407,7 +2405,6 @@ install_own_builds() {
     install_croc
     install_kanata
     install_eza
-    #install_synergy  # currently installing from repo
     install_i3
     #install_polybar  # currently installing from repo
     install_gruvbox_gtk_theme
@@ -3862,66 +3859,6 @@ install_webdev() {
     # this would install it globally; better install new local ver by
     # rbenv install <ver> && rbenv global <ver> && gem install rails
     #rb_install rails
-}
-
-
-# building instructions from https://github.com/symless/synergy-core/wiki/Compiling#linux
-# latest built binaries also avail from https://symless.com/synergy/downloads if you have licence
-#
-# note this FOSS fork:  https://github.com/debauchee/barrier which in turn was migrated to
-# https://github.com/input-leap/input-leap by its main contributors (see https://github.com/input-leap/input-leap/issues/1414);
-# it's unclear whether the latter will be _the_ location at this point.
-install_synergy() {
-    local tmpdir ver
-
-    readonly tmpdir="$TMP_DIR/synergy-build-${RANDOM}"
-
-    ver="$(get_git_sha "$SYNERGY_REPO_LOC")" || return 1
-    is_installed "$ver" synergy && return 2
-
-    report "installing synergy build dependencies..."
-    install_block '
-        build-essential
-        qtcreator
-        qtbase5-dev
-        qttools5-dev
-        cmake
-        make
-        xorg-dev
-        libssl-dev
-        libx11-dev
-        libsodium-dev
-        libgl1-mesa-glx
-        libegl1-mesa
-        libcurl4-openssl-dev
-        libavahi-compat-libdnssd-dev
-        qtdeclarative5-dev
-        libqt5svg5-dev
-        libsystemd-dev
-        libnotify-dev
-        libgdk-pixbuf2.0-dev
-        libglib2.0-dev
-    ' || { err 'failed to install build deps. abort.'; return 1; }
-
-    execute "git clone ${GIT_OPTS[*]} $SYNERGY_REPO_LOC $tmpdir" || return 1
-    execute "pushd $tmpdir" || return 1
-    #execute "git checkout v2-dev" || return 1  # see https://github.com/symless/synergy-core/wiki/Getting-Started
-    export BOOST_ROOT="$HOME/boost"  # TODO: unsure if this is needed
-
-    report "building synergy"
-    execute "mkdir build" || return 1
-    execute "pushd build" || return 1
-    execute "cmake .." || { err "[cmake ..] for synergy failed w/ $?"; return 1; }
-    execute "make" || { err "[make] for synergy failed w/ $?"; return 1; }
-    build_deb  synergy || err "build_deb for synergy failed"  # TODO: unsure if has to be ran from build/ or root dir;
-    #create_deb_install_and_store  synergy || { popd; return 1; }
-
-    execute "popd;popd"
-    execute "sudo rm -rf -- '$tmpdir'"
-
-    add_to_dl_log  synergy "$ver"
-
-    return 0
 }
 
 build_and_install_synergy_TODO_container_edition() {
@@ -6140,7 +6077,6 @@ __choose_prog_to_build() {
         install_delta
         install_dust
         install_peco
-        install_synergy
         install_dwm
         install_i3
         install_i3_deps
