@@ -16,7 +16,7 @@
 set -o pipefail
 shopt -s nullglob       # unmatching globs to expand into empty string/list instead of being left unexpanded
 
-readonly TMP_DIR='/tmp'
+readonly TMP_DIR='/tmp'  # TODO: deprecate
 readonly I3_REPO_LOC='https://github.com/i3/i3'
 readonly I3_LOCK_LOC='https://github.com/Raymo111/i3lock-color'       # i3lock-color
 readonly I3_LOCK_FANCY_LOC='https://github.com/meskarune/i3lock-fancy'    # i3lock-fancy
@@ -256,10 +256,10 @@ install_acpi_events() {
         [[ -d "$dir" ]] || continue
         for file in "$dir/"*; do
             [[ -f "$file" ]] || continue  # TODO: how to validate acpi event files? what are the rules?
-            tmpfile="$TMP_DIR/.acpi_setup-$(basename -- "$file")"
+            tmpfile="$TMP_DIR/.acpi_setup-$RANDOM"
             execute "cp -- '$file' '$tmpfile'" || return 1
             execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-            execute "sudo mv -- '$tmpfile' $acpi_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$acpi_target] failed w/ $?"; return 1; }
+            execute "sudo mv -- '$tmpfile' $acpi_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$acpi_target/] failed w/ $?"; return 1; }
         done
     done
 
@@ -288,10 +288,10 @@ setup_udev() {
         [[ -d "$dir" ]] || continue
         for file in "$dir/"*; do
             [[ -s "$file" && "$file" == *.rules ]] || continue  # note we require '.rules' suffix
-            tmpfile="$TMP_DIR/.udev_setup-$(basename -- "$file")"
+            tmpfile="$TMP_DIR/.udev_setup-$RANDOM"
             execute "cp -- '$file' '$tmpfile'" || return 1
             execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-            execute "sudo mv -- '$tmpfile' $udev_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$udev_target] failed w/ $?"; return 1; }
+            execute "sudo mv -- '$tmpfile' $udev_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$udev_target/] failed w/ $?"; return 1; }
         done
     done
 
@@ -327,7 +327,7 @@ setup_pm() {
 
             for file in "$pm_state_dir/"*; do
                 [[ -s "$file" ]] || continue
-                tmpfile="$TMP_DIR/.pm_setup-${RANDOM}-$(basename -- "$file")"
+                tmpfile="$TMP_DIR/.pm_setup-${RANDOM}"
                 execute "cp -- '$file' '$tmpfile'" || return 1
                 execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
                 execute "sudo mv -- '$tmpfile' $target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$target] failed w/ $?"; return 1; }
@@ -1820,7 +1820,7 @@ setup_global_bash_settings() {
     local global_bashrc global_profile ps1
 
     readonly global_bashrc='/etc/bash.bashrc'
-    readonly global_profile='/etc/profile'
+    readonly global_profile='/etc/profile.d'   # note this stuff might be sourced by other shells than Bournes (see https://unix.stackexchange.com/a/541585/47501); sourced by /etc/profile
     readonly ps1='PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} -eq 0 ]]; then echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033\[\033[0;31m\]\h"; else echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h"; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # own-ps1-def-marker'
 
     if ! sudo test -f "$global_bashrc"; then
@@ -1836,8 +1836,13 @@ setup_global_bash_settings() {
     ## add the script shell init glue code under /etc for convenience/global access:
     # note this one only covers _interactive_ shells...:
     grep -q 'global_init_marker$' "$global_bashrc" || execute "echo 'source /etc/.global-bash-init  # global_init_marker' | sudo tee --append $global_bashrc > /dev/null"
+
     # ...and this one only covers _non-interactive_ shells (note cron still isn't covered!)
-    grep -q 'global_init_marker$' "$global_profile" || execute "echo 'export BASH_ENV=/etc/.global-bash-init  # global_init_marker' | sudo tee --append $global_profile > /dev/null"
+    # (BASH_ENV is documented here: https://www.gnu.org/software/bash/manual/bash.html#index-BASH_005fENV)
+    # note we define & export BASH_ENV on separate files, as /etc/profile could be
+    # read bu other shells than Bournes (see https://unix.stackexchange.com/a/541585/47501)
+    [[ -d "$global_profile" ]] || { err "[$global_profile] is not a dir!"; return 1; }
+    execute "echo -e 'BASH_ENV=/etc/.global-bash-init  # global_init_marker\nexport BASH_ENV' | sudo tee $global_profile/bash-init-global.sh > /dev/null"
 }
 
 
@@ -5614,7 +5619,8 @@ install_from_repo() {
         colortest-python  # https://github.com/eikenb/terminal-colors
         geany  # GTK-based lightweight IDE
         libreoffice
-        zathura
+        zathura  # https://github.com/pwmt/zathura
+        #mupdf  # more featureful pdf viewer
         feh  # TODO x11; TODO: wallpaper_changer.sh dependency; https://github.com/derf/feh/ (mirror)
         nsxiv  # TODO: x11
         geeqie  # GTK-based image/gallery viewer
