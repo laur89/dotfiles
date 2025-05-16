@@ -1818,6 +1818,7 @@ setup_private_asset_perms() {
     for i in \
             ~/.ssh \
             ~/.netrc \
+            ~/.electrum \
             ~/.gcalclirc \
             ~/.gcalcli_oauth \
             ~/.msmtprc \
@@ -2442,7 +2443,6 @@ install_own_builds() {
     #install_hblock
     install_open_eid
     install_binance
-    #install_exodus_wallet
     install_electrum_wallet
     install_revanced
     install_apkeditor
@@ -6155,7 +6155,6 @@ __choose_prog_to_build() {
         install_hblock
         install_open_eid
         install_binance
-        install_exodus_wallet
         install_electrum_wallet
         install_revanced
         install_apkeditor
@@ -6613,25 +6612,6 @@ install_open_eid() {
 # https://www.binance.com/en/download
 install_binance() {
     install_from_url  binance 'https://ftp.binance.com/electron-desktop/linux/production/binance-amd64-linux.deb'
-}
-
-
-# Exodus crypto wallet: https://www.exodus.com/download/
-# TODO: find out how to grep download url in one go
-# TODO: exodus, like atomic, are closed source!
-#
-# alternatives:
-# - Atomic wallet (https://atomicwallet.io/downloads) - note direct link to debian asset is https://atomicwallet.io/download/atomicwallet.deb
-# - https://github.com/spesmilo/electrum (should be more trusted?)
-    # - https://electrum.org/#download
-install_exodus_wallet() {
-    local loc page ver
-
-    loc='https://www.exodus.com/download/'
-    page="$(wget "$loc" -q --user-agent="$USER_AGENT" -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
-    ver="$(grep -Po '.*a href="https://downloads.exodus.com/releases/hashes-exodus-\K[-.0-9]+(?=\.txt)' <<< "$page")"
-
-    install_from_url  exodus "https://downloads.exodus.com/releases/exodus-linux-x64-${ver}.deb"
 }
 
 
