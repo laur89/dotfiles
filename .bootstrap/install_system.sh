@@ -743,6 +743,9 @@ setup_apt() {
     # config located at apt/apt.conf.d/20auto-upgrades; you should go with either,
     # not both (see the debian wiki link), ie it might be best to remove 20auto-upgrades; TODO: do it maybe automatically?
     # if both it and 02periodic exist;
+    # # TODO 2: according to
+    # https://wiki.debian.org/UnattendedUpgrades#Modifying_download_and_upgrade_schedules_.28on_systemd.29,
+    # we _might_ need to install periodic, as systemd timers are already doing _something_
     #
     # copy to apt.conf.d/:
     for file in \
@@ -5452,7 +5455,7 @@ install_from_repo() {
         apt-show-versions
         apt-xapian-index  # TODO: package no more?
         unattended-upgrades  # automatic installation of security upgrades
-        apt-listchanges  # compare a new version of a package with the one currently installed and show what has been changed
+        apt-listchanges  # compare a new version of a package with the one currently installed and show what has been changed; TODO: we haven't provided configuration for it!
         sudo  # https://github.com/sudo-project/sudo
         libnotify-bin  # sends desktop notifications to a notification daemon; provides notify-send
         dunst  # notification-daemon; https://dunst-project.org/
