@@ -2442,7 +2442,8 @@ install_own_builds() {
     #install_hblock
     install_open_eid
     install_binance
-    install_exodus_wallet
+    #install_exodus_wallet
+    install_electrum_wallet
     install_revanced
     install_apkeditor
 
@@ -6155,6 +6156,7 @@ __choose_prog_to_build() {
         install_open_eid
         install_binance
         install_exodus_wallet
+        install_electrum_wallet
         install_revanced
         install_apkeditor
         install_vbox_guest
@@ -6616,8 +6618,12 @@ install_binance() {
 
 # Exodus crypto wallet: https://www.exodus.com/download/
 # TODO: find out how to grep download url in one go
+# TODO: exodus, like atomic, are closed source!
 #
-# another alternative would be Atomic wallet (https://atomicwallet.io/downloads) - note direct link to debian asset is https://atomicwallet.io/download/atomicwallet.deb
+# alternatives:
+# - Atomic wallet (https://atomicwallet.io/downloads) - note direct link to debian asset is https://atomicwallet.io/download/atomicwallet.deb
+# - https://github.com/spesmilo/electrum (should be more trusted?)
+    # - https://electrum.org/#download
 install_exodus_wallet() {
     local loc page ver
 
@@ -6626,6 +6632,20 @@ install_exodus_wallet() {
     ver="$(grep -Po '.*a href="https://downloads.exodus.com/releases/hashes-exodus-\K[-.0-9]+(?=\.txt)' <<< "$page")"
 
     install_from_url  exodus "https://downloads.exodus.com/releases/exodus-linux-x64-${ver}.deb"
+}
+
+
+# https://electrum.org/#download
+# https://github.com/spesmilo/electrum
+# - old reddit post w/ recommended wallets: https://www.reddit.com/r/Bitcoin/comments/f6ahfx/best_mobile_wallets_for_btc_non_kyc_preferred/fi4i9t4/
+install_electrum_wallet() {
+    local url
+
+    url="$(curl -Lsf --retry 2 'https://electrum.org/#download' \
+        | grep -Po '<a href="\Khttps://download\.electrum\.org/[0-9.]+/electrum-[0-9.]+-x86_64.AppImage(?=">Appimage</a>)')"
+
+    is_valid_url "$url" || { err "[$url] is not a valid download link"; return 1; }
+    install_from_url  electrum "$url" || return 1
 }
 
 
