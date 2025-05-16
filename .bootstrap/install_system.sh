@@ -1823,10 +1823,7 @@ setup_global_bash_settings() {
     readonly global_profile='/etc/profile.d'   # note this stuff might be sourced by other shells than Bournes (see https://unix.stackexchange.com/a/541585/47501); sourced by /etc/profile
     readonly ps1='PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} -eq 0 ]]; then echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033\[\033[0;31m\]\h"; else echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h"; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # own-ps1-def-marker'
 
-    if ! sudo test -f "$global_bashrc"; then
-        err "[$global_bashrc] doesn't exist; cannot modify it!"
-        return 1
-    fi
+    sudo test -f "$global_bashrc" || { err "[$global_bashrc] doesn't exist; cannot modify it!"; return 1; }
 
     ## setup prompt:
     # just in case first delete previous global PS1 def:
@@ -1835,7 +1832,8 @@ setup_global_bash_settings() {
 
     ## add the script shell init glue code under /etc for convenience/global access:
     # note this one only covers _interactive_ shells...:
-    grep -q 'global_init_marker$' "$global_bashrc" || execute "echo 'source /etc/.global-bash-init  # global_init_marker' | sudo tee --append $global_bashrc > /dev/null"
+    execute "sudo sed -i --follow-symlinks '/^source .*global_init_marker$/d' '$global_bashrc'"
+    execute "echo 'source /etc/.global-bash-init  # global_init_marker' | sudo tee --append $global_bashrc > /dev/null"
 
     # ...and this one only covers _non-interactive_ shells (note cron still isn't covered!)
     # (BASH_ENV is documented here: https://www.gnu.org/software/bash/manual/bash.html#index-BASH_005fENV)
