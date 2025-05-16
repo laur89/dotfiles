@@ -993,7 +993,7 @@ _install_nfs_client_stationary() {
     done
 
     # force fstab reload & mount the new remote share(s):
-    [[ "$changed" -eq 1 ]] && execute 'sudo systemctl daemon-reload' && execute "sudo systemctl restart remote-fs.target local-fs.target"
+    [[ "$changed" == 1 ]] && execute 'sudo systemctl daemon-reload' && execute "sudo systemctl restart remote-fs.target local-fs.target"
 
     return 0
 }
@@ -1031,7 +1031,7 @@ _install_nfs_client_laptop() {
         changed=1
     done
 
-    [[ "$changed" -eq 1 ]] && execute 'sudo service autofs reload'
+    [[ "$changed" == 1 ]] && execute 'sudo service autofs reload'
 
     return 0
 }
@@ -6872,14 +6872,14 @@ configure_updatedb() {
     local exe conf paths line i modified
 
     exe='/etc/cron.daily/locate'  # cron task that executes updatedb
-    conf='/etc/updatedb.findutils.cron.local'  # file customizing $exe
-    paths=('/mnt')  # paths to be added to PRUNEPATHS definition
+    conf='/etc/updatedb.findutils.cron.local'  # file customizing $exe; note it's sourced by $exe itself
+    paths=(/mnt /media)  # paths to be added to PRUNEPATHS definition
 
     [[ -x "$exe" ]] || { err "[$exe] not found or not an executable"; return 1; }
-    grep -Fq "$conf" "$exe" || { err "[$conf] not referenced in [$exe]!"; return 1; }
+    grep -Fq "$conf" "$exe" || { err "[$conf] not referenced in [$exe]!"; return 1; }  # sanity
 
     [[ -f "$conf" ]] && grep -q '^PRUNEPATHS=' "$conf" && i="$conf" || i="$exe"
-    # raw value from within quotes:
+    # extract the value between quotes:
     line="$(grep -Po '^PRUNEPATHS="\K.*(?="$)' "$i")" || { err "no PRUNEPATHS found in [$i]"; return 1; }
 
     for i in "${paths[@]}"; do
@@ -6889,7 +6889,7 @@ configure_updatedb() {
     done
 
     if [[ -n "$modified" ]]; then
-        [[ -f "$conf" ]] && execute "sudo sed -i --follow-symlinks '/^PRUNEPATHS=.*$/d' '$conf'"  # nuke previous setting
+        [[ -s "$conf" ]] && execute "sudo sed -i --follow-symlinks '/^PRUNEPATHS=.*$/d' '$conf'"  # nuke previous setting
         execute "echo 'PRUNEPATHS=\"$line\"' | sudo tee --append $conf > /dev/null"
     fi
 }
