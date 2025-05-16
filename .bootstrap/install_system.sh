@@ -3798,17 +3798,6 @@ install_dust() {  # https://github.com/bootandy/dust
 }
 
 
-# note skype is also available as a snap (sudo snap install skype), tho the snap version seemed tad buggy/unstable
-# !!! as of Dec '23 deb/rpm pkgs no longer distributed, only snap is avail: https://www.reddit.com/r/skype/comments/1861hvo/skype_for_linux_distribution_method_change/
-# !!! skype sunset as of May '25
-install_skype() {  # https://wiki.debian.org/skype
-                   # https://www.skype.com/en/get-skype/
-
-    #this url, that resolves to the one below, doesn't support --head: https://go.skype.com/skypeforlinux-64.deb
-    install_from_url skype 'https://repo.skype.com/latest/skypeforlinux-64.deb'
-}
-
-
 # https://asdf-vm.com/guide/getting-started.html
 # node (and others) version manager
 # alternatives:
@@ -6111,7 +6100,6 @@ __choose_prog_to_build() {
         install_i3lock_fancy
         install_betterlockscreen
         install_polybar
-        install_skype
         install_saml2aws
         install_aia
         install_kustomize
