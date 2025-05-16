@@ -237,7 +237,7 @@ check_dependencies() {
 
 
 install_acpi_events() {
-    local file dir  acpi_target  acpi_src  tmpfile
+    local file dir  acpi_target  acpi_src  tmpfile outf
 
     readonly acpi_target='/etc/acpi/events'
     acpi_src=(
@@ -259,7 +259,10 @@ install_acpi_events() {
             tmpfile="$TMP_DIR/.acpi_setup-$RANDOM"
             execute "cp -- '$file' '$tmpfile'" || return 1
             execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-            execute "sudo mv -- '$tmpfile' $acpi_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$acpi_target/] failed w/ $?"; return 1; }
+
+            outf="$acpi_target/$(basename -- "$file")"
+            [[ -f "$outf" ]] && sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
+            execute "sudo mv -- '$tmpfile' $outf" || { err "moving [$tmpfile] to [$outf] failed w/ $?"; return 1; }
         done
     done
 
@@ -268,7 +271,7 @@ install_acpi_events() {
 
 
 setup_udev() {
-    local udev_src udev_target file dir tmpfile
+    local udev_src udev_target file dir tmpfile outf
 
     readonly udev_target='/etc/udev/rules.d'
     udev_src=(
@@ -291,7 +294,10 @@ setup_udev() {
             tmpfile="$TMP_DIR/.udev_setup-$RANDOM"
             execute "cp -- '$file' '$tmpfile'" || return 1
             execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-            execute "sudo mv -- '$tmpfile' $udev_target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$udev_target/] failed w/ $?"; return 1; }
+
+            outf="$udev_target/$(basename -- "$file")"
+            [[ -f "$outf" ]] && sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
+            execute "sudo mv -- '$tmpfile' $outf" || { err "moving [$tmpfile] to [$outf] failed w/ $?"; return 1; }
         done
     done
 
@@ -302,7 +308,7 @@ setup_udev() {
 
 
 setup_pm() {
-    local pm_src pm_target file dir pm_state_dir tmpfile target
+    local pm_src pm_target file dir pm_state_dir tmpfile target outf
 
     readonly pm_target='/etc/pm'
     pm_src=(
@@ -330,7 +336,10 @@ setup_pm() {
                 tmpfile="$TMP_DIR/.pm_setup-${RANDOM}"
                 execute "cp -- '$file' '$tmpfile'" || return 1
                 execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-                execute "sudo mv -- '$tmpfile' $target/$(basename -- "$file")" || { err "moving [$tmpfile] to [$target] failed w/ $?"; return 1; }
+
+                outf="$target/$(basename -- "$file")"
+                [[ -f "$outf" ]] && sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
+                execute "sudo mv -- '$tmpfile' $outf" || { err "moving [$tmpfile] to [$outf] failed w/ $?"; return 1; }
             done
         done
     done
@@ -388,7 +397,7 @@ setup_mail() {
 
 #
 setup_needrestart() {
-    local src_dirs target_confdir file dir tmpfile filename
+    local src_dirs target_confdir file dir tmpfile filename outf
 
     readonly target_confdir='/etc/needrestart/conf.d'
     src_dirs=(
@@ -414,7 +423,10 @@ setup_needrestart() {
 
             execute "cp -- '$file' '$tmpfile'" || { err "copying needrestart file [$file] failed"; continue; }
             execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || { err "sed-ing needrestart file [$file] failed"; continue; }
-            execute "sudo mv -- '$tmpfile' $target_confdir/$filename" || { err "moving [$tmpfile] to [$target_confdir] failed"; continue; }
+
+            outf="$target_confdir/$filename"
+            [[ -f "$outf" ]] && sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
+            execute "sudo mv -- '$tmpfile' $outf" || { err "moving [$tmpfile] to [$outf] failed"; continue; }
         done
     done
 }
@@ -479,9 +491,9 @@ setup_systemd() {
     if ! [[ -d "$global_sysd_target" ]]; then
         err "[$global_sysd_target] is not a dir; skipping systemd file(s) installation."
         return 1
+    elif ! [[ -d "$usr_sysd_target" ]]; then
+        mkdir -p "$usr_sysd_target" || { err "mkdir -p [$usr_sysd_target] failed w/ $?"; return 1; }
     fi
-
-    [[ -d "$usr_sysd_target" ]] || mkdir -p "$usr_sysd_target" || { err "mkdir [$usr_sysd_target] failed w/ $?"; return 1; }
 
     __var_expand_move() {
         local sudo in outf tmpfile
@@ -520,7 +532,6 @@ setup_systemd() {
                     execute "${sudo:+sudo }systemctl ${usr:+--user }enable '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd service [$fname] failed w/ [$?]"; continue; }
                 fi
             elif [[ -d "$node" && "$node" == *.d ]]; then
-                # now migrate the optional per-service configs/overrides from service.d/ dir:
                 t="$tdir/$fname"
                 for f in "$node/"*; do
                     [[ -s "$f" && "$f" == *.conf ]] || continue  # note we require certain suffix
