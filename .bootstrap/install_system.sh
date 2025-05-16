@@ -6801,7 +6801,7 @@ install_setup_printing() {
         confirm "we're not native, sure you want to install printing stack?" || return
     fi
 
-    install_block "$(eval echo "\${$pkgs[@]}")" || return 1
+    install_block "${pkgs[*]}" || return 1
 
     [[ -f "$conf_file" ]] || { err "cannot configure cupsd: [$conf_file] does not exist; abort;"; return 1; }
 
