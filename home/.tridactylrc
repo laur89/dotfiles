@@ -27,6 +27,8 @@ bindurl reddit.com gu urlparent 3
 " Make gu take you back to project root: (see https://github.com/tridactyl/tridactyl/discussions/5208)
 alias urlparent_fromroot js -p let u=tri.excmds.urlmodify_js("-g",JS_ARG||0,""); u.hash=""; window.location.href=u.href
 bindurl ^https:\/\/github\.com\/([^/]+\/){3} gu urlparent_fromroot 2
+bindurl ^https:\/\/codeberg\.org\/([^/]+\/){3} gu urlparent_fromroot 2
+bindurl ^https:\/\/gitlab\.freedesktop\.org\/([^/]+\/){3} gu urlparent_fromroot 2
 " ...or without alias:
 "bindurl ^https:\/\/github\.com\/([^/]+\/){3} gu js window.location.href=window.location.href.match(/^https:\/\/github\.com\/([^/]+\/){2}/)[0]
 
