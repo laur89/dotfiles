@@ -714,7 +714,7 @@ setup_sudoers() {
 
 # https://wiki.debian.org/UnattendedUpgrades for unattended-upgrades setup
 setup_apt() {
-    local apt_dir file
+    local apt_dir file t
 
     readonly apt_dir='/etc/apt'
 
@@ -751,7 +751,9 @@ setup_apt() {
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
         [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it"; continue; }
-        execute "sudo cp -- '$file' '$apt_dir/apt.conf.d'"
+        t="$apt_dir/apt.conf.d/$(basename -- "$file")"
+        [[ -f "$t" ]] && cmp -s "$file" "$t" && continue  # no changes
+        execute "sudo cp -- '$file' '$t'"
     done
 
     retry 2 "sudo apt-get --allow-releaseinfo-change  -y update" || err "apt-get update failed with $?"
@@ -764,11 +766,12 @@ setup_apt() {
 
 
 # symlinked crontabs don't work!
+# TODO: deprecate crontab & move to systemd timers?
 setup_crontab() {
-    local cron_dir weekly_crondir tmpfile file i
+    local cron_dir weekly_crondir tmpfile file i t
 
     readonly cron_dir='/etc/cron.d'  # where crontab will be installed at
-    readonly tmpfile="$TMP_DIR/crontab"
+    readonly tmpfile="$TMP_DIR/.crontab-$RANDOM"
     readonly file="$PRIVATE__DOTFILES/backups/crontab"
     readonly weekly_crondir='/etc/cron.weekly'
 
@@ -780,8 +783,12 @@ setup_crontab() {
     if [[ -f "$file" ]]; then
         execute "cp -- '$file' '$tmpfile'" || return 1
         execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-        #backup_original_and_copy_file --sudo "$tmpfile" "$cron_dir"  # don't create backup - dont wanna end up with 2 crontabs
-        execute "sudo cp -- '$tmpfile' '$cron_dir'"
+
+        t="$cron_dir/$(basename -- "$file")"
+        if [[ -f "$t" ]] && ! cmp -s "$tmpfile" "$t"; then
+            #backup_original_and_copy_file --sudo "$tmpfile" "$cron_dir"  # don't create backup - dont wanna end up with 2 crontabs
+            execute "sudo cp -- '$tmpfile' '$t'"  # TODO: consider cat-ing to safeguard against links
+        fi
 
         execute "rm -- '$tmpfile'"
     else
@@ -802,7 +809,9 @@ setup_crontab() {
             fi
 
             #create_link -s "$i" "${weekly_crondir}/"  # linked crontabs don't work!
-            execute "sudo cp -- '$i' '$weekly_crondir'" || continue
+            t="$weekly_crondir/$(basename -- "$i")"
+            [[ -f "$t" ]] && cmp -s "$i" "$t" && continue  # no changes
+            execute "sudo cp -- '$i' '$t'"  # TODO: consider cat-ing to safeguard against links
         done
     fi
 }
@@ -6782,11 +6791,12 @@ setup_mopidy() {
 # note our configured printers are stored in /etc/cups/printers.conf  !
 # see also https://github.com/openprinting/cups
 install_setup_printing() {
-    local conf_file conf2 group should_restart pkgs
+    local conf_file conf2 group pkgs
 
     readonly conf_file='/etc/cups/cupsd.conf'
     readonly conf2='/etc/cups/cups-files.conf'
-    should_restart=0
+
+    is_native || confirm "we're not native, sure you want to install printing stack?" || return
 
     pkgs=(
         cups
@@ -6796,10 +6806,6 @@ install_setup_printing() {
         system-config-printer  # graphical interface to configure the printing system; https://github.com/OpenPrinting/system-config-printer
         #avahi-utils  # allows programs to publish and discover services and hosts running on a local network with no specific configuration. For example you can plug into a network and instantly find printers to print to
     )
-
-    if ! is_native; then
-        confirm "we're not native, sure you want to install printing stack?" || return
-    fi
 
     install_block "${pkgs[*]}" || return 1
 
@@ -6812,7 +6818,7 @@ install_setup_printing() {
     elif ! grep -Eq '^DefaultAuthType\s+None' "$conf_file"; then  # hasn't been changed yet
         execute "sudo sed -i --follow-symlinks 's/^DefaultAuthType/#DefaultAuthType/g' $conf_file"  # comment out existing value
         execute "echo 'DefaultAuthType None' | sudo tee --append '$conf_file' > /dev/null"
-        should_restart=1
+        execute 'sudo service cups restart'
     fi
 
     # add our user to a group so we're allowed to modify printers & whatnot: {{{
@@ -6824,8 +6830,6 @@ install_setup_printing() {
     list_contains "$group" root sys && { err "found cups SystemGroup is [$group] - verify we want to be added to that group"; return 1; }  # failsafe for not adding oursevles to root or sys groups
     add_to_group "$group"
     # }}}
-
-    [[ "$should_restart" -eq 1 ]] && execute 'sudo service cups restart'
 }
 
 
