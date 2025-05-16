@@ -500,34 +500,33 @@ setup_systemd() {
     }
 
     __process() {
-        local usr sudo dir tdir file fname indir t fname
+        local usr sudo dir tdir node fname t fname f
         sudo='--sudo'
 
         [[ "$1" == --user ]] && { readonly usr=TRUE; unset sudo; shift; }
         readonly dir="$1"; readonly tdir="$2"  # indir, target_dir
 
         [[ -d "$dir" ]] || return 1
-        for file in "$dir/"*; do
-            [[ -f "$file" && "$file" =~ \.(service|target|unit)$ ]] || continue  # note we require certain suffixes
-            fname="$(basename -- "$file")"
+        for node in "$dir/"*; do
+            fname="$(basename -- "$node")"
             fname="${fname/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
-            __var_expand_move $sudo "$file" "$tdir/$fname" || continue
 
-            # now migrate the optional per-service configs/overrides from service.d/ dir:
-            indir="${file}.d"
-            if [[ -d "$indir" ]]; then
-                t="$tdir/${fname}.d"
-                for file in "$indir/"*; do  # note we override original $file here
-                    [[ -s "$file" && "$file" == *.conf ]] || continue  # note we require certain suffix
-                    [[ -d "$t" ]] || mkdir -- "$t" || { err "[mkdir $t] failed w/ $?"; continue; }
-                    __var_expand_move $sudo "$file" "$t/$(basename -- "$file")" || continue
+            if [[ -f "$node" && "$node" =~ \.(service|target|unit)$ ]]; then  # note we require certain suffixes
+                __var_expand_move $sudo "$node" "$tdir/$fname" || continue
+
+                # note do not use the '--now' flag with systemctl enable, nor execute systemctl start,
+                # as some service files might be listening on something like target.sleep - those shouldn't be started on-demand like that!
+                if [[ "$fname" == *.service ]]; then
+                    execute "${sudo:+sudo }systemctl ${usr:+--user }enable '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd service [$fname] failed w/ [$?]"; continue; }
+                fi
+            elif [[ -d "$node" && "$node" == *.d ]]; then
+                # now migrate the optional per-service configs/overrides from service.d/ dir:
+                t="$tdir/$fname"
+                for f in "$node/"*; do
+                    [[ -s "$f" && "$f" == *.conf ]] || continue  # note we require certain suffix
+                    [[ -d "$t" ]] || ${sudo:+sudo} mkdir -- "$t" || { err "[${sudo:+sudo }mkdir $t] failed w/ $?"; continue; }
+                    __var_expand_move $sudo "$f" "$t/$(basename -- "$f")" || continue
                 done
-            fi
-
-            # note do not use the '--now' flag with systemctl enable, nor execute systemctl start,
-            # as some service files might be listening on something like target.sleep - those shouldn't be started on-demand like that!
-            if [[ "$fname" == *.service ]]; then
-                execute "${sudo:+sudo }systemctl ${usr:+--user }enable '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd service [$fname] failed w/ [$?]"; continue; }
             fi
         done
     }
