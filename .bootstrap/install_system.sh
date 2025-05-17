@@ -2094,13 +2094,13 @@ EOF
 setup_additional_apt_keys_and_sources() {
 
     # mopidy: (from https://docs.mopidy.com/en/latest/installation/debian/):
-    # deb-line is from https://apt.mopidy.com/${DEB_OLDSTABLE}.list:
-    create_apt_source  mopidy  https://apt.mopidy.com/mopidy.gpg  https://apt.mopidy.com/ $DEB_OLDSTABLE 'main contrib non-free'
+    # deb-line is from https://apt.mopidy.com/bookworm.sources:
+    create_apt_source  mopidy  https://apt.mopidy.com/mopidy-archive-keyring.gpg  https://apt.mopidy.com/ $DEB_STABLE 'main contrib non-free'
 
     # docker:  (from https://docs.docker.com/engine/install/debian/):
     # note we have to use hard-coded stable codename instead of 'testing' or testing codename,
     # as https://download.docker.com/linux/debian/dists/ doesn't have 'em;
-    create_apt_source -a  docker  https://download.docker.com/linux/debian/gpg  https://download.docker.com/linux/debian/ $DEB_STABLE stable
+    create_apt_source -a  docker  https://download.docker.com/linux/debian/gpg  https://download.docker.com/linux/debian/ trixie stable
 
     # spotify: (from https://www.spotify.com/es/download/linux/):
     # consider also https://github.com/SpotX-Official/SpotX-Bash to patch the client
@@ -2112,9 +2112,9 @@ setup_additional_apt_keys_and_sources() {
     #create_apt_source -a  seafile  https://linux-clients.seafile.com/seafile.asc  https://linux-clients.seafile.com/seafile-deb/$DEB_OLDSTABLE/ stable main
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
-    create_apt_source  charles  https://www.charlesproxy.com/packages/apt/PublicKey  https://www.charlesproxy.com/packages/apt/ charles-proxy main
+    create_apt_source  charles  https://www.charlesproxy.com/packages/apt/charles-repo.asc  https://www.charlesproxy.com/packages/apt/ charles-proxy main
 
-    # terraform:  (from https://www.terraform.io/downloads):
+    # terraform:  (from https://developer.hashicorp.com/terraform/install#linux):
     # note there's open-source terraform fork  OpenTofu
     create_apt_source -a  terraform  https://apt.releases.hashicorp.com/gpg  https://apt.releases.hashicorp.com/ $DEB_STABLE main
 
@@ -2944,6 +2944,7 @@ install_xournalpp() {  # https://github.com/xournalpp/xournalpp
 
 
 # ueberzug drop-in replacement written in c++
+# also avail via brew
 install_ueberzugpp() {  # https://github.com/jstkdng/ueberzugpp
     local deb
 
@@ -5724,7 +5725,7 @@ install_from_repo() {
         docker-buildx-plugin
         docker-compose-plugin
         mitmproxy  # SSL-capable man-in-the-middle HTTP proxy; https://github.com/mitmproxy/mitmproxy
-        #charles-proxy
+        #charles-proxy5  # note also avail as tarball @ https://www.charlesproxy.com/download/
         terraform
         gh  # github cli
     )
