@@ -3564,6 +3564,7 @@ install_alacritty() {
 
 
 # other terms to consider: kitty
+# avail as flatpak: https://flathub.org/apps/org.wezfurlong.wezterm
 install_wezterm() {
     pass # TODO
 }
@@ -5239,6 +5240,7 @@ install_fonts() {
 
     report "installing fonts..."
 
+    # TODO: many x11 fonts!
     install_block '
         fonts-noto
         fonts-noto-color-emoji
@@ -5391,7 +5393,7 @@ install_from_repo() {
         pm-utils  # utilities and scripts for power management
         ntfs-3g
         kdeconnect
-        erlang
+        #erlang  # avail in mise
         cargo  # Rust package manager
         acpid  # Advanced Configuration and Power Interface event daemon
         lm-sensors  # utilities to read temperature/voltage/fan sensors; https://github.com/hramrach/lm-sensors
@@ -5433,7 +5435,7 @@ install_from_repo() {
         alsa-utils  # Utilities for configuring and using ALSA, e.g. alsactl, alsamixer, amixer, aplay...
         pipewire
         pipewire-audio  # recommended set of PipeWire packages for a standard audio desktop use
-        easyeffects  # Audio effects for PipeWire applications; https://github.com/wwmm/easyeffects
+        easyeffects  # Audio effects for PipeWire applications; https://github.com/wwmm/easyeffects; TODO: avail as flatpak
         pulsemixer  # https://github.com/GeorgeFilipkin/pulsemixer
         pasystray  # PulseAudio controller for the system tray; should work w/ pipewire
         ca-certificates
@@ -5516,6 +5518,7 @@ install_from_repo() {
         ncdu  # ncurses disk usage viewer
         pydf  # fully colourised df(1)-clone written in Python; https://github.com/garabik/pydf - or perhaps https://salsa.debian.org/salvage-team/pydf/ - see https://github.com/garabik/pydf/issues/9 ??
         nethogs  # small 'net top' tool. Instead of breaking the traffic down per protocol or per subnet, like most tools do, it groups bandwidth by process; https://github.com/raboof/nethogs
+        #vnstat  # console-based network traffic monitor; keeps a log of daily network traffic for the selected interface
         #nload  # monitors network traffic and bandwidth usage in real time.
         #iftop  # displays bandwidth usage information on an network interface
         #arp-scan  # uses the ARP protocol to discover and fingerprint IP hosts on the local network; https://github.com/royhills/arp-scan
@@ -5609,9 +5612,9 @@ install_from_repo() {
         #audacity  # TODO: there was a takeover by muse group, see https://hackaday.com/2021/07/13/muse-group-continues-tone-deaf-handling-of-audacity/
                    # was forked, see https://codeberg.org/tenacityteam/tenacity
         mpv  # video player based on MPlayer/mplayer2; https://mpv.io/
-        kdenlive  # video editor
+        kdenlive  # video editor; TODO: avail as flatpak
         frei0r-plugins  # https://github.com/dyne/frei0r ; collection of free and open source video effects plugins
-        gimp
+        gimp  # TODO: avail as flatpak
         xss-lock  # TODO: x11!
         #filezilla
         #transmission
@@ -5621,14 +5624,14 @@ install_from_repo() {
     )
 
     declare -ar block3=(
-        firefox
+        firefox  # TODO: avail as flatpak (does native messaging work tho?)
         buku  # CLI bookmark manager; https://github.com/jarun/Buku
         chromium
         chromium-sandbox  # TODO: doucment what's this about
         rxvt-unicode  # https://cvs.schmorp.de/rxvt-unicode/
         colortest-python  # https://github.com/eikenb/terminal-colors
         geany  # GTK-based lightweight IDE
-        libreoffice
+        libreoffice  # TODO: avail as flatpak
         zathura  # https://github.com/pwmt/zathura
         #mupdf  # more featureful pdf viewer
         feh  # TODO x11; TODO: wallpaper_changer.sh dependency; https://github.com/derf/feh/ (mirror)
@@ -5636,7 +5639,7 @@ install_from_repo() {
         geeqie  # GTK-based image/gallery viewer
         gthumb  # gnome image viewer
         imagemagick
-        inkscape  # vector-based drawing program
+        inkscape  # vector-based drawing program  # TODO: avail as flatpak
         xsel  # TODO: x11
         wmctrl  # CLI tool to interact with an EWMH/NetWM compatible X Window Manager; TODO: x11; wayland alternative might be wlrctl
         polybar  # TODO: x11
@@ -5651,7 +5654,7 @@ install_from_repo() {
         flameshot  # https://flameshot.org/
         ffmpeg
         ffmpegthumbnailer  # lightweight video thumbnailer that can be used by file managers to create thumbnails for your video files;  https://github.com/dirkvdb/ffmpegthumbnailer
-        vokoscreen-ng  # https://github.com/vkohaupt/vokoscreenNG
+        vokoscreen-ng  # https://github.com/vkohaupt/vokoscreenNG  # TODO: avail as flatpak
         peek  # simple screen recorder. It is optimized for generating animated GIFs; https://github.com/phw/peek; TODO: avail on flathub
         cheese  # webcam/camera tester; https://wiki.gnome.org/Apps/Cheese
         #screenkey  # displays used keys; TODO: x11
@@ -5670,18 +5673,18 @@ install_from_repo() {
         bitlbee  # IRC to other chat networks gateway; http://www.bitlbee.org/
         bitlbee-libpurple  # This package contains a version of BitlBee that uses the libpurple instant messaging library instead of built-in code, which adds support for more IM protocols (all protocols supported by Pidgin/Finch)
         purple-discord  # libpurple/Pidgin plugin for Discord
-        nheko  # Qt-based chat client for Matrix
+        nheko  # Qt-based chat client for Matrix  # TODO: avail as flatpak
         signal-desktop
         signald  # note this doesn't come from debian repos
         #lxrandr  # GUI application for the Lightweight X11 Desktop Environment (LXDE); TODO: x11!
         arandr  # visual front end for XRandR; TODO: x11
         autorandr  # TODO: x11
-        copyq
+        copyq  # TODO: avail as flatpak
         copyq-plugins
         #googler  # Google Site Search from the terminal; https://github.com/oksiquatzel/googler  # TODO: looks like it's broken: https://github.com/oksiquatzel/googler/issues/7
-        msmtp
-        msmtp-mta
-        thunderbird
+        msmtp  # msmtp is an SMTP client that can be used to send mails from Mutt and probably other MUAs (mail user agents)
+        msmtp-mta  # This package is compiled with SASL and TLS/SSL support
+        #thunderbird  # TODO: avail as flatpak
         neomutt
         notmuch
         abook  # ncurses address book application; to be used w/ mutt
@@ -5768,7 +5771,7 @@ install_from_repo() {
             ruby-dev
         '
 
-        # remmina is remote desktop for windows; rdesktop, remote vnc;
+        # remmina is remote desktop for windows; rdesktop, remote vnc; TODO: avail as flatpak
     fi
 
     if is_virtualbox; then
@@ -8101,6 +8104,10 @@ exit
 #  - https://github.com/jarun/nnn
 #  - https://github.com/dylanaraps/fff - bash file mngr
 #  - https://github.com/gokcehan/lf    - go-based ranger-alike
+#
+#  TODO:
+#  - replace cron w/ systemd timers
+#  - replace docker w/ podman
 #
 #
 # list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/
