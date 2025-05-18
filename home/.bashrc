@@ -122,6 +122,7 @@ fi
 # good source http://tldp.org/LDP/abs/html/sample-bashrc.html
 #
 #
+#umask 0077  # rw by owner alone -- should be set via systemd conf instead!
 
 ##########################################
 # shell opts:
