@@ -261,7 +261,7 @@ install_acpi_events() {
             execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
 
             outf="$acpi_target/$(basename -- "$file")"
-            [[ -f "$outf" ]] && sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
+            sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
             execute "sudo mv -- '$tmpfile' $outf" || { err "moving [$tmpfile] to [$outf] failed w/ $?"; return 1; }
         done
     done
@@ -296,7 +296,7 @@ setup_udev() {
             execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
 
             outf="$udev_target/$(basename -- "$file")"
-            [[ -f "$outf" ]] && sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
+            sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
             execute "sudo mv -- '$tmpfile' $outf" || { err "moving [$tmpfile] to [$outf] failed w/ $?"; return 1; }
         done
     done
@@ -338,7 +338,7 @@ setup_pm() {
                 execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
 
                 outf="$target/$(basename -- "$file")"
-                [[ -f "$outf" ]] && sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
+                sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
                 execute "sudo mv -- '$tmpfile' $outf" || { err "moving [$tmpfile] to [$outf] failed w/ $?"; return 1; }
             done
         done
@@ -425,7 +425,7 @@ setup_needrestart() {
             execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || { err "sed-ing needrestart file [$file] failed"; continue; }
 
             outf="$target_confdir/$filename"
-            [[ -f "$outf" ]] && sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
+            sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
             execute "sudo mv -- '$tmpfile' $outf" || { err "moving [$tmpfile] to [$outf] failed"; continue; }
         done
     done
@@ -506,7 +506,7 @@ setup_systemd() {
         execute "cat -- '$in' > '$tmpfile'" || { err "cat-ing systemd file [$in] failed"; return $?; }  # note we cat instead of cp here, as those files are possibly links
         execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || { err "sed-ing systemd file [$in] failed"; return $?; }
 
-        [[ -f "$outf" ]] && ${sudo:+sudo} cmp -s "$tmpfile" "$outf" && return 0  # same contents, bail -- no need to update modified timestamp
+        ${sudo:+sudo} cmp -s "$tmpfile" "$outf" && return 0  # same contents, bail -- no need to update modified timestamp
         execute "${sudo:+sudo }mv -- '$tmpfile' $outf" || { err "moving [$tmpfile] to [$outf] failed"; return $?; }
         return 0
     }
@@ -755,7 +755,7 @@ setup_apt() {
 
         [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it"; continue; }
         t="$apt_dir/apt.conf.d/$(basename -- "$file")"
-        [[ -f "$t" ]] && cmp -s "$file" "$t" && continue  # no changes
+        cmp -s "$file" "$t" && continue  # no changes
         execute "sudo cp -- '$file' '$t'"
     done
 
@@ -788,7 +788,7 @@ setup_crontab() {
         execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
 
         t="$cron_dir/$(basename -- "$file")"
-        if [[ -f "$t" ]] && ! cmp -s "$tmpfile" "$t"; then
+        if ! cmp -s "$tmpfile" "$t"; then
             #backup_original_and_copy_file --sudo "$tmpfile" "$cron_dir"  # don't create backup - dont wanna end up with 2 crontabs
             execute "sudo cp -- '$tmpfile' '$t'"  # TODO: consider cat-ing to safeguard against links
         fi
@@ -813,7 +813,7 @@ setup_crontab() {
 
             #create_link -s "$i" "${weekly_crondir}/"  # linked crontabs don't work!
             t="$weekly_crondir/$(basename -- "$i")"
-            [[ -f "$t" ]] && cmp -s "$i" "$t" && continue  # no changes
+            cmp -s "$i" "$t" && continue  # no changes
             execute "sudo cp -- '$i' '$t'"  # TODO: consider cat-ing to safeguard against links
         done
     fi
@@ -1028,7 +1028,7 @@ _install_nfs_client_laptop() {
         filename="$(basename -- "$i")"
         [[ "$filename" == auto.* ]] || { err "incorrect filename for autofs server definition: [$filename]"; continue; }
         target="/etc/$filename"
-        [[ -f "$target" ]] && cmp -s "$i" "$target" && continue  # no changes
+        cmp -s "$i" "$target" && continue  # no changes
         execute "sudo cp -- '$i' '$target'"
         changed=1
     done
@@ -1038,7 +1038,7 @@ _install_nfs_client_laptop() {
         filename="$(basename -- "$i")"
         [[ "$filename" == *.autofs ]] || { err "incorrect filename for autofs master.d definition: [$filename]"; continue; }
         target="$autofs_d/$filename"
-        [[ -f "$target" ]] && cmp -s "$i" "$target" && continue  # no changes
+        cmp -s "$i" "$target" && continue  # no changes
         execute "sudo cp -- '$i' '$target'"
         changed=1
     done
@@ -2075,14 +2075,19 @@ create_apt_source() {
     [[ -s "$f" ]] || { err "imported keyfile [$f] does not exist"; return 1; }
     execute "sudo mv -- '$f' '$keyfile'" || return 1
 
-    cat <<EOF | sudo tee "$target_src" > /dev/null
+    f="/tmp/.apt-src-$RANDOM"
+    cat <<EOF | sudo tee "$f" > /dev/null
 Types: deb
 URIs: $uris
 Suites: $suites
 Signed-By: $keyfile
 EOF
-    [[ -n "$components" ]] && echo "Components: $components" | sudo tee -a "$target_src" > /dev/null
-    [[ -n "$arch" ]] && echo "Architectures: $arch" | sudo tee -a "$target_src" > /dev/null
+    [[ -n "$components" ]] && echo "Components: $components" | sudo tee -a "$f" > /dev/null
+    [[ -n "$arch" ]] && echo "Architectures: $arch" | sudo tee -a "$f" > /dev/null
+
+    if ! cmp -s "$f" "$target_src"; then
+        execute "sudo mv -- '$f' '$target_src'" || err
+    fi
 }
 
 
