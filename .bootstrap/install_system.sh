@@ -523,13 +523,15 @@ setup_systemd() {
             fname="$(basename -- "$node")"
             fname="${fname/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
 
-            if [[ -f "$node" && "$node" =~ \.(service|target|unit)$ ]]; then  # note we require certain suffixes
+            if [[ -f "$node" && "$node" =~ \.(service|target|unit|timer)$ ]]; then  # note we require certain suffixes
                 __var_expand_move $sudo "$node" "$tdir/$fname" || continue
 
                 # note do not use the '--now' flag with systemctl enable, nor execute systemctl start,
                 # as some service files might be listening on something like target.sleep - those shouldn't be started on-demand like that!
                 if [[ "$fname" == *.service ]]; then
                     execute "${sudo:+sudo }systemctl ${usr:+--user }enable '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd service [$fname] failed w/ [$?]"; continue; }
+                elif [[ "$fname" == *.timer ]]; then
+                    execute "${sudo:+sudo }systemctl ${usr:+--user }enable --now '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd timer [$fname] failed w/ [$?]"; continue; }
                 fi
             elif [[ -d "$node" && "$node" == *.d ]]; then
                 t="$tdir/$fname"
@@ -1367,7 +1369,7 @@ install_deps() {
     }
 
     # bash-git-prompt:
-    # alternatively consider https://github.com/starship/starship
+    # alternatively consider https://github.com/starship/starship !!
     clone_or_pull_repo "magicmonty" "bash-git-prompt" "$BASE_DEPS_LOC"
 
     # git-flow-completion:  # https://github.com/bobthecow/git-flow-completion
@@ -2073,9 +2075,10 @@ create_apt_source() {
     fi
 
     [[ -s "$f" ]] || { err "imported keyfile [$f] does not exist"; return 1; }
-    execute "sudo mv -- '$f' '$keyfile'" || return 1
+    cmp -s "$f" "$keyfile" || execute "sudo mv -- '$f' '$keyfile'" || return 1
 
-    f="/tmp/.apt-src-$RANDOM"
+    # finally write the source file itself:
+    f="/tmp/.apt-src_${name}-$RANDOM"
     cat <<EOF | sudo tee "$f" > /dev/null
 Types: deb
 URIs: $uris
@@ -2107,9 +2110,9 @@ setup_additional_apt_keys_and_sources() {
     # as https://download.docker.com/linux/debian/dists/ doesn't have 'em;
     create_apt_source -a  docker  https://download.docker.com/linux/debian/gpg  https://download.docker.com/linux/debian/ trixie stable
 
-    # spotify: (from https://www.spotify.com/es/download/linux/):
+    # spotify: (from https://www.spotify.com/download/linux/):
     # consider also https://github.com/SpotX-Official/SpotX-Bash to patch the client
-    create_apt_source  spotify  https://download.spotify.com/debian/pubkey_C85668DF69375001.gpg  http://repository.spotify.com/ stable non-free
+    create_apt_source  spotify  https://download.spotify.com/debian/pubkey_C85668DF69375001.gpg  https://repository.spotify.com/ stable non-free
 
     # !!! "Since 9.0.7 version, we only provide official packages in AppImage format" !!!
     # seafile-client: (from https://help.seafile.com/syncing_client/install_linux_client/):
@@ -5760,6 +5763,7 @@ install_from_repo() {
     # TODO: replace virtualbox by KVM & https://virt-manager.org/
     # another alternatives:
     # - https://flathub.org/apps/org.gnome.Boxes
+    # - https://github.com/firecracker-microvm/firecracker/
     if [[ "$PROFILE" == work ]]; then
         if is_native; then
             install_block '
@@ -8113,7 +8117,12 @@ exit
 #
 #  TODO:
 #  - replace cron w/ systemd timers
-#  - replace docker w/ podman
+#  - replace docker w/ podman  (https://podman.io/docs/installation#debian)
+#    - make sure to remove setup_docker() as well
+#  - migrate to zfs (or bcachefs ?)
+#   - if zfs, look into installing timeshift & integrating it w/ zfs
+#  - enable keepassxc integration w/ ssh-agent? see https://www.techrepublic.com/article/how-to-integrate-ssh-key-authentication-into-keepassxc/
+#  - remove terraform & replace w/ opentofu
 #
 #
 # list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/

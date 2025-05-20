@@ -107,3 +107,4 @@ For GUI dconf editor install `dconf-editor` pkg.
    keys or port 22 being blocked (and relevant git config still not in place);
 1. see other dotfiles:
   - https://github.com/infokiller/config-public
+  - https://github.com/risu729/dotfiles (wsl stuff as well!)
