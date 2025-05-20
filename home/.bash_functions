@@ -4844,6 +4844,8 @@ scan_network() {
 ##############################################
 # marks (jumps)                             ##
 # from: http://jeroenjanssens.com/2013/08/16/quickly-navigate-your-filesystem-from-the-command-line.html
+# alternatives:
+# - https://github.com/huyng/bashmarks
 ##############################################
 if [[ "$EUID" -eq 0 ]]; then
     _MARKPATH="$(find $BASE_DATA_DIR /home -mindepth 2 -maxdepth 2 -type d -name "$_MARKPATH_DIR" -print0 -quit 2>/dev/null)"
