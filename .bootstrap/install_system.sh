@@ -361,6 +361,9 @@ install_flatpak() {
     # only include the 'verified' packages, taken from this secureblue comment:
     # https://www.reddit.com/r/linux/comments/1bq9d3b/flathub_now_marks_unverified_apps/kx1adws/ :
     execute 'sudo flatpak remote-add --if-not-exists --subset=verified flathub-verified https://flathub.org/repo/flathub.flatpakrepo'
+
+    # TODO: limit global default policies, likey in $HOME/.local/share/flatpak/overrides
+    #       flatseal's 'All Applications' tab should configure that
 }
 
 
@@ -5568,7 +5571,7 @@ install_from_repo() {
         speedcrunch  # https://heldercorreia.bitbucket.io/speedcrunch/
         calc  # for cli
         bcal  # another cli calcultor/storage conversion tool; https://github.com/jarun/bcal
-        atool  # instead of atool, consider https://github.com/mholt/archives
+        atool  # provides aunpack command. instead of atool, consider https://github.com/mholt/archives
         file-roller  # archive manager for gnome
         rar
         unrar
@@ -5798,7 +5801,7 @@ install_from_flatpak() {
     if fp_install -n pinta  "$i"; then
         # enable pinta access to /tmp, as we need file IO in /tmp
         # due to our screenshooter: (see https://github.com/PintaProject/Pinta/issues/1357)
-        execute "sudo flatpak override $i --filesystem=/tmp"
+        execute "sudo flatpak override $i --filesystem=/tmp"  # causes file @ /var/lib/flatpak/overrides/com.github.PintaProject.Pinta  to be created/modified
     fi
 
     # https://flathub.org/apps/engineer.atlas.Nyxt
@@ -8078,6 +8081,8 @@ exit
 #   - if zfs, look into installing timeshift & integrating it w/ zfs
 #  - enable keepassxc integration w/ ssh-agent? see https://www.techrepublic.com/article/how-to-integrate-ssh-key-authentication-into-keepassxc/
 #  - remove terraform & replace w/ opentofu
+#  - install TLP
+#    - see these grub edits for TLP: https://linuxblog.io/thinkpad-t14s-gen-3-amd-linux-user-review-tweaks/#My_etcdefaultgrub_edits
 #
 #
 # list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/
