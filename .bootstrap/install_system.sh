@@ -2105,11 +2105,6 @@ setup_additional_apt_keys_and_sources() {
     # deb-line is from https://apt.mopidy.com/bookworm.sources:
     create_apt_source  mopidy  https://apt.mopidy.com/mopidy-archive-keyring.gpg  https://apt.mopidy.com/ $DEB_STABLE 'main contrib non-free'
 
-    # docker:  (from https://docs.docker.com/engine/install/debian/):
-    # note we have to use hard-coded stable codename instead of 'testing' or testing codename,
-    # as https://download.docker.com/linux/debian/dists/ doesn't have 'em;
-    create_apt_source -a  docker  https://download.docker.com/linux/debian/gpg  https://download.docker.com/linux/debian/ trixie stable
-
     # spotify: (from https://www.spotify.com/download/linux/):
     # consider also https://github.com/SpotX-Official/SpotX-Bash to patch the client
     create_apt_source  spotify  https://download.spotify.com/debian/pubkey_C85668DF69375001.gpg  https://repository.spotify.com/ stable non-free
@@ -5453,6 +5448,8 @@ install_from_repo() {
         #gdebi  # GUI local deb file viewer/installer for gnome
         synaptic
         apt-file  # command line tool for searching files contained in packages for the APT packaging system. You can search in which package a file is included or list the contents of a package without installing or fetching it
+                  # TODO: do we need to schedule 'apt-file update'?
+        command-not-found  # automatically search repos when entering unrecognized command, needs apt-file; installs hook for bash, to use w/ zsh see https://github.com/Freed-Wu/zsh-command-not-found
         apt-show-versions
         apt-xapian-index  # TODO: package no more?
         unattended-upgrades  # automatic installation of security upgrades
@@ -5727,11 +5724,11 @@ install_from_repo() {
         #redshift  # TODO: x11!
         gammastep  # redshift alternative: https://gitlab.com/chinstrap/gammastep ; should support some wayland as well
         geoclue-2.0  # D-Bus geoinformation service; https://gitlab.freedesktop.org/geoclue/geoclue/
-        docker-ce
-        docker-ce-cli
-        containerd.io
-        docker-buildx-plugin
-        docker-compose-plugin
+        podman
+        uidmap  # needed to run podman containers as non-root; note it's also a recommended pkg for podman; see https://forum.openmediavault.org/index.php?thread/42841-podman-seams-to-miss-uidmap/
+        passt   # needed for non-root podman container networking; note it's also a recommended pkg for podman;
+        # slirp4netns   # think fills similar needs to passt/pasta, but is older; also recommended pkg for podman
+        criu  # utilities to checkpoint and restore processes in userspace; It can freeze a running container (or an individual application) and checkpoint its state to disk
         mitmproxy  # SSL-capable man-in-the-middle HTTP proxy; https://github.com/mitmproxy/mitmproxy
         #charles-proxy5  # note also avail as tarball @ https://www.charlesproxy.com/download/
         terraform
@@ -6277,8 +6274,6 @@ remind_manually_installed_progs() {
             report "    don't forget [$i]"
         fi
     done
-
-    [[ "$PROFILE" == work ]] && report "don't forget to install docker root CA"
 }
 
 
@@ -6346,43 +6341,6 @@ add_manpath() {
     [[ -f "$man_db" ]] || { err "[$man_db] is not a file, can't add [$path -> $manpath] mapping"; return 1; }
     grep -q "^MANPATH_MAP\s+${path}\s+${manpath}\$" "$man_db" && return 0  # value already set, nothing to do
     execute "echo 'MANPATH_MAP $path  $manpath' | sudo tee --append $man_db > /dev/null"
-}
-
-
-# note: if you don't want to install docker from the debian's own repo (docker.io),
-# follow this instruction:  https://docs.docker.com/engine/install/debian/
-#
-# (refer to proglist2 if docker complains about memory swappiness not supported.)
-#
-# add our user to docker group so it could be run as non-root:
-# see https://docs.docker.com/engine/install/linux-postinstall/
-setup_docker() {
-
-    # see https://github.com/docker/for-linux/issues/58 (without it container exits with 139):
-    _add_kernel_option() {
-        local conf param line
-        conf='/etc/default/grub'
-        param='vsyscall=emulate'
-
-        [[ -f "$conf" ]] || { err "[$conf] grub conf not a file"; return 1; }
-        readonly line="$(grep -Po '^GRUB_CMDLINE_LINUX_DEFAULT="\K.*(?="$)' "$conf")"
-        if ! is_single "$line"; then
-            err "[$conf] contained either more or less than 1 line(s) containing kernel opt: [$line]"
-            return 1
-        fi
-
-        grep -Fq "$param" <<< "$line" && report "[$param] option already set in [$conf]" && return 0
-
-        execute "sudo sed -i --follow-symlinks 's/^GRUB_CMDLINE_LINUX_DEFAULT.*$/GRUB_CMDLINE_LINUX_DEFAULT=\"$line $param\"/g' $conf" || { err; return 1; }
-        execute 'sudo update-grub'
-    }
-
-    add_to_group  docker               # add user to docker group
-    #execute "sudo gpasswd -a ${USER} docker"  # add user to docker group
-    #execute "newgrp docker"  # log us into the new group; !! will stop script execution
-    _add_kernel_option
-
-    execute "sudo service docker restart"  # TODO: we should only restart service if something was _really_ changed
 }
 
 
@@ -6971,7 +6929,6 @@ post_install_progs_setup() {
     increase_inotify_watches_limit         # for intellij IDEA
     #increase_ulimit
     enable_unprivileged_containers_for_regular_users
-    setup_docker
     setup_tcpdump
     setup_nvim
     #setup_keyd
@@ -8117,8 +8074,6 @@ exit
 #
 #  TODO:
 #  - replace cron w/ systemd timers
-#  - replace docker w/ podman  (https://podman.io/docs/installation#debian)
-#    - make sure to remove setup_docker() as well
 #  - migrate to zfs (or bcachefs ?)
 #   - if zfs, look into installing timeshift & integrating it w/ zfs
 #  - enable keepassxc integration w/ ssh-agent? see https://www.techrepublic.com/article/how-to-integrate-ssh-key-authentication-into-keepassxc/
