@@ -202,6 +202,7 @@ export PAGER=less
 # get color support for less:
 export LESS="$LESS -FRXKi"
 export MANPAGER='less -s -M +Gg'  # display scroll percentage in manpages
+                                  # TODO: consider using bat as pager: https://github.com/sharkdp/bat#man
 export GROFF_NO_SGR=1                  # for konsole and gnome-terminal
 # colorize:
 # ------- color 1
