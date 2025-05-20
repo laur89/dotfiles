@@ -5,6 +5,9 @@
 # see https://goral.net.pl/post/systemd-x-sessions/
 # also https://github.com/vincentbernat/i3wm-configuration/blob/master/dotfiles/xsession
 # to auto-login, see https://vincent.bernat.ch/en/blog/2021-startx-systemd
+#
+# - regarding env vars passed to services started by systemd, see
+#   https://www.freedesktop.org/software/systemd/man/latest/environment.d.html#Configuration%20Format
 ##############
 # see also:
 # - https://github.com/liskin/dotfiles/
@@ -96,6 +99,8 @@ _setup_environment() {
     export XAUTHORITY="${XDG_RUNTIME_DIR}/Xauthority"
     mv -f "${HOME}/.Xauthority" "${XAUTHORITY}"
   fi
+
+  export XDG_SESSION_TYPE=x11
 
   #_set_gdk_scaling  # TODO: do we need this?
 
