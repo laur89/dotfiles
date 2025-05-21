@@ -355,7 +355,7 @@ setup_pm() {
 # useful commands:
 #   flatpak list --show-details
 install_flatpak() {
-    install_block flatpak flatseal || return 1  # flatseal is GUI app to manage perms
+    install_block 'flatpak flatseal' || return 1  # flatseal is GUI app to manage perms
     #execute 'sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo'
 
     # only include the 'verified' packages, taken from this secureblue comment:
@@ -2027,7 +2027,7 @@ update_clock() {
 
 
 create_apt_source() {
-    local name key_url uris suites components keyfile f target_src k grp_ptrn arch opt OPTIND
+    local name key_url uris suites components keyfile keyfiles f target_src k i c grp_ptrn arch opt OPTIND
 
     while getopts 'gak:' opt; do
         case "$opt" in
@@ -2041,12 +2041,11 @@ create_apt_source() {
 
     name="$1"
     key_url="$2"  # either keyfile or keyserver, depending on whether -k is used; with -g flag it's a file that contains the PGP key, together with other content (likely an installer script)
+                  # spearate by comma for multiple keys
     uris="$3"  # 3-5 are already for the source file definition
     suites="$4"
     components="$5"
 
-    keyfile="$APT_KEY_DIR/${name}.gpg"
-    f="/tmp/.apt-key_${name}-${RANDOM}.gpg"
     target_src="/etc/apt/sources.list.d/${name}.sources"
 
     if [[ "$suites" == */ ]]; then
@@ -2058,27 +2057,41 @@ create_apt_source() {
     # create (arbitrary) dir for our apt keys:
     [[ -d "$APT_KEY_DIR" ]] || execute "sudo mkdir -- $APT_KEY_DIR" || return 1
 
-    if [[ -n "$k" ]]; then
-        execute "sudo gpg --no-default-keyring --keyring $f --keyserver $key_url --recv-keys $k" || return 1
-    elif [[ -n "$grp_ptrn" ]]; then
-        execute "wget --user-agent='$USER_AGENT' -q -O - '$key_url' | grep -Pzo -- '(?s)$grp_ptrn' | gpg --dearmor | sudo tee $f > /dev/null" || return 1
-    else
-        # either single-conversion command, if it works...:
-        execute "wget --user-agent='$USER_AGENT' -q -O - '$key_url' | gpg --dearmor | sudo tee $f > /dev/null" || return 1
+    c=0
+    IFS=, read -ra key_url <<< "$key_url"
+    for i in "${key_url[@]}"; do
+        if [[ "$c" -eq 0 ]]; then
+            keyfile="$APT_KEY_DIR/${name}.gpg"
+            keyfiles="$keyfile"
+        else
+            keyfile="$APT_KEY_DIR/${name}-${c}.gpg"
+            keyfiles+=",$keyfile"  # TODO: does it allow comma-separation?
+        fi
 
-        # ...or lengthier (but safer?) multi-step conversion:
-        #local tmp_ring
-        #tmp_ring="/tmp/temp-keyring-${RANDOM}.gpg"
-        #execute "curl -fsL -o '$f' '$key_url'" || return 1
+        f="/tmp/.apt-key_${name}-${RANDOM}.gpg"
+        if [[ -n "$k" ]]; then
+            execute "sudo gpg --no-default-keyring --keyring $f --keyserver $i --recv-keys $k" || return 1
+        elif [[ -n "$grp_ptrn" ]]; then
+            execute "wget --user-agent='$USER_AGENT' -q -O - '$i' | grep -Pzo -- '(?s)$grp_ptrn' | gpg --no-tty --batch --dearmor | sudo tee $f > /dev/null" || return 1
+        else
+            # either single-conversion command, if it works...:
+            execute "wget --user-agent='$USER_AGENT' -q -O - '$i' | gpg --no-tty --batch --dearmor | sudo tee $f > /dev/null" || return 1
 
-        #execute "gpg --no-default-keyring --keyring $tmp_ring --import $f" || return 1
-        #rm -- "$f"  # unsure if this is needed or not for the following gpg --output command
-        #execute "gpg --no-default-keyring --keyring $tmp_ring --export --output $f" || return 1
-        #rm -- "$tmp_ring"
-    fi
+            # ...or lengthier (but safer?) multi-step conversion:
+            #local tmp_ring
+            #tmp_ring="/tmp/temp-keyring-${RANDOM}.gpg"
+            #execute "curl -fsL -o '$f' '$i'" || return 1
 
-    [[ -s "$f" ]] || { err "imported keyfile [$f] does not exist"; return 1; }
-    cmp -s "$f" "$keyfile" || execute "sudo mv -- '$f' '$keyfile'" || return 1
+            #execute "gpg --no-default-keyring --keyring $tmp_ring --import $f" || return 1
+            #rm -- "$f"  # unsure if this is needed or not for the following gpg --output command
+            #execute "gpg --no-default-keyring --keyring $tmp_ring --export --output $f" || return 1
+            #rm -- "$tmp_ring"
+        fi
+
+        [[ -s "$f" ]] || { err "imported keyfile [$f] does not exist"; return 1; }
+        cmp -s "$f" "$keyfile" || execute "sudo mv -- '$f' '$keyfile'" || return 1
+        (( c++ ))
+    done
 
     # finally write the source file itself:
     f="/tmp/.apt-src_${name}-$RANDOM"
@@ -2086,7 +2099,7 @@ create_apt_source() {
 Types: deb
 URIs: $uris
 Suites: $suites
-Signed-By: $keyfile
+Signed-By: $keyfiles
 EOF
     [[ -n "$components" ]] && echo "Components: $components" | sudo tee -a "$f" > /dev/null
     [[ -n "$arch" ]] && echo "Architectures: $arch" | sudo tee -a "$f" > /dev/null
@@ -2120,9 +2133,9 @@ setup_additional_apt_keys_and_sources() {
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
     create_apt_source  charles  https://www.charlesproxy.com/packages/apt/charles-repo.asc  https://www.charlesproxy.com/packages/apt/ charles-proxy main
 
-    # terraform:  (from https://developer.hashicorp.com/terraform/install#linux):
-    # note there's open-source terraform fork  OpenTofu
-    create_apt_source -a  terraform  https://apt.releases.hashicorp.com/gpg  https://apt.releases.hashicorp.com/ $DEB_STABLE main
+    # opentofu:  (from https://opentofu.org/docs/intro/install/deb/#set-up-the-opentofu-repository):
+    # (open source terraform)
+    create_apt_source -a  opentofu  https://get.opentofu.org/opentofu.gpg,https://packages.opentofu.org/opentofu/tofu/gpgkey  https://packages.opentofu.org/opentofu/tofu/any/ any main
 
     # openvpn3:  (from https://openvpn.net/cloud-docs/openvpn-3-client-for-linux/):
     #create_apt_source -a  openvpn  https://swupdate.openvpn.net/repos/openvpn-repo-pkg-key.pub  https://swupdate.openvpn.net/community/openvpn3/repos/ $DEB_OLDSTABLE main
@@ -5466,8 +5479,9 @@ install_from_repo() {
         #alien  # convert LSB, Red Hat, Stampede and Slackware Packages into Debian packages
         #checkinstall
         #build-essential  # If you do not plan to build Debian packages, you don't need this package
+        #scdoc  # man page generator
         #devscripts  # scripts to make the life of a Debian Package maintainer easier
-        #equivs
+        #equivs  # tool to create trivial Debian packages. Typically these packages contain only dependency information, but they can also include normal installed files like other packages do
         #cmake
         #ruby
         ipython3  # https://github.com/ipython/ipython
@@ -5734,7 +5748,7 @@ install_from_repo() {
         criu  # utilities to checkpoint and restore processes in userspace; It can freeze a running container (or an individual application) and checkpoint its state to disk
         mitmproxy  # SSL-capable man-in-the-middle HTTP proxy; https://github.com/mitmproxy/mitmproxy
         #charles-proxy5  # note also avail as tarball @ https://www.charlesproxy.com/download/
-        terraform
+        tofu
         gh  # github cli
     )
     # old/deprecated block4:
@@ -7621,6 +7635,12 @@ is_valid_ip() {
 }
 
 
+# did we boot as efi/uefi?
+is_efi() {
+    [[ -d /sys/firmware/efi ]]
+}
+
+
 # pass '-s' as first arg to execute as sudo
 # pass '-c' if $1 is a dir whose contents' should each be symlinked to directory at $2
 #
@@ -8080,7 +8100,7 @@ exit
 #  - migrate to zfs (or bcachefs ?)
 #   - if zfs, look into installing timeshift & integrating it w/ zfs
 #  - enable keepassxc integration w/ ssh-agent? see https://www.techrepublic.com/article/how-to-integrate-ssh-key-authentication-into-keepassxc/
-#  - remove terraform & replace w/ opentofu
+#  - verify our smartd setup
 #  - install TLP
 #    - see these grub edits for TLP: https://linuxblog.io/thinkpad-t14s-gen-3-amd-linux-user-review-tweaks/#My_etcdefaultgrub_edits
 #
