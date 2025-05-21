@@ -6066,7 +6066,7 @@ choose_single_task() {
         install_games
         install_xonotic
         install_from_flatpak
-        install_setup_printing
+        install_setup_printing_cups
     )
 
     if is_virtualbox; then
@@ -6768,18 +6768,20 @@ setup_mopidy() {
 #
 # cups web interface @ http://localhost:631/
 # note our configured printers are stored in /etc/cups/printers.conf  !
+#
 # see also https://github.com/openprinting/cups
-install_setup_printing() {
+# - it also demos the lpadmin command usage
+install_setup_printing_cups() {
     local conf_file conf2 group pkgs
 
-    readonly conf_file='/etc/cups/cupsd.conf'
+    readonly conf_file='/etc/cups/cupsd.conf'  # TODO: there's also cupsctl command to configure this file
     readonly conf2='/etc/cups/cups-files.conf'
 
     is_native || confirm "we're not native, sure you want to install printing stack?" || return
 
     pkgs=(
         cups
-        cups-browsed  # a daemon which browses the Bonjour broadcasts of shared remote CUPS printers and makes the printers available locally
+        cups-browsed  # a daemon which browses the Bonjour broadcasts of shared remote CUPS printers and makes the printers available locally; has had security flaws in the past...
         cups-filters  # provides additional CUPS filters which are not provided by the CUPS project itself. This includes filters for a PDF based printing workflow
         ipp-usb  # userland driver for USB devices (printers, scanners, MFC), supporting the IPP over USB protocol; https://github.com/OpenPrinting/ipp-usb
         system-config-printer  # graphical interface to configure the printing system; https://github.com/OpenPrinting/system-config-printer
@@ -6800,6 +6802,7 @@ install_setup_printing() {
         execute 'sudo service cups restart'
     fi
 
+    # TODO: maybe deprecate this block, think the group is always 'lpadmin'
     # add our user to a group so we're allowed to modify printers & whatnot: {{{
     #   see https://unix.stackexchange.com/a/513983/47501
     #   and https://ro-che.info/articles/2016-07-08-debugging-cups-forbidden-error
