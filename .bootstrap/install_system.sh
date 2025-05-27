@@ -5659,7 +5659,6 @@ install_from_repo() {
         rxvt-unicode  # https://cvs.schmorp.de/rxvt-unicode/
         colortest-python  # https://github.com/eikenb/terminal-colors
         geany  # GTK-based lightweight IDE
-        libreoffice  # TODO: avail as flatpak
         zathura  # https://github.com/pwmt/zathura
         #mupdf  # more featureful pdf viewer
         feh  # TODO x11; TODO: wallpaper_changer.sh dependency; https://github.com/derf/feh/ (mirror)
@@ -5867,6 +5866,9 @@ install_from_flatpak() {
 
     # https://flathub.org/apps/org.telegram.desktop
     fp_install -n telegram  'org.telegram.desktop'
+
+    # https://flathub.org/apps/org.libreoffice.LibreOffice
+    fp_install -n libreoffice  'org.libreoffice.LibreOffice'
 }
 
 # install/update the guest-utils/guest-additions.
