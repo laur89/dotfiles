@@ -37,7 +37,7 @@ steps separately apart from the full installation mode.
 1. optionally preseed the installation (`esc` when graphical menu appears):
 
 ```
-    auto url=http(s)://webserver/path/preseed.cfg
+    auto url=webserver.eu/path/preseed.cfg
     debian-installer/allow_unauthenticated_ssl=true
     hostname=myhostname domain=internal.yourdomain.tld
     passwd/root-password=r00tpass
@@ -47,6 +47,20 @@ steps separately apart from the full installation mode.
     passwd/user-password=userpass
     passwd/user-password-again=userpass
 ```
+  - note under UEFI installation, `esc` likely doesn't do anything; in that
+    case:
+        - highlight `Advanced options` -> `Automated install`
+        - press `e`
+        - down arrow 3 times, move cursor to right after `auto=true`, and add
+        "url="/"hostname="/other params
+  - note if you don't provide required data, installer will ask for it anyway
+  - alternatively, if you don't want to provide any params to preseed, you can
+    also choose `Advanced options` -> `(Graphical) Automated install` -> type
+    url of our preseed file
+    - note to preseed hostname, we _have to_ provide it as kernel params, so
+      this option would leave our domain as default "`debian`"
+  - TODO: consider https://github.com/r0b0/debian-installer as preseed
+    alternative
 
 1. wget https://github.com/laur89/dotfiles/raw/master/.bootstrap/install_system.sh
     * or `wget https://github.com/laur89/dotfiles/raw/develop/.bootstrap/install_system.sh`
@@ -105,6 +119,11 @@ For GUI dconf editor install `dconf-editor` pkg.
 1. delay homeshick repos' https->ssh change to later stages; otherwise
    if we need to restart installation, pull can fail due to missing ssh
    keys or port 22 being blocked (and relevant git config still not in place);
+1. see into using [simple-cdd](https://wiki.debian.org/Simple-CDD) to preseed
+   the installation iso
+1. see into network PXE boot (iPXE?)
+1. consider using https://netboot.xyz/docs/quick-start
 1. see other dotfiles:
   - https://github.com/infokiller/config-public
   - https://github.com/risu729/dotfiles (wsl stuff as well!)
+  - https://gitlab.com/sio/server_common (from [this reddit post](https://www.reddit.com/r/linux/comments/vd9qkn/it_took_years_to_perfect_my_setup_and_now_i_want/ickhfsc/))
