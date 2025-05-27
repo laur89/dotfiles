@@ -5551,6 +5551,7 @@ install_from_repo() {
         tcpflow  # A program like 'tcpdump' shows a summary of packets seen on the wire, but usually doesn't store the data that's actually being transmitted. In contrast, tcpflow reconstructs the actual data streams and stores each flow in a separate file for later analysis; https://github.com/simsong/tcpflow
         #ngrep  # grep for network traffic; https://github.com/jpr5/ngrep
         #ncat  # reimplementation of Netcat by the NMAP project; https://nmap.org/
+        nmap  # list listening ports on given address
         remind
         tkremind
         wyrd  # ncurses-based frontend for remind; https://gitlab.com/wyrd-calendar/wyrd
@@ -5563,6 +5564,7 @@ install_from_repo() {
         git-cola
         git-extras  # https://github.com/tj/git-extras
         zenity
+        #yad  # alternative to zenity
         gxmessage  # xmessage clone based on GTK+
         gnome-keyring
         seahorse
@@ -5571,11 +5573,13 @@ install_from_repo() {
                            # TODO: removed/dropped from debian, as it's no longer maintained??
                            #
                            # - forum thread https://forums.bunsenlabs.org/viewtopic.php?id=8595&p=2 discusses it:
-                           #     - consensus as of May seems to be: lxpolit, or mate-polit (as latter is gtk3)
+                           #     - consensus as of May seems to be: lxpolkit, or mate-polit (as latter is gtk3)
                            #         - also said "if xfce-polkit makes it to Trixie in time, might be worth considering."
                            #     - replace w/ lxqt-policykit or lxpolkit or polkit-kde-agent-1 or mate-polkit or ukui-polkit (last seems unmaintained as well)
                            #         - there's also xfce-polkit, but gh repo seen last update 3y ago
-                           #         - think lxpolit is the winner! other suggestion is mate-polkit (in https://forums.bunsenlabs.org/viewtopic.php?id=8595)
+                           #         - think lxpolkit is the winner! other suggestion is mate-polkit (in https://forums.bunsenlabs.org/viewtopic.php?id=8595)
+                           #           - doesn't mean much, but this upgrader also
+                           #             decided on lxpolkit: https://www.reddit.com/r/debian/comments/1ktoa6m/debian_13_upgrade_report/
                            #         - what about polkitd - what does it provicde? text-based, not graphical?
         libsecret-tools  # can be used to store and retrieve passwords for desktop applications; provides us w/ 'secret-tool' cmd for interfacing w/ keyring
         gsimplecal
@@ -5809,15 +5813,31 @@ install_from_repo() {
 
 
 # https://wiki.debian.org/KVM
+# - note libvirtd is the daemon process, separate from clients.
+# - possible clients:
+#   - virsh (cli)
+#   - boxes (gnome app)
+#   - virt-viewer (display client)
+#   - virt-manager (gui manager)
+#   - see all @ https://wiki.archlinux.org/title/Libvirt#Client
+#
 # commands:
 # - list vms:
 #   virsh list --all
+#
+# collection of relevant scripts: https://github.com/sej7278/virt-installs
+# - to inject debian preseed file: https://github.com/sej7278/virt-installs/blob/master/preseed_deb10/debian10_preseed.sh
 install_kvm() {
+    # virt-install - cli utils to create & edit virt machines
     install_block -f '
         qemu-system
         libvirt-daemon-system
+        virt-install
+        virt-manager
+        virt-viewer
     '
-    add_group libvirt  # in order to manage virtual machines as a regular user
+
+    add_to_group libvirt  # in order to manage virtual machines as a regular user
 }
 
 
@@ -7538,8 +7558,10 @@ is_windows() {
 
 
 # Checks whether system is virtualized (including WSL)
-#
-# TODO: does it detect KVM?
+# TODO: at least the GUI virt-manager is buggy:
+# - not able to read image files: https://unix.stackexchange.com/questions/796179/unable-to-create-libvirt-domain-persmission-denied-reading-os-iso
+# - also deleting snapshots fail. and when we delete the whole domain/vm, then
+# they're gone in virt-manager, but files are still at /var/lib/libvirt/images/ !!!
 #
 # @returns {bool}   true if we're running in virt mode.
 is_virt() {
