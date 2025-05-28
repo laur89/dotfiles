@@ -111,6 +111,117 @@ Note if we had more than one encrypted volume (e.g. / and /home), then we'd
 have to configure a keyfile to forego entering two passphrases, see the bottom
 of the above blog post.
 
+### [another instruction](https://medium.com/@inatagan/installing-debian-with-btrfs-snapper-backups-and-grub-btrfs-27212644175f)
+- sets up grub-btrfs to allow us to boot directly into our snapshots without the need of a live media
+
+- after finishing the partition, do NOT start installing base-system, but isntead
+1. `ctrl+alt+f2` to enter busybox terminal
+1. `df` to see current mounted fs
+1. unmount our target fs by:
+    - `unmount /target/boot/efi`
+    - `unmount /target/boot`
+    - `unmount /target`
+1. mount our encrypter partition w/ `mount /dev/mapper/$VOLUME_GROUP_NAME /mnt`
+    - VOL_GROUP_NAME will be likely be the one that was mounted to /target
+1. `cd /mnt`
+1. `ls`
+    - should show only `@rootfs`
+1. rename to `@` to be compatible w/ timeshift:
+    - `mv @rootfs/ @`
+1. create additional subvolumes:
+    - `btrfs su cr @snapshots`
+    - `btrfs su cr @home`
+    - `btrfs su cr @tmp`
+    - `btrfs su cr @var`
+1. let's mount our root sub-volume to be able to create additional dirs for subvols:
+    - `mount -o noatime,space_cache=v2,compress=zstd:1,ssd,discard=async,subvol=@ /dev/mapper/$VOLUME_GROUP_NAME_FOR_ROOT /target`
+1. now create mountpoints for each subvol:
+    - `cd /target`
+      > It’s also best to create /var/lib/portables and /var/lib/machines 
+        if not already there. Systemd creates them automatically 
+        as nested subvolumes. Nested subvolumes will force you to do some
+        manual removal after restoring a snapshot and removing old snapshots.
+      > var/lib/containers should be podman location
+      > TODO: shouldn't mount /tmp when using tmpfs, right?!
+    - `mkdir -p .snapshots home var/{log,cache,crash,tmp,spool} var/lib/{libvirt/images,containers,portables,machines}`
+        - old, ignore
+    - `mkdir -p .snapshots home tmp var`
+1. mount each subvol to their mountpoint:
+```sh
+mount -o noatime,space_cache=v2,compress=zstd:1,ssd,discard=async,subvol=@snapshots /dev/mapper/$VOLUME_GROUP_NAME_FOR_ROOT /target/.snapshots
+mount -o noatime,space_cache=v2,compress=zstd:1,ssd,discard=async,subvol=@home /dev/mapper/$VOLUME_GROUP_NAME_FOR_ROOT /target/home
+mount -o noatime,space_cache=v2,compress=zstd:1,ssd,discard=async,subvol=@tmp /dev/mapper/$VOLUME_GROUP_NAME_FOR_ROOT /target/tmp
+mount -o noatime,space_cache=v2,compress=zstd:1,ssd,discard=async,subvol=@var /dev/mapper/$VOLUME_GROUP_NAME_FOR_ROOT /target/var
+```
+1. also mount boot & efi:
+    - `mount /dev/sdx2 boot`
+    - `mount /dev/sdx1 boot/efi`
+1. now we edit fstab (note busybox doesn't have vim) TODO: does it have vi?
+    - `nano etc/fstab`
+    - first edit the line where "@rootfs" is, then press `home`, and then
+      `ctrl+k` to cut & `ctrl+u` to paste as many lines as needed; then just
+      edit the mountpoint labels:
+```sh
+/dev/mapper/$VOLUME_GROUP /             btrfs  noatime,space_cache=v2,compress=zstd:1,ssd,discard=async,subvol=@             0    0
+/dev/mapper/$VOLUME_GROUP /.snapshots   btrfs  noatime,space_cache=v2,compress=zstd:1,ssd,discard=async,subvol=@snapshots    0    0
+/dev/mapper/$VOLUME_GROUP /home         btrfs  noatime,space_cache=v2,compress=zstd:1,ssd,discard=async,subvol=@home         0    0
+/dev/mapper/$VOLUME_GROUP /tmp          btrfs  noatime,space_cache=v2,compress=zstd:1,ssd,discard=async,subvol=@tmp          0    0
+/dev/mapper/$VOLUME_GROUP /var          btrfs  noatime,space_cache=v2,compress=zstd:1,ssd,discard=async,subvol=@var          0    0
+```
+1. cd to root and unmount:
+    - `cd /; umount /mnt; exit`
+1. return to standard installation:
+    - `ctrl+alt+f1`
+1. install base system
+1. reboot
+1. `sudo apt-get install snapper inotify-tools`
+1. configure `snapper` to take initial snapshots prior to further installation:
+    1. > The default way that snapper works is to automatically create a new subvolume
+         “.snapshots” under the path of the subvolume that we are creating a snapshot.
+         Because we want to keep our snapshots separated from the backed up subvolume
+         itself we must remove the snapper created “.snapshot” subvolume and then
+         re-mount using the one that we created before in a separate subvolume at @snapshots
+         - `cd /`
+         - `sudo umount .snapshots`
+         - `sudo rm -r .snapshots`
+1. now we can create a new config for snapper:
+    - `sudo snapper -c root create-config /`
+    - this should have crated a new .snapshots/ directory as well a new btrfs
+      subvol of same name. we will rm this new subvol and link our own
+      @snapshots subvol to his path, so our snapshots are safely stored in a 
+      different location:
+    - `sudo btrfs subvolume delete /.snapshots`  # delete auto-created subvol
+    - `sudo mkdir /.snapshots`  # recreate dir
+    - `sudo mount -av`  # remount our @snapshots to /.snapshots
+1. snapper is ready to be used
+1. to disable auto-snapshotting on boot:
+    - `sudo systemctl disable snapper-boot.timer`
+1. to disable snapper timeline:
+    - `sudo snapper -c root set-config 'TIMELINE_CREATE=no'`
+1. adding sudo group to allow our user to use snapper:
+    - `sudo snapper -c root set-config 'ALLOW_GROUPS=sudo'`
+    - `sudo snapper -c root set-config 'SYNC_ACL=yes'`
+1. snapper will auto-create a pair of pre- & post- snapshots every time we use apt
+   to change it, modify `/etc/apt/apt.conf.d/80snapper`
+1. change amount of snapshots kept (NOTE: docs recommended to keep max 12)
+    - `sudo snapper -c root set-config "NUMBER_LIMIT=10"`
+    - `sudo snapper -c root set-config "NUMBER_LIMIT_IMPORTANT=10"`
+1. finally create first default snapshot:
+    - `sudo snapper -c root create --description "default fresh install"`
+
+TODO: look into grub-btrfs (not avail on debian repos)
+
+
+## BTRFS notes 
+
+- [it is best to have /boot and / on the same filesystem, when using the snapshot-feature of btrfs]
+  (https://forum.manjaro.org/t/btrfs-and-separate-boot-ext4-partition/155211/9)
+- cow should be disabled where loads of writes is done, e.g. VM images,
+  databases...
+- if you're making snapshots of /, make sure to take it together with /boot
+  (assuming latter is on a different partition), otherwise you might end up in
+  an unbootable state due to missing kernel
+
 
 ## Troubleshooting
 
