@@ -1,5 +1,4 @@
-LA's Debian netinstall base setup
-=================================
+# LA's Debian netinstall base setup
 
 Pre-requisities:
 * Debian testing release netinstall
@@ -10,8 +9,7 @@ Notes:
 homeshick castles. Some of them are publicly not accessible, so your milage
 WILL vary.
 
-Installation
-------------
+## Installation
 
 The installation script under .bootstrap provides setup logic intended to be run on
 fresh Debian netinstall installation. It also offers a possibility to run one of the
@@ -28,8 +26,7 @@ steps separately apart from the full installation mode.
       before downloading.
     * ~~If you're installing on a laptop/wifi and need firmware, you might be better
       off with these [unofficial images w/ firmware](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/weekly-builds/amd64/iso-cd/):~~
-      - Ignore, as of `bookworm`, [firmware is included in normal installer
-        images](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/)
+      - Ignore, as of `bookworm`, [firmware is included in normal installer images](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/)
       - [weekly testing netinst w/ firmware](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/weekly-builds/amd64/iso-cd/firmware-testing-amd64-netinst.iso)
       - OR [daily sid netinst w/ firmware](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/daily-builds/sid_d-i/current/amd64/iso-cd/firmware-testing-amd64-netinst.iso)
         from [this page](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/daily-builds/sid_d-i/current/amd64/iso-cd/)
@@ -59,8 +56,6 @@ steps separately apart from the full installation mode.
     url of our preseed file
     - note to preseed hostname, we _have to_ provide it as kernel params, so
       this option would leave our domain as default "`debian`"
-  - TODO: consider https://github.com/r0b0/debian-installer as preseed
-    alternative
 
 1. wget https://github.com/laur89/dotfiles/raw/master/.bootstrap/install_system.sh
     * or `wget https://github.com/laur89/dotfiles/raw/develop/.bootstrap/install_system.sh`
@@ -70,7 +65,7 @@ steps separately apart from the full installation mode.
     * su
     * apt-get install sudo
 1. add your user to sudo group:
-    * `/usr/sbin/adduser  YOUR_USERNAME  sudo`    (and logout + login afterwards!)
+    * `/usr/sbin/adduser $USER  sudo`    (and logout + login afterwards!)
 1. sudo apt-get update
 1. execute script:
     * `./install_system.sh -F personal|work`
@@ -91,11 +86,37 @@ It provides maintenance/management options, such as
 ### Update:
 
 This mode is to be ran periodically to build/install software; note it also includes
-non-standard sources, such as github releases/ pages, and being directly built from
-source.
+non-standard sources, such as github releases/, and being directly built from source.
 
-Troubleshooting
----------------
+## Partitioning
+
+Note our main preseed.cfg entails manual partitioning, as we [cannot preseed
+encrypted partitions w/o LVM](https://forums.debian.net/viewtopic.php?p=822924)
+
+Instead we partition it manually. Instructions from [here](https://www.dwarmstrong.org/minimal-debian/):
+- select `Manual` partitioning
+- create `EFI` partition, beginning, 538 MB
+    - TODO: decrease to 300MB?
+- create `ext4` partition, beginning, mount to `/boot`, 1044 MB
+  - could be btrfs, but some features, such as [savedefault](https://wiki.archlinux.org/title/GRUB/Tips_and_tricks#Recall_previous_entry)
+    (relevant w/ dualboot or multiple kernels) might not work
+- create `physical volume for encryption` partition, beginning, remaining size
+- select `Configure encrypted volumes`, select `Yes`
+- select `Create encrypted volumes`
+- select the `crypto` devices/partitions
+- `Finish`
+- go through the data erasure, will prolly take a lot of time
+- set encryption pass
+- select our encrypted volume (under 'Encrypted volume' section, should be at
+  the top), `btrfs`, mount to `/`
+- `Finish partitioning and write changes to disk`
+
+Note if we had more than one encrypted volume (e.g. / and /home), then we'd
+have to configure a keyfile to forego entering two passphrases, see the bottom
+of the above blog post.
+
+
+## Troubleshooting
 
 - dark theme not set.
 in eary '25 it
@@ -114,7 +135,7 @@ For GUI dconf editor install `dconf-editor` pkg.
 - for uniform GTK & QT look, see [this arch wiki](https://wiki.archlinux.org/title/Uniform_look_for_Qt_and_GTK_applications)
 - for theming under Wayland, read [this!](https://github.com/swaywm/sway/wiki/GTK-3-settings-on-Wayland)
 
-### TODO
+## TODO
 
 1. delay homeshick repos' https->ssh change to later stages; otherwise
    if we need to restart installation, pull can fail due to missing ssh
@@ -123,6 +144,9 @@ For GUI dconf editor install `dconf-editor` pkg.
    the installation iso
 1. see into network PXE boot (iPXE?)
 1. consider using https://netboot.xyz/docs/quick-start
+1. consider using [calamares installer](https://github.com/calamares/calamares)
+  - or [this opinionated installer](https://github.com/r0b0/debian-installer)
+    - supports browser-based installation, automation (preseed replacement?)
 1. see other dotfiles:
   - https://github.com/infokiller/config-public
   - https://github.com/risu729/dotfiles (wsl stuff as well!)
