@@ -27,9 +27,6 @@ steps separately apart from the full installation mode.
     * ~~If you're installing on a laptop/wifi and need firmware, you might be better
       off with these [unofficial images w/ firmware](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/weekly-builds/amd64/iso-cd/):~~
       - Ignore, as of `bookworm`, [firmware is included in normal installer images](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/)
-      - [weekly testing netinst w/ firmware](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/weekly-builds/amd64/iso-cd/firmware-testing-amd64-netinst.iso)
-      - OR [daily sid netinst w/ firmware](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/daily-builds/sid_d-i/current/amd64/iso-cd/firmware-testing-amd64-netinst.iso)
-        from [this page](https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/daily-builds/sid_d-i/current/amd64/iso-cd/)
 
 1. optionally preseed the installation (`esc` when graphical menu appears):
 
@@ -77,18 +74,17 @@ steps separately apart from the full installation mode.
 This mode is intended to be used througout the system lifetime post-fullinstall.
 It provides maintenance/management options, such as
 * generating ssh key
-* switching active jdk versions
 * upgrading kernel
 * installing various drivers
 * installing the base package set
-* build and/or install software (such as vim, copyq, oracle jdk)
+* build and/or install software (vim, copyq et al.)
 
 ### Update:
 
 This mode is to be ran periodically to build/install software; note it also includes
 non-standard sources, such as github releases/, and being directly built from source.
 
-## Partitioning
+## Manual partitioning
 
 Note our main preseed.cfg entails manual partitioning, as we [cannot preseed
 encrypted partitions w/o LVM](https://forums.debian.net/viewtopic.php?p=822924)

@@ -2365,7 +2365,7 @@ upgrade_kernel() {
 
     while true; do
        echo
-       report "note kernel was just updated, but you can select different ver:"
+       #report "note kernel was just updated, but you can select different ver:"
        report "select kernel to install: (select none to skip kernel change)\n"
        select_items -s "${kernels_list[@]}"
 
@@ -6503,13 +6503,15 @@ setup_nsswitch() {
     fi
 }
 
+# https://wiki.debian.org/NetworkManager
+#
 # puts networkManager to manage our network interfaces;
 # alternatively, you can remove your interface name from /etc/network/interfaces
 # (bottom) line; eg from 'iface wlan0 inet dhcp' to 'iface inet dhcp'
 #
-# see also wiki.debian.org/NetworkManager
+# see also: https://wiki.debian.org/Netplan
 enable_network_manager() {
-    local nm_conf nm_conf_dir i
+    local nm_conf nm_conf_dir
 
     readonly nm_conf="$COMMON_DOTFILES/backups/networkmanager.conf"
     readonly nm_conf_dir='/etc/NetworkManager/conf.d'
@@ -6545,7 +6547,7 @@ enable_network_manager() {
     }
 
     [[ -d "$nm_conf_dir" ]] || { err "[$nm_conf_dir] does not exist; are you using NetworkManager? if not, this config logic should be removed."; return 1; }
-    [[ -f "$nm_conf" ]] || { err "[$nm_conf] does not exist; cannot update config"; return 1; }
+    [[ -s "$nm_conf" ]] || { err "[$nm_conf] does not exist; cannot update config"; return 1; }
     execute "sudo cp -- '$nm_conf' '$nm_conf_dir'" || return 1
     _configure_con_dns
 
@@ -8184,6 +8186,7 @@ exit
 #    - consider installing systemd-cron if needed - converts legacy cron to sysd timers
 #  - migrate to zfs (or bcachefs ?)
 #   - if zfs, look into installing timeshift & integrating it w/ zfs
+#   - same for btrfs - timeshift & snapper
 #  - enable keepassxc integration w/ ssh-agent? see https://www.techrepublic.com/article/how-to-integrate-ssh-key-authentication-into-keepassxc/
 #  - verify our smartd setup
 #  - install TLP
