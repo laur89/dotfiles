@@ -474,6 +474,8 @@ setup_logind() {
 #       likely reasonable to create .conf file in ~/.config/environment.d/ dir
 #       alternatively, we already call $ systemctl --user --wait import-environment
 #       from our .xsession file
+# cmds:
+# - see failed services:  sudo systemctl --failed
 setup_systemd() {
     local global_sysd_src usr_sysd_src global_sysd_target usr_sysd_target dir
 
@@ -613,23 +615,23 @@ setup_pam_login() {
 #   - scan apparomor audit messages, review them & update the profiles:
 #     sudo aa-logprof
 setup_apparmor() {
-    local aa_notif_desktop
-
-    aa_notif_desktop=/etc/xdg/autostart/aa-notify.desktop
-
     [[ "$(cat /sys/module/apparmor/parameters/enabled)" != Y ]] && err "apparmor not enabled!!"  # sanity
-    add_to_group adm  # adm used for system monitoring tasks; members cna read log files etc
+    add_to_group adm  # adm used for system monitoring tasks; members can read log files etc
 
     # as per https://wiki.debian.org/AppArmor/HowToUse :
     # if auditd is installed, then aa-notify desktop should be modified to use auditd log:
-    if [[ -s "$aa_notif_desktop" ]]; then
-        local cmd='Exec=sudo aa-notify -p -f /var/log/audit/audit.log'
-        if ! grep -Fxq "$cmd" "$aa_notif_desktop"; then
-            execute "sudo sed -i --follow-symlinks 's/^Exec=/#Exec=/g' $aa_notif_desktop"  # comment original one out
-            execute "echo $cmd | sudo tee --append $aa_notif_desktop > /dev/null"
+    if is_pkg_installed 'auditd'; then
+        local aa_notif_desktop=/etc/xdg/autostart/aa-notify.desktop
+
+        if [[ -s "$aa_notif_desktop" ]]; then
+            local cmd='Exec=sudo aa-notify -p -f /var/log/audit/audit.log'
+            if ! grep -Fxq "$cmd" "$aa_notif_desktop"; then
+                execute "sudo sed -i --follow-symlinks 's/^Exec=/#Exec=/g' $aa_notif_desktop"  # comment original one out
+                execute "echo $cmd | sudo tee --append $aa_notif_desktop > /dev/null"
+            fi
+        else
+            err "[$aa_notif_desktop] not a file - is apparmor-notify pkg installed?"
         fi
-    else
-        err "[$aa_notif_desktop] not a file - is apparmor-notify pkg installed?"
     fi
 }
 
@@ -641,6 +643,7 @@ setup_apparmor() {
 #   - https://github.com/netblue30/firejail
 #   - comparison to bubblewrap, docker etc: https://github.com/netblue30/firejail/wiki/Frequently-Asked-Questions#how-does-it-compare-with-docker-lxc-nspawn-bubblewrap
 # - am: (appimage package manager that also does sandboxing)  https://github.com/ivan-hc/AM
+#   - somewhat similar is https://github.com/mijorus/gearlever (avail as flatpak lol)
 # - systemd-nspawn
 # - good hackernews on the topic: https://news.ycombinator.com/item?id=36681912
 # see also:
@@ -2239,6 +2242,7 @@ install_progs() {
     is_native && install_nvidia
     is_native && install_amd
     is_native && install_cpu_microcode_pkg
+    setup_btrfs
     #is_native && install_games
 
     post_install_progs_setup
@@ -3872,16 +3876,17 @@ install_webdev() {
     #fi
 
     # update npm:
-    execute "$NPM_PRFX npm install npm@latest -g" && sleep 0.1
-    # NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
-    execute 'npm completion | sudo tee /etc/bash_completion.d/npm > /dev/null'
+    if command -v npm >/dev/null 2>&1; then
+        execute "$NPM_PRFX npm install npm@latest -g" && sleep 0.1
+        # NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
+        execute 'npm completion | sudo tee /etc/bash_completion.d/npm > /dev/null'
 
-
-    # install npm modules:  # TODO review what we want to install
-    # note nwb (zero-config development setup) is dead - use vite instead: https://github.com/vitejs/vite
-    #execute "$NPM_PRFX npm install -g \
-        #typescript \
-    #"
+        # install npm modules:  # TODO review what we want to install
+        # note nwb (zero-config development setup) is dead - use vite instead: https://github.com/vitejs/vite
+        #execute "$NPM_PRFX npm install -g \
+            #typescript \
+        #"
+    fi
 
     # install ruby modules:          # sass: http://sass-lang.com/install
     # TODO sass deprecated, use https://github.com/sass/dart-sass instead; note there's also sassc (also avail in apk)
@@ -5524,6 +5529,7 @@ install_from_repo() {
     # -    netdata
 
     declare -ar block2=(
+        strace  # system call tracer, i.e. a debugging tool which prints out a trace of all the system calls made by another process/program
         net-tools  # includes the important tools for controlling the network subsystem of the Linux kernel. This includes arp, ifconfig, netstat, rarp, nameif and route
         dnsutils  # provides dig, nslookup, nsupdate
         dnstracer  # determines where a given Domain Name Server (DNS) gets its information from for a given hostname, and follows the chain of DNS servers back to the authoritative answer
@@ -5734,7 +5740,7 @@ install_from_repo() {
         silversearcher-ag
         ugrep  # Universal grep: ultra fast searcher of file systems, text and binary files, source code, archives, compressed files, documents, and more; https://github.com/Genivia/ugrep/
         gawk  # gnu awk
-        locate  # updatedb generates an index of files and directories. GNU locate can be used to quickly query this index
+        plocate  # updatedb generates an index of files and directories. GNU locate can be used to quickly query this index
         cowsay
         #cowsay-off  # offensive
         toilet  # prints text using large characters made of smaller characters
@@ -5938,6 +5944,22 @@ install_cpu_microcode_pkg() {
         err "could not detect our cpu vendor"
         return 1
     fi
+}
+
+
+# read https://wiki.debian.org/Btrfs, especially 'Recommendations'
+# commands:
+# - btrfs dev stats /btrfs_mountpoint
+#   - overview of all devices in pool, statuses etc
+#
+# TODO:
+# - if we use snapper, add it to PRUNEPATHS of configure_updatedb()
+setup_btrfs() {
+    grep -qE '/bbtrfs\' /etc/fstab || return 0
+
+    # TODO: do we need to set up btrfsmaintenance ? think we need to manually
+    # schedule, e.g. scrub
+    install_block 'btrfsmaintenance btrfs-progs'
 }
 
 
@@ -6217,7 +6239,6 @@ __choose_prog_to_build() {
         install_brillo
         install_display_switch
         install_neovide
-        install_asdf
         install_mise
         install_croc
         install_kanata
@@ -6337,6 +6358,11 @@ remind_manually_installed_progs() {
 # as per    https://intellij-support.jetbrains.com/hc/en-us/articles/15268113529362-Inotify-Watches-Limit-Linux
 increase_inotify_watches_limit() {
     _sysctl_conf '60-jetbrains.conf' 'fs.inotify.max_user_watches' 1048576
+}
+
+
+allow_user_run_dmesg() {
+    _sysctl_conf '60-allow-dmesg.conf' 'kernel.dmesg_restrict' 0
 }
 
 
@@ -6892,26 +6918,23 @@ setup_firefox() {
 }
 
 
-# updatedb.findutils is a logic executed by cron to find files and build a db for $locate.
+# updatedb.findutils is a logic executed by cron to find files and build a db for $ locate / plocate.
 # here we provide customization for it
+#
 # TODO: move away from cron!
 configure_updatedb() {
-    local exe conf paths line i modified
+    local conf paths line i modified
 
-    exe='/etc/cron.daily/locate'  # cron task that executes updatedb
-    conf='/etc/updatedb.findutils.cron.local'  # file customizing $exe; note it's sourced by $exe itself
-    paths=(/mnt /media)  # paths to be added to PRUNEPATHS definition
+    conf='/etc/updatedb.conf'
+    # /.snapshots is snapper/btrfs location
+    paths=(/mnt /media /var/cache /data/seafile-data "$HOME/.cache" /.snapshots)  # paths to be added to PRUNEPATHS definition
 
-    [[ -x "$exe" ]] || { err "[$exe] not found or not an executable"; return 1; }
-    grep -Fq "$conf" "$exe" || { err "[$conf] not referenced in [$exe]!"; return 1; }  # sanity
-
-    [[ -f "$conf" ]] && grep -q '^PRUNEPATHS=' "$conf" && i="$conf" || i="$exe"
-    # extract the value between quotes:
-    line="$(grep -Po '^PRUNEPATHS="\K.*(?="$)' "$i")" || { err "no PRUNEPATHS found in [$i]"; return 1; }
+    [[ -s "$conf" ]] || { err "[$conf] not a nonempty file"; return 1; }
+    line="$(grep -Po '^PRUNEPATHS="\K.*(?="$)' "$conf")"  # extract the value between quotes
 
     for i in "${paths[@]}"; do
         [[ "$line" =~ ([[:space:]]|^)"$i"([[:space:]]|$) ]] && continue  # path already included
-        line+=" $i"
+        line+="${line:+ }$i"
         modified=TRUE
     done
 
@@ -6996,7 +7019,9 @@ post_install_progs_setup() {
     #is_native && execute -i "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
     is_native && setup_mopidy
     is_native && execute 'sudo sensors-detect --auto'   # answer enter for default values (this is lm-sensors config)
+    is_pkg_installed 'command-not-found' && execute 'sudo apt-file update && sudo update-command-not-found'
     increase_inotify_watches_limit         # for intellij IDEA
+    allow_user_run_dmesg
     #increase_ulimit
     enable_unprivileged_containers_for_regular_users
     setup_tcpdump
@@ -7089,6 +7114,11 @@ is_installed() {
     fi
 
     return 1
+}
+
+
+is_pkg_installed() {
+    apt list -qq --installed "$*" | grep -q .
 }
 
 
@@ -8152,12 +8182,15 @@ exit
 #
 #  TODO:
 #  - replace cron w/ systemd timers
+#    - consider installing systemd-cron if needed - converts legacy cron to sysd timers
 #  - migrate to zfs (or bcachefs ?)
 #   - if zfs, look into installing timeshift & integrating it w/ zfs
 #  - enable keepassxc integration w/ ssh-agent? see https://www.techrepublic.com/article/how-to-integrate-ssh-key-authentication-into-keepassxc/
 #  - verify our smartd setup
 #  - install TLP
 #    - see these grub edits for TLP: https://linuxblog.io/thinkpad-t14s-gen-3-amd-linux-user-review-tweaks/#My_etcdefaultgrub_edits
+#  - databse defrag/compactions should be scheduled, e.g. "notmuch compact"
+#  - consider installing & setting up logwatch & fwlogwatch
 #
 #
 # list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/
