@@ -2240,7 +2240,7 @@ install_progs() {
     install_own_builds  # has to be after install_from_repo()
 
     is_native && install_nvidia
-    is_native && install_amd
+    is_native && install_amd_gpu
     is_native && install_cpu_microcode_pkg
     setup_btrfs
     #is_native && install_games
@@ -2311,10 +2311,7 @@ install_kernel_modules() {
 
     conf='/etc/modules'
 
-    if ! [[ -f "$conf" ]]; then
-        err "[$conf] is not a file; skipping kernel module installation"
-        return 1
-    fi
+    [[ -f "$conf" ]] || { err "[$conf] is not a file; skipping kernel module installation"; return 1; }
 
     # note as per https://wiki.archlinux.org/title/Backlight :
     #   > Using ddcci and i2c-dev simultaneously may result in resource conflicts such as a Device or resource busy error.
@@ -2355,14 +2352,14 @@ upgrade_kernel() {
         '
         readonly arch='amd64'
     else
-        err "verified we're not running 64bit system. make sure it's correct. skipping kernel meta-package installation."
-        sleep 5
+        err "verified we're not running 64bit system. make sure it's correct. skipping kernel meta-package installation..."
+        sleep 10
     fi
 
     if is_noninteractive || [[ "$MODE" -ne 0 ]]; then return 0; fi  # only ask for custom kernel ver when we're in manual mode (single task), or we're in noninteractive node
 
     # search for available kernel images:
-    readarray -t kernels_list < <(apt-cache search --names-only "^linux-image-[0-9]+\.[0-9]+\.[0-9]+.*$arch\$" | cut -d' ' -f1 | sort -n)
+    readarray -t kernels_list < <(apt-cache search --names-only "^linux-image-[-.0-9]+.*$arch\$" | cut -d' ' -f1 | sort -r --version-sort)
 
     [[ -z "${kernels_list[*]}" ]] && { err "apt-cache search didn't find any kernel images. skipping kernel upgrade"; sleep 5; return 1; }
 
@@ -5915,14 +5912,16 @@ install_vbox_guest() {
 
 
 # offers to install AMD drivers, if card is detected.
+# note run radeontop to monitor AMD card usage
 #
 # https://wiki.debian.org/AtiHowTo
-install_amd() {
+install_amd_gpu() {
     # TODO: consider  lspci -vnn | grep VGA | grep AMD
     if sudo lshw | grep -iA 5 'display' | grep -q 'vendor.*AMD'; then
         if confirm -d N "we seem to have AMD card; want to install AMD drivers?"; then  # TODO: should we default to _not_ installing in non-interactive mode?
             report "installing AMD drivers & firmware..."
-            install_block 'firmware-amd-graphics libgl1-mesa-dri libglx-mesa0 mesa-vulkan-drivers xserver-xorg-video-all'
+            # TODO: x11!:
+            install_block 'firmware-amd-graphics libgl1-mesa-dri libglx-mesa0 mesa-vulkan-drivers xserver-xorg-video-amdgpu radeontop'
             return $?
         else
             report "we chose not to install AMD drivers..."
@@ -5941,7 +5940,7 @@ install_cpu_microcode_pkg() {
     elif is_amd_cpu; then
         install_block  amd64-microcode
     else
-        err "could not detect our cpu vendor"
+        err "!! could not detect our cpu vendor !!"
         return 1
     fi
 }
@@ -5955,7 +5954,7 @@ install_cpu_microcode_pkg() {
 # TODO:
 # - if we use snapper, add it to PRUNEPATHS of configure_updatedb()
 setup_btrfs() {
-    grep -qE '/bbtrfs\' /etc/fstab || return 0
+    grep -qE '\bbtrfs\b' /etc/fstab || return 0
 
     # TODO: do we need to set up btrfsmaintenance ? think we need to manually
     # schedule, e.g. scrub
@@ -5980,7 +5979,7 @@ install_nvidia() {
     # TODO: consider  lspci -vnn | grep VGA | grep -i nvidia
     if sudo lshw | grep -iA 5 'display' | grep -iq 'vendor.*NVIDIA'; then
         if confirm -d N "we seem to have NVIDIA card; want to install nvidia drivers?"; then  # TODO: should we default to _not_ installing in non-interactive mode?
-            # TODO: also install  nvidia-detect ?
+            # TODO: also/instead install  nvidia-detect and install the driver it suggests?
             report "installing NVIDIA drivers..."
             install_block 'nvidia-driver'
             #execute "sudo nvidia-xconfig"  # not required as of Stretch
@@ -5989,7 +5988,7 @@ install_nvidia() {
             report "we chose not to install nvidia drivers..."
         fi
     else
-        report "we don't have a nvidia card; skipping installing their drivers..."
+        report "we don't have an nvidia card; skipping installing their drivers..."
     fi
 }
 
@@ -6119,7 +6118,7 @@ choose_single_task() {
         upgrade_firmware
         install_cpu_microcode_pkg
         install_nvidia
-        install_amd
+        install_amd_gpu
         install_webdev
         install_from_repo
         install_ssh_server_or_client
