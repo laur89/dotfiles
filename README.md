@@ -209,7 +209,7 @@ mount -o noatime,space_cache=v2,compress=zstd:1,ssd,discard=async,subvol=@var /d
 1. finally create first default snapshot:
     - `sudo snapper -c root create --description "default fresh install"`
 
-TODO: look into grub-btrfs (not avail on debian repos)
+TODO: look into grub-btrfs (not avail on debian repos); any alternative for systemd-boot?
 
 
 ## BTRFS notes 
