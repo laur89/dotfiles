@@ -121,7 +121,7 @@ of the above blog post.
     - `unmount /target/boot/efi`
     - `unmount /target/boot`
     - `unmount /target`
-1. mount our encrypter partition w/ `mount /dev/mapper/$VOLUME_GROUP_NAME /mnt`
+1. mount our encrypted partition w/ `mount /dev/mapper/$VOLUME_GROUP_NAME /mnt`
     - VOL_GROUP_NAME will be likely be the one that was mounted to /target
 1. `cd /mnt`
 1. `ls`
