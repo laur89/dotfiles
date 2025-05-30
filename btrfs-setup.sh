@@ -48,9 +48,8 @@ if [ -z "$BTRFS_MOUNT_OPTS" ]; then
     [ -z "$BTRFS_MOUNT_OPTS" ] && exit 1  # sanity
 fi
 
-# modify our fstab for the root subvolume line (@rootfs -> @)
-sed -r -e "s|(^.*\s+/\s+btrfs\s+)\S+,subvol=@rootfs(\s+.*)|\1${BTRFS_MOUNT_OPTS},subvol=@\2|g" -i /target/etc/fstab || exit 1
-FSTAB_MOUNTLINE="$(grep -E '\s+/\s+btrfs\s+.*subvol=@\s+' /target/etc/fstab)" || exit 1
+sed -r -e "s|(^.*\s+/\s+btrfs\s+)\S+(,subvol=@rootfs\s+.*)|\1${BTRFS_MOUNT_OPTS}\2|g" -i /target/etc/fstab || exit 1
+FSTAB_MOUNTLINE="$(grep -E '\s+/\s+btrfs\s+.*subvol=@rootfs\s+' /target/etc/fstab)" || exit 1
 
 # first unmount our partitions:
 EFI_FS="$(umnt /target/boot/efi)" || exit 1  # results in empty var if mountpoint doesn't exist
@@ -58,17 +57,10 @@ BOOT_FS="$(umnt /target/boot)" || exit 1  # results in empty var if mountpoint d
 ROOT_FS="$(umnt /target)" || exit 1  # required non-empty
 [ -z "$ROOT_FS" ] && exit 1  # sanity
 
-# rename debian-created @rootfs to '@' to be more compatible w/ Timeshift et al:
 mount "$ROOT_FS" /mnt || exit 1
 
-TARGET_ROOT_SUBVOL='/mnt/@'
-[ -e "$TARGET_ROOT_SUBVOL" ] && exit 1  # sanity
-# note @rootfs type is dir
-find /mnt -mindepth 1 -maxdepth 1 -name '@rootfs' -exec mv {} "$TARGET_ROOT_SUBVOL" \;
-[ -e "$TARGET_ROOT_SUBVOL" ] || exit 1  # sanity
-
-# re-mount our renamed root volume to be able to create additional dirs for subvols:
-mount -o "${BTRFS_MOUNT_OPTS},subvol=@" "$ROOT_FS" /target || exit 1
+# re-mount our root volume to be able to create additional dirs for subvols:
+mount -o "${BTRFS_MOUNT_OPTS},subvol=@rootfs" "$ROOT_FS" /target || exit 1
 ##################
 
 # 1. create mountpoints (i.e. dirs) for each subvol;
@@ -110,7 +102,7 @@ for mapping in "$@"; do
     mount -o "${BTRFS_MOUNT_OPTS},subvol=$subvol" "$ROOT_FS" "$mntp" || exit 1
     # add fstab entry:
     echo "$FSTAB_MOUNTLINE" | sed -r -e "s|(^.*\s+)/(\s+btrfs.*)|\1/${mountpoint}\2|" \
-                                  -e "s|,subvol=@|,subvol=$subvol|" >> /target/etc/fstab || exit 1
+                                  -e "s|,subvol=@rootfs|,subvol=$subvol|" >> /target/etc/fstab || exit 1
 done
 
 umount /mnt || exit 1
