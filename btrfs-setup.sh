@@ -25,11 +25,11 @@ fi
 # upstream scripts import this common lib, e.g. https://salsa.debian.org/installer-team/partman-basicfilesystems/-/blob/master/finish.d/aptinstall_basicfilesystems
 #. /lib/partman/lib/base.sh
 
+[ -s /target/etc/fstab ] || exit 1  # sanity
+
 # verify whether we've partitioned using btrfs; if not, bail successfully.
 # note upstream scripts do it differently, see script under /lib/partman/finish.d/70aptinstall_btrfs
-#apt list -qq --installed btrfs-progs | grep -q . || exit 0  # TODO: we might not have apt set up yet...
 grep -Eq -m 1 '\s+/\s+btrfs\s+.*=@rootfs\s+' /target/etc/fstab || exit 0
-[ -d /target ] || exit 1  # sanity
 
 
 umnt() {  # unmount provided mountpoint, and return the fs that was mounted
@@ -81,7 +81,7 @@ mount -o "${BTRFS_MOUNT_OPTS},subvol=@rootfs" "$ROOT_FS" /target || exit 1
 #      system("mount -o " BTRFS_MOUNT_OPTS ",subvol=" subvol_mountpoint[1] " " ROOT_FS " /target/" subvol_mountpoint[2])
 #
 #      t = FSTAB;
-#      sub(",subvol=@",",subvol=" subvol_mountpoint[1],t);
+#      sub(",subvol=@rootfs",",subvol=" subvol_mountpoint[1],t);
 #      sub(" / "," /" subvol_mountpoint[2] " ",t);
 #
 #      #system("echo \"" t "\" >> /target/etc/fstab")
