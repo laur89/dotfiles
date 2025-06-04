@@ -66,8 +66,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # needs to be in same dir as the sourcing env vars file.
 
     export BASE_DATA_DIR='/data'
-    export BASE_PROGS_DIR="$BASE_DATA_DIR/progs"
-    export BASE_DEPS_LOC="$BASE_PROGS_DIR/deps"             # hosting stuff like homeshick, bash-git-prompt...
+    export BASE_PROGS_DIR='/progs'
 
     # !! note homeshick env vars are likely also defined/duplicated in our install bootstrap script !!
     export BASE_HOMESICK_REPOS_LOC="$HOME/.homesick/repos"  # !! keep real location in $HOME! otherwise some apparmor whitelisting won't work (eg for msmtp)
@@ -82,12 +81,12 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
 
     # note JAVA_X env vars are managed by sdkman; unsure about M2* ones tho;
     #export JAVA_HOME=/usr/local/jdk_link  # superseded by sdkman
-    #export M2_HOME=$BASE_DATA_DIR/progs/maven/mvn_link
+    #export M2_HOME=$BASE_PROGS_DIR/maven/mvn_link
     #export M2=$M2_HOME/bin
     #export GRADLE_HOME=/usr/share/gradle
     #export GRADLE_USER_HOME=$BASE_DATA_DIR/apps/gradle   # defaults to ~/.gradle; afaik we currently link it from ~/.gradle to $BASE_DATA_DIR via homeshick
 
-    export KAFKA_HOME=$BASE_DATA_DIR/progs/kafka/kafka
+    export KAFKA_HOME=$BASE_PROGS_DIR/kafka/kafka
 
     # set path for global, but non-sudo, npm pacakges:  (https://stackoverflow.com/questions/10081293/install-npm-into-home-directory-with-distribution-nodejs-package-ubuntu/13021677#13021677)
     # note this also requires ~/.npmrc with 'prefix = ~/.npm-packages', which is not
@@ -102,11 +101,11 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     #NODE_PATH="$NPM_PACKAGES/lib/node_modules:$NODE_PATH"
 
     export NVM_DIR="$HOME/.nvm"  # do not change location, keep _non-linked_ .nvm/ under ~
-    #export ASDF_DIR="$BASE_DEPS_LOC/asdf"  # https://asdf-vm.com/manage/configuration.html#asdf-dir
+    #export ASDF_DIR="$BASE_PROGS_DIR/asdf"  # https://asdf-vm.com/manage/configuration.html#asdf-dir
     #export ASDF_DATA_DIR="$ASDF_DIR"  # defaults to $HOME/.asdf
 
     # mise conf: https://mise.jdx.dev/directories.html#directory-structure
-    export MISE_DATA_DIR="$BASE_DEPS_LOC/mise"  # defaults to ~/.local/share/mise
+    export MISE_DATA_DIR="$BASE_PROGS_DIR/mise"  # defaults to ~/.local/share/mise
 
     # set our own-used link to latest node version (managed by .bashrc):
     #export NODE_LOC="$NVM_DIR/latest"  # when unsing nvm
@@ -367,7 +366,7 @@ for i in \
         "$ANDROID_HOME/cmdline-tools/bin" \
         "$GOPATH/bin" \
         "${KREW_ROOT:-$HOME/.krew}/bin" \
-        "$BASE_DEPS_LOC/git-fuzzy/bin" \
+        "$BASE_PROGS_DIR/git-fuzzy/bin" \
         "$HOME/.local/share/coursier/bin" \
         "$PYENV_ROOT/bin" \
         "$BASE_PROGS_DIR/clojure/bin" \

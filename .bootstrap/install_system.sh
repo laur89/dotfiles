@@ -70,7 +70,6 @@ SYSCTL_CHANGED=0       # states whether sysctl config got changed
 #------------------------
 readonly BASE_DATA_DIR="/data"  # try to keep this value in sync with equivalent defined in $SHELL_ENVS;
 readonly BASE_PROGS_DIR="/progs"
-readonly BASE_DEPS_LOC="$BASE_PROGS_DIR/deps"             # hosting stuff like ~homeshick~, bash-git-prompt...
 readonly BASE_BUILDS_DIR="$BASE_PROGS_DIR/custom_builds"  # hosts our built progs and/or their .deb packages;
 # !! note homeshick env vars are likely also defined/duplicated in our env_var files !!
 readonly BASE_HOMESICK_REPOS_LOC="$HOME/.homesick/repos"  # !! keep real location in $HOME! otherwise some apparmor whitelisting won't work (eg for msmtp)
@@ -1369,90 +1368,90 @@ install_deps() {
         #   - xfce4-power-manager
 
         # batt output (requires spark):
-        clone_or_pull_repo "laur89" "Battery" "$BASE_DEPS_LOC"  # https://github.com/laur89/Battery
-        create_link "${BASE_DEPS_LOC}/Battery/battery" "$HOME/bin/battery"
+        clone_or_pull_repo "laur89" "Battery" "$BASE_PROGS_DIR"  # https://github.com/laur89/Battery
+        create_link "${BASE_PROGS_DIR}/Battery/battery" "$HOME/bin/battery"
 
         __install_wifi_driver && sleep 5; unset __install_wifi_driver  # keep last, as this _might_ restart wifi kernel module
     }
 
     # bash-git-prompt:
     # alternatively consider https://github.com/starship/starship !!
-    clone_or_pull_repo "magicmonty" "bash-git-prompt" "$BASE_DEPS_LOC"
+    clone_or_pull_repo "magicmonty" "bash-git-prompt" "$BASE_PROGS_DIR"
 
     # git-flow-completion:  # https://github.com/bobthecow/git-flow-completion
-    #clone_or_pull_repo "bobthecow" "git-flow-completion" "$BASE_DEPS_LOC"
+    #clone_or_pull_repo "bobthecow" "git-flow-completion" "$BASE_PROGS_DIR"
 
     # bars (as in bar-charts) in shell:
     #  note: see also https://github.com/sindresorhus/sparkly-cli
-    clone_or_pull_repo "holman" "spark" "$BASE_DEPS_LOC"  # https://github.com/holman/spark
-    create_link "${BASE_DEPS_LOC}/spark/spark" "$HOME/bin/spark"
+    clone_or_pull_repo "holman" "spark" "$BASE_PROGS_DIR"  # https://github.com/holman/spark
+    create_link "${BASE_PROGS_DIR}/spark/spark" "$HOME/bin/spark"
 
     # imgur uploader:
-    clone_or_pull_repo "ram-on" "imgurbash2" "$BASE_DEPS_LOC"  # https://github.com/ram-on/imgurbash2
-    create_link "${BASE_DEPS_LOC}/imgurbash2/imgurbash2" "$HOME/bin/imgurbash2"
+    clone_or_pull_repo "ram-on" "imgurbash2" "$BASE_PROGS_DIR"  # https://github.com/ram-on/imgurbash2
+    create_link "${BASE_PROGS_DIR}/imgurbash2/imgurbash2" "$HOME/bin/imgurbash2"
 
     # imgur uploader 2:
-    #clone_or_pull_repo "tangphillip" "Imgur-Uploader" "$BASE_DEPS_LOC"  # https://github.com/tangphillip/Imgur-Uploader
-    #create_link "${BASE_DEPS_LOC}/Imgur-Uploader/imgur" "$HOME/bin/imgur-uploader"
+    #clone_or_pull_repo "tangphillip" "Imgur-Uploader" "$BASE_PROGS_DIR"  # https://github.com/tangphillip/Imgur-Uploader
+    #create_link "${BASE_PROGS_DIR}/Imgur-Uploader/imgur" "$HOME/bin/imgur-uploader"
 
     # fuzzy file finder/command completer etc:
-    clone_or_pull_repo "junegunn" "fzf" "$BASE_DEPS_LOC"  # https://github.com/junegunn/fzf
-    create_link "${BASE_DEPS_LOC}/fzf" "$HOME/.fzf"
+    clone_or_pull_repo "junegunn" "fzf" "$BASE_PROGS_DIR"  # https://github.com/junegunn/fzf
+    create_link "${BASE_PROGS_DIR}/fzf" "$HOME/.fzf"
     execute "$HOME/.fzf/install --all" || err "could not install fzf"
 
     # replace bash tab completion w/ fzf:
     # alternatively consider https://github.com/rockandska/fzf-obc
-    clone_or_pull_repo "lincheney" "fzf-tab-completion" "$BASE_DEPS_LOC"  # https://github.com/lincheney/fzf-tab-completion
+    clone_or_pull_repo "lincheney" "fzf-tab-completion" "$BASE_PROGS_DIR"  # https://github.com/lincheney/fzf-tab-completion
 
     # fasd - shell navigator similar to autojump:
     # note we're using whjvenyl's fork instead of original clvv, as latter was last updated 2015 (orig: https://github.com/clvv/fasd.git)
     # another alternative: https://github.com/ajeetdsouza/zoxide
-    clone_or_pull_repo "whjvenyl" "fasd" "$BASE_DEPS_LOC"  # https://github.com/whjvenyl/fasd
-    create_link "${BASE_DEPS_LOC}/fasd/fasd" "$HOME/bin/fasd"
+    clone_or_pull_repo "whjvenyl" "fasd" "$BASE_PROGS_DIR"  # https://github.com/whjvenyl/fasd
+    create_link "${BASE_PROGS_DIR}/fasd/fasd" "$HOME/bin/fasd"
 
     # maven bash completion:
-    clone_or_pull_repo "juven" "maven-bash-completion" "$BASE_DEPS_LOC"  # https://github.com/juven/maven-bash-completion
-    create_link "${BASE_DEPS_LOC}/maven-bash-completion/bash_completion.bash" "$HOME/.bash_completion.d/maven-completion.bash"
+    clone_or_pull_repo "juven" "maven-bash-completion" "$BASE_PROGS_DIR"  # https://github.com/juven/maven-bash-completion
+    create_link "${BASE_PROGS_DIR}/maven-bash-completion/bash_completion.bash" "$HOME/.bash_completion.d/maven-completion.bash"
 
     # gradle bash completion:  # https://github.com/gradle/gradle-completion/blob/master/README.md#installation-for-bash-32
     #curl -LA gradle-completion https://edub.me/gradle-completion-bash -o $HOME/.bash_completion.d/
-    clone_or_pull_repo "gradle" "gradle-completion" "$BASE_DEPS_LOC"
-    create_link "${BASE_DEPS_LOC}/gradle-completion/gradle-completion.bash" "$HOME/.bash_completion.d/"
+    clone_or_pull_repo "gradle" "gradle-completion" "$BASE_PROGS_DIR"
+    create_link "${BASE_PROGS_DIR}/gradle-completion/gradle-completion.bash" "$HOME/.bash_completion.d/"
 
     # leiningen bash completion:  # https://codeberg.org/leiningen/leiningen/src/branch/main/bash_completion.bash
     #
     install_from_url -d "$HOME/.bash_completion.d/" lein_bash_completion.bash "https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash"
 
     # vifm filetype icons: https://github.com/thimc/vifm_devicons
-    clone_or_pull_repo "thimc" "vifm_devicons" "$BASE_DEPS_LOC"
-    create_link "${BASE_DEPS_LOC}/vifm_devicons" "$HOME/.vifm_devicons"
+    clone_or_pull_repo "thimc" "vifm_devicons" "$BASE_PROGS_DIR"
+    create_link "${BASE_PROGS_DIR}/vifm_devicons" "$HOME/.vifm_devicons"
 
     # git-fuzzy (yet another git fzf tool)   # https://github.com/bigH/git-fuzzy
-    clone_or_pull_repo "bigH" "git-fuzzy" "$BASE_DEPS_LOC"
+    clone_or_pull_repo "bigH" "git-fuzzy" "$BASE_PROGS_DIR"
 
     # notify-send with additional features  # https://github.com/M3TIOR/notify-send.sh
     # note it depends on libglib2.0-bin (should be already installed):   install_block libglib2.0-bin
-    clone_or_pull_repo  M3TIOR  "notify-send.sh" "$BASE_DEPS_LOC"
-    create_link "${BASE_DEPS_LOC}/notify-send.sh/src/notify-send.sh" "$HOME/bin/"
+    clone_or_pull_repo  M3TIOR  "notify-send.sh" "$BASE_PROGS_DIR"
+    create_link "${BASE_PROGS_DIR}/notify-send.sh/src/notify-send.sh" "$HOME/bin/"
 
 
     # diff-so-fancy - human-readable git diff:  # https://github.com/so-fancy/diff-so-fancy#install
     # note: alternative would be https://github.com/dandavison/delta
     # either of those need manual setup in our gitconfig
-    clone_or_pull_repo "so-fancy" "diff-so-fancy" "$BASE_DEPS_LOC" || return 1
-    create_link "$BASE_DEPS_LOC/diff-so-fancy" "$HOME/bin/"
+    clone_or_pull_repo "so-fancy" "diff-so-fancy" "$BASE_PROGS_DIR" || return 1
+    create_link "$BASE_PROGS_DIR/diff-so-fancy" "$HOME/bin/"
 
     # forgit - fzf-fueled git tool:  # https://github.com/wfxr/forgit
-    clone_or_pull_repo "wfxr" "forgit" "$BASE_DEPS_LOC" || return 1
+    clone_or_pull_repo "wfxr" "forgit" "$BASE_PROGS_DIR" || return 1
 
     # dynamic colors loader: (TODO: deprecated by pywal right?)
-    #clone_or_pull_repo "sos4nt" "dynamic-colors" "$BASE_DEPS_LOC"  # https://github.com/sos4nt/dynamic-colors
-    #create_link "${BASE_DEPS_LOC}/dynamic-colors" "$HOME/.dynamic-colors"
-    #create_link "${BASE_DEPS_LOC}/dynamic-colors/bin/dynamic-colors" "$HOME/bin/dynamic-colors"
+    #clone_or_pull_repo "sos4nt" "dynamic-colors" "$BASE_PROGS_DIR"  # https://github.com/sos4nt/dynamic-colors
+    #create_link "${BASE_PROGS_DIR}/dynamic-colors" "$HOME/.dynamic-colors"
+    #create_link "${BASE_PROGS_DIR}/dynamic-colors/bin/dynamic-colors" "$HOME/bin/dynamic-colors"
 
     # base16 shell colors:
-    #clone_or_pull_repo "chriskempson" "base16-shell" "$BASE_DEPS_LOC"  # https://github.com/chriskempson/base16-shell
-    #create_link "${BASE_DEPS_LOC}/base16-shell" "$HOME/.config/base16-shell"
+    #clone_or_pull_repo "chriskempson" "base16-shell" "$BASE_PROGS_DIR"  # https://github.com/chriskempson/base16-shell
+    #create_link "${BASE_PROGS_DIR}/base16-shell" "$HOME/.config/base16-shell"
 
     # tmux plugin manager:
     _install_tmux_deps; unset _install_tmux_deps
@@ -1603,7 +1602,6 @@ setup_dirs() {
             $BASE_DATA_DIR/tmp \
             $BASE_DATA_DIR/vbox_vms \
             $BASE_PROGS_DIR \
-            $BASE_DEPS_LOC \
             $BASE_BUILDS_DIR \
             $BASE_DATA_DIR/dev \
             $BASE_DATA_DIR/apps \
@@ -2659,11 +2657,11 @@ resolve_dl_urls() {
     if [[ -z "$urls" ]]; then
         err "all urls got filtered out after processing [$dl_url]?"  # TODO: this would never happen right?
         return 1
-    elif [[ "$multi" -ne 1 ]] && ! is_single "$urls"; then
+    elif [[ "$multi" != 1 ]] && ! is_single "$urls"; then
         err "multiple urls found from [$loc] for pattern [$grep_tail], but expecting a single result:"
         err "$urls"
         return 1
-    elif [[ "$zort" -eq 1 ]] && ! is_single "$urls"; then
+    elif [[ "$zort" == 1 ]] && ! is_single "$urls"; then
         urls="$(tail -n1 <<< "$urls")"
     fi
 
@@ -3414,17 +3412,17 @@ install_kubectx() {  # https://github.com/ahmetb/kubectx
     install_bin_from_git -N kubens  -d "$HOME/bin"  ahmetb  kubectx  "kubens_.*_linux_x86_64.tar.gz"
 
     # kubectx/kubens completion scripts: (note there's corresponding entry in ~/.bashrc)
-    clone_or_pull_repo "ahmetb" "kubectx" "$BASE_DEPS_LOC" || return 1
+    clone_or_pull_repo "ahmetb" "kubectx" "$BASE_PROGS_DIR" || return 1
     COMPDIR=$(pkg-config --variable=completionsdir bash-completion)
     [[ -d "$COMPDIR" ]] || { err "[$COMPDIR] not a dir, cannot install kube{ctx,ns} shell completion"; return 1; }
-    create_link -s "${BASE_DEPS_LOC}/kubectx/completion/kubens.bash" "$COMPDIR/kubens"
-    create_link -s "${BASE_DEPS_LOC}/kubectx/completion/kubectx.bash" "$COMPDIR/kubectx"
+    create_link -s "${BASE_PROGS_DIR}/kubectx/completion/kubens.bash" "$COMPDIR/kubens"
+    create_link -s "${BASE_PROGS_DIR}/kubectx/completion/kubectx.bash" "$COMPDIR/kubectx"
 }
 
 # kube-ps1 - kubernets shell prompt
 # tag: aws, k8s, kubernetes
 install_kube_ps1() {  # https://github.com/jonmosco/kube-ps1
-    clone_or_pull_repo "jonmosco" "kube-ps1" "$BASE_DEPS_LOC"
+    clone_or_pull_repo "jonmosco" "kube-ps1" "$BASE_PROGS_DIR"
     # note there's corresponding entry in ~/.bashrc
 }
 
@@ -3675,7 +3673,7 @@ install_weeslack() {  # https://github.com/wee-slack/wee-slack
 install_weechat_matrix() {  # https://github.com/poljar/weechat-matrix
     local d deps
     d="$HOME/.local/share/weechat/python"
-    deps="${BASE_DEPS_LOC}/weechat-matrix"
+    deps="${BASE_PROGS_DIR}/weechat-matrix"
 
     install_block 'libolm-dev' || return 1
     execute "mkdir -p $d/autoload" || return 1
@@ -4684,8 +4682,8 @@ install_i3_deps() {
     py_install  i3expo
 
     # i3ass  # https://github.com/budlabs/i3ass/
-    clone_or_pull_repo budlabs i3ass "$BASE_DEPS_LOC"
-    create_link -c "${BASE_DEPS_LOC}/i3ass/src" "$HOME/bin/"
+    clone_or_pull_repo budlabs i3ass "$BASE_PROGS_DIR"
+    create_link -c "${BASE_PROGS_DIR}/i3ass/src" "$HOME/bin/"
 
 
     # install i3-quickterm   # https://github.com/laur89/i3-quickterm
@@ -6756,8 +6754,8 @@ install_gtk_numix() {
 install_gruvbox_gtk_theme() {
     install_block 'gtk2-engines-murrine gnome-themes-extra sassc'
 
-    clone_or_pull_repo "Fausto-Korpsvart" "Gruvbox-GTK-Theme" "$BASE_DEPS_LOC"
-    execute "$BASE_DEPS_LOC/Gruvbox-GTK-Theme/install.sh" || err "gruvbox theme installation failed w/ $?"  # TODO: sandbox! needs write access only to ~/.themes
+    clone_or_pull_repo "Fausto-Korpsvart" "Gruvbox-GTK-Theme" "$BASE_PROGS_DIR"
+    execute "$BASE_PROGS_DIR/Gruvbox-GTK-Theme/install.sh" || err "gruvbox theme installation failed w/ $?"  # TODO: sandbox! needs write access only to ~/.themes
 }
 
 
@@ -6827,7 +6825,7 @@ install_electrum_wallet() {
 
 install_revanced() {
     local d
-    d="$BASE_DEPS_LOC/revanced"
+    d="$BASE_PROGS_DIR/revanced"
     [[ -d "$d" ]] || mkdir "$d"
 
     install_bin_from_git -UA -N revanced.jar -d "$d"  ReVanced  revanced-cli 'all.jar'
@@ -6837,7 +6835,7 @@ install_revanced() {
 
 install_apkeditor() {
     local d
-    d="$BASE_DEPS_LOC/apkeditor"
+    d="$BASE_PROGS_DIR/apkeditor"
     [[ -d "$d" ]] || mkdir "$d"
 
     install_bin_from_git -UA -N apkeditor.jar -d "$d"  REAndroid  APKEditor 'APKEditor-.*.jar'
