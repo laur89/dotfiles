@@ -1831,13 +1831,14 @@ setup_private_asset_perms() {
             ~/.gcalcli_oauth \
             ~/.msmtprc \
             ~/.irssi \
+            ~/.config/weechat \
             "$GNUPGHOME" \
             ~/.gist \
             ~/.bash_hist \
             ~/.bash_history_eternal \
             ~/.config/revolut-py \
                 ; do
-        [[ -e "$i" ]] || { err "expected to find [$i], but it doesn't exist; is it normal?"; continue; }
+        [[ -e "$i" ]] || { err "expected to find [$i] for permission sanitization, but it doesn't exist; is it normal?"; continue; }
         [[ -d "$i" && "$i" != */ ]] && i+='/'
         find -L "$i" -maxdepth 25 \( -type f -o -type d \) -exec chmod 'u=rwX,g=,o=' -- '{}' \+
     done
@@ -1976,6 +1977,8 @@ setup_install_log_file() {
 
 
 setup() {
+    [[ "$MODE" -eq 1 ]] && setup_btrfs
+
     setup_homesick || { err "homesick setup failed; as homesick is necessary, script will exit"; exit 1; }
     verify_ssh_key
     source_shell_conf  # so we get our env vars after dotfiles are pulled in
@@ -2242,7 +2245,6 @@ install_progs() {
     is_native && install_nvidia
     is_native && install_amd_gpu
     is_native && install_cpu_microcode_pkg
-    setup_btrfs
     #is_native && install_games
 
     post_install_progs_setup
@@ -5411,6 +5413,7 @@ install_from_repo() {
     )
 
     declare -ar block1_nonwin=(
+        # firmware-linux  # bunch of firmware, free & non-free
         smartmontools
         pm-utils  # utilities and scripts for power management
         ntfs-3g
@@ -5950,6 +5953,8 @@ install_cpu_microcode_pkg() {
 # commands:
 # - btrfs dev stats /btrfs_mountpoint
 #   - overview of all devices in pool, statuses etc
+# - btrfs su list /
+# - btrfs filesystem usage /
 #
 # TODO:
 # - if we use snapper, add it to PRUNEPATHS of configure_updatedb()
@@ -5959,6 +5964,91 @@ setup_btrfs() {
     # TODO: do we need to set up btrfsmaintenance ? think we need to manually
     # schedule, e.g. scrub
     install_block 'btrfsmaintenance btrfs-progs'
+
+    setup_snapper
+}
+
+
+# for guidance see https://github.com/archlinux/archinstall/blob/master/archinstall/lib/installer.py (function setup_btrfs_snapshot())
+#
+# - note snapper will always take pre- and post snapshots every time apt installs something;
+#   configured via /etc/default/snapper and/or /etc/apt/apt.conf.d/80snapper.
+# - NUMBER_CLEANUP enables/disables cleanup of installation&admin snapshot pairs
+#
+# - print config via $ snapper -c root get-config
+# - list snaps: $ snapper -c root list
+#
+# NOTE: not idempotent! actually kind of is; create-config for existing subvolume exits w/ 1
+# alternatives to snapper:
+# - https://github.com/digint/btrbk - remote transfer of snapshots for backup
+# - Timeshift
+setup_snapper() {
+    [[ -e /etc/default/snapper ]] && return 0  # config file exists, assume we've already set up
+
+    _enable() {
+        local opt OPTIND custom name mountpoint mp
+
+        while getopts 'c' opt; do
+            case "$opt" in
+                c) custom=TRUE ;;  # custom, pre-existing subvolume to use instead of snapper-created nested subvol
+                *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+            esac
+        done
+        shift "$((OPTIND-1))"
+
+        name="$1"
+        mountpoint="$2"
+
+        mp="$mountpoint"; [[ "$mp" != */ ]] && mp+='/'
+
+        if [[ -n "$custom" ]]; then
+            # The default way that snapper works is to automatically create a new subvolume
+            # “.snapshots” under the path of the subvolume that we are creating a snapshot.
+            # Because we want to keep our snapshots separated from the backed up subvolume
+            # itself we must remove the snapper created “.snapshot” subvolume and then
+            # re-mount using the one that we created before in a separate subvolume at @snapshots
+            execute "sudo umount ${mp}.snapshots" || return 1
+            execute "sudo rm -r -- ${mp}.snapshots" || return 1
+        fi
+
+        # create new config(s):
+        # this will likely crate a new .snapshots/ dir as well a new btrfs subvol
+        # of same name. we will rm this new subvol and link our own @snapshots
+        # subvol to this path, so our snapshots are safely stored in different location.
+        execute "sudo snapper -c $name create-config $mountpoint" || return 1  # note returns 1 if $mountpoint is already covered
+
+        if [[ -n "$custom" ]]; then
+            execute "sudo btrfs subvolume delete '${mp}.snapshots'" || return 1  # delete auto-created subvol
+            execute "sudo mkdir '${mp}.snapshots'" || return 1
+            execute "sudo mount -av" || return 1  # remount our @snapshots (or whatever is defined in fstab) to ${mp}.snapshots
+        fi
+
+        execute "sudo snapper -c $name set-config 'ALLOW_GROUPS=sudo'"
+        execute "sudo snapper -c $name set-config 'SYNC_ACL=yes'"
+        #execute "sudo snapper -c $name set-config 'TIMELINE_CREATE=no'"  # disable hourly snaps; think this is also controlled by snapper-timeline.timer ?
+        # reduce number of snapshots kept to avoid slowdowns:
+        execute "sudo snapper -c $name set-config 'TIMELINE_LIMIT_HOURLY=5'"
+        execute "sudo snapper -c $name set-config 'TIMELINE_LIMIT_DAILY=7'"
+        execute "sudo snapper -c $name set-config 'TIMELINE_LIMIT_WEEKLY=0'"
+        execute "sudo snapper -c $name set-config 'TIMELINE_LIMIT_MONTHLY=0'"
+        execute "sudo snapper -c $name set-config 'TIMELINE_LIMIT_YEARLY=0'"
+
+        execute "sudo snapper -c $name set-config 'NUMBER_LIMIT=10'"
+        execute "sudo snapper -c $name set-config 'NUMBER_LIMIT_IMPORTANT=10'"
+        #execute "sudo snapper -c $name set-config 'NUMBER_MIN_AGE=600'"
+    }
+
+    install_block 'snapper snapper-gui' || return 1
+
+    _enable -c root /
+    _enable -c home /home
+
+    ######################################################################
+    execute "sudo systemctl disable snapper-boot.timer"  # disable taking snapshot of root at boot
+    execute "sudo systemctl enable snapper-timeline.timer"
+    execute "sudo systemctl enable snapper-cleanup.timer"
+
+    unset _enable
 }
 
 
@@ -6884,6 +6974,7 @@ install_setup_printing_cups() {
 
 # ff & extension configs/customisation
 # TODO: conf_dir does not exist during initial full install!
+# TODO: consider https://github.com/yokoffing/Betterfox  <-- real cool!
 setup_firefox() {
     local conf_dir profile
 
@@ -8193,6 +8284,7 @@ exit
 #    - see these grub edits for TLP: https://linuxblog.io/thinkpad-t14s-gen-3-amd-linux-user-review-tweaks/#My_etcdefaultgrub_edits
 #  - databse defrag/compactions should be scheduled, e.g. "notmuch compact"
 #  - consider installing & setting up logwatch & fwlogwatch
+#  - consider using Timeshift creator's tinytools: https://teejeetech.com/tinytools/
 #
 #
 # list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/
