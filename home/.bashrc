@@ -277,7 +277,7 @@ unset _homes
 ########################################## bash-prompt
 # if using bash-git-prompt; ...
 
-_BGPRMPT="$BASE_DEPS_LOC/bash-git-prompt/gitprompt.sh"
+_BGPRMPT="$BASE_PROGS_DIR/bash-git-prompt/gitprompt.sh"
 if [[ -f "$_BGPRMPT" ]]; then
     # add lazy-loaded/dynamic extra content to git-prompt, eg kube-ps1:
     # !! note this guy's only called/shown when we're in git repo, unless GIT_PROMPT_ONLY_IN_REPO=0 !!
@@ -318,7 +318,7 @@ fi
 
 ##########################################
 # git-flow-competion:
-[[ -f "$BASE_DEPS_LOC/git-flow-completion/git-flow-completion.bash" ]] && source "$HOME/.git-flow-completion/git-flow-completion.bash"
+[[ -f "$BASE_PROGS_DIR/git-flow-completion/git-flow-completion.bash" ]] && source "$HOME/.git-flow-completion/git-flow-completion.bash"
 
 ##########################################
 # maven-bash-completion:
@@ -466,7 +466,7 @@ export _ZO_RESOLVE_SYMLINKS=1
 command -v zoxide > /dev/null && eval "$(zoxide init bash)"
 ########################################## forgit
 # forgit  (https://github.com/wfxr/forgit)
-_forgit="$BASE_DEPS_LOC/forgit/forgit.plugin.sh"
+_forgit="$BASE_PROGS_DIR/forgit/forgit.plugin.sh"
 [[ -f "$_forgit" ]] && source "$_forgit"
 unset _forgit
 ########################################## mise
@@ -498,7 +498,7 @@ fi
 ##########################################
 # kubectx and kubens bash completion:
 # TODO: migrate to bash_env_vars?
-[[ :$PATH: != *:"${BASE_DEPS_LOC}/kubectx":* ]] && export PATH="${BASE_DEPS_LOC}/kubectx:$PATH"
+[[ :$PATH: != *:"${BASE_PROGS_DIR}/kubectx":* ]] && export PATH="${BASE_PROGS_DIR}/kubectx:$PATH"
 ##########################################
 # kubernetes/k8s shell prompt: (https://github.com/jonmosco/kube-ps1)
 KUBE_PS1_PREFIX="$PROMPT_SEGMENT_PREFIX"
@@ -506,7 +506,7 @@ KUBE_PS1_SUFFIX="$PROMPT_SEGMENT_SUFFIX"
 KUBE_PS1_SYMBOL_USE_IMG=true
 KUBE_PS1_SYMBOL_PADDING=false
 #KUBE_PS1_SYMBOL_DEFAULT=$'\u2388'
-__kube_ps1_sh="${BASE_DEPS_LOC}/kube-ps1/kube-ps1.sh"
+__kube_ps1_sh="${BASE_PROGS_DIR}/kube-ps1/kube-ps1.sh"
 [[ -f "$__kube_ps1_sh" ]] && source "$__kube_ps1_sh" && kubeoff && unset __kube_ps1_sh  # note we default to kubeoff; for better automatic prompt filtering check out this issue/comment: https://github.com/jonmosco/kube-ps1/issues/115#issuecomment-724971405
 ##########################################
 # customize python virtualenv prompt
@@ -565,7 +565,7 @@ export -f nvr
 # note: commented out (at least) 'til these are solved:
 #   https://github.com/lincheney/fzf-tab-completion/issues/17
 #   https://github.com/lincheney/fzf-tab-completion/issues/15
-#ftc="$BASE_DEPS_LOC/fzf-tab-completion/bash/fzf-bash-completion.sh"
+#ftc="$BASE_PROGS_DIR/fzf-tab-completion/bash/fzf-bash-completion.sh"
 #if [[ -f "$ftc" ]]; then
     #source "$ftc"
     #bind -x '"\t": fzf_bash_completion'
