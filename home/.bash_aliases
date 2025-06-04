@@ -19,23 +19,23 @@
 ##################################
 #__THEME_LOC="$HOME/.themes/Numix/gtk-2.0/gtkrc"
 #
-#alias eclipse='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-eclipse "/data/progs/eclipse-jee-kepler-x86_64/eclipse/eclipse"'
-#alias eclipse='env GTK2_RC_FILES=/usr/share/themes/Greybird/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/eclipse-java-luna-SR1-linux-gtk-x86_64/eclipse/eclipse"'
-alias sts2='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/eclipse/sts2"'
-alias eclipse='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/eclipse/eclipse"'
-alias mat='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-eclipse "/data/progs/mat/MemoryAnalyzer"'
-#alias sts='env GTK2_RC_FILES=/usr/share/themes/Greybird/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/STS"'
-alias sts='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/eclipse/sts"'
-#alias idea='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtkrc-2.0-IDE "/data/progs/idea/idea"'
-alias soapui='( cd /data/progs/soapui && env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtkrc-2.0-IDE "./soapui/bin/soapui.sh" )'
-alias giteye='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtkrc-2.0-IDE "/data/progs/GitEye/GitEye"'
-#alias sts='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/STS"'
-alias eclim='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "/data/progs/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/eclimd"'
-#alias skype='LD_PRELOAD=/data/progs/custom_builds/skypetab-ng/libskypetab-ng.so   skype'
+#alias eclipse='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-eclipse "$BASE_PROGS_DIR/eclipse-jee-kepler-x86_64/eclipse/eclipse"'
+#alias eclipse='env GTK2_RC_FILES=/usr/share/themes/Greybird/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "$BASE_PROGS_DIR/eclipse-java-luna-SR1-linux-gtk-x86_64/eclipse/eclipse"'
+alias sts2='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "$BASE_PROGS_DIR/eclipse/sts2"'
+alias eclipse='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "$BASE_PROGS_DIR/eclipse/eclipse"'
+alias mat='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-eclipse "$BASE_PROGS_DIR/mat/MemoryAnalyzer"'
+#alias sts='env GTK2_RC_FILES=/usr/share/themes/Greybird/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "$BASE_PROGS_DIR/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/STS"'
+alias sts='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "$BASE_PROGS_DIR/eclipse/sts"'
+#alias idea='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtkrc-2.0-IDE "$BASE_PROGS_DIR/idea/idea"'
+alias soapui='( cd $BASE_PROGS_DIR/soapui && env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtkrc-2.0-IDE "./soapui/bin/soapui.sh" )'
+alias giteye='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtkrc-2.0-IDE "$BASE_PROGS_DIR/GitEye/GitEye"'
+#alias sts='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "$BASE_PROGS_DIR/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/STS"'
+alias eclim='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "$BASE_PROGS_DIR/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/eclimd"'
+#alias skype='LD_PRELOAD=$BASE_PROGS_DIR/custom_builds/skypetab-ng/libskypetab-ng.so   skype'
 alias fileroller='file-roller'
-alias vscode='/data/progs/VSCode-linux-x64/Code'  # MS Visual Code (editor)
-#alias franz='/data/progs/franz/franz'  # client that manages loads of different chat clients (via their web frontends)
-alias mattermost='/data/progs/mattermost/mattermost'
+alias vscode='$BASE_PROGS_DIR/VSCode-linux-x64/Code'  # MS Visual Code (editor)
+#alias franz='$BASE_PROGS_DIR/franz/franz'  # client that manages loads of different chat clients (via their web frontends)
+alias mattermost='$BASE_PROGS_DIR/mattermost/mattermost'
 alias pastebinit='pastebinit -P'
 alias uptime='uptime --pretty'
 alias xo='xdg-open'
@@ -77,7 +77,7 @@ alias kof='kubeoff'
 #}
 ##################################
 #alias clean_failed_mvn="$(find ~/.m2 -name *.lastUpdated -delete)"
-#alias amq="/data/progs/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"
+#alias amq="$BASE_PROGS_DIR/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"
 #alias ulogout="sudo pkill -KILL -u $1"  # user logout
 alias logout="pkill -TERM -u $(whoami) & sleep 5 && pkill -KILL -u $(whoami) && exit 0"
 #alias logout="pkill -u $USER"   # by default pkill sends SIGTERM signal
@@ -92,7 +92,7 @@ alias igrep='grep -i --color=auto'
 command -v ncal > /dev/null 2>&1 && alias cal='ncal -bM -A 1 -B 1'  # same as [ncal -bM3]
 alias caly='cal -y'  # year view
 alias gagenda='gcalcli agenda "$(date "+%F %R")"  "$(date -d tomorrow "+%F 00:00")" --details=url --details=end --military'
-alias gag=gagenda
+#alias gag=gagenda
 alias gagt='gcalcli agenda "$(date -d tomorrow "+%F 00:00")"  "$(date -d "+2 days" "+%F 00:00")" --details=url --details=end --military'
 alias calw='gcalcli calw --details=end --military --monday'
 alias galw=calw
@@ -363,9 +363,7 @@ alias shots='cd /data/Dropbox/Pictures/screenshots/$HOSTNAME'
 alias drop='cd /data/Dropbox/'
 alias scripts='cd /data/dev/scripts'
 alias proj='cd /data/dev/projects'
-alias prog='cd /data/progs'
-alias progs='cd /data/progs'
-alias deps='cd /data/progs/deps'
+alias progs='cd $BASE_PROGS_DIR'
 alias dev='cd /data/dev'
 alias data='cd /data/'
 alias tmp='cd /tmp/'
