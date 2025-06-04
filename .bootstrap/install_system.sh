@@ -2671,6 +2671,70 @@ resolve_dl_urls() {
 }
 
 
+# Fetch a file from a given page and install it. Essentially symbiosis of
+# pre-existing fetch_release_from_any() & install_file().
+#
+# Note we will automaticaly extract the asset (and expect to locate a single file
+# in the extracted result) if it's archived/compressed; pass -U to skip that step.
+#
+# -U     - skip extracting if archive and pass compressed/tarred ball as-is.
+# -s     - skip adding fetched asset in $GIT_RLS_LOG
+# -n     - filename pattern to be used by find; works together w/ -F;
+# -F     - $file output pattern to grep for in order to filter for specific
+#          single file from unpacked tarball (meaning it's pointless when -U is given);
+#          as it stands, the _first_ file matching given filetype is returned, even
+#          if there were more. works together w/ -n
+# -r     - if href grep should be relative, ie start with / (note user should not prefix w/ '/' themselves)
+# -d /target/dir    - dir to install pulled binary in, optional. (see install_file())
+#                     note if installing whole dirs (-D), it should be the root dir;
+#                     /$name will be created/appended by install_file()
+# -D                - see install_file()
+# -A                - install file as-is, do not derive method from mime
+#
+# $1 - name of the binary/resource; also used in installed ver tracking.
+# $2 - url to extract the asset url from;
+# $3 - build/file regex to be used (for grep -Po) to parse correct item from git /releases page src;
+#      note it matches 'til the very end of url (ie you should only provide the latter bit);
+#
+# see also: install_from_url()
+install_from_any() {
+    local install_file_args skipadd resolve_url_args opt relative name loc dl_url ver f OPTIND
+    local tmpdir
+
+    install_file_args=()
+    while getopts 'sF:n:d:O:P:rR:UDA' opt; do
+        case "$opt" in
+            s) skipadd=1 ;;
+            F|n|d|O|P) install_file_args+=("-$opt" "$OPTARG") ;;
+            r) relative='TRUE' ;;
+            R) resolve_url_args="$OPTARG" ;;
+            U|D|A) install_file_args+=("-$opt") ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    readonly name="$1"
+    readonly loc="$2"
+
+    dl_url="$(resolve_dl_urls $resolve_url_args "$loc" "${relative:+/}.*$3")" || return 1  # note we might be looking for a relative url
+    ver="$(resolve_ver "$dl_url")" || return 1
+    [[ "$skipadd" != 1 ]] && is_installed "$ver" "$name" && return 2
+
+    # instead of _fetch_release_common(), fetch ourselves (just like we do in install_from_url():
+    tmpdir="$(mktemp -d "install-from-any-${name}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    execute "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
+    f="$(find "$tmpdir" -type f)"
+    [[ -f "$f" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
+
+    install_file "${install_file_args[@]}" "$f" "$name" || return 1
+
+    if [[ "$skipadd" != 1 ]]; then
+        add_to_dl_log "$name" "$ver"
+    fi
+}
+
+
 # Fetch a file from a given page, and return full path to the file.
 # Note we will automaticaly extract the asset (and expect to locate a single file
 # in the extracted result) if it's archived/compressed; pass -U to skip that step.
@@ -2690,11 +2754,7 @@ resolve_dl_urls() {
 #      note it matches 'til the very end of url (ie you should only provide the latter bit);
 # $3 - optional output file name; if given, downloaded file will be renamed to this; note name only, not including path!
 #
-# TODO: also add function install_from_any(), that combines/calls fetch_release_from_any() & install_file();
-#       or maybe replace this fun with new one install_from_any(), that just resolves url via resolve_dl_urls()
-#       and then installs directly via install_from_url()? one thing that's fishy from get-go is that this one here
-#       differentiates $name and $id; maybe install_from_url() could have optional -I, which then uses
-#       that value for ver tracking as opposed name? or make name always mandatory and just use that (ie drop ID)?
+# TODO: see also install_from_any() that finally merges (sorta) this function & install_file
 fetch_release_from_any() {
     local opts opt id relative resolveurls_opts loc dl_url ver OPTIND
 
@@ -3114,6 +3174,7 @@ install_file() {
             O) owner="$OPTARG" ;;  # chown
             P) perms="$OPTARG" ;;  # chmod
             A) asis=TRUE ;;  # install file as-is, do not derive method from mime
+                             # TODO: should this imply -U?
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -3143,10 +3204,10 @@ install_file() {
 
     _owner_perms() {
         if [[ -n "$owner" ]]; then
-            execute "sudo chown -R $owner  $file" || return 1
+            execute "sudo chown -R -- $owner  $file" || return 1
         fi
         if [[ -n "$perms" ]]; then
-            execute "sudo chmod -R $perms  $file" || return 1
+            execute "sudo chmod -R -- $perms  $file" || return 1
         fi
     }
 
