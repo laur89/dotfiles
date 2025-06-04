@@ -2,23 +2,52 @@
 #
 # note this will run on busybox! meaning it's ash, NOT bash.
 #######################################################################
-BTRFS_MOUNT_OPTS=''  # optional; leave blank to use default opts set by debian installer.
+# for HDD it's ok to go with higher compression (say zstd:3) as you're not
+# likely to be cpu limited. zstd:1 reasonable for nvme's. SATA SSD maybe zstd:2
+#
+# noatime as we don't really care for it. also atime makes many snapshots more costly.
+# compress-force will try to compress even if the first 64KiB of a file is not compressible.
+# - TODO: enable autodefrag?
+# - does 'nodatasum' need to go w/ nodatacow?
+#   - don't think, nodatacow should imply the former, and the othe way around
+#   - !! apparently nodatadow also implies no compression
+# - btrfs does not support mounting subvols from the same partition w/
+#   different settings regardign cow - best use chattr +C !!!
+#   - see https://archive.kernel.org/oldwiki/btrfs.wiki.kernel.org/index.php/FAQ.html#Can_I_mount_subvolumes_with_different_mount_options.3F
+# - TODO:  I make /home/<user>/.cache a separate BTRFS subvolume and I mark that directory as nodatacow. But that's really a separate discussion.
+# - some people set +C on entire /var - reasonable?
+BTRFS_MOUNT_OPTS='defaults,noatime,compress=zstd:1'  # optional; leave blank to use default opts set by debian installer.
                      # note it should _not_ include the ",subvolume=" tail
 
 while getopts 'sm:' opt; do
     case "$opt" in
-        s)      exit 0 ;;  # skip
+        s)      exit 0 ;;  # skip; TODO: deprecate, makes no sense to have
         m)      BTRFS_MOUNT_OPTS="$OPTARG" ;;
         \?)     exit 1 ;;
     esac
 done
 shift $(expr $OPTIND - 1)
 
+# note one interesting layout is making snapshots its subject subvolume siblings, see
+# https://bbs.archlinux.org/viewtopic.php?pid=1766676#p1766676
+#
+# TODO: can we grep ID=1000 username from /etc/passwd or elsewhere, and make /home/<user>/.cache a separate BTRFS subvolume and I mark that directory as nodatacow
 if [ $# -eq 0 ]; then
-    # default subvolume-to-mountpoint mappings:
-    set -- '@snapshots:.snapshots' \
+    # default subvolume-to-mountpoint mappings to create:
+    set -- 'snapshots/@root:.snapshots' \
            '@home:home' \
-           '@var:var'
+           'snapshots/@home:home/.snapshots' \
+           '@data:data' \
+           '@opt:opt' \
+           'var/@log:var/log' \
+           'var/@tmp:var/tmp' \
+           'var/@run:var/run' \
+           'var/@lock:var/lock' \
+           'var/@cache:var/cache' \
+           'var/lib/@containers:var/lib/containers:NOCOW' \
+           'var/lib/@machines:var/lib/machines:NOCOW' \
+           'var/lib/libvirt/@images:var/lib/libvirt/images:NOCOW' \
+           'var/lib/apt/@lists:var/lib/apt/lists:NOCOW'
 fi
 #######################################################################
 
@@ -66,38 +95,22 @@ mount -o "${BTRFS_MOUNT_OPTS},subvol=@rootfs" "$ROOT_FS" /target || exit 1
 # 1. create mountpoints (i.e. dirs) for each subvol;
 # 2. create additional subvols;
 # 3. mount them (i.e. to the dir created in step 1)
-
-# first awk version...:
-#awk -v "SNAPSHOT_TO_MOUNTPOINT=@snapshots:.snapshots;@home:home;@var:var" \
-#    -v "ROOT_FS=$ROOT_FS" \
-#    -v "BTRFS_MOUNT_OPTS=$BTRFS_MOUNT_OPTS" \
-#    -v "FSTAB=$FSTAB_MOUNTLINE" '
-#  BEGIN {
-#    n=split(SNAPSHOT_TO_MOUNTPOINT,pp,";")
-#    for(i=1; i<=n; i++) {
-#      split(pp[i],subvol_mountpoint,":")
-#      system("btrfs subvolume create /mnt/" subvol_mountpoint[1])
-#      system("mkdir /target/" subvol_mountpoint[2])
-#      system("mount -o " BTRFS_MOUNT_OPTS ",subvol=" subvol_mountpoint[1] " " ROOT_FS " /target/" subvol_mountpoint[2])
-#
-#      t = FSTAB;
-#      sub(",subvol=@rootfs",",subvol=" subvol_mountpoint[1],t);
-#      sub(" / "," /" subvol_mountpoint[2] " ",t);
-#
-#      #system("echo \"" t "\" >> /target/etc/fstab")
-#      print t >> "/target/etc/fstab"
-#    }
-#}'
-# ...and pure ash:
 for mapping in "$@"; do
     subvol="$(echo "$mapping" | cut -d: -f1)"
     mountpoint="$(echo "$mapping" | cut -d: -f2)"
+    opts="$(echo "$mapping" | cut -d: -f3)"
+
     mntp="/target/$mountpoint"
 
     # create subvol:
-    btrfs subvolume create "/mnt/$subvol" || exit 1
+    btrfs subvolume create -p "/mnt/$subvol" || exit 1  # -p is similar to mkdir's -p
     # create mountpoint:
-    mkdir "$mntp" || exit 1
+    mkdir -p -- "$mntp" || exit 1
+    if [ "$opts" == *NOCOW* ]; then  # TODO verify ash supports this
+        # TODO: or should we set it on /mnt/$subvol?:
+        chattr +C -- "$mntp" || exit 1  # confirm values via  $ lsattr
+    fi
+
     # mount:
     mount -o "${BTRFS_MOUNT_OPTS},subvol=$subvol" "$ROOT_FS" "$mntp" || exit 1
     # add fstab entry:
