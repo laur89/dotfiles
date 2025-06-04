@@ -69,7 +69,7 @@ SYSCTL_CHANGED=0       # states whether sysctl config got changed
 #--- Global Constants ---
 #------------------------
 readonly BASE_DATA_DIR="/data"  # try to keep this value in sync with equivalent defined in $SHELL_ENVS;
-readonly BASE_PROGS_DIR="$BASE_DATA_DIR/progs"
+readonly BASE_PROGS_DIR="/progs"
 readonly BASE_DEPS_LOC="$BASE_PROGS_DIR/deps"             # hosting stuff like ~homeshick~, bash-git-prompt...
 readonly BASE_BUILDS_DIR="$BASE_PROGS_DIR/custom_builds"  # hosts our built progs and/or their .deb packages;
 # !! note homeshick env vars are likely also defined/duplicated in our env_var files !!
@@ -191,7 +191,7 @@ validate_and_init() {
 check_dependencies() {
     local dir prog perms exec_to_pkg
 
-    readonly perms=764  # can't be 777, nor 766, since then you'd be unable to ssh into;
+    readonly perms='u=rwX,g=,o='  # can't be 777, nor 766, since then you'd be unable to ssh into;
     declare -A exec_to_pkg=(
         [gpg]=gnupg
     )
@@ -220,6 +220,7 @@ check_dependencies() {
     for dir in \
             "$BASE_DATA_DIR" \
             "$BASE_DATA_DIR/dev" \
+            "$BASE_PROGS_DIR" \
                 ; do
         if ! [[ -d "$dir" ]]; then
             if confirm -d Y "[$dir] mountpoint/dir does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
@@ -1630,7 +1631,8 @@ setup_dirs() {
     elif ! [[ -d "$CUSTOM_LOGDIR" ]]; then
         report "[$CUSTOM_LOGDIR] does not exist, creating..."
         execute "sudo mkdir -- $CUSTOM_LOGDIR"
-        execute "sudo chmod 777 -- $CUSTOM_LOGDIR"
+        execute "sudo chown root:laur -- $CUSTOM_LOGDIR"
+        execute "sudo chmod 'u=rwX,g=rwX,o=' -- $CUSTOM_LOGDIR"
     fi
 }
 
@@ -1977,8 +1979,6 @@ setup_install_log_file() {
 
 
 setup() {
-    [[ "$MODE" -eq 1 ]] && setup_btrfs
-
     setup_homesick || { err "homesick setup failed; as homesick is necessary, script will exit"; exit 1; }
     verify_ssh_key
     source_shell_conf  # so we get our env vars after dotfiles are pulled in
@@ -3854,7 +3854,7 @@ install_mise() {
     [[ "$MODE" -eq 1 ]] && eval "$(mise activate bash --shims)"  # use shims to load dev tools
 
     # set up shell autocompletion: https://mise.jdx.dev/installing-mise.html#autocompletion
-    mise use --global usage
+    execute 'mise use --global usage'
     execute 'mise completion bash --include-bash-completion-lib | sudo tee /etc/bash_completion.d/mise > /dev/null'
 }
 
@@ -3863,7 +3863,7 @@ install_webdev() {
     is_server && { report "we're server, skipping webdev env installation."; return; }
 
     install_mise
-    mise install  # install the globally-defined tools (and local, if pwd has mise.toml)
+    execute 'mise install'  # install the globally-defined tools (and local, if pwd has mise.toml)
 
     # make sure the constant link to latest node exec ($NODE_LOC) is set up (normally managed by .bashrc, but might not have been created, as this is install_sys).
     # eg some nvim plugin(s) might reference $NODE_LOC
@@ -4331,9 +4331,10 @@ install_i3lock_fancy() {
 }
 
 
+# TODO: review, needed?
 install_betterlockscreen() {  # https://github.com/pavanjadhaw/betterlockscreen
     wget -O ~/bin/betterlockscreen "https://raw.githubusercontent.com/pavanjadhaw/betterlockscreen/master/betterlockscreen" || return 1
-    execute "chmod u+x ~/bin/betterlockscreen"
+    execute "chmod u+x $HOME/bin/betterlockscreen"
 }
 
 
@@ -4609,6 +4610,8 @@ install_i3_conf() {
 install_i3_deps() {
     local f
     f="$TMP_DIR/i3-dep-${RANDOM}"
+
+    install_block 'python3-i3ipc' || return 1
 
     # i3ipc now installed as apt pkg
     #py_install i3ipc      # https://github.com/altdesktop/i3ipc-python
@@ -5430,7 +5433,7 @@ install_from_repo() {
         #nftables  # debian default since Buster!
         firewalld  # nft wrapper
         fail2ban
-        udisks2  # D-Bus service to access and manipulate storage devices; https://www.freedesktop.org/wiki/Software/udisks/
+        #udisks2  # D-Bus service to access and manipulate storage devices; https://www.freedesktop.org/wiki/Software/udisks/ ; commented out as it's already a dependency of udiskie we use
         udiskie  # a udisks2 front-end that allows to manage removable media ; https://github.com/coldfix/udiskie
         fwupd  # daemon to allow session software to update device firmware. https://github.com/fwupd/fwupd
         apparmor-utils  # provides tools such as aa-genprof, aa-enforce, aa-complain and aa-disable
@@ -5455,8 +5458,8 @@ install_from_repo() {
     # TODO: replace compton w/ picom or ibhagwan/picom? compton seems unmaintained since 2017
     declare -ar block1=(
         xorg
-        x11-apps
-        xinit  # xinit and startx are programs which facilitate starting an X server, and loading a base X session
+        #x11-apps  # already a dependecy of xorg
+        #xinit  # xinit and startx are programs which facilitate starting an X server, and loading a base X session; already dependency of xorg
         ssh-askpass  # under X, asks user for a passphrase for ssh-add; TODO: x11?
         alsa-utils  # Utilities for configuring and using ALSA, e.g. alsactl, alsamixer, amixer, aplay...
         pipewire
@@ -5496,8 +5499,6 @@ install_from_repo() {
         python3-venv  # venv module for python3
         python3-pip
         pipx  # https://github.com/pypa/pipx
-        python3-i3ipc  # TODO: move installation to one of i3-specific functions?
-        flake8  # code checker using pycodestyle and pyflakes; https://github.com/pycqa/flake8  # TODO: superceded by ruff?
         curl
         httpie  # CLI, cURL-like tool for humans; https://httpie.io/
         lshw  # list hardware; https://github.com/lyonel/lshw
@@ -5965,7 +5966,7 @@ setup_btrfs() {
     # schedule, e.g. scrub
     install_block 'btrfsmaintenance btrfs-progs'
 
-    setup_snapper
+    _setup_snapper
 }
 
 
@@ -5982,7 +5983,7 @@ setup_btrfs() {
 # alternatives to snapper:
 # - https://github.com/digint/btrbk - remote transfer of snapshots for backup
 # - Timeshift
-setup_snapper() {
+_setup_snapper() {
     [[ -e /etc/default/snapper ]] && return 0  # config file exists, assume we've already set up
 
     _enable() {
@@ -6358,6 +6359,7 @@ full_install() {
     is_interactive && is_native && install_ssh_server_or_client
     is_interactive && is_native && install_nfs_server_or_client
     [[ "$PROFILE" == work ]] && exe_work_funs
+    setup_btrfs  # late, so snapper won't create bunch of snapshots due to apt operations
 
     remind_manually_installed_progs
 }
@@ -7334,6 +7336,7 @@ report() {
 # NOTE: unsure if this is really needed for our use-case;
 # see https://askubuntu.com/a/908825
 # see https://unix.stackexchange.com/questions/468807/strange-error-in-apt-get-download-bug
+# TODO: consider removing
 sanitize_apt() {
     local target
 
