@@ -1,6 +1,8 @@
 #!/bin/sh
 #
 # note this will run on busybox! meaning it's ash, NOT bash.
+#
+readonly DEFAULT_ROOT_SUBVOL='@rootfs'  # default root subvol name used by debian, do not customize
 #######################################################################
 # for HDD it's ok to go with higher compression (say zstd:3) as you're not
 # likely to be cpu limited. zstd:1 reasonable for nvme's. SATA SSD maybe zstd:2
@@ -17,11 +19,11 @@
 # - TODO:  I make /home/<user>/.cache a separate BTRFS subvolume and I mark that directory as nodatacow. But that's really a separate discussion.
 # - some people set +C on entire /var - reasonable?
 BTRFS_MOUNT_OPTS='defaults,noatime,compress=zstd:1'  # optional; leave blank to use default opts set by debian installer.
-                     # note it should _not_ include the ",subvolume=" tail
+                                                     # note it should _not_ include the ",subvolume=" tail
+ROOT_SUBVOL="$DEFAULT_ROOT_SUBVOL"  # if you want to rename the default root subvol, change this value; e.g. commonly used value is '@'
 
-while getopts 'sm:' opt; do
+while getopts 'm:' opt; do
     case "$opt" in
-        s)      exit 0 ;;  # skip; TODO: deprecate, makes no sense to have
         m)      BTRFS_MOUNT_OPTS="$OPTARG" ;;
         \?)     exit 1 ;;
     esac
@@ -58,7 +60,7 @@ fi
 
 # verify whether we've partitioned using btrfs; if not, bail successfully.
 # note upstream scripts do it differently, see script under /lib/partman/finish.d/70aptinstall_btrfs
-grep -Eq -m 1 '\s+/\s+btrfs\s+.*=@rootfs\s+' /target/etc/fstab || exit 0
+grep -Eq -m 1 "\s+/\s+btrfs\s+.*=${DEFAULT_ROOT_SUBVOL}\s+" /target/etc/fstab || exit 0
 
 
 umnt() {  # unmount provided mountpoint, and return the fs that was mounted
@@ -73,12 +75,19 @@ umnt() {  # unmount provided mountpoint, and return the fs that was mounted
 
 # capture the original mount opts, sans the ',subvol=':
 if [ -z "$BTRFS_MOUNT_OPTS" ]; then
-    BTRFS_MOUNT_OPTS="$(sed -nr -e "s|^.*\s+/\s+btrfs\s+(\S+),subvol=@rootfs\s+.*|\1|p" /target/etc/fstab)"
+    BTRFS_MOUNT_OPTS="$(sed -nr -e "s|^.*\s+/\s+btrfs\s+(\S+),subvol=${DEFAULT_ROOT_SUBVOL}\s+.*|\1|p" /target/etc/fstab)"
     [ -z "$BTRFS_MOUNT_OPTS" ] && exit 1  # sanity
 fi
 
-sed -r -e "s|(^.*\s+/\s+btrfs\s+)\S+(,subvol=@rootfs\s+.*)|\1${BTRFS_MOUNT_OPTS}\2|g" -i /target/etc/fstab || exit 1
-FSTAB_MOUNTLINE="$(grep -E '\s+/\s+btrfs\s+.*subvol=@rootfs\s+' /target/etc/fstab)" || exit 1
+# set our BTRFS mount opts:
+if [ "$ROOT_SUBVOL" != "$DEFAULT_ROOT_SUBVOL" ]; then
+    # additionally change the root subvolume ($DEFAULT_ROOT_SUBVOL -> $ROOT_SUBVOL):
+    sed -r -e "s|(^.*\s+/\s+btrfs\s+)\S+,subvol=${DEFAULT_ROOT_SUBVOL}(\s+.*)|\1${BTRFS_MOUNT_OPTS},subvol=${ROOT_SUBVOL}\2|g" -i /target/etc/fstab || exit 1
+else
+    sed -r -e "s|(^.*\s+/\s+btrfs\s+)\S+(,subvol=${DEFAULT_ROOT_SUBVOL}\s+.*)|\1${BTRFS_MOUNT_OPTS}\2|g" -i /target/etc/fstab || exit 1
+fi
+
+FSTAB_MOUNTLINE="$(grep -E "\s+/\s+btrfs\s+.*subvol=${ROOT_SUBVOL}\s+" /target/etc/fstab)" || exit 1
 
 # first unmount our partitions:
 EFI_FS="$(umnt /target/boot/efi)" || exit 1  # results in empty var if mountpoint doesn't exist
@@ -88,8 +97,17 @@ ROOT_FS="$(umnt /target)" || exit 1  # required non-empty
 
 mount "$ROOT_FS" /mnt || exit 1
 
+# rename the root subvol:
+if [ "$ROOT_SUBVOL" != "$DEFAULT_ROOT_SUBVOL" ]; then
+    TARGET_ROOT_SUBVOL="/mnt/$ROOT_SUBVOL"
+    [ -e "$TARGET_ROOT_SUBVOL" ] && exit 1  # sanity
+    #find /mnt -mindepth 1 -maxdepth 1 -name "$DEFAULT_ROOT_SUBVOL" -exec mv {} "$TARGET_ROOT_SUBVOL" \;
+    mv -- "/mnt/$DEFAULT_ROOT_SUBVOL" "$TARGET_ROOT_SUBVOL" || exit 1
+    [ -e "$TARGET_ROOT_SUBVOL" ] || exit 1  # sanity
+fi
+
 # re-mount our root volume to be able to create additional dirs for subvols:
-mount -o "${BTRFS_MOUNT_OPTS},subvol=@rootfs" "$ROOT_FS" /target || exit 1
+mount -o "${BTRFS_MOUNT_OPTS},subvol=${ROOT_SUBVOL}" "$ROOT_FS" /target || exit 1
 ##################
 
 # 1. create mountpoints (i.e. dirs) for each subvol;
@@ -103,6 +121,7 @@ for mapping in "$@"; do
     mntp="/target/$mountpoint"
 
     # create subvol:
+    [ -e "/mnt/$subvol" ] && exit 1  # sanity
     btrfs subvolume create -p "/mnt/$subvol" || exit 1  # -p is similar to mkdir's -p
     # create mountpoint:
     mkdir -p -- "$mntp" || exit 1
@@ -115,7 +134,7 @@ for mapping in "$@"; do
     mount -o "${BTRFS_MOUNT_OPTS},subvol=$subvol" "$ROOT_FS" "$mntp" || exit 1
     # add fstab entry:
     echo "$FSTAB_MOUNTLINE" | sed -r -e "s|(^.*\s+)/(\s+btrfs.*)|\1/${mountpoint}\2|" \
-                                  -e "s|,subvol=@rootfs|,subvol=$subvol|" >> /target/etc/fstab || exit 1
+                                  -e "s|,subvol=${ROOT_SUBVOL}|,subvol=$subvol|" >> /target/etc/fstab || exit 1
 done
 
 umount /mnt || exit 1
