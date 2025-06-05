@@ -1,5 +1,4 @@
 {
     "term": "urxvtc",
-    "ratio": 0.35,
-    "envVarBlacklist": ["PYENV_VERSION"]
+    "ratio": 0.35
 }
