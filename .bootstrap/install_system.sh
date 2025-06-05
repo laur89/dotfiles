@@ -43,7 +43,7 @@ readonly BUILD_DOCK='deb-build-box'              # name of the build container
 readonly DEB_STABLE=bookworm                    # current _stable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
 readonly DEB_OLDSTABLE=bullseye                 # current _oldstable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
 
-readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:104.0) Gecko/20100101 Firefox/104.0'
+readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:138.0) Gecko/20100101 Firefox/138.0'
 #------------------------
 #--- Global Variables ---
 #------------------------
@@ -2573,8 +2573,8 @@ _fetch_release_common() {
     dl_url="$3"
     name="$4"  # optional
 
-    [[ "$skipadd" -ne 1 ]] && is_installed "$ver" "${id:-$name}" && return 2
-    tmpdir="$(mktemp -d "release-from-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    [[ "$skipadd" != 1 ]] && is_installed "$ver" "${id:-$name}" && return 2
+    tmpdir="$(mktemp -d "release-from-${id:-$name}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     report "fetching [$dl_url]..."
     execute "wget --user-agent='$USER_AGENT' --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
@@ -2594,10 +2594,10 @@ _fetch_release_common() {
         fi
     fi
 
-    if [[ "$skipadd" -ne 1 ]]; then
+    if [[ "$skipadd" != 1 ]]; then
         # we're assuming here that installation succeeded from here on.
         # it is optimistic, but removes repetitive calls.
-        add_to_dl_log "$id" "$ver"
+        add_to_dl_log "${id:-$name}" "$ver"
     fi
 
     #sanitize_apt "$tmpdir"  # think this is not really needed...
@@ -2680,6 +2680,8 @@ resolve_dl_urls() {
 #                     /$name will be created/appended by install_file()
 # -D                - see install_file()
 # -A                - install file as-is, do not derive method from mime
+# -I     - entity identifier (for logging/version tracking et al);
+#          optional, if missing then use $name
 #
 # $1 - name of the binary/resource; also used in installed ver tracking.
 # $2 - url to extract the asset url from;
@@ -2689,16 +2691,17 @@ resolve_dl_urls() {
 # see also: install_from_url()
 install_from_any() {
     local install_file_args skipadd resolve_url_args opt relative name loc dl_url ver f OPTIND
-    local tmpdir
+    local tmpdir id
 
     install_file_args=()
-    while getopts 'sF:n:d:O:P:rR:UDA' opt; do
+    while getopts 'sF:n:d:O:P:rR:UDAI:' opt; do
         case "$opt" in
             s) skipadd=1 ;;
             F|n|d|O|P) install_file_args+=("-$opt" "$OPTARG") ;;
             r) relative='TRUE' ;;
             R) resolve_url_args="$OPTARG" ;;
             U|D|A) install_file_args+=("-$opt") ;;
+            I) id="$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2707,12 +2710,14 @@ install_from_any() {
     readonly name="$1"
     readonly loc="$2"
 
+    id="${id:-$name}"
+
     dl_url="$(resolve_dl_urls $resolve_url_args "$loc" "${relative:+/}.*$3")" || return 1  # note we might be looking for a relative url
     ver="$(resolve_ver "$dl_url")" || return 1
-    [[ "$skipadd" != 1 ]] && is_installed "$ver" "$name" && return 2
+    [[ "$skipadd" != 1 ]] && is_installed "$ver" "$id" && return 2
 
     # instead of _fetch_release_common(), fetch ourselves (just like we do in install_from_url():
-    tmpdir="$(mktemp -d "install-from-any-${name}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    tmpdir="$(mktemp -d "install-from-any-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     execute "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
     f="$(find "$tmpdir" -type f)"
     [[ -f "$f" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
@@ -2720,7 +2725,7 @@ install_from_any() {
     install_file "${install_file_args[@]}" "$f" "$name" || return 1
 
     if [[ "$skipadd" != 1 ]]; then
-        add_to_dl_log "$name" "$ver"
+        add_to_dl_log "$id" "$ver"
     fi
 }
 
@@ -2778,8 +2783,6 @@ install_deb_from_git() {
     local deb
 
     deb="$(fetch_release_from_git "$1" "$2" "$3")" || return 1
-    # TODO: note apt doesn't have --yes option!
-    #execute "sudo apt install '$deb'" || { err "installing [$1/$2] failed w/ $?"; return 1; }
     install_file "$deb" || return 1
 }
 
@@ -3495,7 +3498,7 @@ install_gitkraken() {  # https://release.gitkraken.com/linux/gitkraken-amd64.deb
 
 # perforce git mergetool, alternative to meld;
 #
-# TODO: generalize this path - dl tarball, unpack under $BASE_PROGS_DIR; eg Postman uses same pattern
+# TODO: does not work in '25 - requires registration and whatnot
 install_p4merge() {  # https://www.perforce.com/downloads/visual-merge-tool
     local ver loc
 
@@ -3515,8 +3518,9 @@ install_steam() {  # https://store.steampowered.com/about/
     # either from deb fetched directly from steam...
     #install_from_url  steam 'https://cdn.akamai.steamstatic.com/client/installer/steam.deb'
 
-    # ...or from apt repos:
-    execute 'dpkg --add-architecture i386'  # as per https://wiki.debian.org/Steam#Installing_Steam
+    # ...or from apt repos:  # as per https://wiki.debian.org/Steam#Installing_Steam
+    execute 'sudo dpkg --add-architecture i386'
+    execute 'sudo apt-get update'
     install_block -f  steam-installer
 }
 
@@ -3753,11 +3757,11 @@ install_terragrunt() {  # https://github.com/gruntwork-io/terragrunt/
 }
 
 
-install_eclipse_mem_analyzer() {  # https://eclipse.dev/mat/downloads.php
+install_eclipse_mem_analyzer() {
     local target loc page dl_url dir mirror ver
 
     target="$BASE_PROGS_DIR/mat"
-    loc='https://eclipse.dev/mat/downloads.php'
+    loc='https://eclipse.dev/mat/download'
     mirror=1208  # 1208 = france, 1301,1190,1045 = germany, 1099 = czech
 
     page="$(wget "$loc" -q --user-agent="$USER_AGENT" -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
@@ -6847,16 +6851,17 @@ install_apkeditor() {
 
 # note this gives us sdkmanager that can be used to install whatever else;
 # see  $ sdkmanager --list     for avail/installed packages
+#
+# ! note we have some env vars that are bound to our installation path !
 install_android_command_line_tools() {
-    local target f
+    local target
 
-    target="$BASE_PROGS_DIR/android/cmdline-tools"
+    target="$BASE_PROGS_DIR/android"
     [[ -d "$target" ]] || mkdir -p -- "$target"
 
-    f="$(fetch_release_from_any -U -I android-command-line-tools 'https://developer.android.com/studio#command-line-tools-only' 'commandlinetools-linux-[0-9]+_latest.zip')" || return $?
-    f="$(extract_tarball "$f")" || return 1
-    [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }  # rm previous installation
-    execute "mv -- '$f' '$target'" || return 1
+    install_from_any -D -d "$target" -I android-command-line-tools  cmdline-tools \
+        'https://developer.android.com/studio#command-line-tools-only' \
+        'commandlinetools-linux-[0-9]+_latest.zip'
 }
 
 
