@@ -362,9 +362,6 @@ install_flatpak() {
     # only include the 'verified' packages, taken from this secureblue comment:
     # https://www.reddit.com/r/linux/comments/1bq9d3b/flathub_now_marks_unverified_apps/kx1adws/ :
     execute 'sudo flatpak remote-add --if-not-exists --subset=verified flathub-verified https://flathub.org/repo/flathub.flatpakrepo'
-
-    # TODO: limit global default policies, likey in $HOME/.local/share/flatpak/overrides
-    #       flatseal's 'All Applications' tab should configure that
 }
 
 
@@ -3255,11 +3252,6 @@ install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
 # https://github.com/junegunn/fzf
 install_fzf() {
     install_bin_from_git -N fzf junegunn fzf 'linux_amd64.tar.gz'
-
-    # old way:
-    #clone_or_pull_repo "junegunn" "fzf" "$BASE_PROGS_DIR"
-    #create_link "${BASE_PROGS_DIR}/fzf" "$HOME/.fzf"
-    #execute "$HOME/.fzf/install --all" || err "could not install fzf"
 }
 
 
@@ -3272,15 +3264,7 @@ install_slack_term() {  # https://github.com/jpbruinsslot/slack-term
 
 # TODO: looks like after initial installation apt keeps updating it automatically?!
 install_slack() {  # https://slack.com/help/articles/212924728-Download-Slack-for-Linux--beta-
-    # snap version:
-    #snap_install slack
-
-    # ...or deb:
-    local deb
-
-    deb="$(fetch_release_from_any -I slack 'https://slack.com/downloads/instructions/linux?ddl=1&build=deb' '-amd64\.deb')" || return $?
-    execute "sudo apt-get --yes install '$deb'" || return 1
-    return 0
+    install_from_any  slack 'https://slack.com/downloads/instructions/linux?build=deb' '-amd64\.deb'
 }
 
 
@@ -6802,11 +6786,9 @@ install_hblock() {
 # note digidoc4 client executable is likely `qdigidoc4`
 install_open_eid() {
     install_block -f 'opensc  open-eid' || return 1
-    execute 'sudo systemctl enable --now pcscd.socket' || return 1  # note --now flag effectively also starts the service immediately
 
-    # Configure Chrome PKCS11 driver for current user, /etc/xdg/autstart/ will init other users on next logon
-    # (taken from the bottom of install-open-eid.sh script)
-    execute '/usr/bin/esteid-update-nssdb'
+    # Configure Chrome/Firefox PKCS11 driver for current user, /etc/xdg/autstart/ will init other users on next logon
+    execute '/usr/bin/pkcs11-register'
 }
 
 
