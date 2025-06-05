@@ -2090,6 +2090,9 @@ setup_additional_apt_keys_and_sources() {
     # gh: (from https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt):
     create_apt_source -a  gh  https://cli.github.com/packages/githubcli-archive-keyring.gpg  https://cli.github.com/packages/ stable main
 
+    # wezterm: (from https://wezterm.org/install/linux.html):
+    create_apt_source  wezterm  https://apt.fury.io/wez/gpg.key  https://apt.fury.io/wez/ '*' '*'
+
     execute 'sudo apt-get --yes update'
 }
 
@@ -3605,7 +3608,7 @@ install_alacritty() {
 # other terms to consider: kitty
 # avail as flatpak but not recommended: https://flathub.org/apps/org.wezfurlong.wezterm
 install_wezterm() {
-    pass # TODO
+    install_block  wezterm
 }
 
 
