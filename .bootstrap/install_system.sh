@@ -1491,29 +1491,29 @@ install_deps() {
     # keepass rofi/demnu tool (similar to passhole (aka ph), but w/ rofi gui)
     py_install keepmenu     # https://github.com/firecat53/keepmenu
 
-    if is_native; then
-        # mopidy-spotify        # https://mopidy.com/ext/mpd/
-        #py_install Mopidy-MPD
-        install_block  mopidy-mpd
+    #if is_native; then
+        ## mopidy-spotify        # https://mopidy.com/ext/mpd/
+        ##py_install Mopidy-MPD
+        #install_block  mopidy-mpd
 
-        #  TODO: spotify extensions need to be installed globally??
-        # mopidy-youtube        # https://mopidy.com/ext/youtube/
-        install_block  gstreamer1.0-plugins-bad
-        py_install Mopidy-Youtube
+        ##  TODO: spotify extensions need to be installed globally??
+        ## mopidy-youtube        # https://mopidy.com/ext/youtube/
+        #install_block  gstreamer1.0-plugins-bad
+        #py_install Mopidy-Youtube
 
-        # mopidy-local        # https://mopidy.com/ext/local/
-        # (provides us with 'mopidy local scan' command)
-        #py_install Mopidy-Local
-        install_block  mopidy-local
+        ## mopidy-local        # https://mopidy.com/ext/local/
+        ## (provides us with 'mopidy local scan' command)
+        ##py_install Mopidy-Local
+        #install_block  mopidy-local
 
-        # mopidy-soundcloud     # https://mopidy.com/ext/soundcloud/
-        #py_install Mopidy-SoundCloud
-        install_block  mopidy-soundcloud
+        ## mopidy-soundcloud     # https://mopidy.com/ext/soundcloud/
+        ##py_install Mopidy-SoundCloud
+        #install_block  mopidy-soundcloud
 
-        # mopidy-spotify        # https://mopidy.com/ext/spotify/
-        #py_install Mopidy-Spotify
-        install_block  mopidy-spotify
-    fi
+        ## mopidy-spotify        # https://mopidy.com/ext/spotify/
+        ##py_install Mopidy-Spotify
+        #install_block  mopidy-spotify
+    #fi
 
     # some py deps requred by scripts:  # TODO: should we not install these via said scripts' requirements.txt file instead?
     #py_install exchangelib vobject icalendar arrow
@@ -2095,7 +2095,7 @@ setup_additional_apt_keys_and_sources() {
 
     # mopidy: (from https://docs.mopidy.com/en/latest/installation/debian/):
     # deb-line is from https://apt.mopidy.com/bookworm.sources:
-    create_apt_source  mopidy  https://apt.mopidy.com/mopidy-archive-keyring.gpg  https://apt.mopidy.com/ $DEB_STABLE 'main contrib non-free'
+    #create_apt_source  mopidy  https://apt.mopidy.com/mopidy-archive-keyring.gpg  https://apt.mopidy.com/ $DEB_STABLE 'main contrib non-free'
 
     # spotify: (from https://www.spotify.com/download/linux/):
     # consider also https://github.com/SpotX-Official/SpotX-Bash to patch the client
@@ -5679,7 +5679,7 @@ install_from_repo() {
 
     declare -ar block3_nonwin=(
         spotify-client
-        mopidy
+        #mopidy
         playerctl  # cli utility and library for controlling media players that implement the MPRIS D-Bus Interface Specification. Compatible players include audacious, cmus, mopidy, mpd, mpv, quod libet, rhythmbox, spotify, and vlc; https://github.com/altdesktop/playerctl
         socat
         yt-dlp  # dl vids from yt & other sites; https://github.com/yt-dlp/yt-dlp
@@ -7154,7 +7154,7 @@ post_install_progs_setup() {
     enable_network_manager
     is_native && install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present  # TODO: do we want to install these only on native systems?
     #is_native && execute -i "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
-    is_native && setup_mopidy
+    #is_native && setup_mopidy
     is_native && execute 'sudo sensors-detect --auto'   # answer enter for default values (this is lm-sensors config)
     is_pkg_installed 'command-not-found' && execute 'sudo apt-file update && sudo update-command-not-found'
     increase_inotify_watches_limit         # for intellij IDEA
