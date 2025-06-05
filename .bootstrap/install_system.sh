@@ -2373,7 +2373,7 @@ install_own_builds() {
     #install_neovim
     install_neovide
     #install_keepassxc
-    install_keybase
+    #install_keybase
     #install_goforit
     #install_copyq
     is_native && install_uhk_agent
@@ -2396,7 +2396,7 @@ install_own_builds() {
     install_jd
     install_bat
     install_btop
-    install_alacritty
+    #install_alacritty
     install_wezterm
     install_croc
     install_kanata
@@ -3600,8 +3600,10 @@ install_alacritty() {
 }
 
 
+# https://wezterm.org/install/linux.html
+#
 # other terms to consider: kitty
-# avail as flatpak: https://flathub.org/apps/org.wezfurlong.wezterm
+# avail as flatpak but not recommended: https://flathub.org/apps/org.wezfurlong.wezterm
 install_wezterm() {
     pass # TODO
 }
@@ -4235,7 +4237,7 @@ install_keepassxc() {
 
 # https://keybase.io/docs/the_app/install_linux
 install_keybase() {
-    execute 'sudo touch /etc/default/keybase' || return 1
+    execute 'sudo touch /etc/default/keybase' || return 1  # this disables keybase adding pkg repository
     install_from_url keybase 'https://prerelease.keybase.io/keybase_amd64.deb'
 }
 
