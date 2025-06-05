@@ -22,9 +22,10 @@ BTRFS_MOUNT_OPTS='defaults,noatime,compress=zstd:1'  # optional; leave blank to 
                                                      # note it should _not_ include the ",subvolume=" tail
 ROOT_SUBVOL="$DEFAULT_ROOT_SUBVOL"  # if you want to rename the default root subvol, change this value; e.g. commonly used value is '@'
 
-while getopts 'm:' opt; do
+while getopts 'm:R:' opt; do
     case "$opt" in
         m)      BTRFS_MOUNT_OPTS="$OPTARG" ;;
+        R)      ROOT_SUBVOL="$OPTARG" ;;
         \?)     exit 1 ;;
     esac
 done
@@ -40,6 +41,7 @@ if [ $# -eq 0 ]; then
            '@home:home' \
            'snapshots/@home:home/.snapshots' \
            '@data:data' \
+           '@progs:progs' \
            '@opt:opt' \
            'var/@log:var/log' \
            'var/@tmp:var/tmp' \
@@ -127,7 +129,7 @@ for mapping in "$@"; do
     mkdir -p -- "$mntp" || exit 1
     if [ "$opts" == *NOCOW* ]; then  # TODO verify ash supports this
         # TODO: or should we set it on /mnt/$subvol?:
-        chattr +C -- "$mntp" || exit 1  # confirm values via  $ lsattr
+        chattr +C -- "$mntp" || exit 1  # confirm values via  $ lsattr  (e.g. lsattr -d /dir/path)
     fi
 
     # mount:
