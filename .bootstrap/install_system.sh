@@ -1394,11 +1394,6 @@ install_deps() {
     #clone_or_pull_repo "tangphillip" "Imgur-Uploader" "$BASE_PROGS_DIR"  # https://github.com/tangphillip/Imgur-Uploader
     #create_link "${BASE_PROGS_DIR}/Imgur-Uploader/imgur" "$HOME/bin/imgur-uploader"
 
-    # fuzzy file finder/command completer etc:
-    clone_or_pull_repo "junegunn" "fzf" "$BASE_PROGS_DIR"  # https://github.com/junegunn/fzf
-    create_link "${BASE_PROGS_DIR}/fzf" "$HOME/.fzf"
-    execute "$HOME/.fzf/install --all" || err "could not install fzf"
-
     # replace bash tab completion w/ fzf:
     # alternatively consider https://github.com/rockandska/fzf-obc
     clone_or_pull_repo "lincheney" "fzf-tab-completion" "$BASE_PROGS_DIR"  # https://github.com/lincheney/fzf-tab-completion
@@ -2434,6 +2429,7 @@ install_own_builds() {
     is_native && install_ferdium
     install_xournalpp
     #install_zoxide
+    install_fzf
     install_ripgrep
     install_rga
     install_browsh
@@ -3252,6 +3248,18 @@ install_lazyman() {  # https://github.com/StevensNJD4/LazyMan
 # fasd-alike alternative
 install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
     install_bin_from_git -N zoxide ajeetdsouza zoxide 'zoxide-x86_64-unknown-linux-gnu'
+}
+
+
+# fuzzy file finder/command completer etc
+# https://github.com/junegunn/fzf
+install_fzf() {
+    install_bin_from_git -N fzf junegunn fzf 'linux_amd64.tar.gz'
+
+    # old way:
+    #clone_or_pull_repo "junegunn" "fzf" "$BASE_PROGS_DIR"
+    #create_link "${BASE_PROGS_DIR}/fzf" "$HOME/.fzf"
+    #execute "$HOME/.fzf/install --all" || err "could not install fzf"
 }
 
 
@@ -6312,6 +6320,7 @@ __choose_prog_to_build() {
         install_zoom
         install_xournalpp
         install_zoxide
+        install_fzf
         install_ripgrep
         install_rga
         install_browsh
