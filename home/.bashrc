@@ -379,9 +379,10 @@ __check_for_change_and_compile_ssh_config() {
 __check_for_change_and_compile_ssh_config &
 disown $!
 ########################################## fzf
-[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+# https://github.com/junegunn/fzf#setting-up-shell-integration
+command -v fzf > /dev/null && eval "$(fzf --bash)"
 
-# Replace default shell autocomplete:  https://github.com/junegunn/fzf#settings
+# Replace default shell autocomplete:  https://github.com/junegunn/fzf#customizing-completion-source-for-paths-and-directories
 ####################
 # Use fd (https://github.com/sharkdp/fd) instead of the default find
 # command for listing path candidates.
