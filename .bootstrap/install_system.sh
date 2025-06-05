@@ -357,7 +357,7 @@ setup_pm() {
 #   flatpak list --show-details
 install_flatpak() {
     install_block 'flatpak flatseal' || return 1  # flatseal is GUI app to manage perms
-    #execute 'sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo'
+    #execute 'sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo'  # <- normal/non-verified-only remote
 
     # only include the 'verified' packages, taken from this secureblue comment:
     # https://www.reddit.com/r/linux/comments/1bq9d3b/flathub_now_marks_unverified_apps/kx1adws/ :
@@ -433,37 +433,29 @@ setup_needrestart() {
 }
 
 
-# TODO: instead of using sed for manipulation, maybe use crudini, as configuration
-#       file appears to be in ini format; eg in there were to be any other section
-#       'sides "Login", then our appending function wouldn't cut it.
-# TODO: shouldn't  /etc/systemd/logind.conf.d/ be used? don't have this dir by default tho
-#       note: we best start using conf.d/ dir, as every upstream update to
-#       logind.conf otherwise conflicts and asks whether we want to install the
-#       updated version or keep our old/modified one
 setup_logind() {
-    local logind_conf conf_map key value
+    local logind_conf logind_confd file
 
     readonly logind_conf='/etc/systemd/logind.conf'
-    declare -A conf_map=(
-        [HandleLidSwitch]=ignore
-        [HandlePowerKey]=suspend
-        [SuspendKeyIgnoreInhibited]=yes
-    )
-    # note we've added 'HandleLidSwitch' as for some reason docking state is not detected
-    # and it still suspends lid-closed when docked otherwise.
+    readonly logind_confd='/etc/systemd/logind.conf.d'
+    file="$COMMON_DOTFILES/backups/logind.conf"
 
     if ! [[ -f "$logind_conf" ]]; then
-        err "[$logind_conf] is not a file; skipping configuring it"
+        err "[$logind_conf] is not a file; skipping configuring logind"
         return 1
+    elif ! [[ -f "$file" ]]; then
+        err "[$file] is not a file; skipping configuring logind"
+        return 1
+    elif ! grep -q "$logind_confd" "$logind_conf"; then
+        err "[$logind_confd] is not referenced/mentioned in [$logind_conf]! something's changed?"
+        return 1
+    elif ! [[ -d "$logind_confd" ]]; then
+        execute "sudo mkdir -- '$logind_confd'"
     fi
 
-    for key in ${!conf_map[*]}; do
-         value="${conf_map[$key]}"
-         if ! grep -q "^${key}=$value" "$logind_conf"; then
-            execute "sudo sed -i --follow-symlinks '/^$key\s*=/d' '$logind_conf'" || continue
-            execute "echo '$key=$value' | sudo tee --append $logind_conf > /dev/null"
-         fi
-    done
+    if ! sudo cmp -s "$file" "$logind_confd/custom.conf"; then
+        execute "sudo cp -- $file $logind_confd/custom.conf" || return 1
+    fi
 }
 
 
@@ -711,10 +703,13 @@ setup_sudoers() {
 
     execute "cp -- '$file' '$tmpfile'" || return 1
     execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-    execute "sudo chown root:root $tmpfile" || return 1
-    execute "sudo chmod 0440 $tmpfile" || return 1
 
-    execute "sudo mv -f -- $tmpfile $sudoers_dest/sudoers" || return 1
+    if ! sudo cmp -s "$tmpfile" "$sudoers_dest/sudoers"; then
+        execute "sudo chown root:root $tmpfile" || return 1
+        execute "sudo chmod 0440 $tmpfile" || return 1
+
+        execute "sudo mv -f -- $tmpfile $sudoers_dest/sudoers" || return 1
+    fi
 }
 
 
@@ -6802,13 +6797,7 @@ install_binance() {
 # https://github.com/spesmilo/electrum
 # - old reddit post w/ recommended wallets: https://www.reddit.com/r/Bitcoin/comments/f6ahfx/best_mobile_wallets_for_btc_non_kyc_preferred/fi4i9t4/
 install_electrum_wallet() {
-    local url
-
-    url="$(curl -Lsf --retry 2 'https://electrum.org/#download' \
-        | grep -Po '<a href="\Khttps://download\.electrum\.org/[0-9.]+/electrum-[0-9.]+-x86_64.AppImage(?=">Appimage</a>)')"
-
-    is_valid_url "$url" || { err "[$url] is not a valid download link"; return 1; }
-    install_from_url  electrum "$url" || return 1
+    install_from_any  electrum 'https://electrum.org/#download' 'https://download\.electrum\.org/[0-9.]+/electrum-[0-9.]+-x86_64.AppImage'
 }
 
 
