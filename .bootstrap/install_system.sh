@@ -4260,31 +4260,31 @@ install_i3lock() {
     report "installing i3lock build dependencies..."
     install_block '
       autoconf
-      automake
-      libev-dev
-      libxcb-composite0
+      gcc
+      make
+      pkg-config
+      libpam0g-dev
+      libcairo2-dev
+      libfontconfig1-dev
       libxcb-composite0-dev
-      libxcb-xinerama0
-      libxcb-randr0
-      libxcb-xinerama0-dev
+      libev-dev
+      libx11-xcb-dev
       libxcb-xkb-dev
+      libxcb-xinerama0-dev
+      libxcb-randr0-dev
       libxcb-image0-dev
       libxcb-util0-dev
-      libxkbcommon-x11-dev
-      libjpeg62-turbo-dev
-      libpam0g-dev
-      pkg-config
-      xcb-proto
       libxcb-xrm-dev
-      libxcb-randr0-dev
       libxkbcommon-dev
-      libcairo2-dev
-      libxcb1-dev
-      libxcb-dpms0-dev' || { err 'failed to install i3lock build deps. abort.'; return 1; }
+      libxkbcommon-x11-dev
+      libjpeg-dev
+      libgif-dev
+      ' || { err 'failed to install i3lock build deps. abort.'; return 1; }
 
     # clone the repository
     execute "git clone ${GIT_OPTS[*]} $I3_LOCK_LOC '$tmpdir'" || return 1
-    execute "git -C '$tmpdir' tag -f 'git-$(git rev-parse --short HEAD)'" || return 1
+    # create tag so a non-debug version is built:
+    execute "git -C '$tmpdir' tag -f 'git-$(git -C '$tmpdir' rev-parse --short HEAD)'" || return 1
 
     report "building i3lock..."
     execute "pushd $tmpdir" || return 1
