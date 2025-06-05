@@ -2251,7 +2251,8 @@ upgrade_firmware() {
 
 
 # TODO: /etc/modules is still supported by debian, but is an older system/mechanic; perhaps
-# start using /etc/modules-load.d/ instead?
+# start using /etc/modules-load.d/ instead? as of '25 debian appears to symlink
+# /etc/modules-load.d/modules.conf -> /etc/modules, so who knows...
 #
 # Note: dashes & underscores are interchangeable in module names.
 install_kernel_modules() {
@@ -2275,7 +2276,7 @@ install_kernel_modules() {
 
     # ddcci-dkms gives us DDC support so we can control also external monitor brightness (via brillo et al; not related to i2c-dev/ddcutil)
     # note project is @ https://gitlab.com/ddcci-driver-linux/ddcci-driver-linux
-    #install_block  ddcci-dkms || return 1  # TODO: re-enable once 0.4.5 is avail, otherwise linux img doesn't build; was fixed in https://gitlab.com/ddcci-driver-linux/ddcci-driver-linux/-/issues/39
+    install_block  ddcci-dkms || return 1
 
     for i in "${modules[@]}"; do
         grep -Fxq "$i" "$conf" || execute "echo $i | sudo tee --append $conf > /dev/null"
