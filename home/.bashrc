@@ -573,9 +573,3 @@ export -f nvr
 #fi
 #unset ftc
 ##########################################
-# pyenv  # note we source something also in ~/.profile, and export some in .bash_env_vars
-if command -v pyenv >/dev/null 2>/dev/null; then
-    eval "$(pyenv init -)"
-    eval "$(pyenv virtualenv-init -)"  # enables auto-activation of _pyenv-managed_ virtualenvs; see https://github.com/pyenv/pyenv-virtualenv
-fi
-##########################################
