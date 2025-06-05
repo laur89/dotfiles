@@ -1422,6 +1422,7 @@ install_deps() {
     # git-fuzzy (yet another git fzf tool)   # https://github.com/bigH/git-fuzzy
     clone_or_pull_repo "bigH" "git-fuzzy" "$BASE_PROGS_DIR"
 
+    # TODO: find alternative. note we have some scripts currently depending on it
     # notify-send with additional features  # https://github.com/M3TIOR/notify-send.sh
     # note it depends on libglib2.0-bin (should be already installed):   install_block libglib2.0-bin
     clone_or_pull_repo  M3TIOR  "notify-send.sh" "$BASE_PROGS_DIR"
@@ -1450,14 +1451,6 @@ install_deps() {
     _install_tmux_deps; unset _install_tmux_deps
     # vifm plugins:
     _install_vifm_deps; unset _install_vifm_deps
-
-    # install scala apps (requires coursier):
-    # giter8    # http://www.foundweekends.org/giter8/setup.html
-    if command -v g8 >/dev/null 2>&1; then
-        execute 'cs update g8'
-    else
-        execute 'cs install giter8'
-    fi
 
     # cheat.sh:  # https://github.com/chubin/cheat.sh#installation
     curl -fsSL "https://cht.sh/:cht.sh" > ~/bin/cht.sh && chmod +x ~/bin/cht.sh || err "curling cheat.sh failed w/ [$?]"
@@ -2384,7 +2377,7 @@ install_devstuff() {
     install_bruno
     install_terragrunt
     install_minikube
-    install_coursier
+    #install_coursier
 
     install_kubectl
 }
@@ -3307,6 +3300,7 @@ install_clj_kondo() {
 }
 
 # scala application & artifact manager
+# provides us with cs command
 install_coursier() {  # https://github.com/coursier/coursier
     install_bin_from_git -N cs  coursier coursier  cs-x86_64-pc-linux.gz
 }
