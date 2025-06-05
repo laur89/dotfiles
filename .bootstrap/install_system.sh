@@ -1453,7 +1453,8 @@ install_deps() {
     _install_vifm_deps; unset _install_vifm_deps
 
     # cheat.sh:  # https://github.com/chubin/cheat.sh#installation
-    curl -fsSL "https://cht.sh/:cht.sh" > ~/bin/cht.sh && chmod +x ~/bin/cht.sh || err "curling cheat.sh failed w/ [$?]"
+    #curl -fsSL "https://cht.sh/:cht.sh" > ~/bin/cht.sh && chmod +x ~/bin/cht.sh || err "curling cheat.sh failed w/ [$?]"
+    install_from_url  cht.sh 'https://cht.sh/:cht.sh'
 
     # TODO: following are not deps, are they?:
 
@@ -3187,7 +3188,7 @@ install_file() {
     if [[ "$ftype" == *"debian.binary-package; charset=binary" ]]; then
         execute "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
         execute "rm -f -- '$file'"
-    elif [[ "$ftype" == *'executable; charset=binary' || "$ftype" == 'text/x-shellscript; charset=utf-8' ]]; then
+    elif [[ "$ftype" == *'executable; charset=binary' || "$ftype" == 'text/x-shellscript; charset='* ]]; then
         execute "chmod +x '$file'" || return 1
         _rename || return 1
         execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
