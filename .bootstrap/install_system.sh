@@ -3800,6 +3800,7 @@ install_btop() {  # https://github.com/aristocratos/btop
 
 
 # modern ls replacement written in rust
+# https://github.com/eza-community/eza/blob/main/INSTALL.md#debian-and-ubuntu
 install_eza() {  # https://github.com/eza-community/eza
     install_bin_from_git -N eza -d "$HOME/bin"  eza-community  eza 'eza_x86_64-unknown-linux-gnu.tar.gz'
 }
@@ -4031,17 +4032,20 @@ setup_keyd() {
 #
 # for quick debug, run as  $ sudo -u kanata kanata --cfg /path/to/conf.kbd
 install_kanata() {
-    local conf_src conf_base
+    local conf_src conf_base t
 
     conf_src="$COMMON_DOTFILES/backups/kanata.kbd"
-    conf_target='/etc/kanata/'  # note this path is referenced in relevant systemd service file
+    conf_target='/etc/kanata'  # note this path is referenced in relevant systemd service file
 
     # note group & user are also referenced in relevant systemd & udev files
     add_group uinput
     add_user  kanata  'input,uinput'
 
-    [[ -d "$conf_target" ]] || execute "mkdir -- '$conf_target'" || return 1
-    [[ -s "$conf_src" ]] && execute "sudo cp -- '$conf_src' '$conf_target'"
+    t="$conf_target/$(basename -- "$conf_src")"
+    if [[ -s "$conf_src" ]] && ! cmp -s "$conf_src" "$t"; then
+        [[ -d "$conf_target" ]] || execute "sudo mkdir -- '$conf_target'" || return 1
+        execute "sudo cp -- '$conf_src' '$t'"
+    fi
 
     install_bin_from_git -N kanata -O root:kanata -P 754  jtroo kanata 'kanata'
 }
@@ -4052,6 +4056,10 @@ install_kanata() {
 #
 # pre-built binaries avail @ https://www.ddcutil.com/install/#prebuilt-packages-maintained-by-the-ddcutil-project
 install_ddcutil() {
+    install_block  ddcutil
+    return
+
+    # TODO leaving building instructions just in case:
     local dir group
 
     dir="$(fetch_extract_tarball_from_git -T  rockowitz ddcutil)" || return 1
@@ -4087,12 +4095,6 @@ install_ddcutil() {
 
     execute "popd"
     execute "sudo rm -rf -- '$dir'"
-
-    # following from https://www.ddcutil.com/i2c_permissions/
-    group=i2c
-    add_group "$group"
-    add_to_group "$group"
-    return 0
 }
 
 
@@ -4426,7 +4428,7 @@ install_display_switch() {
 }
 
 
-# https://github.com/Airblader/i3/wiki/Building-from-source
+# https://i3wm.org/docs/hacking-howto.html
 # see also https://github.com/maestrogerardo/i3-gaps-deb for debian pkg building logic
 build_i3() {
     local tmpdir ver
@@ -4547,7 +4549,8 @@ EOF
 }
 
 install_i3() {
-    build_i3   # do not return, as it might return w/ 2 because of is_installed()
+    #build_i3   # do not return, as it might return w/ 2 because of is_installed()
+    install_block  i3
     install_i3_deps
     install_i3_conf
 }
