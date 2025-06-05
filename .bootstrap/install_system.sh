@@ -4779,9 +4779,6 @@ build_deb() {
         report "no debian/ in pwd, generating scaffolding..."
         execute 'mkdir -- debian' || return 1
 
-        # create compat:
-        execute 'echo 11 > debian/compat' || return 1  # compat 11 is from debian 9+
-
         # create changelog:
         echo "$pkg_name (0.0-0) UNRELEASED; urgency=medium
 
@@ -4798,6 +4795,7 @@ Maintainer: Laur Aliste <laur.aliste@packager.eu>
 Package: $pkg_name
 Architecture: any
 Description: custom-built $pkg_name package
+Build-Depends: debhelper-compat (= 13)
 " > debian/control || return 1
 
         # create rules:
