@@ -2409,7 +2409,7 @@ install_own_builds() {
     install_gruvbox_gtk_theme
     #install_weeslack
     install_gomuks
-    is_native && install_slack_term
+    #is_native && install_slack_term
     install_slack
     install_veracrypt
     install_ueberzugpp
@@ -2982,11 +2982,7 @@ install_xournalpp() {  # https://github.com/xournalpp/xournalpp
 # ueberzug drop-in replacement written in c++
 # also avail via brew
 install_ueberzugpp() {  # https://github.com/jstkdng/ueberzugpp
-    local deb
-
-    deb="$(fetch_release_from_any -I ueberzugpp 'https://software.opensuse.org/download.html?project=home%3Ajustkidding&package=ueberzugpp#directDebian' 'Debian_Testing.*[-0-9.]+_amd64\.deb')" || return $?
-    execute "sudo apt-get --yes install '$deb'" || return 1
-    return 0
+    install_from_any  ueberzugpp  'https://software.opensuse.org/download.html?project=home%3Ajustkidding&package=ueberzugpp#directDebian' 'Debian_Testing.*[-0-9.]+_amd64\.deb'
 }
 
 
@@ -3216,13 +3212,6 @@ install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
 # https://github.com/junegunn/fzf
 install_fzf() {
     install_bin_from_git -N fzf junegunn fzf 'linux_amd64.tar.gz'
-}
-
-
-# see also https://github.com/wee-slack/wee-slack/
-# this is one of installation/setup blogs: http://www.futurile.net/2020/11/30/weechat-for-slack/
-install_slack_term() {  # https://github.com/jpbruinsslot/slack-term
-    install_bin_from_git -N slack-term jpbruinsslot slack-term slack-term-linux-amd64
 }
 
 
@@ -3612,6 +3601,12 @@ install_wezterm() {
 }
 
 
+# TODO last commit '20
+install_slack_term() {  # https://github.com/jpbruinsslot/slack-term
+    install_bin_from_git -N slack-term jpbruinsslot slack-term slack-term-linux-amd64
+}
+
+
 # potentially useful tutorial: http://www.futurile.net/2020/11/30/weechat-for-slack/
 #
 # follow instruction at https://github.com/wee-slack/wee-slack#get-a-session-token
@@ -3621,10 +3616,14 @@ install_weeslack() {  # https://github.com/wee-slack/wee-slack
     install_block 'weechat-python python3-websocket' || return 1
 
     execute "mkdir -p $d/autoload" || return 1
-    execute "pushd $d" || return 1
-    execute 'curl -O https://raw.githubusercontent.com/wee-slack/wee-slack/master/wee_slack.py' || return 1
-    execute 'ln -s ../wee_slack.py autoload'  # in order to start wee-slack automatically when weechat starts
-    execute 'popd' || return 1
+    #execute "pushd $d" || return 1
+
+    #execute 'curl -O https://raw.githubusercontent.com/wee-slack/wee-slack/master/wee_slack.py' || { popd; return 1; }
+    install_from_url -A -d "$d" wee_slack.py  'https://raw.githubusercontent.com/wee-slack/wee-slack/master/wee_slack.py'
+    #execute 'ln -s ../wee_slack.py autoload'
+    create_link "$d/wee_slack.py" "$d/autoload/"  # in order to start wee-slack automatically when weechat starts
+
+    #execute 'popd' || return 1
 }
 
 
@@ -3647,8 +3646,9 @@ install_weechat_matrix() {  # https://github.com/poljar/weechat-matrix
 }
 
 # go-based matrix client
-install_gomuks() {  # https://github.com/tulir/gomuks
-    install_deb_from_git tulir gomuks _amd64.deb
+install_gomuks() {  # https://github.com/gomuks/gomuks
+    #install_deb_from_git gomuks gomuks _amd64.deb
+    install_bin_from_git -N gomuks gomuks gomuks  gomuks-linux-amd64
 }
 
 
