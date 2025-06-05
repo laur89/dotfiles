@@ -1523,21 +1523,6 @@ install_deps() {
         install_block  mopidy-spotify
     fi
 
-    # pyenv  # https://github.com/pyenv/pyenv-installer
-    # TODO: consider replacing all env/version managers by asdf or mise
-    if [[ -d "$PYENV_ROOT" ]]; then  # already installed
-        execute 'pyenv update'
-    else
-        install_from_url_shell  pyenv 'https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer'
-
-        # install pyenv plugins:
-        # ! note pyenv-virtualenv is already installed by pyenv-installer script!
-        #pve_loc="$PYENV_ROOT/plugins/pyenv-virtualenv"
-        #if [[ -d "$PYENV_ROOT/plugins" && ! -d "$pve_loc" ]]; then
-        #    clone_or_pull_repo "pyenv" "pyenv-virtualenv" "${pve_loc}/" || return 1
-        #fi
-    fi
-
     # some py deps requred by scripts:  # TODO: should we not install these via said scripts' requirements.txt file instead?
     #py_install exchangelib vobject icalendar arrow
     # note: if exchangelib fails with something like
