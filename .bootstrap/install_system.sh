@@ -27,7 +27,7 @@ readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - ye
 readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
 readonly GOFORIT_REPO_LOC='https://github.com/Manuel-Kehl/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
 readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
-readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
+readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"  # TODO: change to id_ed25519
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
@@ -1284,7 +1284,7 @@ install_deps() {
         readonly plugins_dir="$HOME/.config/vifm/plugins"
         [[ -d "$plugins_dir" ]] || { err "[$plugins_dir] not a dir, can't install vifm plugin(s)"; return 1; }
 
-        # TODO: is this needed, given we already install ueberzugpp and are using the vifmimg script?
+        # https://github.com/vifm/vifm/tree/master/data/plugins/ueberzug
         for plugin in 'ueberzug'; do
             clone_repo_subdir  vifm vifm "data/plugins/$plugin" "$plugins_dir"
         done
@@ -1449,8 +1449,10 @@ install_deps() {
 
     # tmux plugin manager:
     _install_tmux_deps; unset _install_tmux_deps
+
     # vifm plugins:
-    _install_vifm_deps; unset _install_vifm_deps
+    # note ueberzug plugin commented out atm as we're using scripts from https://github.com/thimc/vifmimg
+    #_install_vifm_deps; unset _install_vifm_deps
 
     # cheat.sh:  # https://github.com/chubin/cheat.sh#installation
     #curl -fsSL "https://cht.sh/:cht.sh" > ~/bin/cht.sh && chmod +x ~/bin/cht.sh || err "curling cheat.sh failed w/ [$?]"
@@ -1531,6 +1533,7 @@ install_deps() {
 
     # flashfocus - flash window when focus changes  https://github.com/fennerm/flashfocus
     # note on X systems it requires a compositor (e.g. picom) to be effective.
+    # TODO: x11? project page mentions it's working on sway, but it has xcb dependencies, so...
     install_block 'libxcb-render0-dev libffi-dev python-cffi'
     py_install flashfocus
 
@@ -1583,8 +1586,6 @@ setup_dirs() {
             $BASE_DATA_DIR/mail/work \
             $BASE_DATA_DIR/mail/personal \
             $BASE_DATA_DIR/Downloads \
-            $BASE_DATA_DIR/Downloads/Transmission \
-            $BASE_DATA_DIR/Downloads/Transmission/incomplete \
             $BASE_DATA_DIR/Videos \
             $BASE_DATA_DIR/Music \
             $BASE_DATA_DIR/Documents \
@@ -1608,7 +1609,6 @@ setup_dirs() {
 
 
 install_homesick() {
-
     clone_or_pull_repo "andsens" "homeshick" "$BASE_HOMESICK_REPOS_LOC" || return 1
 }
 
@@ -1739,7 +1739,7 @@ verify_ssh_key() {
     err "expected ssh keys to be there after cloning repo(s), but weren't."
 
     if confirm -d N "do you wish to generate set of ssh keys?"; then
-        generate_key
+        generate_ssh_key
     else
         return
     fi
@@ -2147,15 +2147,34 @@ setup_additional_apt_keys_and_sources() {
 # TODO: instead of modifying locale file, perhaps would be better to do it via  'sudo -E update-locale LANG=en_CA.UTF-8'?
 #       eg see how this guy does it: https://github.com/nhooyr/dotfiles/blob/b513f244b1dd088b741d62377b787bfb3b13e2da/debian/init.sh#L101
 override_locale_time() {
-    local conf_file
+    local conf_file loc_file locales i modified
 
     readonly conf_file='/etc/default/locale'
+    readonly loc_file='/etc/locale.gen'
 
     [[ -f "$conf_file" ]] || { err "cannot override locale time: [$conf_file] does not exist; abort;"; return 1; }
 
-    # just in case delete all same definitions, regardless of its value:
-    execute "sudo sed -i --follow-symlinks '/^LC_TIME\s*=/d' '$conf_file'" || return 1
-    execute "echo 'LC_TIME=\"en_GB.UTF-8\"' | sudo tee --append $conf_file > /dev/null"  # en-gb gives us 24h clock
+    # change our LC_TIME, so first day of week is OK:
+    if ! grep -qE "LC_TIME=.en_GB.UTF-8." "$conf_file"; then
+        # just in case delete all same definitions, regardless of its value:
+        execute "sudo sed -i --follow-symlinks '/^LC_TIME\s*=/d' '$conf_file'" || return 1
+        execute "echo 'LC_TIME=\"en_GB.UTF-8\"' | sudo tee --append $conf_file > /dev/null"  # en-gb gives us 24h clock
+    fi
+
+    # generate missing locales:
+    [[ -f "$loc_file" ]] || { err "cannot add locales: [$loc_file] does not exist; abort;"; return 1; }
+                #'et_EE.UTF-8' \
+    for i in \
+                'en_GB.UTF-8' \
+                'en_US.UTF-8' \
+            ; do
+        if ! grep -qE "^$i" "$loc_file"; then
+            execute "sudo sed -i --follow-symlinks 's|^# $i|$i|' '$loc_file'" || return 1
+            modified=Y
+        fi
+    done
+
+    [[ -n "$modified" ]] && execute 'sudo locale-gen'
 
     return 0
 }
@@ -6241,7 +6260,7 @@ choose_single_task() {
         setup_homesick
         setup_seafile
 
-        generate_key
+        generate_ssh_key
         install_nm_dispatchers
         install_acpi_events
         install_deps
@@ -7425,7 +7444,7 @@ check_connection() {
 
 
 # https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
-generate_key() {
+generate_ssh_key() {
     local mail valid_mail_regex
 
     readonly valid_mail_regex='^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+$'
@@ -7445,7 +7464,7 @@ generate_key() {
         read -r mail
     done
 
-    #execute "ssh-keygen -t rsa -b 4096 -C '$mail' -f '$PRIVATE_KEY_LOC'"  # for RSA
+    #execute "ssh-keygen -t rsa -b 4096 -C '$mail' -f '$PRIVATE_KEY_LOC'"  # legacy for RSA
     execute "ssh-keygen -t ed25519 -C '$mail' -f '$PRIVATE_KEY_LOC'"
 }
 
