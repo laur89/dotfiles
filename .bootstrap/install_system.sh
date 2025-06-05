@@ -31,6 +31,7 @@ readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
+readonly SHELL_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # as per https://github.com/scop/bash-completion#faq
 readonly APT_KEY_DIR='/usr/local/share/keyrings'  # dir where per-application apt keys will be stored in
 readonly SERVER_IP='10.42.21.10'             # default server address; likely to be an address in our LAN
 readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
@@ -1378,9 +1379,6 @@ install_deps() {
     # alternatively consider https://github.com/starship/starship !!
     clone_or_pull_repo "magicmonty" "bash-git-prompt" "$BASE_PROGS_DIR"
 
-    # git-flow-completion:  # https://github.com/bobthecow/git-flow-completion
-    #clone_or_pull_repo "bobthecow" "git-flow-completion" "$BASE_PROGS_DIR"
-
     # bars (as in bar-charts) in shell:
     #  note: see also https://github.com/sindresorhus/sparkly-cli
     clone_or_pull_repo "holman" "spark" "$BASE_PROGS_DIR"  # https://github.com/holman/spark
@@ -1406,16 +1404,16 @@ install_deps() {
 
     # maven bash completion:
     clone_or_pull_repo "juven" "maven-bash-completion" "$BASE_PROGS_DIR"  # https://github.com/juven/maven-bash-completion
-    create_link "${BASE_PROGS_DIR}/maven-bash-completion/bash_completion.bash" "$HOME/.bash_completion.d/maven-completion.bash"
+    create_link "${BASE_PROGS_DIR}/maven-bash-completion/bash_completion.bash" "$SHELL_COMPLETIONS/mvn"
 
     # gradle bash completion:  # https://github.com/gradle/gradle-completion/blob/master/README.md#installation-for-bash-32
     #curl -LA gradle-completion https://edub.me/gradle-completion-bash -o $HOME/.bash_completion.d/
     clone_or_pull_repo "gradle" "gradle-completion" "$BASE_PROGS_DIR"
-    create_link "${BASE_PROGS_DIR}/gradle-completion/gradle-completion.bash" "$HOME/.bash_completion.d/"
+    create_link "${BASE_PROGS_DIR}/gradle-completion/gradle-completion.bash" "$SHELL_COMPLETIONS/gradle"
 
     # leiningen bash completion:  # https://codeberg.org/leiningen/leiningen/src/branch/main/bash_completion.bash
     #
-    install_from_url -d "$HOME/.bash_completion.d/" lein_bash_completion.bash "https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash"
+    install_from_url -A -d "$SHELL_COMPLETIONS" lein  "https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash"
 
     # vifm filetype icons: https://github.com/thimc/vifm_devicons
     clone_or_pull_repo "thimc" "vifm_devicons" "$BASE_PROGS_DIR"
@@ -1573,7 +1571,7 @@ setup_dirs() {
     # create dirs:
     for dir in \
             $HOME/bin \
-            $HOME/.bash_completion.d \
+            $SHELL_COMPLETIONS \
             $HOME/.npm-packages \
             $BASE_DATA_DIR/.calendars \
             $BASE_DATA_DIR/.calendars/work \
@@ -3068,13 +3066,14 @@ resolve_ver() {
 # $1 - name of the binary/resource
 # $2 - resource url
 install_from_url() {
-    local opt OPTIND target install_file_params name loc file ver tmpdir
+    local opt OPTIND target opts name loc file ver tmpdir
 
     target='/usr/local/bin'  # default
-    while getopts 'd:D' opt; do
+    opts=()
+    while getopts 'd:DA' opt; do
         case "$opt" in
             d) target="$OPTARG" ;;
-            D) install_file_params+='-D ' ;;
+            D|A) opts+=("-$opt") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -3100,7 +3099,7 @@ install_from_url() {
     file="$(find "$tmpdir" -type f)"
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
-    install_file $install_file_params -d "$target" "$file" "$name" || return 1
+    install_file "${opts[@]}" -d "$target" "$file" "$name" || return 1
 
     add_to_dl_log "$name" "$ver"
 }
@@ -3627,7 +3626,7 @@ install_alacritty() {
     execute 'gzip -c extra/alacritty-msg.man | sudo tee /usr/local/share/man/man1/alacritty-msg.1.gz > /dev/null' || err
 
     # install bash completion:
-    execute 'cp extra/completions/alacritty.bash ~/.bash_completion.d/alacritty' || err
+    execute "cp extra/completions/alacritty.bash $SHELL_COMPLETIONS/alacritty" || err
 
     execute 'sudo mv -- target/release/alacritty  /usr/local/bin/' || err
 
@@ -3907,7 +3906,7 @@ install_mise() {
 
     # set up shell autocompletion: https://mise.jdx.dev/installing-mise.html#autocompletion
     execute 'mise use --global usage'
-    execute 'mise completion bash --include-bash-completion-lib | sudo tee /etc/bash_completion.d/mise > /dev/null'
+    execute "mise completion bash --include-bash-completion-lib | tee $SHELL_COMPLETIONS/mise > /dev/null"
 }
 
 
@@ -3930,7 +3929,7 @@ install_webdev() {
     if command -v npm >/dev/null 2>&1; then
         execute "$NPM_PRFX npm install npm@latest -g" && sleep 0.1
         # NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
-        execute 'npm completion | sudo tee /etc/bash_completion.d/npm > /dev/null'
+        execute "npm completion | tee $SHELL_COMPLETIONS/npm > /dev/null"
 
         # install npm modules:  # TODO review what we want to install
         # note nwb (zero-config development setup) is dead - use vite instead: https://github.com/vitejs/vite
@@ -3946,11 +3945,6 @@ install_webdev() {
     # install yarn:  https://yarnpkg.com/getting-started/install
     execute "corepack enable"  # note corepack is included w/ node, but is currently opt-in, hence 'enable'
     execute "corepack prepare yarn@stable --activate"
-
-    # install rails:
-    # this would install it globally; better install new local ver by
-    # rbenv install <ver> && rbenv global <ver> && gem install rails
-    #rb_install rails
 }
 
 build_and_install_synergy_TODO_container_edition() {
@@ -5677,6 +5671,7 @@ install_from_repo() {
         dirmngr  # server for managing and downloading OpenPGP and X.509 certificates, as well as updates and status signals related to those certificates;
                  # used for network access by gpg, gpgsm, and dirmngr-client, among other tools
         #direnv  # commented out as it might conflict w/ mise: https://mise.jdx.dev/direnv.html
+        bash-completion
     )
 
 
@@ -7197,7 +7192,7 @@ post_install_progs_setup() {
     setup_firefox
     configure_updatedb
 
-    command -v kubectl >/dev/null && execute 'kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl > /dev/null'  # add kubectl bash completion
+    command -v kubectl >/dev/null && execute "kubectl completion bash | tee $SHELL_COMPLETIONS/kubectl > /dev/null"  # add kubectl bash completion
     command -v minikube >/dev/null && setup_minikube
 }
 
