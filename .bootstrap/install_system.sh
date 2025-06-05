@@ -645,11 +645,10 @@ setup_bubblewrap() {
 
 
 setup_hosts() {
-    local hosts_file_dest file current_hostline tmpfile
+    local file tmpfile current_hostline
 
-    readonly hosts_file_dest='/etc'
-    readonly tmpfile="$TMP_DIR/hosts.head"  # note result file won't be 'hosts', but 'hosts.head'
     readonly file="$PRIVATE__DOTFILES/backups/hosts-header.tmpl"
+    readonly tmpfile="$TMP_DIR/hosts.head"  # note result file won't be 'hosts', but 'hosts.head'
 
     _extract_current_hostname_line() {
         local file current
@@ -665,17 +664,12 @@ setup_hosts() {
         return 0
     }
 
-    if ! [[ -d "$hosts_file_dest" ]]; then
-        err "[$hosts_file_dest] is not a dir; skipping hosts file installation."
-        return 1
-    fi
-
     if [[ -f "$file" ]]; then
-        [[ -f "$hosts_file_dest/hosts" ]] || { err "system hosts file is missing!"; return 1; }
-        current_hostline="$(_extract_current_hostname_line $hosts_file_dest/hosts)" || return 1
+        [[ -f "/etc/hosts" ]] || { err "system hosts file is missing!"; return 1; }
+        current_hostline="$(_extract_current_hostname_line /etc/hosts)" || return 1
         execute "sed -e 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' -e 's/{HOSTNAME}/$HOSTNAME/g' $file > $tmpfile" || { err; return 1; }
 
-        backup_original_and_copy_file --sudo "$tmpfile" "$hosts_file_dest"
+        backup_original_and_copy_file --sudo "$tmpfile" /etc
         execute "rm -- '$tmpfile'"
     else
         err "expected configuration file at [$file] does not exist; won't install it."
@@ -736,8 +730,9 @@ setup_apt() {
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
         [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it"; continue; }
-        # TODO: is it safe to create backup into ...d/ dir?:
-        backup_original_and_copy_file --sudo "$file" "$apt_dir/sources.list.d"
+        t="$apt_dir/sources.list.d/$(basename -- "$file")"
+        cmp -s "$file" "$t" && continue  # no changes
+        execute "sudo cp -- '$file' '$t'"
     done
 
     # NOTE: 02periodic _might_ be duplicating the unattended-upgrades activation
@@ -1112,10 +1107,9 @@ create_mountpoint() {
     readonly mountpoint="$1"
 
     [[ -z "$mountpoint" ]] && { err "cannot pass empty mountpoint arg to $FUNCNAME"; return 1; }
-
-    [[ -d "$mountpoint" ]] || execute "sudo mkdir -p -- '$mountpoint'" || { err "couldn't create [$mountpoint]"; return 1; }
+    [[ -d "$mountpoint" ]] || execute "sudo mkdir -p -- '$mountpoint'" || return 1
     [[ -d "$mountpoint" ]] || { err "mountpoint [$mountpoint] is not a dir"; return 1; }  # sanity
-    execute "sudo chmod 777 -- '$mountpoint'" || { err; return 1; }
+    execute "sudo chmod 777 -- '$mountpoint'" || { err; return 1; }  # TODO: why 777 ???
 
     return 0
 }
@@ -1220,30 +1214,6 @@ install_sshfs() {
 
     return 0
 }
-
-
-#function setup_ssh_config() {
-    #local ssh_confdir ssh_conf
-
-    #ssh_confdir="/etc/ssh"
-    #ssh_conf="$COMMON_DOTFILES/backups/ssh_config"
-
-    ## install ssh config:
-    ######################
-    #if ! [[ -d "$ssh_confdir" ]]; then
-        #err "$ssh_confdir is not a dir; skipping ssh conf installation."
-        #return 1
-    #fi
-
-    #if [[ -f "$ssh_conf" ]]; then
-        #backup_original_and_copy_file --sudo "$ssh_conf" "$ssh_confdir"
-    #else
-        #err "expected ssh configuration file at [$ssh_conf] does not exist; aborting ssh (client) configuration."
-        #return 1
-    #fi
-
-    #return 0
-#}
 
 
 # "deps" as in git repos/py modules et al our system setup depends on;
@@ -1730,11 +1700,8 @@ verify_ssh_key() {
     [[ "$IS_SSH_SETUP" -eq 1 ]] && return 0
     err "expected ssh keys to be there after cloning repo(s), but weren't."
 
-    if confirm -d N "do you wish to generate set of ssh keys?"; then
-        generate_ssh_key
-    else
-        return
-    fi
+    confirm -d N "do you wish to generate set of ssh keys?" || return
+    generate_ssh_key
 
     if is_ssh_key_available; then
         IS_SSH_SETUP=1
@@ -1753,10 +1720,11 @@ setup_homesick() {
     fetch_castles || return 1
 
     # just in case check if any of the castles are still tracking https instead of ssh:
-    https_castles="$("$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick" list | grep -i '\bhttps://\b')"
+    https_castles="$("$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick" list | grep -Ei '\bhttps://\b')"
     if [[ -n "$https_castles" ]]; then
         err "fyi, these homesick castles are for some reason still tracking https remotes:"
         report "$https_castles"
+        err ""
     fi
 }
 
@@ -1850,7 +1818,6 @@ setup_config_files() {
     setup_apt
     setup_crontab
     setup_sudoers
-    #setup_ssh_config   # better stick to ~/.ssh/config, rite?  # TODO
     setup_hosts
     setup_systemd
     setup_apparmor
@@ -1871,8 +1838,11 @@ setup_config_files() {
 
 
 # network manager wrapper script;
+# see:
+# - https://blogs.oracle.com/linux/post/networkmanager-dispatcher-scripts
+# - https://manpages.debian.org/unstable/network-manager/NetworkManager-dispatcher.8.en.html
 install_nm_dispatchers() {
-    local dispatchers nm_wrapper_dest f
+    local dispatchers nm_wrapper_dest f t
 
     readonly nm_wrapper_dest="/etc/NetworkManager/dispatcher.d"
     readonly dispatchers=(
@@ -1885,13 +1855,11 @@ install_nm_dispatchers() {
     fi
 
     for f in "${dispatchers[@]}"; do
-        if ! [[ -f "$f" ]]; then
-            err "[$f] does not exist; this netw-manager dispatcher won't be installed"
-            continue
-        fi
+        [[ -f "$f" ]] || { err "[$f] does not exist; this netw-manager dispatcher won't be installed"; continue; }
 
-        # do not create .orig backup!
-        execute "sudo cp -- '$f' $nm_wrapper_dest/"
+        t="$nm_wrapper_dest/$(basename -- "$f")"
+        cmp -s "$f" "$t" && continue  # no changes
+        execute "sudo cp -- '$f' '$t'"
     done
 }
 
@@ -1904,9 +1872,7 @@ source_shell_conf() {
         for i in \
                 "$SHELL_ENVS" \
                     ; do  # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
-            if [[ -r "$i" ]]; then
-                source "$i"
-            fi
+            [[ -r "$i" ]] && source "$i"
         done
 
         if [[ -d "$HOME/.bash_env_vars_overrides" ]]; then
@@ -1914,8 +1880,6 @@ source_shell_conf() {
                 [[ -f "$i" ]] && source "$i"
             done
         fi
-
-        unset i
     fi
 
     if ! type __BASH_FUNS_LOADED_MARKER > /dev/null 2>&1; then
@@ -1926,8 +1890,6 @@ source_shell_conf() {
             for i in "$HOME/.bash_funs_overrides/"*; do
                 [[ -f "$i" ]] && source "$i"
             done
-
-            unset i
        fi
     fi
 }
@@ -1935,7 +1897,7 @@ source_shell_conf() {
 
 setup_install_log_file() {
     if [[ -z "$GIT_RLS_LOG" ]]; then
-        [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/git-releases-install.log" || GIT_RLS_LOG="$TMP_DIR/.git-rls-log.tmp"  # log of all installed debs/binaries from git releases/latest page
+        [[ -n "$CUSTOM_LOGDIR" ]] && readonly GIT_RLS_LOG="$CUSTOM_LOGDIR/install.log" || GIT_RLS_LOG="$TMP_DIR/.install.tmp"  # log of all installed debs/binaries from git releases/latest page
     fi
 }
 
@@ -2147,7 +2109,7 @@ override_locale_time() {
     [[ -f "$conf_file" ]] || { err "cannot override locale time: [$conf_file] does not exist; abort;"; return 1; }
 
     # change our LC_TIME, so first day of week is OK:
-    if ! grep -qE "LC_TIME=.en_GB.UTF-8." "$conf_file"; then
+    if ! grep -qE 'LC_TIME=.en_GB.UTF-8.' "$conf_file"; then
         # just in case delete all same definitions, regardless of its value:
         execute "sudo sed -i --follow-symlinks '/^LC_TIME\s*=/d' '$conf_file'" || return 1
         execute "echo 'LC_TIME=\"en_GB.UTF-8\"' | sudo tee --append $conf_file > /dev/null"  # en-gb gives us 24h clock
@@ -2182,6 +2144,7 @@ override_locale_time() {
 # TODO: do not call; looks like changing pc file makes xcape not work for the remapped caps key;
 #       regular ctrl key worked fine, but caps key only worked as esc -- ctrl functionality was broken for it.
 #       we're calling alternative logic from .xinitrc instead.
+# TODO: deprecated
 swap_caps_lock_and_esc() {
     local conf_file
 
@@ -2245,8 +2208,10 @@ install_xonotic() {
     # TODO: use glx or sdl script? best try both and benchmark w/ included 'the-big-benchmark'
     create_link "$BASE_PROGS_DIR/xonotic/xonotic-linux-glx.sh" "$HOME/bin/xonotic"
 
-    # or instead of our custom dl logic above, use snap:
-    #snap_install xonotic
+    ######################################
+    # TODO: this doesn't work atm, as it fetches also older versions' urls:
+    #install_from_any -D -d "$BASE_PROGS_DIR" xonotic 'https://xonotic.org/download/' 'https://dl\.xonotic.org/xonotic-[0-9.]+\.zip'
+    #create_link "$BASE_PROGS_DIR/xonotic/xonotic-linux-glx.sh" "$HOME/bin/xonotic"
 }
 
 
