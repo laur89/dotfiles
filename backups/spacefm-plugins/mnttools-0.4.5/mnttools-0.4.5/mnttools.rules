@@ -1,6 +1,0 @@
-KERNEL!="sd[b-z][0-9]|mmcblk[0-9]p[0-9]", GOTO="mount_end"
-ACTION=="add", PROGRAM!="/sbin/blkid %N", GOTO="mount_end"
-ACTION=="add", RUN+="/usr/bin/mnttools udevmount"
-# ACTION=="add", RUN+="/usr/bin/mnttools --config cfg_filepath udevmount"
-ACTION=="remove", RUN+="/usr/bin/mnttools udevunmount"
-LABEL="mount_end"
