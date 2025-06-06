@@ -2459,13 +2459,16 @@ prepare_build_container() {  # TODO container build env not used atm
 }
 
 
+# note this function optimistically handles the version tracking, although
+# installation happens by the caller and might fail.
+#
 # -T  - instead of grepping via asset rgx, go with the latest tarball
 # -Z  - instead of grepping via asset rgx, go with the latest zipball
 #
 # $1 - git user
 # $2 - git repo
 # $3 - asset regex to be used (for jq's test()) to parse correct item from git /releases page. note jq requires most likely double-backslashes!
-# $4 - what to rename resulting file as (optional)
+# $4 - what to rename resulting file as; optional
 #
 # see also:
 #  - https://github.com/OhMyMndy/bin-get
@@ -2474,10 +2477,10 @@ fetch_release_from_git() {
     local opt loc id OPTIND dl_url opts selector
 
     opts=()
-    while getopts 'UsF:n:TZ' opt; do
+    while getopts 'Usf:n:TZ' opt; do
         case "$opt" in
             U|s) opts+=("-$opt") ;;
-            F|n) opts+=("-$opt" "$OPTARG") ;;
+            f|n) opts+=("-$opt" "$OPTARG") ;;
             T) selector='.tarball_url' ;;
             Z) selector='.zipball_url' ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
@@ -2490,24 +2493,21 @@ fetch_release_from_git() {
     dl_url="$(curl -fsSL "$loc" | jq -er "$selector")" || { err "asset url resolution from [$loc] failed w/ $?"; return 1; }
     readonly id="github-$1-$2${4:+-$4}"  # note we append name to the id when defined (same repo might contain multiple binaries)
 
-    if ! is_valid_url "$dl_url"; then
-        err "resolved url for ${id} is improper: [$dl_url]; aborting"
-        return 1
-    fi
-
+    is_valid_url "$dl_url" || { err "resolved url for ${id} is improper: [$dl_url]; aborting"; return 1; }
     _fetch_release_common "${opts[@]}" "$id" "$dl_url" "$dl_url" "$4"
 }
 
 
 # common logic for both fetch_release_from_{git,any}()
+# TODO: as of '25 only user is fetch_release_from_git()
 _fetch_release_common() {
     local opt noextract skipadd file_filter name_filter id ver dl_url name tmpdir file OPTIND
 
-    while getopts 'UsF:n:' opt; do
+    while getopts 'Usf:n:' opt; do
         case "$opt" in
             U) noextract=1 ;;
             s) skipadd=1 ;;
-            F) file_filter="$OPTARG" ;;
+            f) file_filter="$OPTARG" ;;
             n) name_filter="$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
@@ -2519,15 +2519,15 @@ _fetch_release_common() {
     dl_url="$3"
     name="$4"  # optional
 
-    [[ "$skipadd" != 1 ]] && is_installed "$ver" "${id:-$name}" && return 2
-    tmpdir="$(mktemp -d "release-from-${id:-$name}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    [[ "$skipadd" != 1 ]] && is_installed "$ver" "$id" && return 2
+    tmpdir="$(mktemp -d "release-from-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
     report "fetching [$dl_url]..."
     execute "wget --user-agent='$USER_AGENT' --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
     file="$(find "$tmpdir" -type f)"
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
-    if [[ "$noextract" -ne 1 ]] && grep -qiE 'archive|compressed' <<< "$(file --brief "$file")"; then
+    if [[ "$noextract" != 1 ]] && file --brief "$file" | grep -qiE 'archive|compressed'; then
         file="$(extract_tarball -s -f "$file_filter" -n "$name_filter" "$file")" || return 1
     fi
 
@@ -2543,7 +2543,7 @@ _fetch_release_common() {
     if [[ "$skipadd" != 1 ]]; then
         # we're assuming here that installation succeeded from here on.
         # it is optimistic, but removes repetitive calls.
-        add_to_dl_log "${id:-$name}" "$ver"
+        add_to_dl_log "$id" "$ver"
     fi
 
     #sanitize_apt "$tmpdir"  # think this is not really needed...
@@ -2615,8 +2615,8 @@ resolve_dl_urls() {
 #
 # -U     - skip extracting if archive and pass compressed/tarred ball as-is.
 # -s     - skip adding fetched asset in $GIT_RLS_LOG
-# -n     - filename pattern to be used by find; works together w/ -F;
-# -F     - $file output pattern to grep for in order to filter for specific
+# -n     - filename pattern to be used by find; works together w/ -f;
+# -f     - $file output pattern to grep for in order to filter for specific
 #          single file from unpacked tarball (meaning it's pointless when -U is given);
 #          as it stands, the _first_ file matching given filetype is returned, even
 #          if there were more. works together w/ -n
@@ -2640,10 +2640,10 @@ install_from_any() {
     local name loc url_ptrn dl_url ver f OPTIND tmpdir id
 
     install_file_args=()
-    while getopts 'sF:n:d:O:P:rR:UDAI:' opt; do
+    while getopts 'sf:n:d:O:P:rR:UDAI:' opt; do
         case "$opt" in
             s) skipadd=1 ;;
-            F|n|d|O|P) install_file_args+=("-$opt" "$OPTARG") ;;
+            f|n|d|O|P) install_file_args+=("-$opt" "$OPTARG") ;;
             r) relative='TRUE' ;;
             R) resolve_url_args="$OPTARG" ;;
             U|D|A) install_file_args+=("-$opt") ;;
@@ -2683,8 +2683,8 @@ install_from_any() {
 #
 # -U     - skip extracting if archive and pass compressed/tarred ball as-is.
 # -s     - skip adding fetched asset in $GIT_RLS_LOG
-# -n     - filename pattern to be used by find; works together w/ -F;
-# -F     - $file output pattern to grep for in order to filter for specific
+# -n     - filename pattern to be used by find; works together w/ -f;
+# -f     - $file output pattern to grep for in order to filter for specific
 #          single file from unpacked tarball (meaning it's pointless when -U is given);
 #          as it stands, the _first_ file matching given filetype is returned, even
 #          if there were more. works together w/ -n
@@ -2697,28 +2697,29 @@ install_from_any() {
 # $3 - optional output file name; if given, downloaded file will be renamed to this; note name only, not including path!
 #
 # TODO: see also install_from_any() that finally merges (sorta) this function & install_file
-fetch_release_from_any() {
-    local opts opt id relative resolveurls_opts loc dl_url ver OPTIND
+# TODO: deprecated? at least unused as of '25
+#fetch_release_from_any() {
+    #local opts opt id relative resolveurls_opts loc dl_url ver OPTIND
 
-    opts=()
-    while getopts 'UsF:n:I:rR:' opt; do
-        case "$opt" in
-            U|s) opts+=("-$opt") ;;
-            F|n) opts+=("-$opt" "$OPTARG") ;;
-            I) id="$OPTARG" ;;
-            r) relative='TRUE' ;;
-            R) resolveurls_opts="$OPTARG" ;;
-            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
-        esac
-    done
-    shift "$((OPTIND-1))"
+    #opts=()
+    #while getopts 'Usf:n:I:rR:' opt; do
+        #case "$opt" in
+            #U|s) opts+=("-$opt") ;;
+            #f|n) opts+=("-$opt" "$OPTARG") ;;
+            #I) id="$OPTARG" ;;
+            #r) relative='TRUE' ;;
+            #R) resolveurls_opts="$OPTARG" ;;
+            #*) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        #esac
+    #done
+    #shift "$((OPTIND-1))"
 
-    readonly loc="$1"
-    dl_url="$(resolve_dl_urls $resolveurls_opts "$loc" "${relative:+/}.*$2")" || return 1  # note we might be looking for a relative url
-    ver="$(resolve_ver "$dl_url")" || return 1
+    #readonly loc="$1"
+    #dl_url="$(resolve_dl_urls $resolveurls_opts "$loc" "${relative:+/}.*$2")" || return 1  # note we might be looking for a relative url
+    #ver="$(resolve_ver "$dl_url")" || return 1
 
-    _fetch_release_common "${opts[@]}" "${id:-$3}" "$ver" "$dl_url" "$3"
-}
+    #_fetch_release_common "${opts[@]}" "${id:-$3}" "$ver" "$dl_url" "$3"
+#}
 
 
 # Fetch a .deb file from given github /releases page, and install it
@@ -2772,31 +2773,37 @@ fetch_extract_tarball_from_git() {
 # Also note the operation is successful only if a single directory gets extracted out,
 # unless -s option (single_file) is provided.
 #
+# Note input $file is removed upon successful extraction
+#
 # -S     - flag to extract into current $PWD, ie won't create a new tempdir.
 # -s     - if we're after a single file in extracted result. see -f & -n for further filtering.
 # -n     - filename pattern to be used by find; works together w/ -f;
+#          implies -s
 # -f     - $file output pattern to grep for in order to filter for specific
 #          single file from unpacked tarball;
 #          as it stands, the _first_ file matching given filetype is returned, even
-#          if there were more. works together w/ -n
+#          if there were more. works together w/ -n opt;
+#          implies -s
 #
 # $1 - tarball file to be extracted, or a URL where to fetch file from first
 #      TODO: remove url support? as we're not tracking the version this way.
+#            I guess it could be left for the caller to track.
 #
 # @returns {string} path to root dir of extraction result, IF we found a
 #                   _single_ dir in the result.
 # @returns {bool} true, if we found a _single_ dir (or file, if -s option is provided)
 #                 in result; also the full path to dir/file is returned.
-# TODO: shouldn't -f and/or -n options immediately imply -s usage?
 extract_tarball() {
     local opt standalone single_f file_filter name_filter file dir OPTIND tmpdir
 
     while getopts 'Ssf:n:' opt; do
         case "$opt" in
             S) readonly standalone=1 ;;
-            s) readonly single_f=1 ;;
-            f) readonly file_filter="$OPTARG" ;;
-            n) readonly name_filter="$OPTARG" ;;
+            s) single_f=1 ;;
+            f) readonly file_filter="$OPTARG"
+               single_f=1 ;;
+            n) readonly name_filter="$OPTARG"
+               single_f=1 ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2823,7 +2830,7 @@ extract_tarball() {
         execute "aunpack --extract --quiet '$file'" > /dev/null || { err "extracting [$file] failed w/ $?"; [[ "$standalone" != 1 ]] && popd; return 1; }
     fi
 
-    execute "rm -f -- '$file'" || { err; [[ "$standalone" != 1 ]] && popd; return 1; }
+    execute "rm -f -- '$file'" || { [[ "$standalone" != 1 ]] && popd; return 1; }
 
     dir="$(find "$(pwd -P)" -mindepth 1 -maxdepth 1 -type d)"  # do not verify -d $dir _yet_ - ok to fail if $single_f == 1
     [[ "$standalone" != 1 ]] && execute popd
@@ -2838,7 +2845,7 @@ extract_tarball() {
         # TODO: support recursive extraction?
         if [[ -n "$file_filter" ]]; then
             while IFS= read -r -d $'\0' file; do
-                grep -Eq "$file_filter" <<< "$(file -iLb "$file")" && break || unset file
+                file -iLb "$file" | grep -Eq "$file_filter" && break || unset file
             done < <(find "$dir" -name "${name_filter:-*}" -type f -print0)
         else
             file="$(find "$dir" -name "${name_filter:-*}" -type f)"
@@ -2862,36 +2869,31 @@ extract_tarball() {
 # -A                - install file as-is, do not derive method from mime
 # -O, -P            - see install_file()
 # -d /target/dir    - dir to install pulled binary in, optional
-# -N binary_name    - what to name pulled binary to, optional; TODO: should it not be mandatory - otherwise filename changes w/ each new version? A: binary filenames say constant on some projects
-# -n, -F            - see _fetch_release_common()/fetch_release_from_any()
+# -N binary_name    - what to name pulled binary to, optional
+# -n, -f            - see _fetch_release_common()/fetch_release_from_any()
 # $1 - git user
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
 install_bin_from_git() {
-    local opt bin target name OPTIND fetch_git_args install_file_args
+    local opt bin name OPTIND fetch_git_args install_file_args
 
-    # as to why we include 'sharedlib', see https://gitlab.freedesktop.org/xdg/shared-mime-info/-/issues/11
-    fetch_git_args=(-F 'application/x-(pie-)?(sharedlib|executable)')
-    target='/usr/local/bin'  # default
+    # as to why we include 'sharedlib', see https://gitlab.freedesktop.org/xdg/shared-mime-info/-/issues/11 (e.g. some rust binaries are like that)
+    fetch_git_args=(-f 'application/x-(pie-)?(sharedlib|executable)')
     declare -a install_file_args
-    while getopts 'UAN:d:n:F:O:P:' opt; do
+
+    while getopts 'UAN:n:f:O:P:d:' opt; do
         case "$opt" in
             U) install_file_args+=("-$opt")
                fetch_git_args+=("-$opt") ;;
             A) install_file_args+=("-$opt") ;;
-            O|P) install_file_args+=("-$opt" "$OPTARG") ;;
             N) name="$OPTARG" ;;
-            d) target="$OPTARG" ;;
-            n|F) fetch_git_args+=("-$opt" "$OPTARG") ;;
+            O|P|d) install_file_args+=("-$opt" "$OPTARG") ;;
+            n|f) fetch_git_args+=("-$opt" "$OPTARG") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
-    [[ -d "$target" ]] || { err "[$target] not a dir, can't install [$1/$2]"; return 1; }
-    install_file_args+=(-d "$target")
-
-    # note: some of (think rust?) binaries' mime is 'application/x-sharedlib', not /x-executable
     bin="$(fetch_release_from_git "${fetch_git_args[@]}" "$1" "$2" "$3" "$name")" || return 1
     install_file "${install_file_args[@]}" "$bin" || return 1
 }
@@ -3083,11 +3085,11 @@ install_file() {
 
     target='/usr/local/bin'  # default
     single_f='-s'  # ie default to installing/extracting a single file in case tarball is provided
-    while getopts 'd:DUF:n:O:P:A' opt; do
+    while getopts 'd:DUf:n:O:P:A' opt; do
         case "$opt" in
             d) target="$OPTARG" ;;
             D) unset single_f ;;  # mnemonic: directory; ie we want the "whole directory" in case $file is tarball
-            F) file_filter="$OPTARG" ;;  # no use if -D or -U is used
+            f) file_filter="$OPTARG" ;;  # no use if -D or -U is used
             U) noextract=1 ;;  # if, for whatever the reason, an archive/tarball should not be unpacked
             n) name_filter="$OPTARG" ;;  # no use if -D or -U is used
             O) owner="$OPTARG" ;;  # chown
@@ -3103,7 +3105,7 @@ install_file() {
     name="$2"  # OPTIONAL, unless installing whole uncompressed dir (-D opt)
 
     [[ -f "$file" ]] || { err "file [$file] not a regular file"; return 1; }
-    [[ -d "$target" ]] || { err "[$target] not a dir, can't install [${name}${name:+/}$file]"; return 1; }
+    [[ -d "$target" ]] || { err "[$target] not a dir, can't install [${name:+$name///}$file]"; return 1; }
 
     if [[ "$noextract" -ne 1 ]] && grep -qiE "archive|compressed" <<< "$(file --brief "$file")"; then
         file="$(extract_tarball $single_f  -f "$file_filter" -n "$name_filter" "$file")" || return 1
@@ -3324,7 +3326,7 @@ install_kubectx() {  # https://github.com/ahmetb/kubectx
     install_bin_from_git -N kubectx -d "$HOME/bin"  ahmetb  kubectx  "kubectx_.*_linux_x86_64.tar.gz"
     install_bin_from_git -N kubens  -d "$HOME/bin"  ahmetb  kubectx  "kubens_.*_linux_x86_64.tar.gz"
 
-    # kubectx/kubens completion scripts: (note there's corresponding entry in ~/.bashrc)
+    # kubectx/kubens completion scripts:
     clone_or_pull_repo "ahmetb" "kubectx" "$BASE_PROGS_DIR" || return 1
     COMPDIR=$(pkg-config --variable=completionsdir bash-completion)
     [[ -d "$COMPDIR" ]] || { err "[$COMPDIR] not a dir, cannot install kube{ctx,ns} shell completion"; return 1; }
@@ -4398,6 +4400,8 @@ install_brillo() {
 # https://github.com/haimgel/display-switch
 # switches display output when USB device (eg kbd switch) is connected/disconnected
 # similar solution without display_switch: https://www.reddit.com/r/linux/comments/102bwkc/automatically_switching_screen_input_when/
+#
+# Note needs to be installed into /usr/local/bin, as that's what its systemd unit references
 install_display_switch() {
     local group
 
@@ -6464,7 +6468,7 @@ install_veracrypt() {
 
 # https://github.com/hectorm/hblock
 install_hblock() {
-    install_bin_from_git -N hblock -n hblock -F 'text/x-shellscript' hectorm hblock '\\d+.tar.gz'
+    install_bin_from_git -N hblock -n hblock -f 'text/x-shellscript' hectorm hblock '\\d+.tar.gz'
 }
 
 
