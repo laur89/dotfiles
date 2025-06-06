@@ -17,16 +17,6 @@ set -o pipefail
 shopt -s nullglob       # unmatching globs to expand into empty string/list instead of being left unexpanded
 
 readonly TMP_DIR='/tmp'  # TODO: deprecate
-readonly I3_REPO_LOC='https://github.com/i3/i3'
-readonly I3_LOCK_LOC='https://github.com/Raymo111/i3lock-color'       # i3lock-color
-readonly I3_LOCK_FANCY_LOC='https://github.com/meskarune/i3lock-fancy'    # i3lock-fancy
-readonly NERD_FONTS_REPO_LOC='https://github.com/ryanoasis/nerd-fonts'
-readonly PWRLINE_FONTS_REPO_LOC='https://github.com/powerline/fonts'
-readonly POLYBAR_REPO_LOC='https://github.com/polybar/polybar.git'    # polybar
-readonly VIM_REPO_LOC='https://github.com/vim/vim.git'                # vim - yeah.
-readonly NVIM_REPO_LOC='https://github.com/neovim/neovim.git'         # nvim - yeah.
-readonly GOFORIT_REPO_LOC='https://github.com/Manuel-Kehl/Go-For-It.git'  # go-for-it -  T-O-D-O  list manager
-readonly COPYQ_REPO_LOC='https://github.com/hluk/CopyQ.git'           # copyq - awesome clipboard manager
 readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"  # TODO: change to id_ed25519
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
@@ -1361,8 +1351,8 @@ install_deps() {
     # fasd - shell navigator similar to autojump:
     # note we're using whjvenyl's fork instead of original clvv, as latter was last updated 2015 (orig: https://github.com/clvv/fasd.git)
     # another alternative: https://github.com/ajeetdsouza/zoxide
-    clone_or_pull_repo "whjvenyl" "fasd" "$BASE_PROGS_DIR"  # https://github.com/whjvenyl/fasd
-    create_link "${BASE_PROGS_DIR}/fasd/fasd" "$HOME/bin/fasd"
+    #clone_or_pull_repo "whjvenyl" "fasd" "$BASE_PROGS_DIR"  # https://github.com/whjvenyl/fasd
+    #create_link "${BASE_PROGS_DIR}/fasd/fasd" "$HOME/bin/fasd"
 
     # maven bash completion:
     clone_or_pull_repo "juven" "maven-bash-completion" "$BASE_PROGS_DIR"  # https://github.com/juven/maven-bash-completion
@@ -2075,7 +2065,8 @@ setup_additional_apt_keys_and_sources() {
 
     # signald: (from https://signald.org/articles/install/debian/):
     # TODO: using http instead of https as per note in https://signald.org/articles/install/debian/ (apt-update gives error otherwise)
-    create_apt_source -a  signald  https://signald.org/signald.gpg  http://updates.signald.org/ unstable main
+    # TODO 2: believe this was to be used by hoehermann/libpurple-signald, which is deprecated?
+    #create_apt_source -a  signald  https://signald.org/signald.gpg  http://updates.signald.org/ unstable main
 
     # estonian open eid: (from https://installer.id.ee/media/install-scripts/install-open-eid.sh):
     # latest/current key can be found from https://installer.id.ee/media/install-scripts/
@@ -2339,16 +2330,14 @@ install_devstuff() {
     #install_rebar
     install_lazygit
     install_lazydocker
-    #install_gitin
     #install_gitkraken
 
-    install_saml2aws
-    install_aia
+    #install_saml2aws
+    #install_aia
     install_kustomize
     install_k9s
     install_krew
     install_popeye
-    install_octant
     #install_kops
     install_kubectx
     install_kube_ps1
@@ -2356,7 +2345,7 @@ install_devstuff() {
     is_native && install_grpcui
     #install_postman
     install_bruno
-    install_terragrunt
+    #install_terragrunt
     install_minikube
     #install_coursier
 
@@ -2372,8 +2361,6 @@ install_own_builds() {
 
     #prepare_build_container
 
-    #install_vim  # note: can't exclude it as-is, as it also configures vim (if you ever want to go nvim-only)
-    #install_neovim
     install_neovide
     #install_keepassxc
     #install_keybase
@@ -2384,14 +2371,14 @@ install_own_builds() {
     install_seafile_cli
     # TODO: why are ferdium&discord behind is_native?
     is_native && install_ferdium
-    install_xournalpp
+    #install_xournalpp
     #install_zoxide
     install_fzf
     install_ripgrep
     install_rga
-    install_browsh
+    #install_browsh
     install_vnote
-    install_obsidian
+    #install_obsidian
     install_delta
     install_dust
     install_peco
@@ -2410,7 +2397,7 @@ install_own_builds() {
     #install_weeslack
     install_gomuks
     #is_native && install_slack_term
-    install_slack
+    #install_slack
     install_veracrypt
     install_ueberzugpp
     #install_hblock
@@ -2420,10 +2407,9 @@ install_own_builds() {
     install_revanced
     install_apkeditor
 
-    #install_dwm
     is_native && install_i3lock
     #is_native && install_i3lock_fancy
-    is_native && install_betterlockscreen
+    #is_native && install_betterlockscreen
     #is_native && install_acpilight
     is_native && install_brillo
     is_native && install_display_switch
@@ -2435,7 +2421,6 @@ install_own_builds() {
 
 install_work_builds() {
     true
-    #is_native && install_bluejeans
 }
 
 
@@ -2651,8 +2636,8 @@ resolve_dl_urls() {
 #
 # see also: install_from_url()
 install_from_any() {
-    local install_file_args skipadd resolve_url_args opt relative name loc dl_url ver f OPTIND
-    local tmpdir id
+    local install_file_args skipadd resolve_url_args opt relative
+    local name loc url_ptrn dl_url ver f OPTIND tmpdir id
 
     install_file_args=()
     while getopts 'sF:n:d:O:P:rR:UDAI:' opt; do
@@ -2670,10 +2655,11 @@ install_from_any() {
 
     readonly name="$1"
     readonly loc="$2"
+    readonly url_ptrn="$3"
 
     id="${id:-$name}"
 
-    dl_url="$(resolve_dl_urls $resolve_url_args "$loc" "${relative:+/}.*$3")" || return 1  # note we might be looking for a relative url
+    dl_url="$(resolve_dl_urls $resolve_url_args "$loc" "${relative:+/}.*$url_ptrn")" || return 1  # note we might be looking for a relative url
     ver="$(resolve_ver "$dl_url")" || return 1
     [[ "$skipadd" != 1 ]] && is_installed "$ver" "$id" && return 2
 
@@ -2866,19 +2852,6 @@ extract_tarball() {
     # do NOT remove $tmpdir! caller can clean up if they want
 }
 
-download_git_raw() {
-    local u repo ver f out
-    u="$1"
-    repo="$2"
-    ver="$3"
-    f="$4"
-    out="${5:-/tmp/${RANDOM}-dl_git_raw.out}"
-
-    execute "curl -fsSL https://raw.githubusercontent.com/$u/$repo/$ver/$f -o '$out' > /dev/null" || return 1
-    [[ -f "$out" ]] && echo "$out" && return 0
-    return 1
-}
-
 
 # Fetch a file from given github /releases page, and install the binary
 #
@@ -2938,7 +2911,8 @@ install_slides() {  # https://github.com/maaslalani/slides
 # another alternative: https://github.com/getstation/desktop-app
 #                      https://github.com/beeper <- selfhostable built on matrix?
 install_ferdium() {  # https://github.com/ferdium/ferdium-app
-    install_deb_from_git ferdium ferdium-app '-amd64.deb'
+    #install_deb_from_git ferdium ferdium-app '-amd64.deb'
+    install_bin_from_git -N ferdium ferdium ferdium-app 'x86_64.AppImage'
 }
 
 
@@ -2947,12 +2921,7 @@ install_ferdium() {  # https://github.com/ferdium/ferdium-app
 #
 # note url is like https://s3.eu-central-1.amazonaws.com/download.seadrive.org/Seafile-cli-x86_64-9.0.8.AppImage
 install_seafile_cli() {
-    local bin
-
-    bin="$(fetch_release_from_any -I seafile-cli 'https://www.seafile.com/en/download/' 'Seafile-cli-x86_64-[0-9.]+AppImage')" || return $?
-    execute "chmod +x '$bin'" || return 1
-    execute "sudo mv -- '$bin'  /usr/local/bin/seaf-cli" || err
-    return 0
+    install_from_any  seaf-cli 'https://www.seafile.com/en/download/' 'Seafile-cli-x86_64-[0-9.]+AppImage'
 }
 
 
@@ -2961,12 +2930,7 @@ install_seafile_cli() {
 #
 # note url is like  https://s3.eu-central-1.amazonaws.com/download.seadrive.org/Seafile-x86_64-9.0.8.AppImage
 install_seafile_gui() {
-    local bin
-
-    bin="$(fetch_release_from_any -I seafile-gui 'https://www.seafile.com/en/download/' 'Seafile-x86_64-[0-9.]+AppImage')" || return $?
-    execute "chmod +x '$bin'" || return 1
-    execute "sudo mv -- '$bin'  /usr/local/bin/seafile-gui" || err
-    return 0
+    install_from_any  seafile-gui 'https://www.seafile.com/en/download/' 'Seafile-x86_64-[0-9.]+AppImage'
 }
 
 
@@ -2974,15 +2938,19 @@ install_seafile_gui() {
 # (ie providing that fake handwritten signature).
 #
 # how to sign pdf: https://viktorsmari.github.io/linux/pdf/2018/08/23/annotate-pdf-linux.html
+#
+# also avail in apt, and as appimage
 install_xournalpp() {  # https://github.com/xournalpp/xournalpp
     install_deb_from_git xournalpp xournalpp 'Debian-.*x86_64.deb'
+    #install_bin_from_git -N xournalpp xournalpp xournalpp '-x86_64.AppImage'
 }
 
 
 # ueberzug drop-in replacement written in c++
 # also avail via brew
 install_ueberzugpp() {  # https://github.com/jstkdng/ueberzugpp
-    install_from_any  ueberzugpp  'https://software.opensuse.org/download.html?project=home%3Ajustkidding&package=ueberzugpp#directDebian' 'Debian_Testing.*[-0-9.]+_amd64\.deb'
+    install_from_any  ueberzugpp  'https://software.opensuse.org/download.html?project=home%3Ajustkidding&package=ueberzugpp#directDebian' \
+        'Debian_Testing.*[-0-9.]+_amd64\.deb'
 }
 
 
@@ -3193,18 +3161,11 @@ install_zoom() {  # https://zoom.us/download
 }
 
 
-# TODO: looks like StevensNJD4/LazyMan is no more
-# maybe consider one of following:
-#  - https://github.com/tarkah/lazystream  - this seems most active as of Feb 2021
-#  - https://github.com/actionbronson/LazyMan
-install_lazyman() {  # https://github.com/StevensNJD4/LazyMan
-    true
-}
-
-
 # fasd-alike alternative
+# also avail in apt
 install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
-    install_bin_from_git -N zoxide ajeetdsouza zoxide 'zoxide-x86_64-unknown-linux-gnu'
+    #install_bin_from_git -N zoxide ajeetdsouza zoxide '-x86_64-unknown-linux-musl.tar.gz'
+    install_deb_from_git ajeetdsouza zoxide '_amd64.deb'
 }
 
 
@@ -3240,13 +3201,11 @@ install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instruc
     report "installing $name dependencies..."
     install_block 'rlwrap' || { err 'failed to install deps. abort.'; return 1; }
 
-    # note we can't directly DL from github, as linux-install file there contains some palceholders:
-    execute "curl -fsSL 'https://download.clojure.org/install/linux-install-${ver}.sh' -o '$f'" || return 1
-
+    execute "curl -fsSL 'https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh' -o '$f'" || return 1
     execute "chmod +x '$f'" || return 1
-    # TODO: should we clean up/delete existing $install_target?:
+
     execute "$f --prefix $install_target" || return 1
-    add_manpath "$install_target/bin" "$install_target/man"
+    add_manpath "$install_target/bin" "$install_target/share/man"
 
     add_to_dl_log  "$name" "$ver"
     return 0
@@ -3265,11 +3224,13 @@ install_coursier() {  # https://github.com/coursier/coursier
     install_bin_from_git -N cs  coursier coursier  cs-x86_64-pc-linux.gz
 }
 
+# also avail in apt
 install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
     install_deb_from_git BurntSushi ripgrep _amd64.deb
 }
 
 
+# rga: ripgrep, but also search in PDFs, E-Books, Office documents, zip, tar.gz, etc.
 install_rga() {  # https://github.com/phiresky/ripgrep-all#debian-based
     install_block 'pandoc poppler-utils ffmpeg' || return 1
     install_bin_from_git -N rga -n rga phiresky  ripgrep-all 'x86_64-unknown-linux-musl.tar.gz'
@@ -3277,7 +3238,7 @@ install_rga() {  # https://github.com/phiresky/ripgrep-all#debian-based
 
 
 # headless firefox in a terminal
-install_browsh() {  # https://github.com/browsh-org/browsh/releases
+install_browsh() {  # https://github.com/browsh-org/browsh
     install_deb_from_git browsh-org browsh _linux_amd64.deb
 }
 
@@ -3329,6 +3290,8 @@ install_popeye() {  # https://github.com/derailed/popeye
 # tag: aws, k8s, kubernetes
 #
 # see also https://github.com/spekt8/spekt8
+#
+# TODO: octant development halted, it's deprecated
 install_octant() {  # https://github.com/vmware-tanzu/octant
     install_deb_from_git  vmware-tanzu  octant  _Linux-64bit.deb
 }
@@ -3345,12 +3308,16 @@ install_kops() {  # https://github.com/kubernetes/kops/
 # kubectl:  https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-kubectl-binary-with-curl-on-linux
 install_kubectl() {
     install_from_url  kubectl  "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+    # shell completion: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#bash
+    command -v kubectl >/dev/null && execute "kubectl completion bash | tee $SHELL_COMPLETIONS/kubectl > /dev/null"
 }
 
 # kubectx - kubernetes contex swithcher
 # tag: aws, k8s, kubernetes
 #
 # TODO: consider replacing installation by using krew? note that likely won't install shell completion though;
+# https://github.com/ahmetb/kubectx?tab=readme-ov-file#manual-installation-macos-and-linux
 install_kubectx() {  # https://github.com/ahmetb/kubectx
     local COMPDIR
 
@@ -3376,7 +3343,7 @@ install_kube_ps1() {  # https://github.com/jonmosco/kube-ps1
 # tag: aws
 # note also installable via mise
 install_sops() {  # https://github.com/getsops/sops
-    install_deb_from_git getsops sops _amd64.deb
+    install_deb_from_git  getsops sops _amd64.deb
 }
 
 
@@ -3388,27 +3355,30 @@ install_grpcui() {  # https://github.com/fullstorydev/grpcui
 # if build fails, you might be able to salvage something by doing:
 #   sed -i 's/-Werror//g' Makefile
 install_grpc_cli() {  # https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md
-    local ver label tmpdir f
+    local repo ver tmpdir f
 
-    ver="$(curl --fail -L https://grpc.io/release)"
-    label="grpc-cli-$ver"
-    is_installed "$label" grpc-cli && return 2
+    readonly repo='https://github.com/grpc/grpc'
+    ver="$(get_git_sha "$repo")" || return 1
+    is_installed "$ver" grpc-cli && return 2
 
     tmpdir="$(mktemp -d 'grpc-cli-tempdir-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     execute "pushd -- '$tmpdir'" || return 1
-    execute "git clone -b '$ver' https://github.com/grpc/grpc" || return 1
+    execute "git clone $repo" || return 1
     execute 'pushd -- grpc' || return 1
     execute 'git submodule update --init' || return 1
-
-    install_block 'libgflags-dev' || return 1
+    execute 'mkdir -p cmake/build' || return 1
+    execute 'pushd -- cmake/build' || return 1
+    execute 'cmake -DgRPC_BUILD_TESTS=ON -DCMAKE_CXX_STANDARD=17 ../..' || return 1
     execute 'make -j8 grpc_cli' || return 1
+
+    #install_block 'libgflags-dev' || return 1
     f="$(find . -mindepth 1 -type f -name 'grpc_cli')"
     [[ -f "$f" ]] || { err "couldn't find grpc_cli"; return 1; }
-    execute "mv -- '$f' '$BASE_BUILDS_DIR'" || return 1
+    execute "mv -- '$f' '$HOME/bin/'" || return 1
 
-    add_to_dl_log "grpc-cli" "$label"
+    add_to_dl_log "grpc-cli" "$ver"
 
-    execute "popd; popd" || return 1
+    execute "popd; popd; popd" || return 1
     execute "rm -rf -- '$tmpdir'"
 }
 
@@ -3421,14 +3391,28 @@ install_buku_related() {
 
 
 # db/database visualisation tool (for mysql/mariadb)
-# remember intellij idea also has a db tool!
-# TODO: grab from github releaess instead: https://github.com/dbeaver/dbeaver/releases
+# remember intellij idea also has a built-in db tool!
+#
+# https://github.com/dbeaver/dbeaver/wiki/Installation#debian-package
 install_dbeaver() {  # https://dbeaver.io/download/
-    install_from_url  dbeaver 'https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb'
+    #install_from_url  dbeaver 'https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb'
+    #install_deb_from_git  dbeaver dbeaver '_amd64.deb'
+
+    # alternatively, unrar the tarball:
+    local target dir
+    target="$BASE_PROGS_DIR/dbeaver"
+    dir="$(fetch_extract_tarball_from_git dbeaver dbeaver 'linux.gtk.x86_64-nojdk.tar.gz')" || return 1
+
+    [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }
+    execute "mv -- '$dir' '$target'" || return 1
+    create_link "$target/dbeaver" "$HOME/bin/dbeaver"
 }
 
 
-install_gitkraken() {  # https://release.gitkraken.com/linux/gitkraken-amd64.deb
+# https://www.gitkraken.com/download
+install_gitkraken() {
+    # deb url    :  https://api.gitkraken.dev/releases/production/linux/x64/active/gitkraken-amd64.deb
+    # tarball url:  https://api.gitkraken.dev/releases/production/linux/x64/active/gitkraken-amd64.tar.gz
     install_from_url  gitkraken 'https://release.gitkraken.com/linux/gitkraken-amd64.deb'
 }
 
@@ -3467,13 +3451,11 @@ install_chrome() {  # https://www.google.com/chrome/?platform=linux
 }
 
 
-# redis manager (GUI)
-# TODO: automated install broken? see https://redis.io/downloads/
-#
-# to build from source: https://github.com/RedisInsight/RedisInsight/wiki/How-to-build-and-contribute
-install_redis_insight() {  # https://redis.com/thank-you/redisinsight-the-best-redis-gui-35/
-    #snap_install  redisinsight
-    install_from_url  redis-insight 'https://download.redisinsight.redis.com/latest/RedisInsight-v2-linux-amd64.deb'
+# alternatives:
+# - https://github.com/joeferner/redis-commander
+# - https://github.com/patrikx3/redis-ui
+install_redis_desktop_manager() {
+    install_bin_from_git -N redis-desktop-manager  qishibo AnotherRedisDesktopManager 'x86_64.AppImage'
 }
 
 
@@ -3489,23 +3471,22 @@ install_redis_insight() {  # https://redis.com/thank-you/redisinsight-the-best-r
 #   https://github.com/lervag/wiki.vim
 #   # obsidian
 install_vnote() {  # https://github.com/vnotex/vnote/releases
-    #install_bin_from_git -N vnote vnotex vnote 'linux-x64_.*zip'
     install_bin_from_git -N vnote -n '*.AppImage' vnotex vnote 'linux-x64.AppImage.zip'
 }
 
 
 # note there's this for vim: https://github.com/epwalsh/obsidian.nvim
 install_obsidian() {  # https://github.com/obsidianmd/obsidian-releases/releases
-    install_deb_from_git  obsidianmd  obsidian-releases '_amd64.deb'
+    #install_deb_from_git  obsidianmd  obsidian-releases '_amd64.deb'
+    install_bin_from_git -N Obsidian obsidianmd  obsidian-releases '-[0-9.]{6,}AppImage'  # make sure to dodge the arm64 appimage
 }
 
 
 # https://www.postman.com/downloads/canary/
 install_postman() {  # https://learning.postman.com/docs/getting-started/installation/installation-and-updates/#install-postman-on-linux
-    local loc target dsk
+    local target dsk
 
-    loc="https://dl.pstmn.io/download/channel/canary/linux_64"
-    install_from_url -D -d "$BASE_PROGS_DIR" Postman "$loc" || return 1
+    install_from_url -D -d "$BASE_PROGS_DIR" Postman "https://dl.pstmn.io/download/channel/canary/linux_64" || return 1
     target="$BASE_PROGS_DIR/Postman"
 
     # install .desktop:
@@ -3525,7 +3506,8 @@ Categories=Development;
 
 # https://github.com/advanced-rest-client/arc-electron/releases/latest
 install_arc() {
-    install_deb_from_git  advanced-rest-client  arc-electron '-amd64.deb'
+    #install_deb_from_git  advanced-rest-client  arc-electron '-amd64.deb'
+    install_bin_from_git -N arc advanced-rest-client  arc-electron 'x86_64.AppImage'
 }
 
 
@@ -3542,15 +3524,13 @@ install_arc() {
 # haven't checked, but also https://github.com/manatlan/reqman
 # there's also CLI client wrapping curl that uses toml-like config: https://github.com/jonaslu/ain
 install_bruno() {
-    install_deb_from_git  usebruno  bruno '_amd64_linux.deb'
+    install_bin_from_git -N bruno usebruno  bruno  _x86_64_linux.AppImage
+    # or deb:
+    #install_deb_from_git  usebruno  bruno '_amd64_linux.deb'
 }
 
 
-# https://snapcraft.io/install/alacritty/debian#install
-# TODO!!: this snap is broken and to be ignored! see
-#         https://github.com/alacritty/alacritty/issues/6054
 install_alacritty() {
-    #snap_install alacritty --classic  <---- do NOT install this snap
     local dir
 
     # first install deps: (https://github.com/alacritty/alacritty/blob/master/INSTALL.md#debianubuntu)
@@ -3601,7 +3581,7 @@ install_wezterm() {
 }
 
 
-# TODO last commit '20
+# TODO last commit '20 - deprecated?
 install_slack_term() {  # https://github.com/jpbruinsslot/slack-term
     install_bin_from_git -N slack-term jpbruinsslot slack-term slack-term-linux-amd64
 }
@@ -3629,6 +3609,8 @@ install_weeslack() {  # https://github.com/wee-slack/wee-slack
 
 # https://github.com/poljar/weechat-matrix#other-platforms ignore step 3, instead follow the next link...:
 # https://github.com/poljar/weechat-matrix#run-from-git-directly
+#
+# superseded by https://github.com/poljar/weechat-matrix-rs
 install_weechat_matrix() {  # https://github.com/poljar/weechat-matrix
     local d deps
     d="$HOME/.local/share/weechat/python"
@@ -3645,6 +3627,12 @@ install_weechat_matrix() {  # https://github.com/poljar/weechat-matrix
     create_link "$d/matrix.py" "$d/autoload/"
 }
 
+
+install_weechat_matrix_rs() {  # https://github.com/poljar/weechat-matrix-rs
+    true  # as of '25 project is still in active dev, gotta wait...
+}
+
+
 # go-based matrix client
 install_gomuks() {  # https://github.com/gomuks/gomuks
     #install_deb_from_git gomuks gomuks _amd64.deb
@@ -3652,8 +3640,9 @@ install_gomuks() {  # https://github.com/gomuks/gomuks
 }
 
 
-
-# IRC to other chat networks gateway
+# IRC to other chat networks gateway - https://www.bitlbee.org
+# wiki: https://wiki.bitlbee.org/
+#
 install_bitlbee() {  # https://github.com/bitlbee/bitlbee
 
     # slack support: https://github.com/dylex/slack-libpurple
@@ -3675,6 +3664,7 @@ install_bitlbee() {  # https://github.com/bitlbee/bitlbee
         report "building $name"
         execute "pushd $tmpdir" || return 1
         execute "make" || { err; popd; return 1; }
+        # note this project also supports  $ make install-user
 
         create_deb_install_and_store  "$name" || { popd; return 1; }
 
@@ -3693,9 +3683,8 @@ install_bitlbee() {  # https://github.com/bitlbee/bitlbee
     # purple-discord package is in the main list
 
     # signal support
-    # https://github.com/hoehermann/libpurple-signald/blob/master/HOWTO.md
+    # https://github.com/hoehermann/purple-presage  # very much WIP as of '25
     install_block 'qrencode'
-    # signald package is in the main list
 
     # slack:
     _install_slack_support
@@ -3719,7 +3708,7 @@ install_eclipse_mem_analyzer() {
     is_valid_url "$loc" || { err "[$loc] is not a valid link"; return 1; }
 
     readonly ver="$loc"
-    is_installed "$ver" && return 2
+    is_installed "$ver" eclipse-mem-analyzer && return 2
 
     loc+="&mirror_id=$mirror"
     # now need to parse link again from the download page...
@@ -3732,8 +3721,9 @@ install_eclipse_mem_analyzer() {
     execute "mv -- '$dir' '$target'" || return 1
     create_link "$target/MemoryAnalyzer" "$HOME/bin/MemoryAnalyzer"
 
-    add_to_dl_log  mem_analyzer "$ver"
+    add_to_dl_log  eclipse-mem-analyzer "$ver"
 }
+
 
 # lightweight profiling, both for dev & production. see https://visualvm.github.io/
 install_visualvm() {  # https://github.com/oracle/visualvm
@@ -3749,40 +3739,35 @@ install_visualvm() {  # https://github.com/oracle/visualvm
 }
 
 
-# see https://gist.github.com/johnduarte/15851f5bbe85884bc0b947a9d54b441b
-install_bluejeans_via_rpm() {  # https://www.bluejeans.com/downloads#desktop
-    local rpm
-
-    rpm="$(fetch_release_from_any -I bluejeans 'https://www.bluejeans.com/downloads#desktop' 'BlueJeans_[-0-9.]+\.rpm')" || return $?
-    execute "sudo alien --install --to-deb '$rpm'" || return 1
-    return 0
-}
-
-install_bluejeans() {  # https://www.bluejeans.com/downloads#desktop
-    local deb
-
-    deb="$(fetch_release_from_any -I bluejeans 'https://www.bluejeans.com/downloads#desktop' 'BlueJeans_[-0-9.]+\.deb')" || return $?
-    execute "sudo apt-get --yes install '$deb'" || return 1
-    return 0
+# https://minikube.sigs.k8s.io/docs/reference/drivers/none/
+_setup_minikube() {  # TODO: unfinished
+    true
+    #execute 'sudo minikube config set vm-driver none'  # make 'none' the default driver:
+    #execute 'minikube config set memory 4096'  # set default allocated memory (default is 2g i believe, see https://minikube.sigs.k8s.io/docs/start/linux/)
 }
 
 
 # https://github.com/kubernetes/minikube
 install_minikube() {  # https://minikube.sigs.k8s.io/docs/start/
     # from github releases...:
-    install_deb_from_git  kubernetes  minikube  'minikube_[-0-9.]+.*_amd64.deb'
+    #install_deb_from_git  kubernetes  minikube  'minikube_[-0-9.]+.*_amd64.deb'
+    install_bin_from_git -N minikube kubernetes  minikube  'minikube-linux-amd64'
 
     # ...or from k8s page:  (https://minikube.sigs.k8s.io/docs/start/):
     #install_from_url  minikube  "https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb"
+
+    command -v minikube >/dev/null && _setup_minikube
 }
 
 
 # found as apt fd-find package, but executable is named fdfind not fd!
 install_fd() {  # https://github.com/sharkdp/fd
-    install_deb_from_git sharkdp fd 'fd_[-0-9.]+_amd64.deb'
+    #install_deb_from_git sharkdp fd 'fd_[-0-9.]+_amd64.deb'
+    install_bin_from_git -N fd sharkdp fd  'x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
+# json diff
 install_jd() {  # https://github.com/josephburnett/jd
     install_bin_from_git -N jd josephburnett  jd  amd64-linux
 }
@@ -3790,7 +3775,8 @@ install_jd() {  # https://github.com/josephburnett/jd
 
 # see also https://github.com/eth-p/bat-extras/blob/master/README.md#installation
 install_bat() {  # https://github.com/sharkdp/bat
-    install_deb_from_git sharkdp bat 'bat_[-0-9.]+_amd64.deb'
+    #install_deb_from_git sharkdp bat 'bat_[-0-9.]+_amd64.deb'
+    install_bin_from_git -N bat sharkdp bat 'x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
@@ -3806,7 +3792,7 @@ install_eza() {  # https://github.com/eza-community/eza
 }
 
 
-# TODO: consider https://github.com/extrawurst/gitui  instead
+# TODO: consider https://github.com/gitui-org/gitui  instead; seems to be faster?
 install_lazygit() {  # https://github.com/jesseduffield/lazygit
     install_bin_from_git -N lazygit -d "$HOME/bin" jesseduffield lazygit '_Linux_x86_64.tar.gz'
 }
@@ -3817,13 +3803,8 @@ install_lazydocker() {  # https://github.com/jesseduffield/lazydocker
 }
 
 
-# TODO: remove for lazygit?
-install_gitin() {  # https://github.com/isacikgoz/gitin
-    install_bin_from_git -N gitin -d "$HOME/bin" isacikgoz gitin '_linux_amd64.tar.gz'
-}
-
-
 # fzf-alternative, some tools use it as a dep
+# last commit sept '23
 install_peco() {  # https://github.com/peco/peco#installation
     install_bin_from_git -N peco -d "$HOME/bin" peco peco '_linux_amd64.tar.gz'
 }
@@ -3831,14 +3812,18 @@ install_peco() {  # https://github.com/peco/peco#installation
 
 # pretty git diff pager, similar to diff-so-fancy
 # note: alternative would be diff-so-fancy (dsf)
+#
+# https://dandavison.github.io/delta/installation.html
 install_delta() {  # https://github.com/dandavison/delta
-    install_deb_from_git  dandavison  delta  'git-delta_.*_amd64.deb'
+    #install_deb_from_git  dandavison  delta  'git-delta_.*_amd64.deb'
+    install_bin_from_git -N delta dandavison  delta  'x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
 # ncdu-like FS usage viewer, in rust (name is 'du + rust')
 install_dust() {  # https://github.com/bootandy/dust
-    install_deb_from_git  bootandy  dust  '_amd64.deb'
+    #install_deb_from_git  bootandy  dust  '_amd64.deb'
+    install_bin_from_git -N dust  bootandy  dust 'x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
@@ -3955,26 +3940,35 @@ build_and_install_synergy_TODO_container_edition() {
 
 # building instructions from https://copyq.readthedocs.io/en/latest/build-source-code.html
 install_copyq() {
-    local tmpdir ver
+    local tmpdir repo ver
 
     readonly tmpdir="$TMP_DIR/copyq-build-${RANDOM}"
 
-    ver="$(get_git_sha "$COPYQ_REPO_LOC")" || return 1
+    repo='https://github.com/hluk/CopyQ.git'
+    ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" copyq && return 2
 
     report "installing copyq build dependencies..."
     install_block '
         cmake
-        qtbase5-private-dev
-        qtscript5-dev
-        qttools5-dev
-        qttools5-dev-tools
+        extra-cmake-modules
+        libkf5notifications-dev
+        libqt5svg5
         libqt5svg5-dev
+        libqt5waylandclient5-dev
+        libqt5x11extras5-dev
+        libwayland-dev
         libxfixes-dev
         libxtst-dev
+        qtbase5-private-dev
+        qtdeclarative5-dev
+        qttools5-dev
+        qttools5-dev-tools
+        qtwayland5
+        qtwayland5-dev-tools
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone ${GIT_OPTS[*]} $COPYQ_REPO_LOC $tmpdir" || return 1
+    execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     report "building copyq"
     execute "pushd $tmpdir" || return 1
     execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .' || { err; popd; return 1; }
@@ -4098,12 +4092,6 @@ install_ddcutil() {
 }
 
 
-# install sway-overfocus, allowing easier window focus change/movement   # https://github.com/korreman/sway-overfocus
-install_overfocus() {
-    install_bin_from_git -N sway-overfocus -d "$HOME/bin" korreman sway-overfocus '-x86_64.tar.gz'
-}
-
-
 # trying out checkinstall replacement, absed on fpm (https://fpm.readthedocs.io)
 # TODO wip
 create_deb_install_and_store2() {
@@ -4163,16 +4151,19 @@ create_deb_install_and_store() {
 }
 
 
-# building instructions from https://github.com/Manuel-Kehl/Go-For-It#how-to-build
-# also https://github.com/Manuel-Kehl/Go-For-It/issues/143 specifically for debian/buster
-# TODO: flatpak is avail for it
-# TODO: github desc says https://github.com/JMoerman/Go-For-It fork is more active these days!
+# https://github.com/JMoerman/Go-For-It
 install_goforit() {
-    local tmpdir ver
+    # https://flathub.org/apps/de.manuel_kehl.go-for-it
+    fp_install -n goforit  'de.manuel_kehl.go-for-it'
+    return
 
+    # build logic:
+    local repo tmpdir ver
+
+    repo='https://github.com/JMoerman/Go-For-It'
     readonly tmpdir="$TMP_DIR/goforit-build-${RANDOM}"
 
-    ver="$(get_git_sha "$GOFORIT_REPO_LOC")" || return 1
+    ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" goforit && return 2
 
     report "installing goforit build dependencies..."
@@ -4188,14 +4179,14 @@ install_goforit() {
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
 
-    execute "git clone ${GIT_OPTS[*]} $GOFORIT_REPO_LOC $tmpdir" || return 1
+    execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     report "building goforit..."
     execute "mkdir $tmpdir/build"
     execute "pushd $tmpdir/build" || return 1
     execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..' || { err; popd; return 1; }
     execute make || { err; popd; return 1; }
 
-    create_deb_install_and_store goforit || { popd; return 1; }
+    create_deb_install_and_store  goforit || { popd; return 1; }
 
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
@@ -4247,14 +4238,16 @@ install_keybase() {
 }
 
 
+# TODO: build broken
 # https://github.com/Raymo111/i3lock-color
 # this is a depency for i3lock-fancy.
 install_i3lock() {
-    local tmpdir ver
+    local tmpdir repo ver
 
     readonly tmpdir="$TMP_DIR/i3lock-build-${RANDOM}/build"
 
-    ver="$(get_git_sha "$I3_LOCK_LOC")" || return 1
+    repo='https://github.com/Raymo111/i3lock-color'
+    ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" i3lock-color && return 2
 
     report "installing i3lock build dependencies..."
@@ -4282,7 +4275,7 @@ install_i3lock() {
       ' || { err 'failed to install i3lock build deps. abort.'; return 1; }
 
     # clone the repository
-    execute "git clone ${GIT_OPTS[*]} $I3_LOCK_LOC '$tmpdir'" || return 1
+    execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
     # create tag so a non-debug version is built:
     execute "git -C '$tmpdir' tag -f 'git-$(git -C '$tmpdir' rev-parse --short HEAD)'" || return 1
 
@@ -4308,15 +4301,16 @@ install_i3lock() {
 
 
 install_i3lock_fancy() {
-    local tmpdir ver
+    local repo tmpdir ver
 
+    repo='https://github.com/meskarune/i3lock-fancy'
     readonly tmpdir="$TMP_DIR/i3lock-fancy-build-${RANDOM}/build"
 
-    ver="$(get_git_sha "$I3_LOCK_FANCY_LOC")" || return 1
+    ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" i3lock-fancy && return 2
 
     # clone the repository
-    execute "git clone ${GIT_OPTS[*]} $I3_LOCK_FANCY_LOC '$tmpdir'" || return 1
+    execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
 
 
@@ -4348,9 +4342,9 @@ install_i3lock_fancy() {
 
 
 # TODO: review, needed?
-install_betterlockscreen() {  # https://github.com/pavanjadhaw/betterlockscreen
-    wget -O ~/bin/betterlockscreen "https://raw.githubusercontent.com/pavanjadhaw/betterlockscreen/master/betterlockscreen" || return 1
-    execute "chmod u+x $HOME/bin/betterlockscreen"
+install_betterlockscreen() {  # https://github.com/betterlockscreen/betterlockscreen
+    # note 'main' or 'next' branch:
+    install_from_url  betterlockscreen 'https://raw.githubusercontent.com/betterlockscreen/betterlockscreen/next/betterlockscreen'
 }
 
 
@@ -4363,6 +4357,7 @@ install_betterlockscreen() {  # https://github.com/pavanjadhaw/betterlockscreen
 # - https://github.com/Hummer12007/brightnessctl
 #
 # TODO need to install  ddcci-dkms  pkg and load ddcci module to get external display evices listed under /sys
+# TODO: last commit Oct '20
 install_acpilight() {
     true # TODO WIP
 }
@@ -4395,6 +4390,8 @@ install_brillo() {
     execute "popd"
     execute "sudo rm -rf -- '$tmpdir'"
     add_to_dl_log  brillo "$ver"
+
+    add_to_group  video
 }
 
 
@@ -4402,23 +4399,29 @@ install_brillo() {
 # switches display output when USB device (eg kbd switch) is connected/disconnected
 # similar solution without display_switch: https://www.reddit.com/r/linux/comments/102bwkc/automatically_switching_screen_input_when/
 install_display_switch() {
-    local repo tmpdir ver group
+    local group
 
-    repo='git@github.com:haimgel/display-switch.git'
-    tmpdir="$TMP_DIR/display-switch-${RANDOM}"
+    _build_install() {
+        local repo tmpdir ver
+        repo='git@github.com:haimgel/display-switch.git'
+        tmpdir="$TMP_DIR/display-switch-${RANDOM}"
 
-    ver="$(get_git_sha "$repo")" || return 1
-    is_installed "$ver" display-switch && return 2
+        ver="$(get_git_sha "$repo")" || return 1
+        is_installed "$ver" display-switch && return 2
 
-    execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
-    execute "pushd $tmpdir" || return 1
+        execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
+        execute "pushd $tmpdir" || return 1
 
-    execute 'cargo build --release' || return 1  # should produce binary at target/release/display_switch
-    execute 'sudo mv -- target/release/display_switch  /usr/local/bin/' || err
+        execute 'cargo build --release' || return 1  # should produce binary at target/release/display_switch
+        execute 'sudo mv -- target/release/display_switch  /usr/local/bin/' || err
 
-    execute popd
-    execute "sudo rm -rf -- '$tmpdir'"
-    add_to_dl_log  display-switch "$ver"
+        execute popd
+        execute "sudo rm -rf -- '$tmpdir'"
+        add_to_dl_log  display-switch "$ver"
+    }
+
+    #_build_install
+    install_bin_from_git -n display_switch  haimgel display-switch '-linux-amd64.zip'
 
     # following from https://github.com/haimgel/display-switch#linux-2
     # note the associated udev rule is in one of castles' udev/ dir
@@ -4430,8 +4433,9 @@ install_display_switch() {
 
 # https://i3wm.org/docs/hacking-howto.html
 # see also https://github.com/maestrogerardo/i3-gaps-deb for debian pkg building logic
+# TODO: build fails in '25
 build_i3() {
-    local tmpdir ver
+    local tmpdir repo ver
 
     _apply_patches() {
         local f
@@ -4458,12 +4462,13 @@ EOF
     }
 
     readonly tmpdir="$TMP_DIR/i3-build-${RANDOM}/build"
+    readonly repo='https://github.com/i3/i3'
 
-    ver="$(get_git_sha "$I3_REPO_LOC")" || return 1
+    ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" i3 && return 2
 
     # clone the repository
-    execute "git clone ${GIT_OPTS[*]} $I3_REPO_LOC '$tmpdir'" || return 1
+    execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
     execute "pushd $tmpdir" || return 1
 
     _apply_patches  # TODO: should we bail on error?
@@ -4584,7 +4589,7 @@ rb_install() {
 }
 
 
-fp_install() {
+fp_install() {  # flatpak install
     local opt name ref bin remote OPTIND
 
     while getopts 'n:' opt; do
@@ -4607,19 +4612,14 @@ fp_install() {
 }
 
 
-snap_install() {
-    execute "sudo snap install $*"
-}
-
-
 install_i3_conf() {
     local conf
-
     conf="$HOME/.config/i3/config"  # conf file _to be_ generated;
 
     py_install update-conf.py || { err "update-conf.py install failed"; return 1; }
     update-conf.py -f "$conf" || { err "i3 config install failed w/ $?"; return 1; }
 }
+
 
 # TODO: also consider:
 #  - https://gitlab.com/aquator/i3-scratchpad - docks/launches/toggles windows/apps at specific position on screen
@@ -4637,28 +4637,26 @@ install_i3_deps() {
     py_install rofi-tmux-ng  # https://github.com/laur89/rofi-tmux-ng
 
     # install i3expo:
-    py_install  i3expo
+    py_install i3expo
 
     # i3ass  # https://github.com/budlabs/i3ass/
-    clone_or_pull_repo budlabs i3ass "$BASE_PROGS_DIR"
-    create_link -c "${BASE_PROGS_DIR}/i3ass/src" "$HOME/bin/"
-
+    #clone_or_pull_repo budlabs i3ass "$BASE_PROGS_DIR"
+    #create_link -c "${BASE_PROGS_DIR}/i3ass/src" "$HOME/bin/"  # <- broken, links project root dirs, not the executables said root dirs contain
 
     # install i3-quickterm   # https://github.com/laur89/i3-quickterm
-    py_install  i3-qt
+    py_install i3-qt
 
     # install i3-cycle-windows   # https://github.com/DavsX/dotfiles/blob/master/bin/i3_cycle_windows
     # this script defines a 'next' window, so we could bind it to someting like super+mouse_wheel;
-    curl --fail --output "$f" 'https://raw.githubusercontent.com/DavsX/dotfiles/master/bin/i3_cycle_windows' \
-            && execute "chmod +x -- '$f'" \
-            && execute "mv -- '$f' $HOME/bin/i3-cycle-windows" || err "installing i3-cycle-windows failed /w $?"
+    #curl --fail --output "$f" 'https://raw.githubusercontent.com/DavsX/dotfiles/master/bin/i3_cycle_windows' \
+            #&& execute "chmod +x -- '$f'" \
+            #&& execute "mv -- '$f' $HOME/bin/i3-cycle-windows" || err "installing i3-cycle-windows failed /w $?"
 
     # install i3move, allowing easier floating-window movement   # https://github.com/dmbuce/i3b
-    curl --fail --output "$f" 'https://raw.githubusercontent.com/DMBuce/i3b/master/bin/i3move' \
-            && execute "chmod +x -- '$f'" \
-            && execute "mv -- '$f' $HOME/bin/i3move" || err "installing i3move failed /w $?"
+    install_from_url  i3move 'https://raw.githubusercontent.com/DMBuce/i3b/master/bin/i3move'
 
-    install_overfocus
+    # install sway-overfocus, allowing easier window focus change/movement   # https://github.com/korreman/sway-overfocus
+    install_bin_from_git -N sway-overfocus -d "$HOME/bin" korreman sway-overfocus '-x86_64.tar.gz'
 
     # TODO: consider https://github.com/infokiller/i3-workspace-groups
     # TODO: consider https://github.com/JonnyHaystack/i3-resurrect
@@ -4678,7 +4676,7 @@ install_i3_deps() {
 install_polybar() {
     local dir
 
-    #execute "git clone --recursive ${GIT_OPTS[*]} $POLYBAR_REPO_LOC '$dir'" || return 1
+    #execute "git clone --recursive ${GIT_OPTS[*]} https://github.com/polybar/polybar.git '$dir'" || return 1
     dir="$(fetch_extract_tarball_from_git polybar polybar 'polybar-\\d+\\.\\d+.*\\.tar\\.gz')" || return 1
 
     report "installing polybar build dependencies..."
@@ -4728,32 +4726,6 @@ install_polybar() {
 }
 
 
-install_dwm() {
-    local build_dir
-
-    readonly build_dir="$HOME/.dwm/w0ngBuild/source6.0"
-
-    clone_or_link_castle dwm-setup laur89 github.com
-    [[ -d "$build_dir" ]] || { err "[$build_dir] is not a dir. skipping dwm installation."; return 1; }
-
-    report "installing dwm build dependencies..."
-    install_block '
-        suckless-tools
-        build-essential
-        libx11-dev
-        libxinerama-dev
-        libpango1.0-dev
-        libxtst-dev
-    ' || { err 'failed to install build deps. abort.'; return 1; }
-
-    execute "pushd $build_dir" || return 1
-    report "installing dwm..."
-    execute "sudo make clean install"
-    execute "popd"
-    return 0
-}
-
-
 # see https://wiki.debian.org/Packaging/Intro?action=show&redirect=IntroDebianPackaging
 # and https://vincent.bernat.ch/en/blog/2019-pragmatic-debian-packaging
 #
@@ -4761,6 +4733,7 @@ install_dwm() {
 #
 # see also pbuilder, https://wiki.debian.org/SystemBuildTools
 # see also https://github.com/makedeb/makedeb
+# see also https://github.com/FooBarWidget/debian-packaging-for-the-modern-developer
 build_deb() {
     local opt pkg_name configure_extra dh_extra deb OPTIND
 
@@ -4791,11 +4764,11 @@ build_deb() {
         # create control:
         echo "Source: $pkg_name
 Maintainer: Laur Aliste <laur.aliste@packager.eu>
+Build-Depends: debhelper-compat (= 13)
 
 Package: $pkg_name
 Architecture: any
 Description: custom-built $pkg_name package
-Build-Depends: debhelper-compat (= 13)
 " > debian/control || return 1
 
         # create rules:
@@ -4847,7 +4820,7 @@ override_dh_gencontrol:
 
 
 setup_nvim() {
-    nvim_post_install_configuration
+    #nvim_post_install_configuration
 
     if [[ "$MODE" -eq 1 ]]; then
         execute "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"  # no vim pls
@@ -4858,7 +4831,11 @@ setup_nvim() {
     #install_YCM
 
     config_coc  # _instead_ of YCM
+
+    # nvr stuff; you prolly want to install https://github.com/carlocab/tmux-nvr for tmux
+    # TODO: is this still relevant? note nvim now supports --remote:  https://neovim.io/doc/user/remote.html
     py_install neovim-remote     # https://github.com/mhinz/neovim-remote
+
     #py_install pynvim            # https://github.com/neovim/pynvim  # ! now installed via system pkg python3-pynvim
 }
 
@@ -4870,118 +4847,8 @@ install_neovide() {  # rust-based GUI front-end to neovim
 }
 
 
-# https://github.com/neovim/neovim/wiki/Installing-Neovim
-#install_neovim() {  # the AppImage version
-    #local tmpdir nvim_confdir inst_loc nvim_url
-
-    #tmpdir="$(mktemp -d "nvim-download-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-    #readonly nvim_confdir="$HOME/.config/nvim"
-    #readonly inst_loc="$BASE_PROGS_DIR/neovim"
-    #nvim_url='https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage'
-
-    #report "setting up nvim..."
-
-    #execute "pushd -- $tmpdir" || return 1
-    #execute "curl -LO $nvim_url" || { err "curling latest nvim appimage failed"; return 1; }
-    #execute "chmod +x nvim.appimage" || return 1
-
-    #execute "mkdir -p -- '$inst_loc/'" || { err "neovim dir creation failed"; return 1; }
-    #execute "mv -- nvim.appimage '$inst_loc/'" || return 1
-    #create_link "$inst_loc/nvim.appimage" "$HOME/bin/nvim"
-
-    #execute "popd" || { err; return 1; }
-    #execute "sudo rm -rf -- '$tmpdir'"
-
-    ## post-install config:
-
-    ## create links (as per https://neovim.io/doc/user/nvim_from_vim.html):
-    #create_link "$HOME/.vim" "$nvim_confdir"
-    #create_link "$HOME/.vimrc" "$nvim_confdir/init.vim"
-
-    ## as per https://github.com/neovim/neovim/wiki/Installing-Neovim:
-    #execute "sudo pip2 install --upgrade neovim"
-    #execute "sudo pip3 install --upgrade neovim"
-    ##install_block 'python-neovim python3-neovim'
-
-    #return 0
-#}
-
-# https://github.com/neovim/neovim/wiki/Building-Neovim
-# https://github.com/neovim/neovim/wiki/Installing-Neovim
-#install_neovim() {  # the build-from-source version
-    #local tmpdir nvim_confdir
-
-    #readonly tmpdir="$TMP_DIR/nvim-build-${RANDOM}"
-    #readonly nvim_confdir="$HOME/.config/nvim"
-
-    #report "setting up nvim..."
-
-    ## first find whether we have deb packages from other times:
-    #if confirm "do you wish to install nvim from our previous build .deb package, if available?"; then
-        #install_from_deb neovim || return 1
-    #else
-        #report "building neovim..."
-
-        #report "installing neovim build dependencies..."  # https://github.com/neovim/neovim/wiki/Building-Neovim#build-prerequisites
-        #install_block '
-            #libtool
-            #libtool-bin
-            #autoconf
-            #automake
-            #cmake
-            #g\+\+
-            #pkg-config
-            #unzip
-        #' || { err 'failed to install neovim build deps. abort.'; return 1; }
-
-        #execute "git clone ${GIT_OPTS[*]} $NVIM_REPO_LOC $tmpdir" || return 1
-        #execute "pushd $tmpdir" || { err; return 1; }
-
-        ## TODO: checkinstall fails with neovim (bug in checkinstall afaik):
-        #execute "make clean" || { err; return 1; }
-        ##execute "make CMAKE_BUILD_TYPE=Release" || { err; return 1; }
-        ##create_deb_install_and_store neovim || { err; return 1; }
-
-        ## note it'll be installed into separate location; eases with uninstall; requires it setting on $PATH;
-        #execute "sudo make CMAKE_EXTRA_FLAGS='-DCMAKE_INSTALL_PREFIX=/usr/local/neovim' CMAKE_BUILD_TYPE=Release" || { err; return 1; }  # TODO  remove this once checkinstall issue is resolved;
-        #execute "sudo make install" || { err; return 1; }  # TODO  remove this once checkinstall issue is resolved;
-
-        #execute "popd"
-        #execute "sudo rm -rf -- $tmpdir"
-    #fi
-
-    ## post-install config:
-
-    ## create links (as per https://neovim.io/doc/user/nvim_from_vim.html):
-    #create_link "$HOME/.vim" "$nvim_confdir"
-    #create_link "$HOME/.vimrc" "$nvim_confdir/init.vim"
-
-    ## as per https://github.com/neovim/neovim/wiki/Installing-Neovim:
-    ##execute "sudo pip2 install --upgrade neovim"
-    ##execute "sudo pip3 install --upgrade neovim"
-    #install_block 'python-neovim python3-neovim'
-
-    #return 0
-#}
-
-
-#install_vim() {
-
-    #report "setting up vim..."
-
-    #build_and_install_vim || return 1
-    #vim_post_install_configuration
-
-    #report "launching vim, so the initialization could be done (pulling in plugins et al. simply exit vim when it's done.)"
-    #echo 'initialising vim; simply exit when plugin fetching is complete. (quit with  :qa!)' | \
-        #vim -  # needs to be non-root
-
-    ## YCM installation AFTER the first vim launch (vim launch pulls in ycm plugin, among others)!
-    #install_YCM
-#}
-
-
 # NO plugin config should go here (as it's not guaranteed they've been installed by this time)
+# TODO: is this fine? see https://vi.stackexchange.com/questions/46887
 nvim_post_install_configuration() {
     local i nvim_confdir
 
@@ -4989,97 +4856,19 @@ nvim_post_install_configuration() {
 
     execute "sudo mkdir -p /root/.config"
     create_link -s "$nvim_confdir" "/root/.config/"  # root should use same conf
-
-    _setup_vim_sessions_dir() {
-        local stored_vim_sessions vim_sessiondir
-
-        readonly stored_vim_sessions="$BASE_DATA_DIR/.vim_sessions"
-        readonly vim_sessiondir="$nvim_confdir/sessions"
-
-        # link sessions dir, if stored @ $BASE_DATA_DIR: (related to the 'xolox/vim-session' plugin)
-        # note we don't want sessions in homesick, as they're likely to be machine-dependent.
-        if [[ -d "$stored_vim_sessions" ]]; then
-            # refresh link:
-            execute "rm -rf -- $vim_sessiondir"
-        else  # $stored_vim_sessions does not exist; init it anyways
-            if [[ -d "$vim_sessiondir" ]]; then
-                execute "mv -- $vim_sessiondir $stored_vim_sessions"
-            else
-                execute "mkdir -- $stored_vim_sessions"
-            fi
-        fi
-
-        create_link "$stored_vim_sessions" "$vim_sessiondir"
-    }
-
-    _setup_vim_sessions_dir
-}
-
-
-# TODO: deprecate?
-# NO plugin config should go here (as it's not guaranteed they've been installed by this time)
-vim_post_install_configuration() {
-    local i
-
-    # generate links for root, if not existing:
-    for i in \
-            .vim \
-            .vimrc \
-            .vimrc.first \
-            .vimrc.last \
-                ; do
-        i="$HOME/$i"
-
-        if [[ ! -f "$i" && ! -d "$i" ]]; then
-            err "[$i] does not exist - can't link to /root/"
-            continue
-        else
-            create_link -s "$i" "/root/"
-        fi
-    done
-
-    function _setup_vim_sessions_dir() {
-        local stored_vim_sessions vim_sessiondir
-
-        readonly stored_vim_sessions="$BASE_DATA_DIR/.vim_sessions"
-        readonly vim_sessiondir="$HOME/.vim/sessions"
-
-        # link sessions dir, if stored @ $BASE_DATA_DIR: (related to the 'xolox/vim-session' plugin)
-        # note we don't want sessions in homesick, as they're likely to be machine-dependent.
-        if [[ -d "$stored_vim_sessions" ]]; then
-            # refresh link:
-            execute "rm -rf -- $vim_sessiondir"
-        else  # $stored_vim_sessions does not exist; init it anyways
-            if [[ -d "$vim_sessiondir" ]]; then
-                execute "mv -- $vim_sessiondir $stored_vim_sessions"
-            else
-                execute "mkdir -- $stored_vim_sessions"
-            fi
-        fi
-
-        create_link "$stored_vim_sessions" "$vim_sessiondir"
-    }
-
-    _setup_vim_sessions_dir
-
-    unset _setup_vim_sessions_dir
 }
 
 
 # building instructions from https://github.com/Valloric/YouCompleteMe/wiki/Building-Vim-from-source
 build_and_install_vim() {
-    local tmpdir expected_runtimedir python3_confdir ver i
+    local tmpdir expected_runtimedir repo ver
 
     readonly tmpdir="$TMP_DIR/vim-build-${RANDOM}"
-    readonly expected_runtimedir='/usr/local/share/vim/vim82'  # path depends on the ./configure --prefix
-    readonly python3_confdir="$(python3-config --configdir)"
+    readonly expected_runtimedir='/usr/local/share/vim/vim91'  # path depends on the ./configure --prefix
 
-    ver="$(get_git_sha "$VIM_REPO_LOC")" || return 1
+    repo='https://github.com/vim/vim.git'
+    ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" vim-our-build && return 2
-
-    for i in "$python3_confdir"; do
-        [[ -d "$i" ]] || { err "[$i] is not a valid dir; abort"; return 1; }
-    done
 
     # TODO: should this removal only happen in mode=1 (ie full) mode?
     report "removing already installed vim components..."
@@ -5101,7 +4890,7 @@ build_and_install_vim() {
         libperl-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone ${GIT_OPTS[*]} $VIM_REPO_LOC $tmpdir" || return 1
+    execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     execute "pushd $tmpdir" || return 1
 
     report "building vim..."
@@ -5114,7 +4903,7 @@ build_and_install_vim() {
             --enable-multibyte \
             --enable-rubyinterp=yes \
             --enable-python3interp=yes \
-            --with-python3-config-dir=$python3_confdir \
+            --with-python3-config-dir=$(python3-config --configdir) \
             --enable-perlinterp=yes \
             --enable-luainterp=yes \
             --enable-gui=gtk2 \
@@ -5174,6 +4963,7 @@ install_YCM() {  # the quick-and-not-dirty install.py way
     install_block '
         build-essential
         cmake
+        vim-nox
         python3-dev
     '
 
@@ -5185,89 +4975,6 @@ install_YCM() {  # the quick-and-not-dirty install.py way
 }
 
 
-# note: instructions & info here: https://github.com/Valloric/YouCompleteMe#full-installation-guide
-# note2: available in deb repo as 'ycmd'
-#install_YCM() {  # the manual, full-installation-guide way
-    #local ycm_root ycm_build_root libclang_root ycm_plugin_root ycm_third_party_rootdir
-
-    #readonly ycm_root="$BASE_BUILDS_DIR/YCM"
-    #readonly ycm_build_root="$ycm_root/ycm_build"
-    #readonly libclang_root="$ycm_root/llvm"
-    #readonly ycm_plugin_root="$HOME/.vim/bundle/YouCompleteMe"
-    #readonly ycm_third_party_rootdir="$ycm_plugin_root/third_party/ycmd/third_party"
-
-    #function __fetch_libclang() {
-        #local tmpdir tarball dir clang_llvm_loc
-
-        #tmpdir="$(mktemp -d "ycm-tempdir-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
-        #clang_llvm_loc='https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz'  # https://github.com/llvm/llvm-project/releases ; http://llvm.org/releases/download.html ;  https://apt.llvm.org/building-pkgs.php
-        #readonly tarball="$(basename -- "$clang_llvm_loc")"
-
-        #execute "pushd -- $tmpdir" || return 1
-        #report "fetching [$clang_llvm_loc]"
-        #execute "wget '$clang_llvm_loc'" || { err "wgetting [$clang_llvm_loc] failed."; return 1; }
-        #extract "$tarball" || { err "extracting [$tarball] failed."; return 1; }
-        #dir="$(find . -mindepth 1 -maxdepth 1 -type d)"
-        #[[ -d "$dir" ]] || { err "couldn't find unpacked clang directory"; return 1; }
-        #[[ -d "$libclang_root" ]] && execute "sudo rm -rf -- '$libclang_root'"
-        #execute "mv -- '$dir' '$libclang_root'"
-
-        #execute "popd"
-        #execute "sudo rm -rf -- '$tmpdir'"
-
-        #return 0
-    #}
-
-    ## sanity
-    #if ! [[ -d "$ycm_plugin_root" ]]; then
-        #err "expected vim plugin YouCompleteMe to be already pulled"
-        #err "you're either missing vimrc conf or haven't started vim yet (first start pulls all the plugins)."
-        #return 1
-    #fi
-
-    #[[ -d "$ycm_root" ]] || execute "mkdir -- '$ycm_root'"
-
-    ## first make sure we have libclang:
-    #if [[ -d "$libclang_root" ]]; then
-        #if ! confirm "found existing libclang at [$libclang_root]; use this one? (answering 'no' will fetch new version)"; then
-            #__fetch_libclang || { err "fetching libclang failed; aborting YCM installation."; return 1; }
-        #fi
-    #else
-        #__fetch_libclang || { err "fetching libclang failed; aborting YCM installation."; return 1; }
-    #fi
-    #unset __fetch_libclang  # to keep the inner function really an inner one (ie private).
-
-    ## clean previous builddir, if existing:
-    #[[ -d "$ycm_build_root" ]] && execute "sudo rm -rf -- '$ycm_build_root'"
-
-    ## build:
-    #execute "mkdir -- '$ycm_build_root'"
-    #execute "pushd -- '$ycm_build_root'" || return 1
-    #execute "cmake -G 'Unix Makefiles' \
-        #-DPATH_TO_LLVM_ROOT=$libclang_root \
-        #. \
-        #~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp \
-    #"
-    #execute 'cmake --build . --target ycm_core --config Release'
-    #execute "popd"
-
-    #############
-    ## set up support for additional languages:
-    ##     C# (assumes you have mono installed):
-    #execute "pushd $ycm_third_party_rootdir/OmniSharpServer" || return 1
-    #execute "xbuild /property:Configuration=Release /p:NoCompilerStandardLib=false"  # https://github.com/Valloric/YouCompleteMe/issues/2188
-    #execute "popd"
-
-    ##     js:
-    #execute "pushd $ycm_third_party_rootdir/tern_runtime" || return 1
-    #execute "$NPM_PRFX npm install --production"
-    #execute "popd"
-
-    ##     go:
-    ## TODO
-#}
-
-
 # consider also https://github.com/whitelynx/artwiz-fonts-wl
 # consider also https://github.com/slavfox/Cozette
 #
@@ -5277,6 +4984,8 @@ install_YCM() {  # the quick-and-not-dirty install.py way
 #
 # https://github.com/dse/bitmapfont2ttf/blob/master/bin/bitmapfont2ttf
 # https://gitlab.freedesktop.org/xorg/app/fonttosfnt
+#
+# TODO: wayland likely doens't support the bitmap glyph notes: https://unix.stackexchange.com/questions/795108
 install_fonts() {
     local dir
 
@@ -5300,9 +5009,9 @@ install_fonts() {
 
     is_native && install_block 'fontforge gucharmap'
 
-    # https://github.com/ryanoasis/nerd-fonts#option-3-install-script
+    # https://github.com/ryanoasis/nerd-fonts#option-7-install-script
     install_nerd_fonts() {
-        local tmpdir fonts ver i
+        local tmpdir fonts repo ver i
 
         readonly tmpdir="$TMP_DIR/nerd-fonts-${RANDOM}"
         fonts=(
@@ -5319,11 +5028,12 @@ install_fonts() {
             Iosevka
         )
 
-        ver="$(get_git_sha "$NERD_FONTS_REPO_LOC")" || return 1
+        repo='https://github.com/ryanoasis/nerd-fonts'
+        ver="$(get_git_sha "$repo")" || return 1
         is_installed "$ver" nerd-fonts && return 2
 
         # clone the repository
-        execute "git clone ${GIT_OPTS[*]} $NERD_FONTS_REPO_LOC '$tmpdir'" || return 1
+        execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
 
         report "installing nerd-fonts..."
@@ -5341,14 +5051,15 @@ install_fonts() {
     # https://github.com/powerline/fonts
     # note this is same as 'fonts-powerline' pkg, although at least in 2021 the package didn't work
     install_powerline_fonts() {
-        local tmpdir ver
+        local tmpdir repo ver
 
         readonly tmpdir="$TMP_DIR/powerline-fonts-${RANDOM}"
 
-        ver="$(get_git_sha "$PWRLINE_FONTS_REPO_LOC")" || return 1
+        repo='https://github.com/powerline/fonts'
+        ver="$(get_git_sha "$repo")" || return 1
         is_installed "$ver" powerline-fonts && return 2
 
-        execute "git clone ${GIT_OPTS[*]} $PWRLINE_FONTS_REPO_LOC '$tmpdir'" || return 1
+        execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
         execute "pushd $tmpdir" || return 1
         report "installing powerline-fonts..."
         execute "./install.sh" || return 1
@@ -5373,6 +5084,7 @@ install_fonts() {
         execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || { err 'err cloning siji font'; return 1; }
         execute "pushd $tmpdir" || return 1
 
+        # by default installs into $HOME/.fonts
         execute "./install.sh" || { err "siji-font install.sh failed with $?"; return 1; }
 
         execute "popd"
@@ -5395,7 +5107,11 @@ install_fonts() {
 
     enable_bitmap_rendering; unset enable_bitmap_rendering
     install_nerd_fonts; unset install_nerd_fonts
-    install_powerline_fonts; unset install_powerline_fonts  # note 'fonts-powerline' pkg in apt does not seem to work
+
+    # TODO: in '21 fonts-powerline pkg didn't work; trying it again:
+    install_block fonts-powerline
+    #install_powerline_fonts; unset install_powerline_fonts  # note 'fonts-powerline' pkg in apt does not seem to work
+
     install_siji; unset install_siji
 
     # TODO: guess we can't use xset when xserver is not yet running:
@@ -5716,7 +5432,7 @@ install_from_repo() {
         #w3m  # another CLI web browser
         tmux
         neovim/unstable
-        python3-pynvim  # Python3 library for scripting Neovim processes through its msgpack-rpc API
+        python3-pynvim  # Python3 library for scripting Neovim processes through its msgpack-rpc API; https://github.com/neovim/pynvim
         libxml2-utils  # TODO: still needed?
         pidgin
         weechat  # like irssi but better; https://weechat.org/
@@ -5725,7 +5441,7 @@ install_from_repo() {
         purple-discord  # libpurple/Pidgin plugin for Discord
         nheko  # Qt-based chat client for Matrix  # TODO: avail as flatpak
         signal-desktop
-        signald  # note this doesn't come from debian repos
+        #signald  # note this doesn't come from debian repos
         #lxrandr  # GUI application for the Lightweight X11 Desktop Environment (LXDE); TODO: x11!
         arandr  # visual front end for XRandR; TODO: x11
         autorandr  # TODO: x11
@@ -5849,6 +5565,11 @@ install_from_repo() {
 #
 # collection of relevant scripts: https://github.com/sej7278/virt-installs
 # - to inject debian preseed file: https://github.com/sej7278/virt-installs/blob/master/preseed_deb10/debian10_preseed.sh
+#
+# TODO: at least the GUI virt-manager is buggy:
+# - not able to read image files: https://unix.stackexchange.com/questions/796179/unable-to-create-libvirt-domain-persmission-denied-reading-os-iso
+# - also deleting snapshots fail. and when we delete the whole domain/vm, then
+#   they're gone in virt-manager, but files are still at /var/lib/libvirt/images/ !!!
 install_kvm() {
     # virt-install - cli utils to create & edit virt machines
     install_block -f '
@@ -5914,7 +5635,7 @@ install_vbox_guest() {
 
     execute "mkdir $tmp_mount" || return 1
     execute "sudo mount /dev/cdrom $tmp_mount" || { err "mounting guest-utils from /dev/cdrom to [$tmp_mount] failed w/ $? - is image mounted in vbox and in expected (likely first) slot?"; return 1; }
-    [[ -x "$bin" ]] || { err "[$bin] not a file"; return 1; }
+    [[ -x "$bin" ]] || { err "[$bin] not an executable file"; return 1; }
     label="$(grep --text -Po '^label=.\K.*(?="$)' "$bin")"  # or grep for 'INSTALLATION_VER'?
 
     if ! is_single "$label"; then
@@ -5978,8 +5699,7 @@ install_cpu_microcode_pkg() {
 setup_btrfs() {
     grep -qE '\bbtrfs\b' /etc/fstab || return 0
 
-    # TODO: do we need to set up btrfsmaintenance ? think we need to manually
-    # schedule, e.g. scrub
+    # TODO: do we need to set up btrfsmaintenance? think we need to manually schedule it, e.g. scrub
     install_block 'btrfsmaintenance btrfs-progs'
 
     _setup_snapper
@@ -6000,7 +5720,7 @@ setup_btrfs() {
 # - https://github.com/digint/btrbk - remote transfer of snapshots for backup
 # - Timeshift
 _setup_snapper() {
-    [[ -e /etc/default/snapper ]] && return 0  # config file exists, assume we've already set up
+    [[ -e /etc/default/snapper ]] && return 0  # config file exists, assume we're already set up
 
     _enable() {
         local opt OPTIND custom name mountpoint mp
@@ -6248,7 +5968,7 @@ choose_single_task() {
 
 
 # meta-function;
-# offerst steps from install_own_builds():
+# offers steps from install_own_builds():
 #
 # note full-install counterpart would be install_own_builds()
 __choose_prog_to_build() {
@@ -6284,11 +6004,9 @@ __choose_prog_to_build() {
         install_bat
         install_btop
         install_eza
-        install_gitin
         install_delta
         install_dust
         install_peco
-        install_dwm
         install_i3
         install_i3_deps
         install_i3lock
@@ -6301,7 +6019,6 @@ __choose_prog_to_build() {
         install_k9s
         install_krew
         install_popeye
-        install_octant
         install_kops
         install_kubectx
         install_kubectl
@@ -6314,7 +6031,7 @@ __choose_prog_to_build() {
         install_p4merge
         install_steam
         install_chrome
-        install_redis_insight
+        install_redis_desktop_manager
         install_eclipse_mem_analyzer
         install_visualvm
         install_vnote
@@ -6324,13 +6041,12 @@ __choose_prog_to_build() {
         install_bruno
         install_alacritty
         install_weeslack
-        install_weechat_matrix
+        install_weechat_matrix_rs
         install_gomuks
         install_slack_term
         install_slack
         install_bitlbee
         install_terragrunt
-        install_bluejeans
         install_minikube
         install_gruvbox_gtk_theme
         install_veracrypt
@@ -6405,8 +6121,8 @@ quicker_refresh() {
 
     install_own_builds        # from install_progs()
     post_install_progs_setup  # from install_progs()
-
     install_deps  # TODO: do we want this with mode=3?
+
     execute 'pipx  upgrade-all'
     execute 'flatpak -y --noninteractive update'
 }
@@ -6438,7 +6154,6 @@ remind_manually_installed_progs() {
     local progs i
 
     declare -ar progs=(
-        lazyman2
         'intelliJ toolbox'
         'sdkman - jdk, maven, gradle, leiningen...'
         'any custom certs'
@@ -6530,13 +6245,16 @@ add_manpath() {
     man_db='/etc/manpath.config'
 
     [[ -f "$man_db" ]] || { err "[$man_db] is not a file, can't add [$path -> $manpath] mapping"; return 1; }
-    grep -q "^MANPATH_MAP\s+${path}\s+${manpath}\$" "$man_db" && return 0  # value already set, nothing to do
+    [[ -d "$path" ]] || { err "[$path] is not a dir, can't add [$path -> $manpath] mapping"; return 1; }
+    [[ -d "$manpath" ]] || { err "[$manpath] is not a dir, can't add [$path -> $manpath] mapping"; return 1; }
+    grep -Eq "^MANPATH_MAP\s+${path}\s+${manpath}$" "$man_db" && return 0  # value already set, nothing to do
     execute "echo 'MANPATH_MAP $path  $manpath' | sudo tee --append $man_db > /dev/null"
 }
 
 
 # setup tcpdump so our regular user can exe it
 # see https://www.stev.org/post/howtoruntcpdumpasroot
+# see also https://unix.stackexchange.com/questions/628662
 setup_tcpdump() {
     local tcpd
 
@@ -6544,10 +6262,11 @@ setup_tcpdump() {
 
     [[ -x "$tcpd" ]] || { err "[$tcpd] exec does not exist"; return 1; }
 
-    add_to_group tcpdump
+    add_to_group  tcpdump
     execute "sudo chown root:tcpdump $tcpd" || return 1
     execute "sudo chmod 0750 $tcpd" || return 1
     execute "sudo setcap 'CAP_NET_RAW+eip' $tcpd" || return 1
+    #execute "sudo setcap cap_net_raw,cap_net_admin=eip $tcpd" || return 1
 }
 
 
@@ -6620,7 +6339,7 @@ setup_nsswitch() {
 #
 # see also: https://wiki.debian.org/Netplan
 enable_network_manager() {
-    local nm_conf nm_conf_dir
+    local nm_conf nm_conf_dir t
 
     readonly nm_conf="$COMMON_DOTFILES/backups/networkmanager.conf"
     readonly nm_conf_dir='/etc/NetworkManager/conf.d'
@@ -6657,7 +6376,11 @@ enable_network_manager() {
 
     [[ -d "$nm_conf_dir" ]] || { err "[$nm_conf_dir] does not exist; are you using NetworkManager? if not, this config logic should be removed."; return 1; }
     [[ -s "$nm_conf" ]] || { err "[$nm_conf] does not exist; cannot update config"; return 1; }
-    execute "sudo cp -- '$nm_conf' '$nm_conf_dir'" || return 1
+
+    t="$nm_conf_dir/$(basename -- "$nm_conf")"
+    if ! cmp -s "$nm_conf" "$t"; then
+        execute "sudo cp -- '$nm_conf' '$t'" || return 1
+    fi
     _configure_con_dns
 
     # old ver, directly updating /etc/NetworkManager/NetworkManager.conf:
@@ -6769,7 +6492,8 @@ install_binance() {
 # https://github.com/spesmilo/electrum
 # - old reddit post w/ recommended wallets: https://www.reddit.com/r/Bitcoin/comments/f6ahfx/best_mobile_wallets_for_btc_non_kyc_preferred/fi4i9t4/
 install_electrum_wallet() {
-    install_from_any  electrum 'https://electrum.org/#download' 'https://download\.electrum\.org/[0-9.]+/electrum-[0-9.]+-x86_64.AppImage'
+    install_from_any  electrum 'https://electrum.org/#download' \
+        'https://download\.electrum\.org/[0-9.]+/electrum-[0-9.]+-x86_64.AppImage'
 }
 
 
@@ -6901,13 +6625,27 @@ setup_seafile() {
 }
 
 
-# from  TODO find debian url for nftables
+# https://wiki.debian.org/nftables
+# DO NOT edit our nftable rules, instead do it via firewalld
+#
+# see also:
+# - https://www.naturalborncoder.com/2024/10/installing-and-configuring-nftables-on-debian/
+#
+# config file @ /etc/nftables.conf
+#
+# some commands:
+# - list ruleset:
+#    sudo nft list ruleset
 enable_fw() {
-    execute 'sudo systemctl enable --now nftables.service'
+    execute 'sudo systemctl enable nftables.service'
 }
 
 
 # https://docs.mopidy.com/en/latest/running/service/#running-as-a-service
+#
+# - print effective config:
+#     sudo mopidyctl config
+#
 # !note when running as a service, then 'mopidy cmd' should be ran as 'sudo mopidyctl cmd'
 setup_mopidy() {
     local mopidy_confdir file
@@ -6998,7 +6736,6 @@ setup_firefox() {
     # TODO 2: does ff in flatpak even support this? note native messaging portal is not working in flatpak as of '25: https://github.com/flatpak/xdg-desktop-portal/issues/655
     execute 'curl -fsSL https://raw.githubusercontent.com/tridactyl/native_messenger/master/installers/install.sh -o /tmp/trinativeinstall.sh && sh /tmp/trinativeinstall.sh master'  # 'master' refers to git ref/tag; can also remove that arg, so latest tag is installed instead.
 
-
     # install custom css/styling {  # see also https://github.com/MrOtherGuy/firefox-csshacks
     [[ -d "$conf_dir" ]] || { err "[$conf_dir] not a dir"; return 1; }
     profile="$(find "$conf_dir" -mindepth 1 -maxdepth 1 -type d -name '*default-release')"
@@ -7006,7 +6743,6 @@ setup_firefox() {
     [[ -d "$profile/chrome" ]] || execute "mkdir -- '$profile/chrome'" || return 1
     execute "pushd $profile/chrome" || return 1
     clone_or_pull_repo  MrOtherGuy  firefox-csshacks  './'
-
 
     execute popd
     # }
@@ -7022,16 +6758,13 @@ setup_firefox() {
 }
 
 
-# updatedb.findutils is a logic executed by cron to find files and build a db for $ locate / plocate.
-# here we provide customization for it
-#
-# TODO: move away from cron!
+# locate / plocate conf
 configure_updatedb() {
     local conf paths line i modified
 
     conf='/etc/updatedb.conf'
-    # /.snapshots is snapper/btrfs location
-    paths=(/mnt /media /var/cache /data/seafile-data "$HOME/.cache" /.snapshots)  # paths to be added to PRUNEPATHS definition
+    # */.snapshots are snapper/btrfs location
+    paths=(/mnt /media /var/cache /data/seafile-data "$HOME/.cache" "$HOME/.snapshots" /.snapshots)  # paths to be added to PRUNEPATHS definition
 
     [[ -s "$conf" ]] || { err "[$conf] not a nonempty file"; return 1; }
     line="$(grep -Po '^PRUNEPATHS="\K.*(?="$)' "$conf")"  # extract the value between quotes
@@ -7079,14 +6812,6 @@ add_user() {
 }
 
 
-# https://minikube.sigs.k8s.io/docs/reference/drivers/none/
-setup_minikube() {  # TODO: unfinished
-    true
-    #execute 'sudo minikube config set vm-driver none'  # make 'none' the default driver:
-    #execute 'minikube config set memory 4096'  # set default allocated memory (default is 2g i believe, see https://minikube.sigs.k8s.io/docs/start/linux/)
-}
-
-
 # do not disable swap, read https://chrisdown.name/2018/01/02/in-defence-of-swap.html
 # - atop in logging mode can also show you which applications are having their pages swapped out in the SWAPSZ column
 #
@@ -7127,7 +6852,7 @@ post_install_progs_setup() {
     increase_inotify_watches_limit         # for intellij IDEA
     allow_user_run_dmesg
     #increase_ulimit
-    enable_unprivileged_containers_for_regular_users
+    enable_unprivileged_containers_for_regular_users  # TODO: shouldn't be needed anymore?
     setup_tcpdump
     setup_nvim
     #setup_keyd
@@ -7153,9 +6878,6 @@ post_install_progs_setup() {
     #add_to_group fuse  # not needed anymore?
     setup_firefox
     configure_updatedb
-
-    command -v kubectl >/dev/null && execute "kubectl completion bash | tee $SHELL_COMPLETIONS/kubectl > /dev/null"  # add kubectl bash completion
-    command -v minikube >/dev/null && setup_minikube
 }
 
 
@@ -7342,8 +7064,9 @@ report() {
 }
 
 
-# issues when installing downloaded deb files (at least when they've already been installed beforehand?);
-# NOTE: unsure if this is really needed for our use-case;
+# this is to avoid the warning apt prints when installing:
+# > Download is performed unsandboxed as root...
+#
 # see https://askubuntu.com/a/908825
 # see https://unix.stackexchange.com/questions/468807/strange-error-in-apt-get-download-bug
 # TODO: consider removing
@@ -7695,10 +7418,6 @@ is_windows() {
 
 
 # Checks whether system is virtualized (including WSL)
-# TODO: at least the GUI virt-manager is buggy:
-# - not able to read image files: https://unix.stackexchange.com/questions/796179/unable-to-create-libvirt-domain-persmission-denied-reading-os-iso
-# - also deleting snapshots fail. and when we delete the whole domain/vm, then
-# they're gone in virt-manager, but files are still at /var/lib/libvirt/images/ !!!
 #
 # @returns {bool}   true if we're running in virt mode.
 is_virt() {
@@ -7717,7 +7436,7 @@ is_virt() {
 # @returns {bool}   true if we're running in a virtualbox vm
 is_virtualbox() {
     if [[ -z "$_IS_VIRTUALBOX" ]]; then
-        lspci | grep -qi virtualbox
+        is_virt && lspci | grep -qi virtualbox
         readonly _IS_VIRTUALBOX=$?
     fi
 
@@ -7740,7 +7459,7 @@ is_native() {
 
 
 is_64_bit() {
-    # also could do  $ dpkg --print-architecture
+    # also could do  $ [[ "$(dpkg --print-architecture)" == amd64 ]]
     [[ "$(uname -m)" == x86_64 ]]
 }
 
@@ -7759,15 +7478,12 @@ is_amd_cpu() {
 #
 # @returns {bool}  true, if we are in git repo.
 is_git() {
-    if git rev-parse --is-inside-work-tree &>/dev/null; then
-        return 0
-    fi
-
-    return 1
+    git rev-parse --is-inside-work-tree &>/dev/null
 }
 
 
 # Checks whether we're in graphical environment.
+# TODO: differentiate between x11 & GUI; perhaps is_gui() would be better?
 #
 # @returns {bool}  true, if we're currently in graphical env.
 is_x() {
@@ -7795,9 +7511,7 @@ is_x() {
 # @returns {bool}  true, if provided url was a valid url.
 is_valid_url() {
     local regex
-
     readonly regex='^(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
-
     [[ "$1" =~ $regex ]]
 }
 
@@ -8000,7 +7714,6 @@ build_comma_separated_list() {
 
     list="$*"
     echo "${list// /, }"
-    return 0
 }
 
 
@@ -8038,31 +7751,6 @@ create_symlinks() {
     # Create symlink of every file (note target file will be overwritten no matter what):
     find "$src" -maxdepth 1 -mindepth 1 -type f -printf 'ln -sf -- "%p" "$dest"\n' | dest="$dest" bash
     #find "$src" -maxdepth 1 -mindepth 1 -type f -print | xargs -I '{}' ln -sf -- "{}" "$dest"
-}
-
-
-# Removes too old installations from given dir.
-#
-# @param {string}  src_dir                 directory where installations are kept
-# @param {int}     number_of_olds_to_keep  how many old vers should we keep?
-clear_old_vers() {
-    local src_dir number_of_olds_to_keep nodes i
-
-    src_dir="${1:-./installations}"   # default to ./installations
-    number_of_olds_to_keep=${2:-2}    # default to 2 newest to keep
-
-    [[ -d "$src_dir" ]] || { err "dir [$src_dir] is not a valid dir"; return 1; }
-    is_digit "$number_of_olds_to_keep" || { err "\$number_of_olds_to_keep is not a digit"; return 1; }
-    declare -a nodes
-
-    while IFS= read -r i; do
-        nodes+=("$(grep -Poi '^\d+\.\d+\s\K.*' <<< "$i")")
-    done < <(find "$src_dir" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr)
-    [[ ${#nodes[@]} -le "$number_of_olds_to_keep" ]] && return
-
-    for ((i=number_of_olds_to_keep;i<${#nodes[@]};i++)); do
-        execute "sudo rm -rf -- '${nodes[i]}'"
-    done
 }
 
 
@@ -8224,7 +7912,9 @@ while getopts 'NFSUQOP:L:' OPT_; do
            MANUAL_LOG_LVL=TRUE
            is_digit "$OPTARG" || { err "log level needs to be an int, but was [$OPTARG]"; exit 1; }
             ;;
-        *) print_usage; exit 1 ;;
+        *) print_usage
+           exit 1
+            ;;
     esac
 done
 shift "$((OPTIND-1))"; unset OPT_
@@ -8244,9 +7934,9 @@ is_native || update_clock || exit 1  # needs to be done _after_ check_dependenci
 
 choose_step
 
-if [[ "$SYSCTL_CHANGED" -eq 1 ]]; then execute 'sudo sysctl -p --system'; fi
+[[ "$SYSCTL_CHANGED" == 1 ]] && execute 'sudo sysctl -p --system'
 
-exit
+exit 0
 
 
 # ISSUES:
@@ -8298,6 +7988,7 @@ exit
 #  - databse defrag/compactions should be scheduled, e.g. "notmuch compact"
 #  - consider installing & setting up logwatch & fwlogwatch
 #  - consider using Timeshift creator's tinytools: https://teejeetech.com/tinytools/
+#  - instead of mv/cp, start using install; e.g.:  $ install -m644 clojure-tools/deps.edn "$clojure_lib_dir/deps.edn"
 #
 #
 # list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/
