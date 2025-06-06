@@ -4951,7 +4951,7 @@ install_YCM() {  # the quick-and-not-dirty install.py way
     # sanity
     if ! [[ -d "$ycm_plugin_root" ]]; then
         err "expected vim plugin YouCompleteMe to be already pulled"
-        err "you're either missing vimrc conf or haven't started vim yet (first start pulls all the plugins)."
+        err "you're either missing (n)vim conf or haven't started vim yet (first start pulls all the plugins)"
         return 1
     fi
 
@@ -6204,7 +6204,8 @@ increase_ulimit() {
 # i _think_ this issue popped up w/ after 'Franz' or 'notable' started using electron v5+
 #
 # see also https://www.baeldung.com/linux/kernel-enable-user-namespaces
-# TODO: this _should'nt_ be needed anymore on debian: https://www.debian.org/releases/bullseye/amd64/release-notes/ch-information.en.html#linux-user-namespaces
+# TODO: this _should'nt_ be needed anymore as of Linux 5.10: https://www.debian.org/releases/bullseye/amd64/release-notes/ch-information.en.html#linux-user-namespaces
+# TODO: deprecate
 #
 # this is needed eg for electron v5+ to enable sandboxing; eg see
 #    https://github.com/electron/electron/issues/17972
@@ -6852,7 +6853,7 @@ post_install_progs_setup() {
     increase_inotify_watches_limit         # for intellij IDEA
     allow_user_run_dmesg
     #increase_ulimit
-    enable_unprivileged_containers_for_regular_users  # TODO: shouldn't be needed anymore?
+    #enable_unprivileged_containers_for_regular_users
     setup_tcpdump
     setup_nvim
     #setup_keyd
