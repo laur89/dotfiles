@@ -2468,7 +2468,7 @@ prepare_build_container() {  # TODO container build env not used atm
 # $1 - git user
 # $2 - git repo
 # $3 - asset regex to be used (for jq's test()) to parse correct item from git /releases page. note jq requires most likely double-backslashes!
-# $4 - what to rename resulting file as; optional
+# $4 - what to rename resulting file as; optional, but recommended
 #
 # see also:
 #  - https://github.com/OhMyMndy/bin-get
@@ -2477,9 +2477,9 @@ fetch_release_from_git() {
     local opt loc id OPTIND dl_url opts selector
 
     opts=()
-    while getopts 'Usf:n:TZ' opt; do
+    while getopts 'UDsf:n:TZ' opt; do
         case "$opt" in
-            U|s) opts+=("-$opt") ;;
+            U|D|s) opts+=("-$opt") ;;
             f|n) opts+=("-$opt" "$OPTARG") ;;
             T) selector='.tarball_url' ;;
             Z) selector='.zipball_url' ;;
@@ -2501,14 +2501,15 @@ fetch_release_from_git() {
 # common logic for both fetch_release_from_{git,any}()
 # TODO: as of '25 only user is fetch_release_from_git()
 _fetch_release_common() {
-    local opt noextract skipadd file_filter name_filter id ver dl_url name tmpdir file OPTIND
+    local opt extract_opts noextract skipadd id ver dl_url name tmpdir file OPTIND
 
-    while getopts 'Usf:n:' opt; do
+    extract_opts=()
+    while getopts 'UsDf:n:' opt; do
         case "$opt" in
             U) noextract=1 ;;
             s) skipadd=1 ;;
-            f) file_filter="$OPTARG" ;;
-            n) name_filter="$OPTARG" ;;
+            D) extract_opts+=("-$opt") ;;
+            f|n) extract_opts+=("-$opt" "$OPTARG") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2517,7 +2518,7 @@ _fetch_release_common() {
     id="$1"
     ver="$2"
     dl_url="$3"
-    name="$4"  # optional
+    name="$4"  # optional, but recommended
 
     [[ "$name" == */* ]] && { err "name arg can't be a path, but was [$name]"; return 1; }
     [[ "$skipadd" != 1 ]] && is_installed "$ver" "$id" && return 2
@@ -2529,7 +2530,7 @@ _fetch_release_common() {
     [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
     if [[ "$noextract" != 1 ]] && file --brief "$file" | grep -qiE 'archive|compressed'; then
-        file="$(extract_tarball -s -f "$file_filter" -n "$name_filter" "$file")" || return 1
+        file="$(extract_tarball "${extract_opts[@]}" "$file")" || return 1
     fi
 
     # TODO: should we invoke install_file() from this function instead of this reused logic? unsure..better read TODO at the top of this fun
@@ -2660,7 +2661,7 @@ install_from_any() {
     ver="$(resolve_ver "$dl_url")" || return 1
     [[ "$skipadd" != 1 ]] && is_installed "$ver" "$id" && return 2
 
-    # instead of _fetch_release_common(), fetch ourselves (just like we do in install_from_url():
+    # instead of _fetch_release_common(), fetch ourselves (just like we do in install_from_url()):
     tmpdir="$(mktemp -d "install-from-any-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     execute "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
     f="$(find "$tmpdir" -type f)"
@@ -2671,6 +2672,7 @@ install_from_any() {
     if [[ "$skipadd" != 1 ]]; then
         add_to_dl_log "$id" "$ver"
     fi
+    return 0
 }
 
 
@@ -2679,11 +2681,9 @@ install_from_any() {
 #
 # Also note the operation is successful only if a single directory gets extracted out.
 #
-#   -I path  install extracted dir on given path; note desctructive - path is replaced
-#            mutually exclusive w/ -S
-#   -S       see doc on extract_tarball()
-#            mutually exclusive w/ -I
 #   -T|Z     see doc on fetch_release_from_git()
+#   -I path  install extracted dir on given path; note desctructive - path is replaced!
+#            mutually exclusive w/ -S
 #
 # $1 - git user
 # $2 - git repo
@@ -2692,26 +2692,24 @@ install_from_any() {
 # @returns {string} path to root dir of extraction result, IF we found a
 #                   _single_ dir in the result.
 # @returns {bool} true, if we found a _single_ dir in result
+#
+# TODO: try to merge w/ install_from_git() (assuming we get the extract method and
+#       it's -s flag sorted)
 fetch_extract_tarball_from_git() {
-    local extract_opts fetch_rls_opts opt i OPTIND install_target
+    local fetch_rls_opts opt i OPTIND install_target
 
-    extract_opts=()
-    fetch_rls_opts=(-U)
+    fetch_rls_opts=(-D)
 
-    while getopts 'STZI:' opt; do
+    while getopts 'TZI:' opt; do
         case "$opt" in
-            S) extract_opts+=(-S) ;;
-            I) install_target="$OPTARG" ;;  # destructive!
             T|Z) fetch_rls_opts+=("-$opt") ;;
+            I) install_target="$OPTARG" ;;  # destructive!
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
-    # TODO: afaik we call extract_tarball() sparately as fetch_release_from_git()
-    #       itself invokes  extract_tarball with  -s  flag
     i="$(fetch_release_from_git "${fetch_rls_opts[@]}" "$1" "$2" "$3")" || return $?
-    i="$(extract_tarball "${extract_opts[@]}" "$i")" || return $?
 
     if [[ -z "$install_target" ]]; then
         echo "$i"
@@ -2731,20 +2729,18 @@ fetch_extract_tarball_from_git() {
 # Extract given tarball file. Optionally also first downloads the tarball.
 # Note it'll be extracted into newly-created tempdir; if -S opt is provided, it
 # gets extracted into current $pwd instead.
-# Also note the operation is successful only if a single directory gets extracted out,
-# unless -s option (single_file) is provided.
+# Also note the operation is successful only if a single file gets extracted out,
+# unless -D option is provided, in which case extracted root dir is returned.
 #
 # Note input $file is removed upon successful extraction
 #
 # -S     - flag to extract into current $PWD, ie won't create a new tempdir.
-# -s     - if we're after a single file in extracted result. see -f & -n for further filtering.
+# -D     - we want extracted root dir, not a single file;
 # -n     - filename pattern to be used by find; works together w/ -f;
-#          implies -s
 # -f     - $file output pattern to grep for in order to filter for specific
 #          single file from unpacked tarball;
 #          as it stands, the _first_ file matching given filetype is returned, even
 #          if there were more. works together w/ -n opt;
-#          implies -s
 #
 # $1 - tarball file to be extracted, or a URL where to fetch file from first
 #      TODO: remove url support? as we're not tracking the version this way.
@@ -2752,19 +2748,20 @@ fetch_extract_tarball_from_git() {
 #
 # @returns {string} path to root dir of extraction result, IF we found a
 #                   _single_ dir in the result.
-# @returns {bool} true, if we found a _single_ dir (or file, if -s option is provided)
+# @returns {bool} true, if we found a _single_ file (or dir, if -D option is provided)
 #                 in result; also the full path to dir/file is returned.
 extract_tarball() {
-    local opt standalone single_f file_filter name_filter file dir OPTIND tmpdir
+    local opt standalone dir_only file_filter name_filter file dir OPTIND tmpdir
 
-    while getopts 'Ssf:n:' opt; do
+    dir_only=0  # default to seeking for a single file
+    while getopts 'SDf:n:' opt; do
         case "$opt" in
             S) readonly standalone=1 ;;
-            s) single_f=1 ;;
+            D) dir_only=1 ;;
             f) readonly file_filter="$OPTARG"
-               single_f=1 ;;
+               dir_only=0 ;;
             n) readonly name_filter="$OPTARG"
-               single_f=1 ;;
+               dir_only=0 ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2779,6 +2776,7 @@ extract_tarball() {
     fi
 
     [[ -f "$file" ]] || { err "file [$file] not a regular file"; return 1; }
+    [[ -n "$file_filter" || -n "$name_filter" ]] && [[ "$dir_only" == 1 ]] || { err "[fnD] options are mutually exclusive"; return 1; }
     file --brief "$file" | grep -qiE 'archive|compressed' || { err "[$file] is not an archive, cannot decompress"; return 1; }
 
     if [[ "$standalone" != 1 ]]; then
@@ -2794,10 +2792,10 @@ extract_tarball() {
 
     execute "rm -f -- '$file'" || { [[ "$standalone" != 1 ]] && popd; return 1; }
 
-    dir="$(find "$(pwd -P)" -mindepth 1 -maxdepth 1 -type d)"  # do not verify -d $dir _yet_ - ok to fail if $single_f == 1
+    dir="$(find "$(pwd -P)" -mindepth 1 -maxdepth 1 -type d)"  # do not verify -d $dir _yet_ - ok to fail if $dir_only != 1
     [[ "$standalone" != 1 ]] && execute popd
 
-    if [[ "$single_f" != 1 ]]; then
+    if [[ "$dir_only" == 1 ]]; then
         [[ -d "$dir" ]] || { err "couldn't find single extracted dir in extracted tarball"; return 1; }
         echo "$dir"
     else  # we're looking for a specific file (not a dir!) under extracted tarball
@@ -2840,7 +2838,7 @@ install_bin_from_git() {
 #                     implies -U
 # -O, -P            - see install_file()
 # -d /target/dir    - dir to install pulled binary in, optional
-# -N binary_name    - what to name pulled binary to, optional
+# -N name           - what to name pulled file to, optional, but recommended
 # -n, -f            - see fetch_release_from_git()
 # $1 - git user
 # $2 - git repo
@@ -3051,17 +3049,17 @@ install_from_url_shell() {
 
 
 install_file() {
-    local opt OPTIND ftype single_f target file_filter noextract name_filter owner perms file name asis
+    local opt OPTIND ftype target extract_opts noextract owner perms file name asis
 
     target='/usr/local/bin'  # default
-    single_f='-s'  # ie default to installing/extracting a single file in case tarball is provided
+
+    extract_opts=()
     while getopts 'd:DUf:n:O:P:A' opt; do
         case "$opt" in
             d) target="$OPTARG" ;;
-            D) unset single_f ;;  # mnemonic: directory; ie we want the "whole directory" in case $file is tarball
-            f) file_filter="$OPTARG" ;;  # no use if -D or -U is used
+            D) extract_opts+=("$opt") ;;  # mnemonic: directory; ie we want the "whole directory" in case $file is tarball
             U) noextract=1 ;;  # if, for whatever the reason, an archive/tarball should not be unpacked
-            n) name_filter="$OPTARG" ;;  # no use if -D or -U is used
+            f|n) extract_opts+=("-$opt" "$OPTARG") ;;  # no use if -D or -U is used
             O) owner="$OPTARG" ;;  # chown
             P) perms="$OPTARG" ;;  # chmod
             A) asis=TRUE       # install file as-is, do not derive method from mime;
@@ -3077,8 +3075,8 @@ install_file() {
     [[ -f "$file" ]] || { err "file [$file] not a regular file"; return 1; }
     [[ -d "$target" ]] || { err "[$target] not a dir, can't install [${name:+$name///}$file]"; return 1; }
 
-    if [[ "$noextract" -ne 1 ]] && grep -qiE "archive|compressed" <<< "$(file --brief "$file")"; then
-        file="$(extract_tarball $single_f  -f "$file_filter" -n "$name_filter" "$file")" || return 1
+    if [[ "$noextract" != 1 ]] && file --brief "$file" | grep -qiE 'archive|compressed'; then
+        file="$(extract_tarball "${extract_opts[@]}" "$file")" || return 1
     fi
 
     _rename() {
@@ -3686,7 +3684,7 @@ install_eclipse_mem_analyzer() {
     dl_url="$(grep -Poi 'If the download doesn.t start.*a href="\K.*(?=")' <<< "$page")" || { err "parsing final download link from [$loc] content failed"; return 1; }
     is_valid_url "$dl_url" || { err "[$dl_url] is not a valid download link"; return 1; }
 
-    dir="$(extract_tarball "$dl_url")" || return 1
+    dir="$(extract_tarball -D "$dl_url")" || return 1
     [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }  # rm previous installation
     execute "mv -- '$dir' '$target'" || return 1
     create_link "$target/MemoryAnalyzer" "$HOME/bin/MemoryAnalyzer"
@@ -7891,7 +7889,7 @@ shift "$((OPTIND-1))"; unset OPT_
 readonly PROFILE="$1"   # work | personal
 
 [[ "$EUID" -eq 0 ]] && { err "don't run as root."; exit 1; }
-trap "cleanup; exit" EXIT HUP INT QUIT PIPE TERM;
+trap 'cleanup; exit' EXIT HUP INT QUIT PIPE TERM;
 
 validate_and_init
 check_dependencies
