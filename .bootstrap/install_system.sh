@@ -2605,8 +2605,7 @@ resolve_dl_urls() {
 }
 
 
-# Fetch a file from a given page and install it. Essentially symbiosis of
-# pre-existing fetch_release_from_any() & install_file().
+# Fetch a file from a given page and install it.
 #
 # Note we will automaticaly extract the asset (and expect to locate a single file
 # in the extracted result) if it's archived/compressed; pass -U to skip that step.
@@ -2623,7 +2622,8 @@ resolve_dl_urls() {
 #                     note if installing whole dirs (-D), it should be the root dir;
 #                     /$name will be created/appended by install_file()
 # -D                - see install_file()
-# -A                - install file as-is, do not derive method from mime
+# -A                - install file as-is, do not derive method from mime;
+#                     implies -U
 # -I     - entity identifier (for logging/version tracking et al);
 #          optional, if missing then use $name
 #
@@ -2634,16 +2634,15 @@ resolve_dl_urls() {
 #
 # see also: install_from_url()
 install_from_any() {
-    local install_file_args skipadd resolve_url_args opt relative
+    local install_file_args skipadd opt relative
     local name loc url_ptrn dl_url ver f OPTIND tmpdir id
 
     install_file_args=()
-    while getopts 'sf:n:d:O:P:rR:UDAI:' opt; do
+    while getopts 'sf:n:d:O:P:rUDAI:' opt; do
         case "$opt" in
             s) skipadd=1 ;;
             f|n|d|O|P) install_file_args+=("-$opt" "$OPTARG") ;;
             r) relative='TRUE' ;;
-            R) resolve_url_args="$OPTARG" ;;
             U|D|A) install_file_args+=("-$opt") ;;
             I) id="$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
@@ -2657,7 +2656,7 @@ install_from_any() {
 
     id="${id:-$name}"
 
-    dl_url="$(resolve_dl_urls $resolve_url_args "$loc" "${relative:+/}.*$url_ptrn")" || return 1  # note we might be looking for a relative url
+    dl_url="$(resolve_dl_urls "$loc" "${relative:+/}.*$url_ptrn")" || return 1  # note we might be looking for a relative url
     ver="$(resolve_ver "$dl_url")" || return 1
     [[ "$skipadd" != 1 ]] && is_installed "$ver" "$id" && return 2
 
@@ -2673,51 +2672,6 @@ install_from_any() {
         add_to_dl_log "$id" "$ver"
     fi
 }
-
-
-# Fetch a file from a given page, and return full path to the file.
-# Note we will automaticaly extract the asset (and expect to locate a single file
-# in the extracted result) if it's archived/compressed; pass -U to skip that step.
-#
-# -U     - skip extracting if archive and pass compressed/tarred ball as-is.
-# -s     - skip adding fetched asset in $GIT_RLS_LOG
-# -n     - filename pattern to be used by find; works together w/ -f;
-# -f     - $file output pattern to grep for in order to filter for specific
-#          single file from unpacked tarball (meaning it's pointless when -U is given);
-#          as it stands, the _first_ file matching given filetype is returned, even
-#          if there were more. works together w/ -n
-# -I     - entity identifier (for logging/version tracking et al)
-# -r     - if href grep should be relative, ie start with / (note user should not prefix w/ '/' themselves)
-#
-# $1 - url to extract the asset url from;
-# $2 - build/file regex to be used (for grep -Po) to parse correct item from git /releases page src;
-#      note it matches 'til the very end of url (ie you should only provide the latter bit);
-# $3 - optional output file name; if given, downloaded file will be renamed to this; note name only, not including path!
-#
-# TODO: see also install_from_any() that finally merges (sorta) this function & install_file
-# TODO: deprecated? at least unused as of '25
-#fetch_release_from_any() {
-    #local opts opt id relative resolveurls_opts loc dl_url ver OPTIND
-
-    #opts=()
-    #while getopts 'Usf:n:I:rR:' opt; do
-        #case "$opt" in
-            #U|s) opts+=("-$opt") ;;
-            #f|n) opts+=("-$opt" "$OPTARG") ;;
-            #I) id="$OPTARG" ;;
-            #r) relative='TRUE' ;;
-            #R) resolveurls_opts="$OPTARG" ;;
-            #*) fail "unexpected arg passed to ${FUNCNAME}()" ;;
-        #esac
-    #done
-    #shift "$((OPTIND-1))"
-
-    #readonly loc="$1"
-    #dl_url="$(resolve_dl_urls $resolveurls_opts "$loc" "${relative:+/}.*$2")" || return 1  # note we might be looking for a relative url
-    #ver="$(resolve_ver "$dl_url")" || return 1
-
-    #_fetch_release_common "${opts[@]}" "${id:-$3}" "$ver" "$dl_url" "$3"
-#}
 
 
 # Fetch and extract a tarball from given github /releases page.
@@ -2887,7 +2841,7 @@ install_bin_from_git() {
 # -O, -P            - see install_file()
 # -d /target/dir    - dir to install pulled binary in, optional
 # -N binary_name    - what to name pulled binary to, optional
-# -n, -f            - see _fetch_release_common()/fetch_release_from_any()
+# -n, -f            - see fetch_release_from_git()
 # $1 - git user
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
