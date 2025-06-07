@@ -2825,6 +2825,7 @@ extract_tarball() {
     fi
 
     [[ -f "$file" ]] || { err "file [$file] not a regular file"; return 1; }
+    file --brief "$file" | grep -qiE 'archive|compressed' || { err "[$file] is not an archive, cannot decompress"; return 1; }
 
     if [[ "$standalone" != 1 ]]; then
         tmpdir="$(mktemp -d "tarball-extract-XXXXX" -p "$TMP_DIR")" || { err "unable to create tempdir with \$ mktemp"; return 1; }
