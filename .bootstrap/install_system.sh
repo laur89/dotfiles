@@ -2519,6 +2519,7 @@ _fetch_release_common() {
     dl_url="$3"
     name="$4"  # optional
 
+    [[ "$name" == */* ]] && { err "name arg can't be a path, but was [$name]"; return 1; }
     [[ "$skipadd" != 1 ]] && is_installed "$ver" "$id" && return 2
     tmpdir="$(mktemp -d "release-from-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
 
@@ -2532,12 +2533,9 @@ _fetch_release_common() {
     fi
 
     # TODO: should we invoke install_file() from this function instead of this reused logic? unsure..better read TODO at the top of this fun
-    if [[ -n "$name" ]]; then
-        [[ "$name" == */* ]] && { err "name can't be a path, but was [$name]"; return 1; }
-        if [[ "$(basename -- "$file")" != "$name" ]]; then
-            execute "mv -- '$file' '$tmpdir/$name'" || { err "renaming [$file] to [$tmpdir/$name] failed"; return 1; }
-            file="$tmpdir/$name"
-        fi
+    if [[ -n "$name" && "$(basename -- "$file")" != "$name" ]]; then
+        execute "mv -- '$file' '$tmpdir/$name'" || { err "renaming [$file] to [$tmpdir/$name] failed"; return 1; }
+        file="$tmpdir/$name"
     fi
 
     if [[ "$skipadd" != 1 ]]; then
@@ -2722,26 +2720,16 @@ install_from_any() {
 #}
 
 
-# Fetch a .deb file from given github /releases page, and install it
-#
-# $1 - git user
-# $2 - git repo
-# $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
-install_deb_from_git() {
-    local deb
-
-    deb="$(fetch_release_from_git "$1" "$2" "$3")" || return 1
-    install_file "$deb" || return 1
-}
-
-
 # Fetch and extract a tarball from given github /releases page.
 # Whether extraction is done into $PWD or a new tmpdir, is controlled via -S option.
 #
 # Also note the operation is successful only if a single directory gets extracted out.
 #
-#   -S     see doc on extract_tarball()
-#   -T|Z   see doc on fetch_release_from_git()
+#   -I path  install extracted dir on given path; note desctructive - path is replaced
+#            mutually exclusive w/ -S
+#   -S       see doc on extract_tarball()
+#            mutually exclusive w/ -I
+#   -T|Z     see doc on fetch_release_from_git()
 #
 # $1 - git user
 # $2 - git repo
@@ -2751,19 +2739,38 @@ install_deb_from_git() {
 #                   _single_ dir in the result.
 # @returns {bool} true, if we found a _single_ dir in result
 fetch_extract_tarball_from_git() {
-    local opt i OPTIND standalone downstream_opts
+    local extract_opts fetch_rls_opts opt i OPTIND install_target
 
-    while getopts 'STZ' opt; do
+    extract_opts=()
+    fetch_rls_opts=(-U)
+
+    while getopts 'STZI:' opt; do
         case "$opt" in
-            S) standalone='-S' ;;
-            T|Z) downstream_opts+="$opt" ;;
+            S) extract_opts+=(-S) ;;
+            I) install_target="$OPTARG" ;;  # destructive!
+            T|Z) fetch_rls_opts+=("-$opt") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
-    i="$(fetch_release_from_git -U$downstream_opts "$1" "$2" "$3")" || return $?
-    extract_tarball  $standalone "$i"
+    # TODO: afaik we call extract_tarball() sparately as fetch_release_from_git()
+    #       itself invokes  extract_tarball with  -s  flag
+    i="$(fetch_release_from_git "${fetch_rls_opts[@]}" "$1" "$2" "$3")" || return $?
+    i="$(extract_tarball "${extract_opts[@]}" "$i")" || return $?
+
+    if [[ -z "$install_target" ]]; then
+        echo "$i"
+        return 0
+    fi
+
+    [[ "$install_target" == */* ]] || { err "expected to see a subpath in install_target, but it was [$install_target]"; return 1; }  # sanity
+    [[ -d "$(dirname -- "$install_target")" ]] || { err "install_target parent dir should exist - [$install_target]"; return 1; }  # sanity
+
+    [[ -d "$install_target" ]] && { execute "rm -rf -- '$install_target'" || return 1; }
+    execute "mv -- '$i' '$install_target'" || return 1
+
+    return 0
 }
 
 
@@ -2861,12 +2868,21 @@ extract_tarball() {
 
 
 # Fetch a file from given github /releases page, and install the binary
+# Convenience function.
+install_bin_from_git() {
+    # as to why we include 'sharedlib', see https://gitlab.freedesktop.org/xdg/shared-mime-info/-/issues/11 (e.g. some rust binaries are like that)
+    install_from_git -f 'application/x-(pie-)?(sharedlib|executable)' "$@"
+}
+
+
+# common gh installer
 #
 # TODO: see https://github.com/houseabsolute/ubi
 #       and https://github.com/aquaproj/aqua
 #
 # -U                - do not upack the compressed/archived asset
-# -A                - install file as-is, do not derive method from mime
+# -A                - install file as-is, do not derive method from mime;
+#                     implies -U
 # -O, -P            - see install_file()
 # -d /target/dir    - dir to install pulled binary in, optional
 # -N binary_name    - what to name pulled binary to, optional
@@ -2874,18 +2890,17 @@ extract_tarball() {
 # $1 - git user
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
-install_bin_from_git() {
+install_from_git() {
     local opt bin name OPTIND fetch_git_args install_file_args
 
-    # as to why we include 'sharedlib', see https://gitlab.freedesktop.org/xdg/shared-mime-info/-/issues/11 (e.g. some rust binaries are like that)
-    fetch_git_args=(-f 'application/x-(pie-)?(sharedlib|executable)')
     declare -a install_file_args
 
     while getopts 'UAN:n:f:O:P:d:' opt; do
         case "$opt" in
             U) install_file_args+=("-$opt")
                fetch_git_args+=("-$opt") ;;
-            A) install_file_args+=("-$opt") ;;
+            A) install_file_args+=("-$opt")
+               fetch_git_args+=(-U) ;;
             N) name="$OPTARG" ;;
             O|P|d) install_file_args+=("-$opt" "$OPTARG") ;;
             n|f) fetch_git_args+=("-$opt" "$OPTARG") ;;
@@ -2913,7 +2928,7 @@ install_slides() {  # https://github.com/maaslalani/slides
 # another alternative: https://github.com/getstation/desktop-app
 #                      https://github.com/beeper <- selfhostable built on matrix?
 install_ferdium() {  # https://github.com/ferdium/ferdium-app
-    #install_deb_from_git ferdium ferdium-app '-amd64.deb'
+    #install_from_git ferdium ferdium-app '-amd64.deb'
     install_bin_from_git -N ferdium ferdium ferdium-app 'x86_64.AppImage'
 }
 
@@ -2943,7 +2958,7 @@ install_seafile_gui() {
 #
 # also avail in apt, and as appimage
 install_xournalpp() {  # https://github.com/xournalpp/xournalpp
-    install_deb_from_git xournalpp xournalpp 'Debian-.*x86_64.deb'
+    install_from_git xournalpp xournalpp 'Debian-.*x86_64.deb'
     #install_bin_from_git -N xournalpp xournalpp xournalpp '-x86_64.AppImage'
 }
 
@@ -3094,8 +3109,8 @@ install_file() {
             n) name_filter="$OPTARG" ;;  # no use if -D or -U is used
             O) owner="$OPTARG" ;;  # chown
             P) perms="$OPTARG" ;;  # chmod
-            A) asis=TRUE ;;  # install file as-is, do not derive method from mime
-                             # TODO: should this imply -U?
+            A) asis=TRUE       # install file as-is, do not derive method from mime;
+               noextract=1 ;;  # note -U is implied
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -3167,7 +3182,7 @@ install_zoom() {  # https://zoom.us/download
 # also avail in apt
 install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
     #install_bin_from_git -N zoxide ajeetdsouza zoxide '-x86_64-unknown-linux-musl.tar.gz'
-    install_deb_from_git ajeetdsouza zoxide '_amd64.deb'
+    install_from_git ajeetdsouza zoxide '_amd64.deb'
 }
 
 
@@ -3228,7 +3243,7 @@ install_coursier() {  # https://github.com/coursier/coursier
 
 # also avail in apt
 install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
-    install_deb_from_git BurntSushi ripgrep _amd64.deb
+    install_from_git BurntSushi ripgrep _amd64.deb
 }
 
 
@@ -3241,7 +3256,7 @@ install_rga() {  # https://github.com/phiresky/ripgrep-all#debian-based
 
 # headless firefox in a terminal
 install_browsh() {  # https://github.com/browsh-org/browsh
-    install_deb_from_git browsh-org browsh _linux_amd64.deb
+    install_from_git browsh-org browsh _linux_amd64.deb
 }
 
 install_saml2aws() {  # https://github.com/Versent/saml2aws
@@ -3295,7 +3310,7 @@ install_popeye() {  # https://github.com/derailed/popeye
 #
 # TODO: octant development halted, it's deprecated
 install_octant() {  # https://github.com/vmware-tanzu/octant
-    install_deb_from_git  vmware-tanzu  octant  _Linux-64bit.deb
+    install_from_git  vmware-tanzu  octant  _Linux-64bit.deb
 }
 
 # kubernetes (k8s) operations - Production Grade K8s Installation, Upgrades, and Management
@@ -3345,7 +3360,7 @@ install_kube_ps1() {  # https://github.com/jonmosco/kube-ps1
 # tag: aws
 # note also installable via mise
 install_sops() {  # https://github.com/getsops/sops
-    install_deb_from_git  getsops sops _amd64.deb
+    install_from_git  getsops sops _amd64.deb
 }
 
 
@@ -3398,15 +3413,13 @@ install_buku_related() {
 # https://github.com/dbeaver/dbeaver/wiki/Installation#debian-package
 install_dbeaver() {  # https://dbeaver.io/download/
     #install_from_url  dbeaver 'https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb'
-    #install_deb_from_git  dbeaver dbeaver '_amd64.deb'
+    #install_from_git  dbeaver dbeaver '_amd64.deb'
 
     # alternatively, unrar the tarball:
-    local target dir
+    local target
     target="$BASE_PROGS_DIR/dbeaver"
-    dir="$(fetch_extract_tarball_from_git dbeaver dbeaver 'linux.gtk.x86_64-nojdk.tar.gz')" || return 1
 
-    [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }
-    execute "mv -- '$dir' '$target'" || return 1
+    fetch_extract_tarball_from_git -I "$target" dbeaver dbeaver 'linux.gtk.x86_64-nojdk.tar.gz' || return 1
     create_link "$target/dbeaver" "$HOME/bin/dbeaver"
 }
 
@@ -3479,7 +3492,7 @@ install_vnote() {  # https://github.com/vnotex/vnote/releases
 
 # note there's this for vim: https://github.com/epwalsh/obsidian.nvim
 install_obsidian() {  # https://github.com/obsidianmd/obsidian-releases/releases
-    #install_deb_from_git  obsidianmd  obsidian-releases '_amd64.deb'
+    #install_from_git  obsidianmd  obsidian-releases '_amd64.deb'
     install_bin_from_git -N Obsidian obsidianmd  obsidian-releases '-[0-9.]{6,}AppImage'  # make sure to dodge the arm64 appimage
 }
 
@@ -3508,7 +3521,7 @@ Categories=Development;
 
 # https://github.com/advanced-rest-client/arc-electron/releases/latest
 install_arc() {
-    #install_deb_from_git  advanced-rest-client  arc-electron '-amd64.deb'
+    #install_from_git  advanced-rest-client  arc-electron '-amd64.deb'
     install_bin_from_git -N arc advanced-rest-client  arc-electron 'x86_64.AppImage'
 }
 
@@ -3528,7 +3541,7 @@ install_arc() {
 install_bruno() {
     install_bin_from_git -N bruno usebruno  bruno  _x86_64_linux.AppImage
     # or deb:
-    #install_deb_from_git  usebruno  bruno '_amd64_linux.deb'
+    #install_from_git  usebruno  bruno '_amd64_linux.deb'
 }
 
 
@@ -3637,7 +3650,7 @@ install_weechat_matrix_rs() {  # https://github.com/poljar/weechat-matrix-rs
 
 # go-based matrix client
 install_gomuks() {  # https://github.com/gomuks/gomuks
-    #install_deb_from_git gomuks gomuks _amd64.deb
+    #install_from_git gomuks gomuks _amd64.deb
     install_bin_from_git -N gomuks gomuks gomuks  gomuks-linux-amd64
 }
 
@@ -3729,14 +3742,10 @@ install_eclipse_mem_analyzer() {
 
 # lightweight profiling, both for dev & production. see https://visualvm.github.io/
 install_visualvm() {  # https://github.com/oracle/visualvm
-    local target dir
-
+    local target
     target="$BASE_PROGS_DIR/visualvm"
 
-    dir="$(fetch_extract_tarball_from_git oracle visualvm 'visualvm_[-0-9.]+\\.zip')" || return 1
-
-    [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }
-    execute "mv -- '$dir' '$target'" || return 1
+    fetch_extract_tarball_from_git -I "$target" oracle visualvm 'visualvm_[-0-9.]+\\.zip' || return 1
     create_link "$target/bin/visualvm" "$HOME/bin/visualvm"
 }
 
@@ -3752,7 +3761,7 @@ _setup_minikube() {  # TODO: unfinished
 # https://github.com/kubernetes/minikube
 install_minikube() {  # https://minikube.sigs.k8s.io/docs/start/
     # from github releases...:
-    #install_deb_from_git  kubernetes  minikube  'minikube_[-0-9.]+.*_amd64.deb'
+    #install_from_git  kubernetes  minikube  'minikube_[-0-9.]+.*_amd64.deb'
     install_bin_from_git -N minikube kubernetes  minikube  'minikube-linux-amd64'
 
     # ...or from k8s page:  (https://minikube.sigs.k8s.io/docs/start/):
@@ -3764,7 +3773,7 @@ install_minikube() {  # https://minikube.sigs.k8s.io/docs/start/
 
 # found as apt fd-find package, but executable is named fdfind not fd!
 install_fd() {  # https://github.com/sharkdp/fd
-    #install_deb_from_git sharkdp fd 'fd_[-0-9.]+_amd64.deb'
+    #install_from_git sharkdp fd 'fd_[-0-9.]+_amd64.deb'
     install_bin_from_git -N fd sharkdp fd  'x86_64-unknown-linux-gnu.tar.gz'
 }
 
@@ -3777,7 +3786,7 @@ install_jd() {  # https://github.com/josephburnett/jd
 
 # see also https://github.com/eth-p/bat-extras/blob/master/README.md#installation
 install_bat() {  # https://github.com/sharkdp/bat
-    #install_deb_from_git sharkdp bat 'bat_[-0-9.]+_amd64.deb'
+    #install_from_git sharkdp bat 'bat_[-0-9.]+_amd64.deb'
     install_bin_from_git -N bat sharkdp bat 'x86_64-unknown-linux-gnu.tar.gz'
 }
 
@@ -3817,14 +3826,14 @@ install_peco() {  # https://github.com/peco/peco#installation
 #
 # https://dandavison.github.io/delta/installation.html
 install_delta() {  # https://github.com/dandavison/delta
-    #install_deb_from_git  dandavison  delta  'git-delta_.*_amd64.deb'
+    #install_from_git  dandavison  delta  'git-delta_.*_amd64.deb'
     install_bin_from_git -N delta dandavison  delta  'x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
 # ncdu-like FS usage viewer, in rust (name is 'du + rust')
 install_dust() {  # https://github.com/bootandy/dust
-    #install_deb_from_git  bootandy  dust  '_amd64.deb'
+    #install_from_git  bootandy  dust  '_amd64.deb'
     install_bin_from_git -N dust  bootandy  dust 'x86_64-unknown-linux-gnu.tar.gz'
 }
 
@@ -6507,8 +6516,8 @@ install_revanced() {
     d="$BASE_PROGS_DIR/revanced"
     [[ -d "$d" ]] || mkdir "$d"
 
-    install_bin_from_git -UA -N revanced.jar -d "$d"  ReVanced  revanced-cli 'all.jar'
-    install_bin_from_git -UA -N patches.rvp  -d "$d"  ReVanced  revanced-patches  'patches-.*.rvp'
+    install_bin_from_git -A -N revanced.jar -d "$d"  ReVanced  revanced-cli 'all.jar'
+    install_bin_from_git -A -N patches.rvp  -d "$d"  ReVanced  revanced-patches  'patches-.*.rvp'
 }
 
 
@@ -6517,7 +6526,7 @@ install_apkeditor() {
     d="$BASE_PROGS_DIR/apkeditor"
     [[ -d "$d" ]] || mkdir "$d"
 
-    install_bin_from_git -UA -N apkeditor.jar -d "$d"  REAndroid  APKEditor 'APKEditor-.*.jar'
+    install_bin_from_git -A -N apkeditor.jar -d "$d"  REAndroid  APKEditor 'APKEditor-.*.jar'
 }
 
 
