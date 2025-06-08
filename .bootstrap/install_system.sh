@@ -2386,6 +2386,7 @@ install_own_builds() {
     install_jd
     install_bat
     install_btop
+    install_procs
     #install_alacritty
     install_wezterm
     install_croc
@@ -2500,6 +2501,17 @@ fetch_release_from_git() {
 
 # common logic for both fetch_release_from_{git,any}()
 # TODO: as of '25 only user is fetch_release_from_git()
+#
+#
+#
+#
+#
+# TODO: try to add install path in here??
+#
+#
+#
+#
+#
 _fetch_release_common() {
     local opt extract_opts noextract skipadd id ver dl_url name tmpdir file OPTIND
 
@@ -2527,7 +2539,7 @@ _fetch_release_common() {
     report "fetching [$dl_url]..."
     execute "wget --user-agent='$USER_AGENT' --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
     file="$(find "$tmpdir" -type f)"
-    [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
+    [[ -s "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
     if [[ "$noextract" != 1 ]] && file --brief "$file" | grep -qiE 'archive|compressed'; then
         file="$(extract_tarball "${extract_opts[@]}" "$file")" || return 1
@@ -2665,7 +2677,7 @@ install_from_any() {
     tmpdir="$(mktemp -d "install-from-any-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     execute "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
     f="$(find "$tmpdir" -type f)"
-    [[ -f "$f" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
+    [[ -s "$f" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
     install_file "${install_file_args[@]}" "$f" "$name" || return 1
 
@@ -2776,7 +2788,7 @@ extract_tarball() {
     fi
 
     [[ -f "$file" ]] || { err "file [$file] not a regular file"; return 1; }
-    [[ -n "$file_filter" || -n "$name_filter" ]] && [[ "$dir_only" == 1 ]] || { err "[fnD] options are mutually exclusive"; return 1; }
+    [[ -n "$file_filter" || -n "$name_filter" ]] && [[ "$dir_only" == 1 ]] && { err "[fnD] options are mutually exclusive"; return 1; }
     file --brief "$file" | grep -qiE 'archive|compressed' || { err "[$file] is not an archive, cannot decompress"; return 1; }
 
     if [[ "$standalone" != 1 ]]; then
@@ -2883,6 +2895,12 @@ install_slides() {  # https://github.com/maaslalani/slides
 install_ferdium() {  # https://github.com/ferdium/ferdium-app
     #install_from_git ferdium ferdium-app '-amd64.deb'
     install_bin_from_git -N ferdium ferdium ferdium-app 'x86_64.AppImage'
+}
+
+
+# also avail as flatpak
+install_freetube() {  # https://github.com/FreeTubeApp/FreeTube
+    install_bin_from_git -N freetube FreeTubeApp FreeTube 'amd64.AppImage'
 }
 
 
@@ -3008,7 +3026,7 @@ install_from_url() {
     tmpdir="$(mktemp -d "install-from-url-${name}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
     execute "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$loc'" || { err "wgetting [$loc] failed with $?"; return 1; }
     file="$(find "$tmpdir" -type f)"
-    [[ -f "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
+    [[ -s "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
     install_file "${opts[@]}" -d "$target" "$file" "$name" || return 1
 
@@ -3179,6 +3197,13 @@ install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instruc
 
     add_to_dl_log  "$name" "$ver"
     return 0
+}
+
+
+
+# Lisp Flavoured Erlang (LFE)
+install_lfe() {  # https://github.com/lfe/lfe
+    true
 }
 
 
@@ -3746,6 +3771,15 @@ install_bat() {  # https://github.com/sharkdp/bat
 
 install_btop() {  # https://github.com/aristocratos/btop
     install_bin_from_git -N btop aristocratos btop  'btop-x86_64-linux-musl.tbz'
+}
+
+
+# rust replacement for ps
+# also avail in apt
+# read https://github.com/dalance/procs#usage
+#
+install_procs() {  # https://github.com/dalance/procs
+    install_bin_from_git -N procs dalance procs  'x86_64-linux.zip'
 }
 
 
@@ -5367,7 +5401,7 @@ install_from_repo() {
         zathura  # https://github.com/pwmt/zathura
         #mupdf  # more featureful pdf viewer
         feh  # TODO x11; TODO: wallpaper_changer.sh dependency; https://github.com/derf/feh/ (mirror)
-        nsxiv  # TODO: x11
+        nsxiv  # TODO: x11; # TODO: consider imv that supports both wayland & x11
         geeqie  # GTK-based image/gallery viewer
         gthumb  # gnome image viewer
         imagemagick
@@ -5663,12 +5697,38 @@ install_cpu_microcode_pkg() {
 # TODO:
 # - if we use snapper, add it to PRUNEPATHS of configure_updatedb()
 setup_btrfs() {
-    grep -qE '\bbtrfs\b' /etc/fstab || return 0
+    if is_btrfs; then
+        # TODO: do we need to set up btrfsmaintenance? think we need to manually schedule it, e.g. scrub
+        install_block 'btrfsmaintenance btrfs-progs'
 
-    # TODO: do we need to set up btrfsmaintenance? think we need to manually schedule it, e.g. scrub
-    install_block 'btrfsmaintenance btrfs-progs'
+        _setup_snapper
+    else
+        true # TODO: verify we don't leave in some btrfs-specifics!
+    fi
+}
 
-    _setup_snapper
+
+_setup_podman() {
+    local conf user_conf
+
+    conf='/etc/containers/storage.conf'
+    user_conf="$HOME/.config/containers/storage.conf"
+
+    [[ -f "$conf" ]] || { err "[$conf] is not a valid file. is podman installed?"; return 1; }
+
+    if is_btrfs; then
+        # podman-system-reset needs to be ran before changing certain conf items: https://docs.podman.io/en/latest/markdown/podman-system-reset.1.html
+        execute 'podman system reset'  # for rootless
+        execute 'sudo podman system reset'  # for root
+        # TODO: add following: (use crudini?)
+        #
+        #[storage]
+        #driver = "btrfs"
+
+    else
+        grep -qE btrfs "$conf" && err "[btrfs] in podman system conf [$conf] but we're not using btrfs!"
+        grep -qE btrfs "$user_conf" && err "[btrfs] in podman user conf [$user_conf] but we're not using btrfs!"
+    fi
 }
 
 
@@ -5952,6 +6012,7 @@ __choose_prog_to_build() {
         install_seafile_cli
         install_seafile_gui
         install_ferdium
+        install_freetube
         install_zoom
         install_xournalpp
         install_zoxide
@@ -5969,6 +6030,7 @@ __choose_prog_to_build() {
         install_jd
         install_bat
         install_btop
+        install_procs
         install_eza
         install_delta
         install_dust
@@ -7425,6 +7487,12 @@ is_native() {
 }
 
 
+# whether we're using BTRFS
+is_btrfs() {
+    grep -qE '\bbtrfs\b' /etc/fstab
+}
+
+
 is_64_bit() {
     # also could do  $ [[ "$(dpkg --print-architecture)" == amd64 ]]
     [[ "$(uname -m)" == x86_64 ]]
@@ -7956,6 +8024,23 @@ exit 0
 #  - consider installing & setting up logwatch & fwlogwatch
 #  - consider using Timeshift creator's tinytools: https://teejeetech.com/tinytools/
 #  - instead of mv/cp, start using install; e.g.:  $ install -m644 clojure-tools/deps.edn "$clojure_lib_dir/deps.edn"
+#  - consider migrating most of installations over to mise
+#  - consider zsh:
+#    - w/ p10k prompt
+#    - _if_ we go for plugin mngr, check out zinit
+#      - or zim: https://github.com/zimfw/zimfw
+#      - of better yet, no manager: https://github.com/mattmc3/zsh_unplugged
+#        - see also https://www.reddit.com/r/zsh/comments/1etl9mz/fastest_plugin_manager/lie04dt/
+#  - 'sides zsh, maybe fish or nushell
+#    - loads of traction, x-platform, looks interesting
+#    - other interesting interactive shells:
+#      - elvish
+#      - murex
+#      - see also pharo: https://github.com/pharo-project/pharo (smalltalk-like lang with a repl/ide tooling)
+#  - for shell: consider
+#    - ble.sh (readline alternative for bash)
+#      - be sure to test for input lag
+#    - atuin (shell agnostic history nicety)
 #
 #
 # list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/
