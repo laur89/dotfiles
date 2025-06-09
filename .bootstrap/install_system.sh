@@ -2058,7 +2058,7 @@ setup_additional_apt_keys_and_sources() {
     create_apt_source -a  opentofu  https://get.opentofu.org/opentofu.gpg,https://packages.opentofu.org/opentofu/tofu/gpgkey  https://packages.opentofu.org/opentofu/tofu/any/ any main
 
     # openvpn3:  (from https://openvpn.net/cloud-docs/openvpn-3-client-for-linux/):
-    #create_apt_source -a  openvpn  https://swupdate.openvpn.net/repos/openvpn-repo-pkg-key.pub  https://swupdate.openvpn.net/community/openvpn3/repos/ $DEB_OLDSTABLE main
+    #create_apt_source -a  openvpn  https://packages.openvpn.net/packages-repo.gpg  https://packages.openvpn.net/openvpn3/debian $STABLE main
 
     # signal: (from https://signal.org/en/download/):
     create_apt_source -a  signal  https://updates.signal.org/desktop/apt/keys.asc  https://updates.signal.org/desktop/apt/ xenial main
@@ -3068,49 +3068,54 @@ install_file() {
     name="$2"  # OPTIONAL, unless installing whole uncompressed dir (-D opt)
 
     [[ -f "$file"  || -d "$file" ]] || { err "file [$file] not a regular file or dir"; return 1; }
-    [[ -d "$target" ]] || { err "[$target] not a dir, can't install [${name:+$name///}$file]"; return 1; }
+    [[ -d "$target" ]] || { err "target installation dir [$target] not a dir, can't install [${name:+$name///}$file]"; return 1; }
+    if list_contains '-f' "${extract_opts[@]}" || list_contains '-n' "${extract_opts[@]}"; then
+        if list_contains '-D' "${extract_opts[@]}" || list_contains '-U' "${extract_opts[@]}"; then
+            err '[fn|DU] options are mutually exclusive'
+            return 1
+        fi
+    fi
 
     if [[ "$noextract" != 1 ]] && file --brief "$file" | grep -qiE 'archive|compressed'; then
         file="$(extract_tarball "${extract_opts[@]}" "$file")" || return 1
     fi
 
-    _rename() {
-        local tmpdir
-        if [[ -n "$name" && "$(basename -- "$file")" != "$name" ]]; then
+    _process() {
+        if [[ -n "$name" && "$(basename -- "$file")" != "$name" ]]; then  # check if rename is needed
+            local tmpdir
             tmpdir="$(mktemp -d "install-file-${name}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
             execute "mv -- '$file' '$tmpdir/$name'" || { err "renaming [$file] to [$tmpdir/$name] failed"; return 1; }
             file="$tmpdir/$name"
         fi
 
         _owner_perms
-        return 0
     }
 
     _owner_perms() {
         if [[ -n "$owner" ]]; then
-            execute "sudo chown -R -- $owner  $file" || return 1
+            execute "sudo chown -R -- '$owner' '$file'" || return 1
         fi
         if [[ -n "$perms" ]]; then
-            execute "sudo chmod -R -- $perms  $file" || return 1
+            execute "sudo chmod -R -- '$perms' '$file'" || return 1
         fi
     }
 
     [[ -n "$asis" ]] && ftype='text/plain; charset=' || ftype="$(file -iLb -- "$file")"  # mock as-is filetype to enable simple file move logic
 
     if [[ "$ftype" == 'text/plain; charset='* ]]; then  # same as executable/binary above, but do not set executable flag
-        _rename || return 1
+        _process || return 1
         execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
-    elif [[ "$ftype" == *"inode/directory; charset=binary" ]]; then
+    elif [[ "$ftype" == *'inode/directory; charset=binary' ]]; then
         [[ -z "$name" ]] && { err "[name] arg needs to be provided when installing a directory"; return 1; }
-        _rename || return 1
+        _process || return 1
         target+="/$name"
         [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }  # rm previous installation
         execute "mv -- '$file' '$target'" || return 1
     elif [[ "$ftype" == *'executable; charset=binary' || "$ftype" == 'text/x-shellscript; charset='* ]]; then
         execute "chmod +x '$file'" || return 1
-        _rename || return 1
+        _process || return 1
         execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
-    elif [[ "$ftype" == *"debian.binary-package; charset=binary" ]]; then
+    elif [[ "$ftype" == *'debian.binary-package; charset=binary' ]]; then
         execute "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
         execute "rm -f -- '$file'"
     else
@@ -3118,6 +3123,7 @@ install_file() {
         execute "rm -f -- '$file'"
         return 1
     fi
+    unset _process _owner_perms
 }
 
 
@@ -3142,9 +3148,9 @@ install_fzf() {
 
 
 # currently installing via apt
-install_nushell() {
-    install_bin_from_git -N nu nushell nushell  'x86_64-unknown-linux-gnu.tar.gz'
-}
+#install_nushell() {
+    #install_bin_from_git -N nu nushell nushell  'x86_64-unknown-linux-gnu.tar.gz'
+#}
 
 
 # TODO: looks like after initial installation apt keeps updating it automatically?!
