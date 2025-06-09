@@ -2494,8 +2494,8 @@ fetch_release_from_git() {
 
     [[ -z "$selector" ]] && selector=".assets[] | select(.name|test(\"$3\$\")) | .browser_download_url"
     readonly loc="https://api.github.com/repos/$1/$2/releases/latest"
-    dl_url="$(curl -fsSL "$loc" | jq -er "$selector")" || { err "asset url resolution from [$loc] failed w/ $?"; return 1; }
-    readonly id="github-$1-$2${4:+-$4}"  # note we append name to the id when defined (same repo might contain multiple binaries)
+    dl_url="$(curl -fsSL "$loc" | jq -er "$selector")" || { err "asset url resolution from [$loc] via selector [$selector] failed w/ $?"; return 1; }
+    readonly id="github-$1-$2${4:+-$4}"  # note we append name to the id when defined (same repo might contain multiple binaries we're installing)
 
     is_valid_url "$dl_url" || { err "resolved url for ${id} is improper: [$dl_url]; aborting"; return 1; }
     _fetch_release_common "${opts[@]}" "$id" "$dl_url" "$dl_url" "$4"
@@ -2690,8 +2690,6 @@ install_from_any() {
 # Also note the operation is successful only if a single directory gets extracted out.
 #
 #   -T|Z     see doc on fetch_release_from_git()
-#   -I path  install extracted dir on given path; note desctructive - path is replaced!
-#            mutually exclusive w/ -S
 #
 # $1 - git user
 # $2 - git repo
@@ -2700,37 +2698,20 @@ install_from_any() {
 # @returns {string} path to root dir of extraction result, IF we found a
 #                   _single_ dir in the result.
 # @returns {bool} true, if we found a _single_ dir in result
-#
-# TODO: try to merge w/ install_from_git() (assuming we get the extract method and
-#       it's -s flag sorted)
 fetch_extract_tarball_from_git() {
-    local fetch_rls_opts opt i OPTIND install_target
+    local fetch_rls_opts opt OPTIND
 
     fetch_rls_opts=(-D)
 
-    while getopts 'TZI:' opt; do
+    while getopts 'TZ' opt; do
         case "$opt" in
             T|Z) fetch_rls_opts+=("-$opt") ;;
-            I) install_target="$OPTARG" ;;  # destructive!
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
-    i="$(fetch_release_from_git "${fetch_rls_opts[@]}" "$1" "$2" "$3")" || return $?
-
-    if [[ -z "$install_target" ]]; then
-        echo "$i"
-        return 0
-    fi
-
-    [[ "$install_target" == */* ]] || { err "expected to see a subpath in install_target, but it was [$install_target]"; return 1; }  # sanity
-    [[ -d "$(dirname -- "$install_target")" ]] || { err "install_target parent dir should exist - [$install_target]"; return 1; }  # sanity
-
-    [[ -d "$install_target" ]] && { execute "rm -rf -- '$install_target'" || return 1; }
-    execute "mv -- '$i' '$install_target'" || return 1
-
-    return 0
+    fetch_release_from_git "${fetch_rls_opts[@]}" "$1" "$2" "$3" || return $?
 }
 
 
@@ -2841,13 +2822,13 @@ install_bin_from_git() {
 # TODO: see https://github.com/houseabsolute/ubi
 #       and https://github.com/aquaproj/aqua
 #
-# -U                - do not upack the compressed/archived asset
-# -A                - install file as-is, do not derive method from mime;
-#                     implies -U
-# -O, -P            - see install_file()
-# -d /target/dir    - dir to install pulled binary in, optional
-# -N name           - what to name pulled file to, optional, but recommended
-# -n, -f            - see fetch_release_from_git()
+# -U                 - do not upack the compressed/archived asset
+# -A                 - install file as-is, do not derive method from mime;
+#                      implies -U
+# -O, -P             - see install_file()
+# -d /target/dir     - dir to install pulled binary in, optional
+# -N name            - what to name pulled file to, optional, but recommended
+# -n, -f, -T, -Z, -D - see fetch_release_from_git()
 # $1 - git user
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
@@ -2856,22 +2837,23 @@ install_from_git() {
 
     declare -a install_file_args
 
-    while getopts 'UAN:n:f:O:P:d:' opt; do
+    while getopts 'UDAN:O:P:d:n:f:TZ' opt; do
         case "$opt" in
-            U) install_file_args+=("-$opt")
-               fetch_git_args+=("-$opt") ;;
+            U|D) install_file_args+=("-$opt")
+                 fetch_git_args+=("-$opt") ;;
             A) install_file_args+=("-$opt")
                fetch_git_args+=(-U) ;;
             N) name="$OPTARG" ;;
             O|P|d) install_file_args+=("-$opt" "$OPTARG") ;;
             n|f) fetch_git_args+=("-$opt" "$OPTARG") ;;
+            T|Z) fetch_git_args+=("-$opt") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
     bin="$(fetch_release_from_git "${fetch_git_args[@]}" "$1" "$2" "$3" "$name")" || return 1
-    install_file "${install_file_args[@]}" "$bin" || return 1
+    install_file "${install_file_args[@]}" "$bin" "$name" || return 1
 }
 
 
@@ -3085,7 +3067,7 @@ install_file() {
     file="$1"
     name="$2"  # OPTIONAL, unless installing whole uncompressed dir (-D opt)
 
-    [[ -f "$file" ]] || { err "file [$file] not a regular file"; return 1; }
+    [[ -f "$file"  || -d "$file" ]] || { err "file [$file] not a regular file or dir"; return 1; }
     [[ -d "$target" ]] || { err "[$target] not a dir, can't install [${name:+$name///}$file]"; return 1; }
 
     if [[ "$noextract" != 1 ]] && file --brief "$file" | grep -qiE 'archive|compressed'; then
@@ -3118,19 +3100,19 @@ install_file() {
     if [[ "$ftype" == 'text/plain; charset='* ]]; then  # same as executable/binary above, but do not set executable flag
         _rename || return 1
         execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
-    elif [[ "$ftype" == *"debian.binary-package; charset=binary" ]]; then
-        execute "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
-        execute "rm -f -- '$file'"
-    elif [[ "$ftype" == *'executable; charset=binary' || "$ftype" == 'text/x-shellscript; charset='* ]]; then
-        execute "chmod +x '$file'" || return 1
-        _rename || return 1
-        execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
     elif [[ "$ftype" == *"inode/directory; charset=binary" ]]; then
         [[ -z "$name" ]] && { err "[name] arg needs to be provided when installing a directory"; return 1; }
         _rename || return 1
         target+="/$name"
         [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }  # rm previous installation
         execute "mv -- '$file' '$target'" || return 1
+    elif [[ "$ftype" == *'executable; charset=binary' || "$ftype" == 'text/x-shellscript; charset='* ]]; then
+        execute "chmod +x '$file'" || return 1
+        _rename || return 1
+        execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
+    elif [[ "$ftype" == *"debian.binary-package; charset=binary" ]]; then
+        execute "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
+        execute "rm -f -- '$file'"
     else
         err "dunno how to install file [$file] - unknown type [$ftype]"
         execute "rm -f -- '$file'"
@@ -3395,11 +3377,8 @@ install_dbeaver() {  # https://dbeaver.io/download/
     #install_from_git  dbeaver dbeaver '_amd64.deb'
 
     # alternatively, unrar the tarball:
-    local target
-    target="$BASE_PROGS_DIR/dbeaver"
-
-    fetch_extract_tarball_from_git -I "$target" dbeaver dbeaver 'linux.gtk.x86_64-nojdk.tar.gz' || return 1
-    create_link "$target/dbeaver" "$HOME/bin/dbeaver"
+    install_from_git -D -d "$BASE_PROGS_DIR" -N dbeaver  dbeaver dbeaver 'linux.gtk.x86_64-nojdk.tar.gz' || return 1
+    create_link "$BASE_PROGS_DIR/dbeaver/dbeaver" "$HOME/bin/dbeaver"
 }
 
 
@@ -3721,11 +3700,8 @@ install_eclipse_mem_analyzer() {
 
 # lightweight profiling, both for dev & production. see https://visualvm.github.io/
 install_visualvm() {  # https://github.com/oracle/visualvm
-    local target
-    target="$BASE_PROGS_DIR/visualvm"
-
-    fetch_extract_tarball_from_git -I "$target" oracle visualvm 'visualvm_[-0-9.]+\\.zip' || return 1
-    create_link "$target/bin/visualvm" "$HOME/bin/visualvm"
+    install_from_git -D -d "$BASE_PROGS_DIR" -N visualvm  oracle visualvm 'visualvm_[-0-9.]+\\.zip' || return 1
+    create_link "$BASE_PROGS_DIR/visualvm/bin/visualvm" "$HOME/bin/visualvm"
 }
 
 
@@ -5406,7 +5382,7 @@ install_from_repo() {
         geeqie  # GTK-based image/gallery viewer
         gthumb  # gnome image viewer
         imagemagick
-        inkscape  # vector-based drawing program  # TODO: avail as flatpak
+        inkscape  # vector-based drawing program  # TODO: avail as flatpak; alternatives: graphite (for raster AND vector)
         xsel  # TODO: x11
         wmctrl  # CLI tool to interact with an EWMH/NetWM compatible X Window Manager; TODO: x11; wayland alternative might be wlrctl
         polybar  # TODO: x11
@@ -5416,7 +5392,7 @@ install_from_repo() {
         nushell
         shellcheck
         #ranger  # CLI File Manager with VI Key Bindings;  https://ranger.github.io/
-        vifm
+        vifm  # alternatives: yazi
         fastfetch  # takes screenshots of your desktop
         maim  # TODO: x11!  - screenshot.sh depends on it
         flameshot  # https://flameshot.org/
@@ -5719,6 +5695,11 @@ _setup_podman() {
     [[ -f "$conf" ]] || { err "[$conf] is not a valid file. is podman installed?"; return 1; }
 
     if is_btrfs; then
+        if grep -qE btrfs "$conf"; then
+            report "[btrfs] found in [$conf], assuming we're already set up..."
+            return 0  # make idempotent, let's not nuke/reset our existing setup
+        fi
+
         # podman-system-reset needs to be ran before changing certain conf items: https://docs.podman.io/en/latest/markdown/podman-system-reset.1.html
         execute 'podman system reset'  # for rootless
         execute 'sudo podman system reset'  # for root
@@ -6123,6 +6104,7 @@ full_install() {
     is_interactive && is_native && install_nfs_server_or_client
     [[ "$PROFILE" == work ]] && exe_work_funs
     setup_btrfs  # late, so snapper won't create bunch of snapshots due to apt operations
+    _setup_podman
 
     remind_manually_installed_progs
 }
@@ -8009,8 +7991,11 @@ exit 0
 #
 # vifm alternatives:
 #  - https://github.com/jarun/nnn
-#  - https://github.com/dylanaraps/fff - bash file mngr
 #  - https://github.com/gokcehan/lf    - go-based ranger-alike
+#  - https://github.com/sxyazi/yazi    - rust
+#    - tl;dr: better OOTB ux than vifm?
+#    - has zoxide integration?
+#  - https://github.com/dylanaraps/fff - bash file mngr [deprecated]
 #
 #  TODO:
 #  - replace cron w/ systemd timers
@@ -8043,6 +8028,11 @@ exit 0
 #    - ble.sh (readline alternative for bash)
 #      - be sure to test for input lag
 #    - atuin (shell agnostic history nicety)
+#  - window managers:
+#    - gnome has paperWM for scrollable tiling
+#    - niri - another scrollable tiling wm
+#    - scroll - sway-compatible scroller: https://github.com/dawsers/scroll  ! looks cool !!
+#       - alternatively, there's also papersway: https://spwhitton.name/tech/code/papersway/
 #
 #
 # list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/
