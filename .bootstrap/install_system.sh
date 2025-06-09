@@ -2084,6 +2084,9 @@ setup_additional_apt_keys_and_sources() {
     # wezterm: (from https://wezterm.org/install/linux.html):
     create_apt_source  wezterm  https://apt.fury.io/wez/gpg.key  https://apt.fury.io/wez/ '*' '*'
 
+    # nushell: https://www.nushell.sh/book/installation.html#package-managers
+    create_apt_source  nushell  https://apt.fury.io/nushell/gpg.key  https://apt.fury.io/nushell/  /
+
     execute 'sudo apt-get --yes update'
 }
 
@@ -2502,15 +2505,8 @@ fetch_release_from_git() {
 # common logic for both fetch_release_from_{git,any}()
 # TODO: as of '25 only user is fetch_release_from_git()
 #
-#
-#
-#
-#
 # TODO: try to add install path in here??
-#
-#
-#
-#
+#       the pass-through of flags to install_file() is messy tho, so unsure
 #
 _fetch_release_common() {
     local opt extract_opts noextract skipadd id ver dl_url name tmpdir file OPTIND
@@ -3161,6 +3157,12 @@ install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
 # https://github.com/junegunn/fzf
 install_fzf() {
     install_bin_from_git -N fzf junegunn fzf 'linux_amd64.tar.gz'
+}
+
+
+# currently installing via apt
+install_nushell() {
+    install_bin_from_git -N nu nushell nushell  'x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
@@ -5412,6 +5414,7 @@ install_from_repo() {
         xdotool  # TODO: x11 - way not work w/ xwayland! !!! our screenshot.sh depends on it as of '25;  # https://github.com/jordansissel/xdotool/
         python3-xlib  # pure Python 3 implementation of the X11 protocol;  TODO: x11;  https://github.com/python-xlib/python-xlib
         exuberant-ctags  # parses source code and produces a sort of index mapping the names of significant entities (e.g. functions, classes, variables) to the location where that entity is defined
+        nushell
         shellcheck
         #ranger  # CLI File Manager with VI Key Bindings;  https://ranger.github.io/
         vifm
