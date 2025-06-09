@@ -2984,20 +2984,20 @@ resolve_ver() {
 # Fetch a file from given url, and install the binary. If url redirects to final
 # file asset, we follow the redirects.
 #
-# -d /target/dir    - dir to install pulled binary in, optional.
+# -D, -A            - see install_file()
+# -d /target/dir    - see install_file();
+#                     dir to install pulled binary in, optional.
 #                     note if installing whole dirs (-D), it should be the root dir;
 #                     /$name will be created/appended by install_file()
-# -D                - see install_file()
 # $1 - name of the binary/resource
 # $2 - resource url
 install_from_url() {
-    local opt OPTIND target opts name loc file ver tmpdir
+    local opt OPTIND opts name loc file ver tmpdir
 
-    target='/usr/local/bin'  # default
     opts=()
     while getopts 'd:DA' opt; do
         case "$opt" in
-            d) target="$OPTARG" ;;
+            d) opts+=("-$opt" "$OPTARG") ;;
             D|A) opts+=("-$opt") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
@@ -3007,7 +3007,6 @@ install_from_url() {
     readonly name="$1"
     readonly loc="$2"
 
-    [[ -d "$target" ]] || { err "[$target] not a dir, can't install [$name]"; return 1; }
     [[ -z "$name" ]] && { err "[name] param required"; return 1; }
 
     ver="$(resolve_ver "$loc")" || return 1
@@ -3024,7 +3023,7 @@ install_from_url() {
     file="$(find "$tmpdir" -type f)"
     [[ -s "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
-    install_file "${opts[@]}" -d "$target" "$file" "$name" || return 1
+    install_file "${opts[@]}" "$file" "$name" || return 1
 
     add_to_dl_log "$name" "$ver"
 }
@@ -3116,14 +3115,14 @@ install_file() {
 
     [[ -n "$asis" ]] && ftype='text/plain; charset=' || ftype="$(file -iLb -- "$file")"  # mock as-is filetype to enable simple file move logic
 
-    if [[ "$ftype" == *"debian.binary-package; charset=binary" ]]; then
+    if [[ "$ftype" == 'text/plain; charset='* ]]; then  # same as executable/binary above, but do not set executable flag
+        _rename || return 1
+        execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
+    elif [[ "$ftype" == *"debian.binary-package; charset=binary" ]]; then
         execute "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
         execute "rm -f -- '$file'"
     elif [[ "$ftype" == *'executable; charset=binary' || "$ftype" == 'text/x-shellscript; charset='* ]]; then
         execute "chmod +x '$file'" || return 1
-        _rename || return 1
-        execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
-    elif [[ "$ftype" == 'text/plain; charset='* ]]; then  # same as executable/binary above, but do not set executable flag
         _rename || return 1
         execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
     elif [[ "$ftype" == *"inode/directory; charset=binary" ]]; then
@@ -3240,14 +3239,14 @@ install_browsh() {  # https://github.com/browsh-org/browsh
 }
 
 install_saml2aws() {  # https://github.com/Versent/saml2aws
-    install_bin_from_git -N saml2aws -d "$HOME/bin" Versent saml2aws 'saml2aws_[0-9.]+_linux_amd64.tar.gz'
+    install_bin_from_git -N saml2aws Versent saml2aws 'saml2aws_[0-9.]+_linux_amd64.tar.gz'
 }
 
 # kubernetes aws-iam-authenticator (k8s)
 # tag: aws, k8s, kubernetes, auth
                           # https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html
 install_aia() {  # https://github.com/kubernetes-sigs/aws-iam-authenticator
-    install_bin_from_git -N aws-iam-authenticator -d "$HOME/bin" kubernetes-sigs aws-iam-authenticator _linux_amd64
+    install_bin_from_git -N aws-iam-authenticator kubernetes-sigs aws-iam-authenticator _linux_amd64
 }
 
 # kubernetes configuration customizer
@@ -3255,13 +3254,13 @@ install_aia() {  # https://github.com/kubernetes-sigs/aws-iam-authenticator
 #
 # alternatively use the curl-install hack from https://kubectl.docs.kubernetes.io/installation/kustomize/binaries/
 install_kustomize() {  # https://github.com/kubernetes-sigs/kustomize
-    install_bin_from_git -N kustomize -d "$HOME/bin" kubernetes-sigs kustomize _linux_amd64.tar.gz
+    install_bin_from_git -N kustomize kubernetes-sigs kustomize _linux_amd64.tar.gz
 }
 
 # kubernetes (k8s) cli management
 # tag: aws, k8s, kubernetes
 install_k9s() {  # https://github.com/derailed/k9s
-    install_bin_from_git -N k9s -d "$HOME/bin"  derailed  k9s  _linux_amd64.tar.gz
+    install_bin_from_git -N k9s derailed  k9s  _linux_amd64.tar.gz
 }
 
 # krew (kubectl plugins package manager)
@@ -3279,7 +3278,7 @@ install_krew() {  # https://github.com/kubernetes-sigs/krew
 #
 # tag: aws, k8s, kubernetes
 install_popeye() {  # https://github.com/derailed/popeye
-    install_bin_from_git -N popeye -d "$HOME/bin"  derailed  popeye  _linux_amd64.tar.gz
+    install_bin_from_git -N popeye derailed  popeye  _linux_amd64.tar.gz
 }
 
 # kubernetes cluster analyzer for better comprehension (introspective tooling, cluster
@@ -3299,7 +3298,7 @@ install_octant() {  # https://github.com/vmware-tanzu/octant
 #
 # for usecase, see https://medium.com/bench-engineering/deploying-kubernetes-clusters-with-kops-and-terraform-832b89250e8e
 install_kops() {  # https://github.com/kubernetes/kops/
-    install_bin_from_git -N kops -d "$HOME/bin"  kubernetes  kops  kops-linux-amd64
+    install_bin_from_git -N kops kubernetes  kops  kops-linux-amd64
 }
 
 # kubectl:  https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-kubectl-binary-with-curl-on-linux
@@ -3318,8 +3317,8 @@ install_kubectl() {
 install_kubectx() {  # https://github.com/ahmetb/kubectx
     local COMPDIR
 
-    install_bin_from_git -N kubectx -d "$HOME/bin"  ahmetb  kubectx  "kubectx_.*_linux_x86_64.tar.gz"
-    install_bin_from_git -N kubens  -d "$HOME/bin"  ahmetb  kubectx  "kubens_.*_linux_x86_64.tar.gz"
+    install_bin_from_git -N kubectx ahmetb  kubectx  "kubectx_.*_linux_x86_64.tar.gz"
+    install_bin_from_git -N kubens  ahmetb  kubectx  "kubens_.*_linux_x86_64.tar.gz"
 
     # kubectx/kubens completion scripts:
     clone_or_pull_repo "ahmetb" "kubectx" "$BASE_PROGS_DIR" || return 1
@@ -3346,7 +3345,7 @@ install_sops() {  # https://github.com/getsops/sops
 
 # another GUI client for grpc: https://github.com/getezy/ezy
 install_grpcui() {  # https://github.com/fullstorydev/grpcui
-    install_bin_from_git -N grpcui -d "$HOME/bin" fullstorydev grpcui '_linux_x86_64.tar.gz'
+    install_bin_from_git -N grpcui fullstorydev grpcui '_linux_x86_64.tar.gz'
 }
 
 # if build fails, you might be able to salvage something by doing:
@@ -3788,25 +3787,25 @@ install_procs() {  # https://github.com/dalance/procs
 # modern ls replacement written in rust
 # https://github.com/eza-community/eza/blob/main/INSTALL.md#debian-and-ubuntu
 install_eza() {  # https://github.com/eza-community/eza
-    install_bin_from_git -N eza -d "$HOME/bin"  eza-community  eza 'eza_x86_64-unknown-linux-gnu.tar.gz'
+    install_bin_from_git -N eza eza-community  eza 'eza_x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
 # TODO: consider https://github.com/gitui-org/gitui  instead; seems to be faster?
 install_lazygit() {  # https://github.com/jesseduffield/lazygit
-    install_bin_from_git -N lazygit -d "$HOME/bin" jesseduffield lazygit '_Linux_x86_64.tar.gz'
+    install_bin_from_git -N lazygit jesseduffield lazygit '_Linux_x86_64.tar.gz'
 }
 
 
 install_lazydocker() {  # https://github.com/jesseduffield/lazydocker
-    install_bin_from_git -N lazydocker -d "$HOME/bin" jesseduffield lazydocker '_Linux_x86_64.tar.gz'
+    install_bin_from_git -N lazydocker jesseduffield lazydocker '_Linux_x86_64.tar.gz'
 }
 
 
 # fzf-alternative, some tools use it as a dep
 # last commit sept '23
 install_peco() {  # https://github.com/peco/peco#installation
-    install_bin_from_git -N peco -d "$HOME/bin" peco peco '_linux_amd64.tar.gz'
+    install_bin_from_git -N peco peco peco '_linux_amd64.tar.gz'
 }
 
 
@@ -4658,7 +4657,7 @@ install_i3_deps() {
     install_from_url  i3move 'https://raw.githubusercontent.com/DMBuce/i3b/master/bin/i3move'
 
     # install sway-overfocus, allowing easier window focus change/movement   # https://github.com/korreman/sway-overfocus
-    install_bin_from_git -N sway-overfocus -d "$HOME/bin" korreman sway-overfocus '-x86_64.tar.gz'
+    install_bin_from_git -N sway-overfocus korreman sway-overfocus '-x86_64.tar.gz'
 
     # TODO: consider https://github.com/infokiller/i3-workspace-groups
     # TODO: consider https://github.com/JonnyHaystack/i3-resurrect
