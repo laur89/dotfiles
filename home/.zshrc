@@ -1,22 +1,215 @@
-# Set up the prompt
+#!/bin/zsh
+# from https://github.com/marlonrichert/zsh-launchpad/blob/main/.config/zsh/.zshrc
+# notes:
+# - you should always load the module zsh/complist before autoloading compinit
+#   - why tho?
+# commands:
+#   - zsh -o SOURCE_TRACE -lic ''
+#     - print traces of files that get sourced
+#
+# see also:
+# - https://grml.org/zsh/zsh-lovers.html
+# - https://github.com/Phantas0s/.dotfiles/blob/master/zsh/zshrc
+# - https://github.com/oryband/dotfiles/blob/master/.zshrc
+#   - loads of zinit usage/examples
+#   - uses loiccoyle/zsh-github-copilot, sgpt (shell-gpt)...
+##############################
+# Enable additional glob operators. (Globbing = pattern matching)
+# https://zsh.sourceforge.io/Doc/Release/Expansion.html#Filename-Generation
+setopt EXTENDED_GLOB
 
-autoload -Uz promptinit
-promptinit
-prompt adam1
+# Enable ** and *** as shortcuts for **/* and ***/*, respectively:
+# https://zsh.sourceforge.io/Doc/Release/Expansion.html#Recursive-Globbing
+setopt GLOB_STAR_SHORT
 
-setopt histignorealldups sharehistory
+setopt NUMERIC_GLOB_SORT  # Sort numbers numerically, not lexicographically.
+setopt NO_CLOBBER  # Don't let > silently overwrite files. To overwrite, use >! instead.
+setopt INTERACTIVE_COMMENTS  # Treat comments pasted into the command line as comments, not code.
+#
+# TODO: verify what following 2 opts do:
+setopt HASH_LIST_ALL  # Whenever a command completion or spelling correction is attempted, make sure the entire command path is hashed first. This makes the first completion slower but avoids false reports of spelling errors. 
+setopt HIST_VERIFY  # Whenever the user enters a line with history expansion, don’t execute the line directly; instead, perform history expansion and reload the line into the editing buffer. 
 
-# Use emacs keybindings even if our EDITOR is set to vi
-bindkey -e
+# Don't treat non-executable files in your $path as commands. This makes sure
+# they don't show up as command completions. Settinig this option can impact
+# performance on older systems, but should not be a problem on modern ones.
+# trial and error needed whether this is beneficial:
+#setopt HASH_EXECUTABLES_ONLY
 
-# Keep 1000 lines of history within the shell and save it to ~/.zsh_history:
-HISTSIZE=1000
-SAVEHIST=1000
-HISTFILE=~/.zsh_history
 
-# Use modern completion system
-autoload -Uz compinit
-compinit
+# This lets you change to any dir without having to type `cd`, that is, by just
+# typing its name. Be warned, though: This can misfire if there exists an alias,
+# function, builtin or command with the same name.
+# In general, I would recommend you use only the following without `cd`:
+#   ..  to go one dir up
+#   ~   to go to your home dir
+#   ~-2 to go to the 2nd mostly recently visited dir
+#   /   to go to the root dir
+setopt AUTO_CD
+
+setopt GLOB_DOTS     # no special treatment for file names with a leading dot
+setopt NO_AUTO_MENU  # require an extra TAB press to open the completion menu
+setopt RM_STAR_SILENT  # do not query the user before executing ‘rm *’ or ‘rm path/*’
+setopt RC_QUOTES  # allow double-single-quote to signify a single quote within singly quoted strings
+#setopt MAGIC_EQUAL_SUBST  # All unquoted arguments of the form ‘anything=expression’ appearing after the command name have filename expansion (that is, where expression has a leading ‘~’ or ‘=’) performed on expression as if it were a parameter assignment
+
+setopt AUTO_PUSHD           # Push the current directory visited on the stack.
+setopt PUSHD_IGNORE_DUPS    # Do not store duplicates in the stack.
+setopt PUSHD_SILENT         # Do not print the directory stack after pushd or popd.
+
+# TODO: reconsider whether we want these dirstack aliases:
+# dirstack idea from https://thevaluable.dev/zsh-install-configure-mouseless/ :
+alias d='dirs -v'  # display the dirs on the stack prefixed w/ a number
+for index ({1..9}) alias "$index"="cd +${index}"; unset index  # quick dirstack navigation aliases, i.e. run "number commands" to navigate the stack
+
+################ HISTORY
+# := assigns the variable if it's unset or null and then substitutes its value.
+# TODO: decide on file location:
+HISTFILE=$ZDOTDIR/history
+#HISTFILE=${XDG_DATA_HOME:=~/.local/share}/zsh/history
+#HISTFILE=~/.zsh_history
+
+SAVEHIST=100000  # zsh saves this many lines from the in-memory history list to the history file upon shell exit
+
+# Max number of history entries to keep in memory.
+HISTSIZE=$(( 1.2 * SAVEHIST ))  # Zsh recommended value
+#HISTSIZE=10000
+
+
+setopt HIST_FCNTL_LOCK  # Use modern file-locking mechanisms, for better safety & performance.
+
+setopt HIST_IGNORE_ALL_DUPS  # Delete an old recorded event if a new event is a duplicate.
+setopt HIST_IGNORE_DUPS          # Do not record an event that was just recorded again.
+setopt HIST_IGNORE_SPACE         # Do not record an event starting with a space.
+setopt HIST_SAVE_NO_DUPS         # Do not write a duplicate event to the history file.
+setopt SHARE_HISTORY             # Share history between all sessions.
+setopt INC_APPEND_HISTORY  # history file is updated immediately after a command is entered
+# TODO: isn't there overlap between APPENDHISTORY & INC_APPEND_HISTORY?:
+setopt APPENDHISTORY  # ensures that each command entered in the current session is appended to the history file immediately after execution
+
+setopt EXTENDED_HISTORY  # records the time when each command was executed along with the command itself
+setopt HIST_EXPIRE_DUPS_FIRST    # Expire a duplicate event first when trimming history.
+setopt HIST_FIND_NO_DUPS         # Do not display a previously found event.
+
+#HISTTIMEFORMAT="%d/%m/%Y %H:%M] "  # TODO review - isn't this bash option??
+################ /HISTORY
+
+### PLUGINS
+# TODO: as alternative to zinit, consider zim: https://github.com/zimfw/zimfw
+### Added by Zinit's installer (slightly modified by us)  # https://github.com/zdharma-continuum/zinit#manual
+#if [[ ! -f $BASE_PROGS_DIR/zinit/zinit.zsh ]]; then
+    #print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
+    #command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rwX "$BASE_PROGS_DIR/zinit"
+    #command git clone https://github.com/zdharma-continuum/zinit "$BASE_PROGS_DIR/zinit" && \
+        #print -P "%F{33} %F{34}Installation successful.%f%b" || \
+        #print -P "%F{160} The clone has failed.%f%b"
+#fi
+
+if [[ -f $BASE_PROGS_DIR/zinit/zinit.zsh ]]; then
+source "$BASE_PROGS_DIR/zinit/zinit.zsh"
+# note the following 2 lines are needed if sourcing zinit.zsh _after_ compinit, see https://github.com/zdharma-continuum/zinit#manual :
+#autoload -Uz _zinit
+#(( ${+_comps} )) && _comps[zinit]=_zinit
+
+# Load a few important annexes (specialized Zinit extensions), without Turbo
+# (this is currently required for annexes)
+zinit light-mode for \
+    zdharma-continuum/zinit-annex-as-monitor \
+    zdharma-continuum/zinit-annex-bin-gem-node \
+    zdharma-continuum/zinit-annex-patch-dl \
+    zdharma-continuum/zinit-annex-rust
+
+### /End of Zinit's installer chunk
+
+
+### fzf-driven history select   # https://github.com/joshskidmore/zsh-fzf-history-search#zinit
+zinit ice lucid wait'0'
+zinit light joshskidmore/zsh-fzf-history-search
+
+#ZSH_FZF_HISTORY_SEARCH_BIND='^r'
+ZSH_FZF_HISTORY_SEARCH_END_OF_LINE=''  # place cursor end of line after completion; empty=false
+### /fzf-hist
+
+# other plugins:
+zinit ice depth=1; zinit light jeffreytse/zsh-vi-mode
+
+zinit ice pick"bd.zsh"; zinit light Tarrasch/zsh-bd
+
+
+if [[ -x /usr/bin/dircolors ]]; then
+    if [[ -f "$BASE_PROGS_DIR/LS_COLORS/lscolors.sh" ]]; then
+        source "$BASE_PROGS_DIR/LS_COLORS/lscolors.sh"
+    else
+        [[ -r "$HOME/.dircolors" ]] && eval "$(dircolors -b "$HOME/.dircolors")" || eval "$(dircolors -b)"
+    fi
+fi
+# /other plugins:
+
+fi  # /does-zinit.zsh-exist?
+### /PLUGINS
+
+
+### KEYBINDS
+unsetopt FLOW_CONTROL  # Enable the use of Ctrl-Q and Ctrl-S for keyboard shortcuts.
+
+# Alt-Q
+# - On the main prompt: Push aside your current command line, so you can type a
+#   new one. The old command line is re-inserted when you press Alt-G or
+#   automatically on the next command line.
+# - On the continuation prompt: Move all entered lines to the main prompt, so
+#   you can edit the previous lines.
+bindkey '^[q' push-line-or-edit
+
+# enable vi mode; keep at the bottom(ish) to make sure no plugin overwrites it
+# related plugins:
+# - https://github.com/jeffreytse/zsh-vi-mode
+# - https://github.com/softmoth/zsh-vim-mode
+#bindkey -v  # commented out as we're trying out jeffreytse/zsh-vi-mode plugin
+#export KEYTIMEOUT=1  # makes the switch between cmd<->ins modes quicker
+
+# map 'v' to edit our current command line in $EDITOR:
+#autoload -Uz edit-command-line
+#zle -N edit-command-line
+#bindkey -M vicmd v edit-command-line
+### /KEYBINDS
+
+
+### COMMANDS
+
+
+
+# zmv lets you batch rename (or copy or link) files by using pattern matching.
+# https://zsh.sourceforge.io/Doc/Release/User-Contributions.html#index-zmv
+autoload -Uz -- zmv
+alias zmv='zmv -Mv'
+alias zcp='zmv -Cv'
+alias zln='zmv -Lv'
+
+
+# Associate file name .extensions with programs to open them.
+# This lets you open a file just by typing its name and pressing enter.
+# Note that the dot is implicit; `gz` below stands for files ending in .gz
+alias -s {css,gradle,html,js,json,md,patch,properties,txt,xml,yml}=$PAGER
+alias -s gz='gzip -l'
+alias -s {log,out}='tail -F'
+
+
+READNULLCMD=$PAGER  # Use `< file` to quickly view the contents of any text file
+### /COMMANDS
+#
+#
+# think it's best to load compinit last, but unsure why
+autoload -U compinit; compinit
+
+
+# other examples to consider:
+# Define functions and completions.
+#function md() { [[ $# == 1 ]] && mkdir -p -- "$1" && cd -- "$1" }
+#compdef _directories md
+#
+#
+#------ TODO: think debian default config gave also these:
+
 
 zstyle ':completion:*' auto-description 'specify: %d'
 zstyle ':completion:*' completer _expand _complete _correct _approximate
