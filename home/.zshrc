@@ -137,7 +137,10 @@ ZSH_FZF_HISTORY_SEARCH_END_OF_LINE=''  # place cursor end of line after completi
 ### /fzf-hist
 
 # other plugins:
-zinit ice depth=1; zinit light jeffreytse/zsh-vi-mode  # https://github.com/jeffreytse/zsh-vi-mode
+# TODO: currently using own fork of zsh-vi-mode 'til a PR gets merged upstream:
+ZVM_FAST_ESCAPE=y
+zinit ice depth=1; zinit light laur89/zsh-vi-mode  # https://github.com/jeffreytse/zsh-vi-mode
+
 zinit ice pick"bd.zsh"; zinit light Tarrasch/zsh-bd  # https://github.com/Tarrasch/zsh-bd
 zinit light paulirish/git-open  # https://github.com/paulirish/git-open
 
