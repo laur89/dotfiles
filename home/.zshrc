@@ -1,6 +1,8 @@
 #!/bin/zsh
 # from https://github.com/marlonrichert/zsh-launchpad/blob/main/.config/zsh/.zshrc
+#
 # notes:
+# - good starter when coming from bash: https://www.bash2zsh.com/zsh_refcard/refcard.pdf
 # - you should always load the module zsh/complist before autoloading compinit
 #   - why tho?
 # commands:
@@ -13,7 +15,12 @@
 # - https://github.com/oryband/dotfiles/blob/master/.zshrc
 #   - loads of zinit usage/examples
 #   - uses loiccoyle/zsh-github-copilot, sgpt (shell-gpt)...
+# - https://github.com/zdharma-continuum/zinit-configs
+# - https://github.com/scanny/dotfiles/blob/master/link/.zshrc
+# - https://github.com/danielnachun/dotfiles/blob/master/dot_zshrc.tmpl
 ##############################
+
+
 # Enable additional glob operators. (Globbing = pattern matching)
 # https://zsh.sourceforge.io/Doc/Release/Expansion.html#Filename-Generation
 setopt EXTENDED_GLOB
@@ -24,6 +31,10 @@ setopt GLOB_STAR_SHORT
 
 setopt NUMERIC_GLOB_SORT  # Sort numbers numerically, not lexicographically.
 setopt NO_CLOBBER  # Don't let > silently overwrite files. To overwrite, use >! instead.
+# setopt HIST_ALLOW_CLOBBER
+
+#setopt HIST_BEEP              # Beep when accessing non-existent history.
+
 setopt INTERACTIVE_COMMENTS  # Treat comments pasted into the command line as comments, not code.
 #
 # TODO: verify what following 2 opts do:
@@ -50,7 +61,7 @@ setopt AUTO_CD
 setopt GLOB_DOTS     # no special treatment for file names with a leading dot
 setopt NO_AUTO_MENU  # require an extra TAB press to open the completion menu
 setopt RM_STAR_SILENT  # do not query the user before executing ‘rm *’ or ‘rm path/*’
-setopt RC_QUOTES  # allow double-single-quote to signify a single quote within singly quoted strings
+setopt RC_QUOTES  # allow double-single-quote to signify a single quote within singly quoted strings; i.e. allow 'Henry''s Garage' instead of 'Henry'\''s Garage'.
 #setopt MAGIC_EQUAL_SUBST  # All unquoted arguments of the form ‘anything=expression’ appearing after the command name have filename expansion (that is, where expression has a leading ‘~’ or ‘=’) performed on expression as if it were a parameter assignment
 
 setopt AUTO_PUSHD           # Push the current directory visited on the stack.
@@ -82,6 +93,7 @@ setopt HIST_IGNORE_ALL_DUPS  # Delete an old recorded event if a new event is a 
 setopt HIST_IGNORE_DUPS          # Do not record an event that was just recorded again.
 setopt HIST_IGNORE_SPACE         # Do not record an event starting with a space.
 setopt HIST_SAVE_NO_DUPS         # Do not write a duplicate event to the history file.
+setopt HIST_REDUCE_BLANKS        # strip superfluous blanks
 setopt SHARE_HISTORY             # Share history between all sessions.
 setopt INC_APPEND_HISTORY  # history file is updated immediately after a command is entered
 # TODO: isn't there overlap between APPENDHISTORY & INC_APPEND_HISTORY?:
@@ -104,9 +116,9 @@ setopt HIST_FIND_NO_DUPS         # Do not display a previously found event.
         #print -P "%F{33} %F{34}Installation successful.%f%b" || \
         #print -P "%F{160} The clone has failed.%f%b"
 #fi
-
-if [[ -f $BASE_PROGS_DIR/zinit/zinit.zsh ]]; then
-source "$BASE_PROGS_DIR/zinit/zinit.zsh"
+ZINIT_HOME="$BASE_PROGS_DIR/zinit"
+if [[ -f "${ZINIT_HOME}/zinit.zsh" ]]; then
+source "${ZINIT_HOME}/zinit.zsh"
 # note the following 2 lines are needed if sourcing zinit.zsh _after_ compinit, see https://github.com/zdharma-continuum/zinit#manual :
 #autoload -Uz _zinit
 #(( ${+_comps} )) && _comps[zinit]=_zinit
@@ -133,7 +145,19 @@ ZSH_FZF_HISTORY_SEARCH_END_OF_LINE=''  # place cursor end of line after completi
 # other plugins:
 zinit ice depth=1; zinit light jeffreytse/zsh-vi-mode
 
+# TODO: think we should install bd as shell-agnostic and also use in bash?:
 zinit ice pick"bd.zsh"; zinit light Tarrasch/zsh-bd
+
+zinit light paulirish/git-open
+zinit light djui/alias-tips
+
+# prompt {{{
+# starship:
+#zinit ice from"gh-r" as"program" bpick"*x86_64-unknown-linux-gnu*" pick"starship"; zinit light starship/starship
+#eval "$(starship init zsh)"
+# ...or p10k:  # https://github.com/romkatv/powerlevel10k#zinit
+zinit ice depth=1; zinit light romkatv/powerlevel10k
+# }}}
 
 
 if [[ -x /usr/bin/dircolors ]]; then
@@ -145,12 +169,44 @@ if [[ -x /usr/bin/dircolors ]]; then
 fi
 # /other plugins:
 
+
+# prezto {{{
+# Set case-sensitivity for completion, history lookup, etc:
+zstyle ':prezto:*:*' case-sensitive 'no'
+# Color output (auto set to 'no' on dumb terminals):
+zstyle ':prezto:*:*' color 'yes'
+
+# common helper funcionts used by other modules:
+zinit snippet PZTM::helper  # https://github.com/sorin-ionescu/prezto/tree/master/modules/helper
+
+# general shell options and defines environment variables; note it also enables url-quote-magic
+# that romkatv recommends not to: https://www.reddit.com/r/zsh/comments/dybjfe/using_urlquotemagic/f81bxys/
+# also collides/sets some opts we set here, but overall it's a good addition so keeping it:
+zinit snippet PZTM::environment  # https://github.com/sorin-ionescu/prezto/tree/master/modules/environment
+
+# sets term window & tab titles:
+zinit snippet PZTM::terminal  # https://github.com/sorin-ionescu/prezto/tree/master/modules/terminal
+
+# editor module changes a lot; makes sense if we don't use a stand-alone vi/emacs
+# mode plugin IMHO; it does provide other stuff tho, e.g. dot expansion (.... -> ../..)
+zinit snippet PZTM::editor  # https://github.com/sorin-ionescu/prezto/tree/master/modules/editor
+
+#zinit ice svn silent; zinit snippet PZT::modules/gpg  # https://github.com/sorin-ionescu/prezto/tree/master/modules/gpg
+
+# defines general aliases & functions;
+# this module needs to be loaded _before_ the PZTM::completion module
+#zinit ice svn silent pick"init.zsh" lucid; zinit snippet PZT::modules/utility  # https://github.com/sorin-ionescu/prezto/tree/master/modules/utility
+# }}}
+
+
 fi  # /does-zinit.zsh-exist?
 ### /PLUGINS
 
 
 ### KEYBINDS
 unsetopt FLOW_CONTROL  # Enable the use of Ctrl-Q and Ctrl-S for keyboard shortcuts.
+# note https://github.com/sorin-ionescu/prezto/blob/master/modules/environment/init.zsh does this as follows, what's the difference?:
+# [[ -r ${TTY:-} && -w ${TTY:-} && $+commands[stty] == 1 ]] && stty -ixon <$TTY >$TTY
 
 # Alt-Q
 # - On the main prompt: Push aside your current command line, so you can type a
@@ -196,10 +252,28 @@ alias -s {log,out}='tail -F'
 
 READNULLCMD=$PAGER  # Use `< file` to quickly view the contents of any text file
 ### /COMMANDS
+
+########################################## mise
+if command -v mise >/dev/null 2>/dev/null; then
+    eval -- "$(mise activate zsh)"  # https://mise.jdx.dev/installing-mise.html#zsh
+fi
+########################################## /mise
+
 #
 #
 # think it's best to load compinit last, but unsure why
-autoload -U compinit; compinit
+autoload -Uz compinit; compinit
+zinit cdreplay -q  # needs to be after compinit call; see https://github.com/zdharma-continuum/zinit#calling-compinit-without-turbo-mode
+
+########################################## zoxide
+# needs to be at the end of file, as it must be _after_ compinit is called.
+# zoxide settings:  (https://github.com/ajeetdsouza/zoxide)
+#export _ZO_DATA_DIR="$BASE_DATA_DIR/.zoxide"
+export _ZO_RESOLVE_SYMLINKS=1
+command -v zoxide > /dev/null && eval -- "$(zoxide init zsh)"
+# alternatively, source it via zinit:
+#zinit ice has'zoxide'; zinit light ajeetdsouza/zoxide
+########################################## /zoxide
 
 
 # other examples to consider:
