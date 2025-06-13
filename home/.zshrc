@@ -1,10 +1,3 @@
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
 #!/bin/zsh
 # from https://github.com/marlonrichert/zsh-launchpad/blob/main/.config/zsh/.zshrc
 #
@@ -22,15 +15,12 @@ fi
 # - https://github.com/oryband/dotfiles/blob/master/.zshrc
 #   - loads of zinit usage/examples
 #   - uses loiccoyle/zsh-github-copilot, sgpt (shell-gpt)...
+# - https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc
 # - https://github.com/zdharma-continuum/zinit-configs
 # - https://github.com/scanny/dotfiles/blob/master/link/.zshrc
 # - https://github.com/danielnachun/dotfiles/blob/master/dot_zshrc.tmpl
+# - as alternative to zinit, consider zim: https://github.com/zimfw/zimfw
 ##############################
-
-
-# Enable additional glob operators. (Globbing = pattern matching)
-# https://zsh.sourceforge.io/Doc/Release/Expansion.html#Filename-Generation
-setopt EXTENDED_GLOB
 
 # Enable ** and *** as shortcuts for **/* and ***/*, respectively:
 # https://zsh.sourceforge.io/Doc/Release/Expansion.html#Recursive-Globbing
@@ -66,7 +56,6 @@ setopt HIST_VERIFY  # Whenever the user enters a line with history expansion, do
 setopt AUTO_CD
 
 setopt GLOB_DOTS     # no special treatment for file names with a leading dot
-setopt NO_AUTO_MENU  # require an extra TAB press to open the completion menu
 setopt RM_STAR_SILENT  # do not query the user before executing ‘rm *’ or ‘rm path/*’
 setopt RC_QUOTES  # allow double-single-quote to signify a single quote within singly quoted strings; i.e. allow 'Henry''s Garage' instead of 'Henry'\''s Garage'.
 #setopt MAGIC_EQUAL_SUBST  # All unquoted arguments of the form ‘anything=expression’ appearing after the command name have filename expansion (that is, where expression has a leading ‘~’ or ‘=’) performed on expression as if it were a parameter assignment
@@ -114,7 +103,6 @@ setopt HIST_FIND_NO_DUPS         # Do not display a previously found event.
 ################ /HISTORY
 
 ### PLUGINS
-# TODO: as alternative to zinit, consider zim: https://github.com/zimfw/zimfw
 ### Added by Zinit's installer (slightly modified by us)  # https://github.com/zdharma-continuum/zinit#manual
 #if [[ ! -f $BASE_PROGS_DIR/zinit/zinit.zsh ]]; then
     #print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
@@ -137,7 +125,6 @@ zinit light-mode for \
     zdharma-continuum/zinit-annex-bin-gem-node \
     zdharma-continuum/zinit-annex-patch-dl \
     zdharma-continuum/zinit-annex-rust
-
 ### /End of Zinit's installer chunk
 
 
@@ -150,13 +137,14 @@ ZSH_FZF_HISTORY_SEARCH_END_OF_LINE=''  # place cursor end of line after completi
 ### /fzf-hist
 
 # other plugins:
-zinit ice depth=1; zinit light jeffreytse/zsh-vi-mode
+zinit ice depth=1; zinit light jeffreytse/zsh-vi-mode  # https://github.com/jeffreytse/zsh-vi-mode
+zinit ice pick"bd.zsh"; zinit light Tarrasch/zsh-bd  # https://github.com/Tarrasch/zsh-bd
+zinit light paulirish/git-open  # https://github.com/paulirish/git-open
 
-# TODO: think we should install bd as shell-agnostic and also use in bash?:
-zinit ice pick"bd.zsh"; zinit light Tarrasch/zsh-bd
-
-zinit light paulirish/git-open
-zinit light djui/alias-tips
+# TODO: alias-tips makes post-cmd-execution prompt refresh slow!
+#       alias-finder, recommended in alias-tips issues, is told to be 10x faster tho: https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/alias-finder
+#zinit light djui/alias-tips  # https://github.com/djui/alias-tips
+zinit snippet OMZP::alias-finder
 
 # prompt {{{
 # starship:
@@ -166,16 +154,7 @@ zinit light djui/alias-tips
 zinit ice depth=1; zinit light romkatv/powerlevel10k
 # }}}
 
-
-if [[ -x /usr/bin/dircolors ]]; then
-    if [[ -f "$BASE_PROGS_DIR/LS_COLORS/lscolors.sh" ]]; then
-        source "$BASE_PROGS_DIR/LS_COLORS/lscolors.sh"
-    else
-        [[ -r "$HOME/.dircolors" ]] && eval "$(dircolors -b "$HOME/.dircolors")" || eval "$(dircolors -b)"
-    fi
-fi
 # /other plugins:
-
 
 # prezto {{{
 # Set case-sensitivity for completion, history lookup, etc:
@@ -196,24 +175,78 @@ zinit snippet PZTM::terminal  # https://github.com/sorin-ionescu/prezto/tree/mas
 
 # editor module changes a lot; makes sense if we don't use a stand-alone vi/emacs
 # mode plugin IMHO; it does provide other stuff tho, e.g. dot expansion (.... -> ../..)
-zinit snippet PZTM::editor  # https://github.com/sorin-ionescu/prezto/tree/master/modules/editor
+#zinit snippet PZTM::editor  # https://github.com/sorin-ionescu/prezto/tree/master/modules/editor
 
 #zinit ice svn silent; zinit snippet PZT::modules/gpg  # https://github.com/sorin-ionescu/prezto/tree/master/modules/gpg
 
 # defines general aliases & functions;
 # this module needs to be loaded _before_ the PZTM::completion module
 #zinit ice svn silent pick"init.zsh" lucid; zinit snippet PZT::modules/utility  # https://github.com/sorin-ionescu/prezto/tree/master/modules/utility
-# }}}
+# }}}  /prezto
 
 
-fi  # /does-zinit.zsh-exist?
-### /PLUGINS
+# completion {{{
+zinit ice wait="0b" lucid blockf; zinit light zsh-users/zsh-completions  # TODO: why use blockf ice mod?
 
+# note completion PZT module by default adds  zsh-users/zsh-completions to our fpath
+zinit ice wait="0b" silent pick"init.zsh" blockf; zinit snippet PZTM::completion  # TODO: why use blockf ice mod?
 
-### KEYBINDS
+unsetopt CORRECT   # note CORRECT tries to correct the spelling of commands
+setopt COMPLETE_IN_WORD  # # Complete from both ends of a word.  # TODO: do we want this?
+setopt ALWAYS_TO_END  # Move cursor to the end of a completed word.
+setopt AUTO_LIST  # Automatically list choices on ambiguous completion.
+setopt AUTO_PARAM_SLASH  # If completed parameter is a directory, add a trailing slash.
+setopt COMPLETE_ALIASES
+
+# Enable additional glob operators. (Globbing = pattern matching)
+# https://zsh.sourceforge.io/Doc/Release/Expansion.html#Filename-Generation
+setopt EXTENDED_GLOB
+
+setopt FLOW_CONTROL
+#setopt MENU_COMPLETE  # instead of listing possibilites or beeping, insert the first match immediately
+setopt NO_AUTO_MENU  # require an extra TAB press to open the completion menu; note this opt is overridden by MENU_COMPLETE
+
+setopt NO_NOMATCH  # NOMATCH would print an error instead of leaving unchanged if pattern for filename generation has no matches
+setopt PATH_DIRS  # Perform path search even on command names with slashes.
+
 unsetopt FLOW_CONTROL  # Enable the use of Ctrl-Q and Ctrl-S for keyboard shortcuts.
 # note https://github.com/sorin-ionescu/prezto/blob/master/modules/environment/init.zsh does this as follows, what's the difference?:
 # [[ -r ${TTY:-} && -w ${TTY:-} && $+commands[stty] == 1 ]] && stty -ixon <$TTY >$TTY
+# }}} /completion
+
+# suggestions {{{  # from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc#L75
+ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
+zinit ice wait="0a" lucid atload="_zsh_autosuggest_start"; zinit light zsh-users/zsh-autosuggestions
+# }}} /suggestions
+
+# highlighting {{{  # from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc#L107
+# note zpcompinit & zpcdreplay replace our usual compinit/replay lines
+zinit ice wait="0c" lucid atinit="zpcompinit;zpcdreplay"
+zinit light zdharma-continuum/fast-syntax-highlighting
+# }}} /highlighting
+
+# fzf tab  # https://github.com/Aloxaf/fzf-tab
+# !!! needs to be loaded _after_ compinit, but before plugins which will wrap
+#     widgets, such as zsh-autosuggestions or fast-syntax-highlighting;
+#     note atm our compinit is ran by some other plug's zinit "zpcompinit;zpcdreplay"
+zinit ice wait="1" lucid; zinit light Aloxaf/fzf-tab
+
+fi  # /does-zinit.zsh-exist?
+### /PLUGINS
+#
+
+
+# set LS_COLOR after plugins, as some prezto stuff (e.g. completion module) might set it
+if [[ -x /usr/bin/dircolors ]]; then
+    if [[ -f "$BASE_PROGS_DIR/LS_COLORS/lscolors.sh" ]]; then
+        source "$BASE_PROGS_DIR/LS_COLORS/lscolors.sh"
+    else
+        [[ -r "$HOME/.dircolors" ]] && eval "$(dircolors -b "$HOME/.dircolors")" || eval "$(dircolors -b)"
+    fi
+fi
+
+
+### KEYBINDS
 
 # Alt-Q
 # - On the main prompt: Push aside your current command line, so you can type a
@@ -260,21 +293,21 @@ alias -s {log,out}='tail -F'
 READNULLCMD=$PAGER  # Use `< file` to quickly view the contents of any text file
 ### /COMMANDS
 
-########################################## mise
+########################################## mise  # https://mise.jdx.dev/installing-mise.html#zsh
 if command -v mise >/dev/null 2>/dev/null; then
-    eval -- "$(mise activate zsh)"  # https://mise.jdx.dev/installing-mise.html#zsh
+    eval -- "$(mise activate zsh)"
 fi
 ########################################## /mise
 
 #
 #
 # think it's best to load compinit last, but unsure why
-autoload -Uz compinit; compinit
-zinit cdreplay -q  # needs to be after compinit call; see https://github.com/zdharma-continuum/zinit#calling-compinit-without-turbo-mode
+# note compinit & cdreplay are commented out, as are invoked by zinit's "zpcompinit;zpcdreplay"
+#autoload -Uz compinit; compinit
+#zinit cdreplay -q  # needs to be after compinit call; see https://github.com/zdharma-continuum/zinit#calling-compinit-without-turbo-mode
 
-########################################## zoxide
+########################################## zoxide  # https://github.com/ajeetdsouza/zoxide
 # needs to be at the end of file, as it must be _after_ compinit is called.
-# zoxide settings:  (https://github.com/ajeetdsouza/zoxide)
 #export _ZO_DATA_DIR="$BASE_DATA_DIR/.zoxide"
 export _ZO_RESOLVE_SYMLINKS=1
 command -v zoxide > /dev/null && eval -- "$(zoxide init zsh)"
