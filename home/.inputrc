@@ -32,7 +32,7 @@ $endif
 
 # Enable Readline waiting less for additional input when a key is pressed.
 # Otherwise eg exiting from insert mode will have a delay on prompt indicator:
-# (from https://unix.stackexchange.com/questions/318433/bash-urxvt-delay-after-esc-in-vi-mode)
+# (from https://unix.stackexchange.com/questions/318433)
 set keyseq-timeout 50
 
 # Ignore case on tab auto-completion
@@ -40,6 +40,8 @@ set completion-ignore-case on
 
 # use a visible bell if one is available
 set bell-style visible
+
+set meta-flag on
 
 # don't strip characters to 7 bits when reading
 set input-meta on
@@ -70,18 +72,24 @@ set enable-bracketed-paste on
 
 # Color files by types
 # Note that this may cause completion text blink in some terminals (e.g. xterm).
-set colored-stats On
-# Append char to indicate type
-set visible-stats On
-# Mark symlinked directories
-set mark-symlinked-directories On
+set colored-stats on
+# Show extra file information when completing, like `ls -F` does
+set visible-stats on
+# Immediately add a trailing slash when autocompleting symlinks to directories
+set mark-symlinked-directories on
 # Color the common prefix
-set colored-completion-prefix On
+set colored-completion-prefix on
 # Color the common prefix in menu-complete
-set menu-complete-display-prefix On
+set menu-complete-display-prefix on
 # do not echo ctrl chars, e.g. ^C after ctrl+c is pressed:
 set echo-control-characters off
 
+# Be more intelligent when autocompleting by also looking at the text after
+# the cursor. For example, when the current line is "cd ~/src/mozil", and
+# the cursor is on the "z", pressing Tab will not autocomplete it to "cd
+# ~/src/mozillail", but to "cd ~/src/mozilla". (This is supported by the
+# Readline used by Bash 4.)
+set skip-completed-text on
 
 # Macros:
 # Ctrl+Alt+i to append '|less' to current line: (does not work in vi mode? (C-e bit does not quite work?)
