@@ -22,6 +22,8 @@
 # - as alternative to zinit, consider zim: https://github.com/zimfw/zimfw
 ##############################
 
+#zmodload zsh/zprof  # for debugging shell startup speed
+
 # Enable ** and *** as shortcuts for **/* and ***/*, respectively:
 # https://zsh.sourceforge.io/Doc/Release/Expansion.html#Recursive-Globbing
 setopt GLOB_STAR_SHORT
@@ -68,6 +70,10 @@ setopt PUSHD_SILENT         # Do not print the directory stack after pushd or po
 # dirstack idea from https://thevaluable.dev/zsh-install-configure-mouseless/ :
 alias d='dirs -v'  # display the dirs on the stack prefixed w/ a number
 for index ({1..9}) alias "$index"="cd +${index}"; unset index  # quick dirstack navigation aliases, i.e. run "number commands" to navigate the stack
+
+# install native cdr: (https://zsh.sourceforge.io/Doc/Release/User-Contributions.html#Recent-Directories)
+autoload -Uz chpwd_recent_dirs cdr add-zsh-hook
+add-zsh-hook chpwd chpwd_recent_dirs
 
 ################ HISTORY
 # := assigns the variable if it's unset or null and then substitutes its value.
@@ -149,6 +155,11 @@ zinit light paulirish/git-open  # https://github.com/paulirish/git-open
 #zinit light djui/alias-tips  # https://github.com/djui/alias-tips
 zinit snippet OMZP::alias-finder
 
+zinit snippet OMZP::colored-man-pages  # TODO: is this needed?
+#zinit snippet OMZP::copypath
+#zinit snippet OMZP::jump  # TODO: any point ove cdr or zoxide?
+#zinit snippet OMZP::dirhistory
+
 # prompt {{{
 # starship:
 #zinit ice from"gh-r" as"program" bpick"*x86_64-unknown-linux-gnu*" pick"starship"; zinit light starship/starship
@@ -190,9 +201,8 @@ zinit snippet PZTM::terminal  # https://github.com/sorin-ionescu/prezto/tree/mas
 
 # completion {{{
 zinit ice wait="0b" lucid blockf; zinit light zsh-users/zsh-completions  # TODO: why use blockf ice mod?
-
 # note completion PZT module by default adds  zsh-users/zsh-completions to our fpath
-zinit ice wait="0b" silent pick"init.zsh" blockf; zinit snippet PZTM::completion  # TODO: why use blockf ice mod?
+#zinit ice wait="0b" silent pick"init.zsh" blockf; zinit snippet PZTM::completion  # TODO: why use blockf ice mod?
 
 unsetopt CORRECT   # note CORRECT tries to correct the spelling of commands
 setopt COMPLETE_IN_WORD  # # Complete from both ends of a word.  # TODO: do we want this?
@@ -215,6 +225,22 @@ setopt PATH_DIRS  # Perform path search even on command names with slashes.
 unsetopt FLOW_CONTROL  # Enable the use of Ctrl-Q and Ctrl-S for keyboard shortcuts.
 # note https://github.com/sorin-ionescu/prezto/blob/master/modules/environment/init.zsh does this as follows, what's the difference?:
 # [[ -r ${TTY:-} && -w ${TTY:-} && $+commands[stty] == 1 ]] && stty -ixon <$TTY >$TTY
+
+# opts from https://github.com/oryband/dotfiles/blob/master/.zshrc (TODO: needed/wanted?)
+zstyle ':completion:*' completer _expand _complete _ignored _approximate
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+zstyle ':completion:*' menu no
+zstyle ':completion:*' select-prompt '%SScrolling active: current selection at %p%s'
+zstyle ':completion:*:descriptions' format '[%d]'
+zstyle ':completion:*:processes' command 'ps -au$USER'
+zstyle ':completion:complete:*:options' sort false
+zstyle ':fzf-tab:complete:_zlua:*' query-string input
+zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
+zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
+zstyle ':fzf-tab:*' use-fzf-default-opts yes
+zstyle ":completion:*:git-checkout:*" sort false
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 # }}} /completion
 
 # suggestions {{{  # from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc#L75
@@ -301,6 +327,29 @@ if command -v mise >/dev/null 2>/dev/null; then
     eval -- "$(mise activate zsh)"
 fi
 ########################################## /mise
+
+#########################################################################
+# FANCY-CTRL-Z
+# from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc
+#      which in turn is derivative of https://github.com/ohmyzsh/ohmyzsh/blob/master/plugins/fancy-ctrl-z/fancy-ctrl-z.plugin.zsh
+# note bash version is https://gist.github.com/sebastiancarlos/762ac6da14a3180f7ce2409889a6de81
+#########################################################################
+function fg-fzf() {
+  job="$(jobs | fzf -0 -1 | sed -E 's/\[(.+)\].*/\1/')" && echo '' && fg %$job
+}
+
+function fancy-ctrl-z () {
+  if [[ $#BUFFER -eq 0 ]]; then
+    BUFFER=" fg-fzf"
+    zle accept-line -w
+  else
+    zle push-input -w
+    zle clear-screen -w
+  fi
+}
+zle -N fancy-ctrl-z
+bindkey '^Z' fancy-ctrl-z
+#########################################################################
 
 #
 #
