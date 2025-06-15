@@ -228,6 +228,17 @@ unsetopt FLOW_CONTROL  # Enable the use of Ctrl-Q and Ctrl-S for keyboard shortc
 # note https://github.com/sorin-ionescu/prezto/blob/master/modules/environment/init.zsh does this as follows, what's the difference?:
 # [[ -r ${TTY:-} && -w ${TTY:-} && $+commands[stty] == 1 ]] && stty -ixon <$TTY >$TTY
 
+
+# set LS_COLOR after plugins, as some prezto stuff (e.g. completion module) might set it
+if [[ -x /usr/bin/dircolors ]]; then
+    if [[ -f "$BASE_PROGS_DIR/LS_COLORS/lscolors.sh" ]]; then
+        source "$BASE_PROGS_DIR/LS_COLORS/lscolors.sh"
+    else
+        [[ -r "$HOME/.dircolors" ]] && eval "$(dircolors -b "$HOME/.dircolors")" || eval "$(dircolors -b)"
+    fi
+fi
+
+
 # opts from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc#L89 (TODO: needed/wanted?)
 zstyle ':completion:*' completer _expand _complete _ignored _approximate
 # mathcer-list be set to a list of match specifications that are to be applied everywhere, see https://zsh.sourceforge.io/Doc/Release/Completion-Widgets.html#Completion-Matching-Control :
@@ -245,7 +256,11 @@ zstyle ':fzf-tab:*' use-fzf-default-opts yes
 zstyle ":completion:*:git-checkout:*" sort false
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 
+# get rid of the prefix-dot (e.g. on kill <TAB>), see https://github.com/Aloxaf/fzf-tab/discussions/511
+zstyle ':fzf-tab:*' prefix ''
+
 # TODO: new zstyles:
+# to sort by mtime:
 #zstyle ':completion:*:vim:*' file-sort modification
 
 zstyle ':fzf-tab:complete:git-(add|diff|restore):*' fzf-preview \
@@ -277,16 +292,6 @@ zinit ice wait="1" lucid; zinit light Aloxaf/fzf-tab
 fi  # /does-zinit.zsh-exist?
 ### /PLUGINS
 #
-
-
-# set LS_COLOR after plugins, as some prezto stuff (e.g. completion module) might set it
-if [[ -x /usr/bin/dircolors ]]; then
-    if [[ -f "$BASE_PROGS_DIR/LS_COLORS/lscolors.sh" ]]; then
-        source "$BASE_PROGS_DIR/LS_COLORS/lscolors.sh"
-    else
-        [[ -r "$HOME/.dircolors" ]] && eval "$(dircolors -b "$HOME/.dircolors")" || eval "$(dircolors -b)"
-    fi
-fi
 
 
 ### KEYBINDS
@@ -388,25 +393,25 @@ command -v zoxide > /dev/null && eval -- "$(zoxide init zsh)"
 #compdef _directories md
 #
 #
-#------ TODO: think debian default config gave also these:
+#------ TODO: think debian default config gave also these: (are these done by running $ compinstall ?)
 
 
-#zstyle ':completion:*' auto-description 'specify: %d'
-#zstyle ':completion:*' completer _expand _complete _correct _approximate
-#zstyle ':completion:*' format 'Completing %d'
-#zstyle ':completion:*' group-name ''
-#zstyle ':completion:*' menu select=2
-#zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
-#zstyle ':completion:*' list-colors ''
-#zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
-#zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'
-#zstyle ':completion:*' menu select=long
-#zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s
-#zstyle ':completion:*' use-compctl false
-#zstyle ':completion:*' verbose true
+zstyle ':completion:*' auto-description 'specify: %d'
+zstyle ':completion:*' completer _expand _complete _correct _approximate
+zstyle ':completion:*' format 'Completing %d'
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*' menu select=2
+zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+zstyle ':completion:*' list-colors ''
+zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
+zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'
+zstyle ':completion:*' menu select=long
+zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s
+zstyle ':completion:*' use-compctl false
+zstyle ':completion:*' verbose true
 
-#zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
-#zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
+zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
