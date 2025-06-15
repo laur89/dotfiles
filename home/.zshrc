@@ -19,6 +19,8 @@
 # - https://github.com/zdharma-continuum/zinit-configs
 # - https://github.com/scanny/dotfiles/blob/master/link/.zshrc
 # - https://github.com/danielnachun/dotfiles/blob/master/dot_zshrc.tmpl
+# - https://github.com/sainnhe/dotfiles/blob/master/.zshrc
+# - https://github.com/kdheepak/dotfiles/blob/main/zshrc
 # - as alternative to zinit, consider zim: https://github.com/zimfw/zimfw
 ##############################
 
@@ -143,9 +145,9 @@ ZSH_FZF_HISTORY_SEARCH_END_OF_LINE=''  # place cursor end of line after completi
 ### /fzf-hist
 
 # other plugins:
-# TODO: currently using own fork of zsh-vi-mode 'til a PR gets merged upstream:
 ZVM_FAST_ESCAPE=y
-zinit ice depth=1; zinit light laur89/zsh-vi-mode  # https://github.com/jeffreytse/zsh-vi-mode
+zinit ice depth=1; zinit light laur89/zsh-vi-mode  # https://github.com/jeffreytse/zsh-vi-mode  # TODO: currently using own fork of zsh-vi-mode 'til a PR gets merged upstream:
+# note source of other cool vi-mode plugins is https://github.com/zsh-vi-more
 
 zinit ice pick"bd.zsh"; zinit light Tarrasch/zsh-bd  # https://github.com/Tarrasch/zsh-bd
 zinit light paulirish/git-open  # https://github.com/paulirish/git-open
@@ -226,8 +228,9 @@ unsetopt FLOW_CONTROL  # Enable the use of Ctrl-Q and Ctrl-S for keyboard shortc
 # note https://github.com/sorin-ionescu/prezto/blob/master/modules/environment/init.zsh does this as follows, what's the difference?:
 # [[ -r ${TTY:-} && -w ${TTY:-} && $+commands[stty] == 1 ]] && stty -ixon <$TTY >$TTY
 
-# opts from https://github.com/oryband/dotfiles/blob/master/.zshrc (TODO: needed/wanted?)
+# opts from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc#L89 (TODO: needed/wanted?)
 zstyle ':completion:*' completer _expand _complete _ignored _approximate
+# mathcer-list be set to a list of match specifications that are to be applied everywhere, see https://zsh.sourceforge.io/Doc/Release/Completion-Widgets.html#Completion-Matching-Control :
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
 zstyle ':completion:*' menu no
 zstyle ':completion:*' select-prompt '%SScrolling active: current selection at %p%s'
@@ -241,6 +244,13 @@ zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
 zstyle ':fzf-tab:*' use-fzf-default-opts yes
 zstyle ":completion:*:git-checkout:*" sort false
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+
+# TODO: new zstyles:
+#zstyle ':completion:*:vim:*' file-sort modification
+
+zstyle ':fzf-tab:complete:git-(add|diff|restore):*' fzf-preview \
+	'git diff $word | delta'
+
 # }}} /completion
 
 # suggestions {{{  # from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc#L75
@@ -259,6 +269,10 @@ zinit light zdharma-continuum/fast-syntax-highlighting
 #     widgets, such as zsh-autosuggestions or fast-syntax-highlighting;
 #     note atm our compinit is ran by some other plug's zinit "zpcompinit;zpcdreplay"
 zinit ice wait="1" lucid; zinit light Aloxaf/fzf-tab
+
+# bunch of themes in https://github.com/sainnhe/dotfiles/blob/master/.zsh-theme/README.md
+#zinit snippet https://github.com/sainnhe/dotfiles/raw/master/.zsh-theme/gruvbox-material-dark.zsh
+
 
 fi  # /does-zinit.zsh-exist?
 ### /PLUGINS
@@ -359,7 +373,7 @@ bindkey '^Z' fancy-ctrl-z
 #zinit cdreplay -q  # needs to be after compinit call; see https://github.com/zdharma-continuum/zinit#calling-compinit-without-turbo-mode
 
 ########################################## zoxide  # https://github.com/ajeetdsouza/zoxide
-# needs to be at the end of file, as it must be _after_ compinit is called.
+# needs to be at the end of file, as it must be _after_ compinit is called.    TODO: compinit seq dependency
 #export _ZO_DATA_DIR="$BASE_DATA_DIR/.zoxide"
 export _ZO_RESOLVE_SYMLINKS=1
 command -v zoxide > /dev/null && eval -- "$(zoxide init zsh)"
@@ -377,23 +391,22 @@ command -v zoxide > /dev/null && eval -- "$(zoxide init zsh)"
 #------ TODO: think debian default config gave also these:
 
 
-zstyle ':completion:*' auto-description 'specify: %d'
-zstyle ':completion:*' completer _expand _complete _correct _approximate
-zstyle ':completion:*' format 'Completing %d'
-zstyle ':completion:*' group-name ''
-zstyle ':completion:*' menu select=2
-eval "$(dircolors -b)"
-zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
-zstyle ':completion:*' list-colors ''
-zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
-zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'
-zstyle ':completion:*' menu select=long
-zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s
-zstyle ':completion:*' use-compctl false
-zstyle ':completion:*' verbose true
+#zstyle ':completion:*' auto-description 'specify: %d'
+#zstyle ':completion:*' completer _expand _complete _correct _approximate
+#zstyle ':completion:*' format 'Completing %d'
+#zstyle ':completion:*' group-name ''
+#zstyle ':completion:*' menu select=2
+#zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+#zstyle ':completion:*' list-colors ''
+#zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
+#zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'
+#zstyle ':completion:*' menu select=long
+#zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s
+#zstyle ':completion:*' use-compctl false
+#zstyle ':completion:*' verbose true
 
-zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
-zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
+#zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+#zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
