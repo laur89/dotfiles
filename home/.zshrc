@@ -135,6 +135,13 @@ zinit light-mode for \
     zdharma-continuum/zinit-annex-rust
 ### /End of Zinit's installer chunk
 
+########################################## fzf
+# https://github.com/junegunn/fzf#setting-up-shell-integration
+# Set up fzf key bindings and fuzzy completion  # TODO: unsure we want this; et it overrides fzf-tab's ctrl+r
+command -v fzf > /dev/null && source <(fzf --zsh)
+# alternatively, some people source .zsh scripts from fzf themselves:
+#zinit ice lucid wait'0c' multisrc"shell/{completion,key-bindings}.zsh" id-as="junegunn/fzf_completions" pick="/dev/null"
+########################################## /fzf
 
 ### fzf-driven history select   # https://github.com/joshskidmore/zsh-fzf-history-search#zinit
 zinit ice lucid wait'0'
@@ -163,10 +170,7 @@ zinit snippet OMZP::colored-man-pages  # TODO: is this needed?
 #zinit snippet OMZP::dirhistory
 
 # prompt {{{
-# starship:
-#zinit ice from"gh-r" as"program" bpick"*x86_64-unknown-linux-gnu*" pick"starship"; zinit light starship/starship
-#eval "$(starship init zsh)"
-# ...or p10k:  # https://github.com/romkatv/powerlevel10k#zinit
+# p10k:  # https://github.com/romkatv/powerlevel10k#zinit
 zinit ice depth=1; zinit light romkatv/powerlevel10k
 # }}}
 
@@ -250,10 +254,10 @@ zstyle ':completion:*:processes' command 'ps -au$USER'
 zstyle ':completion:complete:*:options' sort false
 zstyle ':fzf-tab:complete:_zlua:*' query-string input
 zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
-zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview=$extract'ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
+zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview='ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
 zstyle ':fzf-tab:*' use-fzf-default-opts yes
-zstyle ":completion:*:git-checkout:*" sort false
+zstyle ':completion:*:git-checkout:*' sort false
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 
 # get rid of the prefix-dot (e.g. on kill <TAB>), see https://github.com/Aloxaf/fzf-tab/discussions/511
@@ -272,6 +276,11 @@ zstyle ':fzf-tab:complete:git-(add|diff|restore):*' fzf-preview \
 ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
 zinit ice wait="0a" lucid atload="_zsh_autosuggest_start"; zinit light zsh-users/zsh-autosuggestions
 # }}} /suggestions
+
+# consider also enahncd:
+# see also option to use zoxide as its backend: https://github.com/babarot/enhancd/issues/231
+#zinit ice wait="0b" lucid; zinit light babarot/enhancd
+#export ENHANCD_FILTER=fzf:fzy:peco
 
 # highlighting {{{  # from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc#L107
 # note zpcompinit & zpcdreplay replace our usual compinit/replay lines
@@ -385,6 +394,17 @@ command -v zoxide > /dev/null && eval -- "$(zoxide init zsh)"
 # alternatively, source it via zinit:
 #zinit ice has'zoxide'; zinit light ajeetdsouza/zoxide
 ########################################## /zoxide
+
+
+########################################## atuin  # https://github.com/atuinsh/atuin
+# Note: binds ctrl+r and others
+command -v atuin > /dev/null && source <(atuin init zsh)
+# or:
+#eval -- "$(atuin init zsh)"
+# or:
+#zinit light atuinsh/atuin  # quite pointless tho, see https://github.com/atuinsh/atuin/blob/main/atuin.plugin.zsh
+                            # although it can help time it, e.g. for ^R rebindings
+########################################## /atuin
 
 
 # other examples to consider:
