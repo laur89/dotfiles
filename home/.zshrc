@@ -22,6 +22,7 @@
 # - https://github.com/sainnhe/dotfiles/blob/master/.zshrc
 # - https://github.com/kdheepak/dotfiles/blob/main/zshrc
 # - as alternative to zinit, consider zim: https://github.com/zimfw/zimfw
+# - https://gist.github.com/mattmc3/c490d01751d6eb80aa541711ab1d54b1
 ##############################
 
 #zmodload zsh/zprof  # for debugging shell startup speed
@@ -34,7 +35,9 @@ setopt NUMERIC_GLOB_SORT  # Sort numbers numerically, not lexicographically.
 setopt NO_CLOBBER  # Don't let > silently overwrite files. To overwrite, use >! instead.
 # setopt HIST_ALLOW_CLOBBER
 
+unsetopt BEEP                  # turn off all beep/bell sounds
 #setopt HIST_BEEP              # Beep when accessing non-existent history.
+# unsetopt LIST_BEEP            # toggles beeps on ambiguous completions
 
 setopt INTERACTIVE_COMMENTS  # Treat comments pasted into the command line as comments, not code.
 #
@@ -67,6 +70,8 @@ setopt RC_QUOTES  # allow double-single-quote to signify a single quote within s
 setopt AUTO_PUSHD           # Push the current directory visited on the stack.
 setopt PUSHD_IGNORE_DUPS    # Do not store duplicates in the stack.
 setopt PUSHD_SILENT         # Do not print the directory stack after pushd or popd.
+#setopt PUSHD_MINUS          # Invert meanings of +N and -N arguments to pushd
+#setopt PUSHD_TO_HOME        # Have pushd with no arguments act like ‘pushd $HOME’
 
 # TODO: reconsider whether we want these dirstack aliases:
 # dirstack idea from https://thevaluable.dev/zsh-install-configure-mouseless/ :
@@ -211,6 +216,7 @@ zinit ice wait="0b" lucid blockf; zinit light zsh-users/zsh-completions  # TODO:
 #zinit ice wait="0b" silent pick"init.zsh" blockf; zinit snippet PZTM::completion  # TODO: why use blockf ice mod?
 
 unsetopt CORRECT   # note CORRECT tries to correct the spelling of commands
+# setopt NOCORRECT
 setopt COMPLETE_IN_WORD  # # Complete from both ends of a word.  # TODO: do we want this?
 setopt ALWAYS_TO_END  # Move cursor to the end of a completed word.
 setopt AUTO_LIST  # Automatically list choices on ambiguous completion.
@@ -227,6 +233,17 @@ setopt NO_AUTO_MENU  # require an extra TAB press to open the completion menu; n
 
 setopt NO_NOMATCH  # NOMATCH would print an error instead of leaving unchanged if pattern for filename generation has no matches
 setopt PATH_DIRS  # Perform path search even on command names with slashes.
+
+# Try to make the completion list smaller (occupying less lines) by printing the matches in columns with different widths:
+#setopt listpacked
+
+# Don't show file types in completion lists w/ trailing identifying mark:
+#setopt nolisttypes
+
+# If the argument to a cd command (or an implied cd with the AUTO_CD option set)
+# is not a directory, and does not begin with a slash, try to expand the
+# expression as if it were preceded by a '~':
+#setopt CDABLE_VARS
 
 unsetopt FLOW_CONTROL  # Enable the use of Ctrl-Q and Ctrl-S for keyboard shortcuts.
 # note https://github.com/sorin-ionescu/prezto/blob/master/modules/environment/init.zsh does this as follows, what's the difference?:
@@ -250,6 +267,7 @@ zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
 zstyle ':completion:*' menu no
 zstyle ':completion:*' select-prompt '%SScrolling active: current selection at %p%s'
 zstyle ':completion:*:descriptions' format '[%d]'
+#zstyle ':completion:*:descriptions' format '%U%F{yellow}%d%f%u'
 zstyle ':completion:*:processes' command 'ps -au$USER'
 zstyle ':completion:complete:*:options' sort false
 zstyle ':fzf-tab:complete:_zlua:*' query-string input
@@ -387,7 +405,7 @@ bindkey '^Z' fancy-ctrl-z
 #zinit cdreplay -q  # needs to be after compinit call; see https://github.com/zdharma-continuum/zinit#calling-compinit-without-turbo-mode
 
 ########################################## zoxide  # https://github.com/ajeetdsouza/zoxide
-# needs to be at the end of file, as it must be _after_ compinit is called.    TODO: compinit seq dependency
+# needs to be at the end of file, as it must be _after_ compinit is called.    TODO: compinit seq dependency, so perhaps zinit is the way to import?
 #export _ZO_DATA_DIR="$BASE_DATA_DIR/.zoxide"
 export _ZO_RESOLVE_SYMLINKS=1
 command -v zoxide > /dev/null && eval -- "$(zoxide init zsh)"
