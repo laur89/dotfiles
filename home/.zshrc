@@ -274,6 +274,7 @@ zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd
 zstyle ':completion:*:git-checkout:*' sort false
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 #zstyle ':completion:*' special-dirs true  # make sure _not_ to enable this, as it'll show . & .. dirs as per https://www.reddit.com/r/zsh/comments/i3o2cq/show_hidden_files_but_hide_and_from_completion/
+#zstyle ':completion:*' use-compctl false  # compctl is the old completion system, see https://zsh.sourceforge.io/Guide/zshguide06.html
 
 # to sort by mtime:
 #zstyle ':completion:*:vim:*' file-sort modification
@@ -483,14 +484,6 @@ function fancy-ctrl-z () {
 }
 zle -N fancy-ctrl-z
 bindkey '^Z' fancy-ctrl-z
-#########################################################################
-
-#
-#
-# think it's best to load compinit last, but unsure why
-# note compinit & cdreplay are commented out, as are invoked by zinit's "zpcompinit;zpcdreplay"
-#autoload -Uz compinit; compinit
-#zinit cdreplay -q  # needs to be after compinit call; see https://github.com/zdharma-continuum/zinit#calling-compinit-without-turbo-mode
 
 ########################################## forgit  https://github.com/wfxr/forgit
 _forgit="$BASE_PROGS_DIR/forgit/forgit.plugin.zsh"
@@ -523,26 +516,14 @@ command -v atuin > /dev/null && source <(atuin init zsh)
 #function md() { [[ $# == 1 ]] && mkdir -p -- "$1" && cd -- "$1" }
 #compdef _directories md
 #
-#
-#------ TODO: think debian default config gave also these: (are these done by running $ compinstall ?)
 
-
-#zstyle ':completion:*' auto-description 'specify: %d'
-#zstyle ':completion:*' completer _expand _complete _correct _approximate
-#zstyle ':completion:*' format 'Completing %d'
-#zstyle ':completion:*' group-name ''
-#zstyle ':completion:*' menu select=2
-#zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
-#zstyle ':completion:*' list-colors ''
-#zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
-#zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'
-#zstyle ':completion:*' menu select=long
-#zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s
-#zstyle ':completion:*' use-compctl false
-#zstyle ':completion:*' verbose true
-
-#zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
-#zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+#########################################################################
+#
+# think it's best to load compinit last, but unsure why
+# note compinit & cdreplay are commented out, as are invoked by zinit's "zpcompinit;zpcdreplay"
+#autoload -Uz compinit; compinit
+#zinit cdreplay -q  # needs to be after compinit call; see https://github.com/zdharma-continuum/zinit#calling-compinit-without-turbo-mode
