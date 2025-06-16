@@ -164,8 +164,8 @@ zinit ice depth=1; zinit light laur89/zsh-vi-mode  # https://github.com/jeffreyt
 zinit ice pick"bd.zsh"; zinit light Tarrasch/zsh-bd  # https://github.com/Tarrasch/zsh-bd
 zinit light paulirish/git-open  # https://github.com/paulirish/git-open
 
-# TODO: alias-tips makes post-cmd-execution prompt refresh slow!
-#       alias-finder, recommended in alias-tips issues, is told to be 10x faster tho: https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/alias-finder
+# TODO: "alias-tips" makes post-cmd-execution prompt refresh slow!
+#       alias-finder, recommended in alias-tips/issues, is told to be 10x faster tho: https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/alias-finder
 #zinit light djui/alias-tips  # https://github.com/djui/alias-tips
 zinit snippet OMZP::alias-finder
 
@@ -264,31 +264,113 @@ fi
 zstyle ':completion:*' completer _expand _complete _ignored _approximate
 # mathcer-list be set to a list of match specifications that are to be applied everywhere, see https://zsh.sourceforge.io/Doc/Release/Completion-Widgets.html#Completion-Matching-Control :
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
-zstyle ':completion:*' menu no
+zstyle ':completion:*' menu no  # force zsh not to show completion menu, which allows fzf-tab to capture the unambiguous prefix
 zstyle ':completion:*' select-prompt '%SScrolling active: current selection at %p%s'
 zstyle ':completion:*:descriptions' format '[%d]'
-#zstyle ':completion:*:descriptions' format '%U%F{yellow}%d%f%u'
-zstyle ':completion:*:processes' command 'ps -au$USER'
+#zstyle ':completion:*:descriptions' format '%U%F{yellow}%d%f%u'  # fzf-tab will ignore escape sequences like %F{red}
 zstyle ':completion:complete:*:options' sort false
-zstyle ':fzf-tab:complete:_zlua:*' query-string input
+#zstyle ':completion:*:processes' command 'ps -au$USER'
 zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
-zstyle ':fzf-tab:complete:kill:argument-rest' extra-opts --preview='ps --pid=$in[(w)1] -o cmd --no-headers -w -w' --preview-window=down:3:wrap
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
-zstyle ':fzf-tab:*' use-fzf-default-opts yes
 zstyle ':completion:*:git-checkout:*' sort false
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+#zstyle ':completion:*' special-dirs true  # make sure _not_ to enable this, as it'll show . & .. dirs as per https://www.reddit.com/r/zsh/comments/i3o2cq/show_hidden_files_but_hide_and_from_completion/
 
-# get rid of the prefix-dot (e.g. on kill <TAB>), see https://github.com/Aloxaf/fzf-tab/discussions/511
-zstyle ':fzf-tab:*' prefix ''
-
-# TODO: new zstyles:
 # to sort by mtime:
 #zstyle ':completion:*:vim:*' file-sort modification
+# }}} /completion
 
+# get rid of the prefix-dot (e.g. shown on kill <TAB>), see https://github.com/Aloxaf/fzf-tab/discussions/511 :
+zstyle ':fzf-tab:*' prefix ''
+
+# To make fzf-tab follow FZF_DEFAULT_OPTS.
+# NOTE: This may lead to unexpected behavior since some flags break this plugin. See Aloxaf/fzf-tab#455.
+zstyle ':fzf-tab:*' use-fzf-default-opts yes
+
+zstyle ':fzf-tab:*' switch-group '<' '>'  # default bindings are F1 & F2
+
+# make use of tmux popup feature:
+zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
+
+# TODO: review minimal popup win size config:
+# increase minimal size of popup window; useful w/ fzf-preview:
+# increase for all commands:
+zstyle ':fzf-tab:*' popup-min-size 50 8
+# ...or only increase for 'diff':
+zstyle ':fzf-tab:complete:diff:*' popup-min-size 80 12
+
+#zstyle ':fzf-tab:*' accept-line enter  # key to accept and run a suggestion in one keystroke
+
+### fzf-tab preview {{{
+## NOTE: either we configure all per-command fzf-tab configs here, or use this
+#        plugin, as per fzf-tab/wiki/Preview:  https://github.com/Freed-Wu/fzf-tab-source
+#
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
+
+zstyle ':fzf-tab:complete:(kill|ps):argument-rest' fzf-preview \
+  '[[ $group == "[process ID]" ]] && ps --pid=$word -o cmd --no-headers -w -w'
+zstyle ':fzf-tab:complete:(kill|ps):argument-rest' fzf-flags --preview-window=down:3:wrap
+
+zstyle ':fzf-tab:complete:tldr:argument-1' fzf-preview 'tldr --color always $word'  # TODO: doesn't work
+
+# env vars:
+zstyle ':fzf-tab:complete:(-command-|-parameter-|-brace-parameter-|export|unset|expand):*' fzf-preview 'echo ${(P)word}'
+#zstyle ':fzf-tab:complete:(-command-|-parameter-|-brace-parameter-|export|unset|expand):*' fzf-preview 'eval echo \$$word'
+
+
+#zstyle ':fzf-tab:complete:_zlua:*' query-string input  # think it's for https://github.com/skywind3000/z.lua
+
+zstyle ':fzf-tab:complete:systemctl-*:*' fzf-preview 'SYSTEMD_COLORS=1 systemctl status $word'  # show systemd unit status
+
+# git previews: {
 zstyle ':fzf-tab:complete:git-(add|diff|restore):*' fzf-preview \
 	'git diff $word | delta'
+zstyle ':fzf-tab:complete:git-log:*' fzf-preview \
+	'git log --color=always $word'
+zstyle ':fzf-tab:complete:git-help:*' fzf-preview \
+	'git help $word | bat -plman --color=always'
+zstyle ':fzf-tab:complete:git-show:*' fzf-preview \
+	'case "$group" in
+	"commit tag") git show --color=always $word ;;
+	*) git show --color=always $word | delta ;;
+	esac'
+zstyle ':fzf-tab:complete:git-checkout:*' fzf-preview \
+	'case "$group" in
+	"modified file") git diff $word | delta ;;
+	"recent commit object name") git show --color=always $word | delta ;;
+	*) git log --color=always $word ;;
+	esac'
+# }
 
-# }}} /completion
+# general preview using ~/.lessfilter: {
+zstyle ':fzf-tab:complete:*:*' fzf-preview 'less ${(Q)realpath}'
+export LESSOPEN='|~/.lessfilter %s'
+# } ...or our own script: {
+#PREVIEW_SNIPPET='/data/dev/scripts/system/preview-file $realpath'
+#zstyle ':fzf-tab:complete:(-command-|-parameter-|-brace-parameter-|export|unset|expand):*' fzf-preview 'eval echo \$$word'
+#zstyle ':fzf-tab:complete:*:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:ln:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:ls:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:cd:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:z:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:zd:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:eza:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:v:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:nvim:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:vim:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:vi:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:c:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:cat:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:bat:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:rm:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:cp:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:mv:*' fzf-preview $PREVIEW_SNIPPET
+##zstyle ':fzf-tab:complete:rsync:*' fzf-preview $PREVIEW_SNIPPET
+# }
+
+### }}} /fzf-tab preview
+
+
+
 
 # suggestions {{{  # from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc#L75
 ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
@@ -314,6 +396,7 @@ zinit ice wait="1a" lucid; zinit light Aloxaf/fzf-tab
 
 # completion fallback to bash completions  # https://github.com/3v1n0/zsh-bash-completions-fallback
 # as per readme: Make sure you load this after other plugins to prevent their completions to be replaced by the (simpler) bash ones.
+# note it's similar to built-in bashcompinit, but readme states it doesn't work as well.
 #zinit ice wait="1c" depth=1; zinit light 3v1n0/zsh-bash-completions-fallback
 
 
@@ -444,22 +527,22 @@ command -v atuin > /dev/null && source <(atuin init zsh)
 #------ TODO: think debian default config gave also these: (are these done by running $ compinstall ?)
 
 
-zstyle ':completion:*' auto-description 'specify: %d'
-zstyle ':completion:*' completer _expand _complete _correct _approximate
-zstyle ':completion:*' format 'Completing %d'
-zstyle ':completion:*' group-name ''
-zstyle ':completion:*' menu select=2
-zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
-zstyle ':completion:*' list-colors ''
-zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
-zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'
-zstyle ':completion:*' menu select=long
-zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s
-zstyle ':completion:*' use-compctl false
-zstyle ':completion:*' verbose true
+#zstyle ':completion:*' auto-description 'specify: %d'
+#zstyle ':completion:*' completer _expand _complete _correct _approximate
+#zstyle ':completion:*' format 'Completing %d'
+#zstyle ':completion:*' group-name ''
+#zstyle ':completion:*' menu select=2
+#zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+#zstyle ':completion:*' list-colors ''
+#zstyle ':completion:*' list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
+#zstyle ':completion:*' matcher-list '' 'm:{a-z}={A-Z}' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=* l:|=*'
+#zstyle ':completion:*' menu select=long
+#zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s
+#zstyle ':completion:*' use-compctl false
+#zstyle ':completion:*' verbose true
 
-zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
-zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
+#zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+#zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
