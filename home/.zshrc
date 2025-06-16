@@ -310,7 +310,12 @@ zinit light zdharma-continuum/fast-syntax-highlighting
 # !!! needs to be loaded _after_ compinit, but before plugins which will wrap
 #     widgets, such as zsh-autosuggestions or fast-syntax-highlighting;
 #     note atm our compinit is ran by some other plug's zinit "zpcompinit;zpcdreplay"
-zinit ice wait="1" lucid; zinit light Aloxaf/fzf-tab
+zinit ice wait="1a" lucid; zinit light Aloxaf/fzf-tab
+
+# completion fallback to bash completions  # https://github.com/3v1n0/zsh-bash-completions-fallback
+# as per readme: Make sure you load this after other plugins to prevent their completions to be replaced by the (simpler) bash ones.
+#zinit ice wait="1c" depth=1; zinit light 3v1n0/zsh-bash-completions-fallback
+
 
 # bunch of themes in https://github.com/sainnhe/dotfiles/blob/master/.zsh-theme/README.md
 #zinit snippet https://github.com/sainnhe/dotfiles/raw/master/.zsh-theme/gruvbox-material-dark.zsh
@@ -403,6 +408,11 @@ bindkey '^Z' fancy-ctrl-z
 # note compinit & cdreplay are commented out, as are invoked by zinit's "zpcompinit;zpcdreplay"
 #autoload -Uz compinit; compinit
 #zinit cdreplay -q  # needs to be after compinit call; see https://github.com/zdharma-continuum/zinit#calling-compinit-without-turbo-mode
+
+########################################## forgit  https://github.com/wfxr/forgit
+_forgit="$BASE_PROGS_DIR/forgit/forgit.plugin.zsh"
+[[ -f "$_forgit" ]] && source "$_forgit"
+unset _forgit
 
 ########################################## zoxide  # https://github.com/ajeetdsouza/zoxide
 # needs to be at the end of file, as it must be _after_ compinit is called.    TODO: compinit seq dependency, so perhaps zinit is the way to import?
