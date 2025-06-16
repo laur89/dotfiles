@@ -1,0 +1,33 @@
+#! /usr/bin/env sh
+# good lessfilter reference: https://github.com/Freed-Wu/Freed-Wu/blob/main/.lessfilter
+#
+# from https://github.com/Aloxaf/fzf-tab/wiki/Preview#show-file-contents
+#
+# essentially similar to our scripts/system/preview-file (and similar scripts),
+# but to be used w/ less (and $LESSOPEN env var)
+#
+# as per lessopen manpage, this script should exit w/ 1 if the standard
+# lesspipe/lessfile filter should handle the input, 0 if we handle it
+#
+# #####################################################
+# this is a example of .lessfilter, you can change it
+mime=$(file -bL --mime-type "$1")
+category=${mime%%/*}
+kind=${mime##*/}
+if [ -d "$1" ]; then
+	eza --git -hl --color=always --icons "$1"
+elif [ "$category" = image ]; then
+	chafa "$1"
+	exiftool "$1"
+elif [ "$kind" = vnd.openxmlformats-officedocument.spreadsheetml.sheet ] || \
+	[ "$kind" = vnd.ms-excel ]; then
+	in2csv "$1" | xsv table | bat -ltsv --color=always
+elif [ "$category" = text ]; then
+	bat --color=always "$1"
+else
+    #exit 1
+	lesspipe.sh "$1" | bat --color=always
+fi
+# lesspipe.sh don't use eza, bat and chafa, it use ls and exiftool. so we create a lessfilter.
+
+exit 0
