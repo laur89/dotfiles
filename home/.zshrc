@@ -23,9 +23,18 @@
 # - https://github.com/kdheepak/dotfiles/blob/main/zshrc
 # - as alternative to zinit, consider zim: https://github.com/zimfw/zimfw
 # - https://gist.github.com/mattmc3/c490d01751d6eb80aa541711ab1d54b1
+# - https://github.com/Freed-Wu/Freed-Wu/blob/main/.zshrc
 ##############################
 
 #zmodload zsh/zprof  # for debugging shell startup speed
+
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+# see https://github.com/romkatv/powerlevel10k?tab=readme-ov-file#how-do-i-configure-instant-prompt
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
 
 # Enable ** and *** as shortcuts for **/* and ***/*, respectively:
 # https://zsh.sourceforge.io/Doc/Release/Expansion.html#Recursive-Globbing
@@ -34,6 +43,9 @@ setopt GLOB_STAR_SHORT
 setopt NUMERIC_GLOB_SORT  # Sort numbers numerically, not lexicographically.
 setopt NO_CLOBBER  # Don't let > silently overwrite files. To overwrite, use >! instead.
 # setopt HIST_ALLOW_CLOBBER
+
+#setopt REMATCH_PCRE  # regular expression matching with the =~ operator will use Perl-Compatible Regular Expressions from the PCRE library. (The zsh/pcre module must be available.) If not set, regular expressions will use the extended regexp syntax provided by the system libraries
+#zmodload zsh/pcre
 
 unsetopt BEEP                  # turn off all beep/bell sounds
 #setopt HIST_BEEP              # Beep when accessing non-existent history.
@@ -72,6 +84,9 @@ setopt PUSHD_IGNORE_DUPS    # Do not store duplicates in the stack.
 setopt PUSHD_SILENT         # Do not print the directory stack after pushd or popd.
 #setopt PUSHD_MINUS          # Invert meanings of +N and -N arguments to pushd
 #setopt PUSHD_TO_HOME        # Have pushd with no arguments act like ‘pushd $HOME’
+
+#setopt CHASE_LINKS  # Resolve symbolic links to their true values when changing directory.
+                     # This also has the effect of CHASE_DOTS
 
 # TODO: reconsider whether we want these dirstack aliases:
 # dirstack idea from https://thevaluable.dev/zsh-install-configure-mouseless/ :
@@ -149,17 +164,32 @@ command -v fzf > /dev/null && source <(fzf --zsh)
 ########################################## /fzf
 
 ### fzf-driven history select   # https://github.com/joshskidmore/zsh-fzf-history-search#zinit
-zinit ice lucid wait'0'
-zinit light joshskidmore/zsh-fzf-history-search
+# replaces Ctrl+R with an fzf-driven select which includes date/times.
+# TODO: sets ctrl+r, conflicts w/ atuin?
+zinit ice lucid wait'0'; zinit light joshskidmore/zsh-fzf-history-search
 
 #ZSH_FZF_HISTORY_SEARCH_BIND='^r'
 ZSH_FZF_HISTORY_SEARCH_END_OF_LINE=''  # place cursor end of line after completion; empty=false
 ### /fzf-hist
 
 # other plugins:
-ZVM_FAST_ESCAPE=y
+# vim mode {{{
+ZVM_FAST_ESCAPE=true  # see https://github.com/jeffreytse/zsh-vi-mode/pull/308
 zinit ice depth=1; zinit light laur89/zsh-vi-mode  # https://github.com/jeffreytse/zsh-vi-mode  # TODO: currently using own fork of zsh-vi-mode 'til a PR gets merged upstream:
 # note source of other cool vi-mode plugins is https://github.com/zsh-vi-more
+# }}} or alternatively: {{{
+#     Cursor    # from https://github.com/Freed-Wu/Freed-Wu/blob/main/.zshrc
+#     add-surround in visual mode cannot be highlighted
+#MODE_CURSOR_VIINS='blinking bar'
+#MODE_CURSOR_REPLACE='blinking underline'
+#MODE_CURSOR_VICMD='blinking block'
+#MODE_CURSOR_SEARCH=underline
+#MODE_CURSOR_VISUAL=block
+#MODE_CURSOR_VLINE=bar
+#zinit id-as depth'1' wait lucid \
+  #atload'. ~/script/zinit/vim-mode/atload.zsh' \
+  #for softmoth/zsh-vim-mode
+# }}} Cursor #
 
 zinit ice pick"bd.zsh"; zinit light Tarrasch/zsh-bd  # https://github.com/Tarrasch/zsh-bd
 zinit light paulirish/git-open  # https://github.com/paulirish/git-open
@@ -227,7 +257,6 @@ setopt COMPLETE_ALIASES
 # https://zsh.sourceforge.io/Doc/Release/Expansion.html#Filename-Generation
 setopt EXTENDED_GLOB
 
-setopt FLOW_CONTROL
 #setopt MENU_COMPLETE  # instead of listing possibilites or beeping, insert the first match immediately
 setopt NO_AUTO_MENU  # require an extra TAB press to open the completion menu; note this opt is overridden by MENU_COMPLETE
 
@@ -245,6 +274,7 @@ setopt PATH_DIRS  # Perform path search even on command names with slashes.
 # expression as if it were preceded by a '~':
 #setopt CDABLE_VARS
 
+#setopt FLOW_CONTROL
 unsetopt FLOW_CONTROL  # Enable the use of Ctrl-Q and Ctrl-S for keyboard shortcuts.
 # note https://github.com/sorin-ionescu/prezto/blob/master/modules/environment/init.zsh does this as follows, what's the difference?:
 # [[ -r ${TTY:-} && -w ${TTY:-} && $+commands[stty] == 1 ]] && stty -ixon <$TTY >$TTY
@@ -273,8 +303,15 @@ zstyle ':completion:complete:*:options' sort false
 zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
 zstyle ':completion:*:git-checkout:*' sort false
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+zstyle ':completion:*' option-stacking true
 #zstyle ':completion:*' special-dirs true  # make sure _not_ to enable this, as it'll show . & .. dirs as per https://www.reddit.com/r/zsh/comments/i3o2cq/show_hidden_files_but_hide_and_from_completion/
 #zstyle ':completion:*' use-compctl false  # compctl is the old completion system, see https://zsh.sourceforge.io/Guide/zshguide06.html
+#zstyle ':completion:*' muttrc ${XDG_CONFIG_HOME:-$HOME/.config}/neomutt/neomuttrc   # TODO
+
+# enable these two if not using fzf-tab:
+#zstyle ':completion:*' menu select
+#zstyle ':completion:*' extra-verbose true
+
 
 # to sort by mtime:
 #zstyle ':completion:*:vim:*' file-sort modification
@@ -305,75 +342,91 @@ zstyle ':fzf-tab:complete:diff:*' popup-min-size 80 12
 ## NOTE: either we configure all per-command fzf-tab configs here, or use this
 #        plugin, as per fzf-tab/wiki/Preview:  https://github.com/Freed-Wu/fzf-tab-source
 #
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
+#zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
 
-zstyle ':fzf-tab:complete:(kill|ps):argument-rest' fzf-preview \
-  '[[ $group == "[process ID]" ]] && ps --pid=$word -o cmd --no-headers -w -w'
-zstyle ':fzf-tab:complete:(kill|ps):argument-rest' fzf-flags --preview-window=down:3:wrap
+#zstyle ':fzf-tab:complete:(kill|ps):argument-rest' fzf-preview \
+  #'[[ $group == "[process ID]" ]] && ps --pid=$word -o cmd --no-headers -w -w'
+#zstyle ':fzf-tab:complete:(kill|ps):argument-rest' fzf-flags --preview-window=down:3:wrap
 
-zstyle ':fzf-tab:complete:tldr:argument-1' fzf-preview 'tldr --color always $word'  # TODO: doesn't work
+#zstyle ':fzf-tab:complete:tldr:argument-1' fzf-preview 'tldr --color always $word'  # TODO: doesn't work
 
-# env vars:
-zstyle ':fzf-tab:complete:(-command-|-parameter-|-brace-parameter-|export|unset|expand):*' fzf-preview 'echo ${(P)word}'
-#zstyle ':fzf-tab:complete:(-command-|-parameter-|-brace-parameter-|export|unset|expand):*' fzf-preview 'eval echo \$$word'
+## env vars:
+#zstyle ':fzf-tab:complete:(-command-|-parameter-|-brace-parameter-|export|unset|expand):*' fzf-preview 'echo ${(P)word}'
+##zstyle ':fzf-tab:complete:(-command-|-parameter-|-brace-parameter-|export|unset|expand):*' fzf-preview 'eval echo \$$word'
 
 
-#zstyle ':fzf-tab:complete:_zlua:*' query-string input  # think it's for https://github.com/skywind3000/z.lua
+##zstyle ':fzf-tab:complete:_zlua:*' query-string input  # think it's for https://github.com/skywind3000/z.lua
 
-zstyle ':fzf-tab:complete:systemctl-*:*' fzf-preview 'SYSTEMD_COLORS=1 systemctl status $word'  # show systemd unit status
+#zstyle ':fzf-tab:complete:systemctl-*:*' fzf-preview 'SYSTEMD_COLORS=1 systemctl status $word'  # show systemd unit status
 
-# git previews: {
-zstyle ':fzf-tab:complete:git-(add|diff|restore):*' fzf-preview \
-	'git diff $word | delta'
-zstyle ':fzf-tab:complete:git-log:*' fzf-preview \
-	'git log --color=always $word'
-zstyle ':fzf-tab:complete:git-help:*' fzf-preview \
-	'git help $word | bat -plman --color=always'
-zstyle ':fzf-tab:complete:git-show:*' fzf-preview \
-	'case "$group" in
-	"commit tag") git show --color=always $word ;;
-	*) git show --color=always $word | delta ;;
-	esac'
-zstyle ':fzf-tab:complete:git-checkout:*' fzf-preview \
-	'case "$group" in
-	"modified file") git diff $word | delta ;;
-	"recent commit object name") git show --color=always $word | delta ;;
-	*) git log --color=always $word ;;
-	esac'
-# }
+## git previews: {
+#zstyle ':fzf-tab:complete:git-(add|diff|restore):*' fzf-preview \
+	#'git diff $word | delta'
+#zstyle ':fzf-tab:complete:git-log:*' fzf-preview \
+	#'git log --color=always $word'
+#zstyle ':fzf-tab:complete:git-help:*' fzf-preview \
+	#'git help $word | bat -plman --color=always'
+#zstyle ':fzf-tab:complete:git-show:*' fzf-preview \
+	#'case "$group" in
+	#"commit tag") git show --color=always $word ;;
+	#*) git show --color=always $word | delta ;;
+	#esac'
+#zstyle ':fzf-tab:complete:git-checkout:*' fzf-preview \
+	#'case "$group" in
+	#"modified file") git diff $word | delta ;;
+	#"recent commit object name") git show --color=always $word | delta ;;
+	#*) git log --color=always $word ;;
+	#esac'
+## }
 
-# general preview using ~/.lessfilter: {
-zstyle ':fzf-tab:complete:*:*' fzf-preview 'less ${(Q)realpath}'
-export LESSOPEN='|~/.lessfilter %s'
-# } ...or our own script: {
-#PREVIEW_SNIPPET='/data/dev/scripts/system/preview-file $realpath'
-#zstyle ':fzf-tab:complete:(-command-|-parameter-|-brace-parameter-|export|unset|expand):*' fzf-preview 'eval echo \$$word'
-#zstyle ':fzf-tab:complete:*:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:ln:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:ls:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:cd:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:z:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:zd:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:eza:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:v:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:nvim:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:vim:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:vi:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:c:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:cat:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:bat:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:rm:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:cp:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:mv:*' fzf-preview $PREVIEW_SNIPPET
-##zstyle ':fzf-tab:complete:rsync:*' fzf-preview $PREVIEW_SNIPPET
-# }
+## general preview using ~/.lessfilter: {
+#zstyle ':fzf-tab:complete:*:*' fzf-preview 'less ${(Q)realpath}'
+#export LESSOPEN='|~/.lessfilter %s'
+## } ...or our own script: {
+##PREVIEW_SNIPPET='/data/dev/scripts/system/preview-file $realpath'
+##zstyle ':fzf-tab:complete:(-command-|-parameter-|-brace-parameter-|export|unset|expand):*' fzf-preview 'eval echo \$$word'
+##zstyle ':fzf-tab:complete:*:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:ln:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:ls:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:cd:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:z:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:zd:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:eza:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:v:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:nvim:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:vim:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:vi:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:c:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:cat:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:bat:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:rm:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:cp:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:mv:*' fzf-preview $PREVIEW_SNIPPET
+###zstyle ':fzf-tab:complete:rsync:*' fzf-preview $PREVIEW_SNIPPET
+## }
 
 ### }}} /fzf-tab preview
 
 
 
 
-# suggestions {{{  # from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc#L75
+# suggestions {{{  # some from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc#L75
+# - must load before zsh-autosuggestions (from https://github.com/Freed-Wu/Freed-Wu/blob/main/.zshrc)
+# - also note https://github.com/zsh-users/zsh-history-substring-search says
+#   highlighting needs to be loaded _before_
+# TODO: does it conflict w/ atuin?
+#zinit id-as depth'1' wait lucid \
+  #atload'bindkey "^[p" history-substring-search-up
+  #bindkey "^[n" history-substring-search-down
+  #bindkey -Mvicmd gk history-substring-search-up
+  #bindkey -Mvicmd gj history-substring-search-down
+  #bindkey -Mvicmd zk history-search-backward
+  #bindkey -Mvicmd zj history-search-forward' \
+  #for zsh-users/zsh-history-substring-search
+
+# TODO:!!!!
+# https://github.com/romkatv/zsh-bench?tab=readme-ov-file#deferred-initialization
+# mentions it must be initialized after syntax highlighting!
 ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
 zinit ice wait="0a" lucid atload="_zsh_autosuggest_start"; zinit light zsh-users/zsh-autosuggestions
 # }}} /suggestions
@@ -394,6 +447,36 @@ zinit light zdharma-continuum/fast-syntax-highlighting
 #     widgets, such as zsh-autosuggestions or fast-syntax-highlighting;
 #     note atm our compinit is ran by some other plug's zinit "zpcompinit;zpcdreplay"
 zinit ice wait="1a" lucid; zinit light Aloxaf/fzf-tab
+
+zinit id-as depth'1' wait lucid \
+  if'(($+commands[fzf]))' \
+  for Freed-Wu/fzf-tab-source
+
+zinit id-as depth'1' wait lucid for hlissner/zsh-autopair
+
+# colorize `XXX --help`:
+zinit id-as depth'1' wait lucid for Freed-Wu/zsh-help
+# colorize functions:
+zinit id-as depth'1' wait lucid for Freed-Wu/zsh-colorize-functions
+
+# keep track of the last used working directory and automatically jumps into it for
+# new shells, unless plugin is already loaded or pwd is not HOME:
+#zinit id-as depth'1' for mdumitru/last-working-dir
+
+# uses the apt pkg command_not_found_handler:
+#zinit id-as depth'1' wait lucid for Freed-Wu/zsh-command-not-found
+
+# consider easy-motion: https://github.com/IngoMeyer441/zsh-easy-motion
+# possibly conflicts w/ zsh-system-clipboard as noted in https://github.com/Freed-Wu/Freed-Wu/blob/main/.zshrc
+# zinit id-as depth'1' wait lucid \
+  # atload'bindkey -Mvicmd " " vi-easy-motion' \
+  # for IngoHeimbach/zsh-easy-motion
+
+ZSH_SYSTEM_CLIPBOARD_METHOD=xsc
+zinit id-as depth'1' wait lucid \
+  if'(($+commands[xsel] || $+commands[xclip] || $+commands[wl-copy]))' \
+  for kutsan/zsh-system-clipboard
+bindkey -M vicmd Y zsh-system-clipboard-vicmd-vi-yank-eol  # bind Y to yank until end of line
 
 # completion fallback to bash completions  # https://github.com/3v1n0/zsh-bash-completions-fallback
 # as per readme: Make sure you load this after other plugins to prevent their completions to be replaced by the (simpler) bash ones.
@@ -454,6 +537,7 @@ alias -s gz='gzip -l'
 alias -s {log,out}='tail -F'
 
 
+# TODO: change to bat/batcat?:
 READNULLCMD=$PAGER  # Use `< file` to quickly view the contents of any text file
 ### /COMMANDS
 
@@ -502,6 +586,9 @@ command -v zoxide > /dev/null && eval -- "$(zoxide init zsh)"
 
 ########################################## atuin  # https://github.com/atuinsh/atuin
 # Note: binds ctrl+r and others
+#
+# consider also:
+#   - atuin init zsh --disable-up-arrow
 command -v atuin > /dev/null && source <(atuin init zsh)
 # or:
 #eval -- "$(atuin init zsh)"
