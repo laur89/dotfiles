@@ -166,7 +166,7 @@ command -v fzf > /dev/null && source <(fzf --zsh)
 ### fzf-driven history select   # https://github.com/joshskidmore/zsh-fzf-history-search#zinit
 # replaces Ctrl+R with an fzf-driven select which includes date/times.
 # TODO: sets ctrl+r, conflicts w/ atuin?
-zinit ice lucid wait'0'; zinit light joshskidmore/zsh-fzf-history-search
+zinit ice lucid wait='0b'; zinit light joshskidmore/zsh-fzf-history-search
 
 #ZSH_FZF_HISTORY_SEARCH_BIND='^r'
 ZSH_FZF_HISTORY_SEARCH_END_OF_LINE=''  # place cursor end of line after completion; empty=false
@@ -241,7 +241,7 @@ zinit snippet PZTM::terminal  # https://github.com/sorin-ionescu/prezto/tree/mas
 
 
 # completion {{{
-zinit ice wait="0b" lucid blockf; zinit light zsh-users/zsh-completions  # TODO: why use blockf ice mod?
+zinit ice wait="0c" lucid blockf; zinit light zsh-users/zsh-completions  # TODO: why use blockf ice mod?
 # note completion PZT module by default adds  zsh-users/zsh-completions to our fpath
 #zinit ice wait="0b" silent pick"init.zsh" blockf; zinit snippet PZTM::completion  # TODO: why use blockf ice mod?
 
@@ -428,7 +428,7 @@ zstyle ':fzf-tab:complete:diff:*' popup-min-size 80 12
 # https://github.com/romkatv/zsh-bench?tab=readme-ov-file#deferred-initialization
 # mentions it must be initialized after syntax highlighting!
 ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
-zinit ice wait="0a" lucid atload="_zsh_autosuggest_start"; zinit light zsh-users/zsh-autosuggestions
+zinit ice wait="0c" lucid atload="_zsh_autosuggest_start"; zinit light zsh-users/zsh-autosuggestions
 # }}} /suggestions
 
 # consider also enahncd:
@@ -438,7 +438,7 @@ zinit ice wait="0a" lucid atload="_zsh_autosuggest_start"; zinit light zsh-users
 
 # highlighting {{{  # from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc#L107
 # note zpcompinit & zpcdreplay replace our usual compinit/replay lines
-zinit ice wait="0c" lucid atinit="zpcompinit;zpcdreplay"
+zinit ice wait="0b" lucid atinit="zpcompinit;zpcdreplay"
 zinit light zdharma-continuum/fast-syntax-highlighting
 # }}} /highlighting
 
@@ -446,7 +446,7 @@ zinit light zdharma-continuum/fast-syntax-highlighting
 # !!! needs to be loaded _after_ compinit, but before plugins which will wrap
 #     widgets, such as zsh-autosuggestions or fast-syntax-highlighting;
 #     note atm our compinit is ran by some other plug's zinit "zpcompinit;zpcdreplay"
-zinit ice wait="1a" lucid; zinit light Aloxaf/fzf-tab
+zinit ice wait="0a" lucid; zinit light Aloxaf/fzf-tab
 
 zinit id-as depth'1' wait lucid \
   if'(($+commands[fzf]))' \
