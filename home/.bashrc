@@ -83,16 +83,13 @@ xterm*|rxvt*)
     ;;
 esac
 
-# enable color support of ls and also add handy aliases
-if [ -x /usr/bin/dircolors ]; then
-    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
-
-    #alias grep='grep --color=auto'
-    #alias fgrep='fgrep --color=auto'
-    #alias egrep='egrep --color=auto'
+# enable color support of ls
+if [[ -x /usr/bin/dircolors ]]; then
+    if [[ -f "$BASE_PROGS_DIR/LS_COLORS/lscolors.sh" ]]; then
+        source "$BASE_PROGS_DIR/LS_COLORS/lscolors.sh"
+    else
+        [[ -r "$HOME/.dircolors" ]] && eval "$(dircolors -b "$HOME/.dircolors")" || eval "$(dircolors -b)"
+    fi
 fi
 
 # colored GCC warnings and errors
@@ -124,7 +121,7 @@ fi
 # good source http://tldp.org/LDP/abs/html/sample-bashrc.html
 #
 #
-#umask 0077  # rw by owner alone -- should be set via systemd conf instead!
+#umask 0077  # rw by owner alone -- should be set via systemd conf (or perhaps ~/.profile) instead!
 
 ##########################################
 # shell opts:
@@ -212,6 +209,7 @@ set -o vi               # needs to be added *before* fzf is sourced, otherwise f
                         #     https://github.com/junegunn/fzf#key-bindings-for-command-line
 stty -ixon              # disable ctrl+s/ctrl+q;
 set -o pipefail
+set -o noclobber        # do not allow overwriting existing files w/ > redirection; use >| to explicitly overwrite
 
 unset MAILCHECK         # avoid delays;
 ##########################################
@@ -306,7 +304,7 @@ unset _BGPRMPT
 
 ########################################## /bash-prompt
 #ruby env (rbenv) - enable shims and autocompletion:  (as per `rbenv init` instructions)
-command -v rbenv >/dev/null 2>/dev/null && eval "$(rbenv init -)"
+#command -v rbenv >/dev/null 2>/dev/null && eval "$(rbenv init -)"
 
 # add local ruby gems to path: # https://guides.rubygems.org/faqs/#i-installed-gems-with---user-install-and-their-commands-are-not-available
 # note this needs to exec after rbenv (or other shim-based ver manager) has set the version, assuming we use shim-based solution
@@ -317,16 +315,8 @@ if command -v ruby >/dev/null && command -v gem >/dev/null; then
 fi
 
 ##########################################
-# git-flow-competion:
-[[ -f "$BASE_PROGS_DIR/git-flow-completion/git-flow-completion.bash" ]] && source "$HOME/.git-flow-completion/git-flow-completion.bash"
-
-##########################################
-# maven-bash-completion:
-[[ -e "$HOME/.bash_completion.d/maven-completion.bash" ]] && source "$HOME/.bash_completion.d/maven-completion.bash"
-
-##########################################
-# gradle bash completion:
-[[ -e "$HOME/.bash_completion.d/gradle-completion.bash" ]] && source "$HOME/.bash_completion.d/gradle-completion.bash"
+# gradle bash completion: (see https://github.com/gradle/gradle-completion/blob/master/README.md#installation-for-bash-32)
+# to allow completion of implicit tasks:
 #export GRADLE_COMPLETION_UNQUALIFIED_TASKS="true"
 
 ##########################################
@@ -364,13 +354,13 @@ __check_for_change_and_compile_ssh_config() {
                 || ! [[ -e "$ssh_config" ]]; then
             # cat, not move ssh/config, as it's likely a symlink!
             [[ -f "$ssh_config" ]] && cat -- "$ssh_config" > "${ssh_config}.bak.$(date -Ins)"
-            cat -- "$ssh_configdir"/* > "$ssh_config"
+            cat -- "$ssh_configdir"/* >| "$ssh_config"
             sanitize_ssh "$HOME/.ssh"
             modified=1
         fi
 
         # avoid pointless $stored_md5sum writing:
-        [[ "$modified" == 1 || "$stored_md5sum_exist" -ne 0 ]] && echo -n "$current_md5sum" > "$stored_md5sum"
+        [[ "$modified" == 1 || "$stored_md5sum_exist" -ne 0 ]] && echo -n "$current_md5sum" >| "$stored_md5sum"
     fi
 
     return 0
@@ -380,7 +370,7 @@ __check_for_change_and_compile_ssh_config &
 disown $!
 ########################################## fzf
 # https://github.com/junegunn/fzf#setting-up-shell-integration
-command -v fzf > /dev/null && eval "$(fzf --bash)"
+command -v fzf > /dev/null && eval -- "$(fzf --bash)"
 
 # Replace default shell autocomplete:  https://github.com/junegunn/fzf#customizing-completion-source-for-paths-and-directories
 ####################
@@ -460,11 +450,6 @@ if command -v fasd > /dev/null; then
     # add tab completion support to all our own-defined fasd aliases (as per fasd readme):
     _fasd_bash_hook_cmd_complete  e se es goto gt  # completion for d is already added by cache, no point in duplicating
 fi
-########################################## zoxide
-# zoxide settings:  (https://github.com/ajeetdsouza/zoxide)
-#export _ZO_DATA_DIR="$BASE_DATA_DIR/.zoxide"
-export _ZO_RESOLVE_SYMLINKS=1
-command -v zoxide > /dev/null && eval "$(zoxide init bash)"
 ########################################## forgit
 # forgit  (https://github.com/wfxr/forgit)
 _forgit="$BASE_PROGS_DIR/forgit/forgit.plugin.sh"
@@ -472,7 +457,7 @@ _forgit="$BASE_PROGS_DIR/forgit/forgit.plugin.sh"
 unset _forgit
 ########################################## mise
 if command -v mise >/dev/null 2>/dev/null; then
-    eval "$(mise activate bash)"  # https://mise.jdx.dev/installing-mise.html#bash
+    eval -- "$(mise activate bash)"  # https://mise.jdx.dev/installing-mise.html#bash
 fi
 
 # some nvim plugins require node to be on PATH; configure a constant link so plugins et al can be pointed at it;
@@ -491,15 +476,12 @@ fi
 #fi
 ########################################## /mise
 # generate .Xauth to be passed to (and used by) GUI (docker) containers:
+# TODO: move to systemd service & depend on x11
 export XAUTH='/tmp/.docker.xauth'
 if [[ ! -s "$XAUTH" && -n "$DISPLAY" ]]; then  # TODO: also check for is_x()?
     touch "$XAUTH"
     xauth nlist "$DISPLAY" | sed -e 's/^..../ffff/' | xauth -f "$XAUTH" nmerge -
 fi
-##########################################
-# kubectx and kubens bash completion:
-# TODO: migrate to bash_env_vars?
-[[ :$PATH: != *:"${BASE_PROGS_DIR}/kubectx":* ]] && export PATH="${BASE_PROGS_DIR}/kubectx:$PATH"
 ##########################################
 # kubernetes/k8s shell prompt: (https://github.com/jonmosco/kube-ps1)
 KUBE_PS1_PREFIX="$PROMPT_SEGMENT_PREFIX"
@@ -523,44 +505,56 @@ __py_virtualenv_ps1() {  # called by PS1
 # just as a reminder - there might also be (n)vim config that sets $GIT_EDITOR to use nvr
 #
 # TODO: nvr doesn't start... look here for the socket issue: https://github.com/mhinz/neovim-remote/issues/134
+# TODO 2: NVIM_LISTEN_ADDRESS is deprecated in nvim, but still supported by nvr
 
+#if [[ -n "$TMUX" ]]; then
+    #export NVR_TMUX_BIND_SESSION=1  # if 1, then single nvim per tmux session; otherwise single nvim per tmux window
+
+    ## note NVIM_LISTEN_ADDRESS env var is referenced in vim config, so don't change the value carelessly!
+    #NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}_"
+    #if [[ "$NVR_TMUX_BIND_SESSION" == 1 ]]; then
+        #export NVIM_LISTEN_ADDRESS+="sess_$(tmux display -p '#{session_id}').sock"
+    #else
+        #export NVIM_LISTEN_ADDRESS+="sess_win_$(tmux display -p '#{session_id}_#{window_id}').sock"
+    #fi
+#fi
+
+## TODO: we might have to move this into a script on $PATH for git_editor settings to work et al
+#nvr() {
+    #if [[ -S "$NVIM_LISTEN_ADDRESS" ]]; then
+        #if [[ -n "$TMUX" ]]; then
+            #local pane_id window_id
+
+            ## Use nvr to get the tmux pane_id
+            #pane_id="$(command nvr --remote-expr 'get(environ(), "TMUX_PANE")')"
+            ## Activate the pane containing our nvim server
+            #command tmux select-pane -t"$pane_id"
+
+            #if [[ "$NVR_TMUX_BIND_SESSION" == 1 ]]; then
+                ## Find the window containing $pane_id (this feature requires tmux 3.2+!)
+                #window_id="$(command tmux list-panes -s -F '#{window_id}' -f "#{m:$pane_id,#{pane_id}}")"
+                ## Activate the window
+                #command tmux select-window -t"$window_id"
+            #fi
+        #fi
+
+        #command nvr -s "$@"
+    #else
+        #nvim -- "$@"
+    #fi
+#}
+#export -f nvr
+####### OR logic lifted from https://github.com/carlocab/tmux-nvr/blob/main/tmux-nvr.plugin.zsh (well, close to it anyway):
+# note this depends on we using the carlocab/tmux-nvr plugin, as its nvim-listen.sh
+# is who originally sets/defines the NVIM_LISTEN_ADDRESS env var.
+#
+# !! note we place "$HOME/.tmux/plugins/tmux-nvr/bin" on our PATH in env vars !!
 if [[ -n "$TMUX" ]]; then
-    export NVR_TMUX_BIND_SESSION=1  # if 1, then single nvim per tmux session; otherwise single nvim per tmux window
-
-    # note NVIM_LISTEN_ADDRESS env var is referenced in vim config, so don't change the value carelessly!
-    NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}_"
-    if [[ "$NVR_TMUX_BIND_SESSION" -eq 1 ]]; then
-        export NVIM_LISTEN_ADDRESS+="sess_$(tmux display -p '#{session_id}').sock"
-    else
-        export NVIM_LISTEN_ADDRESS+="win_$(tmux display -p '#{window_id}').sock"
-    fi
+    eval -- "$(tmux show-environment -s NVIM_LISTEN_ADDRESS 2> /dev/null)"
+else
+    [[ -d /tmp/.nvr ]] || mkdir -p -m 700 /tmp/.nvr  # -m 700 sets permissions so that only you have access to this directory
+    export NVIM_LISTEN_ADDRESS=/tmp/.nvr/nvimsocket
 fi
-
-# TODO: we might have to move this into a script on $PATH for git_editor settings to work et al
-nvr() {
-    if [[ -S "$NVIM_LISTEN_ADDRESS" ]]; then
-        if [[ -n "$TMUX" ]]; then
-            local pane_id window_id
-
-            # Use nvr to get the tmux pane_id
-            pane_id="$(command nvr --remote-expr 'get(environ(), "TMUX_PANE")')"
-            # Activate the pane containing our nvim server
-            command tmux select-pane -t"$pane_id"
-
-            if [[ "$NVR_TMUX_BIND_SESSION" -eq 1 ]]; then
-                # Find the window containing $pane_id (this feature requires tmux 3.2+!)
-                window_id="$(command tmux list-panes -s -F '#{window_id}' -f "#{m:$pane_id,#{pane_id}}")"
-                # Activate the window
-                command tmux select-window -t"$window_id"
-            fi
-        fi
-
-        command nvr -s "$@"
-    else
-        nvim -- "$@"
-    fi
-}
-export -f nvr
 ########################################## fzf-tab-completion
 # replace default bash tab completion menu w/ fzf: (https://github.com/lincheney/fzf-tab-completion)
 # note: commented out (at least) 'til these are solved:
@@ -572,4 +566,33 @@ export -f nvr
     #bind -x '"\t": fzf_bash_completion'
 #fi
 #unset ftc
-##########################################
+########################################## zoxide
+# needs to be at the end of bashrc
+# zoxide settings:  (https://github.com/ajeetdsouza/zoxide)
+#export _ZO_DATA_DIR="$BASE_DATA_DIR/.zoxide"
+export _ZO_RESOLVE_SYMLINKS=1
+command -v zoxide > /dev/null && eval -- "$(zoxide init bash)"
+########################################## /zoxide
+# needs to be at the end:  https://github.com/rcaloras/bash-preexec
+_PREEXEC="$BASE_PROGS_DIR/bash-preexec/bash-preexec.sh"
+[[ ! -f "$_PREEXEC" ]] || source "$_PREEXEC"
+unset _PREEXEC
+
+### from here on, only bash-preexec dependents should be sourced:
+
+# fancy-ctrl-z:
+# depends on bash-preexec
+_fancy_ctrl_z="$BASE_DATA_DIR/dev/scripts/bash-fancy-ctrl-z"
+[[ ! -f "$_fancy_ctrl_z" ]] || source "$_fancy_ctrl_z"
+unset _fancy_ctrl_z
+
+# atuin: (you can see automated setup logic @ https://setup.atuin.sh/)
+# depends on bash-preexec
+#
+# Note:
+# - binds ctrl+r and others
+# - as per automated setup logic, atuin is sourced _after_ bash-preexec
+# consider also:
+#   - atuin init zsh --disable-up-arrow
+command -v atuin > /dev/null && eval -- "$(atuin init bash)"
+
