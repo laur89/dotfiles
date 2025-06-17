@@ -616,6 +616,8 @@ assign [class="^Tor Browser$"]           $w1
 assign [class="^[fF]irefox$" instance="^Navigator$"]  $w1
 assign [class="^jetbrains-(idea|studio)$"]       $w2
 #assign [class="^Zathura"]                $w3
+assign [class="^Signal$"]                $w3
+assign [class="^discord$"]               $w3
 assign [class="^mpv$"]                   $w4
 assign [class="^VirtualBox$"]            $w7
 assign [class="^Gimp$"]                  $w8
