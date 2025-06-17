@@ -46,7 +46,7 @@ reminders=$HOME/.reminders
 # directory.
 
 tmpdir=/tmp/$LOGNAME$$
-umask 077
+umask 0077
 mkdir "$tmpdir" || exit 1
 tmpfile="$tmpdir/mail"
 
