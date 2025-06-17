@@ -43,7 +43,7 @@ URxvt*scrollWithBuffer: true
 URxvt*secondaryScroll: true
 ! keep the lines low, let tmux handle the buffer:
 URxvt*saveLines: 2000
-! icon:
+! icon:  # memleak! enable only w/ rxvt ver >9.31
 !URxvt.iconFile: /home/laur/.icons/ultra-flat-icons/apps/scalable/lxterminal.svg
 ! set meta key:
 URxvt*modifier: alt
