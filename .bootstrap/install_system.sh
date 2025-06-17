@@ -10,18 +10,23 @@
 # script might not be straight-forward (eg 'castle' is essentially a git repo managed
 # by homeshick).
 #
+# see also:
+# - https://github.com/romkatv/dotfiles-public/blob/master/bin/setup-machine.sh
+#   - has some WSL logic as well; note they install dbus-x11 if wsl - why's that?
+#
 #------------------------
 #---   Configuration  ---
 #------------------------
 set -o pipefail
 shopt -s nullglob       # unmatching globs to expand into empty string/list instead of being left unexpanded
 
-readonly TMP_DIR='/tmp'  # TODO: deprecate
+readonly TMP_DIR='/tmp'  # TODO: deprecate, we're not ever gonna modify this are we
 readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"  # TODO: change to id_ed25519
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
 readonly SHELL_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # as per https://github.com/scop/bash-completion#faq
+readonly ZSH_COMPLETIONS="/usr/local/share/zsh/site-functions"
 readonly APT_KEY_DIR='/usr/local/share/keyrings'  # dir where per-application apt keys will be stored in
 readonly SERVER_IP='10.42.21.10'             # default server address; likely to be an address in our LAN
 readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
@@ -1230,6 +1235,15 @@ install_deps() {
         fi
     }
 
+    # see also: https://github.com/romkatv/zsh4humans
+    #           https://github.com/zimfw/zimfw (yes, for real)
+    _install_zsh_deps() {
+        local install_dir
+
+        readonly install_dir="$BASE_PROGS_DIR/zinit"
+        clone_or_pull_repo zdharma-continuum zinit "$BASE_PROGS_DIR"  # https://github.com/zdharma-continuum/zinit#manual
+    }
+
     _install_vifm_deps() {
         local plugins_dir plugin
 
@@ -1327,9 +1341,23 @@ install_deps() {
         __install_wifi_driver && sleep 5; unset __install_wifi_driver  # keep last, as this _might_ restart wifi kernel module
     }
 
+    # ls colors:  # https://github.com/trapd00r/LS_COLORS
+    # used by both bash & zsh
+    clone_or_pull_repo trapd00r LS_COLORS "$BASE_PROGS_DIR"
+
+    # prettyping:  # https://github.com/denilsonsa/prettyping
+    # see also: gping
+    install_from_url  prettyping 'https://raw.githubusercontent.com/denilsonsa/prettyping/master/prettyping'
+
     # bash-git-prompt:
     # alternatively consider https://github.com/starship/starship !!
     clone_or_pull_repo "magicmonty" "bash-git-prompt" "$BASE_PROGS_DIR"
+
+    # bash-preexec:  # https://github.com/rcaloras/bash-preexec
+    # note this is known dependency of some functions/programs, such as
+    # - atuin
+    # - fancy-ctrl-z()
+    clone_or_pull_repo rcaloras bash-preexec "$BASE_PROGS_DIR"
 
     # bars (as in bar-charts) in shell:
     #  note: see also https://github.com/sindresorhus/sparkly-cli
@@ -1401,6 +1429,8 @@ install_deps() {
 
     # tmux plugin manager:
     _install_tmux_deps; unset _install_tmux_deps
+    # zsh:
+    _install_zsh_deps; unset _install_zsh_deps
 
     # vifm plugins:
     # note ueberzug plugin commented out atm as we're using scripts from https://github.com/thimc/vifmimg
@@ -2388,10 +2418,13 @@ install_own_builds() {
     install_fd
     install_jd
     install_bat
+    install_sad
+    install_glow
     install_btop
     install_procs
     #install_alacritty
     install_wezterm
+    install_atuin
     install_croc
     install_kanata
     install_eza
@@ -3164,6 +3197,11 @@ install_rebar() {  # https://github.com/erlang/rebar3
 }
 
 
+install_treesitter() {  # https://github.com/tree-sitter/tree-sitter
+    install_bin_from_git -N tree-sitter tree-sitter tree-sitter linux-x64.gz
+}
+
+
 # note: clojure also available through asdf
 install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instructions
     local name install_target ver f
@@ -3226,6 +3264,7 @@ install_browsh() {  # https://github.com/browsh-org/browsh
     install_from_git browsh-org browsh _linux_amd64.deb
 }
 
+
 install_saml2aws() {  # https://github.com/Versent/saml2aws
     install_bin_from_git -N saml2aws Versent saml2aws 'saml2aws_[0-9.]+_linux_amd64.tar.gz'
 }
@@ -3273,7 +3312,7 @@ install_popeye() {  # https://github.com/derailed/popeye
 # navigation, object management)
 # tag: aws, k8s, kubernetes
 #
-# see also https://github.com/spekt8/spekt8
+# see also https://github.com/spekt8/spekt8 - visualize your Kubernetes cluster in real time
 #
 # TODO: octant development halted, it's deprecated
 install_octant() {  # https://github.com/vmware-tanzu/octant
@@ -3560,6 +3599,11 @@ install_wezterm() {
 }
 
 
+install_atuin() {  # https://github.com/atuinsh/atuin
+    install_bin_from_git -N atuin atuinsh atuin 'atuin-x86_64-unknown-linux-gnu.tar.gz'
+}
+
+
 # TODO last commit '20 - deprecated?
 install_slack_term() {  # https://github.com/jpbruinsslot/slack-term
     install_bin_from_git -N slack-term jpbruinsslot slack-term slack-term-linux-amd64
@@ -3746,9 +3790,29 @@ install_jd() {  # https://github.com/josephburnett/jd
 
 
 # see also https://github.com/eth-p/bat-extras/blob/master/README.md#installation
+# TODO: look into bat extras (like manpages)
 install_bat() {  # https://github.com/sharkdp/bat
     #install_from_git sharkdp bat 'bat_[-0-9.]+_amd64.deb'
     install_bin_from_git -N bat sharkdp bat 'x86_64-unknown-linux-gnu.tar.gz'
+}
+
+
+install_sad() {  # https://github.com/ms-jpq/sad
+    #install_from_git ms-jpq sad 'x86_64-unknown-linux-gnu.deb'
+    install_bin_from_git -N sad ms-jpq sad 'x86_64-unknown-linux-gnu.zip'
+}
+
+
+# terminal image viewer
+install_viu() {  # https://github.com/atanunq/viu
+    install_bin_from_git -N viu atanunq viu 'x86_64-unknown-linux-musl'
+}
+
+
+# render markdown in CLI
+install_glow() { # https://github.com/charmbracelet/glow
+    #install_from_git  charmbracelet glow '_amd64.deb'
+    install_bin_from_git -N glow charmbracelet glow '_Linux_x86_64.tar.gz'
 }
 
 
@@ -3768,6 +3832,9 @@ install_procs() {  # https://github.com/dalance/procs
 
 # modern ls replacement written in rust
 # https://github.com/eza-community/eza/blob/main/INSTALL.md#debian-and-ubuntu
+#
+# alternatives:
+# - https://github.com/lsd-rs/lsd
 install_eza() {  # https://github.com/eza-community/eza
     install_bin_from_git -N eza eza-community  eza 'eza_x86_64-unknown-linux-gnu.tar.gz'
 }
@@ -3842,6 +3909,7 @@ install_mise() {
     # set up shell autocompletion: https://mise.jdx.dev/installing-mise.html#autocompletion
     execute 'mise use --global usage'
     execute "mise completion bash --include-bash-completion-lib | tee $SHELL_COMPLETIONS/mise > /dev/null"
+    execute "mise completion zsh | sudo tee $ZSH_COMPLETIONS/_mise > /dev/null"
 }
 
 
@@ -3964,6 +4032,59 @@ install_copyq() {
     execute "sudo rm -rf -- $tmpdir"
 
     add_to_dl_log  copyq "$ver"
+
+    return 0
+}
+#
+#
+# https://github.com/wofr06/lesspipe/blob/lesspipe/INSTALL
+install_lesspipe() {
+    local tmpdir repo ver
+
+    readonly tmpdir="$TMP_DIR/lesspipe-build-${RANDOM}"
+
+    repo='https://github.com/wofr06/lesspipe.git'
+    ver="$(get_git_sha "$repo")" || return 1
+    is_installed "$ver" lesspipe && return 2
+
+    execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
+
+    # modify lesspipe.sh as to avoid infinite loop if we want to call it from ~/.lessfilter (see https://github.com/wofr06/lesspipe/discussions/167)
+    # TODO: remove once not needed, this is hacky as hell
+    sed -Ei --follow-symlinks '/^\s+\[\[ -x ".*HOME.*\.lessfilter" .* exit 0$/,/^\s+fi$/d' "$tmpdir/lesspipe.sh" || { err "sed-deleting lesspipe.sh failed w/ $?"; return 1; }
+
+    execute "sudo install -m754 --group=$USER --target-directory=/usr/local/bin ${tmpdir}/{archive_color,lesspipe.sh}" || return 1
+
+    execute "sudo rm -rf -- $tmpdir"
+    add_to_dl_log  lesspipe "$ver"
+
+    return 0
+}
+
+
+# https://github.com/wofr06/lesspipe/blob/lesspipe/INSTALL
+build_lesspipe() {
+    local tmpdir repo ver
+
+    readonly tmpdir="$TMP_DIR/lesspipe-build-${RANDOM}"
+
+    repo='https://github.com/wofr06/lesspipe.git'
+    ver="$(get_git_sha "$repo")" || return 1
+    is_installed "$ver" lesspipe && return 2
+
+    execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
+    execute "pushd $tmpdir" || return 1
+
+    report "building lesspipe..."
+    execute './configure' || { err; popd; return 1; }
+    execute make || { err; popd; return 1; }
+
+    create_deb_install_and_store lesspipe || { popd; return 1; }
+
+    execute "popd"
+    execute "sudo rm -rf -- $tmpdir"
+
+    add_to_dl_log  lesspipe "$ver"
 
     return 0
 }
@@ -4824,6 +4945,8 @@ setup_nvim() {
 
 
 # https://github.com/neovide/neovide
+#
+# !! note our $VISUAL env var is tied to it !!
 install_neovide() {  # rust-based GUI front-end to neovim
     # alternative asset:   neovide.AppImage
     install_bin_from_git -N neovide -n neovide  neovide neovide 'linux-x86_64.tar.gz'
@@ -5212,6 +5335,7 @@ install_from_repo() {
         python3-dev
         python3-venv  # venv module for python3
         python3-pip
+        python-is-python3  # creates /usr/bin/python -> python3 symlink
         pipx  # https://github.com/pypa/pipx
         curl
         httpie  # CLI, cURL-like tool for humans; https://httpie.io/
@@ -5273,13 +5397,15 @@ install_from_repo() {
         #ngrep  # grep for network traffic; https://github.com/jpr5/ngrep
         #ncat  # reimplementation of Netcat by the NMAP project; https://nmap.org/
         nmap  # list listening ports on given address
+        gping  # ping, but with a graph; https://github.com/orf/gping
         remind
         tkremind
         wyrd  # ncurses-based frontend for remind; https://gitlab.com/wyrd-calendar/wyrd
-        taskwarrior  # https://taskwarrior.org/
+        taskwarrior  # https://taskwarrior.org/ ; executable is 'task'
         tree
         hyperfine  # cli benchmarking tool:
         #debian-goodies
+        #subversion  # might be used as a dependency, e.g. by zinit plugin (no more - github no longer supports svn)
         git
         tig  # https://github.com/jonas/tig
         git-cola
@@ -5375,6 +5501,7 @@ install_from_repo() {
 
     declare -ar block3=(
         firefox  # TODO: avail as flatpak (does native messaging work tho?)
+        profile-sync-daemon  # pseudo-daemon designed to manage your browsers profile in tmpfs and periodically sync it back to disk
         buku  # CLI bookmark manager; https://github.com/jarun/Buku
         chromium
         chromium-sandbox  # TODO: doucment what's this about
@@ -5382,6 +5509,8 @@ install_from_repo() {
         colortest-python  # https://github.com/eikenb/terminal-colors
         geany  # GTK-based lightweight IDE
         zathura  # https://github.com/pwmt/zathura
+        pandoc  # Universal markup converter; used as dependency by some other services
+        procyon-decompiler  # https://github.com/mstrobel/procyon - java decompiler; used as dependency, eg. by lessopen to view .class files
         #mupdf  # more featureful pdf viewer
         feh  # TODO x11; TODO: wallpaper_changer.sh dependency; https://github.com/derf/feh/ (mirror)
         nsxiv  # TODO: x11; # TODO: consider imv that supports both wayland & x11
@@ -5389,6 +5518,7 @@ install_from_repo() {
         gthumb  # gnome image viewer
         imagemagick
         inkscape  # vector-based drawing program  # TODO: avail as flatpak; alternatives: graphite (for raster AND vector)
+        chafa  # image-to-text converter, i.e. images in terminals
         xsel  # TODO: x11
         wmctrl  # CLI tool to interact with an EWMH/NetWM compatible X Window Manager; TODO: x11; wayland alternative might be wlrctl
         polybar  # TODO: x11
@@ -5400,12 +5530,12 @@ install_from_repo() {
         #ranger  # CLI File Manager with VI Key Bindings;  https://ranger.github.io/
         vifm  # alternatives: yazi
         fastfetch  # takes screenshots of your desktop
-        maim  # TODO: x11!  - screenshot.sh depends on it
-        flameshot  # https://flameshot.org/
+        maim  # TODO: x11!  - screenshot.sh depends on it; one wayland alternative: grim: https://sr.ht/~emersion/grim/ ; see https://github.com/naelstrof/maim/issues/67#issuecomment-974622572 for usage
+        flameshot  # https://github.com/flameshot-org/flameshot ; x11? looks like there's _some_ wayland support there
         ffmpeg
         ffmpegthumbnailer  # lightweight video thumbnailer that can be used by file managers to create thumbnails for your video files;  https://github.com/dirkvdb/ffmpegthumbnailer
         vokoscreen-ng  # https://github.com/vkohaupt/vokoscreenNG  # TODO: avail as flatpak
-        peek  # simple screen recorder. It is optimized for generating animated GIFs; https://github.com/phw/peek; TODO: avail on flathub
+        peek  # simple screen recorder. It is optimized for generating animated GIFs; https://github.com/phw/peek; TODO: avail on flathub; TODO: x11! only runs in gnome shell wayland session via XWayland
         cheese  # webcam/camera tester; https://wiki.gnome.org/Apps/Cheese
         #screenkey  # displays used keys; TODO: x11
         mediainfo  # utility used for retrieving technical information and other metadata about audio or video files; https://mediaarea.net/en/MediaInfo
@@ -5417,7 +5547,7 @@ install_from_repo() {
         tmux
         neovim/unstable
         python3-pynvim  # Python3 library for scripting Neovim processes through its msgpack-rpc API; https://github.com/neovim/pynvim
-        libxml2-utils  # TODO: still needed?
+        libxml2-utils  # provides xmllint, a tool for validating and reformatting XML documents, and xmlcatalog, a tool to parse and manipulate XML or SGML catalog files
         pidgin
         weechat  # like irssi but better; https://weechat.org/
         bitlbee  # IRC to other chat networks gateway; http://www.bitlbee.org/
@@ -5439,6 +5569,7 @@ install_from_repo() {
         notmuch
         abook  # ncurses address book application; to be used w/ mutt
         isync  # mbsync/isync is a command line application which synchronizes mailboxes; https://isync.sourceforge.io/
+               # alternatives: getmail6
         urlview  # utility used to extract URL from text files, especially from mail messages in order to launch some browser to view them (eg mutt)
         translate-shell  # cli translator powered by Google Translate (and others); https://github.com/soimort/translate-shell # TODO: also avail via docker
     )
@@ -5458,6 +5589,7 @@ install_from_repo() {
         ugrep  # Universal grep: ultra fast searcher of file systems, text and binary files, source code, archives, compressed files, documents, and more; https://github.com/Genivia/ugrep/
         gawk  # gnu awk
         plocate  # updatedb generates an index of files and directories. GNU locate can be used to quickly query this index
+        fzy  # different fuzzy finder take than fzf (faster, possibly better results); https://github.com/jhawthorn/fzy
         cowsay
         #cowsay-off  # offensive
         toilet  # prints text using large characters made of smaller characters
@@ -5995,6 +6127,7 @@ __choose_prog_to_build() {
         install_keybase
         install_goforit
         install_copyq
+        install_lesspipe
         install_uhk_agent
         install_ddcutil
         install_slides
@@ -6010,6 +6143,7 @@ __choose_prog_to_build() {
         install_rga
         install_browsh
         install_rebar
+        install_treesitter
         install_coursier
         install_clojure
         install_clj_kondo
@@ -6018,6 +6152,9 @@ __choose_prog_to_build() {
         install_fd
         install_jd
         install_bat
+        install_sad
+        install_viu
+        install_glow
         install_btop
         install_procs
         install_eza
@@ -6057,6 +6194,8 @@ __choose_prog_to_build() {
         install_arc
         install_bruno
         install_alacritty
+        install_wezterm
+        install_atuin
         install_weeslack
         install_weechat_matrix_rs
         install_gomuks
@@ -6066,6 +6205,7 @@ __choose_prog_to_build() {
         install_terragrunt
         install_minikube
         install_gruvbox_gtk_theme
+        install_gruvbox_material_gtk_theme
         install_veracrypt
         install_ueberzugpp
         install_hblock
@@ -6459,6 +6599,13 @@ install_gruvbox_gtk_theme() {
 }
 
 
+# https://github.com/TheGreatMcPain/gruvbox-material-gtk
+install_gruvbox_material_gtk_theme() {
+    err 'not implemented'
+    true  # TODO
+}
+
+
 # also consider the generic installer instead of .deb, eg https://launchpad.net/veracrypt/trunk/1.24-update7/+download/veracrypt-1.24-Update7-setup.tar.bz2
 install_veracrypt() {
     local dl_urls ver_to_url u i
@@ -6744,6 +6891,13 @@ install_setup_printing_cups() {
 # ff & extension configs/customisation
 # TODO: conf_dir does not exist during initial full install!
 # TODO: consider https://github.com/yokoffing/Betterfox  <-- real cool!
+# see also:
+# - https://wiki.archlinux.org/title/Firefox/Tweaks
+# - https://github.com/artsyfriedchicken/EdgyArc-fr/
+# - https://github.com/sainnhe/dotfiles/tree/master/.firefox
+# - https://wiki.archlinux.org/title/Firefox/Profile_on_RAM !!!
+#   - note this should be in addition to profile-sync-daemon, see https://wiki.archlinux.org/title/Profile-sync-daemon / https://wiki.archlinux.org/title/Firefox/Profile_on_RAM
+# - find how to best move cache to RAM; there's Anything-sync-daemon, but not avail in deb repo
 setup_firefox() {
     local conf_dir profile
 
@@ -8013,6 +8167,10 @@ exit 0
 #  - verify our smartd setup
 #  - install TLP
 #    - see these grub edits for TLP: https://linuxblog.io/thinkpad-t14s-gen-3-amd-linux-user-review-tweaks/#My_etcdefaultgrub_edits
+#    - there's tlpui for GUI
+#    - should we install auto-cpufreq w/ tlp?
+#      - it's author says it works w/ TLP as long as you disable tlp's cpu settings: https://www.reddit.com/r/linux/comments/ejxx9f/github_autocpufreq_automatic_cpu_speed_power/fd4y36k/
+#    - it has USB_EXCLUDE_BTUSB opt to exclude bluetooth devices from usb autosuspend feature
 #  - databse defrag/compactions should be scheduled, e.g. "notmuch compact"
 #  - consider installing & setting up logwatch & fwlogwatch
 #  - consider using Timeshift creator's tinytools: https://teejeetech.com/tinytools/
@@ -8021,6 +8179,7 @@ exit 0
 #  - consider zsh:
 #    - w/ p10k prompt
 #    - _if_ we go for plugin mngr, check out zinit
+#      - does it inlcude caching logic like znap does, e.g. $ znap eval zcolors zcolors   ?
 #      - or zim: https://github.com/zimfw/zimfw
 #      - of better yet, no manager: https://github.com/mattmc3/zsh_unplugged
 #        - see also https://www.reddit.com/r/zsh/comments/1etl9mz/fastest_plugin_manager/lie04dt/
@@ -8029,6 +8188,7 @@ exit 0
 #    - other interesting interactive shells:
 #      - elvish
 #      - murex
+#      - xonsh
 #      - see also pharo: https://github.com/pharo-project/pharo (smalltalk-like lang with a repl/ide tooling)
 #  - for shell: consider
 #    - ble.sh (readline alternative for bash)
