@@ -20,7 +20,8 @@
 [core]
     ;excludesfile = ~/.gitignore  # no point in setting; global default in NIX is ~/.config/git/ignore, in WIN: %USERPROFILE%\git\ignore
     editor = nvim
-    ;editor = nvr --remote-wait-silent
+    ; note the bufhidden=wipe is to work around https://github.com/mhinz/neovim-remote/issues/193 
+    ;editor = nvr-tmux --nostart --remote-tab-wait '+setlocal bufhidden=wipe'
 
     ; decent read on the line ending subject:
     ;  - https://stackoverflow.com/a/48384768
@@ -43,6 +44,8 @@
     followTags = true
 [rebase]
     autoStash = true  ; stashes local changes before rebase, if needed
+    autoSquash = true  ; automatically handle the !fixup & !squash commits, see https://thoughtbot.com/blog/autosquashing-git-commits
+    updateRefs = true  ; automatically handle stacked branches updates, see https://dev.to/onepoint/git-update-refs-in-a-nutshell-574c
 [difftool]
     prompt = true
 [difftool "nvr"]
@@ -63,17 +66,33 @@
     ;diff = diff-so-fancy | less --tabs=4 -RFXS --pattern '^(Date|added|deleted|modified): '
 [interactive]
     ;diffFilter = diff-so-facy --patch-mode
-    diffFilter = delta --color-only
+    diffFilter = delta --color-only --features=interactive
 [delta]
     ;side-by-side = true
     line-numbers = true
-    features = decorations unobtrusive-line-numbers
+    ;features = decorations unobtrusive-line-numbers
+    features = decorations
     whitespace-error-style = 22 reverse
+    hyperlinks = true
+    navigate = true
+    light = false
+    minus-style                   = bold red
+    minus-non-emph-style          = bold red
+    minus-emph-style              = bold reverse red
+    minus-empty-line-marker-style = normal "#3f0001"
+    plus-style                    = bold green
+    plus-non-emph-style           = bold green
+    plus-emph-style               = bold reverse green
+
+[delta "interactive"]
+    keep-plus-minus-markers = false
+
 [delta "decorations"]
     commit-decoration-style = bold yellow box ul
     file-style = bold yellow ul
     file-decoration-style = none
-    hunk-header-decoration-style = yellow box
+    hunk-header-decoration-style = cyan box ul
+
 [delta "unobtrusive-line-numbers"]
     line-numbers = true
     line-numbers-minus-style = "#444444"
