@@ -6,7 +6,7 @@
 
 # the default umask is set in /etc/profile; for setting the umask
 # for ssh logins, install and configure the libpam-umask package.
-#umask 022
+umask 0077  # keep this in sync with what we set via systemd & install_system bootstrap!
 
 # if running bash
 if [ -n "$BASH_VERSION" ]; then
