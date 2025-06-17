@@ -1068,6 +1068,7 @@ aptsearch() {
     check_progs_installed  apt-cache || return 1
 
     apt-cache search -- "$@"
+    #apt search -- "$@"
     #aptitude search -- "$@"
 }
 
@@ -1978,6 +1979,9 @@ unpack() { extract "$@"; }
 # name is the same as the archive's, sans the file extension. this avoids situations
 # where gazillion files are being extracted into working dir. note that if the dir
 # already exists, then unpacking fails (since mkdir fails).
+#
+# see also:
+# - https://github.com/ohmyzsh/ohmyzsh/blob/master/plugins/extract/extract.plugin.zsh
 extract() {
     local file file_without_extension
 
@@ -3682,7 +3686,7 @@ dcleanup() {
         -n  remove unused networks
         -h  display this usage info"
 
-    check_progs_installed docker || return 1
+    check_progs_installed  docker || return 1
     [[ -z "$*" ]] && { echo -e "$usage"; return 1; }
 
     while getopts 'acivnh' opt; do
