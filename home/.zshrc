@@ -573,9 +573,10 @@ unset _forgit
 # needs to be at the end of file, as it must be _after_ compinit is called.    TODO: compinit seq dependency, so perhaps zinit is the way to import?
 #export _ZO_DATA_DIR="$BASE_DATA_DIR/.zoxide"
 export _ZO_RESOLVE_SYMLINKS=1
-command -v zoxide > /dev/null && eval -- "$(zoxide init zsh)"
-# alternatively, source it via zinit:
-#zinit ice has'zoxide'; zinit light ajeetdsouza/zoxide
+#command -v zoxide > /dev/null && eval -- "$(zoxide init zsh)"
+# alternatively, source it via zinit:   # note 'wait' ice fucks up the 'z <pattern><space><tab>' completions
+zinit ice has'zoxide'; zinit light ajeetdsouza/zoxide
+alias zz=__zoxide_zi  # for interactive, as `zi` is taken by zinit
 ########################################## /zoxide
 
 ########################################## fzf
