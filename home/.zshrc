@@ -580,7 +580,7 @@ command -v zoxide > /dev/null && eval -- "$(zoxide init zsh)"
 
 ########################################## fzf
 # https://github.com/junegunn/fzf#setting-up-shell-integration
-# Set up fzf key bindings and fuzzy completion  # TODO: unsure we want this; et it overrides fzf-tab's ctrl+r
+# Set up fzf key bindings and fuzzy completion  # TODO: unsure we want this; eg it overrides fzf-tab's ctrl+r
 command -v fzf > /dev/null && source <(fzf --zsh)
 # alternatively, some people source .zsh scripts from fzf themselves:
 #zinit ice lucid wait'0c' multisrc"shell/{completion,key-bindings}.zsh" id-as="junegunn/fzf_completions" pick="/dev/null"
@@ -593,10 +593,60 @@ command -v fzf > /dev/null && source <(fzf --zsh)
 #   - atuin init zsh --disable-up-arrow
 #command -v atuin > /dev/null && source <(atuin init zsh)
 # or:
-#eval -- "$(atuin init zsh)"
+#command -v atuin > /dev/null && eval -- "$(atuin init zsh)"
 # or:
-zinit ice lucid wait; zinit light atuinsh/atuin    # quite pointless tho, see https://github.com/atuinsh/atuin/blob/main/atuin.plugin.zsh
-                                                   # although it can help time it, e.g. for ^R rebindings
+#zinit ice lucid wait; zinit light atuinsh/atuin    # quite pointless tho, see https://github.com/atuinsh/atuin/blob/main/atuin.plugin.zsh
+                                                    # although it can help time it, e.g. for ^R rebindings
+# or instead of 'wait' ice, use jeffreytse/zsh-vi-mode's hook:
+_load_atuin() {
+    command -v atuin > /dev/null && source <(atuin init zsh)
+}
+zvm_after_init_commands+=(_load_atuin)
+
+# another method to use atuin, but w/ fzf; from https://github.com/atuinsh/atuin/issues/68#issuecomment-1567410629
+# note this races with zsh-vi-mode plugin; that can be overriden by zsh-vi-mode's
+# own zvm_after_init_commands hook
+atuin-setup() {
+    if ! which atuin &> /dev/null; then return 1; fi
+    bindkey '^E' _atuin_search_widget
+
+    export ATUIN_NOBIND="true"
+    eval -- "$(atuin init zsh)"
+    fzf-atuin-history-widget() {
+        local selected num
+        setopt localoptions noglobsubst noposixbuiltins pipefail no_aliases 2>/dev/null
+
+        # local atuin_opts="--cmd-only --limit ${ATUIN_LIMIT:-5000}"
+        local atuin_opts="--cmd-only"
+        local fzf_opts=(
+            --height=${FZF_TMUX_HEIGHT:-80%}
+            --tac
+            "-n2..,.."
+            --tiebreak=index
+            "--query=${LBUFFER}"
+            "+m"
+            "--bind=ctrl-d:reload(atuin search $atuin_opts -c $PWD),ctrl-r:reload(atuin search $atuin_opts)"
+            '--preview=echo {}'
+            '--preview-window=down:3:wrap'
+        )
+
+        selected=$(
+            eval "atuin search ${atuin_opts}" |
+                fzf "${fzf_opts[@]}"
+        )
+        local ret=$?
+        if [ -n "$selected" ]; then
+            # the += lets it insert at current pos instead of replacing
+            LBUFFER+="${selected}"
+        fi
+        zle reset-prompt
+        return $ret
+    }
+    zle -N fzf-atuin-history-widget
+    bindkey '^R' fzf-atuin-history-widget
+}
+#atuin-setup  # if no racing w/ jeffreytse/zsh-vi-mode plugin, or if using, then:
+#zvm_after_init_commands+=(atuin-setup)
 ########################################## /atuin
 
 
