@@ -155,18 +155,10 @@ zinit light-mode for \
     zdharma-continuum/zinit-annex-rust
 ### /End of Zinit's installer chunk
 
-########################################## fzf
-# https://github.com/junegunn/fzf#setting-up-shell-integration
-# Set up fzf key bindings and fuzzy completion  # TODO: unsure we want this; et it overrides fzf-tab's ctrl+r
-command -v fzf > /dev/null && source <(fzf --zsh)
-# alternatively, some people source .zsh scripts from fzf themselves:
-#zinit ice lucid wait'0c' multisrc"shell/{completion,key-bindings}.zsh" id-as="junegunn/fzf_completions" pick="/dev/null"
-########################################## /fzf
-
 ### fzf-driven history select   # https://github.com/joshskidmore/zsh-fzf-history-search#zinit
 # replaces Ctrl+R with an fzf-driven select which includes date/times.
 # TODO: sets ctrl+r, conflicts w/ atuin?
-zinit ice lucid wait='0b'; zinit light joshskidmore/zsh-fzf-history-search
+#zinit ice lucid wait='0b'; zinit light joshskidmore/zsh-fzf-history-search
 
 #ZSH_FZF_HISTORY_SEARCH_BIND='^r'
 ZSH_FZF_HISTORY_SEARCH_END_OF_LINE=''  # place cursor end of line after completion; empty=false
@@ -174,6 +166,7 @@ ZSH_FZF_HISTORY_SEARCH_END_OF_LINE=''  # place cursor end of line after completi
 
 # other plugins:
 # vim mode {{{
+# note system clipboard integration is reportedly in progress
 ZVM_FAST_ESCAPE=true  # see https://github.com/jeffreytse/zsh-vi-mode/pull/308
 zinit ice depth=1; zinit light laur89/zsh-vi-mode  # https://github.com/jeffreytse/zsh-vi-mode  # TODO: currently using own fork of zsh-vi-mode 'til a PR gets merged upstream:
 # note source of other cool vi-mode plugins is https://github.com/zsh-vi-more
@@ -472,11 +465,13 @@ zinit id-as depth'1' wait lucid for Freed-Wu/zsh-colorize-functions
   # atload'bindkey -Mvicmd " " vi-easy-motion' \
   # for IngoHeimbach/zsh-easy-motion
 
-ZSH_SYSTEM_CLIPBOARD_METHOD=xsc
-zinit id-as depth'1' wait lucid \
-  if'(($+commands[xsel] || $+commands[xclip] || $+commands[wl-copy]))' \
-  for kutsan/zsh-system-clipboard
-bindkey -M vicmd Y zsh-system-clipboard-vicmd-vi-yank-eol  # bind Y to yank until end of line
+# system-clipboard {{{
+#ZSH_SYSTEM_CLIPBOARD_METHOD=xsc
+#zinit id-as depth'1' wait lucid \
+  #if'(($+commands[xsel] || $+commands[xclip] || $+commands[wl-copy]))' \
+  #for kutsan/zsh-system-clipboard
+#bindkey -M vicmd Y zsh-system-clipboard-vicmd-vi-yank-eol  # bind Y to yank until end of line
+# }}}
 
 # completion fallback to bash completions  # https://github.com/3v1n0/zsh-bash-completions-fallback
 # as per readme: Make sure you load this after other plugins to prevent their completions to be replaced by the (simpler) bash ones.
@@ -583,18 +578,25 @@ command -v zoxide > /dev/null && eval -- "$(zoxide init zsh)"
 #zinit ice has'zoxide'; zinit light ajeetdsouza/zoxide
 ########################################## /zoxide
 
+########################################## fzf
+# https://github.com/junegunn/fzf#setting-up-shell-integration
+# Set up fzf key bindings and fuzzy completion  # TODO: unsure we want this; et it overrides fzf-tab's ctrl+r
+command -v fzf > /dev/null && source <(fzf --zsh)
+# alternatively, some people source .zsh scripts from fzf themselves:
+#zinit ice lucid wait'0c' multisrc"shell/{completion,key-bindings}.zsh" id-as="junegunn/fzf_completions" pick="/dev/null"
+########################################## /fzf
 
 ########################################## atuin  # https://github.com/atuinsh/atuin
 # Note: binds ctrl+r and others
 #
 # consider also:
 #   - atuin init zsh --disable-up-arrow
-command -v atuin > /dev/null && source <(atuin init zsh)
+#command -v atuin > /dev/null && source <(atuin init zsh)
 # or:
 #eval -- "$(atuin init zsh)"
 # or:
-#zinit light atuinsh/atuin  # quite pointless tho, see https://github.com/atuinsh/atuin/blob/main/atuin.plugin.zsh
-                            # although it can help time it, e.g. for ^R rebindings
+zinit ice lucid wait; zinit light atuinsh/atuin    # quite pointless tho, see https://github.com/atuinsh/atuin/blob/main/atuin.plugin.zsh
+                                                   # although it can help time it, e.g. for ^R rebindings
 ########################################## /atuin
 
 
