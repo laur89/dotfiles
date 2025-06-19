@@ -132,16 +132,16 @@ setopt HIST_FIND_NO_DUPS         # Do not display a previously found event.
 
 ### PLUGINS
 ### Added by Zinit's installer (slightly modified by us)  # https://github.com/zdharma-continuum/zinit#manual
-#if [[ ! -f $BASE_PROGS_DIR/zinit/zinit.zsh ]]; then
-    #print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
-    #command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rwX "$BASE_PROGS_DIR/zinit"
-    #command git clone https://github.com/zdharma-continuum/zinit "$BASE_PROGS_DIR/zinit" && \
-        #print -P "%F{33} %F{34}Installation successful.%f%b" || \
-        #print -P "%F{160} The clone has failed.%f%b"
-#fi
 ZINIT_HOME="$BASE_PROGS_DIR/zinit"
-if [[ -f "${ZINIT_HOME}/zinit.zsh" ]]; then
-source "${ZINIT_HOME}/zinit.zsh"
+if [[ ! -f "$ZINIT_HOME/zinit.zsh" ]]; then
+    print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
+    command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rwX "$ZINIT_HOME"
+    command git clone https://github.com/zdharma-continuum/zinit "$ZINIT_HOME" && \
+        print -P "%F{33} %F{34}Installation successful.%f%b" || \
+        print -P "%F{160} The clone has failed.%f%b"
+fi
+
+source "$ZINIT_HOME/zinit.zsh"
 # note the following 2 lines are needed if sourcing zinit.zsh _after_ compinit, see https://github.com/zdharma-continuum/zinit#manual :
 #autoload -Uz _zinit
 #(( ${+_comps} )) && _comps[zinit]=_zinit
@@ -481,9 +481,6 @@ zinit id-as depth'1' wait lucid for Freed-Wu/zsh-colorize-functions
 
 # bunch of themes in https://github.com/sainnhe/dotfiles/blob/master/.zsh-theme/README.md
 #zinit snippet https://github.com/sainnhe/dotfiles/raw/master/.zsh-theme/gruvbox-material-dark.zsh
-
-
-fi  # /does-zinit.zsh-exist?
 ### /PLUGINS
 #
 
