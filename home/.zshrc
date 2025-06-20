@@ -90,8 +90,8 @@ setopt PUSHD_SILENT         # Do not print the directory stack after pushd or po
 
 # TODO: reconsider whether we want these dirstack aliases:
 # dirstack idea from https://thevaluable.dev/zsh-install-configure-mouseless/ :
-alias d='dirs -v'  # display the dirs on the stack prefixed w/ a number
-for index ({1..9}) alias "$index"="cd +${index}"; unset index  # quick dirstack navigation aliases, i.e. run "number commands" to navigate the stack
+#alias d='dirs -v'  # display the dirs on the stack prefixed w/ a number
+#for index ({1..9}) alias "$index"="cd +${index}"; unset index  # quick dirstack navigation aliases, i.e. run "number commands" to navigate the stack
 
 # install native cdr: (https://zsh.sourceforge.io/Doc/Release/User-Contributions.html#Recent-Directories)
 autoload -Uz chpwd_recent_dirs cdr add-zsh-hook
@@ -129,6 +129,52 @@ setopt HIST_FIND_NO_DUPS         # Do not display a previously found event.
 
 #HISTTIMEFORMAT="%d/%m/%Y %H:%M] "  # TODO review - isn't this bash option??
 ################ /HISTORY
+
+# source own functions and env vars:
+if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != 'loaded' ]]; then
+    for i in \
+            "$HOME/.bash_env_vars" \
+                ; do  # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
+        if [[ -r "$i" ]]; then
+            source "$i"
+        #else
+            #echo -e "file [$i] to be sourced does not exist or is not readable!"
+        fi
+    done
+
+    unset i
+fi
+
+# this needs to be outside env_vars, unless you're gonna load those every time bashrc is loaded;
+case "$TERM" in
+    xterm* | rxvt-unicode-256color) export TERM=xterm-256color ;;
+esac
+
+if ! type __BASH_FUNS_LOADED_MARKER > /dev/null 2>&1; then
+    [[ ! -r "$HOME/.bash_functions" ]] || source "$HOME/.bash_functions"
+
+    if [[ -d "$HOME/.bash_funs_overrides" ]]; then
+        for i in $HOME/.bash_funs_overrides/*; do
+            [[ ! -f "$i" ]] || source "$i"
+        done
+        unset i
+    fi
+fi
+
+# sys-specific aliases:
+if [[ -d "$HOME/.bash_aliases_overrides" ]]; then
+    for i in $HOME/.bash_aliases_overrides/*; do
+        [[ ! -f "$i" ]] || source "$i"
+    done
+    unset i
+fi
+
+# source homeshick:
+if [[ -e "$HOME/.homesick/repos/homeshick" ]]; then
+    source "$HOME/.homesick/repos/homeshick/homeshick.sh"
+    fpath=("$HOME/.homesick/repos/homeshick/completions" $fpath)
+fi
+
 
 ### PLUGINS
 ### Added by Zinit's installer (slightly modified by us)  # https://github.com/zdharma-continuum/zinit#manual
@@ -653,6 +699,8 @@ atuin-setup() {
 #function md() { [[ $# == 1 ]] && mkdir -p -- "$1" && cd -- "$1" }
 #compdef _directories md
 #
+
+[[ ! -f ~/.bash_aliases ]] || source ~/.bash_aliases
 
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
