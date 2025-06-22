@@ -123,7 +123,7 @@ setopt INC_APPEND_HISTORY  # history file is updated immediately after a command
 # TODO: isn't there overlap between APPENDHISTORY & INC_APPEND_HISTORY?:
 setopt APPENDHISTORY  # ensures that each command entered in the current session is appended to the history file immediately after execution
 
-setopt EXTENDED_HISTORY  # records the time when each command was executed along with the command itself
+setopt EXTENDED_HISTORY          # records the time when each command was executed along with the command itself
 setopt HIST_EXPIRE_DUPS_FIRST    # Expire a duplicate event first when trimming history.
 setopt HIST_FIND_NO_DUPS         # Do not display a previously found event.
 
@@ -141,8 +141,6 @@ if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != 'loaded' ]]; then
             #echo -e "file [$i] to be sourced does not exist or is not readable!"
         fi
     done
-
-    unset i
 fi
 
 # this needs to be outside env_vars, unless you're gonna load those every time bashrc is loaded;
@@ -157,7 +155,6 @@ if ! type __BASH_FUNS_LOADED_MARKER > /dev/null 2>&1; then
         for i in $HOME/.bash_funs_overrides/*; do
             [[ ! -f "$i" ]] || source "$i"
         done
-        unset i
     fi
 fi
 
@@ -166,8 +163,8 @@ if [[ -d "$HOME/.bash_aliases_overrides" ]]; then
     for i in $HOME/.bash_aliases_overrides/*; do
         [[ ! -f "$i" ]] || source "$i"
     done
-    unset i
 fi
+unset i
 
 # source homeshick:
 if [[ -e "$HOME/.homesick/repos/homeshick" ]]; then
@@ -643,7 +640,7 @@ command -v fzf > /dev/null && source <(fzf --zsh)
                                                     # although it can help time it, e.g. for ^R rebindings
 # or instead of 'wait' ice, use jeffreytse/zsh-vi-mode's hook:
 _load_atuin() {
-    command -v atuin > /dev/null && source <(atuin init zsh)
+    command -v atuin > /dev/null && source <(atuin init zsh --disable-up-arrow)
 }
 zvm_after_init_commands+=(_load_atuin)
 
