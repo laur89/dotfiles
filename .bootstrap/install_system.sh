@@ -1237,11 +1237,15 @@ install_deps() {
 
     # see also: https://github.com/romkatv/zsh4humans
     #           https://github.com/zimfw/zimfw (yes, for real)
+    # essentially the same installer stanza we have at the header of .zshrc
     _install_zsh_deps() {
         local install_dir
 
         readonly install_dir="$BASE_PROGS_DIR/zinit"
         clone_or_pull_repo zdharma-continuum zinit "$BASE_PROGS_DIR"  # https://github.com/zdharma-continuum/zinit#manual
+
+        # default ZINIT[HOME_DIR], where zinit creates all working dirs:
+        execute "mkdir -p '$HOME/.local/share/zinit/'"
     }
 
     _install_vifm_deps() {
@@ -1343,6 +1347,8 @@ install_deps() {
 
     # ls colors:  # https://github.com/trapd00r/LS_COLORS
     # used by both bash & zsh
+    # see also:
+    #   - https://github.com/sharkdp/vivid - themeable LS_COLORS generator
     clone_or_pull_repo trapd00r LS_COLORS "$BASE_PROGS_DIR"
 
     # prettyping:  # https://github.com/denilsonsa/prettyping
@@ -1437,7 +1443,8 @@ install_deps() {
     #_install_vifm_deps; unset _install_vifm_deps
 
     # cheat.sh:  # https://github.com/chubin/cheat.sh#installation
-    #curl -fsSL "https://cht.sh/:cht.sh" > ~/bin/cht.sh && chmod +x ~/bin/cht.sh || err "curling cheat.sh failed w/ [$?]"
+    # see also:
+    # - https://github.com/cheat/cheat
     install_from_url  cht.sh 'https://cht.sh/:cht.sh'
 
     # TODO: following are not deps, are they?:
@@ -2425,6 +2432,7 @@ install_own_builds() {
     #install_alacritty
     install_wezterm
     install_atuin
+    install_lnav
     install_croc
     install_kanata
     install_eza
@@ -3599,8 +3607,18 @@ install_wezterm() {
 }
 
 
+# alternatives:
+# - https://github.com/ddworken/hishtory
+# - https://github.com/cantino/mcfly
 install_atuin() {  # https://github.com/atuinsh/atuin
     install_bin_from_git -N atuin atuinsh atuin 'atuin-x86_64-unknown-linux-gnu.tar.gz'
+}
+
+
+
+# log file navigator
+install_lnav() {  # https://github.com/tstack/lnav
+    install_bin_from_git -N lnav tstack lnav 'linux-musl-x86_64.zip'
 }
 
 
@@ -4953,6 +4971,14 @@ install_neovide() {  # rust-based GUI front-end to neovim
 }
 
 
+# https://github.com/helix-editor/helix
+install_helix() {
+    #install_bin_from_git -N hx helix-editor helix 'x86_64.AppImage'
+    #install_bin_from_git -N hx -n hx  helix-editor helix '-x86_64-linux.tar.xz'
+    install_from_git helix-editor helix _amd64.deb
+}
+
+
 # NO plugin config should go here (as it's not guaranteed they've been installed by this time)
 # TODO: is this fine? see https://vi.stackexchange.com/questions/46887
 nvim_post_install_configuration() {
@@ -6196,6 +6222,7 @@ __choose_prog_to_build() {
         install_alacritty
         install_wezterm
         install_atuin
+        install_lnav
         install_weeslack
         install_weechat_matrix_rs
         install_gomuks
