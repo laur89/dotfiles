@@ -248,10 +248,8 @@ zinit ice depth=1; zinit light romkatv/powerlevel10k
 # /other plugins:
 
 # prezto {{{
-# Set case-sensitivity for completion, history lookup, etc:
-zstyle ':prezto:*:*' case-sensitive 'no'
-# Color output (auto set to 'no' on dumb terminals):
-zstyle ':prezto:*:*' color 'yes'
+zstyle ':prezto:*:*' case-sensitive 'no'  # set case-sensitivity for completion, history lookup, etc
+zstyle ':prezto:*:*' color 'yes'          # color output (auto set to 'no' on dumb terminals)
 
 # common helper funcionts used by other modules:
 zinit snippet PZTM::helper  # https://github.com/sorin-ionescu/prezto/tree/master/modules/helper
@@ -447,19 +445,6 @@ zstyle ':fzf-tab:complete:diff:*' popup-min-size 80 12
 
 
 # suggestions {{{  # some from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc#L75
-# - must load before zsh-autosuggestions (from https://github.com/Freed-Wu/Freed-Wu/blob/main/.zshrc)
-# - also note https://github.com/zsh-users/zsh-history-substring-search says
-#   highlighting needs to be loaded _before_
-# TODO: does it conflict w/ atuin?
-#zinit id-as depth'1' wait lucid \
-  #atload'bindkey "^[p" history-substring-search-up
-  #bindkey "^[n" history-substring-search-down
-  #bindkey -Mvicmd gk history-substring-search-up
-  #bindkey -Mvicmd gj history-substring-search-down
-  #bindkey -Mvicmd zk history-search-backward
-  #bindkey -Mvicmd zj history-search-forward' \
-  #for zsh-users/zsh-history-substring-search
-
 # TODO:!!!!
 # https://github.com/romkatv/zsh-bench?tab=readme-ov-file#deferred-initialization
 # mentions it must be initialized after syntax highlighting!
@@ -477,6 +462,29 @@ zinit ice wait="0c" lucid atload="_zsh_autosuggest_start"; zinit light zsh-users
 zinit ice wait="0b" lucid atinit="zpcompinit;zpcdreplay"
 zinit light zdharma-continuum/fast-syntax-highlighting
 # }}} /highlighting
+
+# history-substring-search {{{  # from https://github.com/Freed-Wu/Freed-Wu/blob/main/.zshrc
+# - must load before zsh-autosuggestions (from https://github.com/Freed-Wu/Freed-Wu/blob/main/.zshrc)
+# - also needs to load after highlighting (https://github.com/zsh-users/zsh-history-substring-search)
+#   - ie the order is highlighting, substrs-search, autosuggestions
+#HISTORY_SUBSTRING_SEARCH_FUZZY=1     # non-empty value causes a fuzzy search by words, matching in given order e.g. "ab c" will match "*ab*c*"
+#HISTORY_SUBSTRING_SEARCH_PREFIXED=1  # non-empty value causes query to be matched against the start of each history entry
+zinit id-as depth'1' wait='0b' lucid \
+  atload'bindkey "^[p" history-substring-search-up
+  bindkey "^[n" history-substring-search-down
+  bindkey "^[[A" history-substring-search-up
+  bindkey "^[[B" history-substring-search-down
+  bindkey -M vicmd "k" history-substring-search-up
+  bindkey -M vicmd "j" history-substring-search-down' \
+  for zsh-users/zsh-history-substring-search
+# }}} or use the native, prefix-only history matching: {{{  # from https://superuser.com/a/585004/179401
+#autoload -U up-line-or-beginning-search
+#autoload -U down-line-or-beginning-search
+#zle -N up-line-or-beginning-search
+#zle -N down-line-or-beginning-search
+#bindkey "^[[A" up-line-or-beginning-search # Up
+#bindkey "^[[B" down-line-or-beginning-search # Down
+# }}}
 
 # fzf tab  # https://github.com/Aloxaf/fzf-tab
 # !!! needs to be loaded _after_ compinit, but before plugins which will wrap
@@ -556,12 +564,13 @@ bindkey '^[q' push-line-or-edit
 
 
 
-# zmv lets you batch rename (or copy or link) files by using pattern matching.
+# zmv lets you batch rename (or copy or link) files by using pattern matching. {{{
 # https://zsh.sourceforge.io/Doc/Release/User-Contributions.html#index-zmv
 autoload -Uz -- zmv
 alias zmv='zmv -Mv'
 alias zcp='zmv -Cv'
 alias zln='zmv -Lv'
+# }}}
 
 
 # Associate file name .extensions with programs to open them.
@@ -702,7 +711,6 @@ atuin-setup() {
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
 #########################################################################
 #
 # think it's best to load compinit last, but unsure why
