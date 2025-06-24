@@ -26,7 +26,7 @@ readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; e
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
 readonly SHELL_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # as per https://github.com/scop/bash-completion#faq
-readonly ZSH_COMPLETIONS="/usr/local/share/zsh/site-functions"
+readonly ZSH_COMPLETIONS='/usr/share/zsh/vendor-completions'  # as per https://unix.stackexchange.com/a/607810/47501
 readonly APT_KEY_DIR='/usr/local/share/keyrings'  # dir where per-application apt keys will be stored in
 readonly SERVER_IP='10.42.21.10'             # default server address; likely to be an address in our LAN
 readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
@@ -2718,9 +2718,7 @@ install_from_any() {
 
     install_file "${install_file_args[@]}" "$f" "$name" || return 1
 
-    if [[ "$skipadd" != 1 ]]; then
-        add_to_dl_log "$id" "$ver"
-    fi
+    [[ "$skipadd" != 1 ]] && add_to_dl_log "$id" "$ver"
     return 0
 }
 
@@ -3008,19 +3006,21 @@ resolve_ver() {
 # file asset, we follow the redirects.
 #
 # -D, -A            - see install_file()
-# -d /target/dir    - see install_file();
+# -s                - skip adding fetched asset in $GIT_RLS_LOG
+# -d /target/dir    - see install_file()
 #                     dir to install pulled binary in, optional.
 #                     note if installing whole dirs (-D), it should be the root dir;
 #                     /$name will be created/appended by install_file()
 # $1 - name of the binary/resource
 # $2 - resource url
 install_from_url() {
-    local opt OPTIND opts name loc file ver tmpdir
+    local opt skipadd OPTIND opts name loc file ver tmpdir
 
     opts=()
-    while getopts 'd:DA' opt; do
+    while getopts 'd:sDA' opt; do
         case "$opt" in
             d) opts+=("-$opt" "$OPTARG") ;;
+            s) skipadd=1 ;;
             D|A) opts+=("-$opt") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
@@ -3037,7 +3037,7 @@ install_from_url() {
     if ! is_valid_url "$loc"; then
         err "passed url for $name is improper: [$loc]; aborting"
         return 1
-    elif is_installed "$ver" "$name"; then
+    elif [[ "$skipadd" != 1 ]] && is_installed "$ver" "$name"; then
         return 2
     fi
 
@@ -3048,7 +3048,8 @@ install_from_url() {
 
     install_file "${opts[@]}" "$file" "$name" || return 1
 
-    add_to_dl_log "$name" "$ver"
+    [[ "$skipadd" != 1 ]] && add_to_dl_log "$name" "$ver"
+    return 0
 }
 
 
@@ -3234,6 +3235,12 @@ install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instruc
     return 0
 }
 
+
+# beautifully format Clojure and Clojurescript source code and s-expressions;
+# basically pretty printing capabilities for both Clojure code and Clojure/EDN structures.
+install_zprint() {  # https://github.com/kkinnear/zprint/blob/main/doc/getting/linux.md
+    install_bin_from_git -N zprint  kkinnear zprint 'zprintl-[-.0-9]+'
+}
 
 
 # Lisp Flavoured Erlang (LFE)
@@ -3839,6 +3846,46 @@ install_btop() {  # https://github.com/aristocratos/btop
 }
 
 
+# alterantives:
+#  - plandex
+#  - goose
+#
+# chat-based pair-programming. as opposed to plandex which has git-like CLI with various stateful commands.
+#
+# https://aider.chat/docs/install.html#install-with-pipx
+#   - !! take note of supported py version !!
+# post-install steps: https://aider.chat/docs/install/optional.html
+# consider 3rd party zsh completion: https://github.com/hmgle/aider-zsh-complete/
+#   - e.g. nvim plugin: https://github.com/joshuavial/aider.nvim
+install_aider() {
+    py_install aider-chat --python python3.12
+}
+
+
+# desktop GUI for aider
+install_aider_desk() {  # https://github.com/hotovo/aider-desk
+    #install_from_git  hotovo aider-desk '_amd64.deb'
+    install_bin_from_git -N aider-desk hotovo aider-desk .AppImage
+}
+
+
+# plandex CLI
+# installation logic from https://raw.githubusercontent.com/plandex-ai/plandex/main/app/cli/install.sh
+install_plandex() {
+    local VERSION RELEASES_URL ENCODED_TAG url
+
+    VERSION="$(curl -sLf -- https://plandex.ai/v2/cli-version.txt)" || return 1
+    is_installed "$VERSION" plandex && return 2
+
+    RELEASES_URL="https://github.com/plandex-ai/plandex/releases/download"
+    ENCODED_TAG="cli%2Fv${VERSION}"
+    url="${RELEASES_URL}/${ENCODED_TAG}/plandex_${VERSION}_linux_amd64.tar.gz"
+
+    install_from_url -s pdx "$url" || return 1
+    add_to_dl_log  plandex "$VERSION"
+}
+
+
 # rust replacement for ps
 # also avail in apt
 # read https://github.com/dalance/procs#usage
@@ -4346,6 +4393,9 @@ build_and_install_keepassxc_TODO_container_edition() {
 #                    https://github.com/keepassxreboot/keepassxc/wiki/Set-up-Build-Environment-on-Linux
 #                    https://github.com/keepassxreboot/keepassxc/wiki/Building-KeePassXC
 #                    https://keepassxc.org/download
+# to programmatically interface w/ keepass using the browser interface/protocol, see
+#   - https://github.com/hargoniX/keepassxc-proxy-client
+#   - https://github.com/hrehfeld/python-keepassxc-browser
 install_keepassxc() {
     install_bin_from_git -N keepassxc keepassxreboot keepassxc 'x86_64.AppImage'
 }
@@ -4686,23 +4736,20 @@ install_i3() {
 # pass -g opt to install from github; in that case 2 args are to be provided - user & repo,
 # and we can install one pkg at a time.
 py_install() {
-    local opt OPTIND github pkg
+    local opt opts OPTIND
 
+    opts=("$@")
     while getopts 'g' opt; do
         case "$opt" in
-            g) github=1 ;;
+            g) opts=("git+ssh://git@github.com/$1/$2.git")
+               shift 2
+               opts+=("$@") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
-    pkg="$1"  # pipx doesn't take multiple packages at a time!
-    [[ "$github" -eq 1 ]] && pkg="git+ssh://git@github.com/$1/$2.git"  # append @branch for a specific branch
-
-    # old way using pip (deprecated for system/global executables):
-    #execute "/usr/bin/env python3 -m pip install --break-system-packages --user --upgrade $pkg"
-
-    execute "pipx install $pkg"
+    execute "pipx install ${opts[*]}"
 }
 
 
@@ -6172,6 +6219,7 @@ __choose_prog_to_build() {
         install_treesitter
         install_coursier
         install_clojure
+        install_zprint
         install_clj_kondo
         install_lazygit
         install_lazydocker
@@ -6249,6 +6297,9 @@ __choose_prog_to_build() {
         install_mise
         install_croc
         install_kanata
+        install_plandex
+        install_aider
+        install_aider_desk
         install_android_command_line_tools
     )
 
@@ -8068,6 +8119,10 @@ cleanup() {
     [[ "$__CLEANUP_EXECUTED_MARKER" -eq 1 ]] && return  # don't invoke more than once.
 
     [[ -s "$NPMRC_BAK" ]] && mv -- "$NPMRC_BAK" ~/.npmrc   # move back
+
+    if [[ -d "$ZSH_COMPLETIONS" && "$ZSH_COMPLETIONS" == /usr/* ]]; then
+        execute "sudo chmod -R 'o+r' '$ZSH_COMPLETIONS'"
+    fi
 
     # shut down the build container:
     if command -v docker >/dev/null 2>&1 && [[ -n "$(docker ps -qa -f status=running -f name="$BUILD_DOCK")" ]]; then
