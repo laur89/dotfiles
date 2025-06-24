@@ -260,6 +260,7 @@ zinit snippet PZTM::helper  # https://github.com/sorin-ionescu/prezto/tree/maste
 zinit snippet PZTM::environment  # https://github.com/sorin-ionescu/prezto/tree/master/modules/environment
 
 # sets term window & tab titles:
+# alternatively consider OMZL::termsupport.zsh
 zinit snippet PZTM::terminal  # https://github.com/sorin-ionescu/prezto/tree/master/modules/terminal
 
 # editor module changes a lot; makes sense if we don't use a stand-alone vi/emacs
@@ -272,6 +273,11 @@ zinit snippet PZTM::terminal  # https://github.com/sorin-ionescu/prezto/tree/mas
 # this module needs to be loaded _before_ the PZTM::completion module
 #zinit ice svn silent pick"init.zsh" lucid; zinit snippet PZT::modules/utility  # https://github.com/sorin-ionescu/prezto/tree/master/modules/utility
 # }}}  /prezto
+
+# OMZ {{{
+#zinit snippet OMZL::termsupport.zsh
+zinit snippet OMZL::spectrum.zsh
+# }}}
 
 
 # completion {{{
@@ -311,7 +317,9 @@ setopt PATH_DIRS  # Perform path search even on command names with slashes.
 #setopt FLOW_CONTROL
 unsetopt FLOW_CONTROL  # Enable the use of Ctrl-Q and Ctrl-S for keyboard shortcuts.
 # note https://github.com/sorin-ionescu/prezto/blob/master/modules/environment/init.zsh does this as follows, what's the difference?:
-# [[ -r ${TTY:-} && -w ${TTY:-} && $+commands[stty] == 1 ]] && stty -ixon <$TTY >$TTY
+#     [[ -r ${TTY:-} && -w ${TTY:-} && $+commands[stty] == 1 ]] && stty -ixon <$TTY >$TTY
+# then others use this:
+#     stty start undef; stty stop undef
 
 
 # set LS_COLOR after plugins, as some prezto stuff (e.g. completion module) might set it
@@ -444,13 +452,16 @@ zstyle ':fzf-tab:complete:diff:*' popup-min-size 80 12
 
 
 
-# suggestions {{{  # some from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc#L75
-# TODO:!!!!
-# https://github.com/romkatv/zsh-bench?tab=readme-ov-file#deferred-initialization
-# mentions it must be initialized after syntax highlighting!
+# autosuggestions {{{  # some from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc#L75
+# NOTE: https://github.com/romkatv/zsh-bench?tab=readme-ov-file#deferred-initialization
+#       mentions it must be initialized _after_ syntax highlighting!
 ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
+ZSH_AUTOSUGGEST_MANUAL_REBIND=1  # make prompt faster; see comment @ https://github.com/zsh-users/zsh-autosuggestions/blob/master/zsh-autosuggestions.zsh
+                                 # essentially _zsh_autosuggest_bind_widgets() will
+                                 # only be invoked at start of shell, not at every
+                                 # prompt update.
 zinit ice wait="0c" lucid atload="_zsh_autosuggest_start"; zinit light zsh-users/zsh-autosuggestions
-# }}} /suggestions
+# }}} /autosuggestions
 
 # consider also enahncd:
 # see also option to use zoxide as its backend: https://github.com/babarot/enhancd/issues/231
