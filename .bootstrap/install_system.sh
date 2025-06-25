@@ -2406,6 +2406,7 @@ install_own_builds() {
     #install_keybase
     #install_goforit
     #install_copyq
+    install_lesspipe
     is_native && install_uhk_agent
     is_native && install_ddcutil
     install_seafile_cli
@@ -2417,6 +2418,7 @@ install_own_builds() {
     install_ripgrep
     install_rga
     #install_browsh
+    install_treesitter
     install_vnote
     #install_obsidian
     install_delta
@@ -3005,8 +3007,10 @@ resolve_ver() {
 # Fetch a file from given url, and install the binary. If url redirects to final
 # file asset, we follow the redirects.
 #
-# -D, -A            - see install_file()
 # -s                - skip adding fetched asset in $GIT_RLS_LOG
+# -D, -A            - see install_file()
+# -O owner:group    - see install_file()
+# -P perms          - see install_file()
 # -d /target/dir    - see install_file()
 #                     dir to install pulled binary in, optional.
 #                     note if installing whole dirs (-D), it should be the root dir;
@@ -3017,11 +3021,11 @@ install_from_url() {
     local opt skipadd OPTIND opts name loc file ver tmpdir
 
     opts=()
-    while getopts 'd:sDA' opt; do
+    while getopts 'sDAO:P:d:' opt; do
         case "$opt" in
-            d) opts+=("-$opt" "$OPTARG") ;;
             s) skipadd=1 ;;
             D|A) opts+=("-$opt") ;;
+            O|P|d) opts+=("-$opt" "$OPTARG") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -3822,6 +3826,7 @@ install_bat() {  # https://github.com/sharkdp/bat
 }
 
 
+# CLI search and replace
 install_sad() {  # https://github.com/ms-jpq/sad
     #install_from_git ms-jpq sad 'x86_64-unknown-linux-gnu.deb'
     install_bin_from_git -N sad ms-jpq sad 'x86_64-unknown-linux-gnu.zip'
@@ -3848,17 +3853,21 @@ install_btop() {  # https://github.com/aristocratos/btop
 
 # alterantives:
 #  - plandex
-#  - goose
+#  - https://github.com/block/goose
+#  - https://github.com/cline/cline
+#  - https://github.com/zed-industries/zed ?
+#       - comes w/ its own editor
 #
 # chat-based pair-programming. as opposed to plandex which has git-like CLI with various stateful commands.
 #
 # https://aider.chat/docs/install.html#install-with-pipx
 #   - !! take note of supported py version !!
 # post-install steps: https://aider.chat/docs/install/optional.html
-# consider 3rd party zsh completion: https://github.com/hmgle/aider-zsh-complete/
 #   - e.g. nvim plugin: https://github.com/joshuavial/aider.nvim
 install_aider() {
     py_install aider-chat --python python3.12
+    # install zsh completion: TODO: doesn't seem to work
+    install_from_url -d "$ZSH_COMPLETIONS" -O root:root -P 644  _aider 'https://raw.githubusercontent.com/hmgle/aider-zsh-complete/refs/heads/main/_aider'
 }
 
 
@@ -6294,6 +6303,7 @@ __choose_prog_to_build() {
         install_brillo
         install_display_switch
         install_neovide
+        install_helix
         install_mise
         install_croc
         install_kanata
