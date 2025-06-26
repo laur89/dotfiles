@@ -1,3 +1,7 @@
+; interesting resources:
+;  - https://github.com/intelfx/dotfiles/blob/master/.gitconfig
+;  - github PR management: https://gist.github.com/gnarf/5406589
+
 ;[name]  ! name block doesn't belong in common gitconfig !
 [merge]
     ;tool = meld
@@ -5,7 +9,7 @@
     ;tool = vimdiff
     ;tool = nvr
     tool = my_meld
-    conflictstyle = diff3
+    conflictstyle = zdiff3
     prompt = false
 [mergetool "my_meld"]
     ;cmd = meld --auto-merge --diff $BASE $LOCAL --diff $BASE $REMOTE --diff $LOCAL $BASE $REMOTE --output $MERGED
@@ -39,7 +43,7 @@
 [pull]
     rebase = true
 [push]
-    default = simple
+    default = simple  # simple is the default since git 2.0
     ; automatically push _annotated_ tags:
     followTags = true
 [rebase]
@@ -57,10 +61,6 @@
     ;tool = vimdiff
     renames = true
     colorMoved = default
-;[multidiff]
-    ; see http://www.xenomachina.com/2012/02/multi-diff-with-vim-andor-git.html
-    ; & https://github.com/xenomachina/public/
-    ;tool = vd -f
 [pager]
     difftool = false
     ;diff = diff-so-fancy | less --tabs=4 -RFXS --pattern '^(Date|added|deleted|modified): '
@@ -74,7 +74,7 @@
     features = decorations
     whitespace-error-style = 22 reverse
     hyperlinks = true
-    navigate = true
+    navigate = true  # use n and N to move between diff sections
     light = false
     minus-style                   = bold red
     minus-non-emph-style          = bold red
@@ -196,12 +196,10 @@
     old = red bold
     new = green bold
     whitespace = red reverse
-
-;;;;;;;;;;;;;;;;;;;
-;;;; COMMANDSS ;;;;
-;;;;;;;;;;;;;;;;;;;
-; git log --all --oneline
-; git log --all --oneline --author=rickhanlonii | grep "search query"
-; git show a2c25061
-;   or  git show a2c25061 --stat   to show info about commit without diff
-;
+[svn]
+    pushmergeinfo = true
+[filter "lfs"]
+    smudge = git-lfs smudge -- %f
+    process = git-lfs filter-process
+    required = true
+    clean = git-lfs clean -- %f
