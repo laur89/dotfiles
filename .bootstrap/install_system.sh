@@ -25,7 +25,7 @@ readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"  # TODO: change to id_ed25519
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
-readonly SHELL_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # as per https://github.com/scop/bash-completion#faq
+readonly BASH_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # as per https://github.com/scop/bash-completion#faq
 readonly ZSH_COMPLETIONS='/usr/share/zsh/vendor-completions'  # as per https://unix.stackexchange.com/a/607810/47501
 readonly APT_KEY_DIR='/usr/local/share/keyrings'  # dir where per-application apt keys will be stored in
 readonly SERVER_IP='10.42.21.10'             # default server address; likely to be an address in our LAN
@@ -1389,16 +1389,16 @@ install_deps() {
 
     # maven bash completion:
     clone_or_pull_repo "juven" "maven-bash-completion" "$BASE_PROGS_DIR"  # https://github.com/juven/maven-bash-completion
-    create_link "${BASE_PROGS_DIR}/maven-bash-completion/bash_completion.bash" "$SHELL_COMPLETIONS/mvn"
+    create_link "${BASE_PROGS_DIR}/maven-bash-completion/bash_completion.bash" "$BASH_COMPLETIONS/mvn"
 
     # gradle bash completion:  # https://github.com/gradle/gradle-completion/blob/master/README.md#installation-for-bash-32
     #curl -LA gradle-completion https://edub.me/gradle-completion-bash -o $HOME/.bash_completion.d/
     clone_or_pull_repo "gradle" "gradle-completion" "$BASE_PROGS_DIR"
-    create_link "${BASE_PROGS_DIR}/gradle-completion/gradle-completion.bash" "$SHELL_COMPLETIONS/gradle"
+    create_link "${BASE_PROGS_DIR}/gradle-completion/gradle-completion.bash" "$BASH_COMPLETIONS/gradle"
 
     # leiningen bash completion:  # https://codeberg.org/leiningen/leiningen/src/branch/main/bash_completion.bash
     #
-    install_from_url -A -d "$SHELL_COMPLETIONS" lein  "https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash"
+    install_from_url -A -d "$BASH_COMPLETIONS" lein  "https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash"
 
     # vifm filetype icons: https://github.com/thimc/vifm_devicons
     clone_or_pull_repo "thimc" "vifm_devicons" "$BASE_PROGS_DIR"
@@ -1556,7 +1556,7 @@ setup_dirs() {
     # create dirs:
     for dir in \
             $HOME/bin \
-            $SHELL_COMPLETIONS \
+            $BASH_COMPLETIONS \
             $HOME/.npm-packages \
             $BASE_DATA_DIR/.calendars \
             $BASE_DATA_DIR/.calendars/work \
@@ -3355,7 +3355,7 @@ install_kubectl() {
     install_from_url  kubectl  "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 
     # shell completion: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#bash
-    command -v kubectl >/dev/null && execute "kubectl completion bash | tee $SHELL_COMPLETIONS/kubectl > /dev/null"
+    command -v kubectl >/dev/null && execute "kubectl completion bash | tee $BASH_COMPLETIONS/kubectl > /dev/null"
 }
 
 # kubectx - kubernetes contex swithcher
@@ -3601,7 +3601,7 @@ install_alacritty() {
     execute 'gzip -c extra/alacritty-msg.man | sudo tee /usr/local/share/man/man1/alacritty-msg.1.gz > /dev/null' || err
 
     # install bash completion:
-    execute "cp extra/completions/alacritty.bash $SHELL_COMPLETIONS/alacritty" || err
+    execute "cp extra/completions/alacritty.bash $BASH_COMPLETIONS/alacritty" || err
 
     execute 'sudo mv -- target/release/alacritty  /usr/local/bin/' || err
 
@@ -3925,13 +3925,13 @@ install_aichat() {  # https://github.com/sigoden/aichat
     clone_repo_subdir  sigoden aichat "scripts" "$shell"
     #execute "sudo cp -- '${shell}completions/aichat.zsh' $ZSH_COMPLETIONS/_aichat"
     create_link -s "${shell}completions/aichat.zsh" "$ZSH_COMPLETIONS/_aichat"
-    create_link "${shell}completions/aichat.bash" "$SHELL_COMPLETIONS/aichat"
+    create_link "${shell}completions/aichat.bash" "$BASH_COMPLETIONS/aichat"
 
     # alternatively, if we didn't need also the integration components, we
     # could directly install the completion files:
     #install_from_url -A -d "$ZSH_COMPLETIONS" -O root:root -P 644 \
         #_aichat 'https://raw.githubusercontent.com/sigoden/aichat/refs/heads/main/scripts/completions/aichat.zsh'
-    #install_from_url -A -d "$SHELL_COMPLETIONS" aichat \
+    #install_from_url -A -d "$BASH_COMPLETIONS" aichat \
         #'https://raw.githubusercontent.com/sigoden/aichat/refs/heads/main/scripts/completions/aichat.bash'
 }
 
@@ -4023,7 +4023,7 @@ install_mise() {
 
     # set up shell autocompletion: https://mise.jdx.dev/installing-mise.html#autocompletion
     execute 'mise use --global usage'
-    execute "mise completion bash --include-bash-completion-lib | tee $SHELL_COMPLETIONS/mise > /dev/null"
+    execute "mise completion bash --include-bash-completion-lib | tee $BASH_COMPLETIONS/mise > /dev/null"
     execute "mise completion zsh | sudo tee $ZSH_COMPLETIONS/_mise > /dev/null"
 }
 
@@ -4047,7 +4047,7 @@ install_webdev() {
     if command -v npm >/dev/null 2>&1; then
         execute "$NPM_PRFX npm install npm@latest -g" && sleep 0.1
         # NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
-        execute "npm completion | tee $SHELL_COMPLETIONS/npm > /dev/null"
+        execute "npm completion | tee $BASH_COMPLETIONS/npm > /dev/null"
 
         # install npm modules:  # TODO review what we want to install
         # note nwb (zero-config development setup) is dead - use vite instead: https://github.com/vitejs/vite
