@@ -6348,6 +6348,7 @@ __choose_prog_to_build() {
         install_helix
         install_mise
         install_croc
+        install_ventoy
         install_kanata
         install_plandex
         install_open_interpreter
@@ -6834,6 +6835,12 @@ install_android_command_line_tools() {
 # share files between computers/phones
 install_croc() {
     install_bin_from_git -N croc -n croc  schollz  croc  '_Linux-64bit.tar.gz'
+}
+
+
+# https://github.com/ventoy/Ventoy
+install_ventoy() {
+    install_from_git -D -d "$BASE_PROGS_DIR" -N ventoy  ventoy Ventoy '-linux.tar.gz' || return 1
 }
 
 
