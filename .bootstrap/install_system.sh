@@ -861,18 +861,17 @@ clone_repo_subdir() {
     readonly hub=${5:-github.com}  # OPTIONAL; defaults to github.com;
 
     [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
-    if [[ "$install_dir" != */ ]]; then
-        install_dir="${install_dir}/$(basename -- "$path")"
-        if [[ -d "$install_dir" ]]; then
-            rm -rf -- "$install_dir" || { err "removing existing install_dir [$install_dir] failed w/ $?" "$FUNCNAME"; return 1; }
-        fi
+    [[ "$install_dir" != */ ]] && install_dir+="/$(basename -- "$path")"
+
+    if [[ -d "$install_dir" ]]; then
+        rm -rf -- "$install_dir" || { err "removing existing install_dir [$install_dir] failed w/ $?" "$FUNCNAME"; return 1; }
     fi
 
     tmpdir="$TMP_DIR/$repo-${user}-${RANDOM}"
     execute "git clone -n --depth=1 --filter=tree:0 https://$hub/$user/${repo}.git '$tmpdir'" || { err "cloning [$hub/$user/$repo] failed w/ $?"; return 1; }
     execute "git -C '$tmpdir' sparse-checkout set --no-cone $path" || return 1
     execute "git -C '$tmpdir' checkout" || return 1
-    execute "mv --force -- '$tmpdir/$path' '$install_dir'" || return 1
+    execute "mv -- '$tmpdir/$path' '$install_dir'" || return 1
     #execute "git -C '$install_dir' pull" || return 1
 }
 
@@ -3864,6 +3863,8 @@ install_btop() {  # https://github.com/aristocratos/btop
 #       - comes w/ its own editor
 #
 # chat-based pair-programming. as opposed to plandex which has git-like CLI with various stateful commands.
+# plandex itself is more stateful - it accumulates changes to its own git repo you
+# have to explicitly 'apply' to your code.
 #
 # https://aider.chat/docs/install.html#install-with-pipx
 #   - !! take note of supported py version !!
@@ -3873,7 +3874,7 @@ install_aider() {
     py_install aider-chat --python python3.12
 
     # install zsh completion:
-    install_from_url -d "$ZSH_COMPLETIONS" -O root:root -P 644 \
+    install_from_url -A -d "$ZSH_COMPLETIONS" -O root:root -P 644 \
         _aider 'https://raw.githubusercontent.com/hmgle/aider-zsh-complete/refs/heads/main/_aider'
 }
 
@@ -3908,6 +3909,30 @@ install_plandex() {
 # - https://github.com/gptme/gptme
 install_open_interpreter() {
     py_install open-interpreter
+}
+
+
+# see also:
+# - https://github.com/simonw/llm
+# - https://github.com/charmbracelet/mods
+# - https://github.com/TheR1D/shell_gpt
+install_aichat() {  # https://github.com/sigoden/aichat
+    local shell="$BASE_PROGS_DIR/aichat-shell-scripts/"  # trailing path is important; note this path is also referenced in bash/zsh rc!
+
+    install_bin_from_git -N aichat sigoden aichat 'x86_64-unknown-linux-musl.tar.gz'
+
+    # install shell completions:
+    clone_repo_subdir  sigoden aichat "scripts" "$shell"
+    #execute "sudo cp -- '${shell}completions/aichat.zsh' $ZSH_COMPLETIONS/_aichat"
+    create_link -s "${shell}completions/aichat.zsh" "$ZSH_COMPLETIONS/_aichat"
+    create_link "${shell}completions/aichat.bash" "$SHELL_COMPLETIONS/aichat"
+
+    # alternatively, if we didn't need also the integration components, we
+    # could directly install the completion files:
+    #install_from_url -A -d "$ZSH_COMPLETIONS" -O root:root -P 644 \
+        #_aichat 'https://raw.githubusercontent.com/sigoden/aichat/refs/heads/main/scripts/completions/aichat.zsh'
+    #install_from_url -A -d "$SHELL_COMPLETIONS" aichat \
+        #'https://raw.githubusercontent.com/sigoden/aichat/refs/heads/main/scripts/completions/aichat.bash'
 }
 
 
@@ -6326,6 +6351,7 @@ __choose_prog_to_build() {
         install_kanata
         install_plandex
         install_open_interpreter
+        install_aichat
         install_aider
         install_aider_desk
         install_android_command_line_tools
