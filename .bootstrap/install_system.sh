@@ -1791,6 +1791,7 @@ setup_private_asset_perms() {
             ~/.msmtprc \
             ~/.irssi \
             ~/.config/weechat \
+            ~/.aider.conf.yml \
             "$GNUPGHOME" \
             ~/.gist \
             ~/.bash_hist \
@@ -2123,6 +2124,9 @@ setup_additional_apt_keys_and_sources() {
 
     # nushell: https://www.nushell.sh/book/installation.html#package-managers
     create_apt_source  nushell  https://apt.fury.io/nushell/gpg.key  https://apt.fury.io/nushell/  /
+
+    # tailscale: https://tailscale.com/download/linux/debian-bookworm
+    #create_apt_source  tailscale  https://pkgs.tailscale.com/stable/debian/$DEB_STABLE.noarmor.gpg  https://pkgs.tailscale.com/stable/debian $DEB_STABLE main
 
     execute 'sudo apt-get --yes update'
 }
@@ -3855,6 +3859,7 @@ install_btop() {  # https://github.com/aristocratos/btop
 #  - plandex
 #  - https://github.com/block/goose
 #  - https://github.com/cline/cline
+#  - https://github.com/All-Hands-AI/OpenHands
 #  - https://github.com/zed-industries/zed ?
 #       - comes w/ its own editor
 #
@@ -3866,8 +3871,10 @@ install_btop() {  # https://github.com/aristocratos/btop
 #   - e.g. nvim plugin: https://github.com/joshuavial/aider.nvim
 install_aider() {
     py_install aider-chat --python python3.12
-    # install zsh completion: TODO: doesn't seem to work
-    install_from_url -d "$ZSH_COMPLETIONS" -O root:root -P 644  _aider 'https://raw.githubusercontent.com/hmgle/aider-zsh-complete/refs/heads/main/_aider'
+
+    # install zsh completion:
+    install_from_url -d "$ZSH_COMPLETIONS" -O root:root -P 644 \
+        _aider 'https://raw.githubusercontent.com/hmgle/aider-zsh-complete/refs/heads/main/_aider'
 }
 
 
@@ -3884,14 +3891,23 @@ install_plandex() {
     local VERSION RELEASES_URL ENCODED_TAG url
 
     VERSION="$(curl -sLf -- https://plandex.ai/v2/cli-version.txt)" || return 1
-    is_installed "$VERSION" plandex && return 2
 
     RELEASES_URL="https://github.com/plandex-ai/plandex/releases/download"
     ENCODED_TAG="cli%2Fv${VERSION}"
     url="${RELEASES_URL}/${ENCODED_TAG}/plandex_${VERSION}_linux_amd64.tar.gz"
 
-    install_from_url -s pdx "$url" || return 1
-    add_to_dl_log  plandex "$VERSION"
+    install_from_url plandex "$url" || return 1
+}
+
+
+# execute commands on PC - i.e. natural language interface for computers
+# https://github.com/OpenInterpreter/open-interpreter
+# https://docs.openinterpreter.com/getting-started/setup
+#
+# alternative:
+# - https://github.com/gptme/gptme
+install_open_interpreter() {
+    py_install open-interpreter
 }
 
 
@@ -5437,6 +5453,7 @@ install_from_repo() {
         iptraf-ng  # ncurses-based IP LAN monitor that generates various network statistics; https://github.com/iptraf-ng/iptraf-ng
         rsync
         wireguard
+        #tailscale  # note depends on custom apt entry
         #openvpn3
         #network-manager-openvpn-gnome  # OpenVPN plugin GNOME GUI
         gparted  # GNOME partition editor; https://gparted.org/
@@ -6308,6 +6325,7 @@ __choose_prog_to_build() {
         install_croc
         install_kanata
         install_plandex
+        install_open_interpreter
         install_aider
         install_aider_desk
         install_android_command_line_tools
