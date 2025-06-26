@@ -19,6 +19,8 @@
     ;keepBackup = false
 [mergetool "nvr"]
     cmd = nvr -s -d $LOCAL $BASE $REMOTE $MERGED -c 'wincmd J | wincmd ='
+[mergetool "vimdiff"]
+    layout = LOCAL,BASE,REMOTE / MERGED + BASE,LOCAL + BASE,REMOTE + (LOCAL/BASE/REMOTE),MERGED
 ;[mergetool]
     ;keepBackup = false
 [core]
