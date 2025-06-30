@@ -2408,6 +2408,7 @@ install_own_builds() {
     #install_goforit
     #install_copyq
     install_lesspipe
+    install_lessfilter
     is_native && install_uhk_agent
     is_native && install_ddcutil
     install_seafile_cli
@@ -4154,8 +4155,8 @@ install_copyq() {
 
     return 0
 }
-#
-#
+
+
 # https://github.com/wofr06/lesspipe/blob/lesspipe/INSTALL
 install_lesspipe() {
     local tmpdir repo ver
@@ -4167,17 +4168,18 @@ install_lesspipe() {
     is_installed "$ver" lesspipe && return 2
 
     execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
-
-    # modify lesspipe.sh as to avoid infinite loop if we want to call it from ~/.lessfilter (see https://github.com/wofr06/lesspipe/discussions/167)
-    # TODO: remove once not needed, this is hacky as hell
-    sed -Ei --follow-symlinks '/^\s+\[\[ -x ".*HOME.*\.lessfilter" .* exit 0$/,/^\s+fi$/d' "$tmpdir/lesspipe.sh" || { err "sed-deleting lesspipe.sh failed w/ $?"; return 1; }
-
     execute "sudo install -m754 --group=$USER --target-directory=/usr/local/bin ${tmpdir}/{archive_color,lesspipe.sh}" || return 1
 
     execute "sudo rm -rf -- $tmpdir"
     add_to_dl_log  lesspipe "$ver"
 
     return 0
+}
+
+
+# custom logic used by lesspipe(.sh) to extend its logic
+install_lessfilter() {
+    install_from_url -d "$HOME" .lessfilter 'https://raw.githubusercontent.com/Freed-Wu/Freed-Wu/refs/heads/main/.lessfilter'
 }
 
 
@@ -6268,6 +6270,7 @@ __choose_prog_to_build() {
         install_goforit
         install_copyq
         install_lesspipe
+        install_lessfilter
         install_uhk_agent
         install_ddcutil
         install_slides
