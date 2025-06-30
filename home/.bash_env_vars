@@ -168,8 +168,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
 
     # scripts' settings:
     # ###################
-    export _SCRIPTS_COMMONS="$BASE_DATA_DIR/dev/scripts/system/utils.sh"
-    export PEARLSSH_BIN="$BASE_DATA_DIR/dev/scripts/shell"  # note needs to be in this [[ -z "$PEARL_HOME" ]] scope, as later on it's supposed to be overwritten
+    export _SCRIPTS_BIN="$BASE_DATA_DIR/dev/scripts/shell"  # also used by pearlssh!; note needs to be in this [[ -z "$PEARL_HOME" ]] scope, as later on it's supposed to be overwritten by pearlssh
     export _DEF_CON_IF="/tmp/connected_default_if.dat"
     export _CON_IF="/tmp/connected_interfaces.dat"
     export _WIRELESS_IF="/tmp/wireless_interfaces.dat"
@@ -193,6 +192,8 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
 
     export PHONE_NAME='POCO F5'  # as defined in kde-connect; likley some bash aliases and/or functions depend on it
 fi
+
+export _SCRIPTS_COMMONS="$_SCRIPTS_BIN/__utils.sh"
 
 command -v nvim > /dev/null 2>&1 && export EDITOR=nvim || export EDITOR=vim
 
