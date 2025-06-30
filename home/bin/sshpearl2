@@ -131,14 +131,13 @@ _parse_args() {
 #   None
 #######################################
 _execute_ssh() {
-    command -v $BASE64 >/dev/null 2>&1 || { echo >&2 "kyrat requires $BASE64 to be installed locally. Aborting."; return $NOT_EXISTING_COMMAND; }
-    command -v $GZIP >/dev/null 2>&1 || { echo >&2 "kyrat requires $GZIP to be installed locally. Aborting."; return $NOT_EXISTING_COMMAND; }
-    if [[ $KYRAT_SHELL != "$BASH" && $KYRAT_SHELL != "$ZSH" && $KYRAT_SHELL != "$SH" ]]; then
-        echo >&2 "KYRAT_SHELL not set correctly: $KYRAT_SHELL. Aborting.";
-        return $KYRAT_SHELL_NOT_CORRECT;
-    fi
+    local remote_command
 
-    local remote_command="$(_get_remote_command)"
+    command -v $BASE64 >/dev/null 2>&1 || { echo >&2 "kyrat requires $BASE64 to be installed locally. Aborting."; exit $NOT_EXISTING_COMMAND; }
+    command -v $GZIP >/dev/null 2>&1 || { echo >&2 "kyrat requires $GZIP to be installed locally. Aborting."; exit $NOT_EXISTING_COMMAND; }
+    command -v tar >/dev/null 2>&1 || { echo >&2 "kyrat requires tar to be installed locally. Aborting."; exit $NOT_EXISTING_COMMAND; }
+
+    remote_command="$(_get_remote_command)"
 
     #$SSH -t "${SSH_OPTS[@]}" -- "$BASH -c '$remote_command'"  # TODO: upstream version, doesn't work
     $SSH -t "${SSH_OPTS[@]}" -- "$remote_command"
@@ -165,19 +164,30 @@ _execute_ssh() {
 #   The composed remote command to execute in the ssh session.
 #######################################
 _get_remote_command() {
-    local bashrc_script="$(_concatenate_files "$PEARL_HOME"/bashrc "$PEARL_HOME"/bashrc.d | $GZIP | $BASE64)"
-    local zshrc_script="$(_concatenate_files "$PEARL_HOME"/zshrc "$PEARL_HOME"/zshrc.d | $GZIP | $BASE64)"
-    local inputrc_script="$(_concatenate_files "$PEARL_HOME"/inputrc "$PEARL_HOME"/inputrc.d | $GZIP | $BASE64)"
-    local vimrc_script="$(_concatenate_files "$PEARL_HOME"/vimrc "$PEARL_HOME"/vimrc.d | $GZIP | $BASE64)"
-    local tmux_conf="$(_concatenate_files "$PEARL_HOME"/tmux.conf "$PEARL_HOME"/tmux.conf.d | $GZIP | $BASE64)"
-    self="$($GZIP < "$0" | $BASE64)"
+    local bashrc_script zshrc_script inputrc_script vimrc_script tmux_conf shell_bin self commands_opt
 
-    if [[ $KYRAT_SHELL == "$BASH" ]]; then
-        KYRAT_SHELL_CMD="$BASH --rcfile \${PEARL_HOME}/bashrc -i"
-    elif [[ $KYRAT_SHELL == "$ZSH" ]]; then
-        KYRAT_SHELL_CMD="$ZSH -i"
-    elif [[ $KYRAT_SHELL == "$SH" ]]; then
-        KYRAT_SHELL_CMD="$SH -i"
+    bashrc_script="$(_concatenate_files "$PEARL_HOME"/bashrc "$PEARL_HOME"/bashrc.d | $GZIP | $BASE64)"
+    zshrc_script="$(_concatenate_files "$PEARL_HOME"/zshrc "$PEARL_HOME"/zshrc.d | $GZIP | $BASE64)"
+    inputrc_script="$(_concatenate_files "$PEARL_HOME"/inputrc "$PEARL_HOME"/inputrc.d | $GZIP | $BASE64)"
+    vimrc_script="$(_concatenate_files "$PEARL_HOME"/vimrc "$PEARL_HOME"/vimrc.d | $GZIP | $BASE64)"
+    tmux_conf="$(_concatenate_files "$PEARL_HOME"/tmux.conf "$PEARL_HOME"/tmux.conf.d | $GZIP | $BASE64)"
+    shell_bin="$(tar -zc -C "$PEARLSSH_BIN" . | $BASE64)"
+    [[ -f "$PEARLSSH_BIN/$SELF" ]] || self="$($GZIP < "$0" | $BASE64)"
+
+    case "$KYRAT_SHELL" in
+        "$BASH") KYRAT_SHELL_CMD="$BASH --rcfile \${PEARL_HOME}/bashrc -i" ;;
+        "$ZSH") KYRAT_SHELL_CMD="$ZSH -i" ;;
+        "$SH") KYRAT_SHELL_CMD="$SH -i" ;;
+        *)  echo >&2 "KYRAT_SHELL not set correctly: $KYRAT_SHELL. Aborting.";
+            exit $KYRAT_SHELL_NOT_CORRECT ;;
+    esac
+
+    if [[ -n "${COMMANDS[*]}" ]]; then
+        commands_opt="-c '${COMMANDS[*]}'"
+#    else
+#        $CAT <<EOF
+#[[ -e /etc/motd ]] && $CAT /etc/motd || { [[ -e /etc/update-motd.d ]] && command -v run-parts &> /dev/null && run-parts /etc/update-motd.d/; }
+#EOF
     fi
 
     $CAT <<EOF
@@ -187,36 +197,25 @@ unset _tmp_dir; for d in /tmp \$HOME; do [[ -w "\$d" ]] && { _tmp_dir="\$d"; bre
 for d in $BASE64 $GUNZIP mktemp; do command -v "\$d" >/dev/null 2>&1 || { echo >&2 "pearl-ssh requires [\$d] to be installed on the server. Aborting."; exit $NOT_EXISTING_COMMAND; } done;
 
 export PEARL_HOME="\$(mktemp -d pearl-XXXXX -p "\$_tmp_dir")";
-PEARLSSH_BIN="\$PEARL_HOME/bin"; mkdir -- "\$PEARLSSH_BIN";
+export PEARLSSH_BIN="\$PEARL_HOME/bin"; mkdir -- "\$PEARLSSH_BIN";  # note this var first originates from our own shell_vars
 export _TMUX_RC="\$_tmp_dir/.laur_tmux_rc";
 rm -rf -- "\$_TMUX_RC" 2>/dev/null; mkdir -- "\$_TMUX_RC";
 
 trap "rm -rf -- '\$PEARL_HOME'; exit" EXIT HUP INT QUIT PIPE TERM KILL;
-EOF
 
-    if [[ -n "${COMMANDS[*]}" ]]; then
-        local commands_opt="-c '${COMMANDS[*]}'"
-#    else
-#        $CAT <<EOF
-#[[ -e /etc/motd ]] && $CAT /etc/motd || { [[ -e /etc/update-motd.d ]] && command -v run-parts &> /dev/null && run-parts /etc/update-motd.d/; }
-#EOF
-    fi
-
-    $CAT <<EOF
 echo "${bashrc_script}" | $BASE64 -di | $GUNZIP > "\${PEARL_HOME}/bashrc";
 echo "${zshrc_script}" | $BASE64 -di | $GUNZIP > "\${PEARL_HOME}/.zshrc";
 echo "${inputrc_script}" | $BASE64 -di | $GUNZIP > "\${PEARL_HOME}/inputrc";
 echo "${vimrc_script}" | $BASE64 -di | $GUNZIP > "\${PEARL_HOME}/vimrc";
 echo "${tmux_conf}" | $BASE64 -di | $GUNZIP > "\${PEARL_HOME}/tmux.conf";
 
-echo "$self" | $BASE64 -di | $GUNZIP > "\$PEARLSSH_BIN/$SELF";
-
-# TODO: import more bins!!!!!!!!!!!!!!!!!!!!!!!!
-chmod -R +x "\$PEARLSSH_BIN";
-
-export PATH="\$PATH:\$PEARLSSH_BIN";
-
 # from here on only my changes compared to upstream kyrat: {{{
+
+echo "${shell_bin}" | $BASE64 -di | tar -zx -C "\$PEARLSSH_BIN/";
+[[ -f "\$PEARLSSH_BIN/$SELF" ]] || echo "$self" | $BASE64 -di | $GUNZIP > "\$PEARLSSH_BIN/$SELF";
+
+chmod -R +x "\$PEARLSSH_BIN";
+export PATH="\$PATH:\$PEARLSSH_BIN";
 
 # increments the number of dashes to be used in PS1 env var to indicate
 # the ssh-ing depth, as in how deep in ssh-sessions are we:
@@ -234,10 +233,11 @@ sed -i '/^alias tmux=/d' "\$PEARL_HOME/bashrc"
 # enter new tmux alias (keep on a single line!):
 echo -e "alias tmux='tmux -f \"\$_TMUX_RC/tmux.conf\"'" >> "\$PEARL_HOME/bashrc"
 sed -i '/^set .* default-command /d' "\$PEARL_HOME/tmux.conf"
+# TODO: currently hard-coded to bash:
 echo -e "set -g default-command \"VIMINIT='let \\\$MYVIMRC=\$_TMUX_RC/vimrc | source \\\$MYVIMRC' INPUTRC='\$_TMUX_RC/inputrc' /bin/bash --rcfile '\$_TMUX_RC/bashrc'\"" >> "\$PEARL_HOME/tmux.conf"
 cp -rp -- "\$PEARL_HOME"/* "\$_TMUX_RC/"
 
-# enter new gosu() function def (keep on a single line!):
+# enter new gosu() function def (keep on a single line!):  TODO: currently hard-coded to/only taking bash into consideration:
 for d in \$PEARL_HOME \$_TMUX_RC; do echo -e "gosu() { sudo -E bash --rcfile \"\$d/bashrc\" -i $commands_opt; }" >> "\$d/bashrc"; done
 
 # doctor tmux settings/configs:
