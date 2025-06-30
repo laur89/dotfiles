@@ -4916,7 +4916,7 @@ _completemarks() {
     COMPREPLY=($(compgen -W '${wordlist[@]}' -- "$curw"))
     return 0
 }
-complete -F _completemarks jj jum jmo
+is_bash && complete -F _completemarks jj jum jmo
 
 # print out pstree, but in reverse (ie root of the tree is at the bottom)
 ptree() {
@@ -4964,7 +4964,7 @@ copy-progress() {
 # other shell completions:
 # use this if grep w/ perl regex not avail:
 #[[ -f ~/.ssh/config ]] && complete -o default -o nospace -W "$(grep -i -e '^host ' ~/.ssh/config | awk '{print substr($0, index($0,$2))}' ORS=' ')" sshpearl
-[[ -f ~/.ssh/config ]] && complete -o default -o nospace -W "$(grep -Poi '^host\s+\K\S+' ~/.ssh/config | grep -vFx '*')" sshpearl
+is_bash && [[ -f ~/.ssh/config ]] && complete -o default -o nospace -W "$(grep -Poi '^host\s+\K\S+' ~/.ssh/config | grep -vFx '*')" sshpearl
 
 # $1 - name of the function whose args are completed
 # $2 - word being completed
@@ -5078,7 +5078,7 @@ _complete_dirs_in_pwd() {
 }
 #is_function g && complete -o dirnames -o filenames -o nospace -F _complete_dirs_in_pwd g  # autocomplete on directories
 #is_function g && complete -o dirnames -o filenames -F _complete_dirs_in_pwd g  # autocomplete on directories
-is_function g && complete -o dirnames -F _complete_dirs_in_pwd g
+is_bash && is_function g && complete -o dirnames -F _complete_dirs_in_pwd g
 
 # TODO: here we try to introduce fuzzyness via find -iname {{{
 #_complete_dirs_in_pwd() {
