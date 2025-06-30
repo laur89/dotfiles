@@ -73,6 +73,8 @@ if ! command -v tree >/dev/null; then
     }
 fi
 
+source "$_SCRIPTS_COMMONS"  # utils are now sent via shell-bin directory, i.e. won't be merged into bashrc
+
 ###########################
 # source homeshick:
 _homes="$HOME/.homesick/repos/homeshick"
