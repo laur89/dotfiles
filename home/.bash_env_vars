@@ -169,6 +169,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # scripts' settings:
     # ###################
     export _SCRIPTS_COMMONS="$BASE_DATA_DIR/dev/scripts/system/utils.sh"
+    export PEARLSSH_BIN="$BASE_DATA_DIR/dev/scripts/shell"  # note needs to be in this [[ -z "$PEARL_HOME" ]] scope, as later on it's supposed to be overwritten
     export _DEF_CON_IF="/tmp/connected_default_if.dat"
     export _CON_IF="/tmp/connected_interfaces.dat"
     export _WIRELESS_IF="/tmp/wireless_interfaces.dat"
@@ -198,7 +199,7 @@ command -v nvim > /dev/null 2>&1 && export EDITOR=nvim || export EDITOR=vim
 # VISUAL/EDITOR distinction is really historical; tl;dr is that VIAUL depends on
 # whether you ahve a term capable of cursor positioning, not whether you have a GUI/
 # window system avail; see https://unix.stackexchange.com/a/334022/47501
-export VISUAL=neovide  # note gvim doesn't play well with some stuff, eg with 'crontab -e'
+command -v neovide > /dev/null 2>&1 && export VISUAL=neovide || export VISUAL="$EDITOR"  # note gvim doesn't play well with some stuff, eg with 'crontab -e'
 
 export PAGER=less
 [[ -n "$DISPLAY" ]] && export BROWSER=/usr/bin/firefox || export BROWSER=links2
