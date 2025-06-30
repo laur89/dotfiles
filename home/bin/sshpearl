@@ -32,11 +32,9 @@
 readonly SELF="$(basename -- "$0")"
 
 ssh_pearl() {
-    local self rcScript inputrcScript vimrcScript tmux ssh_opts opt commands arg commands_opt cmd
+    local self rcScript inputrcScript vimrcScript tmux ssh_opts opt commands commands_opt cmd
 
-    declare -a commands=()
-    declare -a ssh_opts=()
-
+    declare -a commands ssh_opts
 
     # strips empty lines & comments from input ($1) file
     _process_rc_file() {
@@ -70,10 +68,7 @@ ssh_pearl() {
             *) ssh_opts+=("$opt"); shift ;;
         esac
     done
-
-    for arg in "$@"; do
-        commands+=("$arg")
-    done
+    commands=("$@")
 
     [[ -n "${commands[*]}" ]] && commands_opt="-c '${commands[*]}'"
 
