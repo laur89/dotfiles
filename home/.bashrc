@@ -100,9 +100,7 @@ export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quo
 # ~/.bash_aliases, instead of adding them here directly.
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
-fi
+[[ ! -f ~/.bash_aliases ]] || source ~/.bash_aliases
 
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
@@ -216,7 +214,7 @@ unset MAILCHECK         # avoid delays;
 
 # source own functions and env vars:
 
-if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
+if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != 'loaded' ]]; then
     for i in \
             "$HOME/.bash_env_vars" \
                 ; do  # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
@@ -226,15 +224,11 @@ if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
             #echo -e "file [$i] to be sourced does not exist or is not readable!"
         fi
     done
-
-    unset i
 fi
 
 # this needs to be outside env_vars, unless you're gonna load those every time bashrc is loaded;
 case "$TERM" in
-    xterm* | rxvt-unicode-256color )
-        export TERM=xterm-256color
-    ;;
+    xterm* | rxvt-unicode-256color) export TERM=xterm-256color ;;
 esac
 
 if ! type __BASH_FUNS_LOADED_MARKER > /dev/null 2>&1; then
@@ -244,8 +238,6 @@ if ! type __BASH_FUNS_LOADED_MARKER > /dev/null 2>&1; then
         for i in $HOME/.bash_funs_overrides/*; do
             [[ -f "$i" ]] && source "$i"
         done
-
-        unset i
     fi
 fi
 
@@ -254,17 +246,14 @@ if [[ -d "$HOME/.bash_aliases_overrides" ]]; then
     for i in $HOME/.bash_aliases_overrides/*; do
         [[ -f "$i" ]] && source "$i"
     done
-
-    unset i
 fi
 
 # source homeshick:
-_homes="$HOME/.homesick/repos/homeshick"
-if [[ -e "$_homes" ]]; then
-    source "$_homes/homeshick.sh"
-    source "$_homes/completions/homeshick-completion.bash"
+i="$HOME/.homesick/repos/homeshick"
+if [[ -e "$i" ]]; then
+    source "$i/homeshick.sh"
+    source "$i/completions/homeshick-completion.bash"
 fi
-unset _homes
 
 # bash-git-prompt conf:
 # see provide'ib promptile git repo info; override'ib üleval defineeritud PS1 (põmst sama asjaga kui olen ümber modinud)
@@ -309,9 +298,8 @@ unset _BGPRMPT
 # add local ruby gems to path: # https://guides.rubygems.org/faqs/#i-installed-gems-with---user-install-and-their-commands-are-not-available
 # note this needs to exec after rbenv (or other shim-based ver manager) has set the version, assuming we use shim-based solution
 if command -v ruby >/dev/null && command -v gem >/dev/null; then
-    _rb_pth="$(ruby -r rubygems -e 'puts Gem.user_dir')/bin"
-    [[ "$_rb_pth" != /bin && :$PATH: != *:"$_rb_pth":* ]] && export PATH="$_rb_pth:$PATH"
-    unset _rb_pth
+    i="$(ruby -r rubygems -e 'puts Gem.user_dir')/bin"
+    [[ "$i" != /bin && :$PATH: != *:"$i":* ]] && export PATH="$i:$PATH"
 fi
 
 ##########################################
@@ -452,9 +440,8 @@ if command -v fasd > /dev/null; then
 fi
 ########################################## forgit
 # forgit  (https://github.com/wfxr/forgit)
-_forgit="$BASE_PROGS_DIR/forgit/forgit.plugin.sh"
-[[ -f "$_forgit" ]] && source "$_forgit"
-unset _forgit
+i="$BASE_PROGS_DIR/forgit/forgit.plugin.sh"
+[[ ! -f "$i" ]] || source "$i"
 ########################################## mise
 if command -v mise >/dev/null 2>/dev/null; then
     eval -- "$(mise activate bash)"  # https://mise.jdx.dev/installing-mise.html#bash
@@ -573,18 +560,23 @@ fi
 export _ZO_RESOLVE_SYMLINKS=1
 command -v zoxide > /dev/null && eval -- "$(zoxide init bash)"
 ########################################## /zoxide
+
+########################################## ai
+# aichat; see https://github.com/sigoden/aichat/blob/main/scripts/shell-integration/integration.bash
+i="$BASE_PROGS_DIR/aichat-shell-scripts/shell-integration/integration.bash"
+command -v aichat > /dev/null && [[ -f "$i" ]] && source "$i"
+########################################## /ai
+
 # needs to be at the end:  https://github.com/rcaloras/bash-preexec
-_PREEXEC="$BASE_PROGS_DIR/bash-preexec/bash-preexec.sh"
-[[ ! -f "$_PREEXEC" ]] || source "$_PREEXEC"
-unset _PREEXEC
+i="$BASE_PROGS_DIR/bash-preexec/bash-preexec.sh"
+[[ ! -f "$i" ]] || source "$i"
 
 ### from here on, only bash-preexec dependents should be sourced:
 
 # fancy-ctrl-z:
 # depends on bash-preexec
-_fancy_ctrl_z="$BASE_DATA_DIR/dev/scripts/bash-fancy-ctrl-z"
-[[ ! -f "$_fancy_ctrl_z" ]] || source "$_fancy_ctrl_z"
-unset _fancy_ctrl_z
+i="$BASE_DATA_DIR/dev/scripts/bash-fancy-ctrl-z"
+[[ ! -f "$i" ]] || source "$i"
 
 # atuin: (you can see automated setup logic @ https://setup.atuin.sh/)
 # depends on bash-preexec
@@ -592,7 +584,6 @@ unset _fancy_ctrl_z
 # Note:
 # - binds ctrl+r and others
 # - as per automated setup logic, atuin is sourced _after_ bash-preexec
-# consider also:
-#   - atuin init zsh --disable-up-arrow
-command -v atuin > /dev/null && eval -- "$(atuin init bash)"
+command -v atuin > /dev/null && eval -- "$(atuin init bash --disable-up-arrow)"
 
+unset i
