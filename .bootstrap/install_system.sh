@@ -2421,7 +2421,7 @@ install_own_builds() {
     install_ripgrep
     install_rga
     #install_browsh
-    install_treesitter
+    #install_treesitter
     install_vnote
     #install_obsidian
     install_delta
@@ -2512,8 +2512,9 @@ prepare_build_container() {  # TODO container build env not used atm
 # note this function optimistically handles the version tracking, although
 # installation happens by the caller and might fail.
 #
-# -T  - instead of grepping via asset rgx, go with the latest tarball
-# -Z  - instead of grepping via asset rgx, go with the latest zipball
+# -T      - instead of grepping via asset rgx, go with the latest tarball
+# -Z      - instead of grepping via asset rgx, go with the latest zipball
+# -v ver  - specify tag to install; this is to pin a version
 #
 # $1 - git user
 # $2 - git repo
@@ -2524,22 +2525,24 @@ prepare_build_container() {  # TODO container build env not used atm
 #  - https://github.com/OhMyMndy/bin-get
 #  - https://github.com/wimpysworld/deb-get
 fetch_release_from_git() {
-    local opt loc id OPTIND dl_url opts selector
+    local opt loc id OPTIND dl_url opts selector ver
 
     opts=()
-    while getopts 'UDsf:n:TZ' opt; do
+    ver=latest  # default
+    while getopts 'UDsf:n:TZv:' opt; do
         case "$opt" in
             U|D|s) opts+=("-$opt") ;;
             f|n) opts+=("-$opt" "$OPTARG") ;;
             T) selector='.tarball_url' ;;
             Z) selector='.zipball_url' ;;
+            v) ver="tags/$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
     [[ -z "$selector" ]] && selector=".assets[] | select(.name|test(\"$3\$\")) | .browser_download_url"
-    readonly loc="https://api.github.com/repos/$1/$2/releases/latest"
+    readonly loc="https://api.github.com/repos/$1/$2/releases/$ver"
     dl_url="$(curl -fsSL "$loc" | jq -er "$selector")" || { err "asset url resolution from [$loc] via selector [$selector] failed w/ $?"; return 1; }
     readonly id="github-$1-$2${4:+-$4}"  # note we append name to the id when defined (same repo might contain multiple binaries we're installing)
 
@@ -2871,17 +2874,17 @@ install_bin_from_git() {
 #                      implies -U
 # -O, -P             - see install_file()
 # -d /target/dir     - dir to install pulled binary in, optional
-# -N name            - what to name pulled file to, optional, but recommended
-# -n, -f, -T, -Z, -D - see fetch_release_from_git()
+# -N name            - what to name pulled file/dir to, optional, but recommended
+# -n, -f, -v, -T, -Z, -D - see fetch_release_from_git()
 # $1 - git user
 # $2 - git repo
 # $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
 install_from_git() {
-    local opt bin name OPTIND fetch_git_args install_file_args
+    local opt f name OPTIND fetch_git_args install_file_args
 
-    declare -a install_file_args
+    declare -a install_file_args fetch_git_args
 
-    while getopts 'UDAN:O:P:d:n:f:TZ' opt; do
+    while getopts 'UDAN:O:P:d:n:f:v:TZ' opt; do
         case "$opt" in
             U|D) install_file_args+=("-$opt")
                  fetch_git_args+=("-$opt") ;;
@@ -2889,15 +2892,15 @@ install_from_git() {
                fetch_git_args+=(-U) ;;
             N) name="$OPTARG" ;;
             O|P|d) install_file_args+=("-$opt" "$OPTARG") ;;
-            n|f) fetch_git_args+=("-$opt" "$OPTARG") ;;
+            n|f|v) fetch_git_args+=("-$opt" "$OPTARG") ;;
             T|Z) fetch_git_args+=("-$opt") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
-    bin="$(fetch_release_from_git "${fetch_git_args[@]}" "$1" "$2" "$3" "$name")" || return 1
-    install_file "${install_file_args[@]}" "$bin" "$name" || return 1
+    f="$(fetch_release_from_git "${fetch_git_args[@]}" "$1" "$2" "$3" "$name")" || return 1
+    install_file "${install_file_args[@]}" "$f" "$name" || return 1
 }
 
 
@@ -3097,7 +3100,7 @@ install_file() {
 
     target='/usr/local/bin'  # default
 
-    extract_opts=()
+    declare -a extract_opts
     while getopts 'd:DUf:n:O:P:A' opt; do
         case "$opt" in
             d) target="$OPTARG" ;;
@@ -3106,7 +3109,7 @@ install_file() {
             f|n) extract_opts+=("-$opt" "$OPTARG") ;;  # no use if -D or -U is used
             O) owner="$OPTARG" ;;  # chown
             P) perms="$OPTARG" ;;  # chmod
-            A) asis=TRUE       # install file as-is, do not derive method from mime;
+            A) asis=TRUE       # install file as-is, do not derive method from mimetype;
                noextract=1 ;;  # note -U is implied
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
@@ -3160,7 +3163,7 @@ install_file() {
         target+="/$name"
         [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }  # rm previous installation
         execute "mv -- '$file' '$target'" || return 1
-    elif [[ "$ftype" == *'executable; charset=binary' || "$ftype" == 'text/x-shellscript; charset='* ]]; then
+    elif [[ "$ftype" == *'executable; charset=binary' || "$ftype" == 'text/x-shellscript; charset='* || "$ftype" == 'text/x-perl; charset='* ]]; then
         execute "chmod +x '$file'" || return 1
         _process || return 1
         execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
@@ -3208,6 +3211,7 @@ install_slack() {  # https://slack.com/help/articles/212924728-Download-Slack-fo
 }
 
 
+# also avail in apt repo
 install_rebar() {  # https://github.com/erlang/rebar3
     install_bin_from_git -N rebar3 erlang rebar3 rebar3
 }
@@ -3905,6 +3909,8 @@ install_plandex() {
 # https://github.com/OpenInterpreter/open-interpreter
 # https://docs.openinterpreter.com/getting-started/setup
 #
+# TODO: install fails
+#
 # alternative:
 # - https://github.com/gptme/gptme
 install_open_interpreter() {
@@ -3917,7 +3923,7 @@ install_open_interpreter() {
 # - https://github.com/charmbracelet/mods
 # - https://github.com/TheR1D/shell_gpt
 install_aichat() {  # https://github.com/sigoden/aichat
-    local shell="$BASE_PROGS_DIR/aichat-shell-scripts/"  # trailing path is important; note this path is also referenced in bash/zsh rc!
+    local shell="$BASE_PROGS_DIR/aichat-shell-scripts/"  # trailing slash is important; note this path is also referenced in bash/zsh rc!
 
     install_bin_from_git -N aichat sigoden aichat 'x86_64-unknown-linux-musl.tar.gz'
 
@@ -4872,10 +4878,12 @@ install_i3_deps() {
             #&& execute "mv -- '$f' $HOME/bin/i3-cycle-windows" || err "installing i3-cycle-windows failed /w $?"
 
     # install i3move, allowing easier floating-window movement   # https://github.com/dmbuce/i3b
+    # TODO: x11!
     install_from_url  i3move 'https://raw.githubusercontent.com/DMBuce/i3b/master/bin/i3move'
 
     # install sway-overfocus, allowing easier window focus change/movement   # https://github.com/korreman/sway-overfocus
-    install_bin_from_git -N sway-overfocus korreman sway-overfocus '-x86_64.tar.gz'
+    # TODO: pinned version, until version 0.2.5 is released
+    install_bin_from_git -v v0.2.3-fix -N sway-overfocus korreman sway-overfocus '-x86_64.tar.gz'
 
     # TODO: consider https://github.com/infokiller/i3-workspace-groups
     # TODO: consider https://github.com/JonnyHaystack/i3-resurrect
@@ -5069,6 +5077,7 @@ install_neovide() {  # rust-based GUI front-end to neovim
 
 
 # https://github.com/helix-editor/helix
+# also available in apt repo
 install_helix() {
     #install_bin_from_git -N hx helix-editor helix 'x86_64.AppImage'
     #install_bin_from_git -N hx -n hx  helix-editor helix '-x86_64-linux.tar.xz'
@@ -7460,16 +7469,16 @@ generate_ssh_key() {
 #           list of values if multiple exit codes are to be considered a success.
 #  -r       return the original return code in order to catch the code even when
 #           -c <code> or -i options were passed
+#  -s       silent stdout - do not print
 execute() {
-    local opt OPTIND cmd exit_sig ignore_errs retain_code ok_code ok_codes
+    local opt OPTIND cmd exit_sig ignore_errs retain_code silent ok_code ok_codes
 
     ok_codes=(0)  # default
-    while getopts 'irc:' opt; do
+    while getopts 'irsc:' opt; do
         case "$opt" in
-           i) ignore_errs=1
-                ;;
-           r) retain_code=1
-                ;;
+           i) ignore_errs=1 ;;
+           r) retain_code=1 ;;
+           s) silent=1 ;;
            c)
               IFS=',' read -ra ok_codes <<< "$OPTARG"
               for ok_code in "${ok_codes[@]}"; do
@@ -7484,7 +7493,7 @@ execute() {
 
     readonly cmd="$(sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' <<< "$1")"  # trim leading-trailing whitespace
 
-    >&2 echo -e "${COLORS[GREEN]}-->${COLORS[OFF]} executing [${COLORS[YELLOW]}${cmd}${COLORS[OFF]}]"
+    [[ -z "$silent" ]] && >&2 echo -e "${COLORS[GREEN]}-->${COLORS[OFF]} executing [${COLORS[YELLOW]}${cmd}${COLORS[OFF]}]"
     # TODO: collect and log command execution stderr?
     eval "$cmd"
     readonly exit_sig=$?
@@ -8182,7 +8191,7 @@ cleanup() {
     [[ -s "$NPMRC_BAK" ]] && mv -- "$NPMRC_BAK" ~/.npmrc   # move back
 
     if [[ -d "$ZSH_COMPLETIONS" && "$ZSH_COMPLETIONS" == /usr/* ]]; then
-        execute "sudo chmod -R 'o+r' '$ZSH_COMPLETIONS'"
+        execute -s "sudo chmod -R 'o+r' '$ZSH_COMPLETIONS'"  # ensure 'other' group has read rights
     fi
 
     # shut down the build container:
