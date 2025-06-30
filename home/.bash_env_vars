@@ -77,7 +77,8 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export GOPATH="$BASE_DATA_DIR/.repos/go"  # .repos/ will likely contain stuff like m2, go, etc repos...
 
     # kubectl configs:
-    export KUBECONFIG="${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config:$HOME/.kube/work-config"
+    #export KUBECONFIG="${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config:$HOME/.kube/work-config"
+    export KUBECONFIG="${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config"
 
     # note JAVA_X env vars are managed by sdkman; unsure about M2* ones tho;
     #export JAVA_HOME=/usr/local/jdk_link  # superseded by sdkman
@@ -193,15 +194,24 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
 fi
 
 command -v nvim > /dev/null 2>&1 && export EDITOR=nvim || export EDITOR=vim
-export VISUAL="$EDITOR"  # note gvim doesn't play well with some stuff, eg with 'crontab -e';
+
+# VISUAL/EDITOR distinction is really historical; tl;dr is that VIAUL depends on
+# whether you ahve a term capable of cursor positioning, not whether you have a GUI/
+# window system avail; see https://unix.stackexchange.com/a/334022/47501
+export VISUAL=neovide  # note gvim doesn't play well with some stuff, eg with 'crontab -e'
+
 export PAGER=less
-[ -n "$DISPLAY" ] && export BROWSER=/usr/bin/firefox || export BROWSER=links2
+[[ -n "$DISPLAY" ]] && export BROWSER=/usr/bin/firefox || export BROWSER=links2
+
+# see https://github.com/wofr06/lesspipe/discussions/167#discussioncomment-13530997 :
+export LESSOPEN='|/usr/local/bin/lesspipe.sh %s'  # used e.g. for zsh preview, by https://github.com/Freed-Wu/fzf-tab-source
 
 # Colorize less (from http://unix.stackexchange.com/questions/119/colors-in-man-pages)
 # get color support for less:
-export LESS="$LESS -FRXKi"
+export LESS="$LESS -FRXKi"  # note -r flag might cause problems, so avoid it: https://www.greenwoodsoftware.com/less/faq.html#dashr
 export MANPAGER='less -s -M +Gg'  # display scroll percentage in manpages
                                   # TODO: consider using bat as pager: https://github.com/sharkdp/bat#man
+export LESSCOLORIZER='batcat --theme=default'       # from https://github.com/wofr06/lesspipe
 export GROFF_NO_SGR=1                  # for konsole and gnome-terminal
 # colorize:
 # ------- color 1
@@ -274,7 +284,14 @@ export _MARKPATH_DIR=.shell_jump_marks
 
 # FZF settings:  # https://github.com/sharkdp/fd
 # gruvbox (or any other --color cmd here) taken from https://github.com/junegunn/fzf/issues/1602#issuecomment-511663634
-export FZF_DEFAULT_OPTS='--ansi --bind=alt-k:preview-up,alt-p:preview-up --bind=alt-j:preview-down,alt-n:preview-down --bind=ctrl-r:toggle-all --bind=alt-w:toggle-preview-wrap --bind=?:toggle-preview --bind=ctrl-z:toggle-sort'  # note ansi is detrimental to fzf perf
+export FZF_DEFAULT_OPTS="--ansi --bind=alt-k:preview-up,alt-p:preview-up \
+--bind=alt-j:preview-down,alt-n:preview-down --bind=ctrl-r:toggle-all \
+--bind=alt-w:toggle-preview-wrap --bind=?:toggle-preview --bind=ctrl-z:toggle-sort \
+--prompt='λ -> ' \
+--pointer='❯' \
+--marker='✓'"
+#--color=fg:#f8f8f2,bg:#282a36,hl:#bd93f9 --color=fg+:#f8f8f2,bg+:#44475a,hl+:#bd93f9 --color=info:#ffb86c,prompt:#50fa7b,pointer:#ff79c6 --color=marker:#ff79c6,spinner:#ffb86c,header:#6272a4"  # note ansi is detrimental to fzf perf
+
 #export FZF_DEFAULT_OPTS='--ansi --color=bg+:#ebdbb2,bg:#fbf1c7,spinner:#9d0006,hl:#928374,fg:#3c3836,header:#928374,info:#427b58,pointer:#9d0006,marker:#9d0006,fg+:#3c3836,prompt:#9d0006,hl+:#9d0006'  # note this is detrimental to fzf perf
 #export FZF_DEFAULT_OPTS='--ansi --color fg:#D8DEE9,bg:#2E3440,hl:#A3BE8C,fg+:#D8DEE9,bg+:#434C5E,hl+:#A3BE8C,pointer:#BF616A,info:#4C566A,spinner:#4C566A,header:#4C566A,prompt:#81A1C1,marker:#EBCB8B'
 #export FZF_DEFAULT_OPTS='--ansi --color fg:-1,bg:-1,hl:230,fg+:3,bg+:233,hl+:229,info:150,prompt:110,spinner:150,pointer:167,marker:174'
@@ -354,8 +371,6 @@ for i in \
         /usr/local/sbin \
         /usr/sbin \
         /sbin \
-        "$BASE_DATA_DIR/dev/scripts/system" \
-        "$BASE_DATA_DIR/dev/scripts/git" \
         "$HOME/bin" \
         "$HOME/.local/bin" \
         "$GRADLE_HOME/bin" \
@@ -370,6 +385,10 @@ for i in \
         "$HOME/.config/nvim/bundle/vim-iced/bin" \
         "$HOME/.local/share/JetBrains/Toolbox/scripts" \
         "$PERL_BASE/bin" \
+        "$HOME/.tmux/plugins/tmux-nvr/bin" \
+        "$BASE_DATA_DIR/dev/scripts/system" \
+        "$BASE_DATA_DIR/dev/scripts/git" \
+        "$BASE_DATA_DIR/dev/scripts/shell" \
             ; do
     if [[ :$PATH: != *:"$i":* && -d "$i" ]]; then
         j+="$i:"
