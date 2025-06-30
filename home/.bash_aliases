@@ -30,8 +30,6 @@ alias sts='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkrc:/home/laur/.gtkrc
 alias soapui='( cd $BASE_PROGS_DIR/soapui && env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtkrc-2.0-IDE "./soapui/bin/soapui.sh" )'
 alias giteye='env GTK2_RC_FILES=$HOME/.themes/Numix/gtk-2.0/gtkr:/home/laur/.gtkrc-2.0-IDE "$BASE_PROGS_DIR/GitEye/GitEye"'
 #alias sts='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "$BASE_PROGS_DIR/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/STS"'
-alias eclim='env GTK2_RC_FILES=/usr/share/themes/Clearlooks/gtk-2.0/gtkrc:/home/laur/.gtkrc-2.0-IDE "$BASE_PROGS_DIR/spring-tool-suite-3.6.2.RELEASE-e4.4.1-linux-gtk-x86_64/sts-bundle/sts-3.6.2.RELEASE/eclimd"'
-#alias skype='LD_PRELOAD=$BASE_PROGS_DIR/custom_builds/skypetab-ng/libskypetab-ng.so   skype'
 alias fileroller='file-roller'
 alias vscode='$BASE_PROGS_DIR/VSCode-linux-x64/Code'  # MS Visual Code (editor)
 #alias franz='$BASE_PROGS_DIR/franz/franz'  # client that manages loads of different chat clients (via their web frontends)
@@ -58,7 +56,8 @@ alias ngo='nvim --listen /tmp/nvim_$USER' # start the _main_/master nvim process
 alias gist='gist --private --copy'
 alias tkremind='tkremind -m -b1'
 alias lofi='mpv --no-video https://youtu.be/jfKfPfyJRdk'  # play lo-fi music
-stock() { curl "https://terminal-stocks.herokuapp.com/${1:-GME}"; }
+alias pdx=plandex
+pdxn() { [[ "$#" -eq 1 ]] || { err 'need one arg - new plan name to create'; return 1; }; plandex new -n "$1"; }
 
 # note following uses the 'none' driver, now effectively superseded by 'docker' driver:   # https://minikube.sigs.k8s.io/docs/drivers/none/
 #alias mkstart='CHANGE_MINIKUBE_NONE_USER=true sudo -E minikube start --driver=none --extra-config=apiserver.service-node-port-range=80-32767 --apiserver-ips 127.0.0.1 --apiserver-name localhost'
@@ -109,6 +108,8 @@ alias dig='dig +search'  # https://serverfault.com/questions/434581/why-can-host
 command -v pydf > /dev/null 2>&1 && alias dfh='command pydf -h --local' || alias dfh='df -h --local -x tmpfs -x devtmpfs -x nfs'
 alias pydf=dfh
 #alias less="less -IRKFX" # handled by the $LESS env var
+alias nano='nano --mouse'
+alias sysinfo='inxi -Fxxxz'
 ###############################
 alias ls='ls -h --color=auto --group-directories-first'
 alias ll='ls -l'
@@ -224,6 +225,12 @@ alias gpushall='is_git || err "not in a git repo" && { git push --tags && git ch
 alias gr='forgit::reset::head'    # git reset
 alias gR='forgit::checkout::file' # git co -- ...
 alias gin='gitin'
+
+# gh pr-related aliases, TODO confirm:
+prcreate() { gh pr create -B "$1" -f; }
+prmerge() { gh pr merge --merge --delete-branch=false "$1"; }
+prlist() { gh pr list --state open; }
+prcheck() { gh pr checkout "$1" && gh pr diff; }
 
 # ------------------------------------
 # Docker alias and functions
