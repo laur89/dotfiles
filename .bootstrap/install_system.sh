@@ -956,8 +956,7 @@ _install_nfs_client_stationary() {
     readonly fstab='/etc/fstab'
     readonly default_mountpoint='/mnt/nfs'
 
-    declare -a mounted_shares=()
-    declare -a used_mountpoints=()
+    declare -a mounted_shares used_mountpoints
 
     [[ -f "$fstab" ]] || { err "[$fstab] does not exist; cannot add fstab entry!"; return 1; }
 
@@ -1118,8 +1117,7 @@ install_sshfs() {
     readonly fstab="/etc/fstab"
     readonly ssh_port=443
     readonly identity_file="$HOME/.ssh/id_rsa_only_for_server_connect"
-    declare -a mounted_shares=()
-    declare -a used_mountpoints=()
+    declare -a mounted_shares used_mountpoints
     declare -A sel_ips_to_user
 
     confirm "wish to install and configure sshfs?" || return 1
@@ -2527,7 +2525,7 @@ prepare_build_container() {  # TODO container build env not used atm
 fetch_release_from_git() {
     local opt loc id OPTIND dl_url opts selector ver
 
-    opts=()
+    declare -a opts
     ver=latest  # default
     while getopts 'UDsf:n:TZv:' opt; do
         case "$opt" in
@@ -2560,7 +2558,7 @@ fetch_release_from_git() {
 _fetch_release_common() {
     local opt extract_opts noextract skipadd id ver dl_url name tmpdir file OPTIND
 
-    extract_opts=()
+    declare -a extract_opts
     while getopts 'UsDf:n:' opt; do
         case "$opt" in
             U) noextract=1 ;;
@@ -2695,7 +2693,7 @@ install_from_any() {
     local install_file_args skipadd opt relative
     local name loc url_ptrn dl_url ver f OPTIND tmpdir id
 
-    install_file_args=()
+    declare -a install_file_args
     while getopts 'sf:n:d:O:P:rUDAI:' opt; do
         case "$opt" in
             s) skipadd=1 ;;
@@ -3026,7 +3024,7 @@ resolve_ver() {
 install_from_url() {
     local opt skipadd OPTIND opts name loc file ver tmpdir
 
-    opts=()
+    declare -a opts
     while getopts 'sDAO:P:d:' opt; do
         case "$opt" in
             s) skipadd=1 ;;
@@ -4791,6 +4789,12 @@ install_i3() {
 
 # pass -g opt to install from github; in that case 2 args are to be provided - user & repo,
 # and we can install one pkg at a time.
+#
+# good write-up on py dependency management as of '24: https://nielscautaerts.xyz/python-dependency-management-is-a-dumpster-fire.html
+# tl;dr: use uv if pypi, or pixi if conda
+#   - note uv has pipx analogue: uvx
+#   - also supports PEP 723 to add dependencies to file hdr, so can run these
+#     single scripts via uvx while also using deps; also supported by pipx! - https://peps.python.org/pep-0723/
 py_install() {
     local opt opts OPTIND
 
@@ -4863,6 +4867,9 @@ install_i3_deps() {
 
     # install i3expo:
     py_install i3expo
+
+    # install our i3 tools:  # TODO: unreleased as of Jun '25
+    py_install i3-tools
 
     # i3ass  # https://github.com/budlabs/i3ass/
     #clone_or_pull_repo budlabs i3ass "$BASE_PROGS_DIR"
@@ -5751,7 +5758,7 @@ install_from_repo() {
         libjson-perl  # module for manipulating JSON-formatted data
     )
 
-    blocks=()
+    declare -a blocks
     is_native && blocks=(block1_nonwin block2_nonwin block3_nonwin block4_nonwin)
     blocks+=(block1 block2 block3 block4 block5)
 
@@ -6119,7 +6126,7 @@ install_block() {
     declare -ar list_to_install=( $1 )
     readonly extra_apt_params="$2"  # optional
 
-    declare -a dry_run_failed=()
+    declare -a dry_run_failed
     exit_sig=0  # default
 
     report "installing these packages:\n${list_to_install[*]}\n"
@@ -7893,12 +7900,12 @@ create_link() {
     readonly src="${1%/}"
     target="$2"
 
+    declare -a srcs
     if [[ "$contents" -eq 1 ]]; then
         [[ -d "$src" ]] || { err "source [$src] should be a dir, but is [$(file_type "$src")]"; return 1; }
         [[ -d "$target" ]] || { err "with -c opt, target [$target] should be a dir, but is [$(file_type "$target")]"; return 1; }
         [[ "$target" != */ ]] && target+='/'
 
-        srcs=()
         for node in "$src/"*; do
             srcs+=("$node")
         done
@@ -7959,7 +7966,7 @@ list_contains() {
 check_progs_installed() {
     local msg msg_beginning i progs_missing
 
-    declare -a progs_missing=()
+    declare -a progs_missing
 
     # Check whether required programs are installed:
     for i in "$@"; do
