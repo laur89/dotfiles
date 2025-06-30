@@ -84,3 +84,8 @@ __pycache__/
 
 # system
 /proc/
+
+# aider (AI coding tool)
+.aider*
+!.aider.conf.yml
+!.aiderignore
