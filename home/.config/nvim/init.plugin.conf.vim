@@ -145,10 +145,6 @@
             \ },
         \ }
 
-    " eclim:
-    " eclim completon registration to vim's omni complete which YCM automatically detects:
-    let g:EclimCompletionMethod = 'omnifunc'
-
 
     """"""""" /ultisnips-YCM
     "" one solution for YCM and UltiSnips conflict (from http://stackoverflow.com/questions/14896327/ultisnips-and-youcompleteme/18685821#18685821):
@@ -242,6 +238,8 @@
         " because of our system nvm hack, manually set node path so _a_ node version is discoverable at a constant location:
         let g:coc_node_path = $NODE_LOC
         "set runtimepath^=/home/laur/dev/coc-clojure  " test local coc extensions/plugins
+        " from https://mise.jdx.dev/ide-integration.html#neovim :
+        "vim.env.PATH = vim.env.HOME .. "/.local/share/mise/shims:" .. vim.env.PATH
 
         " Remap <C-f> and <C-b> for scroll float windows/popups:
         if has('nvim-0.4.0') || has('patch-8.2.0750')
@@ -310,14 +308,6 @@
         ""\ 'passive_filetypes': [] } 
     """ }}}
 
-
-    " Session management options (vim-session):
-    " if you don't want help windows to be restored:
-    set sessionoptions-=help
-    " by default, don't ask to save sessions:
-    let g:session_autosave = 'no'
-    " session data store:
-    let g:session_directory = '~/.config/nvim/sessions'
 
     " rainbow_parentheses:
     "let g:rbpt_colorpairs = [

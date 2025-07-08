@@ -6,6 +6,7 @@
 " @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 " nice vimrc (and general dotfiles): https://github.com/kshenoy/dotfiles
 " also https://dev.to/voyeg3r/my-ever-growing-neovim-init-lua-h0p (lua)
+" - https://github.com/sainnhe/dotfiles
 "
 "
 set nocompatible " Must be the first line

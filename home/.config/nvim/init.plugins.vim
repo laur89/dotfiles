@@ -1,8 +1,8 @@
 " vim: set ft=vimrc:
 
 " Edit files using sudo/su
-"Plug 'chrisbra/SudoEdit.vim'  This one does not support neovim!
-Plug 'lambdalisue/suda.vim'
+"Plug 'chrisbra/SudoEdit.vim'  This one does not support neovim! (last commit '23)
+Plug 'lambdalisue/vim-suda'
 
 " A pretty statusline, bufferline integration:
 "Plug 'itchyny/lightline.vim'  " too minimalist for me
@@ -83,18 +83,22 @@ Plug 'preservim/tagbar'
 " Ctags generator/highlighter
 Plug 'ludovicchabant/vim-gutentags'  " alt: jsfaint/gen_tags.vim
 
-Plug 'xolox/vim-misc'  " remove once we no longer use any of xolox' plugins that use vim-misc as dependency
-Plug 'xolox/vim-session'  " TODO: replace with tpope/vim-obsession?
+"Plug 'xolox/vim-misc'  " remove once we no longer use any of xolox' plugins that use vim-misc as dependency
+"Plug 'xolox/vim-session'  " TODO: replace with tpope/vim-obsession?
 "Plug 'xolox/vim-notes'  " alternative: http://orgmode.org/
-Plug 'fmoralesc/vim-pad', { 'branch': 'devel' }   " alt to vim-notes
-Plug 'vim-pandoc/vim-pandoc'  " this and pandoc-syntax for vim-pad
-Plug 'vim-pandoc/vim-pandoc-syntax'
-Plug 'jceb/vim-orgmode'  " text outlining (to use with note-taking plugins?)
+"Plug 'fmoralesc/vim-pad', { 'branch': 'devel' }   " alt to vim-notes
+"Plug 'vim-pandoc/vim-pandoc'  " this and pandoc-syntax for vim-pad
+"Plug 'vim-pandoc/vim-pandoc-syntax'
+Plug 'jceb/vim-orgmode'  " text outlining (to use with note-taking plugins?); see also https://github.com/nvim-orgmode/orgmode !<-- yes, nvim-orgmode is what we want to use instead
+" !!!! TODO: there's also https://github.com/nvim-neorg/neorg ;  how does it compare to orgmode? does this have roam alternative as org-roam?
+" note there seems to be some work done for org-roam alternative for neo-org: https://github.com/chipsenkbeil/org-roam.nvim
+" TODO: consdier also https://github.com/ranjithshegde/orgWiki.nvim as companion to orgmode?
 
 " Selfexplanatory...
 "Plug 'jlanzarotta/bufexplorer'
 
 " File browser
+" TODO: consider https://github.com/nvim-neo-tree/neo-tree.nvim or https://github.com/nvim-tree/nvim-tree.lua
 Plug 'preservim/nerdtree', { 'on': ['NERDTreeToggle', 'NERDTreeFind'] }
 
 " Visualise the undo tree
@@ -112,6 +116,7 @@ Plug 'simnalamburt/vim-mundo', { 'on': 'MundoToggle' }  " gundo fork with neovim
 " another alternative: coc (sic)
 "Plug 'ycm-core/YouCompleteMe'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
+" another alternative: nvim-cmp
 
 " Go-lang/golang/go lang support:
 " (believe it's redundtant when using vim-coc)
@@ -180,6 +185,7 @@ Plug 'vim-scripts/argtextobj.vim'
 Plug 'moll/vim-node'
 
 " syntax highlight for vue components:  " https://github.com/posva/vim-vue
+" TODO: not actively maintained, find replacement (some linked in project readme)
 Plug 'posva/vim-vue', { 'for': 'vue' }
 
 " syntax highlight for 'just' files:  " https://github.com/NoahTheDuke/vim-just
@@ -189,6 +195,8 @@ Plug 'NoahTheDuke/vim-just'
 "Plug 'jsbeautify'
 
 " typescript syntax https://github.com/leafgarland/typescript-vim
+" TODO: not really updated anymore, consider replacing w/ https://github.com/tree-sitter/tree-sitter-typescript
+"       in general tree-sitter should be prefered for syntax highlighting
 Plug 'leafgarland/typescript-vim', { 'for': 'ts' }
 
 " js syntax highlighting & improved indentation:
@@ -214,6 +222,9 @@ Plug 'tpope/vim-eunuch'
 
 " async jobs
 Plug 'tpope/vim-dispatch' " alt: skywind3000/asyncrun.vim
+
+" sessions
+Plug 'tpope/vim-obsession'
 
 " project specific vimrc:   # TODO: works with nvim?
 Plug 'LucHermitte/lh-vim-lib' " dependency for local_vimrc
@@ -247,7 +258,14 @@ Plug 'mboughaba/i3config.vim'
 " reopen file at last edit position
 Plug 'farmergreg/vim-lastplace'
 
-" alternative to fzf: https://github.com/liuchengxu/vim-clap (rust)
-Plug '~/.fzf'
+" aider (AI coding tool) plugin: (note there are others)
+"Plug 'joshuavial/aider.nvim'
+
+" TODO: consider repacing our own Rg command w/ something like telescope plugin!
+"       another alternative to fzf & telescope: https://github.com/liuchengxu/vim-clap (rust)
+"       looks like clap&telescope have some overlap: https://github.com/nvim-telescope/telescope.nvim/issues/121
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 
+" plugins to consider once we migrate config over to lua:
+" - https://github.com/LintaoAmons/bookmarks.nvim
