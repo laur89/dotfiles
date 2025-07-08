@@ -111,7 +111,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # set our own-used link to latest node version (managed by .bashrc):
     #export NODE_LOC="$NVM_DIR/latest"  # when unsing nvm
     #export NODE_LOC="$ASDF_DIR/nodejs-latest"  # when unsing asdf
-    export NODE_LOC="$MISE_DATA_DIR/shims/node"  # when unsing mise; note this does not need to be managed by us!
+    export NODE_LOC="$MISE_DATA_DIR/shims/node"  # when unsing mise; note this does not need to be managed by us like w/ asdf
 
     export CUSTOM_LOGDIR='/var/log/custom_logs'
     export PANEL_FIFO='/tmp/panel-fifo'  # for BSPWM
@@ -364,7 +364,7 @@ export PERL5LIB="$PERL_BASE/lib/perl5"
 #export MANPATH="$PERL_BASE/man${MANPATH:+:$MANPATH}"
 ###############################
 # android sdk installed via apt:
-[[ -d "$BASE_PROGS_DIR/android" ]] && export ANDROID_HOME="$BASE_PROGS_DIR/android"
+[[ ! -d "$BASE_PROGS_DIR/android" ]] || export ANDROID_HOME="$BASE_PROGS_DIR/android"
 
 # Note  "$ANDROID_HOME/platform-tools"  would give us tools such as adb, but atm we install it from apt
 # add additional locations to PATH if not already present:
@@ -392,7 +392,7 @@ for i in \
         "$BASE_DATA_DIR/dev/scripts/git" \
         "$BASE_DATA_DIR/dev/scripts/shell" \
             ; do
-    if [[ :$PATH: != *:"$i":* && -d "$i" ]]; then
+    if [[ ":${PATH}:" != *":${i}:"* && -d "$i" ]]; then
         j+="$i:"
     fi
 done
@@ -403,7 +403,7 @@ unset i j
 # load our env/system specific overrides:
 if [[ -d "$HOME/.bash_env_vars_overrides" ]]; then
     for env_override in $HOME/.bash_env_vars_overrides/*; do
-        [[ -f "$env_override" ]] && source "$env_override"
+        [[ ! -f "$env_override" ]] || source "$env_override"
     done
     unset env_override
 fi
