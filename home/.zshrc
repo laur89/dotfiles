@@ -164,12 +164,12 @@ if [[ -d "$HOME/.bash_aliases_overrides" ]]; then
         [[ ! -f "$i" ]] || source "$i"
     done
 fi
-unset i
 
 # source homeshick:
-if [[ -e "$HOME/.homesick/repos/homeshick" ]]; then
-    source "$HOME/.homesick/repos/homeshick/homeshick.sh"
-    fpath=("$HOME/.homesick/repos/homeshick/completions" $fpath)
+i="$HOME/.homesick/repos/homeshick"
+if [[ -e "$i" ]]; then
+    source "$i/homeshick.sh"
+    fpath=("$i/completions" $fpath)
 fi
 
 
@@ -625,9 +625,8 @@ zle -N fancy-ctrl-z
 bindkey '^Z' fancy-ctrl-z
 
 ########################################## forgit  https://github.com/wfxr/forgit
-_forgit="$BASE_PROGS_DIR/forgit/forgit.plugin.zsh"
-[[ -f "$_forgit" ]] && source "$_forgit"
-unset _forgit
+i="$BASE_PROGS_DIR/forgit/forgit.plugin.zsh"
+[[ ! -f "$i" ]] || source "$i"
 
 ########################################## zoxide  # https://github.com/ajeetdsouza/zoxide
 # needs to be at the end of file, as it must be _after_ compinit is called.    TODO: compinit seq dependency, so perhaps zinit is the way to import?
@@ -672,13 +671,13 @@ atuin-setup() {
     bindkey '^E' _atuin_search_widget
 
     export ATUIN_NOBIND="true"
-    eval -- "$(atuin init zsh)"
+    eval -- "$(atuin init zsh --disable-up-arrow)"
     fzf-atuin-history-widget() {
         local selected num
         setopt localoptions noglobsubst noposixbuiltins pipefail no_aliases 2>/dev/null
 
         # local atuin_opts="--cmd-only --limit ${ATUIN_LIMIT:-5000}"
-        local atuin_opts="--cmd-only"
+        local atuin_opts='--cmd-only'
         local fzf_opts=(
             --height=${FZF_TMUX_HEIGHT:-80%}
             --tac
@@ -696,7 +695,7 @@ atuin-setup() {
                 fzf "${fzf_opts[@]}"
         )
         local ret=$?
-        if [ -n "$selected" ]; then
+        if [[ -n "$selected" ]]; then
             # the += lets it insert at current pos instead of replacing
             LBUFFER+="${selected}"
         fi
@@ -710,6 +709,11 @@ atuin-setup() {
 #zvm_after_init_commands+=(atuin-setup)
 ########################################## /atuin
 
+# AI {{{
+# aichat; see https://github.com/sigoden/aichat/blob/main/scripts/shell-integration/integration.zsh
+i="$BASE_PROGS_DIR/aichat-shell-scripts/shell-integration/integration.zsh"
+command -v aichat > /dev/null && [[ -f "$i" ]] && source "$i"
+# }}}
 
 # other examples to consider:
 # Define functions and completions.
@@ -728,3 +732,5 @@ atuin-setup() {
 # note compinit & cdreplay are commented out, as are invoked by zinit's "zpcompinit;zpcdreplay"
 #autoload -Uz compinit; compinit
 #zinit cdreplay -q  # needs to be after compinit call; see https://github.com/zdharma-continuum/zinit#calling-compinit-without-turbo-mode
+
+unset i
