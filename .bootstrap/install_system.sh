@@ -1474,7 +1474,7 @@ install_deps() {
 
     # rofi-based emoji picker
     # change rofi command to something like [-modi combi#ssh#emoji:rofimoji] to use.
-    py_install -g fdw  rofimoji  # https://github.com/fdw/rofimoji
+    py_install -g fdw/rofimoji  # https://github.com/fdw/rofimoji
 
     # keepass cli tool
     py_install passhole     # https://github.com/Evidlo/passhole
@@ -4816,7 +4816,7 @@ install_i3() {
 }
 
 
-# pass -g opt to install from github; in that case 2 args are to be provided - user & repo,
+# pass -g opt to install from github; in that case the repo to be provided is [user/repo]
 # and we can install one pkg at a time.
 #
 # good write-up on py dependency management as of '24: https://nielscautaerts.xyz/python-dependency-management-is-a-dumpster-fire.html
@@ -4830,8 +4830,8 @@ py_install() {
     opts=("$@")
     while getopts 'g' opt; do
         case "$opt" in
-            g) opts=("git+ssh://git@github.com/$1/$2.git")
-               shift 2
+            g) opts=("git+ssh://git@github.com/${1}.git")
+               shift
                opts+=("$@") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
@@ -4899,7 +4899,7 @@ install_i3_deps() {
 
     # install our i3 tools:
     #py_install i3-tools  # TODO: unreleased as of Jun '25
-    py_install -g laur89 i3-tools  # https://github.com/laur89/i3-tools
+    py_install -g laur89/i3-tools  # https://github.com/laur89/i3-tools
 
     # i3ass  # https://github.com/budlabs/i3ass/
     #clone_or_pull_repo budlabs i3ass "$BASE_PROGS_DIR"
