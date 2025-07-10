@@ -41,6 +41,8 @@ steps separately apart from the full installation mode.
     passwd/user-password=userpass
     passwd/user-password-again=userpass
 ```
+  - make sure to use the preseed template expander script, not the preseed
+    template directly;
   - note under UEFI installation, `esc` likely doesn't do anything; in that
     case:
         - highlight `Advanced options` -> `Automated install`
@@ -96,6 +98,10 @@ Instead we partition it manually. Instructions from [here](https://www.dwarmstro
 - create `ext4` partition, beginning, mount to `/boot`, 1044 MB
   - could be btrfs, but some features, such as [savedefault](https://wiki.archlinux.org/title/GRUB/Tips_and_tricks#Recall_previous_entry)
     (relevant w/ dualboot or multiple kernels) might not work
+  - when using systemd-boot and encrypting everything, then no need for
+    separate /boot partition as commit c0cde1e8348db5915a026ec3c8ad2220031e6fcc
+    implies
+    - also somewhat relevant to no-boot partition is [this debian forum post](https://forums.debian.net/viewtopic.php?p=822950)
 - create `physical volume for encryption` partition, beginning, remaining size
 - select `Configure encrypted volumes`, select `Yes`
 - select `Create encrypted volumes`
@@ -109,7 +115,7 @@ Instead we partition it manually. Instructions from [here](https://www.dwarmstro
 
 Note if we had more than one encrypted volume (e.g. / and /home), then we'd
 have to configure a keyfile to forego entering two passphrases, see the bottom
-of the above blog post.
+of the (minimal-debian post) blog post above.
 
 ### [another instruction](https://medium.com/@inatagan/installing-debian-with-btrfs-snapper-backups-and-grub-btrfs-27212644175f)
 - sets up grub-btrfs to allow us to boot directly into our snapshots without the need of a live media
@@ -218,9 +224,48 @@ TODO: look into grub-btrfs (not avail on debian repos); any alternative for syst
   (https://forum.manjaro.org/t/btrfs-and-separate-boot-ext4-partition/155211/9)
 - cow should be disabled where loads of writes is done, e.g. VM images,
   databases...
+  - as per [this comment](https://www.reddit.com/r/btrfs/comments/p1xa0u/terrible_vm_performance_even_with_mitigations/h8gdyui/)
+    > If you have any snapshots, CoW is force enabled
+    meaning even if you `chattr +C a directory`, taking a snapshot of that subvolume / directory will make it CoW again
+  - if you need cow, use KVM's `Qcow2` instead
 - if you're making snapshots of /, make sure to take it together with /boot
   (assuming latter is on a different partition), otherwise you might end up in
   an unbootable state due to missing kernel
+- quota usage with btrfs is questionable - both from performance & reported
+  data usage perspective
+- see https://github.com/kdave/btrfsmaintenance for maintenance scripts
+- unsure about the differences, but do not run `check` unless we're having
+  problems; for general maintenance, `scrub` & `balance` are the tools
+  - think it's becuase `check` looks for fs consistency, but btrfs can't become
+    inconsistent like ext4 due to cow?
+- look into duplicate metadata on single drive
+- verify scrub is scheduled by sytemd/deb
+- look into `btrfs de stats`
+- on [defrag](https://btrfs.readthedocs.io/en/latest/Defragmentation.html):
+    > Defragmentation does not preserve extent sharing, e.g. files created by cp --reflink
+      or existing on multiple snapshots. Due to that the data space consumption may increase
+    - this is also mentioned [here](https://btrfs.readthedocs.io/en/latest/ch-mount-options.html)
+- `lsattr` cmd to confirm our cow/nodatacow attr (`C`)
+- from [here](https://archive.kernel.org/oldwiki/btrfs.wiki.kernel.org/index.php/SysadminGuide.html#Snapshots),
+  in order to roll back to a snapshot, unmount the modified original subvolume,
+  use `mv` to rename the old subvolume to a temp location, and then again to
+  rename the snapshot to the original name. you can then remount the subvolume.
+  at this point the original subvol may be deleted.
+- when using multi disk, you should periodically [balance](https://archive.kernel.org/oldwiki/btrfs.wiki.kernel.org/index.php/SysadminGuide.html#Balancing)
+- https://en.opensuse.org/SDB:BTRFS
+- see also: https://github.com/baodrate/snap-sync
+- see also: https://github.com/digint/btrbk
+- confirm this is reasonable way for rollbacks:
+```sh
+$ sudo btrfs subvolume delete /btrfs/@
+$ sudo btrfs subvolume snapshot /btrfs/@snapshots/root/15/snapshot /btrfs/@
+```
+- another rollback way, where `/btrfs/@snpashots/root/15/snapshot` is the currently
+  booted ro-snapshot; note this method saves the damaged subvolume:
+```sh
+$ sudo mv /btrfs/@ /btrfs/@snapshots/old_root
+$ sudo btrfs su sn /btrfs/@snapshots/root/15/snapshot /btrfs/@
+```
 
 
 ## Troubleshooting
@@ -242,6 +287,9 @@ For GUI dconf editor install `dconf-editor` pkg.
 - for uniform GTK & QT look, see [this arch wiki](https://wiki.archlinux.org/title/Uniform_look_for_Qt_and_GTK_applications)
 - for theming under Wayland, read [this!](https://github.com/swaywm/sway/wiki/GTK-3-settings-on-Wayland)
 
+## Notes/see also
+- [zfs installation script](https://github.com/danfossi/Debian-ZFS-Root-Installation-Script)
+
 ## TODO
 
 1. delay homeshick repos' https->ssh change to later stages; otherwise
@@ -252,9 +300,10 @@ For GUI dconf editor install `dconf-editor` pkg.
 1. see into network PXE boot (iPXE?)
 1. consider using https://netboot.xyz/docs/quick-start
 1. consider using [calamares installer](https://github.com/calamares/calamares)
-  - or [this opinionated installer](https://github.com/r0b0/debian-installer)
-    - supports browser-based installation, automation (preseed replacement?)
+   (_Distribution-independent installer framework_)
+    - or [this opinionated installer](https://github.com/r0b0/debian-installer)
+      - supports browser-based installation, automation (preseed replacement?)
 1. see other dotfiles:
-  - https://github.com/infokiller/config-public
-  - https://github.com/risu729/dotfiles (wsl stuff as well!)
-  - https://gitlab.com/sio/server_common (from [this reddit post](https://www.reddit.com/r/linux/comments/vd9qkn/it_took_years_to_perfect_my_setup_and_now_i_want/ickhfsc/))
+    - https://github.com/infokiller/config-public
+    - https://github.com/risu729/dotfiles (wsl stuff as well!)
+    - https://gitlab.com/sio/server_common (from [this reddit post](https://www.reddit.com/r/linux/comments/vd9qkn/it_took_years_to_perfect_my_setup_and_now_i_want/ickhfsc/))
