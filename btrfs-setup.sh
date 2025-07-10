@@ -20,7 +20,9 @@ readonly DEFAULT_ROOT_SUBVOL='@rootfs'  # default root subvol name used by debia
 # - some people set +C on entire /var - reasonable?
 BTRFS_MOUNT_OPTS='defaults,noatime,compress=zstd:1'  # optional; leave blank to use default opts set by debian installer.
                                                      # note it should _not_ include the ",subvolume=" tail
-ROOT_SUBVOL="$DEFAULT_ROOT_SUBVOL"  # if you want to rename the default root subvol, change this value; e.g. commonly used value is '@'
+ROOT_SUBVOL="$DEFAULT_ROOT_SUBVOL"  # if you want to rename the default root subvol,
+                                    # change this value; e.g. commonly used value is '@';
+                                    # note you can also set it w/ -R flag
 
 while getopts 'm:R:' opt; do
     case "$opt" in
@@ -127,7 +129,7 @@ for mapping in "$@"; do
     btrfs subvolume create -p "/mnt/$subvol" || exit 1  # -p is similar to mkdir's -p
     # create mountpoint:
     mkdir -p -- "$mntp" || exit 1
-    if [ "$opts" == *NOCOW* ]; then  # TODO verify ash supports this
+    if echo "$opts" | grep -q 'NOCOW'; then
         # TODO: or should we set it on /mnt/$subvol?:
         chattr +C -- "$mntp" || exit 1  # confirm values via  $ lsattr  (e.g. lsattr -d /dir/path)
     fi
