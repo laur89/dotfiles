@@ -714,7 +714,3 @@ $exa  i3expo
 
 # start playerctl daemon:
 #$ex  playerctld daemon  !! looks like already started by systemd!
-
-# populate DBUS vars.
-# taken from some reddit post: https://www.reddit.com/r/Gentoo/comments/tzdnvn/comment/i3zzvjl/?utm_source=share&utm_medium=web2x&context=3
-#$ex create-desktop-environment.sh
