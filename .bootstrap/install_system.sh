@@ -3104,7 +3104,7 @@ install_file() {
     while getopts 'd:DUf:n:O:P:A' opt; do
         case "$opt" in
             d) target="$OPTARG" ;;
-            D) extract_opts+=("$opt") ;;  # mnemonic: directory; ie we want the "whole directory" in case $file is tarball
+            D) extract_opts+=("-$opt") ;;  # mnemonic: directory; ie we want the "whole directory" in case $file is tarball
             U) noextract=1 ;;  # if, for whatever the reason, an archive/tarball should not be unpacked
             f|n) extract_opts+=("-$opt" "$OPTARG") ;;  # no use if -D or -U is used
             O) owner="$OPTARG" ;;  # chown
