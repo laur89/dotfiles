@@ -2519,10 +2519,9 @@ prepare_build_container() {  # TODO container build env not used atm
 # -Z      - instead of grepping via asset rgx, go with the latest zipball
 # -v ver  - specify tag to install; this is to pin a version
 #
-# $1 - git user
-# $2 - git repo
-# $3 - asset regex to be used (for jq's test()) to parse correct item from git /releases page. note jq requires most likely double-backslashes!
-# $4 - what to rename resulting file as; optional, but recommended
+# $1 - git user/repo
+# $2 - asset regex to be used (for jq's test()) to parse correct item from git /releases page. note jq requires most likely double-backslashes!
+# $3 - what to rename resulting file as; optional, but recommended
 #
 # see also:
 #  - https://github.com/OhMyMndy/bin-get
@@ -2544,13 +2543,13 @@ fetch_release_from_git() {
     done
     shift "$((OPTIND-1))"
 
-    [[ -z "$selector" ]] && selector=".assets[] | select(.name|test(\"$3\$\")) | .browser_download_url"
-    readonly loc="https://api.github.com/repos/$1/$2/releases/$ver"
+    [[ -z "$selector" ]] && selector=".assets[] | select(.name|test(\"$2\$\")) | .browser_download_url"
+    readonly loc="https://api.github.com/repos/$1/releases/$ver"
     dl_url="$(curl -fsSL "$loc" | jq -er "$selector")" || { err "asset url resolution from [$loc] via selector [$selector] failed w/ $?"; return 1; }
-    readonly id="github-$1-$2${4:+-$4}"  # note we append name to the id when defined (same repo might contain multiple binaries we're installing)
+    readonly id="github-${1//\//-}${3:+-$3}"  # note we append name to the id when defined (same repo might contain multiple binaries we're installing)
 
     is_valid_url "$dl_url" || { err "resolved url for ${id} is improper: [$dl_url]; aborting"; return 1; }
-    _fetch_release_common "${opts[@]}" "$id" "$dl_url" "$dl_url" "$4"
+    _fetch_release_common "${opts[@]}" "$id" "$dl_url" "$dl_url" "$3"
 }
 
 
@@ -2741,9 +2740,8 @@ install_from_any() {
 #
 #   -T|Z     see doc on fetch_release_from_git()
 #
-# $1 - git user
-# $2 - git repo
-# $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
+# $1 - git user/repo
+# $2 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
 #
 # @returns {string} path to root dir of extraction result, IF we found a
 #                   _single_ dir in the result.
@@ -2761,7 +2759,7 @@ fetch_extract_tarball_from_git() {
     done
     shift "$((OPTIND-1))"
 
-    fetch_release_from_git "${fetch_rls_opts[@]}" "$1" "$2" "$3" || return $?
+    fetch_release_from_git "${fetch_rls_opts[@]}" "$1" "$2" || return $?
 }
 
 
@@ -2879,9 +2877,8 @@ install_bin_from_git() {
 # -d /target/dir     - dir to install pulled binary in, optional
 # -N name            - what to name pulled file/dir to, optional, but recommended
 # -n, -f, -v, -T, -Z, -D - see fetch_release_from_git()
-# $1 - git user
-# $2 - git repo
-# $3 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
+# $1 - git user/repo
+# $2 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
 install_from_git() {
     local opt f name OPTIND fetch_git_args install_file_args
 
@@ -2902,7 +2899,7 @@ install_from_git() {
     done
     shift "$((OPTIND-1))"
 
-    f="$(fetch_release_from_git "${fetch_git_args[@]}" "$1" "$2" "$3" "$name")" || return 1
+    f="$(fetch_release_from_git "${fetch_git_args[@]}" "$1" "$2" "$name")" || return 1
     install_file "${install_file_args[@]}" "$f" "$name" || return 1
 }
 
@@ -2912,7 +2909,7 @@ install_from_git() {
 # alternative: https://github.com/visit1985/mdp
 # another, more rich alternative: https://github.com/slidevjs/slidev
 install_slides() {  # https://github.com/maaslalani/slides
-    install_bin_from_git -N slides maaslalani slides '_linux_amd64.tar.gz'
+    install_bin_from_git -N slides maaslalani/slides '_linux_amd64.tar.gz'
 }
 
 
@@ -2921,14 +2918,14 @@ install_slides() {  # https://github.com/maaslalani/slides
 # another alternative: https://github.com/getstation/desktop-app
 #                      https://github.com/beeper <- selfhostable built on matrix?
 install_ferdium() {  # https://github.com/ferdium/ferdium-app
-    #install_from_git ferdium ferdium-app '-amd64.deb'
-    install_bin_from_git -N ferdium ferdium ferdium-app 'x86_64.AppImage'
+    #install_from_git ferdium/ferdium-app '-amd64.deb'
+    install_bin_from_git -N ferdium ferdium/ferdium-app 'x86_64.AppImage'
 }
 
 
 # also avail as flatpak
 install_freetube() {  # https://github.com/FreeTubeApp/FreeTube
-    install_bin_from_git -N freetube FreeTubeApp FreeTube 'amd64.AppImage'
+    install_bin_from_git -N freetube FreeTubeApp/FreeTube 'amd64.AppImage'
 }
 
 
@@ -2957,8 +2954,8 @@ install_seafile_gui() {
 #
 # also avail in apt, and as appimage
 install_xournalpp() {  # https://github.com/xournalpp/xournalpp
-    install_from_git xournalpp xournalpp 'Debian-.*x86_64.deb'
-    #install_bin_from_git -N xournalpp xournalpp xournalpp '-x86_64.AppImage'
+    install_from_git xournalpp/xournalpp 'Debian-.*x86_64.deb'
+    #install_bin_from_git -N xournalpp xournalpp/xournalpp '-x86_64.AppImage'
 }
 
 
@@ -3190,21 +3187,21 @@ install_zoom() {  # https://zoom.us/download
 # fasd-alike alternative
 # also avail in apt
 install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
-    #install_bin_from_git -N zoxide ajeetdsouza zoxide '-x86_64-unknown-linux-musl.tar.gz'
-    install_from_git ajeetdsouza zoxide '_amd64.deb'
+    #install_bin_from_git -N zoxide ajeetdsouza/zoxide '-x86_64-unknown-linux-musl.tar.gz'
+    install_from_git ajeetdsouza/zoxide '_amd64.deb'
 }
 
 
 # fuzzy file finder/command completer etc
 # https://github.com/junegunn/fzf
 install_fzf() {
-    install_bin_from_git -N fzf junegunn fzf 'linux_amd64.tar.gz'
+    install_bin_from_git -N fzf junegunn/fzf 'linux_amd64.tar.gz'
 }
 
 
 # currently installing via apt
 #install_nushell() {
-    #install_bin_from_git -N nu nushell nushell  'x86_64-unknown-linux-gnu.tar.gz'
+    #install_bin_from_git -N nu nushell/nushell  'x86_64-unknown-linux-gnu.tar.gz'
 #}
 
 
@@ -3216,12 +3213,12 @@ install_slack() {  # https://slack.com/help/articles/212924728-Download-Slack-fo
 
 # also avail in apt repo
 install_rebar() {  # https://github.com/erlang/rebar3
-    install_bin_from_git -N rebar3 erlang rebar3 rebar3
+    install_bin_from_git -N rebar3 erlang/rebar3 rebar3
 }
 
 
 install_treesitter() {  # https://github.com/tree-sitter/tree-sitter
-    install_bin_from_git -N tree-sitter tree-sitter tree-sitter linux-x64.gz
+    install_bin_from_git -N tree-sitter tree-sitter/tree-sitter linux-x64.gz
 }
 
 
@@ -3253,7 +3250,7 @@ install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instruc
 # beautifully format Clojure and Clojurescript source code and s-expressions;
 # basically pretty printing capabilities for both Clojure code and Clojure/EDN structures.
 install_zprint() {  # https://github.com/kkinnear/zprint/blob/main/doc/getting/linux.md
-    install_bin_from_git -N zprint  kkinnear zprint 'zprintl-[-.0-9]+'
+    install_bin_from_git -N zprint  kkinnear/zprint 'zprintl-[-.0-9]+'
 }
 
 
@@ -3266,43 +3263,43 @@ install_lfe() {  # https://github.com/lfe/lfe
 # clojure static analyzer/linter
 # https://github.com/clj-kondo/clj-kondo
 install_clj_kondo() {
-    install_bin_from_git -N clj-kondo  clj-kondo  clj-kondo 'clj-kondo-.*-linux-amd64.zip'
+    install_bin_from_git -N clj-kondo  clj-kondo/clj-kondo 'clj-kondo-.*-linux-amd64.zip'
 }
 
 # scala application & artifact manager
 # provides us with cs command
 install_coursier() {  # https://github.com/coursier/coursier
-    install_bin_from_git -N cs  coursier coursier  cs-x86_64-pc-linux.gz
+    install_bin_from_git -N cs  coursier/coursier  cs-x86_64-pc-linux.gz
 }
 
 # also avail in apt
 install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
-    install_from_git BurntSushi ripgrep _amd64.deb
+    install_from_git BurntSushi/ripgrep _amd64.deb
 }
 
 
 # rga: ripgrep, but also search in PDFs, E-Books, Office documents, zip, tar.gz, etc.
 install_rga() {  # https://github.com/phiresky/ripgrep-all#debian-based
     install_block 'pandoc poppler-utils ffmpeg' || return 1
-    install_bin_from_git -N rga -n rga phiresky  ripgrep-all 'x86_64-unknown-linux-musl.tar.gz'
+    install_bin_from_git -N rga -n rga phiresky/ripgrep-all 'x86_64-unknown-linux-musl.tar.gz'
 }
 
 
 # headless firefox in a terminal
 install_browsh() {  # https://github.com/browsh-org/browsh
-    install_from_git browsh-org browsh _linux_amd64.deb
+    install_from_git browsh-org/browsh _linux_amd64.deb
 }
 
 
 install_saml2aws() {  # https://github.com/Versent/saml2aws
-    install_bin_from_git -N saml2aws Versent saml2aws 'saml2aws_[0-9.]+_linux_amd64.tar.gz'
+    install_bin_from_git -N saml2aws Versent/saml2aws 'saml2aws_[0-9.]+_linux_amd64.tar.gz'
 }
 
 # kubernetes aws-iam-authenticator (k8s)
 # tag: aws, k8s, kubernetes, auth
                           # https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html
 install_aia() {  # https://github.com/kubernetes-sigs/aws-iam-authenticator
-    install_bin_from_git -N aws-iam-authenticator kubernetes-sigs aws-iam-authenticator _linux_amd64
+    install_bin_from_git -N aws-iam-authenticator kubernetes-sigs/aws-iam-authenticator _linux_amd64
 }
 
 # kubernetes configuration customizer
@@ -3310,13 +3307,13 @@ install_aia() {  # https://github.com/kubernetes-sigs/aws-iam-authenticator
 #
 # alternatively use the curl-install hack from https://kubectl.docs.kubernetes.io/installation/kustomize/binaries/
 install_kustomize() {  # https://github.com/kubernetes-sigs/kustomize
-    install_bin_from_git -N kustomize kubernetes-sigs kustomize _linux_amd64.tar.gz
+    install_bin_from_git -N kustomize kubernetes-sigs/kustomize _linux_amd64.tar.gz
 }
 
 # kubernetes (k8s) cli management
 # tag: aws, k8s, kubernetes
 install_k9s() {  # https://github.com/derailed/k9s
-    install_bin_from_git -N k9s derailed  k9s  _linux_amd64.tar.gz
+    install_bin_from_git -N k9s derailed/k9s  _linux_amd64.tar.gz
 }
 
 # krew (kubectl plugins package manager)
@@ -3324,7 +3321,7 @@ install_k9s() {  # https://github.com/derailed/k9s
 # installation instructions: https://krew.sigs.k8s.io/docs/user-guide/setup/install/
 install_krew() {  # https://github.com/kubernetes-sigs/krew
     local dir
-    dir="$(fetch_extract_tarball_from_git  kubernetes-sigs krew 'linux_amd64.tar.gz')" || return 1
+    dir="$(fetch_extract_tarball_from_git  kubernetes-sigs/krew 'linux_amd64.tar.gz')" || return 1
     execute "$dir/krew-linux_amd64  install krew"
     #"$KREW" update || err "[krew update] failed w/ [$?]"
 }
@@ -3334,7 +3331,7 @@ install_krew() {  # https://github.com/kubernetes-sigs/krew
 #
 # tag: aws, k8s, kubernetes
 install_popeye() {  # https://github.com/derailed/popeye
-    install_bin_from_git -N popeye derailed  popeye  _linux_amd64.tar.gz
+    install_bin_from_git -N popeye derailed/popeye  _linux_amd64.tar.gz
 }
 
 # kubernetes cluster analyzer for better comprehension (introspective tooling, cluster
@@ -3345,7 +3342,7 @@ install_popeye() {  # https://github.com/derailed/popeye
 #
 # TODO: octant development halted, it's deprecated
 install_octant() {  # https://github.com/vmware-tanzu/octant
-    install_from_git  vmware-tanzu  octant  _Linux-64bit.deb
+    install_from_git  vmware-tanzu/octant  _Linux-64bit.deb
 }
 
 # kubernetes (k8s) operations - Production Grade K8s Installation, Upgrades, and Management
@@ -3354,7 +3351,7 @@ install_octant() {  # https://github.com/vmware-tanzu/octant
 #
 # for usecase, see https://medium.com/bench-engineering/deploying-kubernetes-clusters-with-kops-and-terraform-832b89250e8e
 install_kops() {  # https://github.com/kubernetes/kops/
-    install_bin_from_git -N kops kubernetes  kops  kops-linux-amd64
+    install_bin_from_git -N kops kubernetes/kops  kops-linux-amd64
 }
 
 # kubectl:  https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-kubectl-binary-with-curl-on-linux
@@ -3373,8 +3370,8 @@ install_kubectl() {
 install_kubectx() {  # https://github.com/ahmetb/kubectx
     local COMPDIR
 
-    install_bin_from_git -N kubectx ahmetb  kubectx  "kubectx_.*_linux_x86_64.tar.gz"
-    install_bin_from_git -N kubens  ahmetb  kubectx  "kubens_.*_linux_x86_64.tar.gz"
+    install_bin_from_git -N kubectx ahmetb/kubectx  'kubectx_.*_linux_x86_64.tar.gz'
+    install_bin_from_git -N kubens  ahmetb/kubectx  'kubens_.*_linux_x86_64.tar.gz'
 
     # kubectx/kubens completion scripts:
     clone_or_pull_repo "ahmetb" "kubectx" "$BASE_PROGS_DIR" || return 1
@@ -3395,13 +3392,13 @@ install_kube_ps1() {  # https://github.com/jonmosco/kube-ps1
 # tag: aws
 # note also installable via mise
 install_sops() {  # https://github.com/getsops/sops
-    install_from_git  getsops sops _amd64.deb
+    install_from_git  getsops/sops _amd64.deb
 }
 
 
 # another GUI client for grpc: https://github.com/getezy/ezy
 install_grpcui() {  # https://github.com/fullstorydev/grpcui
-    install_bin_from_git -N grpcui fullstorydev grpcui '_linux_x86_64.tar.gz'
+    install_bin_from_git -N grpcui fullstorydev/grpcui '_linux_x86_64.tar.gz'
 }
 
 # if build fails, you might be able to salvage something by doing:
@@ -3448,10 +3445,10 @@ install_buku_related() {
 # https://github.com/dbeaver/dbeaver/wiki/Installation#debian-package
 install_dbeaver() {  # https://dbeaver.io/download/
     #install_from_url  dbeaver 'https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb'
-    #install_from_git  dbeaver dbeaver '_amd64.deb'
+    #install_from_git  dbeaver/dbeaver '_amd64.deb'
 
     # alternatively, unrar the tarball:
-    install_from_git -D -d "$BASE_PROGS_DIR" -N dbeaver  dbeaver dbeaver 'linux.gtk.x86_64-nojdk.tar.gz' || return 1
+    install_from_git -D -d "$BASE_PROGS_DIR" -N dbeaver  dbeaver/dbeaver 'linux.gtk.x86_64-nojdk.tar.gz' || return 1
     create_link "$BASE_PROGS_DIR/dbeaver/dbeaver" "$HOME/bin/dbeaver"
 }
 
@@ -3502,7 +3499,7 @@ install_chrome() {  # https://www.google.com/chrome/?platform=linux
 # - https://github.com/joeferner/redis-commander
 # - https://github.com/patrikx3/redis-ui
 install_redis_desktop_manager() {
-    install_bin_from_git -N redis-desktop-manager  qishibo AnotherRedisDesktopManager 'x86_64.AppImage'
+    install_bin_from_git -N redis-desktop-manager  qishibo/AnotherRedisDesktopManager 'x86_64.AppImage'
 }
 
 
@@ -3518,14 +3515,14 @@ install_redis_desktop_manager() {
 #   https://github.com/lervag/wiki.vim
 #   # obsidian
 install_vnote() {  # https://github.com/vnotex/vnote/releases
-    install_bin_from_git -N vnote -n '*.AppImage' vnotex vnote 'linux-x64.AppImage.zip'
+    install_bin_from_git -N vnote -n '*.AppImage' vnotex/vnote 'linux-x64.AppImage.zip'
 }
 
 
 # note there's this for vim: https://github.com/epwalsh/obsidian.nvim
 install_obsidian() {  # https://github.com/obsidianmd/obsidian-releases/releases
-    #install_from_git  obsidianmd  obsidian-releases '_amd64.deb'
-    install_bin_from_git -N Obsidian obsidianmd  obsidian-releases '-[0-9.]{6,}AppImage'  # make sure to dodge the arm64 appimage
+    #install_from_git  obsidianmd/obsidian-releases '_amd64.deb'
+    install_bin_from_git -N Obsidian obsidianmd/obsidian-releases '-[0-9.]{6,}AppImage'  # make sure to dodge the arm64 appimage
 }
 
 
@@ -3553,8 +3550,8 @@ Categories=Development;
 
 # https://github.com/advanced-rest-client/arc-electron/releases/latest
 install_arc() {
-    #install_from_git  advanced-rest-client  arc-electron '-amd64.deb'
-    install_bin_from_git -N arc advanced-rest-client  arc-electron 'x86_64.AppImage'
+    #install_from_git  advanced-rest-client/arc-electron '-amd64.deb'
+    install_bin_from_git -N arc advanced-rest-client/arc-electron 'x86_64.AppImage'
 }
 
 
@@ -3571,9 +3568,9 @@ install_arc() {
 # haven't checked, but also https://github.com/manatlan/reqman
 # there's also CLI client wrapping curl that uses toml-like config: https://github.com/jonaslu/ain
 install_bruno() {
-    install_bin_from_git -N bruno usebruno  bruno  _x86_64_linux.AppImage
+    install_bin_from_git -N bruno usebruno/bruno  _x86_64_linux.AppImage
     # or deb:
-    #install_from_git  usebruno  bruno '_amd64_linux.deb'
+    #install_from_git  usebruno/bruno '_amd64_linux.deb'
 }
 
 
@@ -3589,7 +3586,7 @@ install_alacritty() {
     #return
 
     # ...or follow the full build logic if you want to install extras like manpages:
-    dir="$(fetch_extract_tarball_from_git alacritty alacritty 'v\\d+\\.\\d+.*\\.tar\\.gz')" || return 1
+    dir="$(fetch_extract_tarball_from_git alacritty/alacritty 'v\\d+\\.\\d+.*\\.tar\\.gz')" || return 1
 
     execute "pushd $dir" || return 1
 
@@ -3628,24 +3625,26 @@ install_wezterm() {
 }
 
 
+# available also in apt
+#
 # alternatives:
 # - https://github.com/ddworken/hishtory
 # - https://github.com/cantino/mcfly
 install_atuin() {  # https://github.com/atuinsh/atuin
-    install_bin_from_git -N atuin atuinsh atuin 'atuin-x86_64-unknown-linux-gnu.tar.gz'
+    install_bin_from_git -N atuin atuinsh/atuin 'atuin-x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
 
 # log file navigator
 install_lnav() {  # https://github.com/tstack/lnav
-    install_bin_from_git -N lnav tstack lnav 'linux-musl-x86_64.zip'
+    install_bin_from_git -N lnav tstack/lnav 'linux-musl-x86_64.zip'
 }
 
 
 # TODO last commit '20 - deprecated?
 install_slack_term() {  # https://github.com/jpbruinsslot/slack-term
-    install_bin_from_git -N slack-term jpbruinsslot slack-term slack-term-linux-amd64
+    install_bin_from_git -N slack-term jpbruinsslot/slack-term  slack-term-linux-amd64
 }
 
 
@@ -3697,8 +3696,8 @@ install_weechat_matrix_rs() {  # https://github.com/poljar/weechat-matrix-rs
 
 # go-based matrix client
 install_gomuks() {  # https://github.com/gomuks/gomuks
-    #install_from_git gomuks gomuks _amd64.deb
-    install_bin_from_git -N gomuks gomuks gomuks  gomuks-linux-amd64
+    #install_from_git gomuks/gomuks _amd64.deb
+    install_bin_from_git -N gomuks gomuks/gomuks  gomuks-linux-amd64
 }
 
 
@@ -3754,7 +3753,7 @@ install_bitlbee() {  # https://github.com/bitlbee/bitlbee
 }
 
 install_terragrunt() {  # https://github.com/gruntwork-io/terragrunt/
-    install_bin_from_git -N terragrunt gruntwork-io terragrunt terragrunt_linux_amd64
+    install_bin_from_git -N terragrunt gruntwork-io/terragrunt  terragrunt_linux_amd64
 }
 
 
@@ -3789,7 +3788,7 @@ install_eclipse_mem_analyzer() {
 
 # lightweight profiling, both for dev & production. see https://visualvm.github.io/
 install_visualvm() {  # https://github.com/oracle/visualvm
-    install_from_git -D -d "$BASE_PROGS_DIR" -N visualvm  oracle visualvm 'visualvm_[-0-9.]+\\.zip' || return 1
+    install_from_git -D -d "$BASE_PROGS_DIR" -N visualvm  oracle/visualvm 'visualvm_[-0-9.]+\\.zip' || return 1
     create_link "$BASE_PROGS_DIR/visualvm/bin/visualvm" "$HOME/bin/visualvm"
 }
 
@@ -3805,8 +3804,8 @@ _setup_minikube() {  # TODO: unfinished
 # https://github.com/kubernetes/minikube
 install_minikube() {  # https://minikube.sigs.k8s.io/docs/start/
     # from github releases...:
-    #install_from_git  kubernetes  minikube  'minikube_[-0-9.]+.*_amd64.deb'
-    install_bin_from_git -N minikube kubernetes  minikube  'minikube-linux-amd64'
+    #install_from_git  kubernetes/minikube  'minikube_[-0-9.]+.*_amd64.deb'
+    install_bin_from_git -N minikube kubernetes/minikube  'minikube-linux-amd64'
 
     # ...or from k8s page:  (https://minikube.sigs.k8s.io/docs/start/):
     #install_from_url  minikube  "https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb"
@@ -3817,47 +3816,47 @@ install_minikube() {  # https://minikube.sigs.k8s.io/docs/start/
 
 # found as apt fd-find package, but executable is named fdfind not fd!
 install_fd() {  # https://github.com/sharkdp/fd
-    #install_from_git sharkdp fd 'fd_[-0-9.]+_amd64.deb'
-    install_bin_from_git -N fd sharkdp fd  'x86_64-unknown-linux-gnu.tar.gz'
+    #install_from_git sharkdp/fd 'fd_[-0-9.]+_amd64.deb'
+    install_bin_from_git -N fd sharkdp/fd  'x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
 # json diff
 install_jd() {  # https://github.com/josephburnett/jd
-    install_bin_from_git -N jd josephburnett  jd  amd64-linux
+    install_bin_from_git -N jd josephburnett/jd  amd64-linux
 }
 
 
 # see also https://github.com/eth-p/bat-extras/blob/master/README.md#installation
 # TODO: look into bat extras (like manpages)
 install_bat() {  # https://github.com/sharkdp/bat
-    #install_from_git sharkdp bat 'bat_[-0-9.]+_amd64.deb'
-    install_bin_from_git -N bat sharkdp bat 'x86_64-unknown-linux-gnu.tar.gz'
+    #install_from_git sharkdp/bat 'bat_[-0-9.]+_amd64.deb'
+    install_bin_from_git -N bat sharkdp/bat 'x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
 # CLI search and replace
 install_sad() {  # https://github.com/ms-jpq/sad
-    #install_from_git ms-jpq sad 'x86_64-unknown-linux-gnu.deb'
-    install_bin_from_git -N sad ms-jpq sad 'x86_64-unknown-linux-gnu.zip'
+    #install_from_git ms-jpq/sad 'x86_64-unknown-linux-gnu.deb'
+    install_bin_from_git -N sad ms-jpq/sad 'x86_64-unknown-linux-gnu.zip'
 }
 
 
 # terminal image viewer
 install_viu() {  # https://github.com/atanunq/viu
-    install_bin_from_git -N viu atanunq viu 'x86_64-unknown-linux-musl'
+    install_bin_from_git -N viu atanunq/viu 'x86_64-unknown-linux-musl'
 }
 
 
 # render markdown in CLI
 install_glow() { # https://github.com/charmbracelet/glow
-    #install_from_git  charmbracelet glow '_amd64.deb'
-    install_bin_from_git -N glow charmbracelet glow '_Linux_x86_64.tar.gz'
+    #install_from_git  charmbracelet/glow '_amd64.deb'
+    install_bin_from_git -N glow charmbracelet/glow '_Linux_x86_64.tar.gz'
 }
 
 
 install_btop() {  # https://github.com/aristocratos/btop
-    install_bin_from_git -N btop aristocratos btop  'btop-x86_64-linux-musl.tbz'
+    install_bin_from_git -N btop aristocratos/btop  'btop-x86_64-linux-musl.tbz'
 }
 
 
@@ -3888,8 +3887,8 @@ install_aider() {
 
 # desktop GUI for aider
 install_aider_desk() {  # https://github.com/hotovo/aider-desk
-    #install_from_git  hotovo aider-desk '_amd64.deb'
-    install_bin_from_git -N aider-desk hotovo aider-desk .AppImage
+    #install_from_git  hotovo/aider-desk '_amd64.deb'
+    install_bin_from_git -N aider-desk hotovo/aider-desk .AppImage
 }
 
 
@@ -3928,7 +3927,7 @@ install_open_interpreter() {
 install_aichat() {  # https://github.com/sigoden/aichat
     local shell="$BASE_PROGS_DIR/aichat-shell-scripts/"  # trailing slash is important; note this path is also referenced in bash/zsh rc!
 
-    install_bin_from_git -N aichat sigoden aichat 'x86_64-unknown-linux-musl.tar.gz'
+    install_bin_from_git -N aichat sigoden/aichat 'x86_64-unknown-linux-musl.tar.gz'
 
     # install shell completions:
     clone_repo_subdir  sigoden aichat "scripts" "$shell"
@@ -3950,7 +3949,7 @@ install_aichat() {  # https://github.com/sigoden/aichat
 # read https://github.com/dalance/procs#usage
 #
 install_procs() {  # https://github.com/dalance/procs
-    install_bin_from_git -N procs dalance procs  'x86_64-linux.zip'
+    install_bin_from_git -N procs dalance/procs  'x86_64-linux.zip'
 }
 
 
@@ -3960,48 +3959,48 @@ install_procs() {  # https://github.com/dalance/procs
 # alternatives:
 # - https://github.com/lsd-rs/lsd
 install_eza() {  # https://github.com/eza-community/eza
-    install_bin_from_git -N eza eza-community  eza 'eza_x86_64-unknown-linux-gnu.tar.gz'
+    install_bin_from_git -N eza eza-community/eza 'eza_x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
 # TODO: consider https://github.com/gitui-org/gitui  instead; seems to be faster?
 install_lazygit() {  # https://github.com/jesseduffield/lazygit
-    install_bin_from_git -N lazygit jesseduffield lazygit '_Linux_x86_64.tar.gz'
+    install_bin_from_git -N lazygit jesseduffield/lazygit '_Linux_x86_64.tar.gz'
 }
 
 
 install_lazydocker() {  # https://github.com/jesseduffield/lazydocker
-    install_bin_from_git -N lazydocker jesseduffield lazydocker '_Linux_x86_64.tar.gz'
+    install_bin_from_git -N lazydocker jesseduffield/lazydocker '_Linux_x86_64.tar.gz'
 }
 
 
 # docker image layer analyzer tool
 install_dive() {  # https://github.com/wagoodman/dive
-    #install_from_git  wagoodman dive '_linux_amd64.deb'
-    install_bin_from_git -N dive wagoodman dive '_linux_amd64.tar.gz'
+    #install_from_git  wagoodman/dive '_linux_amd64.deb'
+    install_bin_from_git -N dive wagoodman/dive '_linux_amd64.tar.gz'
 }
 
 
 # similar to nvim's telescope; comes w/ shell binding; e.g. ctrl+t can complete
 # being context-aware, e.g. completing for dirs/files/git repos etc
 install_television() {  # https://github.com/alexpasmantier/television
-    #install_from_git  alexpasmantier television 'x86_64-unknown-linux-gnu.deb'
-    install_bin_from_git -N tv  alexpasmantier television 'x86_64-unknown-linux-gnu.tar.gz'
+    #install_from_git  alexpasmantier/television 'x86_64-unknown-linux-gnu.deb'
+    install_bin_from_git -N tv  alexpasmantier/television 'x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
 # alternatives:
 # - https://github.com/GuillaumeGomez/systemd-manager
 install_systemd_manager_tui() {  # https://github.com/matheus-git/systemd-manager-tui
-    #install_from_git  matheus-git systemd-manager-tui '_amd64.deb'
-    install_bin_from_git -N systemd-manager-tui  matheus-git systemd-manager-tui 'systemd-manager-tui'
+    #install_from_git  matheus-git/systemd-manager-tui '_amd64.deb'
+    install_bin_from_git -N systemd-manager-tui  matheus-git/systemd-manager-tui 'systemd-manager-tui'
 }
 
 
 # fzf-alternative, some tools use it as a dep
 # last commit sept '23
 install_peco() {  # https://github.com/peco/peco#installation
-    install_bin_from_git -N peco peco peco '_linux_amd64.tar.gz'
+    install_bin_from_git -N peco peco/peco '_linux_amd64.tar.gz'
 }
 
 
@@ -4010,15 +4009,15 @@ install_peco() {  # https://github.com/peco/peco#installation
 #
 # https://dandavison.github.io/delta/installation.html
 install_delta() {  # https://github.com/dandavison/delta
-    #install_from_git  dandavison  delta  'git-delta_.*_amd64.deb'
-    install_bin_from_git -N delta dandavison  delta  'x86_64-unknown-linux-gnu.tar.gz'
+    #install_from_git  dandavison/delta  'git-delta_.*_amd64.deb'
+    install_bin_from_git -N delta dandavison/delta  'x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
 # ncdu-like FS usage viewer, in rust (name is 'du + rust')
 install_dust() {  # https://github.com/bootandy/dust
-    #install_from_git  bootandy  dust  '_amd64.deb'
-    install_bin_from_git -N dust  bootandy  dust 'x86_64-unknown-linux-gnu.tar.gz'
+    #install_from_git  bootandy/dust  '_amd64.deb'
+    install_bin_from_git -N dust  bootandy/dust 'x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
@@ -4029,7 +4028,7 @@ install_dust() {  # https://github.com/bootandy/dust
 #   - https://github.com/jdx/mise
 install_asdf() {
     [[ -d "$ASDF_DIR" ]] || execute "mkdir -- '$ASDF_DIR'" || return 1
-    install_bin_from_git -N asdf asdf-vm asdf '-linux-amd64.tar.gz'
+    install_bin_from_git -N asdf asdf-vm/asdf '-linux-amd64.tar.gz'
 
     command -v asdf >/dev/null 2>&1 || { err 'asdf not on PATH??'; return 1; }  # sanity
 
@@ -4048,7 +4047,7 @@ install_asdf() {
 # plugins org: https://github.com/mise-plugins
 # available tools: https://mise.jdx.dev/registry.html
 install_mise() {
-    install_bin_from_git -N mise jdx mise '-linux-x64' || return
+    install_bin_from_git -N mise jdx/mise '-linux-x64' || return
     command -v mise >/dev/null 2>&1 || { err '[mise] not on PATH?'; return 1; }  # sanity
 
     [[ "$MODE" -eq 1 ]] && eval "$(mise activate bash --shims)"  # use shims to load dev tools
@@ -4240,7 +4239,7 @@ build_lesspipe() {
 
 # https://github.com/UltimateHackingKeyboard/agent
 install_uhk_agent() {
-    install_bin_from_git -N agent UltimateHackingKeyboard agent linux-x86_64.AppImage
+    install_bin_from_git -N agent UltimateHackingKeyboard/agent linux-x86_64.AppImage
 }
 
 
@@ -4291,7 +4290,7 @@ install_kanata() {
         execute "sudo cp -- '$conf_src' '$t'"
     fi
 
-    install_bin_from_git -N kanata -O root:kanata -P 754  jtroo kanata 'kanata'
+    install_bin_from_git -N kanata -O root:kanata -P 754  jtroo/kanata 'kanata'
 }
 
 
@@ -4306,7 +4305,7 @@ install_ddcutil() {
     # TODO leaving building instructions just in case:
     local dir group
 
-    dir="$(fetch_extract_tarball_from_git -T  rockowitz ddcutil)" || return 1
+    dir="$(fetch_extract_tarball_from_git -T  rockowitz/ddcutil)" || return 1
 
     report "installing ddcutil build dependencies..."
     install_block '
@@ -4480,7 +4479,7 @@ build_and_install_keepassxc_TODO_container_edition() {
 #   - https://github.com/hargoniX/keepassxc-proxy-client
 #   - https://github.com/hrehfeld/python-keepassxc-browser
 install_keepassxc() {
-    install_bin_from_git -N keepassxc keepassxreboot keepassxc 'x86_64.AppImage'
+    install_bin_from_git -N keepassxc keepassxreboot/keepassxc 'x86_64.AppImage'
 }
 
 
@@ -4676,7 +4675,7 @@ install_display_switch() {
     }
 
     #_build_install
-    install_bin_from_git -n display_switch  haimgel display-switch '-linux-amd64.zip'
+    install_bin_from_git -n display_switch  haimgel/display-switch '-linux-amd64.zip'
 
     # following from https://github.com/haimgel/display-switch#linux-2
     # note the associated udev rule is in one of castles' udev/ dir
@@ -4919,7 +4918,7 @@ install_i3_deps() {
     install_from_url  i3move 'https://raw.githubusercontent.com/DMBuce/i3b/master/bin/i3move'
 
     # install sway-overfocus, allowing easier window focus change/movement   # https://github.com/korreman/sway-overfocus
-    install_bin_from_git -N sway-overfocus korreman sway-overfocus '-x86_64.tar.gz'
+    install_bin_from_git -N sway-overfocus korreman/sway-overfocus '-x86_64.tar.gz'
 
     # TODO: consider https://github.com/infokiller/i3-workspace-groups
     # TODO: consider https://github.com/JonnyHaystack/i3-resurrect
@@ -4940,7 +4939,7 @@ install_polybar() {
     local dir
 
     #execute "git clone --recursive ${GIT_OPTS[*]} https://github.com/polybar/polybar.git '$dir'" || return 1
-    dir="$(fetch_extract_tarball_from_git polybar polybar 'polybar-\\d+\\.\\d+.*\\.tar\\.gz')" || return 1
+    dir="$(fetch_extract_tarball_from_git polybar/polybar 'polybar-\\d+\\.\\d+.*\\.tar\\.gz')" || return 1
 
     report "installing polybar build dependencies..."
     # note: clang is installed because of  https://github.com/polybar/polybar/issues/572
@@ -5108,16 +5107,16 @@ setup_nvim() {
 # !! note our $VISUAL env var is tied to it !!
 install_neovide() {  # rust-based GUI front-end to neovim
     # alternative asset:   neovide.AppImage
-    install_bin_from_git -N neovide -n neovide  neovide neovide 'linux-x86_64.tar.gz'
+    install_bin_from_git -N neovide -n neovide  neovide/neovide 'linux-x86_64.tar.gz'
 }
 
 
 # https://github.com/helix-editor/helix
 # also available in apt repo
 install_helix() {
-    #install_bin_from_git -N hx helix-editor helix 'x86_64.AppImage'
-    #install_bin_from_git -N hx -n hx  helix-editor helix '-x86_64-linux.tar.xz'
-    install_from_git helix-editor helix _amd64.deb
+    #install_bin_from_git -N hx helix-editor/helix 'x86_64.AppImage'
+    #install_bin_from_git -N hx -n hx  helix-editor/helix '-x86_64-linux.tar.xz'
+    install_from_git helix-editor/helix _amd64.deb
 }
 
 
@@ -6811,7 +6810,8 @@ install_veracrypt() {
 
 # https://github.com/hectorm/hblock
 install_hblock() {
-    install_bin_from_git -N hblock -n hblock -f 'text/x-shellscript' hectorm hblock '\\d+.tar.gz'
+    #install_from_git -T -N hblock -n hblock -f 'text/x-shellscript' hectorm/hblock
+    install_from_url  hblock 'https://raw.githubusercontent.com/hectorm/hblock/master/hblock'
 }
 
 
@@ -6850,8 +6850,8 @@ install_revanced() {
     d="$BASE_PROGS_DIR/revanced"
     [[ -d "$d" ]] || mkdir "$d"
 
-    install_bin_from_git -A -N revanced.jar -d "$d"  ReVanced  revanced-cli 'all.jar'
-    install_bin_from_git -A -N patches.rvp  -d "$d"  ReVanced  revanced-patches  'patches-.*.rvp'
+    install_bin_from_git -A -N revanced.jar -d "$d"  ReVanced/revanced-cli 'all.jar'
+    install_bin_from_git -A -N patches.rvp  -d "$d"  ReVanced/revanced-patches  'patches-.*.rvp'
 }
 
 
@@ -6860,7 +6860,7 @@ install_apkeditor() {
     d="$BASE_PROGS_DIR/apkeditor"
     [[ -d "$d" ]] || mkdir "$d"
 
-    install_bin_from_git -A -N apkeditor.jar -d "$d"  REAndroid  APKEditor 'APKEditor-.*.jar'
+    install_bin_from_git -A -N apkeditor.jar -d "$d"  REAndroid/APKEditor 'APKEditor-.*.jar'
 }
 
 
@@ -6883,13 +6883,13 @@ install_android_command_line_tools() {
 # https://github.com/schollz/croc
 # share files between computers/phones
 install_croc() {
-    install_bin_from_git -N croc -n croc  schollz  croc  '_Linux-64bit.tar.gz'
+    install_bin_from_git -N croc -n croc  schollz/croc  '_Linux-64bit.tar.gz'
 }
 
 
 # https://github.com/ventoy/Ventoy
 install_ventoy() {
-    install_from_git -D -d "$BASE_PROGS_DIR" -N ventoy  ventoy Ventoy '-linux.tar.gz' || return 1
+    install_from_git -D -d "$BASE_PROGS_DIR" -N ventoy  ventoy/Ventoy '-linux.tar.gz' || return 1
 }
 
 
