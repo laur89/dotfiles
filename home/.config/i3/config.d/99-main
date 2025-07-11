@@ -701,12 +701,12 @@ bindsym $mod1+e $ex killall -s SIGUSR1 i3expo
 #$ex i3-focus-last-window.sh
 #bindsym $mod1+Tab [con_mark=^_last$] focus
 # another, py-based alt-tab alternative:
-$exa i3-cycle-focus-daemon --ignore-floating --focused-workspace --history 3 --delay 0.7
-bindsym $mod1+Tab $ex i3-cycle-focus
+$exa i3-cycle-focus --ignore-floating --focused-workspace --history 3 --delay 0.7
+bindsym $mod1+Tab $ex killall -s SIGUSR1 i3-cycle-focus
 
 # manage workspace history:
-$exa i3-cycle-workspace-daemon --focused-output --history 3 --delay 0.7
-bindsym $mod+Tab $ex i3-cycle-workspace
+$exa i3-cycle-workspace --focused-output --history 3 --delay 0.7
+bindsym $mod+Tab $ex killall -s SIGUSR1 i3-cycle-workspace
 #bindsym $mod+Tab workspace back_and_forth
 
 # start i3expo daemon:
