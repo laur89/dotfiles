@@ -2588,7 +2588,7 @@ _fetch_release_common() {
     file="$(find "$tmpdir" -type f)"
     [[ -s "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
-    if [[ "$noextract" != 1 ]] && file --brief "$file" | grep -qiE 'archive|compressed'; then
+    if [[ "$noextract" != 1 ]] && is_archive "$file"; then
         file="$(extract_tarball "${extract_opts[@]}" "$file")" || return 1
     fi
 
@@ -2814,7 +2814,7 @@ extract_tarball() {
 
     [[ -f "$file" ]] || { err "file [$file] not a regular file"; return 1; }
     [[ -n "$file_filter" || -n "$name_filter" ]] && [[ "$dir_only" == 1 ]] && { err "[fnD] options are mutually exclusive"; return 1; }
-    file --brief "$file" | grep -qiE 'archive|compressed' || { err "[$file] is not an archive, cannot decompress"; return 1; }
+    is_archive "$file" || { err "[$file] is not an archive, cannot decompress"; return 1; }
 
     if [[ "$standalone" != 1 ]]; then
         tmpdir="$(mktemp -d "tarball-extract-XXXXX" -p "$TMP_DIR")" || { err "unable to create tempdir with \$ mktemp"; return 1; }
@@ -3128,7 +3128,7 @@ install_file() {
         fi
     fi
 
-    if [[ "$noextract" != 1 ]] && file --brief "$file" | grep -qiE 'archive|compressed'; then
+    if [[ "$noextract" != 1 ]] && is_archive "$file"; then
         file="$(extract_tarball "${extract_opts[@]}" "$file")" || return 1
     fi
 
@@ -7846,6 +7846,11 @@ is_amd_cpu() {
 # @returns {bool}  true, if we are in git repo.
 is_git() {
     git rev-parse --is-inside-work-tree &>/dev/null
+}
+
+
+is_archive() {
+    file --brief "$1" | grep -qiE 'archive|compressed'
 }
 
 
