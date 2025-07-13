@@ -5610,7 +5610,7 @@ install_from_repo() {
         rar
         unrar
         zip
-        p7zip
+        7zip
         dos2unix  # convert text file line endings between CRLF and LF
         lxappearance  # TODO: x11
         qt5ct
