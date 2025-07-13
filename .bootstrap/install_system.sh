@@ -2544,7 +2544,9 @@ fetch_release_from_git() {
     done
     shift "$((OPTIND-1))"
 
+    [[ -n "$selector" && -n "$2" ]] && { err "if -T or -Z options provided, then asset regex should not be given as it won't be used"; return 1; }
     [[ -z "$selector" ]] && selector=".assets[] | select(.name|test(\"$2\$\")) | .browser_download_url"
+
     readonly loc="https://api.github.com/repos/$1/releases/$ver"
     dl_url="$(curl -fsSL "$loc" | jq -er "$selector")" || { err "asset url resolution from [$loc] via selector [$selector] failed w/ $?"; return 1; }
     readonly id="github-${1//\//-}${3:+-$3}"  # note we append name to the id when defined (same repo might contain multiple binaries we're installing)
@@ -2971,7 +2973,7 @@ install_ueberzugpp() {  # https://github.com/jstkdng/ueberzugpp
 resolve_ver() {
     local url ver hdrs
 
-    url="$1"
+    readonly url="$1"
 
     # verify the passed string includes (likely) a version
     _verif_ver() {
@@ -2981,7 +2983,7 @@ resolve_ver() {
         n=3  # we want to see at least 3 digits in url to make it more likely we have version in it
 
         # increase $n by the number of digits in $v that are not part of ver:
-        for i in 'x86.64' 'linux.{,2}64' 'amd.{,2}64'; do
+        for i in 'x86\S64' 'linux\S{,2}64' 'amd\S{,2}64'; do
             readarray o < <(grep -Eio "$i" <<< "$v")  # occurrences of $i in $v
             for j in "${o[@]}"; do
                 i="${j//[!0-9]/}"  # leave only digits
@@ -4897,7 +4899,7 @@ install_i3_deps() {
     py_install i3expo
 
     # install our i3 tools:
-    #py_install i3-tools  # TODO: unreleased as of Jun '25
+    #py_install i3-tools  # TODO: unreleased as of Jun '25 due to drone.ci's plugins/pypi image using outdated twine
     py_install -g laur89/i3-tools  # https://github.com/laur89/i3-tools
 
     # i3ass  # https://github.com/budlabs/i3ass/
@@ -5680,7 +5682,7 @@ install_from_repo() {
         procyon-decompiler  # https://github.com/mstrobel/procyon - java decompiler; used as dependency, eg. by lessopen to view .class files
         #mupdf  # more featureful pdf viewer
         feh  # TODO x11; TODO: wallpaper_changer.sh dependency; https://github.com/derf/feh/ (mirror)
-        nsxiv  # TODO: x11; # TODO: consider imv that supports both wayland & x11
+        nsxiv  # TODO: x11; # TODO: consider [imv] that supports both wayland & x11
         geeqie  # GTK-based image/gallery viewer
         gthumb  # gnome image viewer
         imagemagick
