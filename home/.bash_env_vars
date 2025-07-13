@@ -203,7 +203,9 @@ command -v nvim > /dev/null 2>&1 && export EDITOR=nvim || export EDITOR=vim
 command -v neovide > /dev/null 2>&1 && export VISUAL=neovide || export VISUAL="$EDITOR"  # note gvim doesn't play well with some stuff, eg with 'crontab -e'
 
 export PAGER=less
-[[ -n "$DISPLAY" ]] && export BROWSER=/usr/bin/firefox || export BROWSER=links2
+# note this doesn't work, as systemd session where this is evaluated won't have $DISPLAY set:
+#[[ -n "$DISPLAY" ]] && export BROWSER=/usr/bin/firefox || export BROWSER=links2
+export BROWSER=/usr/bin/firefox
 
 # see https://github.com/wofr06/lesspipe/discussions/167#discussioncomment-13530997 :
 export LESSOPEN='|/usr/local/bin/lesspipe.sh %s'  # used e.g. for zsh preview, by https://github.com/Freed-Wu/fzf-tab-source
