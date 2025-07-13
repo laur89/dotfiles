@@ -5675,7 +5675,6 @@ install_from_repo() {
         chromium-sandbox  # TODO: doucment what's this about
         rxvt-unicode  # https://cvs.schmorp.de/rxvt-unicode/
         colortest-python  # https://github.com/eikenb/terminal-colors
-        geany  # GTK-based lightweight IDE
         zathura  # https://github.com/pwmt/zathura
         pandoc  # Universal markup converter; used as dependency by some other services
         procyon-decompiler  # https://github.com/mstrobel/procyon - java decompiler; used as dependency, eg. by lessopen to view .class files
