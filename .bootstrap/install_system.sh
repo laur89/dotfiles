@@ -139,13 +139,16 @@ validate_and_init() {
             exit 1 ;;
     esac
 
+    report "private castle defined as [$PRIVATE__DOTFILES]"
+
+    # derive our platform castle from hostname, if not explicitly provided:
     if [[ -n "$PLATFORM" ]]; then  # provided via cmd opt
         for i in "${!HOSTNAME_TO_PLATFORM[@]}"; do
             [[ "$i" == "$PLATFORM" ]] && break
             unset i
         done
 
-        [[ -z "$i" ]] && { err "selected platform [$PLATFORM] is not known"; exit 1; }
+        [[ -z "$i" ]] && err "selected platform [$PLATFORM] is not known" && exit 1
         # TODO: prompt if selected platform doesn't match our hostname?
         unset i
     elif [[ -n "${HOSTNAME_TO_PLATFORM[$HOSTNAME]}" ]]; then
@@ -154,13 +157,12 @@ validate_and_init() {
 
     if [[ -n "$PLATFORM" ]]; then
         PLATFORM_DOTFILES="${HOSTNAME_TO_PLATFORM[$PLATFORM]}"
-
-        # TODO: is this check valid? maybe prompt instead?:
-        is_native || { err "platform selected on non-native setup - makes no sense"; exit 1; }
+        is_native || confirm "platform selected nor resolved on non-native setup -- continue?" || exit 1  # TODO: any reason for this check?
+        report "platform castle defined as [$PLATFORM_DOTFILES]"
+    else
+        ! is_native || confirm "no platform selected nor automatically resolved -- continue?" || exit 1
+        report "no platform castle defined"
     fi
-
-    report "private castle defined as [$PRIVATE__DOTFILES]"
-    report "platform castle defined as [$PLATFORM_DOTFILES]"
 
     # verify we have our key(s) set up and available:
     if is_ssh_key_available; then
@@ -219,9 +221,9 @@ check_dependencies() {
                 ; do
         if ! [[ -d "$dir" ]]; then
             if confirm -d Y "[$dir] mountpoint/dir does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
-                execute "sudo mkdir '$dir'" || { err "unable to create [$dir] directory. abort."; exit 1; }
+                execute "sudo mkdir -- '$dir'" || { err "unable to create [$dir] directory. abort."; exit 1; }
             else
-                err "expected [$dir] to be already-existing dir. abort"
+                err "expected [$dir] to be an already-existing dir. abort"
                 exit 1
             fi
         fi
@@ -329,7 +331,7 @@ setup_pm() {
 
             for file in "$pm_state_dir/"*; do
                 [[ -s "$file" ]] || continue
-                tmpfile="$TMP_DIR/.pm_setup-${RANDOM}"
+                tmpfile="$TMP_DIR/.pm_setup-$RANDOM"
                 execute "cp -- '$file' '$tmpfile'" || return 1
                 execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
 
@@ -1385,7 +1387,7 @@ install_deps() {
     #   - https://github.com/ajeetdsouza/zoxide
     #   - https://github.com/wyne/fasder  - go reimplementation
     clone_or_pull_repo "whjvenyl" "fasd" "$BASE_PROGS_DIR"  # https://github.com/whjvenyl/fasd
-    create_link "${BASE_PROGS_DIR}/fasd/fasd" "$HOME/bin/fasd"
+    create_link "$BASE_PROGS_DIR/fasd/fasd" "$HOME/bin/fasd"
     execute "mkdir -p -- $XDG_DATA_HOME/fasd"  # referenced by ~/.config/fasd/config
 
     # maven bash completion:
@@ -1450,13 +1452,12 @@ install_deps() {
     # TODO: following are not deps, are they?:
 
     # this needs apt-get install  python-imaging ?:
-    py_install img2txt.py    # https://github.com/hit9/img2txt  (for ranger)
     py_install scdl          # https://github.com/flyingrub/scdl (soundcloud downloader)
-    py_install rtv           # https://github.com/michael-lazar/rtv (reddit reader)  # TODO: active development has ceased; alternatives @ https://gist.github.com/michael-lazar/8c31b9f637c3b9d7fbdcbb0eebcf2b0a
+    #py_install rtv           # https://github.com/michael-lazar/rtv (reddit reader)  # TODO: active development has ceased; alternatives @ https://gist.github.com/michael-lazar/8c31b9f637c3b9d7fbdcbb0eebcf2b0a
+    py_install tuir-continued  # https://gitlab.com/Chocimier/tuir  (now-discontinued rtv continuation)
     py_install tldr          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
     py_install vit           # https://github.com/vit-project/vit (curses-based interface for taskwarrior (a todo list mngr we install from apt; executable is called 'task'))
                                                                                       #   note its conf is in bash_env_vars
-    #py_install maybe         # https://github.com/p-e-w/maybe (check what command would do)
     py_install httpstat       # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
     py_install yamllint       # https://github.com/adrienverge/yamllint
     py_install awscli         # https://docs.aws.amazon.com/en_pv/cli/latest/userguide/install-linux.html#install-linux-awscli
@@ -1464,7 +1465,7 @@ install_deps() {
     # colorscheme generator:
     # see also complementing script @ https://github.com/dylanaraps/bin/blob/master/wal-set
     # rust alternative to pywal: https://codeberg.org/explosion-mental/wallust
-    py_install pywal          # https://github.com/dylanaraps/pywal/wiki/Installation
+    py_install pywal16          # https://github.com/eylles/pywal16/wiki/Installation#pip-install
 
     # consider also perl alternative @ https://github.com/pasky/speedread
     #rb_install speed_read  # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
@@ -4826,17 +4827,16 @@ install_i3() {
 py_install() {
     local opt opts OPTIND
 
-    opts=("$@")
-    while getopts 'g' opt; do
+    declare -a opts
+    while getopts 'g:' opt; do
         case "$opt" in
-            g) opts=("git+ssh://git@github.com/${1}.git")
-               shift
-               opts+=("$@") ;;
-            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+            g) opts+=("git+ssh://git@github.com/${OPTARG}.git") ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}(): -$opt" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
+    opts+=("$@")
     execute "pipx install ${opts[*]}"
 }
 
