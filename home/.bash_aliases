@@ -110,6 +110,7 @@ alias pydf=dfh
 #alias less="less -IRKFX" # handled by the $LESS env var
 alias nano='nano --mouse'
 alias sysinfo='inxi -Fxxxz'
+alias rtv='tuir'
 ###############################
 alias ls='ls -h --color=auto --group-directories-first'
 alias ll='ls -l'
