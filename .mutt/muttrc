@@ -1,4 +1,4 @@
-# vim: ft=muttrc
+# vim: syntax=neomuttrc
 # 
 # ref: http://durak.org/sean/pubs/software/mutt/reference.html
 #
@@ -97,6 +97,7 @@ set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh'
   # and optionally:
     set sidebar_folder_indent=yes
     set sidebar_short_path=yes  # shorten mailbox names
+    set sidebar_non_empty_mailbox_only=yes   # sidebar will only display mailboxes that contain one or more mails
   color sidebar_new yellow default   # mailboxes containing new mail
   #color sidebar_indicator default color17
   #color sidebar_new color221 color233
@@ -127,8 +128,16 @@ set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh'
   set date_format = "%d/%m/%y at %R"
   #set date_format = "{}%"  # for dynamic date formatting
   #set date_format = "!%a %Y%m%d%H%M%S %Z"
+
+  index-format-hook  date  "~d<1d"    "%[%H:%M]"
+  index-format-hook  date  "~d<1w"    "%[%a %H:%m]"
+  index-format-hook  date  "~d<1m"    "%[%a %d]"  # Thu 17
+  index-format-hook  date  "~d<1y"    "%[%b %d]"  # Jul 17
+  index-format-hook  date  "~A"       "%[%m/%y]"  # 07/25
+
   #set index_format = "%3C [%Z] %?X?A&-? %D %-15.15F %s"  # note the '%?X?A&-?' displays 'A' or '-' depending on presence of an attachment
-  set index_format = '/home/laur/bin/mutt-index-format "%9[%d.%m.%y]" "%9[%e.%b]" "%8[%a %H:%m]" "%[%H:%m]" "%3C [%Z] %?X?%2X& -? %%s %-20.20L %?M?+%-2M&   ? %s %> [%4c]asladfg" "%[%s]" |'
+  #set index_format = '/home/laur/bin/mutt-index-format "%9[%d.%m.%y]" "%9[%e.%b]" "%8[%a %H:%m]" "%[%H:%m]" "%3C [%Z] %?X?%2X& -? %%s %-20.20L %?M?+%-2M&   ? %s %> [%4c]asladfg" "%[%s]" |'
+  set index_format="%4C %-6@date@ %-15.15F %Z (%4c) %s"
   set alias_format = "%4n %t %-20a %r"
 #color status red default  # colors come from included file
 
@@ -163,7 +172,7 @@ source ~/.mailboxes        # source virtual boxes; (if not listed in sidebar, th
 
 # This variable allows you to customize the file browser display for virtual
 # folders to your personal taste.
-set vfolder_format = "%6n(%6N) %f"
+set folder_format = "%6n(%6N) %f"
 #unvirtual-mailboxes *
 
 
