@@ -12,10 +12,11 @@ Host imap.gmail.com
 User laur.aliste@gmail.com
 PassCmd "getnetrc laur.aliste@gmail.com"
 # with gpg:  PassCmd "gpg2 -q --for-your-eyes-only --no-tty -d ~/.mailpass.gpg"
+# with pass: PassCmd "pass show <email_provider>/<account_name>/password"
 #AuthMechs LOGIN
 # Use SSL:
-SSLType IMAPS
-SSLVersions TLSv1.2
+TLSType IMAPS
+#TLSVersions TLSv1.2
 #CertificateFile /etc/ssl/certs/ca-certificates.crt
 
 # THEN WE SPECIFY THE LOCAL AND REMOTE STORAGE
@@ -45,42 +46,42 @@ SubFolders Verbatim
 # 3 "DIR" TO MATCH DIR
 
 Channel gmail-default
-Master :gmail-remote:
-Slave :gmail-local:
+Far :gmail-remote:
+Near :gmail-local:
 #Patterns "INBOX" "[Gmail]/Sent Mail" "[Gmail]/Drafts" "[Gmail]/Starred"  # <- use this if you're not using different channel per maildir
 Patterns * ![Gmail]* !Archives !bug-bash !twitter
 # automatically create missing mailboxes:
-Create Slave
+Create Near
 Expunge Both
 # Save the synchronization state files in the relevant directory:
 SyncState *
 
 Channel gmail-sent
-Master :gmail-remote:"[Gmail]/Sent Mail"
-Slave :gmail-local:sent
-Create Slave
+Far :gmail-remote:"[Gmail]/Sent Mail"
+Near :gmail-local:sent
+Create Near
 Expunge Both
 SyncState *
 
 Channel gmail-archive
-Master :gmail-remote:"Archives"
-#Master ":gmail-remote:[Gmail]/All Mail"
-Slave :gmail-local:archive
-Create Slave
+Far :gmail-remote:"Archives"
+#Far ":gmail-remote:[Gmail]/All Mail"
+Near :gmail-local:archive
+Create Near
 Expunge Both
 SyncState *
 
 Channel gmail-trash
-Master :gmail-remote:"[Gmail]/Trash"
-Slave :gmail-local:trash
-Create Slave
+Far :gmail-remote:"[Gmail]/Trash"
+Near :gmail-local:trash
+Create Near
 Expunge Both
 SyncState *
 
 Channel gmail-drafts
-Master :gmail-remote:"[Gmail]/Drafts"
-Slave :gmail-local:drafts
-Create Slave
+Far :gmail-remote:"[Gmail]/Drafts"
+Near :gmail-local:drafts
+Create Near
 Expunge Both
 SyncState *
 
@@ -112,7 +113,7 @@ Port 1143
 # Do not use SSL:
 #UseIMAPS yes
 #RequireSSL no
-SSLType None
+TLSType None
 #CertificateFile /etc/ssl/certs/ca-certificates.crt
 
 IMAPStore work-remote
@@ -128,25 +129,25 @@ Inbox ~/mail/work/Inbox
 SubFolders Verbatim
 
 Channel work-default
-Master :work-remote:
-Slave :work-local:
+Far :work-remote:
+Near :work-local:
 # exclude some, include all ohters:
 #Patterns *
 Patterns * !Junk !Sync\ Issues* !Unsent\ Messages !_setupRelated !_workplaceRelated !Inbox/serviceDesk !Inbox/sbNotifications !Inbox/changeManagement
-Create Slave
+Create Near
 Expunge Both
 # Save the synchronization state files in the relevant directory:
 SyncState *
 
 #  Note here we're renaming the local dir to something different:
 #Channel work-sb
-#Master :work-remote:
-#Slave :work-local:sb
+#Far :work-remote:
+#Near :work-local:sb
 #Patterns !* Inbox/scoreboards
 
 #Channel work-devs
-#Master :work-remote:
-#Slave :work-local:devs
+#Far :work-remote:
+#Near :work-local:devs
 #Patterns !* Inbox/devs
 
 Group work
