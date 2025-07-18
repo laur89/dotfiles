@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/busybox sh
 #
 # note this will run on busybox! meaning it's ash, NOT bash.
 #
@@ -14,7 +14,7 @@ readonly DEFAULT_ROOT_SUBVOL='@rootfs'  # default root subvol name used by debia
 #   - don't think, nodatacow should imply the former, and the othe way around
 #   - !! apparently nodatadow also implies no compression
 # - btrfs does not support mounting subvols from the same partition w/
-#   different settings regardign cow - best use chattr +C !!!
+#   different settings regarding cow - best use chattr +C !!!
 #   - see https://archive.kernel.org/oldwiki/btrfs.wiki.kernel.org/index.php/FAQ.html#Can_I_mount_subvolumes_with_different_mount_options.3F
 # - TODO:  I make /home/<user>/.cache a separate BTRFS subvolume and I mark that directory as nodatacow. But that's really a separate discussion.
 # - some people set +C on entire /var - reasonable?
@@ -26,12 +26,12 @@ ROOT_SUBVOL="$DEFAULT_ROOT_SUBVOL"  # if you want to rename the default root sub
 
 while getopts 'm:R:' opt; do
     case "$opt" in
-        m)      BTRFS_MOUNT_OPTS="$OPTARG" ;;
-        R)      ROOT_SUBVOL="$OPTARG" ;;
-        \?)     exit 1 ;;
+        m)  BTRFS_MOUNT_OPTS="$OPTARG" ;;
+        R)  ROOT_SUBVOL="$OPTARG" ;;
+        \?) exit 1 ;;
     esac
 done
-shift $(expr $OPTIND - 1)
+shift "$((OPTIND - 1))"
 
 # note one interesting layout is making snapshots its subject subvolume siblings, see
 # https://bbs.archlinux.org/viewtopic.php?pid=1766676#p1766676
