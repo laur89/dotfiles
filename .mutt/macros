@@ -1,4 +1,4 @@
-# vim: ft=muttrc
+# vim: syntax=neomuttrc
 macro index ,i      "<change-folder>!<enter>"  "go to inbox"
 #macro index ,p      "<pipe-message>cat > ~/"   "save message as"
 macro index <space> "<collapse-thread>"        "[un]collapse thread"
@@ -61,3 +61,11 @@ macro index c "<change-vfolder>?" "Change to vfolder overview"
 macro index \\\\ "<vfolder-from-query>" "Search mailbox"
 # toggle between mailboxes and virtual mailboxes:
 #bind index,pager ??? sidebar-toggle-virtual
+
+# attach & save attachments using external program; from https://github.com/anufrievroman/neomutt-file-picker/ {{{
+# type A instead of standard a to call the script that opens vifm:
+macro compose A "<shell-escape>bash $HOME/.config/mutt/filepicker<enter><enter-command>source $HOME/.config/mutt/tmpfile<enter><shell-escape>bash $HOME/.config/mutt/filepicker clean<enter>" "Attach with your file manager"
+# on the attachment screen (by default reached w/ v), type S instead of standard s to
+# call the script - vifm is opened; choose folder & quit:
+macro attach S "<shell-escape>bash $HOME/.config/mutt/dirpicker<enter><enter-command>source $HOME/.config/mutt/tmpfile<enter>o" "Choose folder with ranger"
+# }}} /attachments
