@@ -77,7 +77,7 @@ macro index,pager a "\
 #macro index,pager ,r ":unset wait_key; set pipe_decode\n|icalview.rb\n:set wait_key; unset pipe_decode\n" "record a reminder"
 macro index,pager ,r ":unset wait_key; set pipe_decode\n|vim -\n:set wait_key; unset pipe_decode\n" "record a reminder"
 
-set spoolfile = "+work/Inbox"
+set spool_file = "+work/Inbox"
 
 my_hdr Company: William Hill Online  # add company header
 

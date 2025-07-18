@@ -10,5 +10,5 @@ mailboxes +work/Inbox \
           +work/Sent \
           +work/temp/search
 
-#set spoolfile = "+work/Inbox"  # default inbox; so-called startup folder where (unfiltered) email arrives;
+#set spool_file = "+work/Inbox"  # default inbox; so-called startup folder where (unfiltered) email arrives;
 
