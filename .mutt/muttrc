@@ -19,7 +19,7 @@ unset confirmappend  # don't ask
   set fast_reply  # skip to compose when replying
   set folder            = ~/mail  # mailboxes in here; do not end with slash!
   set forward_quote  # include msg in forwards
-  set quote_regexp = "^( {0,4}[>|:#%]| {0,4}[a-z0-9]+[>|]+)+"
+  set quote_regex = "^( {0,4}[>|:#%]| {0,4}[a-z0-9]+[>|]+)+"
   #set header_cache      = ~/.mutt/cache
   # if you have more than a few emails, you *really* want this
   set header_cache = ~/.mutt/caches/work-headercache  # where to store hdrs
@@ -28,7 +28,7 @@ unset confirmappend  # don't ask
 unset help
   set include  # include msg in replies
   set mail_check        = 0
-  set mailcap_path      = ~/.mutt/mailcap
+  set mailcap_path      = ~/.mutt/mailcap  # see also auto_view config to auto-view some types in pager
 unset mark_old   # read/new is ok enough
 #set beep_new  # bell on new mail
 unset markers  # no ugly plus signs
@@ -47,7 +47,7 @@ unset markers  # no ugly plus signs
   set text_flowed=yes  # flow the lines of quoted text in outher mailclients,
                        # instead of producing ugly linebreaks (read http://joeclark.org/ffaq.html)
 
-# this block from https://github.com/smemsh/.mutt/:
+# this block from https://github.com/smemsh/.mutt/
 # Postfix uses the envelope sender to determine which from
 # `sasl_auth_map' to use.  We have to use the correct login
 # because if it's different than the body's internal `from'
@@ -65,9 +65,7 @@ set envelope_from_address
 
 
 set wait_key=no # Don't show the "Press any key to continue..." message.
-set ssl_starttls            = yes
 set ssl_use_sslv3           = yes
-set ssl_use_tlsv1 = yes
 
 unset sig_dashes  # dashes before sig;
   set sleep_time=0  # open dirs w/o delay
@@ -97,7 +95,7 @@ set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh'
   # and optionally:
     set sidebar_folder_indent=yes
     set sidebar_short_path=yes  # shorten mailbox names
-    set sidebar_non_empty_mailbox_only=yes   # sidebar will only display mailboxes that contain one or more mails
+    set sidebar_non_empty_mailbox_only=yes   # sidebar will only display mailboxes that contain one or more mails; note it'll filter out also empty virtual mailboxes
   color sidebar_new yellow default   # mailboxes containing new mail
   #color sidebar_indicator default color17
   #color sidebar_new color221 color233
@@ -109,16 +107,15 @@ set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh'
   set sig_on_top = yes  # signature BEFORE quoted text
   #sorting:
   #
-  set sort              = threads  # sort by threads, just like gmail
+  set use_threads=threads  # note this is newer config item and conflicts w/ "sort" if sort=threads
+  set sort              = reverse-last-date-received  # like gmail
   set sort_aux          = reverse-last-date-received  # like gmail
-  #set sort              = reverse-threads
-  #set sort_aux          = date-received
   #
-  set uncollapse_jump  # don't collapse on an unread message
-  # note our spoolfile is set by detectMailboxes.sh:
-  #set spoolfile         = "+work/Inbox"  # work is default inbox; so-called startup folder
+  set uncollapse_jump  # jump to the next unread message, if any, when the current thread is un collapsed
+  # note our spool_file is set by detectMailboxes.sh:
+  #set spool_file         = "+work/Inbox"  # work is default inbox; so-called startup folder
   set sort_re  # thread based on regex
-  set reply_regexp = "^(([Rr][Ee]?(\[[0-9]+\])?: *)?(\[[^]]+\] *)?)*"
+  set reply_regex = "^(([Rr][Ee]?(\[[0-9]+\])?: *)?(\[[^]]+\] *)?)*"
 
   # status bar:
   #set status_on_top  # status bar on top
@@ -147,7 +144,7 @@ set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh'
   set tilde  # show tildes like in vim
   set timeout           = 3  # idle time before scanning
   set mail_check = 120  # interval to check new mail (in sec)
-  set tmpdir            = ~/.mutt/temp
+  set tmp_dir            = ~/.mutt/temp
   set mask=""  # show all files/directories in the browser (eg dotfiles included)
 
 #alternates .*@pbrisbin\.com .*@brisb\.in
@@ -162,17 +159,18 @@ hdr_order from: to: cc: date: subject:
 # -------------------------------------
 #set nm_default_uri="notmuch:///~/mail" # path to the maildir; defaults to $folder
 
-# When set, mutt will use the first virtual mailbox (see virtual-mailboxes) as a spoolfile:
-#set virtual_spoolfile=yes
+# When set, mutt will use the first virtual mailbox (see virtual-mailboxes) as a spoolfile;
+# as of '25 this command is unnecessary. $spool_file has been extended to support
+# mailbox descriptions as a value.
+#set virtual_spool_file=yes
 
 # note you might have issues because your own replies are missing from threads; in
 # that case, start using virtual boxes: https://www.reddit.com/r/commandline/comments/53dh17/mutt_getting_thread_replies_in_inbox/
 
 source ~/.mailboxes        # source virtual boxes; (if not listed in sidebar, then look up macro for 'change-vfolder')
 
-# This variable allows you to customize the file browser display for virtual
-# folders to your personal taste.
-set folder_format = "%6n(%6N) %f"
+# This variable allows you to customize the file browser display
+#set folder_format = "%6n(%6N) %f"
 #unvirtual-mailboxes *
 
 
@@ -227,5 +225,5 @@ source '~/.mutt/detectMailboxes.sh|'  # watch these mailboxes for new mail
 #set record = '~/.mutt/sent'  # default: '~/sent'
 #set signature = '~/.mutt/.signature'  # default: '~/.signature'
 #set sort_browser = 'date'  # default: 'alpha'
-#set tmpdir = '~/.mutt/temp'  # default: '(empty)'
+#set tmp_dir = '~/.mutt/temp'  # default: '/tmp'
 #set visual = 'vim'  # default: '(empty)'
