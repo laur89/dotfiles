@@ -25,3 +25,8 @@ application/ics; ical-prettyprint.py %s; copiousoutput;
 # note this one did not work: text/calendar; khal -a my_calendar import;
 #text/calendar; khal import -a work %s;
 
+# TODO: look into using lesspipe.sh (https://neomutt.org/contrib/useful-programs#converting-text-formats):
+#text/*;                           LESSQUIET=1 lesspipe.sh '%s'; copiousoutput
+#application/*;                    LESSQUIET=1 lesspipe.sh '%s'; copiousoutput
+#image/*;                          LESSQUIET=1 lesspipe.sh '%s'; copiousoutput
+#audio/*;                          LESSQUIET=1 lesspipe.sh '%s'; copiousoutput

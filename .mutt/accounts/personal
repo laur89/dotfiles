@@ -40,7 +40,7 @@ macro index ,z "<shell-escape>mbsync --pull-new personal<enter>" "sync IMAP"
 #macro index,pager <f3> '<sync-mailbox><enter-command>source ~/.mutt/work<enter><change-folder>!<enter>'
 macro index S "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch.py -g ~/mail/personal/temp/search<enter><change-folder-readonly>+personal/temp/search<enter>" "search mail (using notmuch)"
 
-set spoolfile = "+personal/INBOX"
+set spool_file = "+personal/INBOX"
 
 macro index,pager a "\
     <save-message>=personal/archive<enter>" \
