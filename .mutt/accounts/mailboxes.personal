@@ -15,5 +15,5 @@ mailboxes +personal/INBOX \
           +personal/suckless \
           +personal/temp/search
 
-#set spoolfile = "+personal/INBOX"  # default inbox; so-called startup folder where (unfiltered) email arrives;
+#set spool_file = "+personal/INBOX"  # default inbox; so-called startup folder where (unfiltered) email arrives;
 

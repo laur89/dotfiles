@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# from https://github.com/anufrievroman/neomutt-file-picker/blob/master/filepicker
+
+tmpfile=$HOME/.config/mutt/.picker.tmp
+
+if \[ -z "$1" \]; then
+    #ranger --choosefiles $tmpfile &&    # Use Ranger
+    vifm --choose-files "$tmpfile" &&       # Use Vifm
+    sed --follow-symlinks -i 's/ /^V /g' "$tmpfile" &&
+    echo "$(awk 'BEGIN {printf "%s", "push "} {printf "%s", "<attach-file>\""$0"\"<enter>"}' "$tmpfile")" > "$tmpfile"
+elif \[ "$1" == clean \]; then
+    rm -- "$tmpfile"
+fi
