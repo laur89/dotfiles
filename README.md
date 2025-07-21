@@ -43,18 +43,18 @@ steps separately apart from the full installation mode.
 ```
   - make sure to use the preseed template expander script, not the preseed
     template directly;
-  - note under UEFI installation, `esc` likely doesn't do anything; in that
-    case:
-        - highlight `Advanced options` -> `Automated install`
-        - press `e`
-        - down arrow 3 times, move cursor to right after `auto=true`, and add
-        "url="/"hostname="/other params
+  - note under UEFI installation, `esc` likely doesn't do anything; in that case:
+    - highlight `Advanced options` -> `Automated install`
+    - press `e`
+    - down arrow 3 times, move cursor to right after `auto=true`, and add
+    "url=" / "hostname=" / other params
+    - press `Ctrl-x` or `F10` to boot (as instructed on screen)
   - note if you don't provide required data, installer will ask for it anyway
   - alternatively, if you don't want to provide any params to preseed, you can
     also choose `Advanced options` -> `(Graphical) Automated install` -> type
     url of our preseed file
     - note to preseed hostname, we _have to_ provide it as kernel params, so
-      this option would leave our domain as default "`debian`"
+      this option would leave our domain as default `debian`
 
 1. wget https://github.com/laur89/dotfiles/raw/master/.bootstrap/install_system.sh
     * or `wget https://github.com/laur89/dotfiles/raw/develop/.bootstrap/install_system.sh`
