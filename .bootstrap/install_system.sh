@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2317
+#
 # base version taken from https://github.com/rastasheep/dotfiles/blob/master/script/bootstrap
 #
 # Base installation script intended to be executed on freshly installed
@@ -951,6 +953,7 @@ install_nfs_server() {
 
 
 # fstab entries are ok only if we're a desktop, and the NFS server is _always_ on
+# TODO: consider moving from fstab to systemd mount @ /run/systemd/generator/
 _install_nfs_client_stationary() {
     local fstab mountpoint nfs_share default_mountpoint server_ip prev_server_ip
     local mounted_shares used_mountpoints changed
@@ -1110,6 +1113,7 @@ create_mountpoint() {
 }
 
 
+# TODO: consider moving from fstab to systemd mount @ /run/systemd/generator/
 install_sshfs() {
     local fuse_conf mountpoint default_mountpoint fstab server_ip remote_user ssh_port sel_ips_to_user
     local prev_server_ip used_mountpoints mounted_shares ssh_share identity_file
@@ -1232,6 +1236,15 @@ install_deps() {
                 [[ -d "$dir" && -d "$dir/.git" ]] && execute "git -C '$dir' pull"
             done
         fi
+
+        # install tmux-fingers plugin binary counterpart:
+        # note there's rust port of fingers
+        # - https://github.com/fcsonline/tmux-thumbs - but appears to be unmaintained ('25) & working poorly
+        install_bin_from_git -N tmux-fingers  Morantron/tmux-fingers '-linux-x86_64'  # expected binary name from https://github.com/Morantron/tmux-fingers/blob/master/tmux-fingers.tmux
+    }
+
+    _install_mutt_deps() {
+        true
     }
 
     # see also: https://github.com/romkatv/zsh4humans
@@ -1435,9 +1448,9 @@ install_deps() {
     #clone_or_pull_repo "chriskempson" "base16-shell" "$BASE_PROGS_DIR"  # https://github.com/chriskempson/base16-shell
     #create_link "${BASE_PROGS_DIR}/base16-shell" "$HOME/.config/base16-shell"
 
-    # tmux plugin manager:
+
     _install_tmux_deps; unset _install_tmux_deps
-    # zsh:
+    _install_mutt_deps; unset _install_mutt_deps
     _install_zsh_deps; unset _install_zsh_deps
 
     # vifm plugins:
@@ -4344,7 +4357,7 @@ install_ddcutil() {
 }
 
 
-# trying out checkinstall replacement, absed on fpm (https://fpm.readthedocs.io)
+# trying out checkinstall replacement, based on fpm (https://fpm.readthedocs.io)
 # TODO wip
 create_deb_install_and_store2() {
     execute 'sudo gem install fpm'
@@ -4690,7 +4703,6 @@ install_display_switch() {
 
 # https://i3wm.org/docs/hacking-howto.html
 # see also https://github.com/maestrogerardo/i3-gaps-deb for debian pkg building logic
-# TODO: build fails in '25
 build_i3() {
     local tmpdir repo ver
 
@@ -4998,6 +5010,8 @@ install_polybar() {
 # see also pbuilder, https://wiki.debian.org/SystemBuildTools
 # see also https://github.com/makedeb/makedeb
 # see also https://github.com/FooBarWidget/debian-packaging-for-the-modern-developer
+# see also https://github.com/aidan-gallagher/debpic
+#   - short introduction @ https://www.reddit.com/r/debian/comments/1cy34sb/ive_created_a_tool_to_ease_building_debian/
 build_deb() {
     local opt pkg_name configure_extra dh_extra deb OPTIND
 
@@ -6335,6 +6349,7 @@ __choose_prog_to_build() {
         install_delta
         install_dust
         install_peco
+        build_i3
         install_i3
         install_i3_deps
         install_i3lock
@@ -6494,11 +6509,10 @@ remind_manually_installed_progs() {
     local progs i
 
     declare -ar progs=(
+        'GPG restore/import'
         'intelliJ toolbox'
-        'sdkman - jdk, maven, gradle, leiningen...'
-        'any custom certs'
         'install tmux plugins (prefix+I)'
-        'ublock additional configs (est, social media, ...)'
+        'ublock additional configs (EST, social media, ...)'
         'ublock whitelist, filters (should be saved somewhere)'
         'import keepass-xc browser plugin config'
         'install tridactyl native messenger/executable (:installnative)'
@@ -6789,6 +6803,8 @@ install_gruvbox_material_gtk_theme() {
 
 
 # also consider the generic installer instead of .deb, eg https://launchpad.net/veracrypt/trunk/1.24-update7/+download/veracrypt-1.24-Update7-setup.tar.bz2
+# see also:
+# - https://github.com/FiloSottile/age
 install_veracrypt() {
     local dl_urls ver_to_url u i
 
@@ -6963,8 +6979,7 @@ setup_seafile() {
     IFS=, read -ra libs_conf <<< "$SEAFILE_LIBS"
     [[ "${#libs_conf[@]}" -eq 0 ]] && err "env var SEAFILE_LIBS is empty - misconfiguration?"  # sanity
     for lib in "${libs_conf[@]}"; do
-        [[ -d "$parent_dir/$lib" ]] && continue
-        libs+=("$lib")
+        [[ -d "$parent_dir/$lib" ]] || libs+=("$lib")
     done
 
     select_items -h 'choose libraries to sync' "${libs[@]}" || return
@@ -7821,7 +7836,10 @@ is_native() {
 
 
 # whether we're using BTRFS
+#
+# TODO: depend on fstab or /run/systemd/generator/ contents?
 is_btrfs() {
+    [[ -s /etc/fstab && -r /etc/fstab ]] || { err "[/etc/fstab] not a file"; return 2; }
     grep -qE '\bbtrfs\b' /etc/fstab
 }
 
