@@ -41,14 +41,15 @@ steps separately apart from the full installation mode.
     passwd/user-password=userpass
     passwd/user-password-again=userpass
 ```
-  - make sure to use the preseed template expander script, not the preseed
-    template directly;
-  - note under UEFI installation, `esc` likely doesn't do anything; in that case:
+  - as of '25 we likely only want to add `url` & `hostname` params
+  - **note under UEFI installation, `esc` likely doesn't do anything; in that case:**
     - highlight `Advanced options` -> `Automated install`
     - press `e`
     - down arrow 3 times, move cursor to right after `auto=true`, and add
     "url=" / "hostname=" / other params
     - press `Ctrl-x` or `F10` to boot (as instructed on screen)
+  - make sure to use the preseed template expander script, not the preseed
+    template directly;
   - note if you don't provide required data, installer will ask for it anyway
   - alternatively, if you don't want to provide any params to preseed, you can
     also choose `Advanced options` -> `(Graphical) Automated install` -> type
@@ -63,7 +64,7 @@ steps separately apart from the full installation mode.
 1. install sudo, if not already installed:
     * su
     * apt-get install sudo
-1. add your user to sudo group:
+1. add your user to sudo group (if not already done so by the preseed):
     * `/usr/sbin/adduser $USER  sudo`    (and logout + login afterwards!)
 1. sudo apt-get update
 1. execute script:
@@ -88,18 +89,19 @@ non-standard sources, such as github releases/, and being directly built from so
 
 ## Manual partitioning
 
-Note our main preseed.cfg entails manual partitioning, as we [cannot preseed
+Note our main `preseed.cfg` entails manual partitioning, as we [cannot preseed
 encrypted partitions w/o LVM](https://forums.debian.net/viewtopic.php?p=822924)
+(at least as of '25)
 
 Instead we partition it manually. Instructions from [here](https://www.dwarmstrong.org/minimal-debian/):
 - select `Manual` partitioning
 - create `EFI` partition, beginning, 538 MB
-    - TODO: decrease to 300MB?
+    - TODO: decrease to 300MB? most docs recommended ~500M, but seems superfluous IMHO;
 - create `ext4` partition, beginning, mount to `/boot`, 1044 MB
   - could be btrfs, but some features, such as [savedefault](https://wiki.archlinux.org/title/GRUB/Tips_and_tricks#Recall_previous_entry)
     (relevant w/ dualboot or multiple kernels) might not work
   - when using systemd-boot and encrypting everything, then no need for
-    separate /boot partition as commit c0cde1e8348db5915a026ec3c8ad2220031e6fcc
+    separate /boot partition as commit [c0cde1e](https://github.com/laur89/dotfiles/commit/c0cde1e8348db5915a026ec3c8ad2220031e6fcc)
     implies
     - also somewhat relevant to no-boot partition is [this debian forum post](https://forums.debian.net/viewtopic.php?p=822950)
 - create `physical volume for encryption` partition, beginning, remaining size
