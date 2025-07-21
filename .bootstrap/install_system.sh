@@ -1620,7 +1620,7 @@ install_homesick() {
 #
 # pass   -H   flag to set up path to our githooks
 clone_or_link_castle() {
-    local castle user hub homesick_exe opt OPTIND set_hooks batch
+    local repo castle hub homesick_exe opt OPTIND set_hooks batch
 
     while getopts 'H' opt; do
         case "$opt" in
@@ -1630,13 +1630,13 @@ clone_or_link_castle() {
     done
     shift "$((OPTIND-1))"
 
-    readonly castle="$1"
-    readonly user="$2"
-    readonly hub="$3"  # domain of the git repo, ie github.com/bitbucket.org...
+    readonly repo="$1"  # user/repo
+    readonly hub="${2:-github.com}"  # domain of the git repo, ie github.com/bitbucket.org...
 
+    castle="$(basename -- "$repo")"
     readonly homesick_exe="$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick"
 
-    [[ -z "$castle" || -z "$user" || -z "$hub" ]] && { err "either user, repo or castle name were missing"; sleep 2; return 1; }
+    [[ -z "$repo" || -z "$castle" || -z "$hub" ]] && { err "either repo or castle name were missing"; sleep 2; return 1; }
     [[ -x "$homesick_exe" ]] || { err "expected to see homesick script @ [$homesick_exe], but didn't. skipping cloning/linking castle [$castle]"; return 1; }
     is_noninteractive && batch=' --batch'
 
@@ -1652,17 +1652,17 @@ clone_or_link_castle() {
     else
         report "cloning castle ${castle}..."
         if is_ssh_key_available; then
-            retry 3 "$homesick_exe clone git@${hub}:$user/${castle}.git" || { err "cloning castle [$castle] failed with $?"; return 1; }
+            retry 3 "$homesick_exe clone git@${hub}:${repo}.git" || { err "cloning castle [$castle] failed with $?"; return 1; }
         else
             # note we clone via https, not ssh:
-            retry 3 "$homesick_exe clone https://${hub}/$user/${castle}.git" || { err "cloning castle [$castle] failed with $?"; return 1; }
+            retry 3 "$homesick_exe clone https://${hub}/${repo}.git" || { err "cloning castle [$castle] failed with $?"; return 1; }
 
             # change just cloned repo remote from https to ssh:
-            execute "git -C '$BASE_HOMESICK_REPOS_LOC/$castle' remote set-url origin git@${hub}:$user/${castle}.git"
+            execute "git -C '$BASE_HOMESICK_REPOS_LOC/$castle' remote set-url origin git@${hub}:${repo}.git"
         fi
 
         # note this assumes $castle repo has a .githooks symlink at its root that points to dir that contains the actual hooks!
-        if [[ "$set_hooks" -eq 1 ]]; then
+        if [[ "$set_hooks" == 1 ]]; then
             execute 'git -C '$BASE_HOMESICK_REPOS_LOC/$castle' config core.hooksPath .githooks' || err "git hook installation failed!"
         fi
     fi
@@ -1679,21 +1679,20 @@ fetch_castles() {
     local castle user hub
 
     # common private:
-    clone_or_link_castle -H private-common layr bitbucket.org || { err "failed pulling private dotfiles; it's required!"; return 1; }
+    clone_or_link_castle -H layr/private-common bitbucket.org || { err "failed pulling private dotfiles; it's required!"; return 1; }
 
     # common public castles:
-    clone_or_link_castle -H dotfiles laur89 github.com || { err "failed pulling public dotfiles; it's required!"; return 1; }
+    clone_or_link_castle -H laur89/dotfiles || { err "failed pulling public dotfiles; it's required!"; return 1; }
 
     # !! if you change private repos, make sure you update PRIVATE__DOTFILES definitions @ validate_and_init()!
     case "$PROFILE" in
         work)
             export GIT_SSL_NO_VERIFY=1
-            local host user repo u
+            local host repo u
             host=git.nonprod.williamhill.plc
-            user=laliste
-            repo="$(basename -- "$PRIVATE__DOTFILES")"
-            if clone_or_link_castle -H "$repo" "$user" "$host"; then
-                for u in "git@$host:$user/$repo.git"  "git@github.com:laur89/work-dots-mirror.git"; do
+            repo="laliste/$(basename -- "$PRIVATE__DOTFILES")"
+            if clone_or_link_castle -H "$repo" "$host"; then
+                for u in "git@$host:${repo}.git"  "git@github.com:laur89/work-dots-mirror.git"; do
                     if ! grep -iq "pushurl.*$u" "$PRIVATE__DOTFILES/.git/config"; then  # need if-check as 'set-url --add' is not idempotent; TODO: create ticket for git?
                         execute "git -C '$PRIVATE__DOTFILES' remote set-url --add --push origin '$u'"
                     fi
@@ -1705,7 +1704,7 @@ fetch_castles() {
             unset GIT_SSL_NO_VERIFY
             ;;
         personal)
-            clone_or_link_castle -H "$(basename -- "$PRIVATE__DOTFILES")" layr bitbucket.org || err "failed pulling personal dotfiles; won't abort"
+            clone_or_link_castle -H "layr/$(basename -- "$PRIVATE__DOTFILES")" bitbucket.org || err "failed pulling personal dotfiles; won't abort"
             ;;
         *)
             err "unexpected \$PROFILE [$PROFILE]"; exit 1
@@ -1713,7 +1712,7 @@ fetch_castles() {
     esac
 
     if [[ -n "$PLATFORM" ]]; then
-        clone_or_link_castle -H "$(basename -- "$PLATFORM_DOTFILES")" laur89 github.com || err "failed pulling platform-specific dotfiles for [$PLATFORM]; won't abort"
+        clone_or_link_castle -H "laur89/$(basename -- "$PLATFORM_DOTFILES")" || err "failed pulling platform-specific dotfiles for [$PLATFORM]; won't abort"
     fi
 
     #while true; do
@@ -1727,7 +1726,7 @@ fetch_castles() {
             #echo -e "enter castle name (repo name, eg [dotfiles]):"
             #read -r castle
 
-            #execute "clone_or_link_castle $castle $user $hub"
+            #execute "clone_or_link_castle "$user/$castle" $hub"
         #else
             #break
         #fi
