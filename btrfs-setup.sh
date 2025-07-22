@@ -24,10 +24,11 @@ ROOT_SUBVOL="$DEFAULT_ROOT_SUBVOL"  # if you want to rename the default root sub
                                     # change this value; e.g. commonly used value is '@';
                                     # note you can also set it w/ -R flag
 
-while getopts 'm:R:' opt; do
+while getopts 'm:R:A' opt; do
     case "$opt" in
         m)  BTRFS_MOUNT_OPTS="$OPTARG" ;;
         R)  ROOT_SUBVOL="$OPTARG" ;;
+        A)  APPLY_OPTS=1 ;;
         \?) exit 1 ;;
     esac
 done
@@ -65,6 +66,25 @@ fi
 # verify whether we've partitioned using btrfs; if not, bail successfully.
 # note upstream scripts do it differently, see script under /lib/partman/finish.d/70aptinstall_btrfs
 grep -Eq -m 1 "\s+/\s+btrfs\s+.*=${DEFAULT_ROOT_SUBVOL}\s+" /target/etc/fstab || exit 0
+
+# chattr is not avail right after partitioning, hence why these options need to be set later
+if [ "$APPLY_OPTS" == 1 ]; then
+    for mapping in "$@"; do
+        mountpoint="$(echo "$mapping" | cut -d: -f2)"
+        opts="$(echo "$mapping" | cut -d: -f3)"
+
+        [ -z "$opts" ] && continue
+        mntp="/target/$mountpoint"
+        [ -e "$mntp" ] || exit 1  # sanity
+        if echo "$opts" | grep -q 'NOCOW'; then
+            # TODO: or should we set it on /mnt/$subvol? if so, we'd have to mount it first under /mnt again;
+            # TODO 2: chattr not avail right after partitioning!
+            chattr +C -- "$mntp" || exit 1  # confirm values via  $ lsattr  (e.g. lsattr -d /dir/path)
+        fi
+    done
+
+    exit 0
+fi
 
 
 umnt() {  # unmount provided mountpoint, and return the fs that was mounted
@@ -120,7 +140,6 @@ mount -o "${BTRFS_MOUNT_OPTS},subvol=${ROOT_SUBVOL}" "$ROOT_FS" /target || exit 
 for mapping in "$@"; do
     subvol="$(echo "$mapping" | cut -d: -f1)"
     mountpoint="$(echo "$mapping" | cut -d: -f2)"
-    opts="$(echo "$mapping" | cut -d: -f3)"
 
     mntp="/target/$mountpoint"
 
@@ -129,10 +148,6 @@ for mapping in "$@"; do
     btrfs subvolume create -p "/mnt/$subvol" || exit 1  # -p is similar to mkdir's -p
     # create mountpoint:
     mkdir -p -- "$mntp" || exit 1
-    if echo "$opts" | grep -q 'NOCOW'; then
-        # TODO: or should we set it on /mnt/$subvol?:
-        chattr +C -- "$mntp" || exit 1  # confirm values via  $ lsattr  (e.g. lsattr -d /dir/path)
-    fi
 
     # mount:
     mount -o "${BTRFS_MOUNT_OPTS},subvol=$subvol" "$ROOT_FS" "$mntp" || exit 1
