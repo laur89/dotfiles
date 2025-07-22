@@ -72,12 +72,11 @@ if [ "$APPLY_OPTS" == 1 ]; then
         opts="$(echo "$mapping" | cut -d: -f3)"
 
         [ -z "$opts" ] && continue
-        mntp="/target/$mountpoint"
-        [ -e "$mntp" ] || exit 1  # sanity
+        [ -e "/target/$mountpoint" ] || exit 1  # sanity
         if echo "$opts" | grep -q 'NOCOW'; then
             # TODO: or should we set it on /mnt/$subvol? if so, we'd have to mount it first under /mnt again;
             # TODO 2: chattr not avail right after partitioning!
-            chattr +C -- "$mntp" || exit 1  # confirm values via  $ lsattr  (e.g. lsattr -d /dir/path)
+            in-target chattr +C -- "/$mountpoint" || exit 1  # confirm values via  $ lsattr  (e.g. lsattr -d /dir/path)
         fi
     done
 
