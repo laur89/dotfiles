@@ -48,8 +48,6 @@ if [ $# -eq 0 ]; then
            '@opt:opt' \
            'var/@log:var/log' \
            'var/@tmp:var/tmp' \
-           'var/@run:var/run' \
-           'var/@lock:var/lock' \
            'var/@cache:var/cache' \
            'var/lib/@containers:var/lib/containers:NOCOW' \
            'var/lib/@machines:var/lib/machines:NOCOW' \
