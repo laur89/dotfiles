@@ -20,8 +20,8 @@ steps separately apart from the full installation mode.
 1. Install Debian testing release netinstall (in reality, any Debian base distro
    should work fine).
     * can be found from https://www.debian.org/devel/debian-installer/
-    * (or https://cdimage.debian.org/cdimage/daily-builds/daily/arch-latest/amd64/iso-cd/
-      more specifically)
+      - [daily build](https://cdimage.debian.org/cdimage/daily-builds/daily/arch-latest/amd64/iso-cd/)
+      - [weekly build](https://cdimage.debian.org/cdimage/weekly-builds/amd64/iso-cd/)
     * *Note*: sometimes the daily images are broken, verify the build is passing [here](https://d-i.debian.org/daily-images/daily-build-overview.html)
       before downloading.
     * ~~If you're installing on a laptop/wifi and need firmware, you might be better
