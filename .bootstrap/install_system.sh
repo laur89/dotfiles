@@ -22,7 +22,7 @@
 set -o pipefail
 shopt -s nullglob       # unmatching globs to expand into empty string/list instead of being left unexpanded
 
-readonly TMP_DIR='/tmp'  # TODO: deprecate, we're not ever gonna modify this are we
+TMP_DIR=/tmp
 readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"  # TODO: change to id_ed25519
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
@@ -1570,6 +1570,7 @@ setup_dirs() {
 
     # create dirs:
     for dir in \
+            $TMP_DIR \
             $HOME/bin \
             $BASH_COMPLETIONS \
             $HOME/.npm-packages \
@@ -2046,7 +2047,7 @@ create_apt_source() {
             keyfiles+=",$keyfile"  # TODO: does it allow comma-separation?
         fi
 
-        f="/tmp/.apt-key_${name}-${RANDOM}.gpg"
+        f="$TMP_DIR/.apt-key_${name}-${RANDOM}.gpg"
         if [[ -n "$k" ]]; then
             execute "sudo gpg --no-default-keyring --keyring $f --keyserver $i --recv-keys $k" || return 1
         elif [[ -n "$grp_ptrn" ]]; then
@@ -2057,7 +2058,7 @@ create_apt_source() {
 
             # ...or lengthier (but safer?) multi-step conversion:
             #local tmp_ring
-            #tmp_ring="/tmp/temp-keyring-${RANDOM}.gpg"
+            #tmp_ring="$TMP_DIR/temp-keyring-${RANDOM}.gpg"
             #execute "curl -fsL -o '$f' '$i'" || return 1
 
             #execute "gpg --no-default-keyring --keyring $tmp_ring --import $f" || return 1
@@ -2072,7 +2073,7 @@ create_apt_source() {
     done
 
     # finally write the source file itself:
-    f="/tmp/.apt-src_${name}-$RANDOM"
+    f="$TMP_DIR/.apt-src_${name}-$RANDOM"
     cat <<EOF | sudo tee "$f" > /dev/null
 Types: deb
 URIs: $uris
@@ -3250,7 +3251,7 @@ install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instruc
 
     readonly name=clojure
     readonly install_target="$BASE_PROGS_DIR/clojure"
-    readonly f="/tmp/${RANDOM}-clojure-linux-install.sh"
+    readonly f="$TMP_DIR/${RANDOM}-clojure-linux-install.sh"
 
     ver="$(get_git_tag "https://github.com/$name/brew-install.git")" || return 1
     is_installed "$ver" "$name" && return 2
@@ -8294,29 +8295,22 @@ cleanup() {
 #----------------------------
 #---  Script entry point  ---
 #----------------------------
-while getopts 'NFSUQOP:L:' OPT_; do
+while getopts 'NFSUQOP:L:T:' OPT_; do
     case "$OPT_" in
-        N) NON_INTERACTIVE=1
-            ;;
-        F) MODE=1  # full install
-            ;;
-        S) MODE=0  # single task
-            ;;
-        U) MODE=2  # update/quick_refresh
-            ;;
-        Q) MODE=3  # even faster update/quick_refresh
-            ;;
-        O) ALLOW_OFFLINE=1  # allow running offline
-            ;;
-        P) PLATFORM="$OPTARG"  # force the platform-specific config to install (as opposed to deriving it from hostname); best not use it and let platform be resolved from our hostname
-            ;;
+        N) NON_INTERACTIVE=1 ;;
+        F) MODE=1 ;;  # full install
+        S) MODE=0 ;;  # single task
+        U) MODE=2 ;;  # update/quick_refresh
+        Q) MODE=3 ;;  # even faster update/quick_refresh
+        O) ALLOW_OFFLINE=1 ;;  # allow running offline
+        P) PLATFORM="$OPTARG" ;;  # force the platform-specific config to install (as opposed to deriving it from hostname); best not use it and let platform be resolved from our hostname
         L) LOGGING_LVL="$OPTARG"  # log vl
            MANUAL_LOG_LVL=TRUE
            is_digit "$OPTARG" || { err "log level needs to be an int, but was [$OPTARG]"; exit 1; }
             ;;
+        T) TMP_DIR="$OPTARG" ;;
         *) print_usage
-           exit 1
-            ;;
+           exit 1 ;;
     esac
 done
 shift "$((OPTIND-1))"; unset OPT_
