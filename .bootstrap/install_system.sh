@@ -6432,6 +6432,10 @@ full_install() {
     [[ -z "$MANUAL_LOG_LVL" ]] && LOGGING_LVL=10
     readonly MODE=1
 
+    if ! is_proc_running ssh-agent; then
+        eval "$(ssh-agent)"
+    fi
+
     setup
 
     is_windows || upgrade_kernel  # keep this check is_windows(), not is_native();
@@ -7487,6 +7491,7 @@ check_connection() {
 
 
 # https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
+# or: https://support.atlassian.com/bitbucket-cloud/docs/set-up-personal-ssh-keys-on-linux/
 generate_ssh_key() {
     local mail valid_mail_regex
 
