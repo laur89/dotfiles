@@ -653,7 +653,7 @@ setup_hosts() {
         local file current
 
         readonly file="$1"
-        current="$(grep '\(127\.0\.1\.1\)\s\+\(.*\)\s\+\(\w\+\)' "$file")"
+        current="$(grep -E '^127\.0\.1\.1\s+' "$file")"
         if ! is_single "$current"; then
             err "[$file] contained either more or less than 1 line(s) containing our hostname. check manually."
             return 1
