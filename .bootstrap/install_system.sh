@@ -27,7 +27,7 @@ readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"  # TODO: change to id_ed25519
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
-readonly BASH_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # as per https://github.com/scop/bash-completion#faq
+#readonly BASH_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # as per https://github.com/scop/bash-completion#faq  # cannot set before importing SHELL_ENVS!
 readonly ZSH_COMPLETIONS='/usr/share/zsh/vendor-completions'  # as per https://unix.stackexchange.com/a/607810/47501
 readonly APT_KEY_DIR='/usr/local/share/keyrings'  # dir where per-application apt keys will be stored in
 readonly SERVER_IP='10.42.21.10'             # default server address; likely to be an address in our LAN
@@ -1568,6 +1568,8 @@ install_deps() {
 setup_dirs() {
     local dir
 
+    readonly BASH_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # as per https://github.com/scop/bash-completion#faq  # cannot set before importing SHELL_ENVS!
+
     # create dirs:
     for dir in \
             $TMP_DIR \
@@ -1682,11 +1684,10 @@ fetch_castles() {
 
     # common private:
     clone_or_link_castle -H layr/private-common bitbucket.org || { err "failed pulling private dotfiles; it's required!"; return 1; }
-    [[ "$MODE" -ne 1 ]] || execute "cp -- $COMMON_PRIVATE_DOTFILES/home/.ssh/ssh_common_client_config ~/.ssh/config" || { err "ssh initial config copy failed w/ $?"; return 1; }
-    _sanitize_ssh
-
-    if ! is_proc_running ssh-agent; then
-        eval "$(ssh-agent)"
+    if [[ "$MODE" -eq 1 ]]; then
+        execute "cp -- $COMMON_PRIVATE_DOTFILES/home/.ssh/ssh_common_client_config ~/.ssh/config" || { err "ssh initial config copy failed w/ $?"; return 1; }
+        _sanitize_ssh
+        is_proc_running ssh-agent || eval "$(ssh-agent)"
     fi
 
     # common public castles:
@@ -1870,7 +1871,7 @@ setup_config_files() {
     setup_hosts
     setup_systemd
     setup_apparmor
-    setup_needrestart
+    is_pkg_installed needrestart && setup_needrestart  # TODO: should we include needrestart pkg?
     setup_pam_login
     setup_logind
     is_native && setup_udev
@@ -5368,6 +5369,7 @@ install_fonts() {
     }
 
     # https://github.com/stark/siji   (bitmap font icons)
+    # TODO: x11! note pcf and bdf formats are ancient and not supported by wayland (https://www.reddit.com/r/swaywm/comments/e1r1r8/no_bitmap_font_support_ever/)
     install_siji() {
         local tmpdir repo ver
 
