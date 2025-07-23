@@ -159,7 +159,7 @@ validate_and_init() {
 
     if [[ -n "$PLATFORM" ]]; then
         PLATFORM_DOTFILES="${HOSTNAME_TO_PLATFORM[$PLATFORM]}"
-        is_native || confirm "platform selected nor resolved on non-native setup -- continue?" || exit 1  # TODO: any reason for this check?
+        #is_native || confirm "platform either selected or resolved on non-native setup -- continue?" || exit 1  # TODO: any reason for this check?
         report "platform castle defined as [$PLATFORM_DOTFILES]"
     else
         ! is_native || confirm "no platform selected nor automatically resolved -- continue?" || exit 1
@@ -1620,11 +1620,12 @@ install_homesick() {
 #
 # pass   -H   flag to set up path to our githooks
 clone_or_link_castle() {
-    local repo castle hub homesick_exe opt OPTIND set_hooks batch
+    local repo castle hub homesick_exe opt OPTIND set_hooks batch force_ssh
 
-    while getopts 'H' opt; do
+    while getopts 'HS' opt; do
         case "$opt" in
             H) set_hooks=1 ;;
+            S) force_ssh=1 ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -1651,7 +1652,7 @@ clone_or_link_castle() {
         execute "${homesick_exe}$batch link $castle" || { err "linking castle [$castle] failed with $?"; return 1; }  # TODO: should we exit here?
     else
         report "cloning castle ${castle}..."
-        if is_ssh_key_available; then
+        if is_ssh_key_available || [[ "$force_ssh" == 1 ]]; then
             retry 3 "$homesick_exe clone git@${hub}:${repo}.git" || { err "cloning castle [$castle] failed with $?"; return 1; }
         else
             # note we clone via https, not ssh:
@@ -1680,6 +1681,12 @@ fetch_castles() {
 
     # common private:
     clone_or_link_castle -H layr/private-common bitbucket.org || { err "failed pulling private dotfiles; it's required!"; return 1; }
+    [[ "$MODE" -ne 1 ]] || execute "cp -- $COMMON_PRIVATE_DOTFILES/home/.ssh/ssh_common_client_config ~/.ssh/config" || { err "ssh initial config copy failed w/ $?"; return 1; }
+    _sanitize_ssh
+
+    if ! is_proc_running ssh-agent; then
+        eval "$(ssh-agent)"
+    fi
 
     # common public castles:
     clone_or_link_castle -H laur89/dotfiles || { err "failed pulling public dotfiles; it's required!"; return 1; }
@@ -1704,7 +1711,7 @@ fetch_castles() {
             unset GIT_SSL_NO_VERIFY
             ;;
         personal)
-            clone_or_link_castle -H "layr/$(basename -- "$PRIVATE__DOTFILES")" bitbucket.org || err "failed pulling personal dotfiles; won't abort"
+            clone_or_link_castle -HS "layr/$(basename -- "$PRIVATE__DOTFILES")" bitbucket.org || err "failed pulling personal dotfiles; won't abort"
             ;;
         *)
             err "unexpected \$PROFILE [$PROFILE]"; exit 1
@@ -1712,7 +1719,7 @@ fetch_castles() {
     esac
 
     if [[ -n "$PLATFORM" ]]; then
-        clone_or_link_castle -H "laur89/$(basename -- "$PLATFORM_DOTFILES")" || err "failed pulling platform-specific dotfiles for [$PLATFORM]; won't abort"
+        clone_or_link_castle -HS "laur89/$(basename -- "$PLATFORM_DOTFILES")" || err "failed pulling platform-specific dotfiles for [$PLATFORM]; won't abort"
     fi
 
     #while true; do
@@ -6435,10 +6442,6 @@ full_install() {
 
     [[ -z "$MANUAL_LOG_LVL" ]] && LOGGING_LVL=10
     readonly MODE=1
-
-    if ! is_proc_running ssh-agent; then
-        eval "$(ssh-agent)"
-    fi
 
     setup
 
