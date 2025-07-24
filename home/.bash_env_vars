@@ -119,7 +119,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     #export HGRCPATH="$HOME/.config/hg/hgrc"
     export PASSWORD_STORE_DIR="$HOME/.config/password-store"  # used by pass?
     export GNUPGHOME="$HOME/.gnupg"
-    export GPGKEY=515503C58074FAB0  # key-id of our default key
+    export GPGKEY=515503C58074FAB0  # key-id of our default key; aka 'long key-id', being last 16 chars of the key-id, which is 160bit fingerprint for a key
 
     # Update RC file locations for apps that don't support XDG:
     #export GTK2_RC_FILES="$HOME/.config/gtk-2.0/gtkrc"
@@ -208,7 +208,7 @@ export PAGER=less
 export BROWSER=/usr/bin/firefox
 
 # see https://github.com/wofr06/lesspipe/discussions/167#discussioncomment-13530997 :
-export LESSOPEN='|/usr/local/bin/lesspipe.sh %s'  # used e.g. for zsh preview, by https://github.com/Freed-Wu/fzf-tab-source
+[[ -x /usr/local/bin/lesspipe.sh ]] && export LESSOPEN='|/usr/local/bin/lesspipe.sh %s'  # used e.g. for zsh preview, by https://github.com/Freed-Wu/fzf-tab-source
 
 # Colorize less (from http://unix.stackexchange.com/questions/119/colors-in-man-pages)
 # get color support for less:
@@ -367,16 +367,17 @@ export PERL5LIB="$PERL_BASE/lib/perl5"
 ###############################
 # android sdk installed via apt:
 [[ ! -d "$BASE_PROGS_DIR/android" ]] || export ANDROID_HOME="$BASE_PROGS_DIR/android"
-
 # Note  "$ANDROID_HOME/platform-tools"  would give us tools such as adb, but atm we install it from apt
+
+###############################
 # add additional locations to PATH if not already present:
 j=''
 for i in \
         /usr/local/sbin \
         /usr/sbin \
         /sbin \
-        "$HOME/bin" \
-        "$HOME/.local/bin" \
+        "$HOME/bin:F" \
+        "$HOME/.local/bin:F" \
         "$GRADLE_HOME/bin" \
         "$HOME/.yarn/bin" \
         /usr/local/go/bin \
@@ -394,12 +395,15 @@ for i in \
         "$BASE_DATA_DIR/dev/scripts/git" \
         "$BASE_DATA_DIR/dev/scripts/shell" \
             ; do
-    if [[ ":${PATH}:" != *":${i}:"* && -d "$i" ]]; then
+    IFS=: read -r i opts <<< "$i"
+
+    # add to PATH if dir exists, OR has force (F) option set:
+    if [[ ":${PATH}:" != *":${i}:"* ]] && [[ "$opts" == *F* || -d "$i" ]]; then
         j+="$i:"
     fi
 done
 [[ -n "$j" ]] && export PATH="${j}$PATH"
-unset i j
+unset i j opts
 ###############################
 
 # load our env/system specific overrides:
