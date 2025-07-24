@@ -325,36 +325,7 @@ fi
 
 # compile .ssh/config
 ##########################################
-__check_for_change_and_compile_ssh_config() {
-    local stored_md5sum ssh_config ssh_configdir modified current_md5sum stored_md5sum_exist
-
-    readonly stored_md5sum="$_PERSISTED_TMP/.last_known_sshconfigdir_md5sum"
-    readonly ssh_config="$HOME/.ssh/config"
-    readonly ssh_configdir="$HOME/.ssh/config.d"  # dir holding the ssh config files that will be
-                                                  # merged into a single $ssh_config
-
-    if [[ -d "$ssh_configdir" ]] && ! is_dir_empty "$ssh_configdir"; then
-        cd "$ssh_configdir" || return 1  # move to $ssh_configdir, since we execute find relative to curr dir;
-        current_md5sum="$(find -L . -type f -exec md5sum -- '{}' \+ | sort -k 34 | md5sum)" || { err 'md5summing configdir failed' "$FUNCNAME"; return 1; }
-        test -s "$stored_md5sum"; stored_md5sum_exist=$?
-
-        if [[ "$stored_md5sum_exist" -eq 0 && "$(cat -- "$stored_md5sum")" != "$current_md5sum" ]] \
-                || ! [[ -e "$ssh_config" ]]; then
-            # cat, not move ssh/config, as it's likely a symlink!
-            [[ -f "$ssh_config" ]] && cat -- "$ssh_config" > "${ssh_config}.bak.$(date -Ins)"
-            cat -- "$ssh_configdir"/* >| "$ssh_config"
-            sanitize_ssh "$HOME/.ssh"
-            modified=1
-        fi
-
-        # avoid pointless $stored_md5sum writing:
-        [[ "$modified" == 1 || "$stored_md5sum_exist" -ne 0 ]] && echo -n "$current_md5sum" >| "$stored_md5sum"
-    fi
-
-    return 0
-}
-
-__check_for_change_and_compile_ssh_config &
+__check_for_change_and_compile_ssh_config.sh &
 disown $!
 ########################################## fzf
 # https://github.com/junegunn/fzf#setting-up-shell-integration
