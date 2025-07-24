@@ -6804,7 +6804,7 @@ install_gruvbox_gtk_theme() {
     install_block 'gtk2-engines-murrine gnome-themes-extra sassc'
 
     clone_or_pull_repo "Fausto-Korpsvart" "Gruvbox-GTK-Theme" "$BASE_PROGS_DIR"
-    execute "$BASE_PROGS_DIR/Gruvbox-GTK-Theme/install.sh" || err "gruvbox theme installation failed w/ $?"  # TODO: sandbox! needs write access only to ~/.themes
+    execute "$BASE_PROGS_DIR/Gruvbox-GTK-Theme/themes/install.sh" || err "gruvbox theme installation failed w/ $?"  # TODO: sandbox! needs write access only to ~/.themes
 }
 
 
