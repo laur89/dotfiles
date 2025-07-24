@@ -3,4 +3,4 @@
 usage = "latest"
 java = "lts"
 node = "lts"
-python = {version='3.12'}
+#python = {version='3.12'}  # caused some issues, best continue using system py version for global
