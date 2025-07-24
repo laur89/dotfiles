@@ -3337,7 +3337,7 @@ install_kustomize() {  # https://github.com/kubernetes-sigs/kustomize
 # kubernetes (k8s) cli management
 # tag: aws, k8s, kubernetes
 install_k9s() {  # https://github.com/derailed/k9s
-    install_bin_from_git -N k9s derailed/k9s  _linux_amd64.tar.gz
+    install_bin_from_git -N k9s derailed/k9s  _Linux_amd64.tar.gz
 }
 
 # krew (kubectl plugins package manager)
@@ -6687,7 +6687,7 @@ setup_dnsmasq() {
 # verify the hosts: line has the ordering we'd expect
 #
 # note https://manpages.debian.org/testing/libnss-myhostname/nss-myhostname.8.en.html states:
-# > It is recommended to place "myhostname" after "file" and before "dns"
+# > It is recommended to place "myhostname" after "files" and before "dns"
 setup_nsswitch() {
     local conf target
 
