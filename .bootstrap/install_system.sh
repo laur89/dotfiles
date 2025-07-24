@@ -3392,17 +3392,19 @@ install_kubectl() {
 # TODO: consider replacing installation by using krew? note that likely won't install shell completion though;
 # https://github.com/ahmetb/kubectx?tab=readme-ov-file#manual-installation-macos-and-linux
 install_kubectx() {  # https://github.com/ahmetb/kubectx
-    local COMPDIR
-
     install_bin_from_git -N kubectx ahmetb/kubectx  'kubectx_.*_linux_x86_64.tar.gz'
     install_bin_from_git -N kubens  ahmetb/kubectx  'kubens_.*_linux_x86_64.tar.gz'
 
     # kubectx/kubens completion scripts:
     clone_or_pull_repo "ahmetb" "kubectx" "$BASE_PROGS_DIR" || return 1
-    COMPDIR=$(pkg-config --variable=completionsdir bash-completion)
-    [[ -d "$COMPDIR" ]] || { err "[$COMPDIR] not a dir, cannot install kube{ctx,ns} shell completion"; return 1; }
-    create_link -s "${BASE_PROGS_DIR}/kubectx/completion/kubens.bash" "$COMPDIR/kubens"
-    create_link -s "${BASE_PROGS_DIR}/kubectx/completion/kubectx.bash" "$COMPDIR/kubectx"
+
+    #local COMPDIR=$(pkg-config --variable=completionsdir bash-completion)
+    #[[ -d "$COMPDIR" ]] || { err "[$COMPDIR] not a dir, cannot install kube{ctx,ns} shell completion"; return 1; }
+    #create_link -s "${BASE_PROGS_DIR}/kubectx/completion/kubens.bash" "$COMPDIR/kubens"
+    #create_link -s "${BASE_PROGS_DIR}/kubectx/completion/kubectx.bash" "$COMPDIR/kubectx"
+
+    create_link "$BASE_PROGS_DIR/kubectx/completion/kubens.bash" "$BASH_COMPLETIONS/kubens"
+    create_link "$BASE_PROGS_DIR/kubectx/completion/kubectx.bash" "$BASH_COMPLETIONS/kubectx"
 }
 
 # kube-ps1 - kubernets shell prompt
