@@ -5568,7 +5568,9 @@ install_from_repo() {
         mtr  # mtr combines the functionality of the 'traceroute' and 'ping' programs in a single network diagnostic tool; GUI
         whois  # whois client
         systemd-timesyncd
-        systemd-resolved
+        #systemd-resolved  # !! be careful, it's buggy; e.g. see https://github.com/systemd/systemd/issues/21123 https://github.com/systemd/systemd/issues/13432 as pointed out in https://www.reddit.com/r/linux/comments/18kh1r5/im_shocked_that_almost_no_one_is_talking_about/
+                           # NOTE: installation requires networking stack restart, see https://forums.debian.net/viewtopic.php?t=163267
+                           #       that's why its installation has been moved to preseed
         network-manager
         network-manager-gnome
         jq  # https://jqlang.github.io/jq
@@ -5596,7 +5598,7 @@ install_from_repo() {
         wyrd  # ncurses-based frontend for remind; https://gitlab.com/wyrd-calendar/wyrd
         taskwarrior  # https://taskwarrior.org/ ; executable is 'task'
         tree
-        hyperfine  # cli benchmarking tool:
+        hyperfine  # cli benchmarking tool
         #debian-goodies
         #subversion  # might be used as a dependency, e.g. by zinit plugin (no more - github no longer supports svn)
         git
@@ -6701,7 +6703,9 @@ setup_nsswitch() {
 # alternatively, you can remove your interface name from /etc/network/interfaces
 # (bottom) line; eg from 'iface wlan0 inet dhcp' to 'iface inet dhcp'
 #
-# see also: https://wiki.debian.org/Netplan
+# see also: systemd-networkd - possilby will replace NM in the future in Debian!
+# see also: https://wiki.debian.org/Netplan - write declarative network config for
+#                                             various backends such as NM or systemd-networkd
 enable_network_manager() {
     local nm_conf nm_conf_dir t
 
