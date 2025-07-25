@@ -47,13 +47,13 @@ let conf_dir = stdpath('config')
 """ vim-plug plugin manager {{{
     """ Automatically setting up, taken from
     """ https://github.com/junegunn/vim-plug/wiki/tips#automatic-installation
-        let has_plug=1
         let data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
         if empty(glob(data_dir . '/autoload/plug.vim'))
-            let has_plug=0
             echo "Installing vim-plug..."
             echo ""
             silent execute '!curl -fLo '.data_dir.'/autoload/plug.vim --create-dirs  https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+            " reset runtime, see https://github.com/junegunn/vim-plug/issues/1270 :
+            let &runtimepath = &runtimepath
             autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
         endif
 
@@ -70,13 +70,6 @@ let conf_dir = stdpath('config')
 
     " Finish vim-plug stuff
             call plug#end()
-
-    """ Installing plugins the first time; quits when done {{{
-        if has_plug == 0
-            :silent! PlugInstall --sync
-            :qa
-        endif
-    """ }}}
 """ }}}
 
 """ Local leading config, only use for prerequisites as it will be
