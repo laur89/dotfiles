@@ -172,10 +172,18 @@ endif
 
 
     """ set git editor & automatically close gitcommit nested buffer: {{{
+        " TODO: might conflict with core.editor git setting!!
+        "
         " note we only define GIT_EDITOR if NVIM_LISTEN_ADDRESS has been set by us
         " for tmux session, in which case its value contains '_userdef_' in it;
-        if has('nvim') && match($NVIM_LISTEN_ADDRESS, "_userdef_") != -1
-          let $GIT_EDITOR = 'nvr -cc split --remote-wait'
+        "if has('nvim') && match($NVIM_LISTEN_ADDRESS, "_userdef_") != -1
+          "let $GIT_EDITOR = 'nvr -cc split --remote-wait'
+          "autocmd FileType gitcommit,gitrebase,gitconfig set bufhidden=delete
+        "endif
+
+        " or use this if using tmux-nvr plugin and its wrapper script 'nvr-tmux':
+        if has('nvim')
+          let $GIT_EDITOR = 'nvr-tmux --nostart --remote-tab-wait'
           autocmd FileType gitcommit,gitrebase,gitconfig set bufhidden=delete
         endif
     """ }}}
@@ -427,6 +435,12 @@ endif
         nnor ,yf :let @"=expand("%:p")<CR>
         " Mnemonic: yank File Name:
         nnor ,fn :let @"=expand("%")<CR>
+    """ }}}
+
+    """ Command remaps {{{
+        " write file as root:
+        cmap w!! :w !sudo -A tee % 2>/dev/null
+        "cmap w!! w !sudo tee > /dev/null %
     """ }}}
 
     " Maps to resizing a window split (Warn: conflict with indentation)
