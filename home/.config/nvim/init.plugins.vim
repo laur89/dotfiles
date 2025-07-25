@@ -81,7 +81,7 @@ Plug 'airblade/vim-rooter'
 Plug 'preservim/tagbar'
 
 " Ctags generator/highlighter
-Plug 'ludovicchabant/vim-gutentags'  " alt: jsfaint/gen_tags.vim
+Plug 'ludovicchabant/vim-gutentags'  " last commit in '23
 
 "Plug 'xolox/vim-misc'  " remove once we no longer use any of xolox' plugins that use vim-misc as dependency
 "Plug 'xolox/vim-session'  " TODO: replace with tpope/vim-obsession?
@@ -204,6 +204,9 @@ Plug 'pangloss/vim-javascript'
 
 " tridactyl syntax
 Plug 'tridactyl/vim-tridactyl'
+
+" vim syntax for neomuttrc
+Plug 'neomutt/neomutt.vim'
 
 " show search window as 'at match # out of # matches':
 " looks like now supported natively by vim/nvim? see 'set shortmess-=S' conifg
