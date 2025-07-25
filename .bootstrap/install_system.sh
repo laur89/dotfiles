@@ -6265,6 +6265,7 @@ choose_single_task() {
 
     source_shell_conf
     setup_install_log_file
+    setup_dirs  # has to come after $SHELL_ENVS sourcing so the env vars are in place
 
 
     # note choices need to be valid functions
