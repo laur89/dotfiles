@@ -80,9 +80,6 @@ Plug 'airblade/vim-rooter'
 " REQUIREMENTS: (exuberant)-ctags
 Plug 'preservim/tagbar'
 
-" Ctags generator/highlighter
-Plug 'ludovicchabant/vim-gutentags'  " last commit in '23
-
 "Plug 'xolox/vim-misc'  " remove once we no longer use any of xolox' plugins that use vim-misc as dependency
 "Plug 'xolox/vim-session'  " TODO: replace with tpope/vim-obsession?
 "Plug 'xolox/vim-notes'  " alternative: http://orgmode.org/
