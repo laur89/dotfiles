@@ -8273,7 +8273,7 @@ popd() {
 
 
 cleanup() {
-    [[ "$__CLEANUP_EXECUTED_MARKER" -eq 1 ]] && return  # don't invoke more than once.
+    [[ "$__CLEANUP_EXECUTED_MARKER" -eq 1 || -z "$MODE" ]] && return  # don't invoke more than once.
 
     [[ -s "$NPMRC_BAK" ]] && mv -- "$NPMRC_BAK" ~/.npmrc   # move back
 
@@ -8333,7 +8333,6 @@ shift "$((OPTIND-1))"; unset OPT_
 readonly PROFILE="$1"   # work | personal
 
 [[ "$EUID" -eq 0 ]] && { err "don't run as root."; exit 1; }
-trap 'cleanup; exit' EXIT HUP INT QUIT PIPE TERM;
 
 validate_and_init
 check_dependencies
@@ -8342,6 +8341,7 @@ check_dependencies
 #is_native || execute "rdate -s tick.greyware.com"
 #is_native || execute "tlsdate -V -n -H encrypted.google.com"
 is_native || update_clock || exit 1  # needs to be done _after_ check_dependencies as update_clock() uses some
+trap 'cleanup; exit' EXIT HUP INT QUIT PIPE TERM;
 
 choose_step
 
