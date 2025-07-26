@@ -9,14 +9,14 @@
 umask 0077  # keep this in sync with what we set via systemd & install_system bootstrap!
 
 # if running bash
-if [ -n "$BASH_VERSION" ]; then
-    # include .bashrc if it exists
-    if [ -f "$HOME/.bashrc" ]; then
-        source "$HOME/.bashrc"
-    fi
+#if [ -n "$BASH_VERSION" ]; then
+    ## include .bashrc if it exists
+    #if [ -f "$HOME/.bashrc" ]; then
+        #source "$HOME/.bashrc"
+    #fi
 
-    # show avail vars via   $ systemctl --user show-environment
-fi
+    ## show avail vars via   $ systemctl --user show-environment
+#fi
 
 # set PATH so it includes user's private bin if it exists
 # currently done from bashrc
@@ -27,6 +27,26 @@ fi
 ##############################################
 # siit alates kõik enda defineeritud:
 ##############################################
+
+# source own functions and env vars:
+
+if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != 'loaded' ]]; then
+    for i in \
+            "$HOME/.bash_env_vars" \
+                ; do  # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
+        if [[ -r "$i" ]]; then
+            source "$i"
+        #else
+            #echo -e "file [$i] to be sourced does not exist or is not readable!"
+        fi
+    done
+fi
+
+# this needs to be outside env_vars, unless you're gonna load those every time bashrc is loaded;
+case "$TERM" in
+    xterm* | rxvt-unicode-256color) export TERM=xterm-256color ;;
+esac
+
 select_wm() {
     echo '============'
     read -r -t 10 -p 'Enter DE/WM: ' __xsession_
