@@ -5349,6 +5349,7 @@ install_fonts() {
 
     # https://github.com/powerline/fonts
     # note this is same as 'fonts-powerline' pkg, although at least in 2021 the package didn't work
+    # TODO: unsure if it really is the same - suspect the deb pkg _only_ provides the symbols
     install_powerline_fonts() {
         local tmpdir repo ver
 
@@ -5408,9 +5409,8 @@ install_fonts() {
     enable_bitmap_rendering; unset enable_bitmap_rendering
     install_nerd_fonts; unset install_nerd_fonts
 
-    # TODO: in '21 fonts-powerline pkg didn't work; trying it again:
-    install_block fonts-powerline
-    #install_powerline_fonts; unset install_powerline_fonts  # note 'fonts-powerline' pkg in apt does not seem to work
+    #install_block fonts-powerline  # TODO: suspect this pkg contains only the symbols?
+    install_powerline_fonts; unset install_powerline_fonts  # note 'fonts-powerline' pkg in apt does not seem to work
 
     install_siji; unset install_siji
 
