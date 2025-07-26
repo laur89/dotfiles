@@ -355,7 +355,7 @@ export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 # seafile libraries: (likley referenced by our install bootstrap & other seafile-related script(s)):
-export SEAFILE_LIBS='main,secrets,notes,signal'  # list of seafile libraries to sync with
+export SEAFILE_LIBS='main,secrets,notes'  # list of seafile libraries to sync with
 
 ###############################
 # perl modules (note PATH addition happens below):
