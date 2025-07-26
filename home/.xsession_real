@@ -11,6 +11,7 @@
 ##############
 # see also:
 # - https://github.com/liskin/dotfiles/
+# - https://github.com/Freed-Wu/Freed-Wu/blob/main/.xinitrc
 
 
 # shellcheck disable=SC2155
