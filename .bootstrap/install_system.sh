@@ -5797,6 +5797,7 @@ install_from_repo() {
         gammastep  # redshift alternative: https://gitlab.com/chinstrap/gammastep ; should support some wayland as well
         geoclue-2.0  # D-Bus geoinformation service; https://gitlab.freedesktop.org/geoclue/geoclue/
         podman
+        podman-docker  # installs a Docker-compatible CLI interface
         mitmproxy  # SSL-capable man-in-the-middle HTTP proxy; https://github.com/mitmproxy/mitmproxy
         #charles-proxy5  # note also avail as tarball @ https://www.charlesproxy.com/download/
         tofu
@@ -6042,6 +6043,11 @@ _setup_podman() {
         grep -qE btrfs "$conf" && err "[btrfs] in podman system conf [$conf] but we're not using btrfs!"
         grep -qE btrfs "$user_conf" && err "[btrfs] in podman user conf [$user_conf] but we're not using btrfs!"
     fi
+
+    # touch file to avoid msg printed to stdout whenever we use 'docker' command:
+    # msg being [Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.]
+    [[ -e /etc/containers/nodocker ]] || execute 'sudo touch /etc/containers/nodocker'
+
 }
 
 
