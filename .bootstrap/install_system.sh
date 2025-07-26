@@ -5399,7 +5399,7 @@ install_fonts() {
     enable_bitmap_rendering() {
         local file
 
-        readonly file='/etc/fonts/conf.d/70-no-bitmaps.conf'
+        readonly file='/etc/fonts/conf.d/70-no-bitmaps-except-emoji.conf'
 
         [[ -f "$file" ]] || { report "[$file] does not exist; cannot enable bitmap font render"; return 0; }
         execute "sudo rm -- '$file'"
