@@ -6034,31 +6034,27 @@ _setup_podman() {
     conf='/etc/containers/storage.conf'
     user_conf="$HOME/.config/containers/storage.conf"
 
-    [[ -f "$conf" ]] || { err "[$conf] is not a valid file. is podman installed?"; return 1; }
-
-    if is_btrfs; then
-        if grep -qE btrfs "$conf"; then
-            report "[btrfs] found in [$conf], assuming we're already set up..."
-            return 0  # make idempotent, let's not nuke/reset our existing setup
-        fi
-
-        # podman-system-reset needs to be ran before changing certain conf items: https://docs.podman.io/en/latest/markdown/podman-system-reset.1.html
-        execute 'podman system reset'  # for rootless
-        execute 'sudo podman system reset'  # for root
-        # TODO: add following: (use crudini?)
-        #
-        #[storage]
-        #driver = "btrfs"
-
-    else
-        grep -qE btrfs "$conf" && err "[btrfs] in podman system conf [$conf] but we're not using btrfs!"
-        grep -qE btrfs "$user_conf" && err "[btrfs] in podman user conf [$user_conf] but we're not using btrfs!"
-    fi
+    #[[ -f "$conf" ]] || { err "[$conf] is not a valid file. is podman installed?"; return 1; }  # doesn't exist by default
 
     # touch file to avoid msg printed to stdout whenever we use 'docker' command:
     # msg being [Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.]
-    [[ -e /etc/containers/nodocker ]] || execute 'sudo touch /etc/containers/nodocker'
+    [[ -e /etc/containers/nodocker ]] || execute 'sudo touch /etc/containers/nodocker' || return 1
 
+    if is_btrfs; then
+        if grep -qF btrfs "$conf"; then
+            report "[btrfs] found in [$conf], assuming we're already set up..."
+        else
+            # podman-system-reset needs to be ran before changing certain conf items (e.g. storage.conf): https://docs.podman.io/en/latest/markdown/podman-system-reset.1.html
+            execute 'podman system reset'  # for rootless
+            execute 'sudo podman system reset'  # for root
+
+            execute "sudo crudini --set '$conf' storage driver btrfs" || return 1
+            execute "mkdir -- '$(dirname -- "$user_conf")'" || return 1
+            execute "crudini --set '$user_conf' storage driver btrfs"
+        fi
+    else
+        grep -qF btrfs "$conf" "$user_conf" && err "[btrfs] in podman conf but we're not using btrfs!"
+    fi
 }
 
 
@@ -6474,7 +6470,7 @@ full_install() {
     is_interactive && is_native && install_nfs_server_or_client
     [[ "$PROFILE" == work ]] && exe_work_funs
     setup_btrfs  # late, so snapper won't create bunch of snapshots due to apt operations
-    _setup_podman
+    is_pkg_installed podman && _setup_podman
 
     remind_manually_installed_progs
 }
