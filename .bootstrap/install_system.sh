@@ -5306,6 +5306,7 @@ install_fonts() {
         fonts-font-awesome
     '
 
+    # note alternative bitmap font tool to fontforge is bitsnpicas
     is_native && install_block 'fontforge gucharmap'
 
     # https://github.com/ryanoasis/nerd-fonts#option-7-install-script
@@ -5396,17 +5397,21 @@ install_fonts() {
     }
 
     # see  https://wiki.archlinux.org/index.php/Font_configuration#Disable_bitmap_fonts
+    #
+    # to list font families, do [fc-list -f '%{family[0]}\n' | bat]
+    # NOTE: should no longer be needed, as we're now enabling specific bitmap fonts
+    #       explicitly in ~/.config/fontconfig/fonts.conf
     enable_bitmap_rendering() {
-        local file
+        local bitmap_no bitmap_yes
 
-        readonly file='/etc/fonts/conf.d/70-no-bitmaps-except-emoji.conf'
+        readonly bitmap_no='/etc/fonts/conf.d/70-no-bitmaps-except-emoji.conf'
+        readonly bitmap_yes='/usr/share/fontconfig/conf.avail/70-yes-bitmaps.conf'
 
-        [[ -f "$file" ]] || { report "[$file] does not exist; cannot enable bitmap font render"; return 0; }
-        execute "sudo rm -- '$file'"
-        return $?
+        [[ ! -h "$bitmap_no" ]] || execute "sudo rm -- '$bitmap_no'" || return $?
+        [[ ! -f "$bitmap_yes" ]] || create_link -s "$bitmap_yes" /etc/fonts/conf.d/
     }
 
-    enable_bitmap_rendering; unset enable_bitmap_rendering
+    #enable_bitmap_rendering; unset enable_bitmap_rendering
     install_nerd_fonts; unset install_nerd_fonts
 
     #install_block fonts-powerline  # TODO: suspect this pkg contains only the symbols?
@@ -5883,6 +5888,8 @@ install_from_repo() {
 # - not able to read image files: https://unix.stackexchange.com/questions/796179/unable-to-create-libvirt-domain-persmission-denied-reading-os-iso
 # - also deleting snapshots fail. and when we delete the whole domain/vm, then
 #   they're gone in virt-manager, but files are still at /var/lib/libvirt/images/ !!!
+# - if you get error [Requested operation is not valid: network 'default' is not active],
+#   see https://blog.programster.org/kvm-missing-default-network
 install_kvm() {
     # virt-install - cli utils to create & edit virt machines
     install_block -f '
