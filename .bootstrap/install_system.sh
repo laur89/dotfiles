@@ -6872,7 +6872,7 @@ install_open_eid() {
     install_block -f 'opensc  open-eid' || return 1
 
     # Configure Chrome/Firefox PKCS11 driver for current user, /etc/xdg/autstart/ will init other users on next logon
-    execute '/usr/bin/pkcs11-register'
+    execute '/usr/bin/pkcs11-register --skip-chrome=off --skip-firefox=off'
 }
 
 
