@@ -2477,7 +2477,7 @@ install_own_builds() {
     install_ueberzugpp
     #install_hblock
     install_open_eid
-    install_binance
+    #install_binance
     install_electrum_wallet
     install_revanced
     install_apkeditor
