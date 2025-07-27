@@ -5414,8 +5414,8 @@ install_fonts() {
     #enable_bitmap_rendering; unset enable_bitmap_rendering
     install_nerd_fonts; unset install_nerd_fonts
 
-    #install_block fonts-powerline  # TODO: suspect this pkg contains only the symbols?
-    install_powerline_fonts; unset install_powerline_fonts  # note 'fonts-powerline' pkg in apt does not seem to work
+    install_block fonts-powerline
+    #install_powerline_fonts; unset install_powerline_fonts
 
     install_siji; unset install_siji
 
