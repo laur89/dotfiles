@@ -1477,7 +1477,9 @@ install_deps() {
 
     # colorscheme generator:
     # see also complementing script @ https://github.com/dylanaraps/bin/blob/master/wal-set
-    # rust alternative to pywal: https://codeberg.org/explosion-mental/wallust
+    # alternatives to pywal:
+    #   - rust: https://codeberg.org/explosion-mental/wallust
+    #   - c: https://github.com/danihek/hellwal
     py_install pywal16          # https://github.com/eylles/pywal16/wiki/Installation#pip-install
 
     # consider also perl alternative @ https://github.com/pasky/speedread
@@ -6052,8 +6054,8 @@ _setup_podman() {
             execute "mkdir -- '$(dirname -- "$user_conf")'" || return 1
             execute "crudini --set '$user_conf' storage driver btrfs"
         fi
-    else
-        grep -qF btrfs "$conf" "$user_conf" && err "[btrfs] in podman conf but we're not using btrfs!"
+    elif grep -qF btrfs "$conf" "$user_conf"; then
+        err "[btrfs] in podman storage.conf but we're not using btrfs!"
     fi
 }
 
@@ -6088,7 +6090,7 @@ _setup_snapper() {
         name="$1"
         mountpoint="$2"
 
-        mp="$mountpoint"; [[ "$mp" != */ ]] && mp+='/'
+        mp="${mountpoint%%+(/)}/"  # ${mountpoint%%+(/)} removes any number of trailing slashes
 
         if [[ -n "$custom" ]]; then
             # The default way that snapper works is to automatically create a new subvolume
@@ -6101,7 +6103,7 @@ _setup_snapper() {
         fi
 
         # create new config(s):
-        # this will likely crate a new .snapshots/ dir as well a new btrfs subvol
+        # this will likely create a new .snapshots/ dir as well a new btrfs subvol
         # of same name. we will rm this new subvol and link our own @snapshots
         # subvol to this path, so our snapshots are safely stored in different location.
         execute "sudo snapper -c $name create-config $mountpoint" || return 1  # note returns 1 if $mountpoint is already covered
@@ -6133,7 +6135,7 @@ _setup_snapper() {
     _enable -c home /home
 
     ######################################################################
-    execute "sudo systemctl disable snapper-boot.timer"  # disable taking snapshot of root at boot
+    execute "sudo systemctl disable snapper-boot.timer"  # disable taking snapshot of @root at boot
     execute "sudo systemctl enable snapper-timeline.timer"
     execute "sudo systemctl enable snapper-cleanup.timer"
 
@@ -6262,8 +6264,7 @@ choose_step() {
           'full-install' ) full_install ;;
           ''             ) exit 0 ;;
           *) err "unsupported choice [$__SELECTED_ITEMS]"
-             exit 1
-             ;;
+             exit 1 ;;
        esac
     fi
 }
