@@ -500,8 +500,8 @@ zinit id-as depth'1' wait lucid for Freed-Wu/zsh-colorize-functions
 # new shells, unless plugin is already loaded or pwd is not HOME:
 #zinit id-as depth'1' for mdumitru/last-working-dir
 
-# uses the apt pkg command_not_found_handler:
-#zinit id-as depth'1' wait lucid for Freed-Wu/zsh-command-not-found
+# uses the apt pkg command-not-found:
+zinit id-as depth'1' wait lucid for Freed-Wu/zsh-command-not-found
 
 # consider easy-motion: https://github.com/IngoMeyer441/zsh-easy-motion
 # possibly conflicts w/ zsh-system-clipboard as noted in https://github.com/Freed-Wu/Freed-Wu/blob/main/.zshrc
