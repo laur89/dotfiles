@@ -2453,6 +2453,7 @@ install_own_builds() {
     #install_obsidian
     install_delta
     install_dust
+    #install_bandwhich
     install_peco
     install_fd
     install_jd
@@ -4049,6 +4050,12 @@ install_dust() {  # https://github.com/bootandy/dust
 }
 
 
+# CLI bandwidth utilization tool
+install_bandwhich() {  # https://github.com/imsnif/bandwhich
+    install_bin_from_git -N bandwhich  imsnif/bandwhich 'x86_64-unknown-linux-gnu.tar.gz'
+}
+
+
 # https://asdf-vm.com/guide/getting-started.html
 # node (and others) version manager
 # alternatives:
@@ -5498,6 +5505,7 @@ install_from_repo() {
         xorg
         #x11-apps  # already a dependecy of xorg
         #xinit  # xinit and startx are programs which facilitate starting an X server, and loading a base X session; already dependency of xorg
+        psmisc  # miscellaneous utilities that use the proc FS, e.g. killall & pstree
         ssh-askpass  # under X, asks user for a passphrase for ssh-add; TODO: x11?
         alsa-utils  # Utilities for configuring and using ALSA, e.g. alsactl, alsamixer, amixer, aplay...
         pipewire
@@ -5553,7 +5561,7 @@ install_from_repo() {
     # for .NET dev, consider also nuget pkg;
     declare -ar block2_nonwin=(
         wireshark
-        iptraf-ng  # ncurses-based IP LAN monitor that generates various network statistics; https://github.com/iptraf-ng/iptraf-ng
+        iptraf-ng  # ncurses-based IP LAN monitor that generates various network statistics, including bandwidth; https://github.com/iptraf-ng/iptraf-ng
         rsync
         wireguard
         #tailscale  # note depends on custom apt entry
@@ -6372,6 +6380,7 @@ __choose_prog_to_build() {
         install_eza
         install_delta
         install_dust
+        install_bandwhich
         install_peco
         build_i3
         install_i3
