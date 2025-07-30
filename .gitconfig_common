@@ -173,6 +173,8 @@
     ;branch-delete = branch -D -r -f  # delete branch locally & on the remote
     delete-branch = branch-delete
 
+    fixup = "!f() { [ -z "$(git diff --name-only --staged)" ] && echo 'no changes staged' && return 1; git commit --fixup=$1 && git rebase -i --autosquash --autostash $1~1; }; f"
+
 [gitflow "branch"]
     master = master
     develop = develop
