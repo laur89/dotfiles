@@ -216,6 +216,7 @@ export LESS="$LESS -FRXKi"  # note -r flag might cause problems, so avoid it: ht
 export MANPAGER='less -s -M +Gg'  # display scroll percentage in manpages
                                   # TODO: consider using bat as pager: https://github.com/sharkdp/bat#man
 export LESSCOLORIZER='batcat --theme=default'       # from https://github.com/wofr06/lesspipe
+export LESSUTFCHARDEF=e000-f8ff:p,f0001-fffff:p  # enable glyphs in less; from https://github.com/ryanoasis/nerd-fonts/wiki/FAQ-and-Troubleshooting#less-settings
 export GROFF_NO_SGR=1                  # for konsole and gnome-terminal
 # colorize:
 # ------- color 1
