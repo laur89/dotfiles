@@ -205,6 +205,7 @@ endif
     """ Search and replace {{{
         set gdefault                                " default s//g (global); note adding /g toggles global!
         set incsearch                               " "live"-search, ie incremental search
+        set inccommand=split                        " see a live preview when :substitute-ing
     """ }}}
 
     """ Matching {{{

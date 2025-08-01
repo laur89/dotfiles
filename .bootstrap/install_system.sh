@@ -5148,6 +5148,8 @@ install_neovide() {  # rust-based GUI front-end to neovim
 
 # https://github.com/helix-editor/helix
 # also available in apt repo
+# see also:
+# - kakoune - https://github.com/mawww/kakoune (avail on apt)
 install_helix() {
     #install_bin_from_git -N hx helix-editor/helix 'x86_64.AppImage'
     #install_bin_from_git -N hx -n hx  helix-editor/helix '-x86_64-linux.tar.xz'
