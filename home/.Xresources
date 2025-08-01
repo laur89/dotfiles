@@ -207,8 +207,8 @@ URxvt.lineSpace: 1
 !URxvt.font: xft:Terminess Nerd Font Mono:size=12:antialias=true:hinting=false:autohint=false
 !URxvt.boldFont: xft:Terminess Nerd Font Mono:style=bold:size=12:antialias=true:hinting=false:autohint=false
 ! this ver works, only if the nerd fonts are added as a fallback (ie 2nd font):
-URxvt.font: xft:xos4 Terminess Powerline:pixelsize=14:antialias=false:hinting=false:autohint=false, xft:Terminess Nerd Font Mono:pixelsize=18:antialias=false:hinting=false:autohint=false
-URxvt.boldFont: xft:xos4 Terminess Powerline:style=bold:pixelsize=14:antialias=false:hinting=false:autohint=false, xft:Terminess Nerd Font Mono:bold:pixelsize=18:antialias=false:hinting=false:autohint=false
+URxvt.font: xft:xos4 Terminess Powerline:pixelsize=14:antialias=false:hinting=false:autohint=false, xft:Terminess Nerd Font Mono:pixelsize=14:antialias=false:hinting=false:autohint=false
+URxvt.boldFont: xft:xos4 Terminess Powerline:style=bold:pixelsize=14:antialias=false:hinting=false:autohint=false, xft:Terminess Nerd Font Mono:bold:pixelsize=14:antialias=false:hinting=false:autohint=false
 
 !! tewi (conf from https://github.com/mohabaks/dotfiles/blob/master/.x/.Xresources)
 !#define fonts xft:Tewi:size=7
