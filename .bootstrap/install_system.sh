@@ -5320,14 +5320,14 @@ install_fonts() {
 
     # https://github.com/ryanoasis/nerd-fonts#option-7-install-script
     install_nerd_fonts() {
-        local tmpdir fonts repo ver i
+        local tmpdir fonts repo ver i opts
 
         readonly tmpdir="$TMP_DIR/nerd-fonts-${RANDOM}"
         fonts=(
             Hack
             SourceCodePro
             AnonymousPro
-            Terminus
+            Terminus:M
             Ubuntu
             UbuntuMono
             DejaVuSansMono
@@ -5347,7 +5347,9 @@ install_fonts() {
 
         report "installing nerd-fonts..."
         for i in "${fonts[@]}"; do
+            IFS=: read -r i opts <<< "$i"
             execute -i "./install.sh '$i'"
+            [[ "$opts" == *M* ]] && execute -i "./install.sh --mono '$i'"  # mono variant needs explicit installation, see https://github.com/ryanoasis/nerd-fonts/discussions/1903#discussioncomment-13948180
         done
 
         execute "popd"
