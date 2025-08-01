@@ -40,7 +40,7 @@ readonly BUILD_DOCK='deb-build-box'              # name of the build container
 readonly DEB_STABLE=bookworm                    # current _stable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
 readonly DEB_OLDSTABLE=bullseye                 # current _oldstable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
 
-readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:138.0) Gecko/20100101 Firefox/138.0'
+readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:141.0) Gecko/20100101 Firefox/141.0'
 #------------------------
 #--- Global Variables ---
 #------------------------
@@ -1610,7 +1610,7 @@ setup_dirs() {
     elif ! [[ -d "$CUSTOM_LOGDIR" ]]; then
         report "[$CUSTOM_LOGDIR] does not exist, creating..."
         execute "sudo mkdir -- $CUSTOM_LOGDIR"
-        execute "sudo chown root:laur -- $CUSTOM_LOGDIR"
+        execute "sudo chown root:$USER -- $CUSTOM_LOGDIR"
         execute "sudo chmod 'u=rwX,g=rwX,o=' -- $CUSTOM_LOGDIR"
     fi
 }
@@ -7977,7 +7977,7 @@ is_efi() {
 
 
 # pass '-s' as first arg to execute as sudo
-# pass '-c' if $1 is a dir whose contents' should each be symlinked to directory at $2
+# pass '-c' if $1 is a dir whose contents should each be symlinked to directory at $2
 #
 # second arg, the target, should end with a slash if a containing dir is meant to be
 # passed, not a literal path to the link-to-be-created. in this case dir needs to exist,
