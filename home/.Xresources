@@ -7,7 +7,7 @@
 Xft.autohint: 0
 Xft.antialias: 1
 Xft.hinting: 1
-Xft.hintstyle: hintfull
+Xft.hintstyle: hintslight
 !Xft*dpi: 96
 !Xft*dpi: 120
 ! note rgba setting is monitor-dependent; test can be cound here: http://www.lagom.nl/lcd-test/subpixel.php
@@ -204,11 +204,11 @@ URxvt.lineSpace: 1
 !URxvt.font: xft:Terminess Powerline:pixelsize=14:antialias=false:hinting=false:autohint=false, xft:Terminess Powerline:pixelsize=16:antialias=false:hinting=false:autohint=false
 !URxvt.boldFont: xft:Terminess Powerline:style=bold:pixelsize=14:antialias=false:hinting=false:autohint=false, xft:Terminess Powerline:bold:pixelsize=16:antialias=false:hinting=false:autohint=false
 ! terminess/terminus - closest okay with nerd-fonts devicons patched in; still blurry and off though:
-!URxvt.font: xft:TerminessTTF Nerd Font Mono:size=12:antialias=true:hinting=false:autohint=false
-!URxvt.boldFont: xft:TerminessTTF Nerd Font Mono:style=bold:size=12:antialias=true:hinting=false:autohint=false
+!URxvt.font: xft:Terminess Nerd Font Mono:size=12:antialias=true:hinting=false:autohint=false
+!URxvt.boldFont: xft:Terminess Nerd Font Mono:style=bold:size=12:antialias=true:hinting=false:autohint=false
 ! this ver works, only if the nerd fonts are added as a fallback (ie 2nd font):
-URxvt.font: xft:xos4 Terminess Powerline:pixelsize=14:antialias=false:hinting=false:autohint=false, xft:TerminessTTF Nerd Font Mono:pixelsize=18:antialias=false:hinting=false:autohint=false
-URxvt.boldFont: xft:xos4 Terminess Powerline:style=bold:pixelsize=14:antialias=false:hinting=false:autohint=false, xft:TerminessTTF Nerd Font Mono:bold:pixelsize=18:antialias=false:hinting=false:autohint=false
+URxvt.font: xft:xos4 Terminess Powerline:pixelsize=14:antialias=false:hinting=false:autohint=false, xft:Terminess Nerd Font Mono:pixelsize=18:antialias=false:hinting=false:autohint=false
+URxvt.boldFont: xft:xos4 Terminess Powerline:style=bold:pixelsize=14:antialias=false:hinting=false:autohint=false, xft:Terminess Nerd Font Mono:bold:pixelsize=18:antialias=false:hinting=false:autohint=false
 
 !! tewi (conf from https://github.com/mohabaks/dotfiles/blob/master/.x/.Xresources)
 !#define fonts xft:Tewi:size=7
