@@ -318,10 +318,14 @@ fi
 zstyle ':completion:*' completer _expand _complete _ignored _approximate
 # mathcer-list be set to a list of match specifications that are to be applied everywhere, see https://zsh.sourceforge.io/Doc/Release/Completion-Widgets.html#Completion-Matching-Control :
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+#zstyle ':completion:*' matcher-list 'b:=*'  # this should match all substrings, not just prefix
 zstyle ':completion:*' menu no  # force zsh not to show completion menu, which allows fzf-tab to capture the unambiguous prefix
 zstyle ':completion:*' select-prompt '%SScrolling active: current selection at %p%s'
-zstyle ':completion:*:descriptions' format '[%d]'
 #zstyle ':completion:*:descriptions' format '%U%F{yellow}%d%f%u'  # fzf-tab will ignore escape sequences like %F{red}
+zstyle ':completion:*:descriptions' format '[%d]'
+zstyle ':completion:*:*:*:*:corrections' format '%F{yellow}> %d:%f'
+zstyle ':completion:*:*:*:*:messages' format ' %F{purple} -- %d --%f'
+zstyle ':completion:*:*:*:*:warnings' format ' %F{red}-- no matches found --%f'
 zstyle ':completion:complete:*:options' sort false
 #zstyle ':completion:*:processes' command 'ps -au$USER'
 zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm,cmd -w -w"
