@@ -40,10 +40,12 @@ shift "$((OPTIND - 1))"
 # TODO: can we grep ID=1000 username from /etc/passwd or elsewhere, and make /home/<user>/.cache a separate BTRFS subvolume and I mark that directory as nodatacow
 if [ $# -eq 0 ]; then
     # default subvolume-to-mountpoint mappings to create:
+    # - note /var/log/journal is automatically set NOCOW, so no need to do it ourselves
     set -- 'snapshots/@root:.snapshots' \
            '@home:home' \
            'snapshots/@home:home/.snapshots' \
            '@data:data' \
+           '@nocow:data/nocow:NOCOW' \
            '@progs:progs' \
            '@opt:opt' \
            'var/@log:var/log' \
