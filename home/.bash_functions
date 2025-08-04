@@ -52,10 +52,12 @@ aptclean() {
     sudo apt-get clean
     sudo apt-get autoremove
 
-    # TODO: instead of nuking $apt_lists_dir, consider   apt-get distclean
+    # TODO: instead of nuking $apt_lists_dir contents, consider  # apt-get distclean
     if [[ -d "$apt_lists_dir" ]]; then
-        report "deleting contents of [$apt_lists_dir]" "$FUNCNAME"
-        is_dir_empty "$apt_lists_dir" || sudo rm -rf "$apt_lists_dir"/*
+        if ! is_dir_empty "$apt_lists_dir"; then
+            report "deleting contents of [$apt_lists_dir]" "$FUNCNAME"
+            sudo rm -rf "$apt_lists_dir"/*
+        fi
     else
         err "[$apt_lists_dir] is not a dir; can't delete the contents in it." "$FUNCNAME"
     fi
