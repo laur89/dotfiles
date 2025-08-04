@@ -7209,9 +7209,9 @@ configure_updatedb() {
     local conf paths line i modified
 
     conf='/etc/updatedb.conf'
-    # */.snapshots are snapper/btrfs location
-    paths=(/mnt /media /var/cache /data/seafile-data "$HOME/.cache" "$HOME/.snapshots" /.snapshots)  # paths to be added to PRUNEPATHS definition
+    paths=(/mnt /media /var/cache /data/seafile-data "$HOME/.cache")  # paths to be added to PRUNEPATHS definition
 
+    is_btrfs && paths+=("$HOME/.snapshots" /.snapshots)  # */.snapshots are snapper/btrfs location
     [[ -s "$conf" ]] || { err "[$conf] not a nonempty file"; return 1; }
     line="$(grep -Po '^PRUNEPATHS="\K.*(?="$)' "$conf")"  # extract the value between quotes
 
