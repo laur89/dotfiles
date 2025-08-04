@@ -15,6 +15,8 @@
 # see also:
 # - https://github.com/romkatv/dotfiles-public/blob/master/bin/setup-machine.sh
 #   - has some WSL logic as well; note they install dbus-x11 if wsl - why's that?
+# - ansible playbooks:
+#   - https://gitlab.com/folliehiyuki/sysconfig
 #
 #------------------------
 #---   Configuration  ---
@@ -2454,6 +2456,7 @@ install_own_builds() {
     install_delta
     install_dust
     #install_bandwhich
+    is_btrfs && install_btdu
     install_peco
     install_fd
     install_jd
@@ -3831,6 +3834,8 @@ _setup_minikube() {  # TODO: unfinished
 
 
 # https://github.com/kubernetes/minikube
+# - alternatives:
+#  - [podman kube play] takes k8s yml mainfest and runs it on podman w/o needing k8s; merely k8s emulation, but good for local testing
 install_minikube() {  # https://minikube.sigs.k8s.io/docs/start/
     # from github releases...:
     #install_from_git  kubernetes/minikube  'minikube_[-0-9.]+.*_amd64.deb'
@@ -4053,6 +4058,16 @@ install_dust() {  # https://github.com/bootandy/dust
 # CLI bandwidth utilization tool
 install_bandwhich() {  # https://github.com/imsnif/bandwhich
     install_bin_from_git -N bandwhich  imsnif/bandwhich 'x86_64-unknown-linux-gnu.tar.gz'
+}
+
+
+# sampling disk usage profiler for btrfs, ie ncdu for btrfs
+# see also:
+# - https://github.com/kimono-koans/httm
+#   - can be used to take snapshots of given data using inotifywait: https://kimono-koans.github.io/inotifywait/
+#   - for continuous snapshots however zfs/btrfs are still the wrong tool, you'd need something like NILFS
+install_btdu() {  # https://github.com/CyberShadow/btdu
+    install_bin_from_git -N btdu  CyberShadow/btdu 'btdu-static-x86_64'
 }
 
 
@@ -5819,7 +5834,7 @@ install_from_repo() {
         podman-docker  # installs a Docker-compatible CLI interface
         uidmap  # needed to run podman containers as non-root; note it's also a recommended pkg for podman; see https://forum.openmediavault.org/index.php?thread/42841-podman-seams-to-miss-uidmap/
         passt   # needed for non-root podman container networking; note it's also a recommended pkg for podman;
-        # slirp4netns   # think fills similar needs to passt/pasta, but is older; also recommended pkg for podman
+        # slirp4netns   # fills similar needs to passt/pasta, but is older; also recommended pkg for podman
         criu  # utilities to checkpoint and restore processes in userspace; It can freeze a running container (or an individual application) and checkpoint its state to disk
         mitmproxy  # SSL-capable man-in-the-middle HTTP proxy; https://github.com/mitmproxy/mitmproxy
         #charles-proxy5  # note also avail as tarball @ https://www.charlesproxy.com/download/
@@ -6042,17 +6057,31 @@ setup_btrfs() {
 }
 
 
+# rootless tutorial: https://github.com/containers/podman/blob/main/docs/tutorials/rootless_tutorial.md
+# alternatives:
+# - containerd + nerdctl
 _setup_podman() {
-    local conf user_conf
-
-    conf='/etc/containers/storage.conf'
-    user_conf="$HOME/.config/containers/storage.conf"
-
-    #[[ -f "$conf" ]] || { err "[$conf] is not a valid file. is podman installed?"; return 1; }  # doesn't exist by default
+    [[ -d /etc/containers ]] || { err "[/etc/containers] is not a dir. is podman installed?"; return 1; }
 
     # touch file to avoid msg printed to stdout whenever we use 'docker' command:
     # msg being [Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.]
     [[ -e /etc/containers/nodocker ]] || execute 'sudo touch /etc/containers/nodocker' || return 1
+
+    return 0  # atm not using btrfs storage driver, as it's not really recommended by the devs
+
+    local conf user_conf user_storage
+    conf='/etc/containers/storage.conf'
+    user_conf="$HOME/.config/containers/storage.conf"
+    #user_storage="/var/lib/containers/user-storage/$USER"
+
+    #[[ -f "$conf" ]] || { err "[$conf] is not a valid file. is podman installed?"; return 1; }  # doesn't exist by default
+
+    # by default rootless storage is @ $XDG_DATA_HOME/containers/storage
+    # change it, e.g. to benefit from a nocow dir:
+    # from https://access.redhat.com/solutions/7007159
+    #execute "sudo crudini --set '$conf' storage rootless_storage_path '\"/var/lib/containers/user-storage/\$USER'\"" || return 1  # <-- do not expand $USER!
+    #execute "sudo mkdir -p '$user_storage'"
+    #execute "sudo chown $USER:$USER '$user_storage'"  # TODO broken, as write permission should be given to entire /var/lib... dir path
 
     if is_btrfs; then
         if grep -qF btrfs "$conf"; then
@@ -6385,6 +6414,7 @@ __choose_prog_to_build() {
         install_delta
         install_dust
         install_bandwhich
+        install_btdu
         install_peco
         build_i3
         install_i3
