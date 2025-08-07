@@ -2088,8 +2088,8 @@ setup_additional_apt_keys_and_sources() {
     # latest/current key can be found from https://installer.id.ee/media/install-scripts/
     #
     # note you'll likely want to use the latest ubuntu LTS or latest, period, codename for repo.
-    #create_apt_source -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh  https://installer.id.ee/media/ubuntu/ noble main
-    create_apt_source  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub  https://installer.id.ee/media/ubuntu/ noble main
+    #create_apt_source -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh  https://installer.id.ee/media/ubuntu/ plucky main
+    create_apt_source  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub  https://installer.id.ee/media/ubuntu/ plucky main
 
     # mozilla/firefox:  https://support.mozilla.org/en-US/kb/install-firefox-linux#w_install-firefox-deb-package-for-debian-based-distributions
     create_apt_source  mozilla  https://packages.mozilla.org/apt/repo-signing-key.gpg  https://packages.mozilla.org/apt/ mozilla main
