@@ -59,10 +59,9 @@ LOGGING_LVL=0                   # execution logging level (full install mode log
                                 # don't set log level too soon; don't want to persist bullshit.
                                 # levels are currently 0, 1 and 10; 0 being no logging, 1 being the lowest (from lvl 1 to 9 only execute() errors are logged)
 NON_INTERACTIVE=0               # whether script's running non-attended
-EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%b-%y--%R).log" \
-        || readonly EXECUTION_LOG="$HOME/installation-exe.log"  # do not create logfile here! otherwise cleanup()
-                                                                # picks it up and reports of its existence, opening
-                                                                # up for false positives.
+EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%b-%y--%R).log"  # do not create logfile here! otherwise cleanup()
+                                                                        # picks it up and reports of its existence, opening
+                                                                        # up for false positives.
 SYSCTL_CHANGED=0       # states whether sysctl config got changed
 
 #------------------------
@@ -239,7 +238,7 @@ check_dependencies() {
 
 
 install_acpi_events() {
-    local file dir  acpi_target  acpi_src  tmpfile outf
+    local file dir  acpi_target  acpi_src  tmpfile
 
     readonly acpi_target='/etc/acpi/events'
     acpi_src=(
@@ -259,12 +258,8 @@ install_acpi_events() {
         for file in "$dir/"*; do
             [[ -f "$file" ]] || continue  # TODO: how to validate acpi event files? what are the rules?
             tmpfile="$TMP_DIR/.acpi_setup-$RANDOM"
-            execute "cp -- '$file' '$tmpfile'" || return 1
-            execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-
-            outf="$acpi_target/$(basename -- "$file")"
-            sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
-            execute "sudo mv -- '$tmpfile' $outf" || { err "moving [$tmpfile] to [$outf] failed w/ $?"; return 1; }
+            execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
+            execute "sudo install -m644 -CT '$tmpfile' '$acpi_target/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
         done
     done
 
@@ -273,7 +268,7 @@ install_acpi_events() {
 
 
 setup_udev() {
-    local udev_src udev_target file dir tmpfile outf
+    local udev_src udev_target file dir tmpfile
 
     readonly udev_target='/etc/udev/rules.d'
     udev_src=(
@@ -294,12 +289,8 @@ setup_udev() {
         for file in "$dir/"*; do
             [[ -s "$file" && "$file" == *.rules ]] || continue  # note we require '.rules' suffix
             tmpfile="$TMP_DIR/.udev_setup-$RANDOM"
-            execute "cp -- '$file' '$tmpfile'" || return 1
-            execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-
-            outf="$udev_target/$(basename -- "$file")"
-            sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
-            execute "sudo mv -- '$tmpfile' $outf" || { err "moving [$tmpfile] to [$outf] failed w/ $?"; return 1; }
+            execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
+            execute "sudo install -m644 -CT '$tmpfile' '$udev_target/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
         done
     done
 
@@ -310,7 +301,7 @@ setup_udev() {
 
 
 setup_pm() {
-    local pm_src pm_target file dir pm_state_dir tmpfile target outf
+    local pm_src pm_target file dir pm_state_dir tmpfile target
 
     readonly pm_target='/etc/pm'
     pm_src=(
@@ -336,12 +327,8 @@ setup_pm() {
             for file in "$pm_state_dir/"*; do
                 [[ -s "$file" ]] || continue
                 tmpfile="$TMP_DIR/.pm_setup-$RANDOM"
-                execute "cp -- '$file' '$tmpfile'" || return 1
-                execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-
-                outf="$target/$(basename -- "$file")"
-                sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
-                execute "sudo mv -- '$tmpfile' $outf" || { err "moving [$tmpfile] to [$outf] failed w/ $?"; return 1; }
+                execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
+                execute "sudo install -m755 -CT '$tmpfile' '$target/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
             done
         done
     done
@@ -399,7 +386,7 @@ setup_mail() {
 
 #
 setup_needrestart() {
-    local src_dirs target_confdir file dir tmpfile filename outf
+    local src_dirs target_confdir file dir tmpfile filename
 
     readonly target_confdir='/etc/needrestart/conf.d'
     src_dirs=(
@@ -423,12 +410,8 @@ setup_needrestart() {
             tmpfile="$TMP_DIR/.needrestart_setup-$filename"
             filename="${filename/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
 
-            execute "cp -- '$file' '$tmpfile'" || { err "copying needrestart file [$file] failed"; continue; }
-            execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || { err "sed-ing needrestart file [$file] failed"; continue; }
-
-            outf="$target_confdir/$filename"
-            sudo cmp -s "$tmpfile" "$outf" && continue  # same contents, bail -- no need to update modified timestamp
-            execute "sudo mv -- '$tmpfile' $outf" || { err "moving [$tmpfile] to [$outf] failed"; continue; }
+            execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || { err "sed-ing needrestart file [$file] failed"; continue; }
+            execute "sudo install -m644 -CT '$tmpfile' '$target_confdir/$filename'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
         done
     done
 }
@@ -450,13 +433,9 @@ setup_logind() {
     elif ! grep -q "$logind_confd" "$logind_conf"; then
         err "[$logind_confd] is not referenced/mentioned in [$logind_conf]! something's changed?"
         return 1
-    elif ! [[ -d "$logind_confd" ]]; then
-        execute "sudo mkdir -- '$logind_confd'"
     fi
 
-    if ! sudo cmp -s "$file" "$logind_confd/custom.conf"; then
-        execute "sudo cp -- $file $logind_confd/custom.conf" || return 1
-    fi
+    execute "sudo install -m644 -CTD '$file' '$logind_confd/custom.conf'" || { err "installing [$file] failed w/ $?"; return 1; }
 }
 
 
@@ -499,11 +478,8 @@ setup_systemd() {
         tmpfile="$TMP_DIR/.sysd_setup-$RANDOM"
 
         [[ -s "$in" ]] || { err "infile [$in] not a non-empty file, abort"; return 1; }  # sanity
-        execute "cat -- '$in' > '$tmpfile'" || { err "cat-ing systemd file [$in] failed"; return $?; }  # note we cat instead of cp here, as those files are possibly links
-        execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || { err "sed-ing systemd file [$in] failed"; return $?; }
-
-        ${sudo:+sudo} cmp -s "$tmpfile" "$outf" && return 0  # same contents, bail -- no need to update modified timestamp
-        execute "${sudo:+sudo }mv -- '$tmpfile' $outf" || { err "moving [$tmpfile] to [$outf] failed"; return $?; }
+        execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$in' > '$tmpfile'" || { err "sed-ing systemd file [$in] failed"; return $?; }
+        execute "${sudo:+sudo }install -m644 -CT '$tmpfile' '$outf'" || { err "installing [$tmpfile] failed"; return 1; }
         return 0
     }
 
@@ -607,7 +583,7 @@ setup_pam_login() {
 #     sudo aa-logprof
 setup_apparmor() {
     [[ "$(cat /sys/module/apparmor/parameters/enabled)" != Y ]] && err "apparmor not enabled!!"  # sanity
-    add_to_group adm  # adm used for system monitoring tasks; members can read log files etc
+    add_to_group  adm  # adm used for system monitoring tasks; members can read log files etc
 
     # as per https://wiki.debian.org/AppArmor/HowToUse :
     # if auditd is installed, then aa-notify desktop should be modified to use auditd log:
@@ -665,8 +641,9 @@ setup_hosts() {
         return 0
     }
 
+    [[ -f /etc/hosts ]] || { err "system hosts file is missing!"; return 1; }
+
     if [[ -f "$file" ]]; then
-        [[ -f "/etc/hosts" ]] || { err "system hosts file is missing!"; return 1; }
         current_hostline="$(_extract_current_hostname_line /etc/hosts)" || return 1
         execute "sed -e 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' -e 's/{HOSTNAME}/$HOSTNAME/g' $file > $tmpfile" || { err; return 1; }
 
@@ -696,21 +673,14 @@ setup_sudoers() {
         return 1
     fi
 
-    execute "cp -- '$file' '$tmpfile'" || return 1
-    execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-
-    if ! sudo cmp -s "$tmpfile" "$sudoers_dest/sudoers"; then
-        execute "sudo chown root:root $tmpfile" || return 1
-        execute "sudo chmod 0440 $tmpfile" || return 1
-
-        execute "sudo mv -f -- $tmpfile $sudoers_dest/sudoers" || return 1
-    fi
+    execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
+    execute "sudo install -m440 -CT '$tmpfile' '$sudoers_dest/sudoers'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
 }
 
 
 # https://wiki.debian.org/UnattendedUpgrades for unattended-upgrades setup
 setup_apt() {
-    local apt_dir file t
+    local apt_dir file
 
     readonly apt_dir='/etc/apt'
 
@@ -731,9 +701,7 @@ setup_apt() {
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
         [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it"; continue; }
-        t="$apt_dir/sources.list.d/$(basename -- "$file")"
-        cmp -s "$file" "$t" && continue  # no changes
-        execute "sudo cp -- '$file' '$t'"
+        execute "sudo install -m644 -C '$file' '$apt_dir/sources.list.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
     # NOTE: 02periodic _might_ be duplicating the unattended-upgrades activation
@@ -751,9 +719,7 @@ setup_apt() {
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
         [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it"; continue; }
-        t="$apt_dir/apt.conf.d/$(basename -- "$file")"
-        cmp -s "$file" "$t" && continue  # no changes
-        execute "sudo cp -- '$file' '$t'"
+        execute "sudo install -m644 -C '$file' '$apt_dir/apt.conf.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
     retry 2 "sudo apt-get --allow-releaseinfo-change  -y update" || err "apt-get update failed with $?"
@@ -768,7 +734,7 @@ setup_apt() {
 # symlinked crontabs don't work!
 # TODO: deprecate crontab & move to systemd timers?
 setup_crontab() {
-    local cron_dir weekly_crondir tmpfile file i t
+    local cron_dir weekly_crondir tmpfile file i
 
     readonly cron_dir='/etc/cron.d'  # where crontab will be installed at
     readonly tmpfile="$TMP_DIR/.crontab-$RANDOM"
@@ -781,15 +747,8 @@ setup_crontab() {
     fi
 
     if [[ -f "$file" ]]; then
-        execute "cp -- '$file' '$tmpfile'" || return 1
-        execute "sed --follow-symlinks -i 's/{USER_PLACEHOLDER}/$USER/g' $tmpfile" || return 1
-
-        t="$cron_dir/$(basename -- "$file")"
-        if ! cmp -s "$tmpfile" "$t"; then
-            #backup_original_and_copy_file --sudo "$tmpfile" "$cron_dir"  # don't create backup - dont wanna end up with 2 crontabs
-            execute "sudo cp -- '$tmpfile' '$t'"  # TODO: consider cat-ing to safeguard against links
-        fi
-
+        execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
+        execute "sudo install -m644 -CT '$tmpfile' '$cron_dir/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
         execute "rm -- '$tmpfile'"
     else
         err "expected configuration file at [$file] does not exist; won't install it."
@@ -809,9 +768,7 @@ setup_crontab() {
             fi
 
             #create_link -s "$i" "${weekly_crondir}/"  # linked crontabs don't work!
-            t="$weekly_crondir/$(basename -- "$i")"
-            cmp -s "$i" "$t" && continue  # no changes
-            execute "sudo cp -- '$i' '$t'"  # TODO: consider cat-ing to safeguard against links
+            execute "sudo install -m644 -CT '$i' '$weekly_crondir/$(basename -- "$i")'" || { err "installing [$i] failed w/ $?"; return 1; }
         done
     fi
 }
@@ -1025,7 +982,7 @@ _install_nfs_client_laptop() {
         [[ "$filename" == auto.* ]] || { err "incorrect filename for autofs server definition: [$filename]"; continue; }
         target="/etc/$filename"
         cmp -s "$i" "$target" && continue  # no changes
-        execute "sudo cp -- '$i' '$target'"
+        execute "sudo install -m644 -CT '$i' '$target'" || { err "installing [$i] failed w/ $?"; return 1; }
         changed=1
     done
 
@@ -1035,7 +992,7 @@ _install_nfs_client_laptop() {
         [[ "$filename" == *.autofs ]] || { err "incorrect filename for autofs master.d definition: [$filename]"; continue; }
         target="$autofs_d/$filename"
         cmp -s "$i" "$target" && continue  # no changes
-        execute "sudo cp -- '$i' '$target'"
+        execute "sudo install -m644 -CT '$i' '$target'" || { err "installing [$i] failed w/ $?"; return 1; }
         changed=1
     done
 
@@ -1896,7 +1853,7 @@ setup_config_files() {
 # - https://blogs.oracle.com/linux/post/networkmanager-dispatcher-scripts
 # - https://manpages.debian.org/unstable/network-manager/NetworkManager-dispatcher.8.en.html
 install_nm_dispatchers() {
-    local dispatchers nm_wrapper_dest f t
+    local dispatchers nm_wrapper_dest f
 
     readonly nm_wrapper_dest="/etc/NetworkManager/dispatcher.d"
     readonly dispatchers=(
@@ -1910,10 +1867,7 @@ install_nm_dispatchers() {
 
     for f in "${dispatchers[@]}"; do
         [[ -f "$f" ]] || { err "[$f] does not exist; this netw-manager dispatcher won't be installed"; continue; }
-
-        t="$nm_wrapper_dest/$(basename -- "$f")"
-        cmp -s "$f" "$t" && continue  # no changes
-        execute "sudo cp -- '$f' '$t'"
+        execute "sudo install -m744 -C '$f' '$nm_wrapper_dest'" || { err "installing [$f] failed w/ $?"; return 1; }
     done
 }
 
@@ -2015,6 +1969,7 @@ create_apt_source() {
 
     while getopts 'gak:' opt; do
         case "$opt" in
+            # TODO: deprecate -g opt:
             g) grp_ptrn='-----BEGIN PGP PUBLIC KEY BLOCK-----.*END PGP PUBLIC KEY BLOCK-----' ;;  # PGP is embedded in a file at $key_url and needs to be grepped out first
             a) arch=amd64 ;;
             k) k="$OPTARG" ;;  # means $key_url is a keyserver
@@ -2073,7 +2028,7 @@ create_apt_source() {
         fi
 
         [[ -s "$f" ]] || { err "imported keyfile [$f] does not exist"; return 1; }
-        cmp -s "$f" "$keyfile" || execute "sudo mv -- '$f' '$keyfile'" || return 1
+        execute "sudo install -m644 -CT '$f' '$keyfile'" || { err "installing [$f] to [$keyfile] failed w/ $?"; return 1; }
         (( c++ ))
     done
 
@@ -2087,10 +2042,7 @@ Signed-By: $keyfiles
 EOF
     [[ -n "$components" ]] && echo "Components: $components" | sudo tee -a "$f" > /dev/null
     [[ -n "$arch" ]] && echo "Architectures: $arch" | sudo tee -a "$f" > /dev/null
-
-    if ! cmp -s "$f" "$target_src"; then
-        execute "sudo mv -- '$f' '$target_src'" || err
-    fi
+    execute "sudo install -m644 -CT '$f' '$target_src'" || { err "installing [$f] to [$target_src] failed w/ $?"; return 1; }
 }
 
 
@@ -3170,15 +3122,17 @@ install_file() {
             file="$tmpdir/$name"
         fi
 
-        _owner_perms
+        _owner_perms "$file"
     }
 
     _owner_perms() {
+        local f="$1"
+
         if [[ -n "$owner" ]]; then
-            execute "sudo chown -R -- '$owner' '$file'" || return 1
+            execute "sudo chown -R -- '$owner' '$f'" || return 1
         fi
         if [[ -n "$perms" ]]; then
-            execute "sudo chmod -R -- '$perms' '$file'" || return 1
+            execute "sudo chmod -R -- '$perms' '$f'" || return 1
         fi
     }
 
@@ -3196,7 +3150,8 @@ install_file() {
     elif [[ "$ftype" == *'executable; charset=binary' || "$ftype" == 'text/x-shellscript; charset='* || "$ftype" == 'text/x-perl; charset='* ]]; then
         execute "chmod +x '$file'" || return 1
         _process || return 1
-        execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
+        execute "sudo install -m754 -C --group=$USER '$file' '$target'" || return 1
+        _owner_perms "$target/$(basename -- "$file")"
     elif [[ "$ftype" == *'debian.binary-package; charset=binary' ]]; then
         execute "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
         execute "rm -f -- '$file'"
@@ -4244,7 +4199,7 @@ install_lesspipe() {
     is_installed "$ver" lesspipe && return 2
 
     execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
-    execute "sudo install -m754 --group=$USER --target-directory=/usr/local/bin ${tmpdir}/{archive_color,lesspipe.sh}" || return 1
+    execute "sudo install -C -m754 --group=$USER --target-directory=/usr/local/bin ${tmpdir}/{archive_color,lesspipe.sh}" || return 1
 
     execute "sudo rm -rf -- $tmpdir"
     add_to_dl_log  lesspipe "$ver"
@@ -4314,7 +4269,9 @@ setup_keyd() {
         create_link -s "$xcomp" '/root/.XCompose'
     fi
 
-    [[ -s "$xcomp" ]] && execute "sudo cp -- '$conf_src' '$conf_target'"
+    if [[ -s "$xcomp" ]]; then
+        execute "sudo install -m644 -CT '$conf_src' '$conf_target'" || { err "installing [$conf_src] failed w/ $?"; return 1; }
+    fi
 
     return 0
 }
@@ -4325,7 +4282,7 @@ setup_keyd() {
 #
 # for quick debug, run as  $ sudo -u kanata kanata --cfg /path/to/conf.kbd
 install_kanata() {
-    local conf_src conf_base t
+    local conf_src conf_target
 
     conf_src="$COMMON_DOTFILES/backups/kanata.kbd"
     conf_target='/etc/kanata'  # note this path is referenced in relevant systemd service file
@@ -4334,10 +4291,8 @@ install_kanata() {
     add_group uinput
     add_user  kanata  'input,uinput'
 
-    t="$conf_target/$(basename -- "$conf_src")"
-    if [[ -s "$conf_src" ]] && ! cmp -s "$conf_src" "$t"; then
-        [[ -d "$conf_target" ]] || execute "sudo mkdir -- '$conf_target'" || return 1
-        execute "sudo cp -- '$conf_src' '$t'"
+    if [[ -s "$conf_src" ]]; then
+        execute "sudo install -m644 -CD '$conf_src' '$conf_target'" || { err "installing [$conf_src] failed w/ $?"; return 1; }
     fi
 
     install_bin_from_git -N kanata -O root:kanata -P 754  jtroo/kanata 'kanata'
@@ -4717,7 +4672,7 @@ install_display_switch() {
         execute "pushd $tmpdir" || return 1
 
         execute 'cargo build --release' || return 1  # should produce binary at target/release/display_switch
-        execute 'sudo mv -- target/release/display_switch  /usr/local/bin/' || err
+        execute "sudo install -m754 -C --group=$USER 'target/release/display_switch' '/usr/local/bin'" || return 1
 
         execute popd
         execute "sudo rm -rf -- '$tmpdir'"
@@ -5723,6 +5678,7 @@ install_from_repo() {
         frei0r-plugins  # https://github.com/dyne/frei0r ; collection of free and open source video effects plugins
         gimp  # TODO: avail as flatpak
         xss-lock  # TODO: x11!
+        xsecurelock  # TODO: x11
         #filezilla
         #transmission
         #transmission-remote-cli
@@ -6329,6 +6285,9 @@ choose_single_task() {
         setup
         setup_homesick
         setup_seafile
+        setup_apt
+        setup_hosts
+        setup_systemd
 
         generate_ssh_key
         install_nm_dispatchers
@@ -6707,8 +6666,8 @@ setup_dnsmasq() {
     #     dig +short chaos txt misses.bind
     #     dig +short chaos txt cachesize.bind
     [[ -d "$dnsmasq_conf_dir" ]] || { err "[$dnsmasq_conf_dir] does not exist"; return 1; }
-    [[ -f "$dnsmasq_conf" ]] || { err "[$dnsmasq_conf] does not exist; cannot update config"; return 1; }
-    execute "sudo cp -- '$dnsmasq_conf' '$dnsmasq_conf_dir'" || return 1
+    [[ -s "$dnsmasq_conf" ]] || { err "[$dnsmasq_conf] does not exist; cannot update config"; return 1; }
+    execute "sudo install -m644 -C '$dnsmasq_conf' '$dnsmasq_conf_dir'" || { err "installing [$dnsmasq_conf] failed w/ $?"; return 1; }
 
 
     # old ver, directly updating /etc/dnsmasq.conf:
@@ -6763,7 +6722,7 @@ setup_nsswitch() {
 # see also: https://wiki.debian.org/Netplan - write declarative network config for
 #                                             various backends such as NM or systemd-networkd
 enable_network_manager() {
-    local nm_conf nm_conf_dir t
+    local nm_conf nm_conf_dir
 
     readonly nm_conf="$COMMON_DOTFILES/backups/networkmanager.conf"
     readonly nm_conf_dir='/etc/NetworkManager/conf.d'
@@ -6800,11 +6759,7 @@ enable_network_manager() {
 
     [[ -d "$nm_conf_dir" ]] || { err "[$nm_conf_dir] does not exist; are you using NetworkManager? if not, this config logic should be removed."; return 1; }
     [[ -s "$nm_conf" ]] || { err "[$nm_conf] does not exist; cannot update config"; return 1; }
-
-    t="$nm_conf_dir/$(basename -- "$nm_conf")"
-    if ! cmp -s "$nm_conf" "$t"; then
-        execute "sudo cp -- '$nm_conf' '$t'" || return 1
-    fi
+    execute "sudo install -m644 -C '$nm_conf' '$nm_conf_dir'" || { err "installing [$nm_conf] to [$nm_conf_dir] failed w/ $?"; return 1; }
     _configure_con_dns
 
     # old ver, directly updating /etc/NetworkManager/NetworkManager.conf:
