@@ -2,44 +2,20 @@
 # see https://wiki.debian.org/DebianTesting for configuration.
 # also https://wiki.debian.org/SourcesList
 ######################################################
-# Modernized from /etc/apt/sources.list
 Types: deb deb-src
-URIs: http://deb.debian.org/debian/
-Suites: oldstable
-Components: main non-free contrib
+URIs: https://deb.debian.org/debian
+Suites: stable oldstable unstable
+Components: main contrib non-free
 Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 
-# Modernized from /etc/apt/sources.list
 Types: deb deb-src
-URIs: http://deb.debian.org/debian/
-Suites: stable
-Components: main non-free contrib
-Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
-
-# Modernized from /etc/apt/sources.list
-Types: deb deb-src
-URIs: http://deb.debian.org/debian/
-Suites: unstable
-Components: main non-free contrib
-Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
-
-# Modernized from /etc/apt/sources.list
-Types: deb deb-src
-URIs: http://deb.debian.org/debian/
-Suites: testing
-Components: main non-free non-free-firmware contrib
-Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
-
-# Modernized from /etc/apt/sources.list
-Types: deb deb-src
-URIs: http://deb.debian.org/debian/
-Suites: testing-updates
+URIs: https://deb.debian.org/debian
+Suites: testing testing-updates
 Components: main contrib non-free non-free-firmware
 Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 
-# Modernized from /etc/apt/sources.list
 Types: deb deb-src
-URIs: http://security.debian.org/debian-security/
+URIs: https://security.debian.org/debian-security
 Suites: testing-security
 Components: main contrib non-free non-free-firmware
 Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
@@ -47,8 +23,8 @@ Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 
 # bookworm-backports, previously on backports.debian.org
 # do NOT use backports if on testing; testing doesnt have those:
-#deb http://deb.debian.org/debian bookworm-backports main contrib non-free
-#deb-src http://deb.debian.org/debian bookworm-backports main contrib non-free
+#deb https://deb.debian.org/debian bookworm-backports main contrib non-free
+#deb-src https://deb.debian.org/debian bookworm-backports main contrib non-free
 
 # archive (for old fonts for instance):  (see https://www.debian.org/distrib/archive)
-#deb http://archive.debian.org/debian-archive/debian/ woody main non-free
+#deb https://archive.debian.org/debian-archive/debian/ woody main non-free
