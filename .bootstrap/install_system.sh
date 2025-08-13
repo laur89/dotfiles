@@ -384,7 +384,8 @@ setup_mail() {
 }
 
 
-#
+# TODO: how does it compare to monit that debian appears to mention? https://www.debian.org/releases/trixie/release-notes/upgrading.en.html#stop-monitoring-systems
+#       nope, monit is general process moniror, see https://mmonit.com/
 setup_needrestart() {
     local src_dirs target_confdir file dir tmpfile filename
 
@@ -1827,7 +1828,7 @@ setup_config_files() {
 
     #setup_swappiness
     setup_apt
-    setup_crontab
+    #setup_crontab
     setup_sudoers
     setup_hosts
     setup_systemd
@@ -5487,6 +5488,7 @@ install_from_repo() {
         easyeffects  # Audio effects for PipeWire applications; https://github.com/wwmm/easyeffects; TODO: avail as flatpak
         pulsemixer  # https://github.com/GeorgeFilipkin/pulsemixer
         pasystray  # PulseAudio controller for the system tray; should work w/ pipewire
+        qpwgraph  # visual representation of which audio devices are connected where; also allows point-and-click connections/configuration
         ca-certificates
         aptitude  # ncurses-based cli apt manager; https://wiki.debian.org/Aptitude
         #nala  # another cli-based apt frontend; https://gitlab.com/volian/nala
@@ -6548,6 +6550,7 @@ remind_manually_installed_progs() {
         'update system firmware'
         'download seafile libraries'
         'setup Signal backup - follow reddit thread & finally _manually_ create link to our seafile lib'
+        'enroll secureboot MOK if using SB'
     )
 
     for i in "${progs[@]}"; do
