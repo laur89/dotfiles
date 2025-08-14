@@ -2120,12 +2120,9 @@ setup_additional_apt_keys_and_sources() {
 }
 
 
-# see https://wiki.debian.org/Locale#First_day_of_week
-# to add additional locales, follow same page from "Manually" title;
-# tl;dr: uncomment wanted locale in /etc/locale.gen and run $ locale-gen as root;
+# to add additional locales, uncomment wanted locale in /etc/locale.gen and run $ locale-gen as root;
 #
-# TODO: instead of modifying locale file, perhaps would be better to do it via  'sudo -E update-locale LANG=en_CA.UTF-8'?
-#       eg see how this guy does it: https://github.com/nhooyr/dotfiles/blob/b513f244b1dd088b741d62377b787bfb3b13e2da/debian/init.sh#L101
+# - to display current active locale settings, run  $ locale
 override_locale_time() {
     local conf_file loc_file locales i modified
 
@@ -2134,15 +2131,15 @@ override_locale_time() {
 
     [[ -f "$conf_file" ]] || { err "cannot override locale time: [$conf_file] does not exist; abort;"; return 1; }
 
-    # change our LC_TIME, so first day of week is OK:
+    # change our LC_TIME, so first day of week is Mon (from https://wiki.debian.org/Locale#First_day_of_week):
     if ! grep -qE 'LC_TIME=.en_GB.UTF-8.' "$conf_file"; then
         # just in case delete all same definitions, regardless of its value:
         execute "sudo sed -i --follow-symlinks '/^LC_TIME\s*=/d' '$conf_file'" || return 1
-        execute "echo 'LC_TIME=\"en_GB.UTF-8\"' | sudo tee --append $conf_file > /dev/null"  # en-gb gives us 24h clock
+        execute "echo 'LC_TIME=\"en_GB.UTF-8\"' | sudo tee --append $conf_file > /dev/null"  # en-gb gives us 24h clock & Monday as first day of the week
     fi
 
-    # generate missing locales:
-    [[ -f "$loc_file" ]] || { err "cannot add locales: [$loc_file] does not exist; abort;"; return 1; }
+    # generate missing locales: {{{
+    [[ -s "$loc_file" ]] || { err "cannot add locales: [$loc_file] does not exist; abort;"; return 1; }
                 #'et_EE.UTF-8' \
     for i in \
                 'en_GB.UTF-8' \
@@ -2153,8 +2150,8 @@ override_locale_time() {
             modified=Y
         fi
     done
-
     [[ -n "$modified" ]] && execute 'sudo locale-gen'
+    # }}}
 
     return 0
 }
