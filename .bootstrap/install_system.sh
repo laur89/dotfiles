@@ -30,7 +30,7 @@ readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; e
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
 #readonly BASH_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # as per https://github.com/scop/bash-completion#faq  # cannot set before importing SHELL_ENVS!
-readonly ZSH_COMPLETIONS='/usr/share/zsh/vendor-completions'  # as per https://unix.stackexchange.com/a/607810/47501
+readonly ZSH_COMPLETIONS='/usr/local/share/zsh/site-functions'  # as per https://unix.stackexchange.com/a/607810/47501
 readonly APT_KEY_DIR='/usr/local/share/keyrings'  # dir where per-application apt keys will be stored in
 readonly SERVER_IP='10.42.21.10'             # default server address; likely to be an address in our LAN
 readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
@@ -1535,7 +1535,7 @@ install_deps() {
 
 
 setup_dirs() {
-    local dir
+    local dir opts
 
     readonly BASH_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # as per https://github.com/scop/bash-completion#faq  # cannot set before importing SHELL_ENVS!
 
@@ -1544,6 +1544,7 @@ setup_dirs() {
             $TMP_DIR \
             $HOME/bin \
             $BASH_COMPLETIONS \
+            "${ZSH_COMPLETIONS}:R" \
             $HOME/.npm-packages \
             $BASE_DATA_DIR/.calendars \
             $BASE_DATA_DIR/.calendars/work \
@@ -1565,9 +1566,10 @@ setup_dirs() {
             $BASE_DATA_DIR/Music \
             $BASE_DATA_DIR/Documents \
                 ; do
+        IFS=: read -r dir opts <<< "$dir"
         if ! [[ -d "$dir" ]]; then
             report "[$dir] does not exist, creating..."
-            execute "mkdir -p -- $dir"
+            if [[ "$opts" == *R* ]]; then execute "sudo mkdir -p -- '$dir'"; else execute "mkdir -p -- '$dir'"; fi
         fi
     done
 
