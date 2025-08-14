@@ -30,9 +30,10 @@ if [[ "$-" != *i* ]]; then
         i="$(whoami)" && [[ -n "$i" && "$i" != root ]] && { export USER="$i"; export MAIN_SYSTEM_USER="$i"; }  # TODO: do we want to define/override MAIN_SYSTEM_USER here?
     fi
 
-    # try to extract our DISPLAY value from $(who) output
+    # try to extract our DISPLAY value from $(w) output
+    # NOTE: DISPLAY fails to resolve from $(who) command as of '25:  _disp="$(LANG= who -u | grep "^$MAIN_SYSTEM_USER\b" | grep -oP '\s+\(\K:[0-9](\.[0-9])?(?=\))' | sort -u)"
     if [[ -z "$DISPLAY" ]]; then
-        _disp="$(LANG= who -u | grep "^$MAIN_SYSTEM_USER\b" | grep -oP '\s+\(\K:[0-9](\.[0-9])?(?=\))' | sort -u)"
+        _disp="$(LANG=C w --no-header --short "$MAIN_SYSTEM_USER" | grep -oP '\s+xinit .*\K:[0-9](\.[0-9])?(?=\s+)' | sort -u)"
         if [[ -n "$_disp" && "$(wc -l <<< "$_disp")" -eq 1 ]]; then
             export DISPLAY="$_disp"
         else
@@ -43,13 +44,10 @@ if [[ "$-" != *i* ]]; then
 
     # TODO: should we be setting following env vars, if user is root?? eg $XDG_RUNTIME_DIR would be shared by root & our regular user in this case?!
     # also, relevant dbus env vars really should already be set at /etc/X11/Xsession.d/20dbus_xdg-runtime
-    i="$(id -u "$MAIN_SYSTEM_USER")"
+    i="$(id --user "$MAIN_SYSTEM_USER")"  # likely 1000
     j="/run/user/$i"
-    if [[ -z "$DBUS_SESSION_BUS_ADDRESS" ]]; then
-        [[ "$i" =~ ^[0-9]+$ && -e "$j/bus" ]] && export DBUS_SESSION_BUS_ADDRESS="unix:path=$j/bus"
-    fi
-
     [[ -z "$XDG_RUNTIME_DIR" && -e "$j" ]] && export XDG_RUNTIME_DIR="$j"
+    [[ -z "$DBUS_SESSION_BUS_ADDRESS" && -e "$j/bus" ]] && export DBUS_SESSION_BUS_ADDRESS="unix:path=$j/bus"
 fi
 
 [[ -z "$GID" && -n "$USER" ]] && export GID="$(id -g "$USER")"
