@@ -105,9 +105,16 @@ declare -A HOSTNAME_TO_PLATFORM=(
 
 
 print_usage() {
-
     printf "${SELF}:  install/provision system.
-        usage: $SELF [-NFSU]  work|personal
+        usage: $SELF [-NFSUQO] [-P platform] [-L log_lvl] ] [-T /tmp/dir]  work|personal
+          -N            non-interactive usage
+          -F            full install mode
+          -S            single task
+          -U            update/quick refresh
+          -Q            faster update
+          -P platform   force platform dots castle
+          -L log_lvl    int, log level to use
+          -T /tmp/dir/  path to temp dir to use, defaults to /tmp
     "
 }
 
@@ -8315,7 +8322,7 @@ cleanup() {
 #----------------------------
 #---  Script entry point  ---
 #----------------------------
-while getopts 'NFSUQOP:L:T:' OPT_; do
+while getopts 'NFSUQOP:L:T:h' OPT_; do
     case "$OPT_" in
         N) NON_INTERACTIVE=1 ;;
         F) MODE=1 ;;  # full install
@@ -8329,8 +8336,8 @@ while getopts 'NFSUQOP:L:T:' OPT_; do
            is_digit "$OPTARG" || { err "log level needs to be an int, but was [$OPTARG]"; exit 1; }
             ;;
         T) TMP_DIR="$OPTARG" ;;
-        *) print_usage
-           exit 1 ;;
+        h) print_usage; exit 0 ;;
+        *) print_usage; exit 1 ;;
     esac
 done
 shift "$((OPTIND-1))"; unset OPT_
@@ -8436,6 +8443,8 @@ exit 0
 #    - niri - another scrollable tiling wm
 #    - scroll - sway-compatible scroller: https://github.com/dawsers/scroll  ! looks cool !!
 #       - alternatively, there's also papersway: https://spwhitton.name/tech/code/papersway/
+#  - consider https://gitlab.com/Zesko/systemd-timer-notify/-/tree/e31e8ecf11a81f844ec3a2a699d7fa0f30f05e46/
+#    - display desktop notifications when systemd timers start services. Notifications close automatically when the services finish
 #
 #
 # list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/
