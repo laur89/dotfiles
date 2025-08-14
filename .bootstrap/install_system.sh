@@ -1975,12 +1975,13 @@ update_clock() {
 
 
 create_apt_source() {
-    local name key_url uris suites components keyfile keyfiles f target_src k i c grp_ptrn arch opt OPTIND
+    local name key_url uris suites components keyfile keyfiles
+    local f target_src k i c grp_ptrn arch opt OPTIND
 
     while getopts 'gak:' opt; do
         case "$opt" in
             # TODO: deprecate -g opt:
-            g) grp_ptrn='-----BEGIN PGP PUBLIC KEY BLOCK-----.*END PGP PUBLIC KEY BLOCK-----' ;;  # PGP is embedded in a file at $key_url and needs to be grepped out first
+            g) grp_ptrn='-----BEGIN PGP PUBLIC KEY BLOCK-----.*END PGP PUBLIC KEY BLOCK-----' ;;  # PGP is embedded in a file at $key_url and needs to be grepped out from it
             a) arch=amd64 ;;
             k) k="$OPTARG" ;;  # means $key_url is a keyserver
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
@@ -1995,10 +1996,8 @@ create_apt_source() {
     suites="$4"
     components="$5"
 
-    target_src="/etc/apt/sources.list.d/${name}.sources"
-
     if [[ "$suites" == */ ]]; then
-        [[ -n "$components" ]] && { err "if [Suites:] is a path (i.e. ends w/ a slash), then [Components:] must be empty!"; return 1; }
+        [[ -n "$components" ]] && { err "if [Suites:] is a path (i.e. ends w/ a slash), then [Components:] must be empty"; return 1; }
     else
         [[ -z "$components" ]] && { err "if [Suites:] is not a path (i.e. doesn't end w/ a slash), then [Components:] must be included"; return 1; }
     fi
@@ -2043,15 +2042,16 @@ create_apt_source() {
     done
 
     # finally write the source file itself:
+    target_src="/etc/apt/sources.list.d/${name}.sources"
     f="$TMP_DIR/.apt-src_${name}-$RANDOM"
-    cat <<EOF | sudo tee "$f" > /dev/null
+    cat <<EOF > "$f"
 Types: deb
 URIs: $uris
 Suites: $suites
 Signed-By: $keyfiles
 EOF
-    [[ -n "$components" ]] && echo "Components: $components" | sudo tee -a "$f" > /dev/null
-    [[ -n "$arch" ]] && echo "Architectures: $arch" | sudo tee -a "$f" > /dev/null
+    [[ -n "$components" ]] && echo "Components: $components" >> "$f"
+    [[ -n "$arch" ]] && echo "Architectures: $arch" >> "$f"
     execute "sudo install -m644 -CT '$f' '$target_src'" || { err "installing [$f] to [$target_src] failed w/ $?"; return 1; }
 }
 
