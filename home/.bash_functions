@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# shellcheck disable=SC2015
 #
 # good source to begin with: http://tldp.org/LDP/abs/html/sample-bashrc.html
 # TODO: check this!: https://github.com/Cloudef/dotfiles-ng/blob/master/#ARCHCONFIG/shell/functions
@@ -42,6 +43,28 @@ aptsearch() {
 
 aptsrc() { aptsearch "$@"; }  # alias
 
+# list packages that did not come from Debian
+# from https://www.debian.org/releases/trixie/release-notes/upgrading.en.html#remove-non-debian-packages
+#
+# other cmds:
+# - show pkgs which have a status of Half-Installed or Failed-Config:
+#    dpkg --audit
+# - inspect state of all pkgs:
+#    dpkg -l
+#    dpkg --get-selections '*' | bat
+#    apt list --installed | bat
+# - find biggest packages:
+#    dpigs
+#    or:
+#    wajig size
+#    or:
+#    start aptitude, select Views > New Flat Package List, plress l and enter ~i, press S and enter ~installsize
+nondebpkgs() {
+    apt list '?narrow(?installed, ?not(?origin(Debian)))'
+    # or:
+    #apt-forktracer | sort
+}
+
 aptclean() {
     local apt_lists_dir
 
@@ -50,7 +73,7 @@ aptclean() {
     report "note that sudo passwd is required" "$FUNCNAME"
 
     sudo apt-get clean
-    sudo apt-get autoremove
+    sudo apt-get autoremove  # remove forgotten packages, i.e. dependencies of already-removed packages
 
     # TODO: instead of nuking $apt_lists_dir contents, consider  # apt-get distclean
     if [[ -d "$apt_lists_dir" ]]; then
@@ -78,9 +101,18 @@ aptlargest()  {
 aptbiggest() { aptlargest "$@"; }  # alias
 
 
-# to remove obsolete packages:
+# to list 'Obsolete and Locally Created Packages':
 #   aptitude search '~o'
+#   or:
+#   apt list '~o'
+# to purge said packages:
 #   aptitude purge '~o'
+#   or:
+#   apt purge '~o'
+# display list of removed pkgs that have config files left that can be purged:
+#   apt list '~c'
+# purge 'em w/:
+#   apt purge '~c'
 #
 # provide -f flag to allow for release codename change (ie to upgrade to new codename)
 # TODO: remove -f support here as it's also defined on update()?
@@ -93,14 +125,11 @@ upgrade() {
 
     while getopts 'fh' opt; do
         case "$opt" in
-           f) full=TRUE
-              ;;
+           f) full=TRUE ;;
            h) echo -e "$usage"
-              return 0
-              ;;
+              return 0 ;;
            *) echo -e "$usage"
-              return 1
-              ;;
+              return 1 ;;
         esac
     done
     shift "$((OPTIND-1))"
@@ -109,7 +138,7 @@ upgrade() {
     report "started at $(date)"
     start="$(date +%s)"
 
-    # note we run upgrade --without-new-pkgs before dist-upgrade as per https://www.debian.org/releases/bullseye/amd64/release-notes/ch-upgrading.en.html#minimal-upgrade
+    # note we run [upgrade --without-new-pkgs] before dist-upgrade as per https://www.debian.org/releases/bullseye/amd64/release-notes/ch-upgrading.en.html#minimal-upgrade
     sudo -s -- <<EOF
         rep_() { echo -e "\033[1m -> \$*...\033[0m"; }
 
