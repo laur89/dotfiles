@@ -21,8 +21,8 @@
 #}
 
 ffindproc() {
-    [[ "$#" -ne 1 ]] && { err "exactly one arg (process name to search) allowed" "$FUNCNAME"; return 1; }
-    [[ -z "$1" ]] && { err "process name required" "$FUNCNAME"; return 1; }
+    [[ "$#" -ne 1 ]] && { err "exactly one arg (process name to search) allowed"; return 1; }
+    [[ -z "$1" ]] && { err "process name required"; return 1; }
 
     # last grep for re-coloring:
     ps -ef | grep -v '\bgrep\b' | grep -i --color=auto -- "$1"
@@ -33,7 +33,7 @@ ffindproc() {
 
 
 aptsearch() {
-    [[ -z "$@" ]] && { err "provide partial package name to search for." "$FUNCNAME"; return 1; }
+    [[ -z "$@" ]] && { err "provide partial package name to search for."; return 1; }
     check_progs_installed  apt-cache || return 1
 
     apt-cache search -- "$@"
@@ -70,7 +70,7 @@ aptclean() {
 
     readonly apt_lists_dir='/var/lib/apt/lists'
 
-    report "note that sudo passwd is required" "$FUNCNAME"
+    report "note that sudo passwd is required"
 
     sudo apt-get clean
     sudo apt-get autoremove  # remove forgotten packages, i.e. dependencies of already-removed packages
@@ -78,11 +78,11 @@ aptclean() {
     # TODO: instead of nuking $apt_lists_dir contents, consider  # apt-get distclean
     if [[ -d "$apt_lists_dir" ]]; then
         if ! is_dir_empty "$apt_lists_dir"; then
-            report "deleting contents of [$apt_lists_dir]" "$FUNCNAME"
+            report "deleting contents of [$apt_lists_dir]"
             sudo rm -rf "$apt_lists_dir"/*
         fi
     else
-        err "[$apt_lists_dir] is not a dir; can't delete the contents in it." "$FUNCNAME"
+        err "[$apt_lists_dir] is not a dir; can't delete the contents in it."
     fi
 
     sudo apt-get update
@@ -93,7 +93,7 @@ aptlargest()  {
 
     num="$1"
     [[ -z "$num" ]] && num=10
-    is_digit "$num" && [[ "$num" -gt 0 ]] || { err "nr of largest apt packages needs to be a positive digit, but was [$num]" "$FUNCNAME"; return 1; }
+    is_digit "$num" && [[ "$num" -gt 0 ]] || { err "nr of largest apt packages needs to be a positive digit, but was [$num]"; return 1; }
 
     aptitude search --sort '~installsize' --display-format '%p %I' '~i' | head -n "$num"
 }
@@ -117,10 +117,11 @@ aptbiggest() { aptlargest "$@"; }  # alias
 # provide -f flag to allow for release codename change (ie to upgrade to new codename)
 # TODO: remove -f support here as it's also defined on update()?
 upgrade() {
-    local usage start res fmt opt OPTIND full
+    local f usage start res fmt opt OPTIND full
 
-    readonly usage="\n$FUNCNAME: upgrade OS
-    Usage: $FUNCNAME  [-f]
+    f="$(funname)"
+    readonly usage="\n$f: upgrade OS
+    Usage: $f  [-f]
         -f  full upgrade, ie allow bumping releaseinfo/codename"
 
     while getopts 'fh' opt; do
@@ -245,15 +246,16 @@ mvnclean() {
 ffstr() {
     local grepcase OPTIND usage opt max_result_line_length caseOptCounter force_case regex i
     local iname_arg maxDepth maxDepthParam defMaxDeptWithFollowLinks follow_links
-    local pattern file_pattern collect_files open_files dir
+    local pattern file_pattern collect_files open_files dir f
 
     caseOptCounter=0
     OPTIND=1
     max_result_line_length=300      # max nr of characters per grep result line; TODO: make it dynamic for current term window?
     defMaxDeptWithFollowLinks=25    # default depth if depth not provided AND follow links (-L) option selected;
 
-    readonly usage="\n$FUNCNAME: find string in files. smartcase both for filename and search patterns.
-    Usage: $FUNCNAME  [opts]  \"pattern\"  [filename pattern]  [starting dir]
+    f="$(funname)"
+    readonly usage="\n$f: find string in files. smartcase both for filename and search patterns.
+    Usage: $f  [opts]  \"pattern\"  [filename pattern]  [starting dir]
         -i  force case insensitive;
         -s  force case sensitivity;
         -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;
@@ -263,7 +265,7 @@ ffstr() {
         -r  enable regex on filename pattern"
 
 
-    command -v ag > /dev/null && report "consider using ag or its wrapper astr (same thing as $FUNCNAME, but using ag instead of find+grep)\n" "$FUNCNAME"
+    command -v ag > /dev/null && report "consider using ag or its wrapper astr (same thing as $f(), but using ag instead of find+grep)\n"
 
     while getopts 'isrm:Lcoh' opt; do
         case "$opt" in
@@ -299,12 +301,12 @@ ffstr() {
     shift "$((OPTIND-1))"
 
     if [[ "$#" -eq 3 && ! -d "${@: -1}" ]]; then
-        err "last arg can only be starting dir" "$FUNCNAME"
+        err "last arg can only be starting dir"
         return 1
     elif [[ "$#" -gt 1 ]]; then
         i="${@: -1}"  # last arg; alternatively ${@:$#}
         if [[ -d "$i" ]]; then
-            [[ "$#" -lt 3 ]] && report "assuming starting path [$i] was given\n" "$FUNCNAME" && sleep 1.5  # if less than 3 args, we need to assume
+            [[ "$#" -lt 3 ]] && report "assuming starting path [$i] was given\n" && sleep 1.5  # if less than 3 args, we need to assume
             dir="$i"
             set -- "${@:1:${#}-1}"  # shift the last arg
         fi
@@ -315,21 +317,21 @@ ffstr() {
     file_pattern="$2"
 
     if [[ "$#" -lt 1 || "$#" -gt 2 ]]; then
-        err "incorrect nr of arguments." "$FUNCNAME"
+        err "incorrect nr of arguments."
         echo -e "$usage"
         return 1;
     elif [[ "$caseOptCounter" -gt 1 ]]; then
-        err "-i and -s flags are exclusive." "$FUNCNAME"
+        err "-i and -s flags are exclusive."
         echo -e "$usage"
         return 1
     fi
 
     # grep search pattern sanity:
     if [[ "$pattern" == *\** && "$pattern" != *\.\** ]]; then
-        err "use .* as wildcards, not a single *" "$FUNCNAME"
+        err "use .* as wildcards, not a single *"
         return 1
     elif [[ "$(echo "$pattern" | tr -dc '.' | wc -m)" -lt "$(echo "$pattern" | tr -dc '*' | wc -m)" ]]; then
-        err "nr of periods (.) was less than stars (*); are you misusing regex?" "$FUNCNAME"
+        err "nr of periods (.) was less than stars (*); are you misusing regex?"
         return 1
     fi
 
@@ -337,36 +339,36 @@ ffstr() {
     # find metacharacter or regex FILENAME (not search pattern) sanity:
     if [[ -n "$file_pattern" ]]; then
         if [[ "$file_pattern" == */* ]]; then
-            err "there are slashes in the filename." "$FUNCNAME"
+            err "there are slashes in the filename."
             return 1
         fi
 
         if [[ "$regex" -eq 1 ]]; then
             if [[ "$file_pattern" == *\** && "$file_pattern" != *\.\** ]]; then
-                err 'err in filename pattern: use .* as wildcards, not a single *; you are misusing regex.' "$FUNCNAME"
+                err 'err in filename pattern: use .* as wildcards, not a single *; you are misusing regex.'
                 return 1
             elif [[ "$(echo "$file_pattern" | tr -dc '.' | wc -m)" -lt "$(echo "$file_pattern" | tr -dc '*' | wc -m)" ]]; then
-                err "err in filename pattern: nr of periods (.) was less than stars (*); are you misusing regex?" "$FUNCNAME"
+                err "err in filename pattern: nr of periods (.) was less than stars (*); are you misusing regex?"
                 return 1
             fi
         else  # no regex, make sure find metacharacters are not mistaken for regex ones:
             if [[ "$file_pattern" == *\.\** ]]; then
-                err "err in filename pattern: only use asterisks (*) for wildcards, not .*; provide -r flag if you want to use regex." "$FUNCNAME"
+                err "err in filename pattern: only use asterisks (*) for wildcards, not .*; provide -r flag if you want to use regex."
                 return 1
             fi
 
             if [[ "$file_pattern" == *\.* ]]; then
-                report "note that period (.) in the filename pattern will be used as a literal period, not as a wildcard. provide -r flag to use regex.\n" "$FUNCNAME"
+                report "note that period (.) in the filename pattern will be used as a literal period, not as a wildcard. provide -r flag to use regex.\n"
             fi
         fi
     elif [[ "$regex" -eq 1 ]]; then  # -z $file_pattern
-        err "with -r flag, filename pattern is required." "$FUNCNAME"
+        err "with -r flag, filename pattern is required."
         return 1
     fi
 
     if [[ -n "$maxDepth" ]]; then
         if ! is_digit "$maxDepth" || [[ "$maxDepth" -le 0 ]]; then
-            err "maxdepth (-m flag) arg value has to be a positive digit, but was [$maxDepth]" "$FUNCNAME"
+            err "maxdepth (-m flag) arg value has to be a positive digit, but was [$maxDepth]"
             echo -e "$usage"
             return 1
         fi
@@ -423,10 +425,10 @@ ffstr() {
         done < <(__find_fun "$file_pattern" | xargs -0 grep -Esl --null --color=never ${grepcase} -- "$pattern")
 
         if [[ "${#_FOUND_FILES[@]}" -eq 0 ]]; then
-            report "found no files containing [${COLORS[RED]}${COLORS[BOLD]}${pattern}${COLORS[OFF]}]" "$FUNCNAME"
+            report "found no files containing [${COLORS[RED]}${COLORS[BOLD]}${pattern}${COLORS[OFF]}]"
             return 1
         else
-            report "found ${#_FOUND_FILES[@]} files containing [${COLORS[GREEN]}${COLORS[BOLD]}${pattern}${COLORS[OFF]}]; stored in \$_FOUND_FILES global array." "$FUNCNAME"
+            report "found ${#_FOUND_FILES[@]} files containing [${COLORS[GREEN]}${COLORS[BOLD]}${pattern}${COLORS[OFF]}]; stored in \$_FOUND_FILES global array."
         fi
 
         [[ "$open_files" -eq 1 ]] && __fo "${_FOUND_FILES[@]}"
@@ -455,15 +457,15 @@ __mem_cpu_most_common_fun() {
 
     readonly format='\t%s\t%s\t%s\n'
 
-    [[ "$#" -lt 4 ]] && { err "minimum of 4 args required" "$FUNCNAME"; return 1; }
-    [[ "$#" -gt 5 ]] && { err "max 5 args supported" "$FUNCNAME"; return 1; }
+    [[ "$#" -lt 4 ]] && { err "minimum of 4 args required"; return 1; }
+    [[ "$#" -gt 5 ]] && { err "max 5 args supported"; return 1; }
     [[ "$#" -eq 5 ]] && num="${@: -1}"  # last arg; alternatively ${@:$#}
 
     [[ -z "$num" ]] && num=10
 
-    is_digit "$num" && [[ "$num" -gt 0 ]] || { err "nr of processes to show needs to be a positive digit, but was [$num]" "${FUNCNAME[1]}"; return 1; }
+    is_digit "$num" && [[ "$num" -gt 0 ]] || { err "nr of processes to show needs to be a positive digit, but was [$num]" -1; return 1; }
     # note we should try use '--ppid 2 -N' flag to filter out kernel threads (see https://unix.stackexchange.com/questions/258448/is-there-any-way-to-hide-kernel-threads-from-ps-command-results)
-    ps_out="$(ps -ax --no-headers -o $first_ps_col,$second_ps_col,args --sort -${first_ps_col},-${second_ps_col})" || { err "ps command failed" "$FUNCNAME"; return 1; }
+    ps_out="$(ps -ax --no-headers -o $first_ps_col,$second_ps_col,args --sort -${first_ps_col},-${second_ps_col})" || { err "ps command failed"; return 1; }
     ps_out="$(head -n $num <<< "$ps_out")" || return 1
 
     # formats the default full ps output (some versions of ps don't offer --sort option)
@@ -501,13 +503,13 @@ __mem_cpu_most_common_fun() {
 }
 
 memmost() {
-    [[ "$#" -gt 1 ]] && { err "only one arg, number of top mem consuming processes to display, allowed" "$FUNCNAME"; return 1; }
+    [[ "$#" -gt 1 ]] && { err "only one arg, number of top mem consuming processes to display, allowed"; return 1; }
 
     __mem_cpu_most_common_fun MEM CPU pmem pcpu "$@"
 }
 
 cpumost() {
-    [[ "$#" -gt 1 ]] && { err "only one arg, number of top cpu consuming processes to display, allowed" "$FUNCNAME"; return 1; }
+    [[ "$#" -gt 1 ]] && { err "only one arg, number of top cpu consuming processes to display, allowed"; return 1; }
 
     __mem_cpu_most_common_fun CPU MEM pcpu pmem "$@"
 }
@@ -554,13 +556,15 @@ topid(){
 
 astr() {
     local grepcase OPTIND usage opt file_pattern caseOptCounter maxDepth follow_links
-    local pattern defMaxDeptWithFollowLinks dir i
+    local pattern defMaxDeptWithFollowLinks dir i f
 
     readonly defMaxDeptWithFollowLinks=25
     OPTIND=1
     caseOptCounter=0
-    readonly usage="\n$FUNCNAME: find string in files using ag. smartcase by default.
-    Usage: $FUNCNAME [options]  \"pattern\"  [filename pattern]  [starting dir]
+
+    f="$(funname)"
+    readonly usage="\n$f: find string in files using ag. smartcase by default.
+    Usage: $f [options]  \"pattern\"  [filename pattern]  [starting dir]
         -i  force case insensitive
         -s  force case sensitivity
         -L  follow symlinks
@@ -568,7 +572,7 @@ astr() {
 
     check_progs_installed ag
     report "consider using ag directly; it has really sane syntax (compared to find + grep)
-      for instance, with this wrapper you can't use the filetype & path options.\n" "$FUNCNAME"
+      for instance, with this wrapper you can't use the filetype & path options.\n"
 
     while getopts 'isLhm:' opt; do
         case "$opt" in
@@ -595,12 +599,12 @@ astr() {
     shift "$((OPTIND-1))"
 
     if [[ "$#" -eq 3 && ! -d "${@: -1}" ]]; then
-        err "last arg can only be starting dir" "$FUNCNAME"
+        err "last arg can only be starting dir"
         return 1
     elif [[ "$#" -gt 1 ]]; then
         i="${@: -1}"  # last arg; alternatively ${@:$#}
         if [[ -d "$i" ]]; then
-            [[ "$#" -lt 3 ]] && report "assuming starting path [$i] was given" "$FUNCNAME"  # if less than 3 args, we need to assume
+            [[ "$#" -lt 3 ]] && report "assuming starting path [$i] was given"  # if less than 3 args, we need to assume
             dir="$i"  # optional
             set -- "${@:1:${#}-1}"  # shift the last arg
         fi
@@ -611,18 +615,18 @@ astr() {
     file_pattern="$2"  # optional
 
     if [[ "$#" -lt 1 || "$#" -gt 2 ]]; then
-        err "incorrect nr of arguments." "$FUNCNAME"
+        err "incorrect nr of arguments."
         echo -e "$usage"
         return 1;
     elif [[ "$caseOptCounter" -gt 1 ]]; then
-        err "-i and -s flags are exclusive." "$FUNCNAME"
+        err "-i and -s flags are exclusive."
         echo -e "$usage"
         return 1
     fi
 
     if [[ -n "$maxDepth" ]]; then
         if ! is_digit "$maxDepth" || [[ "$maxDepth" -le 0 ]]; then
-            err "maxdepth (-m flag) arg value has to be a positive digit, but was [$maxDepth]" "$FUNCNAME"
+            err "maxdepth (-m flag) arg value has to be a positive digit, but was [$maxDepth]"
             echo -e "$usage"
             return 1
         fi
@@ -634,19 +638,19 @@ astr() {
 
     # regex sanity:
     if [[ "$@" == *\** && "$@" != *\.\** ]]; then
-        err "use .* as wildcards, not a single *" "$FUNCNAME"
+        err "use .* as wildcards, not a single *"
         return 1
     elif [[ "$(echo "$@" | tr -dc '.' | wc -m)" -lt "$(echo "$@" | tr -dc '*' | wc -m)" ]]; then
-        err "nr of periods (.) was less than stars (*); are you misusing regex?" "$FUNCNAME"
+        err "nr of periods (.) was less than stars (*); are you misusing regex?"
         return 1
     fi
 
     if [[ -n "$file_pattern" ]]; then
         if [[ "$file_pattern" == */* ]]; then
-            err "there are slashes in the filename." "$FUNCNAME"
+            err "there are slashes in the filename."
             return 1
         elif [[ "$file_pattern" == *\ * ]]; then
-            err "there is whitespace in the filename." "$FUNCNAME"
+            err "there is whitespace in the filename."
             return 1
         fi
         file_pattern="-G $file_pattern"
@@ -660,21 +664,21 @@ astr() {
 swap() {
     local tmp file_size space_left_on_target first_file sec_file i
 
-    tmp="/tmp/${FUNCNAME}_function_tmpFile.$RANDOM"
+    tmp="/tmp/.swap_function_${RANDOM}.tmp"
     first_file="${1%/}"  # strip trailing slash
     sec_file="${2%/}"    # strip trailing slash
 
-    [[ "$#" -ne 2 ]] && { err "2 args required" "$FUNCNAME"; return 1; }
-    [[ ! -e "$first_file" ]] && err "[$first_file] does not exist" "$FUNCNAME" && return 1
-    [[ ! -e "$sec_file" ]] && err "[$sec_file] does not exist" "$FUNCNAME" && return 1
-    [[ "$first_file" == "$sec_file" ]] && err "source and destination cannot be the same" "$FUNCNAME" && return 1
+    [[ "$#" -ne 2 ]] && err "2 args required" && return 1
+    [[ ! -e "$first_file" ]] && err "[$first_file] does not exist" && return 1
+    [[ ! -e "$sec_file" ]] && err "[$sec_file] does not exist" && return 1
+    [[ "$first_file" == "$sec_file" ]] && err "source and destination cannot be the same" && return 1
 
 
     # check write perimssions:
     for i in "$tmp" "$first_file" "$sec_file"; do
         i="$(dirname -- "$i")"
         if [[ ! -w "$i" ]]; then
-            err "$i doesn't have write permission. abort." "$FUNCNAME"
+            err "$i doesn't have write permission. abort."
             return 1
         fi
     done
@@ -683,12 +687,12 @@ swap() {
     file_size="$(get_size "$first_file")"
     space_left_on_target="$(space_left "$tmp")"
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
-        err "$first_file size is ${file_size}MB, but $(dirname -- "$tmp") has only [${space_left_on_target}MB] free space left. abort." "$FUNCNAME"
+        err "$first_file size is ${file_size}MB, but $(dirname -- "$tmp") has only [${space_left_on_target}MB] free space left. abort."
         return 1
     fi
 
     if ! mv -- "$first_file" "$tmp"; then
-        err "moving $first_file to $tmp failed. abort." "$FUNCNAME"
+        err "moving $first_file to $tmp failed. abort."
         return 1
     fi
 
@@ -696,14 +700,14 @@ swap() {
     file_size="$(get_size "$sec_file")"
     space_left_on_target="$(space_left "$first_file")"
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
-        err "$sec_file size is ${file_size}MB, but $(dirname -- "$first_file") has only [${space_left_on_target}MB] free space left. abort." "$FUNCNAME"
+        err "$sec_file size is ${file_size}MB, but $(dirname -- "$first_file") has only [${space_left_on_target}MB] free space left. abort."
         # undo:
         mv -- "$tmp" "$first_file"
         return 1
     fi
 
     if ! mv -- "$sec_file" "$first_file"; then
-        err "moving $sec_file to $first_file failed. abort." "$FUNCNAME"
+        err "moving $sec_file to $first_file failed. abort."
         # undo:
         mv -- "$tmp" "$first_file"
         return 1
@@ -713,7 +717,7 @@ swap() {
     file_size="$(get_size "$tmp")"
     space_left_on_target="$(space_left "$sec_file")"
     if [[ "$file_size" -ge "$space_left_on_target" ]]; then
-        err "$first_file size is ${file_size}MB, but $(dirname -- "$sec_file") has only [${space_left_on_target}MB] free space left. abort." "$FUNCNAME"
+        err "$first_file size is ${file_size}MB, but $(dirname -- "$sec_file") has only [${space_left_on_target}MB] free space left. abort."
         # undo:
         mv -- "$first_file" "$sec_file"
         mv -- "$tmp" "$first_file"
@@ -721,7 +725,7 @@ swap() {
     fi
 
     if ! mv -- "$tmp" "$sec_file"; then
-        err "moving $first_file to $sec_file failed. abort." "$FUNCNAME"
+        err "moving [$first_file] to [$sec_file] failed. abort."
         # undo:
         mv -- "$first_file" "$sec_file"
         mv -- "$tmp" "$first_file"
@@ -733,11 +737,12 @@ swap() {
 # mnemonic: list-grep
 #
 lgrep() {
-    local src srcdir usage exact OPTIND
+    local f src srcdir usage exact OPTIND
 
-    usage="\n$FUNCNAME  [-e]  filename_to_grep  [dir_to_look_from]
+    f="$(funname)"
+    usage="\n$f  [-e]  filename_to_grep  [dir_to_look_from]
   or:
-$FUNCNAME  [-e]  /dir_to_look_from/filename_to_grep
+$f  [-e]  /dir_to_look_from/filename_to_grep
              -e  search for exact filename
 
         Examples:
@@ -765,8 +770,8 @@ $FUNCNAME  [-e]  /dir_to_look_from/filename_to_grep
 
     # provide syntax for   $FUNCNAME  /valid/path/to/grep/in/<filename_pattern>:
     if [[ "$src" == */* ]]; then
-        [[ "$#" -ne 1 ]] && { err "if the path & greppable string is provided in single arg, then additional dir arg is not accepted" "$FUNCNAME"; return 1; }
-        [[ "$src" == */ ]] && { err "can't provide only directory" "$FUNCNAME"; return 1; }
+        [[ "$#" -ne 1 ]] && { err "if the path & greppable string is provided in single arg, then additional dir arg is not accepted"; return 1; }
+        [[ "$src" == */ ]] && { err "can't provide only directory"; return 1; }
         srcdir="$(dirname -- "$src")"
         src="${src##*/}"  # strip everything before last slash (slash included)
     fi
@@ -777,11 +782,11 @@ $FUNCNAME  [-e]  /dir_to_look_from/filename_to_grep
         return 1;
     elif [[ -n "$srcdir" ]]; then
         if [[ ! -d "$srcdir" ]]; then
-            err "provided directory to list and grep from [$srcdir] is not a directory" "$FUNCNAME"
+            err "provided directory to list and grep from [$srcdir] is not a directory"
             echo -e "\n$usage"
             return 1
         elif [[ ! -r "$srcdir" ]]; then
-            err "provided directory to list and grep from is not readable. abort." "$FUNCNAME"
+            err "provided directory to list and grep from is not readable. abort."
             return 1
         fi
 
@@ -789,7 +794,7 @@ $FUNCNAME  [-e]  /dir_to_look_from/filename_to_grep
     fi
 
     if [[ "$exact" -eq 1 ]]; then
-        [[ "$src" == *\.\** ]] && { err "fyi only use asterisks (*) for wildcards, not .*" "$FUNCNAME"; return 1; }  # this is because of find
+        [[ "$src" == *\.\** ]] && { err "fyi only use asterisks (*) for wildcards, not .*"; return 1; }  # this is because of find
         #src="$(ls -lhA "${srcdir:-.}" | awk '{ print $9 }' | grep -i -- "^$src$")" # ! note it assumes filename is listed in 9th column in ls output; what about spaces in filenames?
         src="$(find "${srcdir:-.}" -maxdepth 1 -mindepth 1 -name "$src" -printf '%f\n' -quit)"  # note we only allow single item!
         [[ $? -ne 0 || -z "$src" ]] && return 1
@@ -808,9 +813,9 @@ $FUNCNAME  [-e]  /dir_to_look_from/filename_to_grep
 sanitize() {
     local i
 
-    [[ -z "$*" ]] && { err "provide a file/dir name plz." "$FUNCNAME"; return 1; }
+    [[ -z "$*" ]] && { err "provide a file/dir name plz."; return 1; }
     for i in "$@"; do
-        [[ ! -e "$i" ]] && { err "[$i] does not exist; no permissions were changed" "$FUNCNAME"; return 1; }
+        [[ ! -e "$i" ]] && { err "[$i] does not exist; no permissions were changed"; return 1; }
     done
 
     #chmod -R u=rwX,g=rX,o= -- "$@";  # symlink targets are not resolved by chmod!
@@ -821,10 +826,10 @@ sanitize() {
 sanitize_ssh() {
     local node="$*"
 
-    [[ -z "$node" ]] && { err "provide a file/dir name plz. (most likely you want the [.ssh] dir)" "$FUNCNAME"; return 1; }
-    [[ ! -e "$node" ]] && { err "[$node] does not exist." "$FUNCNAME"; return 1; }
+    [[ -z "$node" ]] && { err "provide a file/dir name plz. (most likely you want the [.ssh] dir)"; return 1; }
+    [[ ! -e "$node" ]] && { err "[$node] does not exist."; return 1; }
     if [[ "$node" != *ssh*  ]]; then
-        confirm  "\nthe node name you're about to ${FUNCNAME}() does not contain string [ssh]; still continue? (y/n)" || return 0
+        confirm  "\nthe node name you're about to $(funname)() does not contain string [ssh]; still continue? (y/n)" || return 0
     fi
 
     [[ -d "$node" && "$node" != */ ]] && node+='/'
@@ -848,7 +853,7 @@ myip() {  # Get internal & external ip addies:
         elif [[ -x /sbin/ifconfig ]]; then
             ip="$(/sbin/ifconfig "$interface" | awk '/inet / {print $2}' | sed -e s/addr://)"  # TODO deprecated
         else
-            err "nothing to find interface IP with" "$FUNCNAME"
+            err "nothing to find interface IP with"
             return 1
         fi
 
@@ -869,7 +874,7 @@ myip() {  # Get internal & external ip addies:
     if [[ "$__REMOTE_SSH" -eq 1 && -z "${interfaces[*]}" ]]; then
         # take a blind guess
         interfaces=(eth0 eth1 eth2 eth3 enp0s3)  # TODO: configure for new standardized if names (https://www.freedesktop.org/software/systemd/man/systemd.net-naming-scheme.html)
-        report "can't resolve network interfaces; trying these interfaces: [${interfaces[*]}]" "$FUNCNAME"
+        report "can't resolve network interfaces; trying these interfaces: [${interfaces[*]}]"
     fi
 
     if [[ "${#interfaces[@]}" -gt 0 ]]; then
@@ -897,7 +902,7 @@ compress() {
     sup='zip|tar|rar|7z'  # supported compression type options
     sup="[${COLORS[YELLOW]}${COLORS[BOLD]}${sup}${COLORS[OFF]}]"
     readonly def=tar  # default compression mode
-    readonly usage="$FUNCNAME  fileOrDir  $sup\n\tif optional second arg not provided, compression type defaults to [$def] "
+    readonly usage="$(funname)  fileOrDir  $sup\n\tif optional second arg not provided, compression type defaults to [$def] "
 
     while getopts 'h' opt; do
         case "$opt" in
@@ -914,9 +919,9 @@ compress() {
     file="$1"
     type="$2"
 
-    [[ $# -eq 1 || $# -eq 2 ]] || { err "gimme file/dir to compress plox.\n" "$FUNCNAME"; echo -e "$usage"; return 1; }
-    [[ -e "$file" ]] || { err "$file doesn't exist." "$FUNCNAME"; echo -e "\n\n$usage"; return 1; }
-    [[ -z "$type" ]] && { report "no compression type selected, defaulting to [${COLORS[YELLOW]}${COLORS[BOLD]}$def${COLORS[OFF]}]\n" "$FUNCNAME"; type="$def"; }
+    [[ $# -eq 1 || $# -eq 2 ]] || { err "gimme file/dir to compress plox.\n"; echo -e "$usage"; return 1; }
+    [[ -e "$file" ]] || { err "$file doesn't exist."; echo -e "\n\n$usage"; return 1; }
+    [[ -z "$type" ]] && { report "no compression type selected, defaulting to [${COLORS[YELLOW]}${COLORS[BOLD]}$def${COLORS[OFF]}]\n"; type="$def"; }
 
     case "$type" in
         zip) makezip "$file"
@@ -924,12 +929,12 @@ compress() {
         #tar) maketar "$file"
         tar) maketar2 "$file"
              ;;
-        rar) [[ -d "$file" ]] || { err "input for rar has to be a dir" "$FUNCNAME"; return 1; }
+        rar) [[ -d "$file" ]] || { err "input for rar has to be a dir"; return 1; }
              makerar "$file"
              ;;
         7z)  make7z "$file"
              ;;
-        *)   err "compression type [$type] not supported; supported types: $sup\n" "$FUNCNAME"
+        *)   err "compression type [$type] not supported; supported types: $sup\n"
              echo -e "$usage";
              return 1;
              ;;
@@ -989,10 +994,10 @@ extract() {
     #file_extension="${file##*.}"
 
     if [[ -z "$file" ]]; then
-        err "gimme file to extract plz." "$FUNCNAME"
+        err "gimme file to extract plz."
         return 1
     elif [[ ! -f "$file" || ! -r "$file" ]]; then
-        err "[$file] is not a regular file or read rights not granted." "$FUNCNAME"
+        err "[$file] is not a regular file or read rights not granted."
         return 1
     fi
 
@@ -1000,9 +1005,9 @@ extract() {
         local dir
 
         readonly dir="$file_without_extension"
-        [[ -e "$dir" ]] && { err "[$dir] already exists" "${FUNCNAME[1]}"; return 1; }
+        [[ -e "$dir" ]] && { err "[$dir] already exists" -1; return 1; }
         command mkdir -- "$dir" || return 1
-        [[ -d "$dir" ]] || { err "mkdir failed to create [$dir]" "${FUNCNAME[1]}"; return 1; }
+        [[ -d "$dir" ]] || { err "mkdir failed to create [$dir]" -1; return 1; }
         return 0
     }
 
@@ -1041,12 +1046,12 @@ extract() {
         *.Z)         check_progs_installed uncompress || return 1
                         uncompress -- "$file"  || return 1
                         ;;
-        *)           err "[$file] cannot be extracted; this filetype is not supported." "$FUNCNAME"
+        *)           err "[$file] cannot be extracted; this filetype is not supported."
                         return 1
                         ;;
     esac
 
-    report "extracted [$file] contents into [$file_without_extension]" "$FUNCNAME"
+    report "extracted [$file] contents into [$file_without_extension]"
     unset __create_target_dir
 }
 
@@ -1055,7 +1060,7 @@ extract() {
 fontreset() {
     local dir
 
-    [[ -d ~/.fonts ]] || { err "~/.fonts is not a dir" "$FUNCNAME"; return 1; }
+    [[ -d ~/.fonts ]] || { err "~/.fonts is not a dir"; return 1; }
 
     xset +fp ~/.fonts
     mkfontscale ~/.fonts
@@ -1111,21 +1116,21 @@ xmlformat() {
     local file regex result content
 
     readonly regex='^\s*<'
-    [[ -z "$@" ]] && { echo -e "usage:   $FUNCNAME  <filename>  OR  $FUNCNAME  'raw xml string'"; return 1; }
+    [[ -z "$@" ]] && { echo -e "usage:   $(funname)  <filename>  OR  $(funname)  'raw xml string'"; return 1; }
     check_progs_installed xmllint "$EDITOR" || return 1;
 
     if [[ "$#" -eq 1 && ! -f "$*" && "$*" =~ $regex ]]; then
         content="$(sed '/^\s*$/d;s/^[[:space:]]*//;s/[[:space:]]*$//' <<< "$*")"  # strip empty lines + leading&trailing whitespace
-        result="$(xmllint --format - <<< "$content")" || { err "formatting input xml failed" "$FUNCNAME"; return 1; }
+        result="$(xmllint --format - <<< "$content")" || { err "formatting input xml failed"; return 1; }
         echo
         echo "$result"
         echo
-        copy_to_clipboard "$result" && report "formatted xml is on clipboard" "$FUNCNAME"
+        copy_to_clipboard "$result" && report "formatted xml is on clipboard"
         return 0
     fi
 
     for file in "$@"; do
-        [[ -f "$file" && -r "$file" ]] || { err "provided file [$file] is not a regular file or is not readable. abort." "$FUNCNAME"; return 1; }
+        [[ -f "$file" && -r "$file" ]] || { err "provided file [$file] is not a regular file or is not readable. abort."; return 1; }
     done
 
     xmllint --format "$@" | "$EDITOR"  "+set foldlevel=99" -;
@@ -1136,17 +1141,18 @@ xmlf() { xmlformat "$@"; }  # alias for xmlformat;
 # TODO: instead of verifying device doesn't end w/ digit, perhaps list devices via:   lsblk -d -n -oNAME,RO | grep '0$' | awk {'print $1'}
 createUsbIso() {
     local file device mountpoint cleaned_devicename usage override_dev_partitioncheck
-    local reverse inf ouf full_lsblk_output i OPTIND partition
+    local reverse inf ouf full_lsblk_output i f OPTIND partition
 
-    readonly usage="${FUNCNAME}: write files onto devices and vice versa.
+    f="$(funname)"
+    readonly usage="$f: write files onto devices and vice versa.
 
-    Usage:   $FUNCNAME  [options]  source  destination
+    Usage:   $f  [options]  source  destination
         -o  allow selecting devices whose name ends with a digit (note that you
             should be selecting a whole device instead of its parition (ie sda vs sda1),
             but some devices have weird names (eg sd cards, optical drives)).
 
-    example: $FUNCNAME  file.iso  /dev/sdh
-             $FUNCNAME  /dev/sdb  /tmp/file.iso"
+    example: $f  file.iso  /dev/sdh
+             $f  /dev/sdb  /tmp/file.iso"
 
     check_progs_installed   dd lsblk dirname umount sudo || return 1
 
@@ -1177,37 +1183,37 @@ createUsbIso() {
     readonly cleaned_devicename="${device##*/}"  # strip everything before last slash (slash included)
 
     if [[ -z "$file" || -z "$device" || -z "$cleaned_devicename" ]]; then
-        err "either file or device weren't provided" "$FUNCNAME"
+        err "either file or device weren't provided"
         echo -e "$usage"
         return 1;
     elif [[ ! -f "$file" && "$reverse" -ne 1 ]]; then
-        err "[$file] is not a regular file" "$FUNCNAME"
+        err "[$file] is not a regular file"
         echo -e "$usage"
         return 1;
     elif [[ -f "$file" && "$reverse" -eq 1 ]]; then
-        err "[$file] already exists. choose another file to write into, or delete it." "$FUNCNAME"
+        err "[$file] already exists. choose another file to write into, or delete it."
         echo -e "$usage"
         return 1;
     elif [[ "$reverse" -eq 1 && ! -d "$(dirname -- "$file")" ]]; then
-        err "[$file] doesn't appear to be defined on a valid path. please check." "$FUNCNAME"
+        err "[$file] doesn't appear to be defined on a valid path. please check."
         echo -e "$usage"
         return 1;
     elif [[ ! -e "$device" ]]; then
-        err "[$device] device does not exist" "$FUNCNAME"
+        err "[$device] device does not exist"
         echo -e "$usage"
         return 1;
     elif ! find /dev -name "$cleaned_devicename" -print0 -quit 2> /dev/null | grep -q .; then
-        err "[$cleaned_devicename] does not exist in /dev" "$FUNCNAME"
+        err "[$cleaned_devicename] does not exist in /dev"
         echo -e "$usage"
         return 1;
     elif [[ "$override_dev_partitioncheck" -ne 1 && "$cleaned_devicename" =~ .*[0-9]+$ ]]; then
         # as per arch wiki
-        err "please don't provide partition, but a drive, e.g. /dev/sdh instad of /dev/sdh1" "$FUNCNAME"
-        report "note you can override this check with the -o flag." "$FUNCNAME"
+        err "please don't provide partition, but a drive, e.g. /dev/sdh instad of /dev/sdh1"
+        report "note you can override this check with the -o flag."
         echo -e "$usage"
         return 1
     elif [[ "$override_dev_partitioncheck" -eq 1 && "$cleaned_devicename" =~ .*[0-9]+$ ]]; then
-        report "you've selected to override partition check (ie making sure you select device, not its partition.)" "$FUNCNAME"
+        report "you've selected to override partition check (ie making sure you select device, not its partition.)"
         confirm "are you sure that [$cleaned_devicename] is the device you wish to select?" || return 1
     fi
 
@@ -1215,7 +1221,7 @@ createUsbIso() {
     #sudo fdisk -l $device
     readonly full_lsblk_output="$(lsblk)" || { err "issues running lsblk"; return 1; }
     echo "$full_lsblk_output" | grep --color=auto -- "$cleaned_devicename\|MOUNTPOINT"
-    confirm  "\nis selected device [$device] the correct one? (y/n)" || { report "aborting, nothing written." "$FUNCNAME"; return 1; }
+    confirm  "\nis selected device [$device] the correct one? (y/n)" || { report "aborting, nothing written."; return 1; }
 
     # find if device is mounted:
     #lsblk -o name,size,mountpoint /dev/sda
@@ -1223,28 +1229,28 @@ createUsbIso() {
     for partition in ${device}* ; do
         echo "$full_lsblk_output" | grep -Eq "${partition##*/}\b" || continue  # not all partitions are listed by lsblk; dunno what's with that
 
-        mountpoint="$(lsblk -o mountpoint -- "$partition")" || { err "some issue occurred running [lsblk -o mountpoint ${partition}]" "$FUNCNAME"; return 1; }
+        mountpoint="$(lsblk -o mountpoint -- "$partition")" || { err "some issue occurred running [lsblk -o mountpoint ${partition}]"; return 1; }
         mountpoint="$(echo "$mountpoint" | sed -n 2p)"
         if [[ -n "$mountpoint" ]]; then
-            report "[$partition] appears to be mounted at [$mountpoint], trying to unmount..." "$FUNCNAME"
+            report "[$partition] appears to be mounted at [$mountpoint], trying to unmount..."
             if ! sudo umount "$mountpoint"; then
-                err "something went wrong while unmounting [$mountpoint]. please unmount the device and try again." "$FUNCNAME"
+                err "something went wrong while unmounting [$mountpoint]. please unmount the device and try again."
                 return 1
             fi
-            report "...success." "$FUNCNAME"
+            report "...success."
         fi
     done
 
     [[ "$reverse" -eq 1 ]] && { inf="$device"; ouf="$file"; } || { inf="$file"; ouf="$device"; }
 
     echo
-    confirm "last confirmation: wish to write [$inf] into [$ouf]?" || { report "aborting." "$FUNCNAME"; return 1; }
-    report "Please provide sudo passwd for running dd:" "$FUNCNAME"
+    confirm "last confirmation: wish to write [$inf] into [$ouf]?" || { report "aborting."; return 1; }
+    report "Please provide sudo passwd for running dd:"
     sudo echo
     clear
 
-    report "Running dd, writing [$inf] into [$ouf]; this might take a while..." "$FUNCNAME"
-    sudo dd if="$inf" of="$ouf" bs=4M status=progress || { err "some error occurred while running dd (err code [$?])." "$FUNCNAME"; }
+    report "Running dd, writing [$inf] into [$ouf]; this might take a while..."
+    sudo dd if="$inf" of="$ouf" bs=4M status=progress || err "some error occurred while running dd (err code [$?])"
     sync  # to check sync progress in separate terminal, do  $ watch -d grep -e Dirty: -e Writeback: /proc/meminfo
     #eject $device
 
@@ -1325,7 +1331,7 @@ mkgit() {
 
     mainOptCounter=0
     is_private=true  # by default create private repos
-    readonly usage="usage:   $FUNCNAME  -g|-b|-w [-p] <dir> [project_name]
+    readonly usage="usage:   $(funname)  -g|-b|-w [-p] <dir> [project_name]
            -g   create repo in github
            -b   create repo in bitbucket
            -w   create repo at work
@@ -1374,34 +1380,34 @@ mkgit() {
     readonly curl_output="/tmp/curl_create_repo_output_${RANDOM}.out"
 
     if [[ "$mainOptCounter" -gt 1 ]]; then
-        err "-g, -w and -b flags are exclusive." "$FUNCNAME"
+        err "-g, -w and -b flags are exclusive."
         echo -e "$usage"
         return 1
     elif [[ "$mainOptCounter" -eq 0 ]]; then
-        err "need to select a repo to create new project in." "$FUNCNAME"
+        err "need to select a repo to create new project in."
         echo -e "$usage"
         return 1
     elif [[ "$#" -gt 2 ]]; then
-        err "too many arguments" "$FUNCNAME"
+        err "too many arguments"
         echo -e "$usage"
         return 1
     elif ! check_progs_installed git getnetrc curl jq; then
         return 1
     elif [[ -z "$dir" ]]; then
-        err "need to provide dir at minimum" "$FUNCNAME"
+        err "need to provide dir at minimum"
         echo -e "$usage"
         return 1
     elif [[ -d "$dir/.git" ]]; then
-        err "[$dir] is already a git repo. abort." "$FUNCNAME"
+        err "[$dir] is already a git repo. abort."
         return 1
     elif is_git; then
-        err "you're already in a git project; don't nest them." "$FUNCNAME"
+        err "you're already in a git project; don't nest them."
         return 1
     elif [[ "$project_name" == */* ]]; then
-        err "project name [$project_name] contains slashes." "$FUNCNAME"
+        err "project name [$project_name] contains slashes."
         return 1
     elif ! check_connection -w "$repo"; then  # -w as bitbucket.org doesn't respond to ping
-        err "no connection to [$repo]" "$FUNCNAME"
+        err "no connection to [$repo]"
         return 1
     fi
 
@@ -1412,13 +1418,13 @@ mkgit() {
 
     # sanity in case:
     if ! [[ -d "$dir" && -w "$dir" ]]; then
-       err "we were unable to create dir [$dir], or it simply doesn't have write permission." "$FUNCNAME"
+       err "we were unable to create dir [$dir], or it simply doesn't have write permission."
        return 1
     fi
 
     passwd="$(getnetrc "${user}@${repo}")"
     if [[ "$?" -ne 0 || -z "$passwd" ]]; then
-        err "getting password failed. abort." "$FUNCNAME"
+        err "getting password failed. abort."
         [[ "$newly_created_dir" -eq 1 ]] && rm -r -- "$dir"  # delete the dir we just created
         return 1
     fi
@@ -1436,15 +1442,15 @@ mkgit() {
             --max-time 5 --connect-timeout 2 \
             "https://${repo}/api/v3/namespaces?per_page=300")"
 
-        [[ "$gitlab_namespaces_json" == '[{"'* ]] || { err "found namespaces curl reply isn't expected json array: $gitlab_namespaces_json" "$FUNCNAME"; return 1; }
+        [[ "$gitlab_namespaces_json" == '[{"'* ]] || { err "found namespaces curl reply isn't expected json array: $gitlab_namespaces_json"; return 1; }
 
         is_id_field=0
         declare -A namespace_to_id
         while read -r i; do
             [[ "$is_id_field" -eq 0 ]] && { j="$i"; is_id_field=1; continue; }
 
-            [[ -z "$j" ]] && { err "found namespace name was empty string; gitlab namespaces json response: $gitlab_namespaces_json" "$FUNCNAME"; return 1; }
-            is_digit "$i" || { err "found namespace id [$i] was not a digit; gitlab namespaces json response: $gitlab_namespaces_json" "$FUNCNAME"; return 1; }
+            [[ -z "$j" ]] && { err "found namespace name was empty string; gitlab namespaces json response: $gitlab_namespaces_json"; return 1; }
+            is_digit "$i" || { err "found namespace id [$i] was not a digit; gitlab namespaces json response: $gitlab_namespaces_json"; return 1; }
             namespace_to_id[$j]="$i"
             fzf_selection+="${j}\n"
             is_id_field=0
@@ -1453,7 +1459,7 @@ mkgit() {
         readonly fzf_selection="${fzf_selection:0:$(( ${#fzf_selection} - 2 ))}"  # strip the trailing newline
         namespace="$(echo -e "$fzf_selection" | fzf --exit-0)" || return 1  # TODO: delegate to generic select_items()
         namespace_id="${namespace_to_id[$namespace]}"
-        is_digit "$namespace_id" || { err "unable to find namespace id from name [$namespace]" "$FUNCNAME"; return 1; }
+        is_digit "$namespace_id" || { err "unable to find namespace id from name [$namespace]"; return 1; }
 
         return 0
     }
@@ -1495,36 +1501,36 @@ mkgit() {
                     -o "$curl_output")"
                 ;;
             *)
-                err "unexpected repo [$repo]" "$FUNCNAME"
+                err "unexpected repo [$repo]"
                 [[ "$newly_created_dir" -eq 1 ]] && rm -r -- "$dir"  # delete the dir we just created
                 return 1
                 ;;
         esac
 
         if [[ "${#http_statuscode}" -ne 3 || "$http_statuscode" != 20* ]]; then
-            err "curl request for creating the repo @ [$repo] failed w/ [$http_statuscode]" "$FUNCNAME"
+            err "curl request for creating the repo @ [$repo] failed w/ [$http_statuscode]"
             if [[ -f "$curl_output" ]]; then
-                err "curl output can be found in [$curl_output]. contents are:\n\n" "$FUNCNAME"
+                err "curl output can be found in [$curl_output]. contents are:\n\n"
                 jq . < "$curl_output"
             fi
             echo
-            err "abort" "$FUNCNAME"
+            err "abort"
 
             [[ "$newly_created_dir" -eq 1 ]] && rm -r -- "$dir"  # delete the dir we just created
             return 1
         fi
 
-        report "created new repo @ [${repo}/${namespace}/${project_name}]" "$FUNCNAME"
+        report "created new repo @ [${repo}/${namespace}/${project_name}]"
         echo
     fi
 
     pushd -- "$dir" &> /dev/null || return 1
-    git init || { err "bad return from git init - code [$?]" "$FUNCNAME"; return 1; }
-    git remote add origin "git@${repo}:${namespace}/${project_name}.git" || { err "adding remote failed. abort." "$FUNCNAME"; return 1; }
+    git init || { err "bad return from git init - code [$?]"; return 1; }
+    git remote add origin "git@${repo}:${namespace}/${project_name}.git" || { err "adding remote failed. abort."; return 1; }
     echo
 
     if confirm "add README.md? (recommended)"; then
-        report "adding README.md ..." "$FUNCNAME"
+        report "adding README.md ..."
         touch README.md
         git add README.md
         git commit -a -m 'inital commit, adding readme - automated'
@@ -1549,16 +1555,16 @@ gito() {
         check_progs_installed git fzf || return 1
     fi
 
-    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+    is_git || { err "not in git repo."; return 1; }
 
-    readonly git_root="$(git rev-parse --show-toplevel)" || { err "unable to find project root" "$FUNCNAME"; return 1; }
+    readonly git_root="$(git rev-parse --show-toplevel)" || { err "unable to find project root"; return 1; }
 
     if [[ -n "$src" ]]; then
         if [[ "$src" == *\** && "$src" != *\.\** ]]; then
-            err 'use .* as wildcards, not a single *' "$FUNCNAME"
+            err 'use .* as wildcards, not a single *'
             return 1
         elif [[ "$(echo "$src" | tr -dc '.' | wc -m)" -lt "$(echo "$src" | tr -dc '*' | wc -m)" ]]; then
-            err "nr of periods (.) was less than stars (*); are you misusing regex?" "$FUNCNAME"
+            err "nr of periods (.) was less than stars (*); are you misusing regex?"
             return 1
         fi
     fi
@@ -1585,7 +1591,7 @@ gito() {
 
     [[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back
     unset __git_ls_fun
-    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
+    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found"; return 1; }
 
     for ((i=0; i <= (( ${#matches[@]} - 1 )); i++)); do
         matches[i]="$git_root/${matches[i]}"  # convert to absolute
@@ -1600,10 +1606,10 @@ gut() {
 
     readonly tag="$*"
 
-    is_git || { err "not in git repo" "$FUNCNAME"; return 1; }
-    [[ -z "$tag" ]] && { err "need to provide tag to delete." "$FUNCNAME"; return 1; }
-    git_tag_exists "$tag" || { err "tag [$tag] does not exist. abort." "$FUNCNAME"; return 1; }
-    git tag -d "$tag" || { err "deleting tag [$tag] locally failed. abort." "$FUNCNAME"; return 1; }
+    is_git || { err "not in git repo"; return 1; }
+    [[ -z "$tag" ]] && { err "need to provide tag to delete."; return 1; }
+    git_tag_exists "$tag" || { err "tag [$tag] does not exist. abort."; return 1; }
+    git tag -d "$tag" || { err "deleting tag [$tag] locally failed. abort."; return 1; }
     git push origin ":refs/tags/$tag"
     return $?
 }
@@ -1612,12 +1618,12 @@ gut() {
 glt() {
     local last_tag
 
-    is_git || { err "not in git repo" "$FUNCNAME"; return 1; }
+    is_git || { err "not in git repo"; return 1; }
     last_tag="$(get_git_last_tag)" || return 1
 
     [[ -z "$last_tag" ]] && { report "no tags found"; return 1; }
-    report "latest tag: [$last_tag]" "$FUNCNAME"
-    copy_to_clipboard "$last_tag" || { err "unable to copy tag to clipboard." "$FUNCNAME"; return 1; }
+    report "latest tag: [$last_tag]"
+    copy_to_clipboard "$last_tag" || { err "unable to copy tag to clipboard."; return 1; }
     return $?
 }
 
@@ -1648,7 +1654,7 @@ increment_version() {
         __SELECTED_ITEMS=("$ver")
     fi
 
-    [[ -z "${__SELECTED_ITEMS[*]}" ]] && { err "no version selected" "$FUNCNAME"; return 1; }
+    [[ -z "${__SELECTED_ITEMS[*]}" ]] && { err "no version selected"; return 1; }
     return 0
 }
 
@@ -1664,27 +1670,27 @@ gffs() {
     fi
 
     if [[ -z "$branch" ]]; then
-        err "need to provide feature branch name to create/start" "$FUNCNAME"
+        err "need to provide feature branch name to create/start"
         return 1
     elif [[ "$branch" == */* ]]; then
-        err "there are slashes in the branchname. need to provide the child branch name only, not [feature/...]" "$FUNCNAME"
+        err "there are slashes in the branchname. need to provide the child branch name only, not [feature/...]"
         return 1
     elif git_branch_exists "feature/$branch"; then
-        err "branch [feature/$branch] already exists on remote." "$FUNCNAME"
+        err "branch [feature/$branch] already exists on remote."
         return 1
     elif [[ "$(get_git_branch)" != develop ]]; then
-        confirm "you're not on develop; note that ${FUNCNAME}() creates new feature branches off of develop. continue?" || return
+        confirm "you're not on develop; note that $(funname)() creates new feature branches off of develop. continue?" || return
     fi
 
-    git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort." "$FUNCNAME"; return 1; }
-    git flow feature start -F "$branch" || { err "starting git feature failed." "$FUNCNAME"; return 1; }
+    git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort."; return 1; }
+    git flow feature start -F "$branch" || { err "starting git feature failed."; return 1; }
     return $?
 }
 
 
 # git flow feature publish
 gffp() {
-    [[ "$(get_git_branch)" != feature/* ]] && { err "need to be on a feature branch for this." "$FUNCNAME"; return 1; }
+    [[ "$(get_git_branch)" != feature/* ]] && { err "need to be on a feature branch for this."; return 1; }
     git flow feature publish
 }
 
@@ -1696,22 +1702,22 @@ gfff() {
     [[ -n "$1" ]] && readonly branch="$1" || readonly branch="$(get_git_branch --child)"
 
     if [[ "$(get_git_branch)" != feature/* ]]; then
-        err "should be on a feature branch" "$FUNCNAME"
+        err "should be on a feature branch"
         return 1
     elif [[ -z "$branch" ]]; then
-        err "need to provide feature branch to finish" "$FUNCNAME"
+        err "need to provide feature branch to finish"
         return 1
     elif [[ "$branch" == */* ]]; then
-        err "there are slashes in the branchname. need to provide the child branch name only, not [feature/...]" "$FUNCNAME"
+        err "there are slashes in the branchname. need to provide the child branch name only, not [feature/...]"
         return 1
     fi
 
-    git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort." "$FUNCNAME"; return 1; }
-    git flow feature finish -F "$branch" || { err "finishing git feature failed." "$FUNCNAME"; return 1; }
+    git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort."; return 1; }
+    git flow feature finish -F "$branch" || { err "finishing git feature failed."; return 1; }
 
     # push the merged develop commit:
     #if [[ "$(get_git_branch --child)" == develop ]]; then
-    git push || { err "pushing to [$(get_git_branch)] failed." "$FUNCNAME"; return 1; }
+    git push || { err "pushing to [$(get_git_branch)] failed."; return 1; }
     return $?
 }
 
@@ -1747,22 +1753,22 @@ gfrs() {
     local tag last_tag expected_tags pom_ver pom pom_wo_postfix i
 
     tag="$1"
-    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+    is_git || { err "not in git repo."; return 1; }
 
     __ask_ver() {
         if [[ -n "$pom_ver" ]]; then
-            [[ "$pom_wo_postfix" =~ ^[0-9\.]+$ ]] || { err "maven/pom ver [$pom_wo_postfix] is in an unexpected format." "${FUNCNAME[1]}"; return 1; }
+            [[ "$pom_wo_postfix" =~ ^[0-9\.]+$ ]] || { err "maven/pom ver [$pom_wo_postfix] is in an unexpected format." -1; return 1; }
             confirm "tag as ver [${COLORS[GREEN]}${pom_wo_postfix}${COLORS[OFF]}]? (derived from current pom ver [$pom_ver])" && { tag="$pom_wo_postfix"; return 0; }
         fi
 
         read -rp 'enter tag ver to create: ' tag
-        [[ -z "$tag" ]] && { err "need to provide release tag to create" "${FUNCNAME[1]}"; return 1; }
+        [[ -z "$tag" ]] && { err "need to provide release tag to create" -1; return 1; }
         return 0
     }
 
     declare -a expected_tags
 
-    pom="$(git rev-parse --show-toplevel)/pom.xml" || { err "unable to find git root" "$FUNCNAME"; return 1; }
+    pom="$(git rev-parse --show-toplevel)/pom.xml" || { err "unable to find git root"; return 1; }
     pom_ver="$(grep -Pos -m 1 '^\s+<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
     pom_wo_postfix="$(grep -Eos '^[0-9\.]+' <<< "$pom_ver" 2>/dev/null)"
 
@@ -1772,21 +1778,21 @@ gfrs() {
     unset __ask_ver
 
     if [[ -z "$tag" ]]; then
-        err "no tag version specified" "$FUNCNAME"; return 1
+        err "no tag version specified"; return 1
     elif [[ "$tag" == */* ]]; then
-        err "there are slashes in the tag. need to provide the child tag ver only, not [release/...]" "$FUNCNAME"
+        err "there are slashes in the tag. need to provide the child tag ver only, not [release/...]"
         return 1
     elif git_branch_exists "release/$tag"; then
-        err "branch [release/$tag] already exists on remote." "$FUNCNAME"
+        err "branch [release/$tag] already exists on remote."
         return 1
     elif git_tag_exists "$tag"; then
-        err "tag [$tag] already exists." "$FUNCNAME"
+        err "tag [$tag] already exists."
         return 1
     fi
 
     # try to predict logical tag names based on latest tag and, if available, pom file.
     # if provided tag is not one of them, ask for confirmation.
-    last_tag="$(get_git_last_tag)" || { err "problems finding latest tag. this was found as latest tag: [$last_tag]" "$FUNCNAME"; unset last_tag; }
+    last_tag="$(get_git_last_tag)" || { err "problems finding latest tag. this was found as latest tag: [$last_tag]"; unset last_tag; }
     if [[ -n "$last_tag" ]]; then  # tag exists
         expected_tags=( $(sort -u < <(
             __increment_version_next_major_or_minor "$last_tag" 0;
@@ -1794,7 +1800,7 @@ gfrs() {
             __increment_version_next_major_or_minor "$last_tag" 2;
             echo "$pom_wo_postfix";
             )
-        ) ) || { err "something blew up" "$FUNCNAME"; return 1; }
+        ) ) || { err "something blew up"; return 1; }
     else
         expected_tags=("$pom_wo_postfix")  # no biggie if pom_wo_postfix is null
     fi
@@ -1803,15 +1809,15 @@ gfrs() {
         confirm "tag [${COLORS[GREEN]}${COLORS[BOLD]}${tag}${COLORS[OFF]}] is not of expected increment\n   (expected one of  $(build_comma_separated_list "${expected_tags[@]}"))\n\ncontinue anyways?" || return
     fi
 
-    git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort." "$FUNCNAME"; return 1; }
-    git flow release start -F "$tag" || { err "git flow relstart failed" "$FUNCNAME"; return 1; }
+    git checkout master && git pull && git checkout develop && git pull || { err "pulling master and/or develop failed. abort."; return 1; }
+    git flow release start -F "$tag" || { err "git flow relstart failed"; return 1; }
 
     if [[ -n "$pom_ver" ]]; then  # we're dealing with a maven project
-        [[ "$pom_ver" =~ ^[0-9\.]+(-SNAPSHOT)?$ ]] || { err "fyi: current maven/pom ver [$pom_ver] is in an unexpected format.\n" "$FUNCNAME"; sleep 3; }
+        [[ "$pom_ver" =~ ^[0-9\.]+(-SNAPSHOT)?$ ]] || { err "fyi: current maven/pom ver [$pom_ver] is in an unexpected format.\n"; sleep 3; }
         # replace pom ver:
-        sed -i "0,/<version>.*</s//<version>${tag}</" "$pom" || { err "switching versions with sed failed" "$FUNCNAME"; return 1; }
+        sed -i "0,/<version>.*</s//<version>${tag}</" "$pom" || { err "switching versions with sed failed"; return 1; }
         [[ "$(grep -c '<tag>HEAD</t' "$pom")" -gt 1 ]] && { err "unexpected number of <tag>HEAD</tag> tags in pom"; return 1; }
-        sed -i "0,/<tag>HEAD</s//<tag>${tag}</" "$pom" || { err "switching scm tag versions with sed failed" "$FUNCNAME"; return 1; }
+        sed -i "0,/<tag>HEAD</s//<tag>${tag}</" "$pom" || { err "switching scm tag versions with sed failed"; return 1; }
         __verify_files_changes_and_commit "$tag" "$pom" || return 1
     fi
 }
@@ -1821,47 +1827,47 @@ gfrs() {
 gfrf() {
     local tag pom pom_ver next_dev
 
-    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+    is_git || { err "not in git repo."; return 1; }
     [[ -n "$1" ]] && readonly tag="$1" || readonly tag="$(get_git_branch --child)"
 
     if [[ "$(get_git_branch)" != release/* ]]; then
-        err "should be on a release branch" "$FUNCNAME"
+        err "should be on a release branch"
         return 1
     elif [[ -z "$tag" ]]; then
-        err "need to provide release tag to finish" "$FUNCNAME"
+        err "need to provide release tag to finish"
         return 1
     elif [[ "$tag" == */* ]]; then
-        err "there are slashes in the tag. need to provide the child tag ver only, not [release/...]" "$FUNCNAME"
+        err "there are slashes in the tag. need to provide the child tag ver only, not [release/...]"
         return 1
     fi
 
-    pom="$(git rev-parse --show-toplevel)/pom.xml" || { err "unable to find git root" "$FUNCNAME"; return 1; }
+    pom="$(git rev-parse --show-toplevel)/pom.xml" || { err "unable to find git root"; return 1; }
     pom_ver="$(grep -Pos -m 1 '^\s+<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
 
     if [[ -n "$pom_ver" ]]; then  # we're dealing with a maven project
         # check tests _before_ tagging; TODO: do we want to run test as part of gfrf()?
-        #mvn clean install || { err "fix tests" "$FUNCNAME"; return 1; }
+        #mvn clean install || { err "fix tests"; return 1; }
         true  # TODO: should we run clean install here or not?
     fi
-    git flow release finish -F -p "$tag" || { err "finishing git release failed." "$FUNCNAME"; return 1; }
-    report "pushing tags..." "$FUNCNAME"
-    git push --tags || { err "...pushing tags failed." "$FUNCNAME"; return 1; }
+    git flow release finish -F -p "$tag" || { err "finishing git release failed."; return 1; }
+    report "pushing tags..."
+    git push --tags || { err "...pushing tags failed."; return 1; }
     # now you should be on develop
 
     if [[ -n "$pom_ver" ]]; then  # we're dealing with a maven project
-        report "select next development version" "$FUNCNAME"
-        increment_version "${tag}-SNAPSHOT" || { err "increment_version() failed." "$FUNCNAME"; return 1; }
+        report "select next development version"
+        increment_version "${tag}-SNAPSHOT" || { err "increment_version() failed."; return 1; }
         next_dev="$__SELECTED_ITEMS"
 
         # replace pom ver:
-        sed -i "0,/<version>${tag}</s//<version>${next_dev}</" "$pom" || { err "switching versions with sed failed" "$FUNCNAME"; return 1; }
-        sed -i "0,/<tag>${tag}</s//<tag>HEAD</" "$pom" || { err "switching scm tag version with sed failed" "$FUNCNAME"; return 1; }
+        sed -i "0,/<version>${tag}</s//<version>${next_dev}</" "$pom" || { err "switching versions with sed failed"; return 1; }
+        sed -i "0,/<tag>${tag}</s//<tag>HEAD</" "$pom" || { err "switching scm tag version with sed failed"; return 1; }
         __verify_files_changes_and_commit --push "$next_dev" "$pom" || return 1
 
-        report "deploying to nexus..." "$FUNCNAME"
-        git checkout "$tag" || { err "unable to check out [$tag]" "$FUNCNAME"; return 1; }
-        mvn clean deploy -Dmaven.test.skip=true || { err "mvn deployment failed" "$FUNCNAME"; return 1; }
-        git checkout develop || { err "unable to check out [develop]" "$FUNCNAME"; return 1; }
+        report "deploying to nexus..."
+        git checkout "$tag" || { err "unable to check out [$tag]"; return 1; }
+        mvn clean deploy -Dmaven.test.skip=true || { err "mvn deployment failed"; return 1; }
+        git checkout develop || { err "unable to check out [develop]"; return 1; }
     fi
 
     return 0
@@ -1886,7 +1892,7 @@ git-show-merged-branches() {
 ago() {
     local DMENU match dmenurc editor
 
-    err "ag is not playing along at the moment. see fo()" "$FUNCNAME"
+    err "ag is not playing along at the moment. see fo()"
     return 1
 
     readonly dmenurc="$HOME/.dmenurc"
@@ -1902,7 +1908,7 @@ ago() {
     [[ $(echo "$match" | wc -l) -gt 1 ]] && match="$(echo "$match" | $DMENU -l 20 -p open)"
     [[ -z "$match" ]] && return 1
 
-    [[ -f "$match" ]] || { err "[$match] is not a regular file." "$FUNCNAME"; return 1; }
+    [[ -f "$match" ]] || { err "[$match] is not a regular file."; return 1; }
     $editor "$match"
 }
 
@@ -1933,7 +1939,7 @@ foa() {
         matches+=("$i")
     done < <(ffind --_skip_msgs "$opts" "$@")
 
-    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
+    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found"; return 1; }
     __fo "${matches[@]}"
 }
 
@@ -1951,15 +1957,15 @@ fod() {
         matches+=("$i")
     done < <(ffind --_skip_msgs "$@")
 
-    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
+    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found"; return 1; }
 
-    report "found [${#matches[@]}] nodes:" "$FUNCNAME"
+    report "found [${#matches[@]}] nodes:"
     for i in "${matches[@]}"; do
         echo -e "\t${i}"
     done
 
     if confirm "wish to DELETE them?"; then
-        rm -r -- "${matches[@]}" || { _FOUND_FILES=("${matches[@]}"); err "something went wrong while deleting. (stored the files in \$_FOUND_FILES array)" "$FUNCNAME"; return 1; }
+        rm -r -- "${matches[@]}" || { _FOUND_FILES=("${matches[@]}"); err "something went wrong while deleting. (stored the files in \$_FOUND_FILES array)"; return 1; }
     fi
 }
 
@@ -1985,7 +1991,7 @@ fog() {
         opts="-L${default_depth}"
     fi
 
-    [[ "$#" -eq 0 ]] && { err "too few args." "$FUNCNAME"; return 1; }
+    [[ "$#" -eq 0 ]] && { err "too few args."; return 1; }
 
     if ! command -v fzf > /dev/null 2>&1; then
         while IFS= read -r -d $'\0' i; do
@@ -2000,7 +2006,7 @@ fog() {
         done < <(ffind --_skip_msgs "$opts" "$@" | fzf --select-1 --read0 --exit-0)
     fi
 
-    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
+    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found"; return 1; }
 
     _goto "${matches[@]}"
 }
@@ -2041,7 +2047,7 @@ fon() {
     check_progs_installed stat sort || return 1
 
     if [[ "$#" -eq 1 ]] && is_digit "$1" && [[ "$1" -gt 0 ]]; then
-        report "note if you really wanted the ${1}. newest, then filename pattern should be provided as first arg\n" "$FUNCNAME"
+        report "note if you really wanted the ${1}. newest, then filename pattern should be provided as first arg\n"
 
     # try to filter out optional last arg defining the nth newest to open (as in open the nth newest file):
     elif [[ "$#" -gt 1 ]]; then
@@ -2058,16 +2064,16 @@ fon() {
     while IFS= read -r -d $'\0' i; do
         matches+=("$i")
     done < <(ffind --_skip_msgs "$opts" "$@")
-    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
+    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found"; return 1; }
 
-    [[ "$n" -gt "${#matches[@]}" ]] && { err "cannot open [${n}th] newest file, since total nr of found files was [${#matches[@]}]" "$FUNCNAME"; return 1; }
+    [[ "$n" -gt "${#matches[@]}" ]] && { err "cannot open [${n}th] newest file, since total nr of found files was [${#matches[@]}]"; return 1; }
 
     readonly newest="$(stat --format='%Y %n' -- "${matches[@]}" \
             | sort -r -k 1 \
             | sed -n ${n}p \
             | cut -d ' ' -f 2-)"
 
-    [[ -f "$newest" ]] || { err "something went wrong, found newest file [$newest] is not a valid file." "$FUNCNAME"; return 1; }
+    [[ -f "$newest" ]] || { err "something went wrong, found newest file [$newest] is not a valid file."; return 1; }
     __fo "$newest"
 }
 
@@ -2095,13 +2101,13 @@ fow() {
         opts="-fL${default_depth}"
     fi
 
-    [[ "$#" -le 1 ]] && { err "too few args." "$FUNCNAME"; return 1; }
+    [[ "$#" -le 1 ]] && { err "too few args."; return 1; }
 
     # filter out prog name
     readonly prog="${@: -1}"  # last arg; alternatively ${@:$#}
-    [[ -d "$prog" ]] && report "last arg needs to be the program to open with, not dir arg for ffind" "$FUNCNAME"
+    [[ -d "$prog" ]] && report "last arg needs to be the program to open with, not dir arg for ffind"
     if ! command -v -- "$prog" >/dev/null; then
-        err "[$prog] is not installed." "$FUNCNAME"
+        err "[$prog] is not installed."
         return 1
     fi
 
@@ -2120,8 +2126,8 @@ fow() {
         done < <(ffind --_skip_msgs "$opts" "$@" | fzf --select-1 --multi --read0 --exit-0)
     fi
 
-    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found" "$FUNCNAME"; return 1; }
-    report "opening [${COLORS[YELLOW]}${COLORS[BOLD]}${matches[*]}${COLORS[OFF]}] with [${COLORS[GREEN]}${COLORS[BOLD]}$prog${COLORS[OFF]}]" "$FUNCNAME"
+    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found"; return 1; }
+    report "opening [${COLORS[YELLOW]}${COLORS[BOLD]}${matches[*]}${COLORS[OFF]}] with [${COLORS[GREEN]}${COLORS[BOLD]}$prog${COLORS[OFF]}]"
     $prog -- "${matches[@]}"
 }
 
@@ -2148,7 +2154,7 @@ foc() {
         matches+=("$i")
     done < <(ffind --_skip_msgs "$opts" "$@")
 
-    report "found ${#matches[@]} files; stored in \$_FOUND_FILES arr." "$FUNCNAME"
+    report "found ${#matches[@]} files; stored in \$_FOUND_FILES arr."
     _FOUND_FILES=("${matches[@]}")
 
     return
@@ -2224,13 +2230,13 @@ __fo() {
     [[ "${#files[@]}" -eq 0 ]] && return  # quit silently
     readonly count="${#files[@]}"
     # define filetype only by the first node:  # TODO: perhaps verify all nodes are of same type?
-    readonly filetype="$(file -iLb -- "${files[0]}")" || { err "issues testing [${files[0]}] with \$ file cmd" "${FUNCNAME[1]}"; return 1; }
+    readonly filetype="$(file -iLb -- "${files[0]}")" || { err "issues testing [${files[0]}] with \$ file cmd" -1; return 1; }
 
     # report files to be opened
     if [[ "$count" -eq 1 ]]; then
-        report "opening [${COLORS[YELLOW]}${COLORS[BOLD]}${files[*]}${COLORS[OFF]}]" "${FUNCNAME[1]}"
+        report "opening [${COLORS[YELLOW]}${COLORS[BOLD]}${files[*]}${COLORS[OFF]}]" -1
     else
-        report "opening:" "${FUNCNAME[1]}"
+        report "opening:" -1
         for i in "${files[@]}"; do
             echo -e "\t${COLORS[YELLOW]}${COLORS[BOLD]}${i}${COLORS[OFF]}"
         done
@@ -2253,7 +2259,7 @@ __fo() {
             "$pager" -- "${files[@]}"
             ;;
         application/xml*)
-            [[ "$count" -gt 1 ]] && { report "won't format multiple xml files! will just open them" "${FUNCNAME[1]}"; sleep 1.5; }
+            [[ "$count" -gt 1 ]] && { report "won't format multiple xml files! will just open them" -1; sleep 1.5; }
             if [[ "$count" -gt 1 || "$(wc -l < "${files[0]}")" -gt 2 ]]; then  # note if more than 2 lines we also assume it's already formatted;
                 # note we're assuming it's already formatted if more than 2 lines;
                 check_progs_installed "$editor" || return 1
@@ -2289,13 +2295,13 @@ __fo() {
             "$editor" < /dev/tty -- "${files[@]}"
             ;;
         'application/x-executable; charset=binary'*)
-            [[ "$count" -gt 1 ]] && { report "won't execute multiple files! select one please" "${FUNCNAME[1]}"; return 1; }
+            [[ "$count" -gt 1 ]] && { report "won't execute multiple files! select one please" -1; return 1; }
             confirm "${files[*]} is executable. want to launch it from here?" || return
-            report "launching ${files[0]}..." "${FUNCNAME[1]}"
+            report "launching ${files[0]}..." -1
             ${files[0]}
             ;;
         'inode/directory;'*)
-            [[ "$count" -gt 1 ]] && { report "won't navigate to multiple dirs! select one please" "${FUNCNAME[1]}"; return 1; }
+            [[ "$count" -gt 1 ]] && { report "won't navigate to multiple dirs! select one please" -1; return 1; }
             check_progs_installed "$file_mngr" || return 1
             "$file_mngr" "${files[0]}"  # optionally 'cd'
             ;;
@@ -2309,7 +2315,7 @@ __fo() {
             "$office" "${files[@]}" &  # libreoffice doesn't like option ending marker '--'
             ;;
         *)
-            err "dunno what to open this type of file with: [$filetype]" "${FUNCNAME[1]}"
+            err "dunno what to open this type of file with: [$filetype]" -1
             return 1
             ;;
     esac
@@ -2355,18 +2361,18 @@ __settz() {
     readonly zonedir='/usr/share/zoneinfo'  # as per file/docs above
 
     check_progs_installed timedatectl || return 1
-    [[ -z "$tz" ]] && { err "provide a timezone to switch to (e.g. Europe/Madrid)." "${FUNCNAME[1]}"; return 1; }
-    [[ "$tz" =~ ^[A-Z][a-z]+/[-_A-Za-z]+$ ]] || { err "invalid timezone format; has to be in a format like [Europe/Madrid]" "${FUNCNAME[1]}"; return 1; }
-    [[ -e "$zonedir/$tz" ]] || { err "[$zonedir/$tz] does not exist; sure about your tz?" "${FUNCNAME[1]}"; return 1; }
+    [[ -z "$tz" ]] && { err "provide a timezone to switch to (e.g. Europe/Madrid)." -1; return 1; }
+    [[ "$tz" =~ ^[A-Z][a-z]+/[-_A-Za-z]+$ ]] || { err "invalid timezone format; has to be in a format like [Europe/Madrid]" -1; return 1; }
+    [[ -e "$zonedir/$tz" ]] || { err "[$zonedir/$tz] does not exist; sure about your tz?" -1; return 1; }
 
-    timedatectl set-timezone "$tz" || { err "setting tz to [$tz] failed (code $?)" "${FUNCNAME[1]}"; return 1; }
+    timedatectl set-timezone "$tz" || { err "setting tz to [$tz] failed (code $?)" -1; return 1; }
 }
 
 # fork bomb
 killmenao() {
     confirm 'you sure?' || return
     clear
-    report 'you ded.' "$FUNCNAME"
+    report 'you ded.'
     :(){ :|:& };:
 }
 
@@ -2387,7 +2393,7 @@ xclass() {
 # note this is fronted by goto()/gt() for interactive usage
 _goto() {
     local i
-    [[ -z "$*" ]] && { err "node operand required" "$FUNCNAME"; return 1; }
+    [[ -z "$*" ]] && { err "node operand required"; return 1; }
 
     if [[ -d "$*" ]]; then
         cd -- "$*"
@@ -2403,11 +2409,12 @@ _goto() {
 # consider also py package 'checksumdir'
 # https://unix.stackexchange.com/a/35834/47501
 sumtree() {
-    local usage OPTIND opt usage dir
+    local f usage OPTIND opt usage dir
 
-    readonly usage="\n${FUNCNAME}: get cumulative md5 sum of all files of either
+    f="$(funname)"
+    readonly usage="\n$f: get cumulative md5 sum of all files of either
          given directory, or current dir (default)
-         Usage: ${FUNCNAME}  [-h]  [directory]
+         Usage: $f  [-h]  [directory]
              -h  show this help\n"
 
     while getopts 'h' opt; do
@@ -2599,7 +2606,7 @@ g() {
         readonly start_dir="${2:-.}"
 
         # debug:
-        #report "patt: '$pattern'; dir: '$start_dir'" "${FUNCNAME[1]}"
+        #report "patt: '$pattern'; dir: '$start_dir'" -1
 
         # first check whether exact node name was given (including [..], given is_backing=1);
         # then we can define [dir] without invoking find:
@@ -2618,8 +2625,8 @@ g() {
             dir="$(__find_fun "$pattern" "$start_dir" | fzf --select-1 --read0 --exit-0)" || return 1
         fi
 
-        [[ -z "$dir" ]] && { err "no matches found" "${FUNCNAME[1]}"; return 1; }
-        [[ -d "$dir" ]] || { err "no such dir like [$dir] in $start_dir" "${FUNCNAME[1]}"; return 1; }
+        [[ -z "$dir" ]] && { err "no matches found" -1; return 1; }
+        [[ -d "$dir" ]] || { err "no such dir like [$dir] in $start_dir" -1; return 1; }
     }
 
     # note this function sets the parent function's dir variable.
@@ -2670,11 +2677,12 @@ g() {
 
 # from http://stackoverflow.com/questions/32723111/how-to-remove-old-and-unused-docker-images
 dcleanup() {
-    local usage opt OPTIND
+    local f usage opt OPTIND
 
-    readonly usage="\n$FUNCNAME: clean up docker containers, volumes, images, networks
+    f="$(funname)"
+    readonly usage="\n$f: clean up docker containers, volumes, images, networks
 
-    Usage: $FUNCNAME  [-acivnh]
+    Usage: $f  [-acivnh]
 
         -a  full cleanup (system prune)
         -c  remove exited containers
@@ -2717,9 +2725,9 @@ wifilist() {
     check_progs_installed nmcli || return 1
 
     if [[ -r "$wifi_device_file" ]]; then
-        [[ -z "$(cat -- "$wifi_device_file")" ]] && { err "[$wifi_device_file] is empty." "$FUNCNAME"; }
+        [[ -z "$(cat -- "$wifi_device_file")" ]] && err "[$wifi_device_file] is empty."
     else
-        err "can't read file [$wifi_device_file]; probably you have no wireless devices." "$FUNCNAME"
+        err "can't read file [$wifi_device_file]; probably you have no wireless devices."
     fi
 
     nmcli device wifi list
@@ -2775,16 +2783,16 @@ transfer() {
 
     readonly file="$1"
 
-    [[ "$#" -ne 1 || -z "$file" ]] && { err "single file to upload required" "$FUNCNAME"; return 1; }
-    [[ -e "$file" ]] || { err "[$file] does not exist." "$FUNCNAME"; return 1; }
+    [[ "$#" -ne 1 || -z "$file" ]] && { err "single file to upload required"; return 1; }
+    [[ -e "$file" ]] || { err "[$file] does not exist."; return 1; }
     check_progs_installed curl || return 1
 
     # write to output to tmpfile because of progress bar  # TODO: wat, why? would bar be stored into var if we didn't use this pointeless file?
-    tmpfile=$(mktemp -t transfer_XXX.tmp) || { err "unable to create temp with mktemp" "$FUNCNAME"; return 1; }
+    tmpfile=$(mktemp -t transfer_XXX.tmp) || { err "unable to create temp with mktemp"; return 1; }
     curl --fail --connect-timeout 2 --progress-bar --upload-file "$file" "https://transfer.sh/$(basename -- "$file")" >> "$tmpfile" || { err; return 1; }
     cat -- "$tmpfile"
     echo
-    copy_to_clipboard "$(cat -- "$tmpfile")" && report "copied link above to clipboard" "$FUNCNAME" || err "copying to clipboard failed" "$FUNCNAME"
+    copy_to_clipboard "$(cat -- "$tmpfile")" && report "copied link above to clipboard" || err "copying to clipboard failed"
 
     rm -f -- "$tmpfile"
 }
@@ -2794,7 +2802,7 @@ transfer() {
 ## Copy && Follow ##
 ####################
 cpf() {
-    [[ -z "$*" ]] && { err "arguments for the cp command required." "$FUNCNAME"; return 1; }
+    [[ -z "$*" ]] && { err "arguments for the cp command required."; return 1; }
     cp -- "$@" && _goto "$_";
 }
 
@@ -2802,7 +2810,7 @@ cpf() {
 ## Move && Follow ##
 ####################
 mvf() {
-    [[ -z "$*" ]] && { err "name of a node to be moved required." "$FUNCNAME"; return 1; }
+    [[ -z "$*" ]] && { err "name of a node to be moved required."; return 1; }
     mv -- "$@" && _goto "$_";
 }
 
@@ -2810,7 +2818,7 @@ mvf() {
 ## Make dir && Follow ##
 ########################
 mkcd() {
-    [[ -z "$*" ]] && { err "name of a directory to be created required." "$FUNCNAME"; return 1; }
+    [[ -z "$*" ]] && { err "name of a directory to be created required."; return 1; }
     command mkdir -p -- "$@" && cd -- "$@"
 }
 
@@ -2854,17 +2862,17 @@ mkgif() {
     readonly output='/tmp/output.gif'
     readonly optimized='/tmp/output_optimized.gif'
 
-    [[ "$#" -ne 1 ]] && { err "exactly one arg expected"; return 1; }
-    [[ -z "$input_file" ]] && { err "video file to convert to gif required as a param." "$FUNCNAME"; return 1; }
-    [[ -f "$input_file" ]] || { err "[$input_file] is not a file" "$FUNCNAME"; return 1; }
+    [[ "$#" -ne 1 ]] && { err "exactly one arg expected - video file to convert"; return 1; }
+    [[ -z "$input_file" ]] && { err "video file to convert to gif required as a param."; return 1; }
+    [[ -f "$input_file" ]] || { err "[$input_file] is not a file"; return 1; }
     check_progs_installed ffmpeg
 
     ffmpeg -ss 00:00:00.000 -i "$input_file" -pix_fmt rgb24 -r 10 -s 320x240 -t 00:00:10.000 "$output"
-    check_progs_installed convert || { err "convert is not installed; can't optimise final output [$output]" "$FUNCNAME"; return 1; }
+    check_progs_installed convert || { err "convert is not installed; can't optimise final output [$output]"; return 1; }
 
     convert -layers Optimize "$output" "$optimized"
 
-    report "final file at [$optimized]" "$FUNCNAME"
+    report "final file at [$optimized]"
 }
 
 
@@ -2878,19 +2886,19 @@ capture() {
     readonly regex='^[0-9]+x[0-9]+$'
 
     check_progs_installed ffmpeg || return 1
-    [[ "$#" -ne 1 ]] && { err "exactly one arg (filename without extension) required" "$FUNCNAME"; return 1; }
-    [[ "$name" == */* || "$(dirname -- "$name")" != '.' ]] && { err "please enter only filename, not path; it will be written to [$dest]" "$FUNCNAME"; return 1; }
-    [[ -n "$name" ]] && readonly name="$dest/${name}.mkv" || { err "need to provide output filename as first arg (without an extension)." "$FUNCNAME"; return 1; }
+    [[ "$#" -ne 1 ]] && { err "exactly one arg (filename without extension) required"; return 1; }
+    [[ "$name" == */* || "$(dirname -- "$name")" != '.' ]] && { err "please enter only filename, not path; it will be written to [$dest]"; return 1; }
+    [[ -n "$name" ]] && readonly name="$dest/${name}.mkv" || { err "need to provide output filename as first arg (without an extension)."; return 1; }
     [[ "$-" != *i* ]] && return 1  # don't launch if we're not in an interactive shell;
 
-    readonly screen_dimensions="$(get_screen_dimensions)" || { err "unable to find screen dimensions" "$FUNCNAME"; return 1; }
-    [[ "$screen_dimensions" =~ $regex ]] || { err "found screen dimensions [$screen_dimensions] do not conform with validation regex [$regex]" "$FUNCNAME"; return 1; }
+    screen_dimensions="$(get_screen_dimensions)" || { err "unable to find screen dimensions"; return 1; }
+    [[ "$screen_dimensions" =~ $regex ]] || { err "found screen dimensions [$screen_dimensions] do not conform with validation regex [$regex]"; return 1; }
 
     #recordmydesktop --display=$DISPLAY --width=1024 height=768 -x=1680 -y=0 --fps=15 --no-sound --delay=10
     #recordmydesktop --display=0 --width=1920 height=1080 --fps=15 --no-sound --delay=10
     ffmpeg -f alsa -ac 2 -i default -framerate 25 -f x11grab -s "$screen_dimensions" -i "$DISPLAY" -acodec pcm_s16le -vcodec libx264 -- "$name"
     echo
-    report "screencap saved at [$name]" "$FUNCNAME"
+    report "screencap saved at [$name]"
 
     ## lossless recording (from https://wiki.archlinux.org/index.php/FFmpeg#x264_lossless):
     #ffmpeg -i "$DISPLAY" -c:v libx264 -preset ultrafast -qp 0 -c:a copy "${name}.mkv"
@@ -2901,8 +2909,8 @@ capture() {
 # takes an input file and outputs mkv container for youtube:
 # taken from https://wiki.archlinux.org/index.php/FFmpeg#YouTube
 ytconvert() {
-    [[ "$#" -ne 2 ]] && { err "exactly 2 args required - input file to convert, and output filename (without extension)." "$FUNCNAME"; return 1; }
-    [[ -f "$1" ]] || { err "need to provide an input file as first argument." "$FUNCNAME"; return 1; }
+    [[ "$#" -ne 2 ]] && { err "exactly 2 args required - input file to convert, and output filename (without extension)."; return 1; }
+    [[ -f "$1" ]] || { err "need to provide an input file as first argument."; return 1; }
     ffmpeg -i "$1" -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -c:a copy "${2}.mkv"
 }
 
@@ -2920,23 +2928,23 @@ pubkey() {
               let o++
               s=ssh
               local key="$HOME/.ssh/id_rsa.pub"
-              [[ -f "$key" ]] || { err "[$key] does not exist" "$FUNCNAME"; return 1; }
-              contents="$(cat -- "$key")" || { err "cat-ing [$key] failed." "$FUNCNAME"; return 1; }
+              [[ -f "$key" ]] || { err "[$key] does not exist"; return 1; }
+              contents="$(cat -- "$key")" || { err "cat-ing [$key] failed."; return 1; }
               ;;
            g)
               let o++
               s=gpg
-              contents="$(gpg --output - --armor --export "${GPGKEY:-$USER}")" || { err "retrieving gpg pubkey failed." "$FUNCNAME"; return 1; }
+              contents="$(gpg --output - --armor --export "${GPGKEY:-$USER}")" || { err "retrieving gpg pubkey failed."; return 1; }
               ;;
            *) err "need to choose which public key to copy: -s & -g for ssh & gpg respectively"; return 1 ;;
         esac
     done
     shift "$((OPTIND-1))"
 
-    [[ "$o" -eq 0 ]] && { err "need to choose which public key to copy: -s & -g for ssh & gpg respectively" "$FUNCNAME"; return 1; }
-    [[ "$o" -gt 1 ]] && { err "can provide at most one option" "$FUNCNAME"; return 1; }
-    [[ -z "$contents" ]] && { err "couldn't retrieve [$s] pubkey" "$FUNCNAME"; return 1; }
-    copy_to_clipboard "$contents" && report "copied [$s] pubkey to clipboard" "$FUNCNAME" || { err "copying [$s] pubkey failed; here it is:\n$contents" "$FUNCNAME"; return 1; }
+    [[ "$o" -eq 0 ]] && { err "need to choose which public key to copy: -s & -g for ssh & gpg respectively"; return 1; }
+    [[ "$o" -gt 1 ]] && { err "can provide at most one option"; return 1; }
+    [[ -z "$contents" ]] && { err "couldn't retrieve [$s] pubkey"; return 1; }
+    copy_to_clipboard "$contents" && report "copied [$s] pubkey to clipboard" || { err "copying [$s] pubkey failed; here it is:\n$contents"; return 1; }
     return 0
 }
 
@@ -2953,7 +2961,7 @@ fdd() {  # 'fd' conflicts with https://github.com/sharkdp/fd
     local dir src
 
     readonly src="$1"
-    [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir." "$FUNCNAME"; return 1; }
+    [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir."; return 1; }
     check_progs_installed fzf || return 1
     dir=$(find "${src:-.}" -path '*/\.*' -prune \
                     -o -type d -print 2> /dev/null | fzf +m) && cd -- "$dir"
@@ -2966,7 +2974,7 @@ fda() {
     local dir src
 
     readonly src="$1"
-    [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir." "$FUNCNAME"; return 1; }
+    [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir."; return 1; }
     check_progs_installed fzf || return 1
     dir=$(find "${src:-.}" -type d 2> /dev/null | fzf +m) && cd -- "$dir"
 }
@@ -2979,7 +2987,7 @@ fdu() {
     readonly src="$1"
     readonly pwd="$(realpath -- "$PWD")"
 
-    [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir." "$FUNCNAME"; return 1; }
+    [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir."; return 1; }
     check_progs_installed fzf || return 1
 
     declare -a dirs=()
@@ -3006,7 +3014,7 @@ cdf() {
     local file dir pattern
 
     readonly pattern="$1"
-    [[ -d "$pattern" ]] && report "fyi, input argument has to be a search pattern, not starting dir." "$FUNCNAME"
+    [[ -d "$pattern" ]] && report "fyi, input argument has to be a search pattern, not starting dir."
     check_progs_installed fzf || return 1
 
     file=$(fzf +m -q "$pattern") && dir=$(dirname -- "$file") && cd -- "$dir"
@@ -3186,9 +3194,11 @@ fpickaxe() { faxe "$@"; }  # alias for faxe()
 #    fh  ssh user server
 #    fh  curl part-of-url
 fh() {
-    local input cleanup_regex cmd out ifs_old k
+    local input f cleanup_regex cmd out ifs_old k
 
     input="$*"
+
+    f="$(funname)"
 
     readonly cleanup_regex='^\s*\d+\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\K.*$'  # depends on your history format (HISTTIMEFORMAT) set in .bashrc
     #([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac | sed -re 's/^\s*[0-9]+\s*//' | __writecmd -run
@@ -3198,7 +3208,7 @@ fh() {
         # clean up history output, remove FUNCNAME, remove trailing whitespace & clean up multiple ws, print unique (w/o sorting):
         out="$(history \
                 | grep -Po -- "$cleanup_regex" \
-                | grep -vE -- "^\s*$FUNCNAME\b" \
+                | grep -vE -- "^\s*$f\b" \
                 | sed -n 's/\ *$//;/.*/s/\s\+/ /gp' \
                 | awk '!x[$0]++' \
                 | fzf --no-sort --tac --query="$input" --expect=ctrl-e,ctrl-d +m -e --exit-0)"
@@ -3215,7 +3225,7 @@ fh() {
         fi
         # oneliner without the binding:
         #([ -n "$ZSH_NAME" ] && fc -l 1 || history) \
-            #| grep -vE -- "\s+$FUNCNAME\b" \
+            #| grep -vE -- "\s+$f\b" \
             #| fzf --no-sort --tac --query="$input" +m -e \
             #| grep -Po -- "$cleanup_regex" \
             #| __writecmd -run
@@ -3225,14 +3235,14 @@ fh() {
         IFS=$'\n'
         declare -ar cmd=( $(history \
                 | grep -Po -- "$cleanup_regex" \
-                | grep -vE -- "^\s*$FUNCNAME\b" \
+                | grep -vE -- "^\s*$f\b" \
                 | sed -n 's/\ *$//;/.*/s/\s\+/ /gp' \
                 | grep -iE --color=auto -- "$input" \
                 | sort -u
         ) )
         IFS="$ifs_old"
 
-        [[ -z "${cmd[*]}" ]] && { err "no matching entries found" "$FUNCNAME"; return 1; }
+        [[ -z "${cmd[*]}" ]] && { err "no matching entries found"; return 1; }
         select_items -s "${cmd[@]}"
         [[ -n "${__SELECTED_ITEMS[*]}" ]] && ${__SELECTED_ITEMS[@]}
         #echo "woo: ${__SELECTED_ITEMS[@]}"
@@ -3259,7 +3269,7 @@ fhd() {
 
         line="$1"
         offset="$(grep -Po "$offset_regex" <<< "$line")"
-        history -d "$offset" || { err "unable to delete history offset [$offset] for entry [$line]" "${FUNCNAME[1]}"; return 1; }
+        history -d "$offset" || { err "unable to delete history offset [$offset] for entry [$line]" -1; return 1; }
     }
 
     if command -v fzf > /dev/null 2>&1; then
@@ -3277,9 +3287,9 @@ fhd() {
         declare -ar cmd=( $(history | grep -iE --color=auto -- "$q") )
         IFS="$ifs_old"
 
-        [[ -z "${cmd[*]}" ]] && { err "no matching entries found" "$FUNCNAME"; return 1; }
+        [[ -z "${cmd[*]}" ]] && { err "no matching entries found"; return 1; }
         select_items -s "${cmd[@]}"
-        [[ -z "${__SELECTED_ITEMS[*]}" ]] && { err "no entries selected" "$FUNCNAME"; return 1; }
+        [[ -z "${__SELECTED_ITEMS[*]}" ]] && { err "no entries selected"; return 1; }
         __delete_cmd "${__SELECTED_ITEMS[*]}" || return $?
     fi
 
@@ -3310,7 +3320,7 @@ fbr() {
 
     q="$*"
     check_progs_installed fzf git || return 1
-    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+    is_git || { err "not in git repo."; return 1; }
 
     branches=$(
         git branch --all | grep -v HEAD             |
@@ -3328,7 +3338,7 @@ fco() {
 
     q="$*"
     check_progs_installed fzf git || return 1
-    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+    is_git || { err "not in git repo."; return 1; }
 
     tags=$(git tag | awk '{print "\x1b[31;1mtag\x1b[m\t" $1}') || return
     branches=$(
@@ -3348,7 +3358,7 @@ fcoc() {
 
     q="$*"
     check_progs_installed fzf git || return 1
-    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+    is_git || { err "not in git repo."; return 1; }
 
     commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&
             commit=$(echo "$commits" | fzf --select-1 --query="$q" --tac +s +m -e --exit-0) &&
@@ -3366,7 +3376,7 @@ fcol() {
     local dsf sha_extract_cmd preview_cmd difftool_cmd opts
 
     check_progs_installed fzf git || return 1
-    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+    is_git || { err "not in git repo."; return 1; }
     hash "$_DSF" &>/dev/null && dsf="|$_DSF"
 
     sha_extract_cmd="grep -Po '^.*?\\\K[0-9a-f]+' <<< {}"
@@ -3410,7 +3420,7 @@ fcol() {
 
     #[[ -z "$commit" ]] && { err "need to provide commit sha"; return 1; }
     #cwd="$(realpath "$PWD")"
-    #git_root="$(realpath "$(git rev-parse --show-toplevel)")" || { err "unable to find project root" "${FUNCNAME[1]}"; return 1; }
+    #git_root="$(realpath "$(git rev-parse --show-toplevel)")" || { err "unable to find project root" -1; return 1; }
 
     #[[ "$cwd" != "$git_root" ]] && pushd -- "$git_root" &> /dev/null  # git root
     #git difftool --dir-diff "$commit"^ "$commit"
@@ -3426,17 +3436,18 @@ fcol() {
 # - ctrl-t copies commit sha to clipboard.
 # - ctrl-b check the selected commit out.
 fshow() {
-    local q dsf k out sha sha_extract_cmd preview_cmd difftool_cmd opts git_log_cmd
+    local f q dsf k out sha sha_extract_cmd preview_cmd difftool_cmd opts git_log_cmd
 
+    f="$(funname)"
     hash "$_DSF" &>/dev/null && dsf="|$_DSF"
 
     check_progs_installed fzf git || return 1
-    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+    is_git || { err "not in git repo."; return 1; }
     #git log -i --all --graph --source --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative |
 
     # first let's navigate to repo (ie git) root:
     #cwd="$(realpath "$PWD")"
-    #git_root="$(realpath "$(git rev-parse --show-toplevel)")" || { err "unable to find project root" "${FUNCNAME[1]}"; return 1; }
+    #git_root="$(realpath "$(git rev-parse --show-toplevel)")" || { err "unable to find project root" -1; return 1; }
     #[[ "$cwd" != "$git_root" ]] && pushd -- "$git_root" &> /dev/null
 
 
@@ -3455,29 +3466,29 @@ fshow() {
         $FZF_DEFAULT_OPTS
         +m --tiebreak=index --preview=\"$preview_cmd\"
         --bind=\"enter:execute($difftool_cmd)\"
-        --bind=\"ctrl-y:execute-silent(echo {} |grep -Eo '[a-f0-9]+' | head -1 | tr -d '\n' |${FORGIT_COPY_CMD:-pbcopy})\"
+        --bind=\"ctrl-y:execute-silent(echo {} | grep -Eo '[a-f0-9]+' | head -1 | tr -d '\n' |${FORGIT_COPY_CMD:-pbcopy})\"
         --bind=\"ctrl-c:execute(
             source $_SCRIPTS_COMMONS;
             i=\$($sha_extract_cmd)
-            is_function generate_jira_commit_comment || { err \\\"can't generate commit msg as dependency is missing\\\" $FUNCNAME; sleep 1.5; exit 1; }
+            is_function generate_jira_commit_comment || { err \\\"can't generate commit msg as dependency is missing\\\" $f; sleep 1.5; exit 1; }
             generate_jira_commit_comment \$i
             exit
         )\"
         --bind=\"ctrl-u:execute(
             source $_SCRIPTS_COMMONS;
             i=\$($sha_extract_cmd)
-            is_function generate_git_commit_url || { err \\\"can't generate git commit url as dependency is missing\\\" $FUNCNAME; sleep 1.5; exit 1; }
-            url=\$(generate_git_commit_url \$i) || { err \\\"creating commit url failed\\\" $FUNCNAME; sleep 1.5; exit 1; }
+            is_function generate_git_commit_url || { err \\\"can't generate git commit url as dependency is missing\\\" $f; sleep 1.5; exit 1; }
+            url=\$(generate_git_commit_url \$i) || { err \\\"creating commit url failed\\\" $f; sleep 1.5; exit 1; }
             copy_to_clipboard \\\"\$url\\\" \
-                && { report \\\"git commit url on clipboard\\\"; sleep 1; exit 0; } \
-                || err \\\"unable to copy git commit url to clipboard. here it is:\\\n\$url\\\" && sleep 4
+                && { report \\\"git commit url on clipboard\\\" $f; sleep 1; exit 0; } \
+                || err \\\"unable to copy git commit url to clipboard. here it is:\\\n\$url\\\" $f && sleep 4
         )\"
         --bind=\"ctrl-t:execute(
             source $_SCRIPTS_COMMONS;
             i=\$($sha_extract_cmd)
             copy_to_clipboard \\\"\$i\\\" \
-                && { report \\\"sha is on clipboard\\\"; sleep 1; exit 0; } \
-                || err \\\"unable to copy sha to clipboard. here it is:\\\n\$i\\\" && sleep 3
+                && { report \\\"sha is on clipboard\\\" $f; sleep 1; exit 0; } \
+                || err \\\"unable to copy sha to clipboard. here it is:\\\n\$i\\\" $f && sleep 3
         )\"
 
         --expect=ctrl-s,ctrl-b
@@ -3500,12 +3511,12 @@ fshow() {
     k="${out[1]}"
     [[ -z "$k" ]] && return 0  # got no --expect keypress event, exit
 
-    sha="$(grep -Po '^.*?\K[0-9a-f]{7}' <<< "${out[-1]}")" || { err "unable to parse out commit sha" "$FUNCNAME"; return 1; }
+    sha="$(grep -Po '^.*?\K[0-9a-f]{7}' <<< "${out[-1]}")" || { err "unable to parse out commit sha"; return 1; }
 
     case "$k" in
         'ctrl-s')
             if [[ "$sha" == "$(git log -n 1 --pretty=format:%h HEAD)" ]]; then
-                report "won't rebase on HEAD lol" "$FUNCNAME" && return
+                report "won't rebase on HEAD lol"; return
             elif [[ -n "$*" ]]; then
                 confirm "\nyou've filtered commits by path(s) [$*]; still continue with rebase?" || return
             elif [[ -n "$q" ]]; then
@@ -3513,17 +3524,12 @@ fshow() {
             fi
 
             git rebase -i "$sha"~
-            return $?
-            ;;
+            return $? ;;
         'ctrl-b')
-            git checkout "$sha"
-            return $?
-            ;;
+            git checkout "$sha"; return $? ;;
         *)
             #__open_git_difftool_at_git_root "$sha"
-            err "unexpected key-combo [$k]"
-            return 1
-            ;;
+            err "unexpected key-combo [$k]"; return 1 ;;
     esac
 }
 
@@ -3534,7 +3540,7 @@ fsha() {
     local commits i
 
     check_progs_installed fzf git || return 1
-    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+    is_git || { err "not in git repo."; return 1; }
 
     while IFS= read -r -d $'\0' i; do
         commits+=("${i%% *}")
@@ -3542,7 +3548,7 @@ fsha() {
     #readarray -t -d $'\0' commits < <(git log --color=always --pretty=oneline --abbrev-commit --reverse | fzf --tac +s -m -e --ansi --reverse --exit-0 --print0| xargs -0 awk '{print $1;}' )
 
     [[ ${#commits[@]} -eq 0 ]] && return 1
-    copy_to_clipboard "${commits[*]}" && report "copied commit sha(s) [${commits[*]}] to clipboard" "$FUNCNAME"
+    copy_to_clipboard "${commits[*]}" && report "copied commit sha(s) [${commits[*]}] to clipboard"
 }
 
 
@@ -3563,7 +3569,7 @@ fstash() {
     hash "$_DSF" &>/dev/null && dsf="|$_DSF"
 
     check_progs_installed fzf git || return 1
-    is_git || { err "not in git repo." "$FUNCNAME"; return 1; }
+    is_git || { err "not in git repo."; return 1; }
 
     #cmd="git stash show \$(echo {}| cut -d: -f1) --color=always --ext-diff $forgit_fancy"  # this to use with  --bind=\"enter:execute($cmd |LESS='-R' less
     sha_extract_cmd="grep -Po '^\\\S+(?=)' <<< {}"
@@ -3598,16 +3604,16 @@ fstash() {
         case "$k" in
             'ctrl-d')
                 confirm " -> drop stash $stsh ($stash_name)?" || continue
-                git stash drop "$stsh" || { err "something went wrong (code $?)" "$FUNCNAME"; return 1; }
+                git stash drop "$stsh" || { err "something went wrong (code $?)"; return 1; }
                 unset stsh  # so it wouldn't get copied to clipboard
                 ;;
             'ctrl-a')
                 confirm " -> apply (pop) stash $stsh ($stash_name)?" || continue
-                git stash pop "$stsh" || { err "something went wrong (code $?)" "$FUNCNAME"; return 1; }
+                git stash pop "$stsh" || { err "something went wrong (code $?)"; return 1; }
                 unset stsh  # so it wouldn't get copied to clipboard
                 ;;
             'ctrl-b')
-                report "not using c-b binding atm" "$FUNCNAME" && return
+                report "not using c-b binding atm" && return
                 git stash branch "stash-$sha" "$sha"
                 break;
                 ;;
@@ -3621,7 +3627,7 @@ fstash() {
     # copy last viewed stash id to clipboard: (commented out for now, don't think i ever needed this)
     #[[ -z "$k" && -n "$stsh" ]] \
         #&& copy_to_clipboard "$stsh" \
-        #&& echo && report " -> copied [$stsh] to clipboard" "$FUNCNAME"
+        #&& echo && report " -> copied [$stsh] to clipboard"
 }
 
 
@@ -3689,10 +3695,11 @@ gt() { goto "$@"; }  # alias to goto()
 # - using [kill -3 <pid>] for thread dump causes it to appear jvm's stdout;
 #   quite likely it'll be the jvm.log you've configured;
 javadump() {
-    local usage OPTIND opt pids pid mode i tf hf target_dir space
+    local f usage OPTIND opt pids pid mode i tf hf target_dir space
 
-    readonly usage="\n${FUNCNAME}: dump java process's heap and/or threads.
-    Usage: ${FUNCNAME}  [-ht] [pid] [pid2]...
+    f="$(funname)"
+    readonly usage="\n$f: dump java process's heap and/or threads.
+    Usage: $f  [-ht] [pid] [pid2]...
         -h  only dump heap (skip thread dump)
         -t  only dump threads (skip heap dump)
 "
@@ -3770,10 +3777,11 @@ threaddump() { javadump -t "$@"; }
 
 # TODO: also look into ngrep usage
 tcpdumperino() {
-    local usage OPTIND opt file overwrite
+    local f usage OPTIND opt file overwrite
 
-    readonly usage="\n${FUNCNAME}: monitor & dump TCP traffic of an interface.
-    Usage: ${FUNCNAME}  [-o] -f <outputfile>
+    f="$(funname)"
+    readonly usage="\n$f: monitor & dump TCP traffic of an interface.
+    Usage: $f  [-o] -f <outputfile>
         -f  file where results should be dumped in
         -o  allow overwriting <outputfile> if it already exists
 "
@@ -3815,7 +3823,7 @@ tcpdumperino() {
         report "dumping traffic using tcpdump... (Ctrl+c to stop)"
         tcpdump -i "$__SELECTED_ITEMS" -s 65535 -w "$file"
     else
-        err "no program to dump TCP traffic with" "$FUNCNAME"; return 1
+        err "no program to dump TCP traffic with"; return 1
     fi
 
     report "output in [$file]"
@@ -3826,7 +3834,7 @@ tcpdumperino() {
 # from https://superuser.com/a/261823/179401
 scan_network() {
     check_progs_installed  arp-scan || return 1
-    report "note that sudo passwd is required" "$FUNCNAME"
+    report "note that sudo passwd is required"
 
     #sudo arp-scan 10.42.21.1/24 --retry=5
     #sudo arp-scan --interface=enp2s0f0 --localnet --timeout=1500 --retry=5
@@ -3860,9 +3868,9 @@ export _MARKPATH
 
 # jump to mark:
 function jj {
-    [[ "$#" -ne 1 ]] && { err "provide a mark to jump to" "$FUNCNAME"; return 1; }
-    [[ -d "$_MARKPATH" ]] || { err "no marks saved in ${_MARKPATH} - dir does not exist." "$FUNCNAME"; return 1; }
-    cd -P -- "$_MARKPATH/$1" 2>/dev/null || err "no mark [$1] in [$_MARKPATH]" "$FUNCNAME"
+    [[ "$#" -ne 1 ]] && { err "provide a mark to jump to"; return 1; }
+    [[ -d "$_MARKPATH" ]] || { err "no marks saved in ${_MARKPATH} - dir does not exist."; return 1; }
+    cd -P -- "$_MARKPATH/$1" 2>/dev/null || err "no mark [$1] in [$_MARKPATH]"
 }
 
 # mark:
@@ -3874,11 +3882,11 @@ function jm {
     [[ "$1" == "-o" || "$1" == "--overwrite" ]] && { readonly overwrite=1; shift; }
     readonly target="$_MARKPATH/$1"
 
-    [[ $# -ne 1 || -z "$1" ]] && { err "exactly one arg accepted" "$FUNCNAME"; return 1; }
-    [[ -z "$_MARKPATH" ]] && { err "\$_MARKPATH not set, aborting." "$FUNCNAME"; return 1; }
-    [[ -d "$_MARKPATH" ]] || command mkdir -p -- "$_MARKPATH" || { err "creating [$_MARKPATH] failed." "$FUNCNAME"; return 1; }
+    [[ $# -ne 1 || -z "$1" ]] && { err "exactly one arg accepted"; return 1; }
+    [[ -z "$_MARKPATH" ]] && { err "\$_MARKPATH not set, aborting."; return 1; }
+    [[ -d "$_MARKPATH" ]] || command mkdir -p -- "$_MARKPATH" || { err "creating [$_MARKPATH] failed."; return 1; }
     [[ "$overwrite" -eq 1 && -h "$target" ]] && rm -- "$target" >/dev/null 2>/dev/null
-    [[ -h "$target" ]] && { err "[$target] already exists; use jmo() or $FUNCNAME -o to overwrite." "$FUNCNAME"; return 1; }
+    [[ -h "$target" ]] && { err "[$target] already exists; use jmo() or $(funname) -o to overwrite."; return 1; }
 
     ln -s -- "$(pwd)" "$target"
     return $?
@@ -3892,14 +3900,14 @@ function jmo {
 
 # un-mark:
 function jum {
-    [[ $# -ne 1 || -z "$1" ]] && { err "exactly one arg accepted" "$FUNCNAME"; return 1; }
-    [[ -d "$_MARKPATH" ]] || { err "no marks saved in [$_MARKPATH] - dir does not exist." "$FUNCNAME"; return 1; }
+    [[ $# -ne 1 || -z "$1" ]] && { err "exactly one arg accepted"; return 1; }
+    [[ -d "$_MARKPATH" ]] || { err "no marks saved in [$_MARKPATH] - dir does not exist."; return 1; }
     rm -i -- "$_MARKPATH/$1"
 }
 
 # list all saved marks:
 function jjj {
-    [[ -d "$_MARKPATH" ]] || { err "no marks saved in [$_MARKPATH] - dir does not exist." "$FUNCNAME"; return 1; }
+    [[ -d "$_MARKPATH" ]] || { err "no marks saved in [$_MARKPATH] - dir does not exist."; return 1; }
     ls -l -- "$_MARKPATH/" | sed 's/  / /g' | cut -d' ' -f9- | sed 's/ -/\t-/g' && echo
 }
 
@@ -3907,7 +3915,7 @@ function jjj {
 _completemarks() {
     local curw wordlist
 
-    [[ -d "$_MARKPATH" ]] || { err "no marks saved in [$_MARKPATH] - dir does not exist." "$FUNCNAME"; return 1; }
+    [[ -d "$_MARKPATH" ]] || { err "no marks saved in [$_MARKPATH] - dir does not exist."; return 1; }
     curw=${COMP_WORDS[COMP_CWORD]}
     wordlist=$(find "$_MARKPATH/" -type l -printf '%f\n')
     COMPREPLY=($(compgen -W '${wordlist[@]}' -- "$curw"))
