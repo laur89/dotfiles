@@ -207,7 +207,7 @@ check_dependencies() {
             git cmp wc wget curl tar unzip atool \
             realpath dirname basename head tee jq \
             gpg mktemp file date id html2text \
-            pwd uniq sort xxd \
+            pwd uniq sort xxd openssl mokutil \
                 ; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
@@ -1920,6 +1920,44 @@ setup_install_log_file() {
 }
 
 
+# see https://wiki.debian.org/SecureBoot#MOK_-_Machine_Owner_Key
+setup_mok() {
+    local target_dir
+    target_dir='/var/lib/shim-signed/mok'
+
+    sudo test -d "$target_dir" || execute "sudo mkdir -p -- '$target_dir'" || return 1
+    if ! is_dir_empty -s "$target_dir"; then
+        report "[$target_dir] not empty, assuming MOK keys already created; testing key enrollment..."
+        # TODO: mokutil here exits /w 1 on success?!
+        #sudo mokutil --test-key "$target_dir/MOK.der" | grep -q 'is already enrolled' || { err "[$target_dir/MOK.der] not enrolled, verify MOK!"; return 1; }
+        local i="$(sudo mokutil --test-key "$target_dir/MOK.der")"
+        grep -qF 'is already enrolled' <<< "$i" || { err "[$target_dir/MOK.der] not enrolled, verify MOK!"; return 1; }
+        return 0
+    fi
+
+    is_noninteractive && { err "do not exec $FUNCNAME() in non-interactive mode; make sure to manually re-run this step!"; return 1; }
+
+    execute "sudo openssl req -nodes -new -x509 -newkey rsa:2048 -keyout $target_dir/MOK.priv -outform DER -out $target_dir/MOK.der -days 36500 -subj '/CN=Laur Aliste/'" || return $?
+    execute "sudo openssl x509 -inform der -in $target_dir/MOK.der -out $target_dir/MOK.pem" || return $?
+
+    report "enrolling MOK, enter password to use for enrollment during next reboot..."
+    execute "sudo mokutil --import $target_dir/MOK.der" || return $?  # prompts for one-time password
+
+    _instruct_dkms_to_use_keys() {
+        local conf_dir f
+        conf_dir='/etc/dkms/framework.conf.d'
+        f="$COMMON_PRIVATE_DOTFILES/backups/use_user_mok.conf"
+
+        [[ -d "$conf_dir" ]] || { err "[$conf_dir] is not a dir; cannot setup DKMS to use our MOK keys"; return 1; }
+        [[ -s "$f" ]] || { err "[$f] is not a file; skipping DKMS config to use our MOK keys"; return 1; }
+
+        execute "sudo install -m644 -C '$f' '$conf_dir'" || { err "installing [$f] to [$conf_dir] failed w/ $?"; return 1; }
+    }
+
+    _instruct_dkms_to_use_keys
+}
+
+
 setup() {
     setup_homesick || { err "homesick setup failed; as homesick is necessary, script will exit"; exit 1; }
     verify_ssh_key
@@ -1931,6 +1969,7 @@ setup() {
     [[ "$MODE" -eq 1 ]] && install_flatpak
     setup_config_files
     setup_additional_apt_keys_and_sources
+    is_secure_boot && setup_mok
 
     [[ "$PROFILE" == work && -s ~/.npmrc ]] && mv -- ~/.npmrc "$NPMRC_BAK"  # work npmrc might define private registry
     # following npm hack is superseded by temporarily getting rid of ~/.npmrc above:
@@ -5828,8 +5867,9 @@ install_from_repo() {
     done
 
 
-    # TODO: replace virtualbox by KVM & https://virt-manager.org/
-    # https://wiki.debian.org/KVM
+    # TODO: replace virtualbox by KVM & https://virt-manager.org/ - https://wiki.debian.org/KVM
+    #
+    # Note alternatively could install vbox from oracle repos, see https://www.virtualbox.org/wiki/Linux_Downloads
     #
     # another alternatives:
     # - https://flathub.org/apps/org.gnome.Boxes
@@ -5934,7 +5974,7 @@ install_from_flatpak() {
 # {virtualbox-guest-utils virtualbox-guest-x11} packages from apt, as additions
 # are rather related to vbox version, so better use the one that's shipped w/ it.
 #
-# make sure guest additions CD is inserted: @ host: Devices->Insert Guest Additions CD...
+# !! make sure guest additions CD is inserted: @ host: Devices->Insert Guest Additions CD...
 #
 # see https://www.virtualbox.org/manual/ch04.html#additions-linux
 install_vbox_guest() {
@@ -7967,6 +8007,19 @@ is_valid_ip() {
 # did we boot as efi/uefi?
 is_efi() {
     [[ -d /sys/firmware/efi ]]
+}
+
+
+# from https://wiki.debian.org/SecureBoot#Has_the_system_booted_via_Secure_Boot.3F
+# and https://wiki.debian.org/SecureBoot/VirtualMachine#Checking_if_secure_boot_is_active
+is_secure_boot() {
+    if command -v mokutil >/dev/null; then
+        [[ "$(sudo mokutil --sb-state)" == 'SecureBoot enabled' ]]
+    elif command -v bootctl >/dev/null; then
+        sudo bootctl | grep -Eiq '^\s*secure boot:\s*enabled'
+    else
+        sudo dmesg | grep -Eiq 'secureboot: secure boot enabled'
+    fi
 }
 
 
