@@ -8235,15 +8235,24 @@ create_symlinks() {
 # Tests whether given directory is empty.
 #
 # @param {string}  dir   directory whose emptiness to test.
+# pass '-s' as first arg to execute as sudo
 #
 # @returns {bool}  true, if directory IS empty.
 is_dir_empty() {
-    local dir
+    local opt OPTIND sudo dir
+
+    while getopts 's' opt; do
+        case "$opt" in
+            s) sudo=sudo ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
 
     readonly dir="$1"
 
-    [[ -d "$dir" ]] || { err "[$dir] is not a valid dir." "$FUNCNAME"; return 2; }
-    find "$dir" -mindepth 1 -maxdepth 1 -print -quit | grep -q . && return 1 || return 0
+    $sudo test -d "$dir" || { err "[$dir] is not a valid dir." "$FUNCNAME"; return 2; }
+    $sudo find "$dir" -mindepth 1 -maxdepth 1 -print -quit | grep -q . && return 1 || return 0
 }
 
 
