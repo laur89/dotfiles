@@ -1943,7 +1943,7 @@ setup_mok() {
     report "enrolling MOK, enter password to use for enrollment during next reboot..."
     execute "sudo mokutil --import $target_dir/MOK.der" || return $?  # prompts for one-time password
 
-    _instruct_dkms_to_use_keys() {
+    _instruct_dkms_to_use_keys() {  # TODO: refactor out into setup_dkms() ?
         local conf_dir f
         conf_dir='/etc/dkms/framework.conf.d'
         f="$COMMON_PRIVATE_DOTFILES/backups/use_user_mok.conf"
@@ -2361,7 +2361,7 @@ upgrade_kernel() {
             linux-image-amd64
             linux-headers-amd64
         '
-        readonly arch='amd64'
+        readonly arch='amd64'  # or instead of magic string, do  $ dpkg --print-architecture
     else
         err "verified we're not running 64bit system. make sure it's correct. skipping kernel meta-package installation..."
         sleep 10
@@ -5522,6 +5522,7 @@ install_from_repo() {
     # TODO: xorg needs to be pulled into non-win (but still has to be installed for virt!) block:
     # TODO: replace compton w/ picom or ibhagwan/picom? compton seems unmaintained since 2017
     declare -ar block1=(
+        dkms
         xorg
         #x11-apps  # already a dependecy of xorg
         #xinit  # xinit and startx are programs which facilitate starting an X server, and loading a base X session; already dependency of xorg
