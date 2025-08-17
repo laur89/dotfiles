@@ -3434,6 +3434,7 @@ fcol() {
 # - ctrl-c generates the jira commit message.
 # - ctrl-u generates gitlab commit url.
 # - ctrl-t copies commit sha to clipboard.
+# - ctrl-f fixup given commit with already-starged changes.
 # - ctrl-b check the selected commit out.
 fshow() {
     local f q dsf k out sha sha_extract_cmd preview_cmd difftool_cmd opts git_log_cmd
@@ -3489,6 +3490,17 @@ fshow() {
             copy_to_clipboard \\\"\$i\\\" \
                 && { report \\\"sha is on clipboard\\\" $f; sleep 1; exit 0; } \
                 || err \\\"unable to copy sha to clipboard. here it is:\\\n\$i\\\" $f && sleep 3
+        )\"
+        --bind=\"ctrl-f:execute(
+            source $_SCRIPTS_COMMONS;
+            c=\$(git diff --name-only --staged)
+            if [[ -n \\\"\$c\\\" ]]; then
+                i=\$($sha_extract_cmd)
+                git fixup \\\"\$i\\\" || { err \\\"git fixup failed\\\" $f; sleep 3; }
+            else
+                err \\\"no files staged, nothing to fixup\\\" $f && sleep 2
+            fi
+
         )\"
 
         --expect=ctrl-s,ctrl-b
