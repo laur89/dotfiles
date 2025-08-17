@@ -438,7 +438,7 @@ setup_logind() {
     elif ! [[ -f "$file" ]]; then
         err "[$file] is not a file; skipping configuring logind"
         return 1
-    elif ! grep -q "$logind_confd" "$logind_conf"; then
+    elif ! grep -Fq "$logind_confd" "$logind_conf"; then  # sanity
         err "[$logind_confd] is not referenced/mentioned in [$logind_conf]! something's changed?"
         return 1
     fi
@@ -1104,7 +1104,7 @@ install_sshfs() {
     # entry has the 'allow_other' opt:
     if ! [[ -r "$fuse_conf" && -f "$fuse_conf" ]]; then
         err "[$fuse_conf] is not readable; cannot uncomment '#user_allow_other' prop in it."
-    elif grep -q '^#user_allow_other' "$fuse_conf"; then  # hasn't been uncommented yet
+    elif grep -Eq '^#user_allow_other' "$fuse_conf"; then  # hasn't been uncommented yet
         execute "sudo sed -i --follow-symlinks 's/#user_allow_other/user_allow_other/g' $fuse_conf"
         [[ $? -ne 0 ]] && { err "uncommenting '#user_allow_other' in [$fuse_conf] failed"; return 2; }
     elif grep -q 'user_allow_other' "$fuse_conf"; then
@@ -1135,7 +1135,7 @@ install_sshfs() {
         list_contains "${server_ip}${ssh_share}" "${mounted_shares[@]}" && { report "selected [${server_ip}:${ssh_share}] has already been used for previous definition"; continue; }
         [[ "$ssh_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
 
-        if ! grep -q "${remote_user}@${server_ip}:${ssh_share}.*${mountpoint}" "$fstab"; then
+        if ! grep -Eq "${remote_user}@${server_ip}:${ssh_share}.*${mountpoint}" "$fstab"; then
             report "adding [${server_ip}:$ssh_share] mounting to [$mountpoint] in $fstab..."
             # TODO: you might want to add 'default_permissions,uid=USER_ID_N,gid=USER_GID_N' to the mix as per https://wiki.archlinux.org/index.php/SSHFS:
             execute "echo ${remote_user}@${server_ip}:${ssh_share} $mountpoint fuse.sshfs port=${ssh_port},noauto,x-systemd.automount,_netdev,users,idmap=user,follow_symlinks,IdentityFile=${identity_file},allow_other,reconnect 0 0 \
@@ -1928,7 +1928,7 @@ setup_mok() {
     sudo test -d "$target_dir" || execute "sudo mkdir -p -- '$target_dir'" || return 1
     if ! is_dir_empty -s "$target_dir"; then
         report "[$target_dir] not empty, assuming MOK keys already created; testing key enrollment..."
-        # TODO: mokutil here exits /w 1 on success?!
+        # TODO: mokutil here exits /w 1 on success, so cannot use w/ pipefail:
         #sudo mokutil --test-key "$target_dir/MOK.der" | grep -q 'is already enrolled' || { err "[$target_dir/MOK.der] not enrolled, verify MOK!"; return 1; }
         local i="$(sudo mokutil --test-key "$target_dir/MOK.der")"
         grep -qF 'is already enrolled' <<< "$i" || { err "[$target_dir/MOK.der] not enrolled, verify MOK!"; return 1; }
@@ -2215,7 +2215,7 @@ swap_caps_lock_and_esc() {
     [[ -f "$conf_file" ]] || { err "cannot swap esc<->caps: [$conf_file] does not exist; abort;"; return 1; }
 
     # map esc to caps:
-    if ! grep -q 'key <ESC>.*Caps_Lock' "$conf_file"; then
+    if ! grep -Eq 'key <ESC>.*Caps_Lock' "$conf_file"; then
         # hasn't been replaced yet
         if ! execute "sudo sed -i --follow-symlinks 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock     \]   \};/g' $conf_file"; then
             err "mapping esc->caps @ [$conf_file] failed"
@@ -2224,7 +2224,7 @@ swap_caps_lock_and_esc() {
     fi
 
     # map caps to control:
-    if ! grep -q 'key <CAPS>.*Control_L' "$conf_file"; then
+    if ! grep -Eq 'key <CAPS>.*Control_L' "$conf_file"; then
         # hasn't been replaced yet
         if ! execute "sudo sed -i --follow-symlinks 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS> \{    \[ Control_L        \]   \};/g' $conf_file"; then
             err "mapping caps->esc @ [$conf_file] failed"
@@ -2334,7 +2334,9 @@ install_kernel_modules() {
 
     # from https://www.ddcutil.com/kernel_module/ : only load
     # i2c on demand if it's not already loaded into kernel:
-    grep -q  i2c-dev.ko  "/lib/modules/$(uname -r)/modules.builtin" || modules+=(i2c-dev)
+    i="/lib/modules/$(uname -r)/modules.builtin"
+    [[ -s "$i" ]] || err "modules.builtin not a file, fix the logic!"  # sanity
+    grep -q  i2c-dev.ko  "$i" || modules+=(i2c-dev)
 
     # ddcci-dkms gives us DDC support so we can control also external monitor brightness (via brillo et al; not related to i2c-dev/ddcutil)
     # note project is @ https://gitlab.com/ddcci-driver-linux/ddcci-driver-linux
@@ -2430,6 +2432,7 @@ install_own_builds() {
 
     #prepare_build_container
 
+    install_fzf
     install_neovide
     #install_keepassxc
     #install_keybase
@@ -2444,7 +2447,6 @@ install_own_builds() {
     is_native && install_ferdium
     #install_xournalpp
     #install_zoxide
-    install_fzf
     install_ripgrep
     install_rga
     #install_browsh
@@ -6012,7 +6014,7 @@ install_vbox_guest() {
 # https://wiki.debian.org/AtiHowTo
 install_amd_gpu() {
     # TODO: consider  lspci -vnn | grep VGA | grep AMD
-    if sudo lshw | grep -iA 5 'display' | grep -q 'vendor.*AMD'; then
+    if sudo lshw | grep -iA 5 'display' | grep -Eq 'vendor.*AMD'; then
         if confirm -d N "we seem to have AMD card; want to install AMD drivers?"; then  # TODO: should we default to _not_ installing in non-interactive mode?
             report "installing AMD drivers & firmware..."
             # TODO: x11!:
@@ -6204,7 +6206,7 @@ _setup_snapper() {
 # TODO: add logic to detect & configure nvidia Optimus, also described in abovementioned link
 install_nvidia() {
     # TODO: consider  lspci -vnn | grep VGA | grep -i nvidia
-    if sudo lshw | grep -iA 5 'display' | grep -iq 'vendor.*NVIDIA'; then
+    if sudo lshw | grep -iA 5 'display' | grep -Eiq 'vendor.*NVIDIA'; then
         if confirm -d N "we seem to have NVIDIA card; want to install nvidia drivers?"; then  # TODO: should we default to _not_ installing in non-interactive mode?
             # TODO: also/instead install  nvidia-detect and install the driver it suggests?
             report "installing NVIDIA drivers..."
@@ -6656,7 +6658,7 @@ _sysctl_conf() {
     [[ -d "$sysctl_dir" ]] || { err "[$sysctl_dir] is not a dir. can't change our sysctl value for [$1]"; return 1; }
 
     if [[ -f "$sysctl_conf" ]]; then
-        grep -q "^${property}\s*=\s*${value}\$" "$sysctl_conf" && return 0  # value already set, nothing to do
+        grep -Eq "^${property}\s*=\s*${value}\$" "$sysctl_conf" && return 0  # value already set, nothing to do
         # delete all same prop definitions, regardless of its value:
         execute "sudo sed -i --follow-symlinks '/^${property}\s*=/d' '$sysctl_conf'"
     fi
@@ -6740,7 +6742,7 @@ setup_dnsmasq() {
         #done
 
         ## no-resolv stops dnsmasq from reading /etc/resolv.conf, and makes it only rely on servers defined in $dnsmasq_conf
-        #if ! grep -q '^no-resolv$' "$dnsmasq_conf"; then
+        #if ! grep -Fxq 'no-resolv' "$dnsmasq_conf"; then
             #execute "echo no-resolv | sudo tee --append $dnsmasq_conf > /dev/null"
         #fi
     #fi
@@ -7238,7 +7240,7 @@ add_to_group() {
     local group
     readonly group="$1"
 
-    if ! id -Gn "$USER" | grep -q "\b${group}\b"; then
+    if ! id -Gn "$USER" | grep -Eq "\b${group}\b"; then
         execute "sudo adduser $USER $group" || return $?
     fi
 }
@@ -7861,7 +7863,7 @@ is_thinkpad() {
 is_windows() {
     if [[ -z "$_IS_WIN" ]]; then
         [[ -f /proc/version ]] || { err "/proc/version not a file, cannot test is_windows"; return 2; }
-        grep -qE '([Mm]icrosoft|WSL)' /proc/version &>/dev/null
+        grep -Eq '([Mm]icrosoft|WSL)' /proc/version &>/dev/null
         readonly _IS_WIN=$?
     fi
 
@@ -7875,7 +7877,7 @@ is_windows() {
 is_virt() {
     if [[ -z "$_IS_VIRT" ]]; then
         [[ -f /proc/cpuinfo ]] || { err "/proc/cpuinfo not a file, cannot test virtualization"; return 2; }
-        grep -qE '^flags.*\s+hypervisor' /proc/cpuinfo &>/dev/null  # detects all virtualizations, including WSL
+        grep -Eq '^flags.*\s+hypervisor' /proc/cpuinfo &>/dev/null  # detects all virtualizations, including WSL
         readonly _IS_VIRT=$?
     fi
 
@@ -7915,7 +7917,7 @@ is_native() {
 # TODO: depend on fstab or /run/systemd/generator/ contents?
 is_btrfs() {
     [[ -s /etc/fstab && -r /etc/fstab ]] || { err "[/etc/fstab] not a file"; return 2; }
-    grep -qE '\bbtrfs\b' /etc/fstab
+    grep -Eq '\bbtrfs\b' /etc/fstab
 }
 
 
@@ -8015,11 +8017,11 @@ is_efi() {
 # and https://wiki.debian.org/SecureBoot/VirtualMachine#Checking_if_secure_boot_is_active
 is_secure_boot() {
     if command -v mokutil >/dev/null; then
-        [[ "$(sudo mokutil --sb-state)" == 'SecureBoot enabled' ]]
+        [[ "$(mokutil --sb-state)" == 'SecureBoot enabled' ]]
     elif command -v bootctl >/dev/null; then
-        sudo bootctl | grep -Eiq '^\s*secure boot:\s*enabled'
+        bootctl 2>/dev/null | grep -Eiq '^\s*secure boot:\s*enabled'
     else
-        sudo dmesg | grep -Eiq 'secureboot: secure boot enabled'
+        sudo dmesg | grep -Eiq 'secureboot: secure boot enabled'  # note need to exec as root as allow_user_run_dmesg() has not been set up yet
     fi
 }
 
@@ -8237,6 +8239,7 @@ create_symlinks() {
 #
 # @param {string}  dir   directory whose emptiness to test.
 # pass '-s' as first arg to execute as sudo
+# TODO: default to _always_ checking dir contents as root?
 #
 # @returns {bool}  true, if directory IS empty.
 is_dir_empty() {
