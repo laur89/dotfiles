@@ -8076,7 +8076,7 @@ create_link() {
 
 
 __is_work() {
-    [[ "$HOSTNAME" == "$WORK_DESKTOP_HOSTNAME" || "$HOSTNAME" == "$WORK_LAPTOP_HOSTNAME" ]]
+    list_contains "$HOSTNAME" "$WORK_DESKTOP_HOSTNAME" "$WORK_LAPTOP_HOSTNAME"
 }
 
 
@@ -8343,6 +8343,24 @@ verify_d() {
     for d in "$@"; do
         sudo test -d "$d" || { err "[$d] not a dir${msg:+; $msg}"; e=1; continue; }
         [[ -n "$nonempty" ]] && is_dir_empty -s "$d" && { err "[$d] is empty, expected nonempty dir${msg:+; $msg}"; e=1; }
+    done
+    return ${e:-0}
+}
+
+
+ensure_d() {
+    local opt sudo msg OPTIND d e
+
+    while getopts 's' opt; do
+        case "$opt" in
+            s) sudo=sudo ;;
+            *) fail "unexpected opt [$opt] passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    for d in "$@"; do
+        $sudo test -d "$d" || execute "${sudo:+sudo }mkdir -p -- '$d'" || e=1
     done
     return ${e:-0}
 }
