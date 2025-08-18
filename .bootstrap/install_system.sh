@@ -794,8 +794,8 @@ backup_original_and_copy_file() {
 
     readonly filename="$(basename -- "$file")"
 
-    $sudo test -d "$dest_dir" || { err "second arg [$dest_dir] was not a dir" "$FUNCNAME"; return 1; }
-    [[ "$dest_dir" == *.d ]] && err "sure we want to be backing up in [$dest_dir]?" "$FUNCNAME"  # sanity
+    $sudo test -d "$dest_dir" || { err "second arg [$dest_dir] was not a dir"; return 1; }
+    [[ "$dest_dir" == *.d ]] && err "sure we want to be backing up in [$dest_dir]?"  # sanity
 
     # back up the destination file, if it already exists and differs from new content:
     if $sudo test -f "$dest_dir/$filename"; then
@@ -831,11 +831,11 @@ clone_repo_subdir() {
     install_dir="$4"  # if has trailing / then $repo won't be appended, eg pass './' to clone to $PWD
     readonly hub=${5:-github.com}  # OPTIONAL; defaults to github.com;
 
-    [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
+    [[ -z "$install_dir" ]] && { err "need to provide target directory."; return 1; }
     [[ "$install_dir" != */ ]] && install_dir+="/$(basename -- "$path")"
 
     if [[ -d "$install_dir" ]]; then
-        rm -rf -- "$install_dir" || { err "removing existing install_dir [$install_dir] failed w/ $?" "$FUNCNAME"; return 1; }
+        rm -rf -- "$install_dir" || { err "removing existing install_dir [$install_dir] failed w/ $?"; return 1; }
     fi
 
     tmpdir="$TMP_DIR/$repo-${user}-${RANDOM}"
@@ -856,7 +856,7 @@ clone_or_pull_repo() {
     install_dir="$3"  # if has trailing / then $repo won't be appended, eg pass './' to clone to $PWD
     readonly hub=${4:-github.com}  # OPTIONAL; defaults to github.com;
 
-    [[ -z "$install_dir" ]] && { err "need to provide target directory." "$FUNCNAME"; return 1; }
+    [[ -z "$install_dir" ]] && { err "need to provide target directory."; return 1; }
     [[ "$install_dir" != */ ]] && install_dir+="/$repo"
 
     if ! [[ -d "$install_dir/.git" ]]; then
@@ -1071,7 +1071,7 @@ create_mountpoint() {
 
     readonly mountpoint="$1"
 
-    [[ -z "$mountpoint" ]] && { err "cannot pass empty mountpoint arg to $FUNCNAME"; return 1; }
+    [[ -z "$mountpoint" ]] && { err "cannot pass empty mountpoint arg"; return 1; }
     [[ -d "$mountpoint" ]] || execute "sudo mkdir -p -- '$mountpoint'" || return 1
     [[ -d "$mountpoint" ]] || { err "mountpoint [$mountpoint] is not a dir"; return 1; }  # sanity
     execute "sudo chmod 777 -- '$mountpoint'" || { err; return 1; }  # TODO: why 777 ???
@@ -4151,7 +4151,7 @@ install_webdev() {
 
 build_and_install_synergy_TODO_container_edition() {
 
-    prepare_build_container || { err "preparation of build container [$BUILD_DOCK] failed" "$FUNCNAME"; return 1; }
+    prepare_build_container || { err "preparation of build container [$BUILD_DOCK] failed"; return 1; }
     bc_install \
         build-essential \
         qtcreator \
@@ -6503,7 +6503,7 @@ __choose_prog_to_build() {
 
     select_items -s "${choices[@]}"
     [[ -z "$__SELECTED_ITEMS" ]] && return
-    #prepare_build_container || { err "preparation of build container [$BUILD_DOCK] failed" "$FUNCNAME"; return 1; }
+    #prepare_build_container || { err "preparation of build container [$BUILD_DOCK] failed"; return 1; }
 
     $__SELECTED_ITEMS
 }
@@ -7014,7 +7014,7 @@ _init_seafile_cli() {
     readonly ccnet_conf="$HOME/.ccnet"
     readonly parent_dir="$BASE_DATA_DIR"
 
-    [[ -d "$parent_dir" ]] || { err "[$parent_dir] is not a valid dir, abort" "$FUNCNAME"; return 1; }
+    [[ -d "$parent_dir" ]] || { err "[$parent_dir] is not a valid dir, abort"; return 1; }
     [[ -f "$ccnet_conf/seafile.ini" && -d "$(cat "$ccnet_conf/seafile.ini")" ]] && return 0  # everything seems set, no need to init
 
     check_progs_installed  seaf-cli || return 1
@@ -7386,7 +7386,7 @@ is_installed() {
     ver="$1"
     name="$2"  # optional, just for better logging
 
-    [[ -z "$ver" ]] && { err "empty ver passed to ${FUNCNAME}() by ${FUNCNAME[1]}()"; return 2; }  # sanity
+    [[ -z "$ver" ]] && { err "empty ver passed to ${FUNCNAME}()" -1; return 2; }  # sanity
     if grep -Fq "$ver" "$GIT_RLS_LOG" 2>/dev/null; then
         report "[${COLORS[GREEN]}$ver${COLORS[OFF]}] already processed, skipping ${name:+${COLORS[YELLOW]}$name${COLORS[OFF]} }installation..."
         return 0
@@ -7481,28 +7481,49 @@ confirm() {
         case "$(tr '[:lower:]' '[:upper:]' <<< "$yno")" in
             Y | YES )
                 report "Ok, continuing..." "->";
-                return 0
-                ;;
+                return 0 ;;
             N | NO )
                 >&2 echo "Abort.";
-                return 1
-                ;;
-            *)
-                err "incorrect answer; try again. (y/n accepted)" "->"
-                ;;
+                return 1 ;;
+            *)  err "incorrect answer; try again. (y/n accepted)" "->" ;;
         esac
     done
 }
+
+
+fail() {
+    local msg caller_name
+
+    readonly msg="$1"
+    caller_name="$2"  # OPTIONAL
+
+    if [[ -z "$caller_name" || "$caller_name" =~ ^-[0-9]+$ ]]; then
+        local stack=1
+        [[ -n "$caller_name" ]] && let stack+=${caller_name:1}
+        caller_name="$(funname "$stack")"
+        [[ -n "$caller_name" ]] && caller_name="fail @ $caller_name" || caller_name=ERR
+    fi
+
+    err "$msg" "$caller_name"  # note caller_name has to be resolved by the time err() is invoked from fail()
+    exit 1
+}
+
 
 
 err() {
     local msg caller_name
 
     readonly msg="$1"
-    readonly caller_name="$2"  # OPTIONAL
+    caller_name="$2"  # OPTIONAL
+
+    if [[ -z "$caller_name" || "$caller_name" =~ ^-[0-9]+$ ]]; then
+        local stack=1
+        [[ -n "$caller_name" ]] && let stack+=${caller_name:1}
+        caller_name="$(funname "$stack")"
+    fi
 
     [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "    ERR LOG: ${caller_name:+[$caller_name]: }$msg" >> "$EXECUTION_LOG"
-    >&2 echo -e "${COLORS[RED]}${caller_name:-"error"}:${COLORS[OFF]} ${msg:-"Abort"}" 1>&2
+    echo -e "${COLORS[RED]}${caller_name:-ERR}:${COLORS[OFF]} ${msg:-Abort}" 1>&2
 }
 
 
@@ -7510,10 +7531,16 @@ report() {
     local msg caller_name
 
     readonly msg="$1"
-    readonly caller_name="$2"  # OPTIONAL
+    caller_name="$2"  # OPTIONAL
+
+    if [[ -z "$caller_name" || "$caller_name" =~ ^-[0-9]+$ ]]; then
+        local stack=1
+        [[ -n "$caller_name" ]] && let stack+=${caller_name:1}
+        caller_name="$(funname "$stack")"
+    fi
 
     [[ "$LOGGING_LVL" -ge 10 ]] && echo -e "OK LOG: ${caller_name:+[$caller_name]: }$msg" >> "$EXECUTION_LOG"
-    >&2 echo -e "${COLORS[YELLOW]}${caller_name:-"INFO"}:${COLORS[OFF]} ${msg:---info lvl message placeholder--}"
+    >&2 echo -e "${COLORS[YELLOW]}${caller_name:-INFO}:${COLORS[OFF]} ${msg:-"--info lvl message placeholder--"}"
 }
 
 
@@ -7750,7 +7777,7 @@ select_items() {
 remove_items_from_list() {
     local orig_list elements_to_remove i j
 
-    [[ "$#" -ne 2 ]] && { err "exactly 2 args required" "$FUNCNAME"; return 1; }
+    [[ "$#" -ne 2 ]] && { err "exactly 2 args required"; return 1; }
 
     declare -a orig_list=( $1 )
     declare -ar elements_to_remove=( $2 )
@@ -7772,10 +7799,10 @@ extract() {
     readonly file="$*"
 
     if [[ -z "$file" ]]; then
-        err "gimme file to extract plz." "$FUNCNAME"
+        err "gimme file to extract plz."
         return 1
     elif [[ ! -f "$file" || ! -r "$file" ]]; then
-        err "[$file] is not a regular file or read rights not granted." "$FUNCNAME"
+        err "[$file] is not a regular file or read rights not granted."
         return 1
     fi
 
@@ -7804,7 +7831,7 @@ extract() {
                 ;;
         *.Z) uncompress -- "$file"
                 ;;
-        *) err "'$file' cannot be extracted; this filetype is not supported." "$FUNCNAME"
+        *) err "'$file' cannot be extracted; this filetype is not supported."
            return 1
                 ;;
     esac
@@ -7824,7 +7851,7 @@ is_laptop() {
     readonly pwr_supply_dir="/sys/class/power_supply"
 
     # sanity:
-    [[ -d "$pwr_supply_dir" ]] || { err "$pwr_supply_dir is not a valid dir! cannot decide if we're a laptop; assuming we're not. abort." "$FUNCNAME"; sleep 5; return 1; }
+    [[ -d "$pwr_supply_dir" ]] || { err "$pwr_supply_dir is not a valid dir! cannot decide if we're a laptop; assuming we're not. abort."; sleep 5; return 1; }
 
     find "$pwr_supply_dir" -mindepth 1 -maxdepth 1 -name 'BAT*' -print -quit | grep -q .
 }
@@ -7837,8 +7864,8 @@ is_appimage() {
 
     readonly file="$1"
 
-    [[ $# -ne 1 ]] && { err "exactly 1 argument (node name) required." "$FUNCNAME"; return 1; }
-    [[ -f "$file" ]] || { err "[$file] is not a valid file." "$FUNCNAME"; return 1; }
+    [[ $# -ne 1 ]] && { err "exactly 1 argument (node name) required."; return 1; }
+    [[ -f "$file" ]] || { err "[$file] is not a valid file."; return 1; }
     check_progs_installed  xxd || return 2
 
     #i="$(xxd "$file" 2>/dev/null | head -1)"   # note likely exits w/ code 3
@@ -7964,7 +7991,7 @@ is_x() {
         wmctrl -m &>/dev/null
         exit_code="$?"
     else
-        err "can't check, neither [xset] nor [wmctrl] are installed" "$FUNCNAME"
+        err "can't check, neither [xset] nor [wmctrl] are installed"
         return 2
     fi
 
@@ -8089,13 +8116,13 @@ __is_work() {
 list_contains() {
     local array element i
 
-    #[[ "$#" -lt 2 ]] && { err "at least 2 args required" "$FUNCNAME"; return 1; }
+    #[[ "$#" -lt 2 ]] && { err "at least 2 args required"; return 1; }
 
     readonly element="$1"; shift
     declare -ar array=("$@")
 
-    #[[ -z "$element" ]]    && { err "element to check can't be empty string." "$FUNCNAME"; return 1; }  # it can!
-    #[[ -z "${array[*]}" ]] && { err "array/list to check from can't be empty." "$FUNCNAME"; return 1; }  # is this check ok/necessary?
+    #[[ -z "$element" ]]    && { err "element to check can't be empty string."; return 1; }  # it can!
+    #[[ -z "${array[*]}" ]] && { err "array/list to check from can't be empty."; return 1; }  # is this check ok/necessary?
 
     for i in "${array[@]}"; do
         [[ "$i" == "$element" ]] && return 0
@@ -8144,7 +8171,7 @@ is_proc_running() {
 
     readonly proc="$1"
 
-    [[ -z "$proc" ]] && { err "process name not provided! Abort." "$FUNCNAME"; return 1; }
+    [[ -z "$proc" ]] && { err "process name not provided! Abort."; return 1; }
 
     #if pidof "$proc"; then
     pgrep -f -- "$proc" > /dev/null 2>&1  # TODO: add -x flag to search for EXACT commands? also, -f seems like a bad idea, eg is_proc_running 'kala' would return true if file named 'kala' was opened in vim
@@ -8227,7 +8254,7 @@ create_symlinks() {
     src="$1"
     dest="$2"
 
-    [[ -d "$src" && -d "$dest" ]] || { err "either given [$src] or [$dest] are not valid dirs"; return 1; }
+    [[ -d "$src" && -d "$dest" ]] || { err "given [$src] and/or [$dest] are not valid dirs"; return 1; }
 
     # Create symlink of every file (note target file will be overwritten no matter what):
     find "$src" -maxdepth 1 -mindepth 1 -type f -printf 'ln -sf -- "%p" "$dest"\n' | dest="$dest" bash
@@ -8255,7 +8282,7 @@ is_dir_empty() {
 
     readonly dir="$1"
 
-    $sudo test -d "$dir" || { err "[$dir] is not a valid dir" "$FUNCNAME"; return 2; }
+    $sudo test -d "$dir" || { err "[$dir] is not a valid dir" -1; return 2; }
     $sudo find "$dir" -mindepth 1 -maxdepth 1 -print -quit | grep -q . && return 1 || return 0
 }
 
@@ -8304,6 +8331,12 @@ is_function() {
 }
 
 
+funname() {
+    local depth="${1:-0}"
+    [[ "${#FUNCNAME[@]}" -ge "$((2+depth))" ]] && echo -n "${FUNCNAME[$((1+depth))]}"
+}
+
+
 verify_f() {
     local opt nonempty msg OPTIND f e
 
@@ -8319,7 +8352,7 @@ verify_f() {
     for f in "$@"; do
         if [[ -n "$nonempty" ]]; then
             #sudo test -f "$f" -a -s "$f" || { err "[$f] not a nonempty file${msg:+; $msg}"; e=1; }
-            [[ -f "$f" && -s "$f" ]] || { err "[$f] not a nonempty file${msg:+; $msg}"; e=1; }
+            [[ -f "$f" && -s "$f" ]] || { err "[$f] not a nonempty file${msg:+; $msg}" -1; e=1; }
         else
             [[ -f "$f" ]] || { err "[$f] not a file${msg:+; $msg}"; e=1; }
         fi
@@ -8342,7 +8375,7 @@ verify_d() {
 
     for d in "$@"; do
         sudo test -d "$d" || { err "[$d] not a dir${msg:+; $msg}"; e=1; continue; }
-        [[ -n "$nonempty" ]] && is_dir_empty -s "$d" && { err "[$d] is empty, expected nonempty dir${msg:+; $msg}"; e=1; }
+        [[ -n "$nonempty" ]] && is_dir_empty -s "$d" && { err "[$d] is empty, expected nonempty dir${msg:+; $msg}" -1; e=1; }
     done
     return ${e:-0}
 }
@@ -8461,7 +8494,7 @@ while getopts 'NFSUQOP:L:T:h' OPT_; do
         P) PLATFORM="$OPTARG" ;;  # force the platform-specific config to install (as opposed to deriving it from hostname); best not use it and let platform be resolved from our hostname
         L) LOGGING_LVL="$OPTARG"  # log vl
            MANUAL_LOG_LVL=TRUE
-           is_digit "$OPTARG" || { err "log level needs to be an int, but was [$OPTARG]"; exit 1; }
+           is_digit "$OPTARG" || fail "log level needs to be an int, but was [$OPTARG]"
             ;;
         T) TMP_DIR="$OPTARG" ;;
         h) print_usage; exit 0 ;;
