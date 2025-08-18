@@ -231,7 +231,7 @@ check_dependencies() {
                 ; do
         if ! [[ -d "$dir" ]]; then
             if confirm -d Y "[$dir] mountpoint/dir does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
-                execute "sudo mkdir -- '$dir'" || { err "unable to create [$dir] directory. abort."; exit 1; }
+                ensure_d -s "$dir" || fail
             else
                 err "expected [$dir] to be an already-existing dir. abort"
                 exit 1
@@ -474,18 +474,17 @@ setup_systemd() {
     if ! [[ -d "$global_sysd_target" ]]; then
         err "[$global_sysd_target] is not a dir; skipping systemd file(s) installation."
         return 1
-    elif ! [[ -d "$usr_sysd_target" ]]; then
-        mkdir -p "$usr_sysd_target" || { err "mkdir -p [$usr_sysd_target] failed w/ $?"; return 1; }
     fi
+    ensure_d "$usr_sysd_target" || return 1
 
     __var_expand_move() {
         local sudo in outf tmpfile
-        [[ "$1" == --sudo ]] && { shift; readonly sudo=TRUE; }
+        [[ "$1" == -s ]] && { shift; readonly sudo=TRUE; }
 
         in="$1"; outf="$2"
         tmpfile="$TMP_DIR/.sysd_setup-$RANDOM"
 
-        [[ -s "$in" ]] || { err "infile [$in] not a non-empty file, abort"; return 1; }  # sanity
+        verify_f -n "$in" || return 1
         execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$in' > '$tmpfile'" || { err "sed-ing systemd file [$in] failed"; return $?; }
         execute "${sudo:+sudo }install -m644 -CT '$tmpfile' '$outf'" || { err "installing [$tmpfile] failed"; return 1; }
         return 0
@@ -493,7 +492,7 @@ setup_systemd() {
 
     __process() {
         local usr sudo dir tdir node fname t fname f
-        sudo='--sudo'
+        sudo='-s'
 
         [[ "$1" == --user ]] && { readonly usr=TRUE; unset sudo; shift; }
         readonly dir="$1"; readonly tdir="$2"  # indir, target_dir
@@ -516,8 +515,8 @@ setup_systemd() {
             elif [[ -d "$node" && "$node" == *.d ]]; then
                 t="$tdir/$fname"
                 for f in "$node/"*; do
-                    [[ -s "$f" && "$f" == *.conf ]] || continue  # note we require certain suffix
-                    [[ -d "$t" ]] || ${sudo:+sudo} mkdir -- "$t" || { err "[${sudo:+sudo }mkdir $t] failed w/ $?"; continue; }
+                    verify_f -n "$f" && [[ "$f" == *.conf ]] || continue  # note we require certain suffix
+                    ensure_d $sudo "$t" || continue
                     __var_expand_move $sudo "$f" "$t/$(basename -- "$f")" || continue
                 done
             fi
@@ -1072,8 +1071,7 @@ create_mountpoint() {
     readonly mountpoint="$1"
 
     [[ -z "$mountpoint" ]] && { err "cannot pass empty mountpoint arg"; return 1; }
-    [[ -d "$mountpoint" ]] || execute "sudo mkdir -p -- '$mountpoint'" || return 1
-    [[ -d "$mountpoint" ]] || { err "mountpoint [$mountpoint] is not a dir"; return 1; }  # sanity
+    ensure_d -s "$mountpoint" || return 1
     execute "sudo chmod 777 -- '$mountpoint'" || { err; return 1; }  # TODO: why 777 ???
 
     return 0
@@ -1224,7 +1222,7 @@ install_deps() {
         clone_or_pull_repo zdharma-continuum zinit "$BASE_PROGS_DIR"  # https://github.com/zdharma-continuum/zinit#manual
 
         # default ZINIT[HOME_DIR], where zinit creates all working dirs:
-        execute "mkdir -p '$HOME/.local/share/zinit/'"
+        ensure_d "$HOME/.local/share/zinit/"
     }
 
     _install_vifm_deps() {
@@ -1368,7 +1366,7 @@ install_deps() {
     #   - https://github.com/wyne/fasder  - go reimplementation
     clone_or_pull_repo "whjvenyl" "fasd" "$BASE_PROGS_DIR"  # https://github.com/whjvenyl/fasd
     create_link "$BASE_PROGS_DIR/fasd/fasd" "$HOME/bin/fasd"
-    execute "mkdir -p -- $XDG_DATA_HOME/fasd"  # referenced by ~/.config/fasd/config
+    ensure_d "$XDG_DATA_HOME/fasd"  # referenced by ~/.config/fasd/config
 
     # maven bash completion:
     clone_or_pull_repo "juven" "maven-bash-completion" "$BASE_PROGS_DIR"  # https://github.com/juven/maven-bash-completion
@@ -1569,7 +1567,7 @@ setup_dirs() {
         IFS=: read -r dir opts <<< "$dir"
         if ! [[ -d "$dir" ]]; then
             report "[$dir] does not exist, creating..."
-            if [[ "$opts" == *R* ]]; then execute "sudo mkdir -p -- '$dir'"; else execute "mkdir -p -- '$dir'"; fi
+            if [[ "$opts" == *R* ]]; then ensure_d -s "$dir"; else ensure_d "$dir"; fi
         fi
     done
 
@@ -1578,7 +1576,7 @@ setup_dirs() {
         err "[CUSTOM_LOGDIR] env var is undefined. abort."; sleep 5
     elif ! [[ -d "$CUSTOM_LOGDIR" ]]; then
         report "[$CUSTOM_LOGDIR] does not exist, creating..."
-        execute "sudo mkdir -- $CUSTOM_LOGDIR"
+        ensure_d -s "$CUSTOM_LOGDIR"
         execute "sudo chown root:$USER -- $CUSTOM_LOGDIR"
         execute "sudo chmod 'u=rwX,g=rwX,o=' -- $CUSTOM_LOGDIR"
     fi
@@ -1925,7 +1923,7 @@ setup_mok() {
     local target_dir
     target_dir='/var/lib/shim-signed/mok'
 
-    sudo test -d "$target_dir" || execute "sudo mkdir -p -- '$target_dir'" || return 1
+    ensure_d -s "$target_dir" || return 1
     if ! is_dir_empty -s "$target_dir"; then
         report "[$target_dir] not empty, assuming MOK keys already created; testing key enrollment..."
         # TODO: mokutil here exits /w 1 on success, so cannot use w/ pipefail:
@@ -2042,7 +2040,7 @@ create_apt_source() {
     fi
 
     # create (arbitrary) dir for our apt keys:
-    [[ -d "$APT_KEY_DIR" ]] || execute "sudo mkdir -- $APT_KEY_DIR" || return 1
+    ensure_d -s "$APT_KEY_DIR" || return 1
 
     c=0
     IFS=, read -ra key_url <<< "$key_url"
@@ -3691,7 +3689,7 @@ install_weeslack() {  # https://github.com/wee-slack/wee-slack
     d="$HOME/.local/share/weechat/python"
     install_block 'weechat-python python3-websocket' || return 1
 
-    execute "mkdir -p $d/autoload" || return 1
+    ensure_d "$d/autoload" || return 1
     #execute "pushd $d" || return 1
 
     #execute 'curl -O https://raw.githubusercontent.com/wee-slack/wee-slack/master/wee_slack.py' || { popd; return 1; }
@@ -3713,7 +3711,7 @@ install_weechat_matrix() {  # https://github.com/poljar/weechat-matrix
     deps="${BASE_PROGS_DIR}/weechat-matrix"
 
     install_block 'libolm-dev' || return 1
-    execute "mkdir -p $d/autoload" || return 1
+    ensure_d "$d/autoload" || return 1
 
     clone_or_pull_repo "poljar" "weechat-matrix" "$deps/"
 
@@ -4080,7 +4078,7 @@ install_btdu() {  # https://github.com/CyberShadow/btdu
 #   - https://github.com/Schniz/fnm (nodejs)
 #   - https://github.com/jdx/mise
 install_asdf() {
-    [[ -d "$ASDF_DIR" ]] || execute "mkdir -- '$ASDF_DIR'" || return 1
+    ensure_d "$ASDF_DIR" || return 1
     install_bin_from_git -N asdf asdf-vm/asdf '-linux-amd64.tar.gz'
 
     command -v asdf >/dev/null 2>&1 || { err 'asdf not on PATH??'; return 1; }  # sanity
@@ -5065,7 +5063,7 @@ build_deb() {
 
     if ! [[ -d debian ]]; then
         report "no debian/ in pwd, generating scaffolding..."
-        execute 'mkdir -- debian' || return 1
+        ensure_d "debian" || return 1
 
         # create changelog:
         echo "$pkg_name (0.0-0) UNRELEASED; urgency=medium
@@ -5182,7 +5180,7 @@ nvim_post_install_configuration() {
 
     readonly nvim_confdir="$HOME/.config/nvim"
 
-    execute "sudo mkdir -p /root/.config"
+    ensure_d -s "/root/.config" || return 1
     create_link -s "$nvim_confdir" "/root/.config/"  # root should use same conf
 }
 
@@ -5989,7 +5987,7 @@ install_vbox_guest() {
     is_virtualbox || return 0
     install_block 'virtualbox-guest-dkms' || return 1
 
-    execute "mkdir $tmp_mount" || return 1
+    ensure_d "$tmp_mount" || return 1
     execute "sudo mount /dev/cdrom $tmp_mount" || { err "mounting guest-utils from /dev/cdrom to [$tmp_mount] failed w/ $? - is image mounted in vbox and in expected (likely first) slot?"; return 1; }
     [[ -x "$bin" ]] || { err "[$bin] not an executable file"; return 1; }
     label="$(grep --text -Po '^label=.\K.*(?="$)' "$bin")"  # or grep for 'INSTALLATION_VER'?
@@ -6099,7 +6097,7 @@ _setup_podman() {
             execute 'sudo podman system reset'  # for root
 
             execute "sudo crudini --set '$conf' storage driver btrfs" || return 1
-            execute "mkdir -- '$(dirname -- "$user_conf")'" || return 1
+            ensure_d "$(dirname -- "$user_conf")" || return 1
             execute "crudini --set '$user_conf' storage driver btrfs"
         fi
     elif grep -qF btrfs "$conf" "$user_conf"; then
@@ -6158,7 +6156,7 @@ _setup_snapper() {
 
         if [[ -n "$custom" ]]; then
             execute "sudo btrfs subvolume delete '${mp}.snapshots'" || return 1  # delete auto-created subvol
-            execute "sudo mkdir '${mp}.snapshots'" || return 1
+            ensure_d -s "${mp}.snapshots" || return 1
             execute "sudo mount -av" || return 1  # remount our @snapshots (or whatever is defined in fstab) to ${mp}.snapshots
         fi
 
@@ -6941,7 +6939,7 @@ install_electrum_wallet() {
 install_revanced() {
     local d
     d="$BASE_PROGS_DIR/revanced"
-    [[ -d "$d" ]] || mkdir "$d"
+    ensure_d "$d" || return 1
 
     install_bin_from_git -A -N revanced.jar -d "$d"  ReVanced/revanced-cli 'all.jar'
     install_bin_from_git -A -N patches.rvp  -d "$d"  ReVanced/revanced-patches  'patches-.*.rvp'
@@ -6951,7 +6949,7 @@ install_revanced() {
 install_apkeditor() {
     local d
     d="$BASE_PROGS_DIR/apkeditor"
-    [[ -d "$d" ]] || mkdir "$d"
+    ensure_d "$d" || return 1
 
     install_bin_from_git -A -N apkeditor.jar -d "$d"  REAndroid/APKEditor 'APKEditor-.*.jar'
 }
@@ -6965,7 +6963,7 @@ install_android_command_line_tools() {
     local target
 
     target="$BASE_PROGS_DIR/android"
-    [[ -d "$target" ]] || mkdir -p -- "$target"
+    ensure_d "$target" || return 1
 
     install_from_any -D -d "$target" -I android-command-line-tools  cmdline-tools \
         'https://developer.android.com/studio#command-line-tools-only' \
@@ -7193,7 +7191,7 @@ setup_firefox() {
     [[ -d "$conf_dir" ]] || { err "[$conf_dir] not a dir"; return 1; }
     profile="$(find "$conf_dir" -mindepth 1 -maxdepth 1 -type d -name '*default-release')"
     [[ -d "$profile" ]] || { err "[$profile] not a dir"; return 1; }
-    [[ -d "$profile/chrome" ]] || execute "mkdir -- '$profile/chrome'" || return 1
+    ensure_d "$profile/chrome" || return 1
     execute "pushd $profile/chrome" || return 1
     clone_or_pull_repo  MrOtherGuy  firefox-csshacks  './'
 
