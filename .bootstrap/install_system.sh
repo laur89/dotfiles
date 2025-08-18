@@ -1740,11 +1740,11 @@ setup_homesick() {
     fetch_castles || return 1
 
     # just in case check if any of the castles are still tracking https instead of ssh:
-    https_castles="$("$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick" list | grep -Ei '\bhttps://\b')"
+    https_castles="$("$BASE_HOMESICK_REPOS_LOC/homeshick/bin/homeshick" list | grep -Ei '\bhttps://')"
     if [[ -n "$https_castles" ]]; then
         err "fyi, these homesick castles are for some reason still tracking https remotes:"
-        report "$https_castles"
-        err ""
+        err "$https_castles"
+        err
     fi
 }
 
@@ -8255,7 +8255,7 @@ is_dir_empty() {
 
     readonly dir="$1"
 
-    $sudo test -d "$dir" || { err "[$dir] is not a valid dir." "$FUNCNAME"; return 2; }
+    $sudo test -d "$dir" || { err "[$dir] is not a valid dir" "$FUNCNAME"; return 2; }
     $sudo find "$dir" -mindepth 1 -maxdepth 1 -print -quit | grep -q . && return 1 || return 0
 }
 
@@ -8304,6 +8304,50 @@ is_function() {
 }
 
 
+verify_f() {
+    local opt nonempty msg OPTIND f e
+
+    while getopts 'nm:' opt; do
+        case "$opt" in
+            n) nonempty=TRUE ;;
+            m) msg="$OPTARG" ;;  # additional message to print on failure
+            *) fail "unexpected opt [$opt] passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    for f in "$@"; do
+        if [[ -n "$nonempty" ]]; then
+            #sudo test -f "$f" -a -s "$f" || { err "[$f] not a nonempty file${msg:+; $msg}"; e=1; }
+            [[ -f "$f" && -s "$f" ]] || { err "[$f] not a nonempty file${msg:+; $msg}"; e=1; }
+        else
+            [[ -f "$f" ]] || { err "[$f] not a file${msg:+; $msg}"; e=1; }
+        fi
+    done
+    return ${e:-0}
+}
+
+
+verify_d() {
+    local opt nonempty msg OPTIND d e
+
+    while getopts 'nm:' opt; do
+        case "$opt" in
+            n) nonempty=TRUE ;;
+            m) msg="$OPTARG" ;;  # additional message to print on failure
+            *) fail "unexpected opt [$opt] passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    for d in "$@"; do
+        sudo test -d "$d" || { err "[$d] not a dir${msg:+; $msg}"; e=1; continue; }
+        [[ -n "$nonempty" ]] && is_dir_empty -s "$d" && { err "[$d] is empty, expected nonempty dir${msg:+; $msg}"; e=1; }
+    done
+    return ${e:-0}
+}
+
+
 file_type() {
     if [[ -h "$*" ]]; then
         echo symlink
@@ -8322,6 +8366,7 @@ file_type() {
     elif ! [[ -e "$*" ]]; then
         echo 'does not exist'
     else
+        err "unknown filetype for [$*]?!"
         echo UNKNOWN
     fi
 }
