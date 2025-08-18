@@ -332,7 +332,7 @@ setup_pm() {
             [[ -d "$target" ]] || { err "[$target] does not exist. should we just create it?"; continue; }
 
             for file in "$pm_state_dir/"*; do
-                [[ -s "$file" ]] || continue
+                verify_f -n "$file" || continue
                 tmpfile="$TMP_DIR/.pm_setup-$RANDOM"
                 execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
                 execute "sudo install -m755 -CT '$tmpfile' '$target/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
@@ -370,7 +370,7 @@ setup_smartd() {
     conf='/etc/smartd.conf'
     c='DEVICESCAN -a -o on -S on -n standby,q -s (S/../.././02|L/../../6/03) -W 4,35,40 -m smart_mail_alias -M exec /usr/local/bin/smartdnotify'  # TODO: create the script! from there we mail & notify; note script shouldn't write anything to stdout/stderr, otherwise it ends up in syslog
 
-    [[ -f "$conf" ]] || { err "cannot configure smartd, its conf file [$conf] does not exist; abort;"; return 1; }
+    verify_f -m 'cannot configure smartd' "$conf" || return 1
     execute "sudo sed -i --follow-symlinks '/^DEVICESCAN.*$/d' '$conf'"  # nuke previous setting
     execute "echo '$c' | sudo tee --append $conf > /dev/null"
 
@@ -432,13 +432,9 @@ setup_logind() {
     readonly logind_confd='/etc/systemd/logind.conf.d'
     file="$COMMON_DOTFILES/backups/logind.conf"
 
-    if ! [[ -f "$logind_conf" ]]; then
-        err "[$logind_conf] is not a file; skipping configuring logind"
-        return 1
-    elif ! [[ -f "$file" ]]; then
-        err "[$file] is not a file; skipping configuring logind"
-        return 1
-    elif ! grep -Fq "$logind_confd" "$logind_conf"; then  # sanity
+    verify_f -m 'skipping configuring logind' "$logind_conf" "$file" || return 1
+
+    if ! grep -Fq "$logind_confd" "$logind_conf"; then  # sanity
         err "[$logind_confd] is not referenced/mentioned in [$logind_conf]! something's changed?"
         return 1
     fi
@@ -556,7 +552,7 @@ setup_pam_login() {
     local f
     f='/etc/pam.d/login'
 
-    [[ -f "$f" ]] || { err "[$f] not a file"; return 1; }
+    verify_f "$f" || return 1
 
     if ! grep -Eq '^auth\s+optional\s+pam_gnome_keyring.so$' "$f"; then
         execute "echo 'auth       optional     pam_gnome_keyring.so' | sudo tee --append '$f' > /dev/null"
@@ -648,7 +644,7 @@ setup_hosts() {
         return 0
     }
 
-    [[ -f /etc/hosts ]] || { err "system hosts file is missing!"; return 1; }
+    verify_f /etc/hosts || return 1
 
     if [[ -f "$file" ]]; then
         current_hostline="$(_extract_current_hostname_line /etc/hosts)" || return 1
@@ -698,7 +694,7 @@ setup_apt() {
                 ; do
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
-        [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it."; continue; }
+        verify_f -m "won't install it" "$file" || continue
         backup_original_and_copy_file --sudo "$file" "$apt_dir"
     done
 
@@ -707,7 +703,7 @@ setup_apt() {
                 ; do
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
-        [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it"; continue; }
+        verify_f -m "won't install it" "$file" || continue
         execute "sudo install -m644 -C '$file' '$apt_dir/sources.list.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
@@ -725,7 +721,7 @@ setup_apt() {
                 ; do
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
-        [[ -f "$file" ]] || { err "expected configuration file at [$file] does not exist; won't install it"; continue; }
+        verify_f -m "won't install it" "$file" || continue
         execute "sudo install -m644 -C '$file' '$apt_dir/apt.conf.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
@@ -769,10 +765,7 @@ setup_crontab() {
                 hosts-block-update \
                     ; do
             i="$BASE_DATA_DIR/dev/scripts/$i"
-            if ! [[ -s "$i" ]]; then
-                err "[$i] does not exist, can't dump into $weekly_crondir..."
-                continue
-            fi
+            verify_f -nm "can't dump into $weekly_crondir" "$i" || continue
 
             #create_link -s "$i" "${weekly_crondir}/"  # linked crontabs don't work!
             execute "sudo install -m644 -CT '$i' '$weekly_crondir/$(basename -- "$i")'" || { err "installing [$i] failed w/ $?"; return 1; }
@@ -882,10 +875,7 @@ install_nfs_server() {
 
     install_block 'nfs-kernel-server' || { err "unable to install nfs-kernel-server. aborting nfs server install/config."; return 1; }
 
-    if ! [[ -f "$nfs_conf" ]]; then
-        err "[$nfs_conf] is not a file; skipping nfs server installation."
-        return 1
-    fi
+    verify_f -m 'skipping nfs server installation' "$nfs_conf" || return 1
 
     while true; do
         confirm "$(report "add ${client_ip:+another }client IP for the exports list?")" || break
@@ -929,7 +919,7 @@ _install_nfs_client_stationary() {
 
     declare -a mounted_shares used_mountpoints
 
-    [[ -f "$fstab" ]] || { err "[$fstab] does not exist; cannot add fstab entry!"; return 1; }
+    verify_f -m 'cannot add fstab entry' "$fstab" || return 1
 
     prev_server_ip="$SERVER_IP"  # default
 
@@ -1758,11 +1748,7 @@ setup_global_shell_links() {
                                 # that location will be used by various scripts.
 
     for file in "${real_file_locations[@]}"; do
-        if ! [[ -f "$file" ]]; then
-            err "[$file] does not exist. can't link it to ${global_dir}/"
-            continue
-        fi
-
+        verify_f -m "can't link it to ${global_dir}/" "$file" || continue
         create_link -s "$file" "${global_dir}/"
     done
 }
@@ -1806,7 +1792,7 @@ setup_global_bash_settings() {
     readonly global_profile='/etc/profile.d'   # note this stuff might be sourced by other shells than Bournes (see https://unix.stackexchange.com/a/541585/47501); sourced by /etc/profile
     readonly ps1='PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} -eq 0 ]]; then echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033\[\033[0;31m\]\h"; else echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h"; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # own-ps1-def-marker'
 
-    sudo test -f "$global_bashrc" || { err "[$global_bashrc] doesn't exist; cannot modify it!"; return 1; }
+    verify_f -m 'cannot modify it' "$global_bashrc" || return 1
 
     ## setup prompt:
     # just in case first delete previous global PS1 def:
@@ -1947,7 +1933,7 @@ setup_mok() {
         f="$COMMON_PRIVATE_DOTFILES/backups/use_user_mok.conf"
 
         [[ -d "$conf_dir" ]] || { err "[$conf_dir] is not a dir; cannot setup DKMS to use our MOK keys"; return 1; }
-        [[ -s "$f" ]] || { err "[$f] is not a file; skipping DKMS config to use our MOK keys"; return 1; }
+        verify_f -nm 'skipping DKMS config to use our MOK keys' "$f" || return 1
 
         execute "sudo install -m644 -C '$f' '$conf_dir'" || { err "installing [$f] to [$conf_dir] failed w/ $?"; return 1; }
     }
@@ -2166,7 +2152,7 @@ override_locale_time() {
     readonly conf_file='/etc/default/locale'
     readonly loc_file='/etc/locale.gen'
 
-    [[ -f "$conf_file" ]] || { err "cannot override locale time: [$conf_file] does not exist; abort;"; return 1; }
+    verify_f "$conf_file" || return 1
 
     # change our LC_TIME, so first day of week is Mon (from https://wiki.debian.org/Locale#First_day_of_week):
     if ! grep -qE 'LC_TIME=.en_GB.UTF-8.' "$conf_file"; then
@@ -2210,7 +2196,7 @@ swap_caps_lock_and_esc() {
 
     readonly conf_file='/usr/share/X11/xkb/symbols/pc'
 
-    [[ -f "$conf_file" ]] || { err "cannot swap esc<->caps: [$conf_file] does not exist; abort;"; return 1; }
+    verify_f "$conf_file" || return 1
 
     # map esc to caps:
     if ! grep -Eq 'key <ESC>.*Caps_Lock' "$conf_file"; then
@@ -2320,7 +2306,7 @@ install_kernel_modules() {
 
     conf='/etc/modules'
 
-    [[ -f "$conf" ]] || { err "[$conf] is not a file; skipping kernel module installation"; return 1; }
+    verify_f -m 'skipping kernel module installation' "$conf" || return 1
 
     # note as per https://wiki.archlinux.org/title/Backlight :
     #   > Using ddcci and i2c-dev simultaneously may result in resource conflicts such as a Device or resource busy error.
@@ -2840,7 +2826,7 @@ extract_tarball() {
         file="$(find "$tmpdir" -mindepth 1 -maxdepth 1 -type f)"
     fi
 
-    [[ -f "$file" ]] || { err "file [$file] not a regular file"; return 1; }
+    verify_f "$file" || return 1
     [[ -n "$file_filter" || -n "$name_filter" ]] && [[ "$dir_only" == 1 ]] && { err "[fnD] options are mutually exclusive"; return 1; }
     is_archive "$file" || { err "[$file] is not an archive, cannot decompress"; return 1; }
 
@@ -3147,7 +3133,7 @@ install_file() {
     file="$1"
     name="$2"  # OPTIONAL, unless installing whole uncompressed dir (-D opt)
 
-    [[ -f "$file"  || -d "$file" ]] || { err "file [$file] not a regular file or dir"; return 1; }
+    [[ -f "$file" || -d "$file" ]] || { err "file [$file] not a regular file or dir"; return 1; }
     [[ -d "$target" ]] || { err "target installation dir [$target] not a dir, can't install [${name:+$name///}$file]"; return 1; }
     if list_contains '-f' "${extract_opts[@]}" || list_contains '-n' "${extract_opts[@]}"; then
         if list_contains '-D' "${extract_opts[@]}" || list_contains '-U' "${extract_opts[@]}"; then
@@ -6716,7 +6702,7 @@ setup_dnsmasq() {
     #     dig +short chaos txt misses.bind
     #     dig +short chaos txt cachesize.bind
     [[ -d "$dnsmasq_conf_dir" ]] || { err "[$dnsmasq_conf_dir] does not exist"; return 1; }
-    [[ -s "$dnsmasq_conf" ]] || { err "[$dnsmasq_conf] does not exist; cannot update config"; return 1; }
+    verify_f -nm 'cannot update config' "$dnsmasq_conf" || return 1
     execute "sudo install -m644 -C '$dnsmasq_conf' '$dnsmasq_conf_dir'" || { err "installing [$dnsmasq_conf] failed w/ $?"; return 1; }
 
 
@@ -6807,8 +6793,8 @@ enable_network_manager() {
         # chattr +i /etc/resolv.conf
     }
 
-    [[ -d "$nm_conf_dir" ]] || { err "[$nm_conf_dir] does not exist; are you using NetworkManager? if not, this config logic should be removed."; return 1; }
-    [[ -s "$nm_conf" ]] || { err "[$nm_conf] does not exist; cannot update config"; return 1; }
+    verify_d -m 'are you using NetworkManager? if not, this config logic should be removed' "$nm_conf_dir" || return 1
+    verify_f -nm 'cannot update config' "$nm_conf" || return 1
     execute "sudo install -m644 -C '$nm_conf' '$nm_conf_dir'" || { err "installing [$nm_conf] to [$nm_conf_dir] failed w/ $?"; return 1; }
     _configure_con_dns
 
@@ -6995,7 +6981,7 @@ configure_ntp_for_work() {
                          'server gibntp02.prod.williamhill.plc'
                         )
 
-    [[ -f "$conf" ]] || { err "[$conf] is not a valid file. is ntp installed?"; return 1; }
+    verify_f -m 'is ntp installed?' "$conf" || return 1
 
     for i in "${servers[@]}"; do
         if ! grep -qFx "$i" "$conf"; then
@@ -7217,7 +7203,7 @@ configure_updatedb() {
     paths=(/mnt /media /var/cache /data/seafile-data "$HOME/.cache")  # paths to be added to PRUNEPATHS definition
 
     is_btrfs && paths+=("$HOME/.snapshots" /.snapshots)  # */.snapshots are snapper/btrfs location
-    [[ -s "$conf" ]] || { err "[$conf] not a nonempty file"; return 1; }
+    verify_f -n "$conf" || return 1
     line="$(grep -Po '^PRUNEPATHS="\K.*(?="$)' "$conf")"  # extract the value between quotes
 
     for i in "${paths[@]}"; do
@@ -7863,7 +7849,7 @@ is_appimage() {
     readonly file="$1"
 
     [[ $# -ne 1 ]] && { err "exactly 1 argument (node name) required."; return 1; }
-    [[ -f "$file" ]] || { err "[$file] is not a valid file."; return 1; }
+    verify_f "$file" || return 1
     check_progs_installed  xxd || return 2
 
     #i="$(xxd "$file" 2>/dev/null | head -1)"   # note likely exits w/ code 3
@@ -8349,10 +8335,9 @@ verify_f() {
 
     for f in "$@"; do
         if [[ -n "$nonempty" ]]; then
-            #sudo test -f "$f" -a -s "$f" || { err "[$f] not a nonempty file${msg:+; $msg}"; e=1; }
-            [[ -f "$f" && -s "$f" ]] || { err "[$f] not a nonempty file${msg:+; $msg}" -1; e=1; }
+            sudo test -f "$f" -a -s "$f" || { err "[$f] not a nonempty file${msg:+; $msg}"; e=1; }
         else
-            [[ -f "$f" ]] || { err "[$f] not a file${msg:+; $msg}"; e=1; }
+            sudo test -f "$f" || { err "[$f] not a file${msg:+; $msg}"; e=1; }
         fi
     done
     return ${e:-0}
