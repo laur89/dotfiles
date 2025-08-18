@@ -63,6 +63,7 @@ EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%b-%y--%R).log"  # do not
                                                                         # picks it up and reports of its existence, opening
                                                                         # up for false positives.
 SYSCTL_CHANGED=0       # states whether sysctl config got changed
+umask 0077  # keep this in sync with what we set via systemd & ~/.profile!
 
 #------------------------
 #--- Global Constants ---
@@ -3172,7 +3173,8 @@ install_file() {
 
     if [[ "$ftype" == 'text/plain; charset='* ]]; then  # same as executable/binary above, but do not set executable flag
         _process || return 1
-        execute "sudo mv -- '$file' '$target'" || { err "installing [$file] in [$target] failed"; return 1; }
+        execute "sudo install -m644 -C --group=$USER '$file' '$target'" || return 1
+        _owner_perms "$target/$(basename -- "$file")"
     elif [[ "$ftype" == *'inode/directory; charset=binary' ]]; then
         [[ -z "$name" ]] && { err "[name] arg needs to be provided when installing a directory"; return 1; }
         _process || return 1
@@ -3619,7 +3621,7 @@ install_alacritty() {
     fi
 
     # install man-pages:
-    execute 'sudo mkdir -p /usr/local/share/man/man1'
+    ensure_d -s "/usr/local/share/man/man1" || return 1
     execute 'gzip -c extra/alacritty.man | sudo tee /usr/local/share/man/man1/alacritty.1.gz > /dev/null' || err
     execute 'gzip -c extra/alacritty-msg.man | sudo tee /usr/local/share/man/man1/alacritty-msg.1.gz > /dev/null' || err
 
@@ -6071,7 +6073,7 @@ _setup_podman() {
     # change it, e.g. to benefit from a nocow dir:
     # from https://access.redhat.com/solutions/7007159
     #execute "sudo crudini --set '$conf' storage rootless_storage_path '\"/var/lib/containers/user-storage/\$USER'\"" || return 1  # <-- do not expand $USER!
-    #execute "sudo mkdir -p '$user_storage'"
+    #ensure_d -s "$user_storage" || return 1
     #execute "sudo chown $USER:$USER '$user_storage'"  # TODO broken, as write permission should be given to entire /var/lib... dir path
 
     if is_btrfs; then
@@ -6214,9 +6216,7 @@ install_block() {
     noinstall='--no-install-recommends'  # default
     while getopts 'f' opt; do
         case "$opt" in
-           f)  # mnemonic: full
-              unset noinstall
-                ;;
+           f) unset noinstall ;;  # mnemonic: full
            *) return 1 ;;
         esac
     done
@@ -7439,12 +7439,8 @@ confirm() {
     timeout=2  # default
     while getopts 'd:t:' opt; do
         case "$opt" in
-           d)
-              default="$OPTARG"
-                ;;
-           t)
-              timeout="$OPTARG"
-                ;;
+           d) default="$OPTARG" ;;
+           t) timeout="$OPTARG" ;;
            *) print_usage; return 1 ;;
         esac
     done
@@ -7630,7 +7626,7 @@ execute() {
                 [[ "${#ok_code}" -gt 3 ]] && { err "too long ok_code arg passed to ${FUNCNAME}: [$ok_code]"; return 1; }
               done
                 ;;
-           *) echo -e "unexpected opt [$opt] passed to $FUNCNAME"; return 1 ;;
+           *) err "unexpected opt [$opt] passed to $FUNCNAME"; return 1 ;;
         esac
     done
     shift "$((OPTIND-1))"
@@ -7642,7 +7638,7 @@ execute() {
     eval "$cmd"
     readonly exit_sig=$?
 
-    if [[ "$ignore_errs" -ne 1 ]] && ! list_contains "$exit_sig" "${ok_codes[@]}"; then
+    if [[ "$ignore_errs" != 1 ]] && ! list_contains "$exit_sig" "${ok_codes[@]}"; then
         if [[ "$LOGGING_LVL" -ge 1 ]]; then
             echo -e "    ERR CMD: [$cmd] (exit code [$exit_sig])" >> "$EXECUTION_LOG"
             echo -e "        LOC: [$(pwd -P)]" >> "$EXECUTION_LOG"
@@ -7653,7 +7649,7 @@ execute() {
     fi
 
     [[ "$LOGGING_LVL" -ge 10 ]] && echo "OK CMD: $cmd" >> "$EXECUTION_LOG"
-    [[ "$retain_code" -eq 1 ]] && return $exit_sig || return 0
+    [[ "$retain_code" == 1 ]] && return $exit_sig || return 0
 }
 
 
@@ -7677,10 +7673,8 @@ select_items() {
 
     while getopts 'sh:' opt; do
         case "$opt" in
-           s) is_single_selection=1
-                ;;
-           h) hdr="$OPTARG"
-                ;;
+           s) is_single_selection=1 ;;
+           h) hdr="$OPTARG" ;;
            *) echo -e "unexpected opt [$opt] passed to $FUNCNAME"; return 1 ;;
         esac
     done
@@ -8376,7 +8370,8 @@ ensure_d() {
     shift "$((OPTIND-1))"
 
     for d in "$@"; do
-        $sudo test -d "$d" || execute "${sudo:+sudo }mkdir -p -- '$d'" || e=1
+        # note we set [umask 2] for root to make sure other group can read&traverse created dir; from https://unix.stackexchange.com/a/132201/47501
+        $sudo test -d "$d" || execute "(${sudo:+umask 2 && sudo }mkdir -p -- '$d')" || e=1
     done
     return ${e:-0}
 }
