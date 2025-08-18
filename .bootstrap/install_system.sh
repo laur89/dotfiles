@@ -124,7 +124,7 @@ validate_and_init() {
     local i
 
     check_connection && CONNECTED=1 || CONNECTED=0
-    [[ "$CONNECTED" -eq 0 && "$ALLOW_OFFLINE" -ne 1 ]] && { err "no internet connection. abort."; exit 1; }
+    [[ "$CONNECTED" -eq 0 && "$ALLOW_OFFLINE" -ne 1 ]] && fail "no internet connection. abort."
 
     # need to define PRIVATE__DOTFILES here, as otherwise 'single-step' mode of this
     # script might fail. be sure the repo names are in sync with the repos actually
@@ -1556,10 +1556,7 @@ setup_dirs() {
             $BASE_DATA_DIR/Documents \
                 ; do
         IFS=: read -r dir opts <<< "$dir"
-        if ! [[ -d "$dir" ]]; then
-            report "[$dir] does not exist, creating..."
-            if [[ "$opts" == *R* ]]; then ensure_d -s "$dir"; else ensure_d "$dir"; fi
-        fi
+        [[ "$opts" == *R* ]] && ensure_d -s "$dir" || ensure_d "$dir"
     done
 
     # create logdir ($CUSTOM_LOGDIR defined in $SHELL_ENVS):
@@ -7561,14 +7558,13 @@ is_ssh_key_available() {
 }
 
 
+# Check whether the client is connected to the internet
 check_connection() {
     local timeout ip
 
     readonly timeout=3  # in seconds
-    readonly ip='https://www.google.com'
+    readonly ip='http://www.google.com'
 
-    # Check whether the client is connected to the internet:
-    # TODO: keep '--no-check-certificate' by default?
     wget --no-check-certificate -q --user-agent="$USER_AGENT" --spider \
         --timeout=$timeout -- "$ip" > /dev/null 2>&1  # works in networks where ping is not allowed
 }
@@ -8316,7 +8312,7 @@ funname() {
 
 
 verify_f() {
-    local opt nonempty msg OPTIND f e
+    local opt nonempty msg OPTIND f e m
 
     while getopts 'nm:' opt; do
         case "$opt" in
@@ -8328,10 +8324,13 @@ verify_f() {
     shift "$((OPTIND-1))"
 
     for f in "$@"; do
-        if [[ -n "$nonempty" ]]; then
-            sudo test -f "$f" -a -s "$f" || { err "[$f] not a nonempty file${msg:+; $msg}"; e=1; }
-        else
-            sudo test -f "$f" || { err "[$f] not a file${msg:+; $msg}"; e=1; }
+        if ! sudo test -f "$f"; then
+            [[ -e "$f" ]] && m=" (but it exists, and is [$(file_type "$f")])"
+            err "[$f] not a file$m${msg:+; $msg}" -1
+            e=1
+        elif [[ -n "$nonempty" ]] && ! sudo test -s "$f"; then
+            err "[$f] not a nonempty file${msg:+; $msg}" -1
+            e=1
         fi
     done
     return ${e:-0}
@@ -8339,7 +8338,7 @@ verify_f() {
 
 
 verify_d() {
-    local opt nonempty msg OPTIND d e
+    local opt nonempty msg OPTIND d e m
 
     while getopts 'nm:' opt; do
         case "$opt" in
@@ -8351,8 +8350,14 @@ verify_d() {
     shift "$((OPTIND-1))"
 
     for d in "$@"; do
-        sudo test -d "$d" || { err "[$d] not a dir${msg:+; $msg}"; e=1; continue; }
-        [[ -n "$nonempty" ]] && is_dir_empty -s "$d" && { err "[$d] is empty, expected nonempty dir${msg:+; $msg}" -1; e=1; }
+        if ! sudo test -d "$d"; then
+            [[ -e "$d" ]] && m=" (but it exists, and is [$(file_type "$d")])"
+            err "[$d] not a dir$m${msg:+; $msg}" -1
+            e=1
+        elif [[ -n "$nonempty" ]] && is_dir_empty -s "$d"; then
+            err "[$d] is empty, expected nonempty dir${msg:+; $msg}" -1
+            e=1
+        fi
     done
     return ${e:-0}
 }
@@ -8371,7 +8376,10 @@ ensure_d() {
 
     for d in "$@"; do
         # note we set [umask 2] for root to make sure other group can read&traverse created dir; from https://unix.stackexchange.com/a/132201/47501
-        $sudo test -d "$d" || execute "(${sudo:+umask 2 && sudo }mkdir -p -- '$d')" || e=1
+        if ! $sudo test -d "$d"; then
+            [[ -e "$d" ]] && { err "[$d] exists, but is [$(file_type "$d")]" -1; e=1; continue; }
+            execute "(${sudo:+umask 2 && sudo }mkdir -p -- '$d')" || e=1
+        fi
     done
     return ${e:-0}
 }
