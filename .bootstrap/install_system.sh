@@ -333,7 +333,7 @@ setup_pm() {
             [[ -d "$target" ]] || { err "[$target] does not exist. should we just create it?"; continue; }
 
             for file in "$pm_state_dir/"*; do
-                verify_f -n "$file" || continue
+                is_f -n "$file" || continue
                 tmpfile="$TMP_DIR/.pm_setup-$RANDOM"
                 execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
                 execute "sudo install -m755 -CT '$tmpfile' '$target/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
@@ -371,7 +371,7 @@ setup_smartd() {
     conf='/etc/smartd.conf'
     c='DEVICESCAN -a -o on -S on -n standby,q -s (S/../.././02|L/../../6/03) -W 4,35,40 -m smart_mail_alias -M exec /usr/local/bin/smartdnotify'  # TODO: create the script! from there we mail & notify; note script shouldn't write anything to stdout/stderr, otherwise it ends up in syslog
 
-    verify_f -m 'cannot configure smartd' "$conf" || return 1
+    is_f -m 'cannot configure smartd' "$conf" || return 1
     execute "sudo sed -i --follow-symlinks '/^DEVICESCAN.*$/d' '$conf'"  # nuke previous setting
     execute "echo '$c' | sudo tee --append $conf > /dev/null"
 
@@ -433,7 +433,7 @@ setup_logind() {
     readonly logind_confd='/etc/systemd/logind.conf.d'
     file="$COMMON_DOTFILES/backups/logind.conf"
 
-    verify_f -m 'skipping configuring logind' "$logind_conf" "$file" || return 1
+    is_f -m 'skipping configuring logind' "$logind_conf" "$file" || return 1
 
     if ! grep -Fq "$logind_confd" "$logind_conf"; then  # sanity
         err "[$logind_confd] is not referenced/mentioned in [$logind_conf]! something's changed?"
@@ -481,7 +481,7 @@ setup_systemd() {
         in="$1"; outf="$2"
         tmpfile="$TMP_DIR/.sysd_setup-$RANDOM"
 
-        verify_f -n "$in" || return 1
+        is_f -n "$in" || return 1
         execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$in' > '$tmpfile'" || { err "sed-ing systemd file [$in] failed"; return $?; }
         execute "${sudo:+sudo }install -m644 -CT '$tmpfile' '$outf'" || { err "installing [$tmpfile] failed"; return 1; }
         return 0
@@ -512,7 +512,7 @@ setup_systemd() {
             elif [[ -d "$node" && "$node" == *.d ]]; then
                 t="$tdir/$fname"
                 for f in "$node/"*; do
-                    verify_f -n "$f" && [[ "$f" == *.conf ]] || continue  # note we require certain suffix
+                    is_f -n "$f" && [[ "$f" == *.conf ]] || continue  # note we require certain suffix
                     ensure_d $sudo "$t" || continue
                     __var_expand_move $sudo "$f" "$t/$(basename -- "$f")" || continue
                 done
@@ -553,7 +553,7 @@ setup_pam_login() {
     local f
     f='/etc/pam.d/login'
 
-    verify_f "$f" || return 1
+    is_f "$f" || return 1
 
     if ! grep -Eq '^auth\s+optional\s+pam_gnome_keyring.so$' "$f"; then
         execute "echo 'auth       optional     pam_gnome_keyring.so' | sudo tee --append '$f' > /dev/null"
@@ -645,7 +645,7 @@ setup_hosts() {
         return 0
     }
 
-    verify_f /etc/hosts || return 1
+    is_f /etc/hosts || return 1
 
     if [[ -f "$file" ]]; then
         current_hostline="$(_extract_current_hostname_line /etc/hosts)" || return 1
@@ -695,7 +695,7 @@ setup_apt() {
                 ; do
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
-        verify_f -m "won't install it" "$file" || continue
+        is_f -m "won't install it" "$file" || continue
         backup_original_and_copy_file --sudo "$file" "$apt_dir"
     done
 
@@ -704,7 +704,7 @@ setup_apt() {
                 ; do
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
-        verify_f -m "won't install it" "$file" || continue
+        is_f -m "won't install it" "$file" || continue
         execute "sudo install -m644 -C '$file' '$apt_dir/sources.list.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
@@ -722,7 +722,7 @@ setup_apt() {
                 ; do
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
-        verify_f -m "won't install it" "$file" || continue
+        is_f -m "won't install it" "$file" || continue
         execute "sudo install -m644 -C '$file' '$apt_dir/apt.conf.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
@@ -766,7 +766,7 @@ setup_crontab() {
                 hosts-block-update \
                     ; do
             i="$BASE_DATA_DIR/dev/scripts/$i"
-            verify_f -nm "can't dump into $weekly_crondir" "$i" || continue
+            is_f -nm "can't dump into $weekly_crondir" "$i" || continue
 
             #create_link -s "$i" "${weekly_crondir}/"  # linked crontabs don't work!
             execute "sudo install -m644 -CT '$i' '$weekly_crondir/$(basename -- "$i")'" || { err "installing [$i] failed w/ $?"; return 1; }
@@ -876,7 +876,7 @@ install_nfs_server() {
 
     install_block 'nfs-kernel-server' || { err "unable to install nfs-kernel-server. aborting nfs server install/config."; return 1; }
 
-    verify_f -m 'skipping nfs server installation' "$nfs_conf" || return 1
+    is_f -m 'skipping nfs server installation' "$nfs_conf" || return 1
 
     while true; do
         confirm "$(report "add ${client_ip:+another }client IP for the exports list?")" || break
@@ -920,7 +920,7 @@ _install_nfs_client_stationary() {
 
     declare -a mounted_shares used_mountpoints
 
-    verify_f -m 'cannot add fstab entry' "$fstab" || return 1
+    is_f -m 'cannot add fstab entry' "$fstab" || return 1
 
     prev_server_ip="$SERVER_IP"  # default
 
@@ -1746,7 +1746,7 @@ setup_global_shell_links() {
                                 # that location will be used by various scripts.
 
     for file in "${real_file_locations[@]}"; do
-        verify_f -m "can't link it to ${global_dir}/" "$file" || continue
+        is_f -m "can't link it to ${global_dir}/" "$file" || continue
         create_link -s "$file" "${global_dir}/"
     done
 }
@@ -1790,7 +1790,7 @@ setup_global_bash_settings() {
     readonly global_profile='/etc/profile.d'   # note this stuff might be sourced by other shells than Bournes (see https://unix.stackexchange.com/a/541585/47501); sourced by /etc/profile
     readonly ps1='PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} -eq 0 ]]; then echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033\[\033[0;31m\]\h"; else echo "\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h"; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # own-ps1-def-marker'
 
-    verify_f -m 'cannot modify it' "$global_bashrc" || return 1
+    is_f -m 'cannot modify it' "$global_bashrc" || return 1
 
     ## setup prompt:
     # just in case first delete previous global PS1 def:
@@ -1931,7 +1931,7 @@ setup_mok() {
         f="$COMMON_PRIVATE_DOTFILES/backups/use_user_mok.conf"
 
         [[ -d "$conf_dir" ]] || { err "[$conf_dir] is not a dir; cannot setup DKMS to use our MOK keys"; return 1; }
-        verify_f -nm 'skipping DKMS config to use our MOK keys' "$f" || return 1
+        is_f -nm 'skipping DKMS config to use our MOK keys' "$f" || return 1
 
         execute "sudo install -m644 -C '$f' '$conf_dir'" || { err "installing [$f] to [$conf_dir] failed w/ $?"; return 1; }
     }
@@ -2150,7 +2150,7 @@ override_locale_time() {
     readonly conf_file='/etc/default/locale'
     readonly loc_file='/etc/locale.gen'
 
-    verify_f "$conf_file" || return 1
+    is_f "$conf_file" || return 1
 
     # change our LC_TIME, so first day of week is Mon (from https://wiki.debian.org/Locale#First_day_of_week):
     if ! grep -qE 'LC_TIME=.en_GB.UTF-8.' "$conf_file"; then
@@ -2194,7 +2194,7 @@ swap_caps_lock_and_esc() {
 
     readonly conf_file='/usr/share/X11/xkb/symbols/pc'
 
-    verify_f "$conf_file" || return 1
+    is_f "$conf_file" || return 1
 
     # map esc to caps:
     if ! grep -Eq 'key <ESC>.*Caps_Lock' "$conf_file"; then
@@ -2304,7 +2304,7 @@ install_kernel_modules() {
 
     conf='/etc/modules'
 
-    verify_f -m 'skipping kernel module installation' "$conf" || return 1
+    is_f -m 'skipping kernel module installation' "$conf" || return 1
 
     # note as per https://wiki.archlinux.org/title/Backlight :
     #   > Using ddcci and i2c-dev simultaneously may result in resource conflicts such as a Device or resource busy error.
@@ -2824,7 +2824,7 @@ extract_tarball() {
         file="$(find "$tmpdir" -mindepth 1 -maxdepth 1 -type f)"
     fi
 
-    verify_f "$file" || return 1
+    is_f "$file" || return 1
     [[ -n "$file_filter" || -n "$name_filter" ]] && [[ "$dir_only" == 1 ]] && { err "[fnD] options are mutually exclusive"; return 1; }
     is_archive "$file" || { err "[$file] is not an archive, cannot decompress"; return 1; }
 
@@ -6699,7 +6699,7 @@ setup_dnsmasq() {
     #     dig +short chaos txt misses.bind
     #     dig +short chaos txt cachesize.bind
     [[ -d "$dnsmasq_conf_dir" ]] || { err "[$dnsmasq_conf_dir] does not exist"; return 1; }
-    verify_f -nm 'cannot update config' "$dnsmasq_conf" || return 1
+    is_f -nm 'cannot update config' "$dnsmasq_conf" || return 1
     execute "sudo install -m644 -C '$dnsmasq_conf' '$dnsmasq_conf_dir'" || { err "installing [$dnsmasq_conf] failed w/ $?"; return 1; }
 
 
@@ -6790,8 +6790,8 @@ enable_network_manager() {
         # chattr +i /etc/resolv.conf
     }
 
-    verify_d -m 'are you using NetworkManager? if not, this config logic should be removed' "$nm_conf_dir" || return 1
-    verify_f -nm 'cannot update config' "$nm_conf" || return 1
+    is_d -m 'are you using NetworkManager? if not, this config logic should be removed' "$nm_conf_dir" || return 1
+    is_f -nm 'cannot update config' "$nm_conf" || return 1
     execute "sudo install -m644 -C '$nm_conf' '$nm_conf_dir'" || { err "installing [$nm_conf] to [$nm_conf_dir] failed w/ $?"; return 1; }
     _configure_con_dns
 
@@ -6978,7 +6978,7 @@ configure_ntp_for_work() {
                          'server gibntp02.prod.williamhill.plc'
                         )
 
-    verify_f -m 'is ntp installed?' "$conf" || return 1
+    is_f -m 'is ntp installed?' "$conf" || return 1
 
     for i in "${servers[@]}"; do
         if ! grep -qFx "$i" "$conf"; then
@@ -7200,7 +7200,7 @@ configure_updatedb() {
     paths=(/mnt /media /var/cache /data/seafile-data "$HOME/.cache")  # paths to be added to PRUNEPATHS definition
 
     is_btrfs && paths+=("$HOME/.snapshots" /.snapshots)  # */.snapshots are snapper/btrfs location
-    verify_f -n "$conf" || return 1
+    is_f -n "$conf" || return 1
     line="$(grep -Po '^PRUNEPATHS="\K.*(?="$)' "$conf")"  # extract the value between quotes
 
     for i in "${paths[@]}"; do
@@ -7825,7 +7825,7 @@ is_laptop() {
     readonly pwr_supply_dir="/sys/class/power_supply"
 
     # sanity:
-    verify_d -m "cannot decide if we're a laptop; assuming we're not" "$pwr_supply_dir" || return 1
+    is_d -m "cannot decide if we're a laptop; assuming we're not" "$pwr_supply_dir" || return 1
 
     find "$pwr_supply_dir" -mindepth 1 -maxdepth 1 -name 'BAT*' -print -quit | grep -q .
 }
@@ -7839,7 +7839,7 @@ is_appimage() {
     readonly file="$1"
 
     [[ $# -ne 1 ]] && { err "exactly 1 argument (node name) required."; return 1; }
-    verify_f "$file" || return 1
+    is_f "$file" || return 1
     check_progs_installed  xxd || return 2
 
     #i="$(xxd "$file" 2>/dev/null | head -1)"   # note likely exits w/ code 3
@@ -7863,7 +7863,7 @@ is_thinkpad() {
 # @returns {bool}   true if we're running inside Windows.
 is_windows() {
     if [[ -z "$_IS_WIN" ]]; then
-        verify_f -m 'cannot test if windows' /proc/version || return 2
+        is_f -m 'cannot test if windows' /proc/version || return 2
         grep -Eq '([Mm]icrosoft|WSL)' /proc/version &>/dev/null
         readonly _IS_WIN=$?
     fi
@@ -7877,7 +7877,7 @@ is_windows() {
 # @returns {bool}   true if we're running in virt mode.
 is_virt() {
     if [[ -z "$_IS_VIRT" ]]; then
-        verify_f -m 'cannot test if virtualized' /proc/cpuinfo || return 2
+        is_f -m 'cannot test if virtualized' /proc/cpuinfo || return 2
         grep -Eq '^flags.*\s+hypervisor' /proc/cpuinfo &>/dev/null  # detects all virtualizations, including WSL
         readonly _IS_VIRT=$?
     fi
@@ -7918,7 +7918,7 @@ is_native() {
 # TODO: depend on fstab or /run/systemd/generator/ contents?
 is_btrfs() {
     local fstab='/etc/fstab'
-    verify_f -n "$fstab" || return 2
+    is_f -n "$fstab" || return 2
     grep -Eq '\bbtrfs\b' "$fstab"
 }
 
@@ -7930,13 +7930,13 @@ is_64_bit() {
 
 
 is_intel_cpu() {
-    verify_f /proc/cpuinfo || return 2
+    is_f /proc/cpuinfo || return 2
     grep -Eiq '^vendor_id.*intel' /proc/cpuinfo
 }
 
 
 is_amd_cpu() {
-    verify_f /proc/cpuinfo || return 2
+    is_f /proc/cpuinfo || return 2
     grep -Eq '^vendor_id.*AMD' /proc/cpuinfo
 }
 
@@ -8314,7 +8314,7 @@ funname() {
 }
 
 
-verify_f() {
+is_f() {
     local opt nonempty msg OPTIND f e m
 
     while getopts 'nm:' opt; do
@@ -8340,7 +8340,7 @@ verify_f() {
 }
 
 
-verify_d() {
+is_d() {
     local opt nonempty msg OPTIND d e m
 
     while getopts 'nm:' opt; do
