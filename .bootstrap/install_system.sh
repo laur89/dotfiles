@@ -7813,7 +7813,7 @@ extract() {
 
 
 is_server() {
-    [[ "$HOSTNAME" == *"server"* ]] && return 0 || return 1
+    [[ "$HOSTNAME" == *'server'* ]]
 }
 
 
@@ -7825,7 +7825,7 @@ is_laptop() {
     readonly pwr_supply_dir="/sys/class/power_supply"
 
     # sanity:
-    [[ -d "$pwr_supply_dir" ]] || { err "$pwr_supply_dir is not a valid dir! cannot decide if we're a laptop; assuming we're not. abort."; sleep 5; return 1; }
+    verify_d -m "cannot decide if we're a laptop; assuming we're not" "$pwr_supply_dir" || return 1
 
     find "$pwr_supply_dir" -mindepth 1 -maxdepth 1 -name 'BAT*' -print -quit | grep -q .
 }
@@ -7853,8 +7853,8 @@ is_appimage() {
 #
 # @returns {bool}   true if system is a thinkpad laptop.
 is_thinkpad() {
-    check_progs_installed  dmidecode || { err "dmidecode not installed"; return 2; }
-    is_laptop && sudo dmidecode | grep -A3 '^System Information' | grep -q 'ThinkPad'
+    check_progs_installed  dmidecode || return 2
+    is_laptop && sudo dmidecode | grep -A3 '^System Information' | grep -Fq 'ThinkPad'
 }
 
 
@@ -7863,7 +7863,7 @@ is_thinkpad() {
 # @returns {bool}   true if we're running inside Windows.
 is_windows() {
     if [[ -z "$_IS_WIN" ]]; then
-        [[ -f /proc/version ]] || { err "/proc/version not a file, cannot test is_windows"; return 2; }
+        verify_f -m 'cannot test if windows' /proc/version || return 2
         grep -Eq '([Mm]icrosoft|WSL)' /proc/version &>/dev/null
         readonly _IS_WIN=$?
     fi
@@ -7877,7 +7877,7 @@ is_windows() {
 # @returns {bool}   true if we're running in virt mode.
 is_virt() {
     if [[ -z "$_IS_VIRT" ]]; then
-        [[ -f /proc/cpuinfo ]] || { err "/proc/cpuinfo not a file, cannot test virtualization"; return 2; }
+        verify_f -m 'cannot test if virtualized' /proc/cpuinfo || return 2
         grep -Eq '^flags.*\s+hypervisor' /proc/cpuinfo &>/dev/null  # detects all virtualizations, including WSL
         readonly _IS_VIRT=$?
     fi
@@ -7917,8 +7917,9 @@ is_native() {
 #
 # TODO: depend on fstab or /run/systemd/generator/ contents?
 is_btrfs() {
-    [[ -s /etc/fstab && -r /etc/fstab ]] || { err "[/etc/fstab] not a file"; return 2; }
-    grep -Eq '\bbtrfs\b' /etc/fstab
+    local fstab='/etc/fstab'
+    verify_f -n "$fstab" || return 2
+    grep -Eq '\bbtrfs\b' "$fstab"
 }
 
 
@@ -7929,12 +7930,14 @@ is_64_bit() {
 
 
 is_intel_cpu() {
-    grep vendor /proc/cpuinfo | uniq | grep -iq intel
+    verify_f /proc/cpuinfo || return 2
+    grep -Eiq '^vendor_id.*intel' /proc/cpuinfo
 }
 
 
 is_amd_cpu() {
-    grep vendor /proc/cpuinfo | uniq | grep -q AMD
+    verify_f /proc/cpuinfo || return 2
+    grep -Eq '^vendor_id.*AMD' /proc/cpuinfo
 }
 
 
@@ -7947,7 +7950,7 @@ is_git() {
 
 
 is_archive() {
-    file --brief "$1" | grep -qiE 'archive|compressed'
+    file --brief "$1" | grep -Eiq 'archive|compressed'
 }
 
 
@@ -7969,7 +7972,7 @@ is_x() {
         return 2
     fi
 
-    [[ "$exit_code" -eq 0 && -n "$DISPLAY" ]] && return 0 || return 1
+    [[ "$exit_code" -eq 0 && -n "$DISPLAY" ]]
 }
 
 
