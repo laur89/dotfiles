@@ -49,7 +49,6 @@ readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:141.0) Gecko/20100101 Fi
 IS_SSH_SETUP=0       # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=''  # only select_items() *writes* into this one.
 PROFILE=''           # work || personal
-MODE=''              # which operation mode we're in; will be defined as 0-3, needs to be first set to empty!
 ALLOW_OFFLINE=0      # whether script is allowed to run when we're offline
 CONNECTED=0          # are we connected to the web? 1 || 0
 GIT_RLS_LOG=''       # log of all installed/fetched assets from git releases/latest page; will be defined later on at init;
@@ -62,6 +61,7 @@ NON_INTERACTIVE=0               # whether script's running non-attended
 EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%b-%y--%R).log"  # do not create logfile here! otherwise cleanup()
                                                                         # picks it up and reports of its existence, opening
                                                                         # up for false positives.
+SCRIPT_LOG="$HOME/installation-execution-term-$(date +%d-%b-%y--%R).log"
 SYSCTL_CHANGED=0       # states whether sysctl config got changed
 umask 0077  # keep this in sync with what we set via systemd & ~/.profile!
 
@@ -5802,6 +5802,7 @@ install_from_repo() {
     )
 
     declare -ar block4=(
+        colorized-logs
         highlight  # syntax highlighting; https://gitlab.com/saalen/highlight
         python3-pygments  # syntax highlighting in py
         silversearcher-ag
@@ -6276,26 +6277,47 @@ install_block() {
 
 
 choose_step() {
-    if [[ -n "$MODE" ]]; then
-       case "$MODE" in
-           0) choose_single_task ;;
-           1) full_install ;;
-           2) quick_refresh ;;
-           3) quicker_refresh ;;
-           *) exit 1 ;;
-       esac
-    else  # mode not provided
+    if [[ -z "$MODE" ]]; then
        select_items -s -h 'what do you want to do' single-task update fast-update full-install
        case "$__SELECTED_ITEMS" in
-          'single-task'  ) choose_single_task ;;
-          'update'       ) quick_refresh ;;
-          'fast-update'  ) quicker_refresh ;;
-          'full-install' ) full_install ;;
+          'single-task'  ) MODE=0 ;;
+          'update'       ) MODE=2 ;;
+          'fast-update'  ) MODE=3 ;;
+          'full-install' ) MODE=1 ;;
           ''             ) exit 0 ;;
           *) err "unsupported choice [$__SELECTED_ITEMS]"
              exit 1 ;;
        esac
     fi
+
+    if [[ "$BOOTSTRAP_LAUNCHER_TAG" != Y ]] && [[ "$MODE" -eq 1 || "$LOGGING_LVL" -ge 20 ]] && command -v script >/dev/null; then
+        script --flush --quiet --return --log-out "$SCRIPT_LOG" --command "BOOTSTRAP_LAUNCHER_TAG=Y MODE=$MODE $0 ${ORIG_OPTS[*]}"
+        ERR=$?
+
+        # ways to clean up $script output:
+        # $ ansi2html <"$SCRIPT_LOG" > out.html
+        # $ ansi2txt <file.log | col -bp >| 111
+        # - note both ansi2* commands come from [colorized-logs] package
+        if is_f -n "$SCRIPT_LOG"; then
+            if command -v ansi2txt >/dev/null; then
+                ansi2txt <"$SCRIPT_LOG" | col -bp > "${SCRIPT_LOG}.cleaned"
+                echo -e "    cleaned up terminal log can be found at [${SCRIPT_LOG}.cleaned]"
+            else
+                echo -e "    terminal log can be found at [$SCRIPT_LOG]"
+            fi
+        fi
+        exit $ERR
+    fi
+
+    trap 'cleanup; exit' EXIT HUP INT QUIT PIPE TERM;
+
+    case "$MODE" in
+        0) choose_single_task ;;
+        1) full_install ;;
+        2) quick_refresh ;;
+        3) quicker_refresh ;;
+        *) exit 1 ;;
+    esac
 }
 
 
@@ -6303,7 +6325,7 @@ choose_step() {
 choose_single_task() {
     local choices
 
-    [[ -z "$MANUAL_LOG_LVL" ]] && LOGGING_LVL=1
+    [[ -z "$LOGGING_LVL" ]] && LOGGING_LVL=1
     readonly MODE=0
 
     source_shell_conf
@@ -6492,7 +6514,7 @@ __choose_prog_to_build() {
 
 full_install() {
 
-    [[ -z "$MANUAL_LOG_LVL" ]] && LOGGING_LVL=10
+    [[ -z "$LOGGING_LVL" ]] && LOGGING_LVL=10
     readonly MODE=1
 
     setup
@@ -6513,7 +6535,7 @@ full_install() {
 
 # quicker update than full_install() to be executed periodically
 quick_refresh() {
-    [[ -z "$MANUAL_LOG_LVL" ]] && LOGGING_LVL=1
+    [[ -z "$LOGGING_LVL" ]] && LOGGING_LVL=1
     readonly MODE=2
 
     setup
@@ -6527,7 +6549,7 @@ quick_refresh() {
 
 # even faster refresher without the install_from_repo() step that's included in install_progs()
 quicker_refresh() {
-    [[ -z "$MANUAL_LOG_LVL" ]] && LOGGING_LVL=1
+    [[ -z "$LOGGING_LVL" ]] && LOGGING_LVL=1
     readonly MODE=3
 
     setup
@@ -7369,7 +7391,7 @@ is_installed() {
 
     [[ -z "$ver" ]] && { err "empty ver passed to ${FUNCNAME}()" -1; return 2; }  # sanity
     if grep -Fq "$ver" "$GIT_RLS_LOG" 2>/dev/null; then
-        report "[${COLORS[GREEN]}$ver${COLORS[OFF]}] already processed, skipping ${name:+${COLORS[YELLOW]}$name${COLORS[OFF]} }installation..."
+        report "[${COLORS[GREEN]}$ver${COLORS[OFF]}] already processed, skipping ${name:+${COLORS[YELLOW]}$name${COLORS[OFF]} }installation..." -1
         return 0
     fi
 
@@ -8315,11 +8337,12 @@ funname() {
 
 
 is_f() {
-    local opt nonempty msg OPTIND f e m
+    local opt nonempty msg quiet OPTIND f e m
 
-    while getopts 'nm:' opt; do
+    while getopts 'nqm:' opt; do
         case "$opt" in
             n) nonempty=TRUE ;;
+            q) quiet=TRUE ;;
             m) msg="$OPTARG" ;;  # additional message to print on failure
             *) fail "unexpected opt [$opt] passed to ${FUNCNAME}()" ;;
         esac
@@ -8329,10 +8352,10 @@ is_f() {
     for f in "$@"; do
         if ! sudo test -f "$f"; then
             [[ -e "$f" ]] && m=" (but it exists, and is [$(file_type "$f")])"
-            err "[$f] not a file$m${msg:+; $msg}" -1
+            [[ -z "$quiet" ]] && err "[$f] not a file$m${msg:+; $msg}" -1
             e=1
         elif [[ -n "$nonempty" ]] && ! sudo test -s "$f"; then
-            err "[$f] not a nonempty file${msg:+; $msg}" -1
+            [[ -z "$quiet" ]] && err "[$f] not a nonempty file${msg:+; $msg}" -1
             e=1
         fi
     done
@@ -8341,11 +8364,12 @@ is_f() {
 
 
 is_d() {
-    local opt nonempty msg OPTIND d e m
+    local opt nonempty msg quiet OPTIND d e m
 
-    while getopts 'nm:' opt; do
+    while getopts 'nqm:' opt; do
         case "$opt" in
             n) nonempty=TRUE ;;
+            q) quiet=TRUE ;;
             m) msg="$OPTARG" ;;  # additional message to print on failure
             *) fail "unexpected opt [$opt] passed to ${FUNCNAME}()" ;;
         esac
@@ -8355,10 +8379,10 @@ is_d() {
     for d in "$@"; do
         if ! sudo test -d "$d"; then
             [[ -e "$d" ]] && m=" (but it exists, and is [$(file_type "$d")])"
-            err "[$d] not a dir$m${msg:+; $msg}" -1
+            [[ -z "$quiet" ]] && err "[$d] not a dir$m${msg:+; $msg}" -1
             e=1
         elif [[ -n "$nonempty" ]] && is_dir_empty -s "$d"; then
-            err "[$d] is empty, expected nonempty dir${msg:+; $msg}" -1
+            [[ -z "$quiet" ]] && err "[$d] is empty, expected nonempty dir${msg:+; $msg}" -1
             e=1
         fi
     done
@@ -8435,7 +8459,7 @@ popd() {
 
 
 cleanup() {
-    [[ "$__CLEANUP_EXECUTED_MARKER" -eq 1 || -z "$MODE" ]] && return  # don't invoke more than once.
+    [[ "$__CLEANUP_EXECUTED_MARKER" == 1 || -z "$MODE" ]] && return  # don't invoke more than once.
 
     [[ -s "$NPMRC_BAK" ]] && mv -- "$NPMRC_BAK" ~/.npmrc   # move back
 
@@ -8472,6 +8496,7 @@ cleanup() {
 #----------------------------
 #---  Script entry point  ---
 #----------------------------
+ORIG_OPTS="$@"
 while getopts 'NFSUQOP:L:T:h' OPT_; do
     case "$OPT_" in
         N) NON_INTERACTIVE=1 ;;
@@ -8482,7 +8507,6 @@ while getopts 'NFSUQOP:L:T:h' OPT_; do
         O) ALLOW_OFFLINE=1 ;;  # allow running offline
         P) PLATFORM="$OPTARG" ;;  # force the platform-specific config to install (as opposed to deriving it from hostname); best not use it and let platform be resolved from our hostname
         L) LOGGING_LVL="$OPTARG"  # log vl
-           MANUAL_LOG_LVL=TRUE
            is_digit "$OPTARG" || fail "log level needs to be an int, but was [$OPTARG]"
             ;;
         T) TMP_DIR="$OPTARG" ;;
@@ -8494,7 +8518,7 @@ shift "$((OPTIND-1))"; unset OPT_
 
 readonly PROFILE="$1"   # work | personal
 
-[[ "$EUID" -eq 0 ]] && { err "don't run as root."; exit 1; }
+[[ "$EUID" -eq 0 ]] && fail "don't run as root."
 
 validate_and_init
 check_dependencies
@@ -8503,7 +8527,6 @@ check_dependencies
 #is_native || execute "rdate -s tick.greyware.com"
 #is_native || execute "tlsdate -V -n -H encrypted.google.com"
 is_native || update_clock || exit 1  # needs to be done _after_ check_dependencies as update_clock() uses some
-trap 'cleanup; exit' EXIT HUP INT QUIT PIPE TERM;
 
 choose_step
 
