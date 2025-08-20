@@ -2572,7 +2572,7 @@ fetch_release_from_git() {
 # common logic for both fetch_release_from_{git,any}()
 # TODO: as of '25 only user is fetch_release_from_git()
 #
-# TODO: try to add install path in here??
+# TODO: try to add install logic/flow path in here??
 #       the pass-through of flags to install_file() is messy tho, so unsure
 #
 _fetch_release_common() {
@@ -2597,7 +2597,7 @@ _fetch_release_common() {
 
     [[ "$name" == */* ]] && { err "name arg can't be a path, but was [$name]"; return 1; }
     [[ "$skipadd" != 1 ]] && is_installed "$ver" "$id" && return 2
-    tmpdir="$(mktemp -d "release-from-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    tmpdir="$(mkt "release-from-${id}")" || return 1
 
     report "fetching [$dl_url]..."
     execute "wget --user-agent='$USER_AGENT' --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
@@ -2744,7 +2744,7 @@ install_from_any() {
     [[ "$skipadd" != 1 ]] && is_installed "$ver" "$id" && return 2
 
     # instead of _fetch_release_common(), fetch ourselves (just like we do in install_from_url()):
-    tmpdir="$(mktemp -d "install-from-any-${id}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    tmpdir="$(mkt "install-from-any-${id}")" || return 1
     execute "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
     f="$(find "$tmpdir" -type f)"
     [[ -s "$f" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
@@ -2830,7 +2830,7 @@ extract_tarball() {
     file="$1"
 
     if is_valid_url "$file"; then
-        tmpdir="$(mktemp -d "tarball-download-extract-XXXXX" -p "$TMP_DIR")" || { err "unable to create tempdir with \$ mktemp"; return 1; }
+        tmpdir="$(mkt "tarball-download-extract")" || return 1
         execute "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$file'" || { err "wgetting [$file] failed with $?"; return 1; }
         file="$(find "$tmpdir" -mindepth 1 -maxdepth 1 -type f)"
     fi
@@ -2840,7 +2840,7 @@ extract_tarball() {
     is_archive "$file" || { err "[$file] is not an archive, cannot decompress"; return 1; }
 
     if [[ "$standalone" != 1 ]]; then
-        tmpdir="$(mktemp -d "tarball-extract-XXXXX" -p "$TMP_DIR")" || { err "unable to create tempdir with \$ mktemp"; return 1; }
+        tmpdir="$(mkt "tarball-extract")" || return 1
         execute "pushd -- $tmpdir" || return 1
     fi
 
@@ -3074,7 +3074,7 @@ install_from_url() {
         return 2
     fi
 
-    tmpdir="$(mktemp -d "install-from-url-${name}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    tmpdir="$(mkt "install-from-url-${name}")" || return 1
     execute "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$loc'" || { err "wgetting [$loc] failed with $?"; return 1; }
     file="$(find "$tmpdir" -type f)"
     [[ -s "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
@@ -3158,7 +3158,7 @@ install_file() {
     _process() {
         if [[ -n "$name" && "$(basename -- "$file")" != "$name" ]]; then  # check if rename is needed
             local tmpdir
-            tmpdir="$(mktemp -d "install-file-${name}-XXXXX" -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+            tmpdir="$(mkt "install-file-${name}")" || return 1
             execute "mv -- '$file' '$tmpdir/$name'" || { err "renaming [$file] to [$tmpdir/$name] failed"; return 1; }
             file="$tmpdir/$name"
         fi
@@ -3439,7 +3439,7 @@ install_grpc_cli() {  # https://github.com/grpc/grpc/blob/master/doc/command_lin
     ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" grpc-cli && return 2
 
-    tmpdir="$(mktemp -d 'grpc-cli-tempdir-XXXXX' -p $TMP_DIR)" || { err "unable to create tempdir with \$mktemp"; return 1; }
+    tmpdir="$(mkt 'grpc-cli-tempdir')" || return 1
     execute "pushd -- '$tmpdir'" || return 1
     execute "git clone $repo" || return 1
     execute 'pushd -- grpc' || return 1
@@ -7505,7 +7505,7 @@ fail() {
         [[ -n "$caller_name" ]] && caller_name="fail @ $caller_name" || caller_name=ERR
     fi
 
-    err "$msg" "$caller_name"  # note caller_name has to be resolved by the time err() is invoked from fail()
+    err "$msg" "$caller_name"  # note caller_name has to be resolved by the time err() is invoked from here
     exit 1
 }
 
@@ -8438,6 +8438,15 @@ file_type() {
 }
 
 
+mkt() {
+    local tmpdir
+    if ! tmpdir="$(mktemp -d -p "$TMP_DIR" -- "${1:-.mktemp}.XXXXX")"; then
+        err "unable to create tempdir with \$mktemp" -1
+        return 1
+    fi
+    printf '%s' "$tmpdir"
+}
+
 
 # Verifies given string is non-empty, non-whitespace-only and on a single line.
 #
@@ -8447,7 +8456,7 @@ file_type() {
 is_single() {
     local s
 
-    readonly s="$(tr -d '[:blank:]' <<< "$*")"  # make sure not to strip newlines!
+    s="$(tr -d '[:blank:]' <<< "$*")"  # make sure not to strip newlines!
     [[ -n "$s" && "$(wc -l <<< "$s")" -eq 1 ]]
 }
 
