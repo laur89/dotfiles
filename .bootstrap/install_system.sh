@@ -93,7 +93,7 @@ declare -A COLORS=(
     [OFF]=$'\033[0m'
     [BOLD]=$'\033[1m'
 )
-readonly NPMRC_BAK="$TMP_DIR/npmrc.bak.$RANDOM"  # temp location where we _might_ move our npmrc to for the duration of this script;
+readonly NPMRC_BAK="/tmp/npmrc.bak.$RANDOM"  # temp location where we _might_ move our npmrc to for the duration of this script;
 readonly GIT_OPTS=(--depth 1 -j8)
 
 # this configures our platform-specific dotfile repos:
@@ -186,9 +186,8 @@ validate_and_init() {
     fi
 
     # ask for the admin password upfront:
-    report "enter sudo password:"
-    sudo -v || { clear; err "is user in sudoers file? is sudo installed? if not, then [su && apt-get install sudo]"; exit 2; }
-    clear
+    sudo --validate || fail "is user in sudoers file? is sudo installed? if not, then [su && apt-get install sudo]"
+    #clear
 
     # keep-alive: update existing `sudo` time stamp; search tags:  keep sudo, keepsudo, staysudo stay sudo
     while true; do sudo -n true; sleep 30; kill -0 "$$" || exit; done 2>/dev/null &
@@ -256,10 +255,7 @@ install_acpi_events() {
     is_laptop && acpi_src+=("$COMMON_DOTFILES/backups/acpi_event_triggers/laptop")
     [[ -n "$PLATFORM" ]] && acpi_src+=("$PLATFORM_DOTFILES/acpi_event_triggers")
 
-    if ! [[ -d "$acpi_target" ]]; then
-        err "[$acpi_target] dir does not exist; acpi event triggers won't be installed"
-        return 1
-    fi
+    is_d -m 'skipping acpi event triggers installation' "$acpi_target" || return 1
 
     for dir in "${acpi_src[@]}"; do
         [[ -d "$dir" ]] || continue
@@ -287,10 +283,7 @@ setup_udev() {
     is_laptop && udev_src+=("$COMMON_PRIVATE_DOTFILES/backups/udev/laptop")
     [[ -n "$PLATFORM" ]] && udev_src+=("$PLATFORM_DOTFILES/udev")
 
-    if ! [[ -d "$udev_target" ]]; then
-        err "[$udev_target] is not a dir; skipping udev file(s) installation."
-        return 1
-    fi
+    is_d -m 'skipping udev file(s) installation' "$udev_target" || return 1
 
     for dir in "${udev_src[@]}"; do
         [[ -d "$dir" ]] || continue
@@ -320,15 +313,12 @@ setup_pm() {
     is_laptop && pm_src+=("$COMMON_PRIVATE_DOTFILES/backups/pm/laptop")
     [[ -n "$PLATFORM" ]] && pm_src+=("$PLATFORM_DOTFILES/pm")
 
-    if ! [[ -d "$pm_target" ]]; then
-        err "[$pm_target] is not a dir; skipping pm file(s) installation."
-        return 1
-    fi
+    is_d -m 'skipping pm file(s) installation' "$pm_target" || return 1
 
     for dir in "${pm_src[@]}"; do
         [[ -d "$dir" ]] || continue
         for pm_state_dir in "$dir/"*.d; do
-            [[ -d "$pm_state_dir" ]] || { err "[$pm_state_dir] not a dir"; continue; }
+            is_d "$pm_state_dir" || continue
             target="$pm_target/$(basename -- "$pm_state_dir")"  # e.g. /etc/pm/sleep.d, ...power.d
             [[ -d "$target" ]] || { err "[$target] does not exist. should we just create it?"; continue; }
 
@@ -2581,8 +2571,8 @@ _fetch_release_common() {
     declare -a extract_opts
     while getopts 'UsDf:n:' opt; do
         case "$opt" in
-            U) noextract=1 ;;
-            s) skipadd=1 ;;
+            U) noextract=TRUE ;;
+            s) skipadd=TRUE ;;
             D) extract_opts+=("-$opt") ;;
             f|n) extract_opts+=("-$opt" "$OPTARG") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
@@ -2596,7 +2586,7 @@ _fetch_release_common() {
     name="$4"  # optional, but recommended
 
     [[ "$name" == */* ]] && { err "name arg can't be a path, but was [$name]"; return 1; }
-    [[ "$skipadd" != 1 ]] && is_installed "$ver" "$id" && return 2
+    [[ -z "$skipadd" ]] && is_installed "$ver" "$id" && return 2
     tmpdir="$(mkt "release-from-${id}")" || return 1
 
     report "fetching [$dl_url]..."
@@ -2604,7 +2594,7 @@ _fetch_release_common() {
     file="$(find "$tmpdir" -type f)"
     [[ -s "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
-    if [[ "$noextract" != 1 ]] && is_archive "$file"; then
+    if [[ -z "$noextract" ]] && is_archive "$file"; then
         file="$(extract_tarball "${extract_opts[@]}" "$file")" || return 1
     fi
 
@@ -2614,7 +2604,7 @@ _fetch_release_common() {
         file="$tmpdir/$name"
     fi
 
-    if [[ "$skipadd" != 1 ]]; then
+    if [[ -z "$skipadd" ]]; then
         # we're assuming here that installation succeeded from here on.
         # it is optimistic, but removes repetitive calls.
         add_to_dl_log "$id" "$ver"
@@ -2723,9 +2713,9 @@ install_from_any() {
     declare -a install_file_args
     while getopts 'sf:n:d:O:P:rUDAI:' opt; do
         case "$opt" in
-            s) skipadd=1 ;;
+            s) skipadd=TRUE ;;
             f|n|d|O|P) install_file_args+=("-$opt" "$OPTARG") ;;
-            r) relative='TRUE' ;;
+            r) relative=TRUE ;;
             U|D|A) install_file_args+=("-$opt") ;;
             I) id="$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
@@ -2741,7 +2731,7 @@ install_from_any() {
 
     dl_url="$(resolve_dl_urls "$loc" "${relative:+/}.*$url_ptrn")" || return 1  # note we might be looking for a relative url
     ver="$(resolve_ver "$dl_url")" || return 1
-    [[ "$skipadd" != 1 ]] && is_installed "$ver" "$id" && return 2
+    [[ -z "$skipadd" ]] && is_installed "$ver" "$id" && return 2
 
     # instead of _fetch_release_common(), fetch ourselves (just like we do in install_from_url()):
     tmpdir="$(mkt "install-from-any-${id}")" || return 1
@@ -2751,7 +2741,7 @@ install_from_any() {
 
     install_file "${install_file_args[@]}" "$f" "$name" || return 1
 
-    [[ "$skipadd" != 1 ]] && add_to_dl_log "$id" "$ver"
+    [[ -z "$skipadd" ]] && add_to_dl_log "$id" "$ver"
     return 0
 }
 
@@ -3052,7 +3042,7 @@ install_from_url() {
     declare -a opts
     while getopts 'sDAO:P:d:' opt; do
         case "$opt" in
-            s) skipadd=1 ;;
+            s) skipadd=TRUE ;;
             D|A) opts+=("-$opt") ;;
             O|P|d) opts+=("-$opt" "$OPTARG") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
@@ -3070,7 +3060,7 @@ install_from_url() {
     if ! is_valid_url "$loc"; then
         err "passed url for $name is improper: [$loc]; aborting"
         return 1
-    elif [[ "$skipadd" != 1 ]] && is_installed "$ver" "$name"; then
+    elif [[ -z "$skipadd" ]] && is_installed "$ver" "$name"; then
         return 2
     fi
 
@@ -3081,7 +3071,7 @@ install_from_url() {
 
     install_file "${opts[@]}" "$file" "$name" || return 1
 
-    [[ "$skipadd" != 1 ]] && add_to_dl_log "$name" "$ver"
+    [[ -z "$skipadd" ]] && add_to_dl_log "$name" "$ver"
     return 0
 }
 
@@ -3128,12 +3118,12 @@ install_file() {
         case "$opt" in
             d) target="$OPTARG" ;;
             D) extract_opts+=("-$opt") ;;  # mnemonic: directory; ie we want the "whole directory" in case $file is tarball
-            U) noextract=1 ;;  # if, for whatever the reason, an archive/tarball should not be unpacked
+            U) noextract=TRUE ;;  # if, for whatever the reason, an archive/tarball should not be unpacked
             f|n) extract_opts+=("-$opt" "$OPTARG") ;;  # no use if -D or -U is used
             O) owner="$OPTARG" ;;  # chown
             P) perms="$OPTARG" ;;  # chmod
             A) asis=TRUE       # install file as-is, do not derive method from mimetype;
-               noextract=1 ;;  # note -U is implied
+               noextract=TRUE ;;  # note -U is implied
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -3151,7 +3141,7 @@ install_file() {
         fi
     fi
 
-    if [[ "$noextract" != 1 ]] && is_archive "$file"; then
+    if [[ -z "$noextract" ]] && is_archive "$file"; then
         file="$(extract_tarball "${extract_opts[@]}" "$file")" || return 1
     fi
 
@@ -3255,7 +3245,7 @@ install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instruc
 
     readonly name=clojure
     readonly install_target="$BASE_PROGS_DIR/clojure"
-    readonly f="$TMP_DIR/${RANDOM}-clojure-linux-install.sh"
+    readonly f="$TMP_DIR/clojure-linux-install-${RANDOM}.sh"
 
     ver="$(get_git_tag "https://github.com/$name/brew-install.git")" || return 1
     is_installed "$ver" "$name" && return 2
@@ -4802,7 +4792,7 @@ EOF
 
 
     # alternatively, install build-deps based on what's in debian/control:
-    # (note mk-build-deps needs equivs pkg)
+    # (note mk-build-deps needs equivs pkg; mk-build-deps itself is provided by devscripts pkg)
     sudo mk-build-deps \
             -t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends -qqy' \
             -i -r debian/control || { err "automatic build-dep resolver for i3 failed w/ [$?]"; popd; return 1; }
@@ -6670,7 +6660,7 @@ _sysctl_conf() {
     readonly property="$2"
     readonly value="$3"
 
-    [[ -d "$sysctl_dir" ]] || { err "[$sysctl_dir] is not a dir. can't change our sysctl value for [$1]"; return 1; }
+    is_d -m "can't change our sysctl value for [$1]" "$sysctl_dir" || return 1
 
     if [[ -f "$sysctl_conf" ]]; then
         grep -Eq "^${property}\s*=\s*${value}\$" "$sysctl_conf" && return 0  # value already set, nothing to do
@@ -7686,10 +7676,12 @@ execute() {
 #                  array that contains list of user selected items.
 #
 # original version stolen from http://serverfault.com/a/298312
+# TODO: instead of bash, use whiptail or dialog, but former preferred
+#       e.g.  TERM=ansi whiptail --title "Example Dialog" --infobox "This is an example of an info box" 8 78
 select_items() {
     local opt OPTIND options is_single_selection hdr
 
-    hdr='Available options:'  # default if not given
+    hdr='Available options:'  # default
 
     while getopts 'sh:' opt; do
         case "$opt" in
@@ -7715,10 +7707,10 @@ select_items() {
     if command -v fzf > /dev/null 2>&1; then
         local opts out
 
-        opts="$FZF_DEFAULT_OPTS --header '$hdr' "
+        opts="$FZF_DEFAULT_OPTS "
         [[ "$is_single_selection" -eq 1 ]] && opts+=' --no-multi ' || opts+=' --multi '
 
-        out="$(printf "%s\n" "${options[@]}" | FZF_DEFAULT_OPTS="$opts" fzf)" || return 1
+        out="$(printf '%s\n' "${options[@]}" | FZF_DEFAULT_OPTS="$opts" fzf --header "$hdr")" || return 1
         mapfile -t __SELECTED_ITEMS <<< "$out"
     else  # bash-only selection prompt
         local i prompt msg choices num
@@ -7735,7 +7727,7 @@ select_items() {
             for ((i = (( ${#options[@]} - 1 )) ; i >= 0 ; i--)); do
                 printf '%3d%s) %s\n' "$((i+1))" "${choices[i]:- }" "${choices[i]:+${COLORS[BOLD]}}${options[i]}${COLORS[OFF]}"
             done
-            [[ "$msg" ]] && echo "$msg"; :
+            if [[ "$msg" ]]; then echo "$msg"; fi
         }
 
         if [[ "$is_single_selection" -eq 1 ]]; then
@@ -7888,7 +7880,7 @@ is_thinkpad() {
 is_windows() {
     if [[ -z "$_IS_WIN" ]]; then
         is_f -m 'cannot test if windows' /proc/version || return 2
-        grep -Eq '([Mm]icrosoft|WSL)' /proc/version &>/dev/null
+        grep -Eq '[Mm]icrosoft|WSL' /proc/version &>/dev/null
         readonly _IS_WIN=$?
     fi
 
@@ -8357,7 +8349,7 @@ is_f() {
             [[ -z "$quiet" ]] && err "[$f] not a file$m${msg:+; $msg}" -1
             e=1
         elif [[ -n "$nonempty" ]] && ! sudo test -s "$f"; then
-            [[ -z "$quiet" ]] && err "[$f] not a nonempty file${msg:+; $msg}" -1
+            [[ -z "$quiet" ]] && err "[$f] is an empty file${msg:+; $msg}" -1
             e=1
         fi
     done
@@ -8384,7 +8376,7 @@ is_d() {
             [[ -z "$quiet" ]] && err "[$d] not a dir$m${msg:+; $msg}" -1
             e=1
         elif [[ -n "$nonempty" ]] && is_dir_empty -s "$d"; then
-            [[ -z "$quiet" ]] && err "[$d] is empty, expected nonempty dir${msg:+; $msg}" -1
+            [[ -z "$quiet" ]] && err "[$d] is an empty dir${msg:+; $msg}" -1
             e=1
         fi
     done
@@ -8508,8 +8500,8 @@ cleanup() {
 #---  Script entry point  ---
 #----------------------------
 ORIG_OPTS="$@"
-while getopts 'NFSUQOP:L:T:h' OPT_; do
-    case "$OPT_" in
+while getopts 'NFSUQOP:L:T:h' OPT; do
+    case "$OPT" in
         N) NON_INTERACTIVE=1 ;;
         F) MODE=1 ;;  # full install
         S) MODE=0 ;;  # single task
@@ -8517,7 +8509,7 @@ while getopts 'NFSUQOP:L:T:h' OPT_; do
         Q) MODE=3 ;;  # even faster update/quick_refresh
         O) ALLOW_OFFLINE=1 ;;  # allow running offline
         P) PLATFORM="$OPTARG" ;;  # force the platform-specific config to install (as opposed to deriving it from hostname); best not use it and let platform be resolved from our hostname
-        L) LOGGING_LVL="$OPTARG"  # log vl
+        L) LOGGING_LVL="$OPTARG"
            is_digit "$OPTARG" || fail "log level needs to be an int, but was [$OPTARG]"
             ;;
         T) TMP_DIR="$OPTARG" ;;
@@ -8525,11 +8517,11 @@ while getopts 'NFSUQOP:L:T:h' OPT_; do
         *) print_usage; exit 1 ;;
     esac
 done
-shift "$((OPTIND-1))"; unset OPT_
+shift "$((OPTIND-1))"
 
 readonly PROFILE="$1"   # work | personal
 
-[[ "$EUID" -eq 0 ]] && fail "don't run as root."
+[[ "$EUID" -eq 0 ]] && fail "don't run as root"
 
 validate_and_init
 check_dependencies
@@ -8587,7 +8579,7 @@ exit 0
 #
 #  TODO:
 #  - replace cron w/ systemd timers
-#    - consider installing systemd-cron if needed - converts legacy cron to sysd timers
+#    - consider installing systemd-cron if needed - converts legacy cron to sd-timers
 #  - migrate to zfs (or bcachefs ?)
 #   - if zfs, look into installing timeshift & integrating it w/ zfs
 #   - same for btrfs - timeshift & snapper
@@ -8597,13 +8589,11 @@ exit 0
 #    - see these grub edits for TLP: https://linuxblog.io/thinkpad-t14s-gen-3-amd-linux-user-review-tweaks/#My_etcdefaultgrub_edits
 #    - there's tlpui for GUI
 #    - should we install auto-cpufreq w/ tlp?
-#      - it's author says it works w/ TLP as long as you disable tlp's cpu settings: https://www.reddit.com/r/linux/comments/ejxx9f/github_autocpufreq_automatic_cpu_speed_power/fd4y36k/
+#      - its author says it works w/ TLP as long as you disable tlp's cpu settings: https://www.reddit.com/r/linux/comments/ejxx9f/github_autocpufreq_automatic_cpu_speed_power/fd4y36k/
 #    - it has USB_EXCLUDE_BTUSB opt to exclude bluetooth devices from usb autosuspend feature
 #  - databse defrag/compactions should be scheduled, e.g. "notmuch compact"
 #  - consider installing & setting up logwatch & fwlogwatch
 #  - consider using Timeshift creator's tinytools: https://teejeetech.com/tinytools/
-#  - instead of mv/cp, start using install; e.g.:  $ install -m644 clojure-tools/deps.edn "$clojure_lib_dir/deps.edn"
-#  - consider migrating most of installations over to mise
 #  - consider zsh:
 #    - w/ p10k prompt
 #    - _if_ we go for plugin mngr, check out zinit
@@ -8632,3 +8622,4 @@ exit 0
 #
 #
 # list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/
+#
