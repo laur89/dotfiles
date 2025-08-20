@@ -2627,23 +2627,29 @@ _fetch_release_common() {
 
 
 resolve_dl_urls() {
-    local opt OPTIND multi zort loc grep_tail page dl_url urls domain u
+    local opt OPTIND multi zort excluded loc grep_tail page dl_url urls domain u
 
-    while getopts 'MS' opt; do
+    while getopts 'MSE:' opt; do
         case "$opt" in
             M) multi=1 ;;  # ie multiple newline-separated urls/results are allowed (but not required!)
-            S) zort=1; multi=1 ;;  # if multiple urls, sort it down to single one. mnemonic: sort/single
+            S) zort=1 ;;  # if multiple urls, sort it down to single largest one. mnemonic: sort/single
+            #E) excluded="(?=^((?!$OPTARG).)*$)" ;;  # pattern to blacklist from url matching; see https://superuser.com/a/537631/179401
+                                                    # !! note this will exclude fail
+                                                    # to match if pattern is anywhere
+                                                    # on the page!!
+                                                    #readonly dl_url="$(grep -Po "$excluded"'.* href="\K'"$grep_tail"'(?=")' <<< "$page" | sort --unique)"
+            E) excluded="$OPTARG" ;;  # pattern to blacklist from matched url
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
-    loc="$1"
+    readonly loc="$1"
     grep_tail="$2"
 
     domain="$(grep -Po '^https?://([^/]+)(?=)' <<< "$loc")"
     page="$(wget "$loc" --user-agent="$USER_AGENT" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
-    readonly dl_url="$(grep -Po '.* href="\K'"$grep_tail"'(?=")' <<< "$page" | sort --unique)"
+    readonly dl_url="$(grep -Po ' href="\K'"$grep_tail"'(?=")' <<< "$page" | sort --unique)"
 
     if [[ -z "$dl_url" ]]; then
         err "no urls found from [$loc] for pattern [$grep_tail]"
@@ -2651,6 +2657,7 @@ resolve_dl_urls() {
     fi
 
     while IFS= read -r u; do
+        [[ -n "$excluded" ]] && grep -Eq "$excluded" <<< "$u" && continue
         [[ "$u" == /* ]] && u="${domain}$u"  # convert to fully qualified url
 
         u="$(html2text -width 1000000 <<< "$u")" || err "html2text processing for [$u] failed w/ [$?]"
@@ -2658,8 +2665,8 @@ resolve_dl_urls() {
         urls+="$u"$'\n'
     done <<< "$dl_url"
 
-    # note we strip trailing newline in sorts' input:
-    urls="$(sort --unique <<< "${urls:0:$(( ${#urls} - 1 ))}")"  # unique again, as we've expanded all into fully qualified addresses
+    # note we strip trailing newline in sort input:
+    urls="$(sort --version-sort <<< "${urls:0:$(( ${#urls} - 1 ))}")"
 
     # debug:
     #report "   urls #:  $(wc -l <<< "$urls")"
@@ -2669,12 +2676,12 @@ resolve_dl_urls() {
     if [[ -z "$urls" ]]; then
         err "all urls got filtered out after processing [$dl_url]?"  # TODO: this would never happen right?
         return 1
+    elif [[ "$zort" == 1 ]] && ! is_single "$urls"; then
+        urls="$(tail -n1 <<< "$urls")"
     elif [[ "$multi" != 1 ]] && ! is_single "$urls"; then
         err "multiple urls found from [$loc] for pattern [$grep_tail], but expecting a single result:"
         err "$urls"
         return 1
-    elif [[ "$zort" == 1 ]] && ! is_single "$urls"; then
-        urls="$(tail -n1 <<< "$urls")"
     fi
 
     echo "$urls"
@@ -6886,26 +6893,16 @@ install_gruvbox_material_gtk_theme() {
 }
 
 
+# https://veracrypt.io/en/Downloads.html
 # also consider the generic installer instead of .deb, eg https://launchpad.net/veracrypt/trunk/1.24-update7/+download/veracrypt-1.24-Update7-setup.tar.bz2
 # see also:
 # - https://github.com/FiloSottile/age
 install_veracrypt() {
-    local dl_urls ver_to_url u i
+    local url
 
-    dl_urls="$(resolve_dl_urls -M 'https://veracrypt.fr/en/Downloads.html' '.*Debian-\d+-amd64.deb')" || return 1
-
-    declare -A ver_to_url  # debian version to url
-
-    while IFS= read -r u; do
-        grep -qi console <<< "$u" && continue  # we want GUI version, not console
-        i="$(grep -oP 'Debian-\K\d+(?=-amd64.deb$)' <<< "$u")"
-        is_digit "$i" && ver_to_url["$i"]="$u"
-    done <<< "$dl_urls"
-
-    [[ ${#ver_to_url[@]} -eq 0 ]] && { err "no valid download urls found for veracrypt"; return 1; }
-
-    i="$(printf '%d\n' "${!ver_to_url[@]}" | sort -n | tail -1)"  # select largest (ie latest) version
-    install_from_url veracrypt "${ver_to_url[$i]}"
+    # we want GUI version, not console:
+    url="$(resolve_dl_urls -SE 'console' 'https://veracrypt.fr/en/Downloads.html' '.*Debian-\d+-amd64.deb')" || return 1
+    install_from_url veracrypt "$url"
 }
 
 
