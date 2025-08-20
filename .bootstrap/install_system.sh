@@ -2537,7 +2537,7 @@ prepare_build_container() {  # TODO container build env not used atm
 #  - https://github.com/OhMyMndy/bin-get
 #  - https://github.com/wimpysworld/deb-get
 fetch_release_from_git() {
-    local opt loc id OPTIND dl_url opts selector ver
+    local opt loc id OPTIND dl_url opts selector ver token
 
     declare -a opts
     ver=latest  # default
@@ -2557,7 +2557,11 @@ fetch_release_from_git() {
     [[ -z "$selector" ]] && selector=".assets[] | select(.name|test(\"$2\$\")) | .browser_download_url"
 
     readonly loc="https://api.github.com/repos/$1/releases/$ver"
-    dl_url="$(curl -fsSL "$loc" | jq -er "$selector")" || { err "asset url resolution from [$loc] via selector [$selector] failed w/ $?"; return 1; }
+    token="$(getnetrc curl@ghapi.com)"
+    [[ -n "$token" ]] && token="-u $token" || err "couldn't resolve gh api token"
+    # note including api version is recommended: https://docs.github.com/en/rest/using-the-rest-api/troubleshooting-the-rest-api#not-a-supported-version
+    dl_url="$(curl -fsSL -A "$USER_AGENT" -H 'X-GitHub-Api-Version:2022-11-28' $token -- "$loc" \
+        | jq -er "$selector")" || { err "asset url resolution from [$loc] via selector [$selector] failed w/ $?"; return 1; }
     readonly id="github-${1//\//-}${3:+-$3}"  # note we append name to the id when defined (same repo might contain multiple binaries we're installing)
 
     is_valid_url "$dl_url" || { err "resolved url for ${id} is improper: [$dl_url]; aborting"; return 1; }
@@ -3003,7 +3007,7 @@ resolve_ver() {
         [[ "${#v}" -ge "$n" ]]
     }
 
-    hdrs="$(curl -Ls --fail --retry 2 --head -o /dev/stdout "$url")"
+    hdrs="$(curl -Ls --fail --retry 1 -A "$USER_AGENT" --head -o /dev/stdout "$url")"
     ver="$(grep -iPo '^etag:\s*"*\K\S+(?=")' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
     if [[ "${#ver}" -le 5 ]]; then
         ver="$(grep -iPo '^location:\s*\K\S+' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
@@ -3102,7 +3106,7 @@ install_from_url_shell() {
         return 2
     fi
 
-    execute "curl -fsSL '$loc' | $shell" || return 1
+    execute "curl -fsSL -A "$USER_AGENT" '$loc' | $shell" || return 1
     add_to_dl_log "$name" "$ver"
 }
 
@@ -3252,7 +3256,7 @@ install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instruc
     report "installing $name dependencies..."
     install_block 'rlwrap' || { err 'failed to install deps. abort.'; return 1; }
 
-    execute "curl -fsSL 'https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh' -o '$f'" || return 1
+    execute "curl -fsSL -A "$USER_AGENT" 'https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh' -o '$f'" || return 1
     execute "chmod +x '$f'" || return 1
 
     execute "$f --prefix $install_target" || return 1
@@ -3485,7 +3489,7 @@ install_gitkraken() {
 install_p4merge() {  # https://www.perforce.com/downloads/visual-merge-tool
     local ver loc
 
-    ver="$(curl -Ls --fail --retry 2 -X POST -d 'family=722&form_id=pfs_inline_download_10_1_1&_triggering_element_name=family' \
+    ver="$(curl -Ls --fail --retry 1 -X POST -d 'family=722&form_id=pfs_inline_download_10_1_1&_triggering_element_name=family' \
         'https://www.perforce.com/downloads/visual-merge-tool?ajax_form=1&_wrapper_format=drupal_ajax' \
         | jq 'last.data' | grep -Po 'selected=\\"selected\\">\d{2}\K\d{2}\.\d(?=/)')"
 
@@ -3917,7 +3921,7 @@ install_aider_desk() {  # https://github.com/hotovo/aider-desk
 install_plandex() {
     local VERSION RELEASES_URL ENCODED_TAG url
 
-    VERSION="$(curl -sLf -- https://plandex.ai/v2/cli-version.txt)" || return 1
+    VERSION="$(curl -sLf -A "$USER_AGENT" -- https://plandex.ai/v2/cli-version.txt)" || return 1
 
     RELEASES_URL="https://github.com/plandex-ai/plandex/releases/download"
     ENCODED_TAG="cli%2Fv${VERSION}"
@@ -3985,7 +3989,7 @@ install_eza() {  # https://github.com/eza-community/eza
 
 # TODO: consider https://github.com/gitui-org/gitui  instead; seems to be faster?
 install_lazygit() {  # https://github.com/jesseduffield/lazygit
-    install_bin_from_git -N lazygit jesseduffield/lazygit '_Linux_x86_64.tar.gz'
+    install_bin_from_git -N lazygit jesseduffield/lazygit '_linux_x86_64.tar.gz'
 }
 
 
@@ -6247,7 +6251,7 @@ install_block() {
                 #sleep 0.1
                 execute "sudo  DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
             else
-                dry_run_failed+=( $pkg )
+                dry_run_failed+=("$pkg")
             fi
         else
             execute "sudo  DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
@@ -6258,7 +6262,7 @@ install_block() {
         err "either these packages could not be found from the repo, or some other issue occurred; skipping installing these packages. this will be logged:"
         err "${dry_run_failed[*]}"
 
-        PACKAGES_IGNORED_TO_INSTALL+=( "${dry_run_failed[@]}" )
+        PACKAGES_IGNORED_TO_INSTALL+=("${dry_run_failed[@]}")
         exit_sig="$SOME_PACKAGE_IGNORED_EXIT_CODE"
     fi
 
@@ -6542,6 +6546,7 @@ quick_refresh() {
 
     install_progs
     install_deps
+
     execute 'pipx  upgrade-all'
     execute 'flatpak -y --noninteractive update'
 }
@@ -7325,7 +7330,7 @@ post_install_progs_setup() {
                                                 # note debconf-get-selections is provided by debconf-utils pkg;
 
     #execute "newgrp wireshark"                  # log us into the new group; !! will stop script execution
-    is_native && add_to_group vboxusers   # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
+    is_native && is_pkg_installed virtualbox && add_to_group vboxusers   # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
     is_virtualbox && add_to_group vboxsf  # add user to vboxsf group (to be able to access mounted shared folders);
     #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
     #configure_ntp_for_work  # TODO: confirm if ntp needed in WSL
