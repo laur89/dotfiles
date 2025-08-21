@@ -36,11 +36,11 @@ readonly SERVER_IP='10.42.21.10'             # default server address; likely to
 readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
 readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
-readonly BUILD_DOCK='deb-build-box'              # name of the build container
+readonly BUILD_DOCK='deb-build-box'          # name of the build container
 
 # just for info, current testing = trixie
-readonly DEB_STABLE=bookworm                    # current _stable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
-readonly DEB_OLDSTABLE=bullseye                 # current _oldstable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
+readonly DEB_STABLE=bookworm                 # current _stable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
+readonly DEB_OLDSTABLE=bullseye              # current _oldstable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
 
 readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:141.0) Gecko/20100101 Firefox/141.0'
 #------------------------
@@ -238,8 +238,8 @@ check_dependencies() {
             fi
         fi
 
-        execute "sudo chown $USER:$USER -- '$dir'" || { err "unable to change [$dir] ownership to [$USER:$USER]. abort."; exit 1; }
-        execute "sudo chmod $perms -- '$dir'" || { err "unable to change [$dir] permissions to [$perms]. abort."; exit 1; }
+        exe "sudo chown $USER:$USER -- '$dir'" || { err "unable to change [$dir] ownership to [$USER:$USER]. abort."; exit 1; }
+        exe "sudo chmod $perms -- '$dir'" || { err "unable to change [$dir] permissions to [$perms]. abort."; exit 1; }
     done
 }
 
@@ -262,8 +262,8 @@ install_acpi_events() {
         for file in "$dir/"*; do
             [[ -f "$file" ]] || continue  # TODO: how to validate acpi event files? what are the rules?
             tmpfile="$TMP_DIR/.acpi_setup-$RANDOM"
-            execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
-            execute "sudo install -m644 -CT '$tmpfile' '$acpi_target/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
+            exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
+            exe "sudo install -m644 -CT '$tmpfile' '$acpi_target/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
         done
     done
 
@@ -290,12 +290,12 @@ setup_udev() {
         for file in "$dir/"*; do
             [[ -s "$file" && "$file" == *.rules ]] || continue  # note we require '.rules' suffix
             tmpfile="$TMP_DIR/.udev_setup-$RANDOM"
-            execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
-            execute "sudo install -m644 -CT '$tmpfile' '$udev_target/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
+            exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
+            exe "sudo install -m644 -CT '$tmpfile' '$udev_target/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
         done
     done
 
-    execute "sudo udevadm control --reload-rules"
+    exe "sudo udevadm control --reload-rules"
 
     return 0
 }
@@ -325,8 +325,8 @@ setup_pm() {
             for file in "$pm_state_dir/"*; do
                 is_f -n "$file" || continue
                 tmpfile="$TMP_DIR/.pm_setup-$RANDOM"
-                execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
-                execute "sudo install -m755 -CT '$tmpfile' '$target/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
+                exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
+                exe "sudo install -m755 -CT '$tmpfile' '$target/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
             done
         done
     done
@@ -343,11 +343,11 @@ setup_pm() {
 #   flatpak list --show-details
 install_flatpak() {
     install_block 'flatpak flatseal' || return 1  # flatseal is GUI app to manage perms
-    #execute 'sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo'  # <- normal/non-verified-only remote
+    #exe 'sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo'  # <- normal/non-verified-only remote
 
     # only include the 'verified' packages, taken from this secureblue comment:
     # https://www.reddit.com/r/linux/comments/1bq9d3b/flathub_now_marks_unverified_apps/kx1adws/ :
-    execute 'sudo flatpak remote-add --if-not-exists --subset=verified flathub-verified https://flathub.org/repo/flathub.flatpakrepo'
+    exe 'sudo flatpak remote-add --if-not-exists --subset=verified flathub-verified https://flathub.org/repo/flathub.flatpakrepo'
 }
 
 
@@ -362,10 +362,10 @@ setup_smartd() {
     c='DEVICESCAN -a -o on -S on -n standby,q -s (S/../.././02|L/../../6/03) -W 4,35,40 -m smart_mail_alias -M exec /usr/local/bin/smartdnotify'  # TODO: create the script! from there we mail & notify; note script shouldn't write anything to stdout/stderr, otherwise it ends up in syslog
 
     is_f -m 'cannot configure smartd' "$conf" || return 1
-    execute "sudo sed -i --follow-symlinks '/^DEVICESCAN.*$/d' '$conf'"  # nuke previous setting
-    execute "echo '$c' | sudo tee --append $conf > /dev/null"
+    exe "sudo sed -i --follow-symlinks '/^DEVICESCAN.*$/d' '$conf'"  # nuke previous setting
+    exe "echo '$c' | sudo tee --append $conf > /dev/null"
 
-    execute 'systemctl enable --now smartd.service'
+    exe 'systemctl enable --now smartd.service'
 }
 
 
@@ -409,8 +409,8 @@ setup_needrestart() {
             tmpfile="$TMP_DIR/.needrestart_setup-$filename"
             filename="${filename/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
 
-            execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || { err "sed-ing needrestart file [$file] failed"; continue; }
-            execute "sudo install -m644 -CT '$tmpfile' '$target_confdir/$filename'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
+            exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || { err "sed-ing needrestart file [$file] failed"; continue; }
+            exe "sudo install -m644 -CT '$tmpfile' '$target_confdir/$filename'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
         done
     done
 }
@@ -430,7 +430,7 @@ setup_logind() {
         return 1
     fi
 
-    execute "sudo install -m644 -CTD '$file' '$logind_confd/custom.conf'" || { err "installing [$file] failed w/ $?"; return 1; }
+    exe "sudo install -m644 -CTD '$file' '$logind_confd/custom.conf'" || { err "installing [$file] failed w/ $?"; return 1; }
 }
 
 
@@ -472,8 +472,8 @@ setup_systemd() {
         tmpfile="$TMP_DIR/.sysd_setup-$RANDOM"
 
         is_f -n "$in" || return 1
-        execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$in' > '$tmpfile'" || { err "sed-ing systemd file [$in] failed"; return $?; }
-        execute "${sudo:+sudo }install -m644 -CT '$tmpfile' '$outf'" || { err "installing [$tmpfile] failed"; return 1; }
+        exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$in' > '$tmpfile'" || { err "sed-ing systemd file [$in] failed"; return $?; }
+        exe "${sudo:+sudo }install -m644 -CT '$tmpfile' '$outf'" || { err "installing [$tmpfile] failed"; return 1; }
         return 0
     }
 
@@ -492,12 +492,12 @@ setup_systemd() {
             if [[ -f "$node" && "$node" =~ \.(service|target|unit|timer)$ ]]; then  # note we require certain suffixes
                 __var_expand_move $sudo "$node" "$tdir/$fname" || continue
 
-                # note do not use the '--now' flag with systemctl enable, nor execute systemctl start,
+                # note do not use the '--now' flag with systemctl enable, nor exe systemctl start,
                 # as some service files might be listening on something like target.sleep - those shouldn't be started on-demand like that!
                 if [[ "$fname" == *.service ]]; then
-                    execute "${sudo:+sudo }systemctl ${usr:+--user }enable '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd service [$fname] failed w/ [$?]"; continue; }
+                    exe "${sudo:+sudo }systemctl ${usr:+--user }enable '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd service [$fname] failed w/ [$?]"; continue; }
                 elif [[ "$fname" == *.timer ]]; then
-                    execute "${sudo:+sudo }systemctl ${usr:+--user }enable --now '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd timer [$fname] failed w/ [$?]"; continue; }
+                    exe "${sudo:+sudo }systemctl ${usr:+--user }enable --now '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd timer [$fname] failed w/ [$?]"; continue; }
                 fi
             elif [[ -d "$node" && "$node" == *.d ]]; then
                 t="$tdir/$fname"
@@ -525,8 +525,8 @@ setup_systemd() {
     done
 
     # reload the rules in case existing rules changed:
-    execute 'systemctl --user --now daemon-reload'  # --user flag manages the user services under ~/.config/systemd/user/
-    execute 'sudo systemctl daemon-reload'
+    exe 'systemctl --user --now daemon-reload'  # --user flag manages the user services under ~/.config/systemd/user/
+    exe 'sudo systemctl daemon-reload'
 
     unset __var_expand_move __process
 }
@@ -546,11 +546,11 @@ setup_pam_login() {
     is_f "$f" || return 1
 
     if ! grep -Eq '^auth\s+optional\s+pam_gnome_keyring.so$' "$f"; then
-        execute "echo 'auth       optional     pam_gnome_keyring.so' | sudo tee --append '$f' > /dev/null"
+        exe "echo 'auth       optional     pam_gnome_keyring.so' | sudo tee --append '$f' > /dev/null"
     fi
 
     if ! grep -Eq '^session\s+optional\s+pam_gnome_keyring.so\s+auto_start$' "$f"; then
-        execute "echo 'session    optional     pam_gnome_keyring.so auto_start' | sudo tee --append '$f' > /dev/null"
+        exe "echo 'session    optional     pam_gnome_keyring.so auto_start' | sudo tee --append '$f' > /dev/null"
     fi
 }
 
@@ -587,8 +587,8 @@ setup_apparmor() {
         if [[ -s "$aa_notif_desktop" ]]; then
             local cmd='Exec=sudo aa-notify -p -f /var/log/audit/audit.log'
             if ! grep -Fxq "$cmd" "$aa_notif_desktop"; then
-                execute "sudo sed -i --follow-symlinks 's/^Exec=/#Exec=/g' $aa_notif_desktop"  # comment original one out
-                execute "echo $cmd | sudo tee --append $aa_notif_desktop > /dev/null"
+                exe "sudo sed -i --follow-symlinks 's/^Exec=/#Exec=/g' $aa_notif_desktop"  # comment original one out
+                exe "echo $cmd | sudo tee --append $aa_notif_desktop > /dev/null"
             fi
         else
             err "[$aa_notif_desktop] not a file - is apparmor-notify pkg installed?"
@@ -639,10 +639,10 @@ setup_hosts() {
 
     if [[ -f "$file" ]]; then
         current_hostline="$(_extract_current_hostname_line /etc/hosts)" || return 1
-        execute "sed -e 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' -e 's/{HOSTNAME}/$HOSTNAME/g' $file > $tmpfile" || { err; return 1; }
+        exe "sed -e 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' -e 's/{HOSTNAME}/$HOSTNAME/g' $file > $tmpfile" || { err; return 1; }
 
         backup_original_and_copy_file --sudo "$tmpfile" /etc
-        execute "rm -- '$tmpfile'"
+        exe "rm -- '$tmpfile'"
     else
         err "expected configuration file at [$file] does not exist; won't install it."
         return 1
@@ -667,8 +667,8 @@ setup_sudoers() {
         return 1
     fi
 
-    execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
-    execute "sudo install -m440 -CT '$tmpfile' '$sudoers_dest/sudoers'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
+    exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
+    exe "sudo install -m440 -CT '$tmpfile' '$sudoers_dest/sudoers'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
 }
 
 
@@ -695,7 +695,7 @@ setup_apt() {
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
         is_f -m "won't install it" "$file" || continue
-        execute "sudo install -m644 -C '$file' '$apt_dir/sources.list.d'" || { err "installing [$file] failed w/ $?"; return 1; }
+        exe "sudo install -m644 -C '$file' '$apt_dir/sources.list.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
     # NOTE: 02periodic _might_ be duplicating the unattended-upgrades activation
@@ -713,7 +713,7 @@ setup_apt() {
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
         is_f -m "won't install it" "$file" || continue
-        execute "sudo install -m644 -C '$file' '$apt_dir/apt.conf.d'" || { err "installing [$file] failed w/ $?"; return 1; }
+        exe "sudo install -m644 -C '$file' '$apt_dir/apt.conf.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
     retry 2 "sudo apt-get --allow-releaseinfo-change  -y update" || err "apt-get update failed with $?"
@@ -741,9 +741,9 @@ setup_crontab() {
     fi
 
     if [[ -f "$file" ]]; then
-        execute "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
-        execute "sudo install -m644 -CT '$tmpfile' '$cron_dir/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
-        execute "rm -- '$tmpfile'"
+        exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
+        exe "sudo install -m644 -CT '$tmpfile' '$cron_dir/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
+        exe "rm -- '$tmpfile'"
     else
         err "expected configuration file at [$file] does not exist; won't install it."
     fi
@@ -759,7 +759,7 @@ setup_crontab() {
             is_f -nm "can't dump into $weekly_crondir" "$i" || continue
 
             #create_link -s "$i" "${weekly_crondir}/"  # linked crontabs don't work!
-            execute "sudo install -m644 -CT '$i' '$weekly_crondir/$(basename -- "$i")'" || { err "installing [$i] failed w/ $?"; return 1; }
+            exe "sudo install -m644 -CT '$i' '$weekly_crondir/$(basename -- "$i")'" || { err "installing [$i] failed w/ $?"; return 1; }
         done
     fi
 }
@@ -797,10 +797,10 @@ backup_original_and_copy_file() {
             is_digit "$i" || { err "last found suffix was not digit: [$i]; setting suffix to RANDOM"; i="$RANDOM"; } && (( i++ ))  # note (( i++ )) errors if i=0, but it increments just fine
         fi
 
-        execute "$sudo cp -- '$dest_dir/$filename' '$dest_dir/${filename}.orig.$i'"  # TODO: should we mv instead?
+        exe "$sudo cp -- '$dest_dir/$filename' '$dest_dir/${filename}.orig.$i'"  # TODO: should we mv instead?
     fi
 
-    execute "$sudo cp -- '$file' '$dest_dir'"
+    exe "$sudo cp -- '$file' '$dest_dir'"
 }
 
 
@@ -822,11 +822,11 @@ clone_repo_subdir() {
     fi
 
     tmpdir="$TMP_DIR/$repo-${user}-${RANDOM}"
-    execute "git clone -n --depth=1 --filter=tree:0 https://$hub/$user/${repo}.git '$tmpdir'" || { err "cloning [$hub/$user/$repo] failed w/ $?"; return 1; }
-    execute "git -C '$tmpdir' sparse-checkout set --no-cone $path" || return 1
-    execute "git -C '$tmpdir' checkout" || return 1
-    execute "mv -- '$tmpdir/$path' '$install_dir'" || return 1
-    #execute "git -C '$install_dir' pull" || return 1
+    exe "git clone -n --depth=1 --filter=tree:0 https://$hub/$user/${repo}.git '$tmpdir'" || { err "cloning [$hub/$user/$repo] failed w/ $?"; return 1; }
+    exe "git -C '$tmpdir' sparse-checkout set --no-cone $path" || return 1
+    exe "git -C '$tmpdir' checkout" || return 1
+    exe "mv -- '$tmpdir/$path' '$install_dir'" || return 1
+    #exe "git -C '$install_dir' pull" || return 1
 }
 
 
@@ -843,13 +843,13 @@ clone_or_pull_repo() {
     [[ "$install_dir" != */ ]] && install_dir+="/$repo"
 
     if ! [[ -d "$install_dir/.git" ]]; then
-        execute "git clone --recursive -j8 https://$hub/$user/${repo}.git '$install_dir'" || { err "cloning [$hub/$user/$repo] failed w/ $?"; return 1; }
+        exe "git clone --recursive -j8 https://$hub/$user/${repo}.git '$install_dir'" || { err "cloning [$hub/$user/$repo] failed w/ $?"; return 1; }
 
-        execute "git -C '$install_dir' remote set-url origin git@${hub}:$user/${repo}.git" || return 1
-        execute "git -C '$install_dir' remote set-url --push origin git@${hub}:$user/${repo}.git" || return 1
+        exe "git -C '$install_dir' remote set-url origin git@${hub}:$user/${repo}.git" || return 1
+        exe "git -C '$install_dir' remote set-url --push origin git@${hub}:$user/${repo}.git" || return 1
     elif is_ssh_key_available; then
-        execute "git -C '$install_dir' pull" || { err "git pull for [$hub/$user/$repo] failed w/ $?"; return 1; }  # TODO: retry?
-        execute "git -C '$install_dir' submodule update --init --recursive" || return 1  # make sure to pull submodules
+        exe "git -C '$install_dir' pull" || { err "git pull for [$hub/$user/$repo] failed w/ $?"; return 1; }  # TODO: retry?
+        exe "git -C '$install_dir' submodule update --init --recursive" || return 1  # make sure to pull submodules
     fi
 }
 
@@ -886,14 +886,14 @@ install_nfs_server() {
         # to set a range of ips, then:   directory 192.168.0.0/255.255.255.0(ro)
         if ! grep -q "${share}.*${client_ip}" "$nfs_conf"; then
             report "adding [$share] for $client_ip to $nfs_conf"
-            execute "echo $share ${client_ip}\(rw,sync,no_subtree_check\) | sudo tee --append $nfs_conf > /dev/null"
+            exe "echo $share ${client_ip}\(rw,sync,no_subtree_check\) | sudo tee --append $nfs_conf > /dev/null"
         else
             report "an entry for exposing [$share] to $client_ip is already present in $nfs_conf"
         fi
     done
 
     # exports the shares:
-    execute 'sudo exportfs -ra' || err
+    exe 'sudo exportfs -ra' || err
 
     return 0
 }
@@ -933,7 +933,7 @@ _install_nfs_client_stationary() {
 
         if ! grep -q "${server_ip}:${nfs_share}.*${mountpoint}" "$fstab"; then
             report "adding [${server_ip}:$nfs_share] mounting to [$mountpoint] in $fstab"
-            execute "echo ${server_ip}:${nfs_share} ${mountpoint} nfs noauto,x-systemd.automount,x-systemd.mount-timeout=10,_netdev,x-systemd.device-timeout=10,timeo=14,rsize=8192,wsize=8192,x-systemd.idle-timeout=1min 0 0 \
+            exe "echo ${server_ip}:${nfs_share} ${mountpoint} nfs noauto,x-systemd.automount,x-systemd.mount-timeout=10,_netdev,x-systemd.device-timeout=10,timeo=14,rsize=8192,wsize=8192,x-systemd.idle-timeout=1min 0 0 \
                     | sudo tee --append $fstab > /dev/null"
             changed=1
         else
@@ -946,7 +946,7 @@ _install_nfs_client_stationary() {
     done
 
     # force fstab reload & mount the new remote share(s):
-    [[ "$changed" == 1 ]] && execute 'sudo systemctl daemon-reload' && execute "sudo systemctl restart remote-fs.target local-fs.target"
+    [[ "$changed" == 1 ]] && exe 'sudo systemctl daemon-reload' && exe "sudo systemctl restart remote-fs.target local-fs.target"
 
     return 0
 }
@@ -970,7 +970,7 @@ _install_nfs_client_laptop() {
         [[ "$filename" == auto.* ]] || { err "incorrect filename for autofs server definition: [$filename]"; continue; }
         target="/etc/$filename"
         cmp -s "$i" "$target" && continue  # no changes
-        execute "sudo install -m644 -CT '$i' '$target'" || { err "installing [$i] failed w/ $?"; return 1; }
+        exe "sudo install -m644 -CT '$i' '$target'" || { err "installing [$i] failed w/ $?"; return 1; }
         changed=1
     done
 
@@ -980,11 +980,11 @@ _install_nfs_client_laptop() {
         [[ "$filename" == *.autofs ]] || { err "incorrect filename for autofs master.d definition: [$filename]"; continue; }
         target="$autofs_d/$filename"
         cmp -s "$i" "$target" && continue  # no changes
-        execute "sudo install -m644 -CT '$i' '$target'" || { err "installing [$i] failed w/ $?"; return 1; }
+        exe "sudo install -m644 -CT '$i' '$target'" || { err "installing [$i] failed w/ $?"; return 1; }
         changed=1
     done
 
-    [[ "$changed" == 1 ]] && execute 'sudo service autofs reload'
+    [[ "$changed" == 1 ]] && exe 'sudo service autofs reload'
 
     return 0
 }
@@ -1040,7 +1040,7 @@ install_ssh_server() {
         #return 1  # don't return, it's just a banner.
     fi
 
-    execute "sudo systemctl enable --now sshd.service"  # note --now flag effectively also starts the service immediately
+    exe "sudo systemctl enable --now sshd.service"  # note --now flag effectively also starts the service immediately
 
     return 0
 }
@@ -1053,7 +1053,7 @@ create_mountpoint() {
 
     [[ -z "$mountpoint" ]] && { err "cannot pass empty mountpoint arg"; return 1; }
     ensure_d -s "$mountpoint" || return 1
-    execute "sudo chmod 777 -- '$mountpoint'" || { err; return 1; }  # TODO: why 777 ???
+    exe "sudo chmod 777 -- '$mountpoint'" || { err; return 1; }  # TODO: why 777 ???
 
     return 0
 }
@@ -1084,7 +1084,7 @@ install_sshfs() {
     if ! [[ -r "$fuse_conf" && -f "$fuse_conf" ]]; then
         err "[$fuse_conf] is not readable; cannot uncomment '#user_allow_other' prop in it."
     elif grep -Eq '^#user_allow_other' "$fuse_conf"; then  # hasn't been uncommented yet
-        execute "sudo sed -i --follow-symlinks 's/#user_allow_other/user_allow_other/g' $fuse_conf"
+        exe "sudo sed -i --follow-symlinks 's/#user_allow_other/user_allow_other/g' $fuse_conf"
         [[ $? -ne 0 ]] && { err "uncommenting '#user_allow_other' in [$fuse_conf] failed"; return 2; }
     elif grep -q 'user_allow_other' "$fuse_conf"; then
         true  # do nothing; already uncommented, all good;
@@ -1117,7 +1117,7 @@ install_sshfs() {
         if ! grep -Eq "${remote_user}@${server_ip}:${ssh_share}.*${mountpoint}" "$fstab"; then
             report "adding [${server_ip}:$ssh_share] mounting to [$mountpoint] in $fstab..."
             # TODO: you might want to add 'default_permissions,uid=USER_ID_N,gid=USER_GID_N' to the mix as per https://wiki.archlinux.org/index.php/SSHFS:
-            execute "echo ${remote_user}@${server_ip}:${ssh_share} $mountpoint fuse.sshfs port=${ssh_port},noauto,x-systemd.automount,_netdev,users,idmap=user,follow_symlinks,IdentityFile=${identity_file},allow_other,reconnect 0 0 \
+            exe "echo ${remote_user}@${server_ip}:${ssh_share} $mountpoint fuse.sshfs port=${ssh_port},noauto,x-systemd.automount,_netdev,users,idmap=user,follow_symlinks,IdentityFile=${identity_file},allow_other,reconnect 0 0 \
                     | sudo tee --append $fstab > /dev/null"
 
             sel_ips_to_user["$server_ip"]="$remote_user"
@@ -1136,7 +1136,7 @@ install_sshfs() {
     for server_ip in "${!sel_ips_to_user[@]}"; do
         remote_user="${sel_ips_to_user[$server_ip]}"
         #report "testing ssh connection to ${remote_user}@${server_ip}..."
-        #execute "sudo ssh -p ${ssh_port} -o ConnectTimeout=7 ${remote_user}@${server_ip} echo ok"
+        #exe "sudo ssh -p ${ssh_port} -o ConnectTimeout=7 ${remote_user}@${server_ip} echo ok"
 
         if [[ -f "${identity_file}.pub" ]]; then
             if confirm "try to ssh-copy-id public key to [$server_ip]?"; then
@@ -1148,13 +1148,13 @@ install_sshfs() {
         # add $server_ip to root's known_hosts, if not already present:
         check_progs_installed  ssh-keygen ssh-keyscan || { err "some necessary ssh tools not installed, check that out"; return 1; }
         if [[ -z "$(sudo ssh-keygen -F "$server_ip")" ]]; then
-            execute "sudo ssh-keyscan -H '$server_ip' >> /root/.ssh/known_hosts" || err "adding host [$server_ip] to /root/.ssh/known_hosts failed"
+            exe "sudo ssh-keyscan -H '$server_ip' >> /root/.ssh/known_hosts" || err "adding host [$server_ip] to /root/.ssh/known_hosts failed"
         fi
         # note2: also could circumvent known_hosts issue by adding 'StrictHostKeyChecking=no'; it does add a bit insecurity tho
     done
 
     # force fstab reload & mount the new remote share(s):
-    [[ "${#sel_ips_to_user[@]}" -gt 0 ]] && execute 'sudo systemctl daemon-reload' && execute "sudo systemctl restart remote-fs.target local-fs.target"
+    [[ "${#sel_ips_to_user[@]}" -gt 0 ]] && exe 'sudo systemctl daemon-reload' && exe "sudo systemctl restart remote-fs.target local-fs.target"
 
     return 0
 }
@@ -1179,7 +1179,7 @@ install_deps() {
         elif ! is_dir_empty "$plugins_dir"; then
             # update all the tmux plugins, including the plugin manager itself:
             for dir in "$plugins_dir"/*; do
-                [[ -d "$dir" && -d "$dir/.git" ]] && execute "git -C '$dir' pull"
+                [[ -d "$dir" && -d "$dir/.git" ]] && exe "git -C '$dir' pull"
             done
         fi
 
@@ -1234,15 +1234,15 @@ install_deps() {
 
                 report "installing rtlwifi_new for card [$rtl_driver]"
                 tmpdir="$TMP_DIR/realtek-driver-${RANDOM}"
-                execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
-                execute "pushd $tmpdir" || return 1
-                execute "make clean" || return 1
+                exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
+                exe "pushd $tmpdir" || return 1
+                exe "make clean" || return 1
 
                 #create_deb_install_and_store realtek-wifi-github  # doesn't work with checkinstall
-                execute "sudo make install" || err "[$rtl_driver] realtek wifi driver make install failed"
+                exe "sudo make install" || err "[$rtl_driver] realtek wifi driver make install failed"
 
-                execute "popd"
-                execute "sudo rm -rf -- $tmpdir"
+                exe "popd"
+                exe "sudo rm -rf -- $tmpdir"
             }
 
             # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
@@ -1269,11 +1269,11 @@ install_deps() {
                 # add config to solve the intermittent disconnection problem; YMMV (https://github.com/lwfinger/rtlwifi_new/issues/126):
                 #     note: 'ips, swlps, fwlps' are power-saving options.
                 #     note2: ant_sel=1 or =2
-                #execute "echo options $rtl_driver ant_sel=1 fwlps=0 | sudo tee /etc/modprobe.d/$rtl_driver.conf"
-                execute "echo options $rtl_driver ant_sel=1 msi=1 ips=0 | sudo tee /etc/modprobe.d/$rtl_driver.conf"
+                #exe "echo options $rtl_driver ant_sel=1 fwlps=0 | sudo tee /etc/modprobe.d/$rtl_driver.conf"
+                exe "echo options $rtl_driver ant_sel=1 msi=1 ips=0 | sudo tee /etc/modprobe.d/$rtl_driver.conf"
 
-                execute "sudo modprobe -r $rtl_driver" || { err "unable removing modprobe [$rtl_driver]"; return 1; }
-                execute "sudo modprobe $rtl_driver" || { err "unable adding modprobe [$rtl_driver]; make sure secure boot is turned off in BIOS"; return 1; }
+                exe "sudo modprobe -r $rtl_driver" || { err "unable removing modprobe [$rtl_driver]"; return 1; }
+                exe "sudo modprobe $rtl_driver" || { err "unable adding modprobe [$rtl_driver]; make sure secure boot is turned off in BIOS"; return 1; }
             else
                 err "can't detect Intel nor Realtek wifi; whose card do we have?"
             fi
@@ -1505,7 +1505,7 @@ install_deps() {
     # https://github.com/dominictarr/JSON.sh
     # https://github.com/sindresorhus/fast-cli
     #
-    execute "$NPM_PRFX npm install -g \
+    exe "$NPM_PRFX npm install -g \
         neovim \
         ungit \
         fast-cli \
@@ -1555,8 +1555,8 @@ setup_dirs() {
     elif ! [[ -d "$CUSTOM_LOGDIR" ]]; then
         report "[$CUSTOM_LOGDIR] does not exist, creating..."
         ensure_d -s "$CUSTOM_LOGDIR"
-        execute "sudo chown root:$USER -- $CUSTOM_LOGDIR"
-        execute "sudo chmod 'u=rwX,g=rwX,o=' -- $CUSTOM_LOGDIR"
+        exe "sudo chown root:$USER -- $CUSTOM_LOGDIR"
+        exe "sudo chmod 'u=rwX,g=rwX,o=' -- $CUSTOM_LOGDIR"
     fi
 }
 
@@ -1599,7 +1599,7 @@ clone_or_link_castle() {
             report "[$castle] already exists; linking..."
         fi
 
-        execute "${homesick_exe}$batch link $castle" || { err "linking castle [$castle] failed with $?"; return 1; }  # TODO: should we exit here?
+        exe "${homesick_exe}$batch link $castle" || { err "linking castle [$castle] failed with $?"; return 1; }  # TODO: should we exit here?
     else
         report "cloning castle ${castle}..."
         if is_ssh_key_available || [[ "$force_ssh" == 1 ]]; then
@@ -1609,12 +1609,12 @@ clone_or_link_castle() {
             retry 3 "$homesick_exe clone https://${hub}/${repo}.git" || { err "cloning castle [$castle] failed with $?"; return 1; }
 
             # change just cloned repo remote from https to ssh:
-            execute "git -C '$BASE_HOMESICK_REPOS_LOC/$castle' remote set-url origin git@${hub}:${repo}.git"
+            exe "git -C '$BASE_HOMESICK_REPOS_LOC/$castle' remote set-url origin git@${hub}:${repo}.git"
         fi
 
         # note this assumes $castle repo has a .githooks symlink at its root that points to dir that contains the actual hooks!
         if [[ "$set_hooks" == 1 ]]; then
-            execute 'git -C '$BASE_HOMESICK_REPOS_LOC/$castle' config core.hooksPath .githooks' || err "git hook installation failed!"
+            exe 'git -C '$BASE_HOMESICK_REPOS_LOC/$castle' config core.hooksPath .githooks' || err "git hook installation failed!"
         fi
     fi
 
@@ -1632,7 +1632,7 @@ fetch_castles() {
     # common private:
     clone_or_link_castle -H layr/private-common bitbucket.org || { err "failed pulling private dotfiles; it's required!"; return 1; }
     if [[ "$MODE" -eq 1 ]]; then
-        execute "cp -- $COMMON_PRIVATE_DOTFILES/home/.ssh/ssh_common_client_config ~/.ssh/config" || { err "ssh initial config copy failed w/ $?"; return 1; }
+        exe "cp -- $COMMON_PRIVATE_DOTFILES/home/.ssh/ssh_common_client_config ~/.ssh/config" || { err "ssh initial config copy failed w/ $?"; return 1; }
         _sanitize_ssh
         is_proc_running ssh-agent || eval "$(ssh-agent)"
     fi
@@ -1650,7 +1650,7 @@ fetch_castles() {
             if clone_or_link_castle -H "$repo" "$host"; then
                 for u in "git@$host:${repo}.git"  "git@github.com:laur89/work-dots-mirror.git"; do
                     if ! grep -iq "pushurl.*$u" "$PRIVATE__DOTFILES/.git/config"; then  # need if-check as 'set-url --add' is not idempotent; TODO: create ticket for git?
-                        execute "git -C '$PRIVATE__DOTFILES' remote set-url --add --push origin '$u'"
+                        exe "git -C '$PRIVATE__DOTFILES' remote set-url --add --push origin '$u'"
                     fi
                 done
             else
@@ -1682,7 +1682,7 @@ fetch_castles() {
             #echo -e "enter castle name (repo name, eg [dotfiles]):"
             #read -r castle
 
-            #execute "clone_or_link_castle "$user/$castle" $hub"
+            #exe "clone_or_link_castle "$user/$castle" $hub"
         #else
             #break
         #fi
@@ -1784,20 +1784,20 @@ setup_global_bash_settings() {
 
     ## setup prompt:
     # just in case first delete previous global PS1 def:
-    execute "sudo sed -i --follow-symlinks '/^PS1=.*# own-ps1-def-marker$/d' '$global_bashrc'"
-    execute "echo '$ps1' | sudo tee --append $global_bashrc > /dev/null"
+    exe "sudo sed -i --follow-symlinks '/^PS1=.*# own-ps1-def-marker$/d' '$global_bashrc'"
+    exe "echo '$ps1' | sudo tee --append $global_bashrc > /dev/null"
 
     ## add the script shell init glue code under /etc for convenience/global access:
     # note this one only covers _interactive_ shells...:
-    execute "sudo sed -i --follow-symlinks '/^source .*global_init_marker$/d' '$global_bashrc'"
-    execute "echo 'source /etc/.global-bash-init  # global_init_marker' | sudo tee --append $global_bashrc > /dev/null"
+    exe "sudo sed -i --follow-symlinks '/^source .*global_init_marker$/d' '$global_bashrc'"
+    exe "echo 'source /etc/.global-bash-init  # global_init_marker' | sudo tee --append $global_bashrc > /dev/null"
 
     # ...and this one only covers _non-interactive_ shells (note cron still isn't covered!)
     # (BASH_ENV is documented here: https://www.gnu.org/software/bash/manual/bash.html#index-BASH_005fENV)
     # note we define & export BASH_ENV on separate files, as /etc/profile could be
     # read bu other shells than Bournes (see https://unix.stackexchange.com/a/541585/47501)
     [[ -d "$global_profile" ]] || { err "[$global_profile] is not a dir!"; return 1; }
-    execute "echo -e 'BASH_ENV=/etc/.global-bash-init  # global_init_marker\nexport BASH_ENV' | sudo tee $global_profile/bash-init-global.sh > /dev/null"
+    exe "echo -e 'BASH_ENV=/etc/.global-bash-init  # global_init_marker\nexport BASH_ENV' | sudo tee $global_profile/bash-init-global.sh > /dev/null"
 }
 
 
@@ -1849,7 +1849,7 @@ install_nm_dispatchers() {
 
     for f in "${dispatchers[@]}"; do
         [[ -f "$f" ]] || { err "[$f] does not exist; this netw-manager dispatcher won't be installed"; continue; }
-        execute "sudo install -m744 -C '$f' '$nm_wrapper_dest'" || { err "installing [$f] failed w/ $?"; return 1; }
+        exe "sudo install -m744 -C '$f' '$nm_wrapper_dest'" || { err "installing [$f] failed w/ $?"; return 1; }
     done
 }
 
@@ -1909,11 +1909,11 @@ setup_mok() {
 
     is_noninteractive && { err "do not exec $FUNCNAME() in non-interactive mode; make sure to manually re-run this step!"; return 1; }
 
-    execute "sudo openssl req -nodes -new -x509 -newkey rsa:2048 -keyout $target_dir/MOK.priv -outform DER -out $target_dir/MOK.der -days 36500 -subj '/CN=Laur Aliste/'" || return $?
-    execute "sudo openssl x509 -inform der -in $target_dir/MOK.der -out $target_dir/MOK.pem" || return $?
+    exe "sudo openssl req -nodes -new -x509 -newkey rsa:2048 -keyout $target_dir/MOK.priv -outform DER -out $target_dir/MOK.der -days 36500 -subj '/CN=Laur Aliste/'" || return $?
+    exe "sudo openssl x509 -inform der -in $target_dir/MOK.der -out $target_dir/MOK.pem" || return $?
 
     report "enrolling MOK, enter password to use for enrollment during next reboot..."
-    execute "sudo mokutil --import $target_dir/MOK.der" || return $?  # prompts for one-time password
+    exe "sudo mokutil --import $target_dir/MOK.der" || return $?  # prompts for one-time password
 
     _instruct_dkms_to_use_keys() {  # TODO: refactor out into setup_dkms() ?
         local conf_dir f
@@ -1923,7 +1923,7 @@ setup_mok() {
         [[ -d "$conf_dir" ]] || { err "[$conf_dir] is not a dir; cannot setup DKMS to use our MOK keys"; return 1; }
         is_f -nm 'skipping DKMS config to use our MOK keys' "$f" || return 1
 
-        execute "sudo install -m644 -C '$f' '$conf_dir'" || { err "installing [$f] to [$conf_dir] failed w/ $?"; return 1; }
+        exe "sudo install -m644 -C '$f' '$conf_dir'" || { err "installing [$f] to [$conf_dir] failed w/ $?"; return 1; }
     }
 
     _instruct_dkms_to_use_keys
@@ -1978,7 +1978,7 @@ update_clock() {
     if [[ "${diff#-}" -gt 30 ]]; then
         report "system time diff to remote source is [${diff}s] - updating clock..."
         # IIRC, input format to date -s here is important:
-        execute "sudo date -s '$(date -d @${remote_time} '+%Y-%m-%d %H:%M:%S')'" || { err "setting system time w/ date failed w/ $?"; return 1; }
+        exe "sudo date -s '$(date -d @${remote_time} '+%Y-%m-%d %H:%M:%S')'" || { err "setting system time w/ date failed w/ $?"; return 1; }
     fi
 
     return 0
@@ -2029,26 +2029,26 @@ create_apt_source() {
 
         f="$TMP_DIR/.apt-key_${name}-${RANDOM}.gpg"
         if [[ -n "$k" ]]; then
-            execute "sudo gpg --no-default-keyring --keyring $f --keyserver $i --recv-keys $k" || return 1
+            exe "sudo gpg --no-default-keyring --keyring $f --keyserver $i --recv-keys $k" || return 1
         elif [[ -n "$grp_ptrn" ]]; then
-            execute "wget --user-agent='$USER_AGENT' -q -O - '$i' | grep -Pzo -- '(?s)$grp_ptrn' | gpg --no-tty --batch --dearmor | sudo tee $f > /dev/null" || return 1
+            exe "wget --user-agent='$USER_AGENT' -q -O - '$i' | grep -Pzo -- '(?s)$grp_ptrn' | gpg --no-tty --batch --dearmor | sudo tee $f > /dev/null" || return 1
         else
             # either single-conversion command, if it works...:
-            execute "wget --user-agent='$USER_AGENT' -q -O - '$i' | gpg --no-tty --batch --dearmor | sudo tee $f > /dev/null" || return 1
+            exe "wget --user-agent='$USER_AGENT' -q -O - '$i' | gpg --no-tty --batch --dearmor | sudo tee $f > /dev/null" || return 1
 
             # ...or lengthier (but safer?) multi-step conversion:
             #local tmp_ring
             #tmp_ring="$TMP_DIR/temp-keyring-${RANDOM}.gpg"
-            #execute "curl -fsL -o '$f' '$i'" || return 1
+            #exe "curl -fsL -o '$f' '$i'" || return 1
 
-            #execute "gpg --no-default-keyring --keyring $tmp_ring --import $f" || return 1
+            #exe "gpg --no-default-keyring --keyring $tmp_ring --import $f" || return 1
             #rm -- "$f"  # unsure if this is needed or not for the following gpg --output command
-            #execute "gpg --no-default-keyring --keyring $tmp_ring --export --output $f" || return 1
+            #exe "gpg --no-default-keyring --keyring $tmp_ring --export --output $f" || return 1
             #rm -- "$tmp_ring"
         fi
 
         [[ -s "$f" ]] || { err "imported keyfile [$f] does not exist"; return 1; }
-        execute "sudo install -m644 -CT '$f' '$keyfile'" || { err "installing [$f] to [$keyfile] failed w/ $?"; return 1; }
+        exe "sudo install -m644 -CT '$f' '$keyfile'" || { err "installing [$f] to [$keyfile] failed w/ $?"; return 1; }
         (( c++ ))
     done
 
@@ -2063,7 +2063,7 @@ Signed-By: $keyfiles
 EOF
     [[ -n "$components" ]] && echo "Components: $components" >> "$f"
     [[ -n "$arch" ]] && echo "Architectures: $arch" >> "$f"
-    execute "sudo install -m644 -CT '$f' '$target_src'" || { err "installing [$f] to [$target_src] failed w/ $?"; return 1; }
+    exe "sudo install -m644 -CT '$f' '$target_src'" || { err "installing [$f] to [$target_src] failed w/ $?"; return 1; }
 }
 
 
@@ -2127,7 +2127,7 @@ setup_additional_apt_keys_and_sources() {
     # tailscale: https://tailscale.com/download/linux/debian-bookworm
     #create_apt_source  tailscale  https://pkgs.tailscale.com/stable/debian/$DEB_STABLE.noarmor.gpg  https://pkgs.tailscale.com/stable/debian $DEB_STABLE main
 
-    execute 'sudo apt-get --yes update'
+    exe 'sudo apt-get --yes update'
 }
 
 
@@ -2145,8 +2145,8 @@ override_locale_time() {
     # change our LC_TIME, so first day of week is Mon (from https://wiki.debian.org/Locale#First_day_of_week):
     if ! grep -qE 'LC_TIME=.en_GB.UTF-8.' "$conf_file"; then
         # just in case delete all same definitions, regardless of its value:
-        execute "sudo sed -i --follow-symlinks '/^LC_TIME\s*=/d' '$conf_file'" || return 1
-        execute "echo 'LC_TIME=\"en_GB.UTF-8\"' | sudo tee --append $conf_file > /dev/null"  # en-gb gives us 24h clock & Monday as first day of the week
+        exe "sudo sed -i --follow-symlinks '/^LC_TIME\s*=/d' '$conf_file'" || return 1
+        exe "echo 'LC_TIME=\"en_GB.UTF-8\"' | sudo tee --append $conf_file > /dev/null"  # en-gb gives us 24h clock & Monday as first day of the week
     fi
 
     # generate missing locales: {{{
@@ -2157,11 +2157,11 @@ override_locale_time() {
                 'en_US.UTF-8' \
             ; do
         if ! grep -qE "^$i" "$loc_file"; then
-            execute "sudo sed -i --follow-symlinks 's|^# $i|$i|' '$loc_file'" || return 1
+            exe "sudo sed -i --follow-symlinks 's|^# $i|$i|' '$loc_file'" || return 1
             modified=Y
         fi
     done
-    [[ -n "$modified" ]] && execute 'sudo locale-gen'
+    [[ -n "$modified" ]] && exe 'sudo locale-gen'
     # }}}
 
     return 0
@@ -2189,7 +2189,7 @@ swap_caps_lock_and_esc() {
     # map esc to caps:
     if ! grep -Eq 'key <ESC>.*Caps_Lock' "$conf_file"; then
         # hasn't been replaced yet
-        if ! execute "sudo sed -i --follow-symlinks 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock     \]   \};/g' $conf_file"; then
+        if ! exe "sudo sed -i --follow-symlinks 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock     \]   \};/g' $conf_file"; then
             err "mapping esc->caps @ [$conf_file] failed"
             return 2
         fi
@@ -2198,14 +2198,14 @@ swap_caps_lock_and_esc() {
     # map caps to control:
     if ! grep -Eq 'key <CAPS>.*Control_L' "$conf_file"; then
         # hasn't been replaced yet
-        if ! execute "sudo sed -i --follow-symlinks 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS> \{    \[ Control_L        \]   \};/g' $conf_file"; then
+        if ! exe "sudo sed -i --follow-symlinks 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS> \{    \[ Control_L        \]   \};/g' $conf_file"; then
             err "mapping caps->esc @ [$conf_file] failed"
             return 2
         fi
     fi
 
     # make short-pressed Ctrl behave like Escape:
-    execute "xcape -e 'Control_L=Escape'" || return 2   # note this command needs to be ran also at every startup!
+    exe "xcape -e 'Control_L=Escape'" || return 2   # note this command needs to be ran also at every startup!
 
     return 0
 }
@@ -2213,7 +2213,7 @@ swap_caps_lock_and_esc() {
 
 install_progs() {
 
-    execute "sudo apt-get --yes update"
+    exe "sudo apt-get --yes update"
 
     install_webdev
     install_from_repo
@@ -2264,13 +2264,13 @@ upgrade_firmware() {
     local c
 
     # display all devices detected by fwupd:
-    execute -c 0,2 'fwupdmgr get-devices' || return 1
+    exe -c 0,2 'fwupdmgr get-devices' || return 1
 
     # download latest metadata from LVFS:
-    execute -c 0,2 'fwupdmgr refresh' || return 1  # note it can exit w/ 2, and saying it was refreshed X time ago; not the case if passing '--force' flag to it
+    exe -c 0,2 'fwupdmgr refresh' || return 1  # note it can exit w/ 2, and saying it was refreshed X time ago; not the case if passing '--force' flag to it
 
     # if updates are available, they'll be displayed:
-    execute -c 0,2 -r 'fwupdmgr get-updates'
+    exe -c 0,2 -r 'fwupdmgr get-updates'
     c=$?
     if [[ $c -eq 2 ]]; then
         report "no updates avail"
@@ -2280,7 +2280,7 @@ upgrade_firmware() {
     fi
 
     # downlaod and apply all updates (will be prompted first)
-    execute 'fwupdmgr update'
+    exe 'fwupdmgr update'
 }
 
 
@@ -2315,7 +2315,7 @@ install_kernel_modules() {
     install_block  ddcci-dkms || return 1
 
     for i in "${modules[@]}"; do
-        grep -Fxq "$i" "$conf" || execute "echo $i | sudo tee --append $conf > /dev/null"
+        grep -Fxq "$i" "$conf" || exe "echo $i | sudo tee --append $conf > /dev/null"
     done
 }
 
@@ -2356,7 +2356,7 @@ upgrade_kernel() {
 
        if [[ -n "$__SELECTED_ITEMS" ]]; then
           report "installing ${__SELECTED_ITEMS}..."
-          execute "sudo apt-get --yes install $__SELECTED_ITEMS"
+          exe "sudo apt-get --yes install $__SELECTED_ITEMS"
           break
        else
           confirm "no items were selected; skip kernel change?" && break
@@ -2479,10 +2479,8 @@ install_work_builds() {
 
 # build container exec
 bc_exe() {
-    local cmds
-
-    cmds="$*"
-    execute "docker exec -it $(docker ps -qf "name=$BUILD_DOCK") bash -c '$cmds'" || return 1
+    local cmds="$*"
+    exe "docker exec -it $(docker ps -qf "name=$BUILD_DOCK") bash -c '$cmds'"
 }
 
 
@@ -2497,18 +2495,17 @@ bc_install() {
 
 prepare_build_container() {  # TODO container build env not used atm
     if [[ -z "$(docker ps -qa -f name="$BUILD_DOCK")" ]]; then  # container hasn't been created
-        #execute "docker create -t --name '$BUILD_DOCK' debian:testing-slim" || return 1  # alternative to docker run
-        execute "docker run -dit --name '$BUILD_DOCK' -v '$BASE_BUILDS_DIR:/out' debian:testing-slim" || return 1
-        bc_exe "apt-get --yes update"
+        #exe "docker create -t --name '$BUILD_DOCK' debian:testing-slim" || return 1  # alternative to docker run
+        exe "docker run -dit --name '$BUILD_DOCK' -v '$BASE_BUILDS_DIR:/out' debian:testing-slim" || return 1
+        bc_exe "apt-get --yes update" || return 1
         bc_install git checkinstall build-essential devscripts equivs cmake || return 1
     fi
 
     if [[ -z "$(docker ps -qa -f status=running -f name="$BUILD_DOCK")" ]]; then
-        execute "docker start '$BUILD_DOCK'" || return 1
+        exe "docker start '$BUILD_DOCK'" || return 1
     fi
 
     bc_exe "apt-get --yes update"
-    return 0
 }
 
 
@@ -2590,7 +2587,7 @@ _fetch_release_common() {
     tmpdir="$(mkt "release-from-${id}")" || return 1
 
     report "fetching [$dl_url]..."
-    execute "wget --user-agent='$USER_AGENT' --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
+    exe "wget --user-agent='$USER_AGENT' --content-disposition -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
     file="$(find "$tmpdir" -type f)"
     [[ -s "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
@@ -2600,7 +2597,7 @@ _fetch_release_common() {
 
     # TODO: should we invoke install_file() from this function instead of this reused logic? unsure..better read TODO at the top of this fun
     if [[ -n "$name" && "$(basename -- "$file")" != "$name" ]]; then
-        execute "mv -- '$file' '$tmpdir/$name'" || { err "renaming [$file] to [$tmpdir/$name] failed"; return 1; }
+        exe "mv -- '$file' '$tmpdir/$name'" || { err "renaming [$file] to [$tmpdir/$name] failed"; return 1; }
         file="$tmpdir/$name"
     fi
 
@@ -2735,7 +2732,7 @@ install_from_any() {
 
     # instead of _fetch_release_common(), fetch ourselves (just like we do in install_from_url()):
     tmpdir="$(mkt "install-from-any-${id}")" || return 1
-    execute "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
+    exe "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$dl_url'" || { err "wgetting [$dl_url] failed with $?"; return 1; }
     f="$(find "$tmpdir" -type f)"
     [[ -s "$f" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
@@ -2821,7 +2818,7 @@ extract_tarball() {
 
     if is_valid_url "$file"; then
         tmpdir="$(mkt "tarball-download-extract")" || return 1
-        execute "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$file'" || { err "wgetting [$file] failed with $?"; return 1; }
+        exe "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$file'" || { err "wgetting [$file] failed with $?"; return 1; }
         file="$(find "$tmpdir" -mindepth 1 -maxdepth 1 -type f)"
     fi
 
@@ -2831,19 +2828,19 @@ extract_tarball() {
 
     if [[ "$standalone" != 1 ]]; then
         tmpdir="$(mkt "tarball-extract")" || return 1
-        execute "pushd -- $tmpdir" || return 1
+        exe "pushd -- $tmpdir" || return 1
     fi
 
     if [[ "$file" == *.tbz ]]; then  # TODO: aunpack can't unpack tbz
-        execute "tar -xjf '$file'" > /dev/null || { err "extracting [$file] failed w/ $?"; [[ "$standalone" != 1 ]] && popd; return 1; }
+        exe "tar -xjf '$file'" > /dev/null || { err "extracting [$file] failed w/ $?"; [[ "$standalone" != 1 ]] && popd; return 1; }
     else
-        execute "aunpack --extract --quiet '$file'" > /dev/null || { err "extracting [$file] failed w/ $?"; [[ "$standalone" != 1 ]] && popd; return 1; }
+        exe "aunpack --extract --quiet '$file'" > /dev/null || { err "extracting [$file] failed w/ $?"; [[ "$standalone" != 1 ]] && popd; return 1; }
     fi
 
-    execute "rm -f -- '$file'" || { [[ "$standalone" != 1 ]] && popd; return 1; }
+    exe "rm -f -- '$file'" || { [[ "$standalone" != 1 ]] && popd; return 1; }
 
     dir="$(find "$(pwd -P)" -mindepth 1 -maxdepth 1 -type d)"  # do not verify -d $dir _yet_ - ok to fail if $dir_only != 1
-    [[ "$standalone" != 1 ]] && execute popd
+    [[ "$standalone" != 1 ]] && exe popd
 
     if [[ "$dir_only" == 1 ]]; then
         [[ -d "$dir" ]] || { err "couldn't find single extracted dir in extracted tarball"; return 1; }
@@ -3065,7 +3062,7 @@ install_from_url() {
     fi
 
     tmpdir="$(mkt "install-from-url-${name}")" || return 1
-    execute "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$loc'" || { err "wgetting [$loc] failed with $?"; return 1; }
+    exe "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$loc'" || { err "wgetting [$loc] failed with $?"; return 1; }
     file="$(find "$tmpdir" -type f)"
     [[ -s "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
 
@@ -3103,7 +3100,7 @@ install_from_url_shell() {
         return 2
     fi
 
-    execute "curl -fsSL -A "$USER_AGENT" '$loc' | $shell" || return 1
+    exe "curl -fsSL -A "$USER_AGENT" '$loc' | $shell" || return 1
     add_to_dl_log "$name" "$ver"
 }
 
@@ -3149,7 +3146,7 @@ install_file() {
         if [[ -n "$name" && "$(basename -- "$file")" != "$name" ]]; then  # check if rename is needed
             local tmpdir
             tmpdir="$(mkt "install-file-${name}")" || return 1
-            execute "mv -- '$file' '$tmpdir/$name'" || { err "renaming [$file] to [$tmpdir/$name] failed"; return 1; }
+            exe "mv -- '$file' '$tmpdir/$name'" || { err "renaming [$file] to [$tmpdir/$name] failed"; return 1; }
             file="$tmpdir/$name"
         fi
 
@@ -3160,10 +3157,10 @@ install_file() {
         local f="$1"
 
         if [[ -n "$owner" ]]; then
-            execute "sudo chown -R -- '$owner' '$f'" || return 1
+            exe "sudo chown -R -- '$owner' '$f'" || return 1
         fi
         if [[ -n "$perms" ]]; then
-            execute "sudo chmod -R -- '$perms' '$f'" || return 1
+            exe "sudo chmod -R -- '$perms' '$f'" || return 1
         fi
     }
 
@@ -3171,25 +3168,25 @@ install_file() {
 
     if [[ "$ftype" == 'text/plain; charset='* ]]; then  # same as executable/binary above, but do not set executable flag
         _process || return 1
-        execute "sudo install -m644 -C --group=$USER '$file' '$target'" || return 1
+        exe "sudo install -m644 -C --group=$USER '$file' '$target'" || return 1
         _owner_perms "$target/$(basename -- "$file")"
     elif [[ "$ftype" == *'inode/directory; charset=binary' ]]; then
         [[ -z "$name" ]] && { err "[name] arg needs to be provided when installing a directory"; return 1; }
         _process || return 1
         target+="/$name"
-        [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }  # rm previous installation
-        execute "mv -- '$file' '$target'" || return 1
+        [[ -d "$target" ]] && { exe "rm -rf -- '$target'" || return 1; }  # rm previous installation
+        exe "mv -- '$file' '$target'" || return 1
     elif [[ "$ftype" == *'executable; charset=binary' || "$ftype" == 'text/x-shellscript; charset='* || "$ftype" == 'text/x-perl; charset='* ]]; then
-        execute "chmod +x '$file'" || return 1
+        exe "chmod +x '$file'" || return 1
         _process || return 1
-        execute "sudo install -m754 -C --group=$USER '$file' '$target'" || return 1
+        exe "sudo install -m754 -C --group=$USER '$file' '$target'" || return 1
         _owner_perms "$target/$(basename -- "$file")"
     elif [[ "$ftype" == *'debian.binary-package; charset=binary' ]]; then
-        execute "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
-        execute "rm -f -- '$file'"
+        exe "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
+        exe "rm -f -- '$file'"
     else
         err "dunno how to install file [$file] - unknown type [$ftype]"
-        execute "rm -f -- '$file'"
+        exe "rm -f -- '$file'"
         return 1
     fi
     unset _process _owner_perms
@@ -3253,10 +3250,10 @@ install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instruc
     report "installing $name dependencies..."
     install_block 'rlwrap' || { err 'failed to install deps. abort.'; return 1; }
 
-    execute "curl -fsSL -A "$USER_AGENT" 'https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh' -o '$f'" || return 1
-    execute "chmod +x '$f'" || return 1
+    exe "curl -fsSL -A "$USER_AGENT" 'https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh' -o '$f'" || return 1
+    exe "chmod +x '$f'" || return 1
 
-    execute "$f --prefix $install_target" || return 1
+    exe "$f --prefix $install_target" || return 1
     add_manpath "$install_target/bin" "$install_target/share/man"
 
     add_to_dl_log  "$name" "$ver"
@@ -3339,7 +3336,7 @@ install_k9s() {  # https://github.com/derailed/k9s
 install_krew() {  # https://github.com/kubernetes-sigs/krew
     local dir
     dir="$(fetch_extract_tarball_from_git  kubernetes-sigs/krew 'linux_amd64.tar.gz')" || return 1
-    execute "$dir/krew-linux_amd64  install krew"
+    exe "$dir/krew-linux_amd64  install krew"
     #"$KREW" update || err "[krew update] failed w/ [$?]"
 }
 
@@ -3376,7 +3373,7 @@ install_kubectl() {
     install_from_url  kubectl  "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 
     # shell completion: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#bash
-    command -v kubectl >/dev/null && execute "kubectl completion bash | tee $BASH_COMPLETIONS/kubectl > /dev/null"
+    command -v kubectl >/dev/null && exe "kubectl completion bash | tee $BASH_COMPLETIONS/kubectl > /dev/null"
 }
 
 # kubectx - kubernetes contex swithcher
@@ -3430,24 +3427,24 @@ install_grpc_cli() {  # https://github.com/grpc/grpc/blob/master/doc/command_lin
     is_installed "$ver" grpc-cli && return 2
 
     tmpdir="$(mkt 'grpc-cli-tempdir')" || return 1
-    execute "pushd -- '$tmpdir'" || return 1
-    execute "git clone $repo" || return 1
-    execute 'pushd -- grpc' || return 1
-    execute 'git submodule update --init' || return 1
-    execute 'mkdir -p cmake/build' || return 1
-    execute 'pushd -- cmake/build' || return 1
-    execute 'cmake -DgRPC_BUILD_TESTS=ON -DCMAKE_CXX_STANDARD=17 ../..' || return 1
-    execute 'make -j8 grpc_cli' || return 1
+    exe "pushd -- '$tmpdir'" || return 1
+    exe "git clone $repo" || return 1
+    exe 'pushd -- grpc' || return 1
+    exe 'git submodule update --init' || return 1
+    exe 'mkdir -p cmake/build' || return 1
+    exe 'pushd -- cmake/build' || return 1
+    exe 'cmake -DgRPC_BUILD_TESTS=ON -DCMAKE_CXX_STANDARD=17 ../..' || return 1
+    exe 'make -j8 grpc_cli' || return 1
 
     #install_block 'libgflags-dev' || return 1
     f="$(find . -mindepth 1 -type f -name 'grpc_cli')"
     [[ -f "$f" ]] || { err "couldn't find grpc_cli"; return 1; }
-    execute "mv -- '$f' '$HOME/bin/'" || return 1
+    exe "mv -- '$f' '$HOME/bin/'" || return 1
 
     add_to_dl_log "grpc-cli" "$ver"
 
-    execute "popd; popd; popd" || return 1
-    execute "rm -rf -- '$tmpdir'"
+    exe "popd; popd; popd" || return 1
+    exe "rm -rf -- '$tmpdir'"
 }
 
 
@@ -3503,8 +3500,8 @@ install_steam() {  # https://store.steampowered.com/about/
     #install_from_url  steam 'https://cdn.akamai.steamstatic.com/client/installer/steam.deb'
 
     # ...or from apt repos:  # as per https://wiki.debian.org/Steam#Installing_Steam
-    execute 'sudo dpkg --add-architecture i386'
-    execute 'sudo apt-get update'
+    exe 'sudo dpkg --add-architecture i386'
+    exe 'sudo apt-get update'
     install_block -f  steam-installer
 }
 
@@ -3601,36 +3598,36 @@ install_alacritty() {
     install_block 'cmake pkg-config libfreetype6-dev libfontconfig1-dev libxcb-xfixes0-dev libxkbcommon-dev' || return 1
 
     # quick, binary-only installation...:
-    #execute 'cargo install alacritty'
+    #exe 'cargo install alacritty'
     #return
 
     # ...or follow the full build logic if you want to install extras like manpages:
     dir="$(fetch_extract_tarball_from_git alacritty/alacritty 'v\\d+\\.\\d+.*\\.tar\\.gz')" || return 1
 
-    execute "pushd $dir" || return 1
+    exe "pushd $dir" || return 1
 
     # build: https://github.com/alacritty/alacritty/blob/master/INSTALL.md#building
     # Force support for only X11:
-    execute 'cargo build --release --no-default-features --features=x11' || return 1  # should produce binary at target/release/alacritty
+    exe 'cargo build --release --no-default-features --features=x11' || return 1  # should produce binary at target/release/alacritty
 
     # post-build setup: https://github.com/alacritty/alacritty/blob/master/INSTALL.md#post-build
     if ! infocmp alacritty; then
-        execute 'sudo tic -xe alacritty,alacritty-direct extra/alacritty.info' || err
+        exe 'sudo tic -xe alacritty,alacritty-direct extra/alacritty.info' || err
     fi
 
     # install man-pages:
     ensure_d -s "/usr/local/share/man/man1" || return 1
-    execute 'gzip -c extra/alacritty.man | sudo tee /usr/local/share/man/man1/alacritty.1.gz > /dev/null' || err
-    execute 'gzip -c extra/alacritty-msg.man | sudo tee /usr/local/share/man/man1/alacritty-msg.1.gz > /dev/null' || err
+    exe 'gzip -c extra/alacritty.man | sudo tee /usr/local/share/man/man1/alacritty.1.gz > /dev/null' || err
+    exe 'gzip -c extra/alacritty-msg.man | sudo tee /usr/local/share/man/man1/alacritty-msg.1.gz > /dev/null' || err
 
     # install bash completion:
-    execute "cp extra/completions/alacritty.bash $BASH_COMPLETIONS/alacritty" || err
+    exe "cp extra/completions/alacritty.bash $BASH_COMPLETIONS/alacritty" || err
 
-    execute 'sudo mv -- target/release/alacritty  /usr/local/bin/' || err
+    exe 'sudo mv -- target/release/alacritty  /usr/local/bin/' || err
 
     # cleanup:
-    execute 'popd'
-    execute "sudo rm -rf -- '$dir'"
+    exe 'popd'
+    exe "sudo rm -rf -- '$dir'"
     return 0
 }
 
@@ -3676,14 +3673,14 @@ install_weeslack() {  # https://github.com/wee-slack/wee-slack
     install_block 'weechat-python python3-websocket' || return 1
 
     ensure_d "$d/autoload" || return 1
-    #execute "pushd $d" || return 1
+    #exe "pushd $d" || return 1
 
-    #execute 'curl -O https://raw.githubusercontent.com/wee-slack/wee-slack/master/wee_slack.py' || { popd; return 1; }
+    #exe 'curl -O https://raw.githubusercontent.com/wee-slack/wee-slack/master/wee_slack.py' || { popd; return 1; }
     install_from_url -A -d "$d" wee_slack.py  'https://raw.githubusercontent.com/wee-slack/wee-slack/master/wee_slack.py'
-    #execute 'ln -s ../wee_slack.py autoload'
+    #exe 'ln -s ../wee_slack.py autoload'
     create_link "$d/wee_slack.py" "$d/autoload/"  # in order to start wee-slack automatically when weechat starts
 
-    #execute 'popd' || return 1
+    #exe 'popd' || return 1
 }
 
 
@@ -3701,7 +3698,7 @@ install_weechat_matrix() {  # https://github.com/poljar/weechat-matrix
 
     clone_or_pull_repo "poljar" "weechat-matrix" "$deps/"
 
-    execute "pip3 install --user -r $deps/requirements.txt"
+    exe "pip3 install --user -r $deps/requirements.txt"
     create_link "$deps/main.py" "$d/matrix.py"
     create_link "$deps/matrix" "$d/"
     create_link "$d/matrix.py" "$d/autoload/"
@@ -3740,19 +3737,19 @@ install_bitlbee() {  # https://github.com/bitlbee/bitlbee
         report "installing $name build dependencies..."
         install_block 'libpurple-dev' || { err 'failed to install build deps. abort.'; return 1; }
 
-        execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
+        exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
         report "building $name"
-        execute "pushd $tmpdir" || return 1
-        execute "make" || { err; popd; return 1; }
+        exe "pushd $tmpdir" || return 1
+        exe "make" || { err; popd; return 1; }
         # note this project also supports  $ make install-user
 
         create_deb_install_and_store  "$name" || { popd; return 1; }
 
         # put package on hold so they don't get overridden by apt-upgrade:
-        execute "sudo apt-mark hold  $name"
+        exe "sudo apt-mark hold  $name"
 
-        execute 'popd'
-        execute "sudo rm -rf -- $tmpdir"
+        exe 'popd'
+        exe "sudo rm -rf -- $tmpdir"
 
         add_to_dl_log  "$name" "$ver"
 
@@ -3797,8 +3794,8 @@ install_eclipse_mem_analyzer() {
     is_valid_url "$dl_url" || { err "[$dl_url] is not a valid download link"; return 1; }
 
     dir="$(extract_tarball -D "$dl_url")" || return 1
-    [[ -d "$target" ]] && { execute "rm -rf -- '$target'" || return 1; }  # rm previous installation
-    execute "mv -- '$dir' '$target'" || return 1
+    [[ -d "$target" ]] && { exe "rm -rf -- '$target'" || return 1; }  # rm previous installation
+    exe "mv -- '$dir' '$target'" || return 1
     create_link "$target/MemoryAnalyzer" "$HOME/bin/MemoryAnalyzer"
 
     add_to_dl_log  eclipse-mem-analyzer "$ver"
@@ -3815,8 +3812,8 @@ install_visualvm() {  # https://github.com/oracle/visualvm
 # https://minikube.sigs.k8s.io/docs/reference/drivers/none/
 _setup_minikube() {  # TODO: unfinished
     true
-    #execute 'sudo minikube config set vm-driver none'  # make 'none' the default driver:
-    #execute 'minikube config set memory 4096'  # set default allocated memory (default is 2g i believe, see https://minikube.sigs.k8s.io/docs/start/linux/)
+    #exe 'sudo minikube config set vm-driver none'  # make 'none' the default driver:
+    #exe 'minikube config set memory 4096'  # set default allocated memory (default is 2g i believe, see https://minikube.sigs.k8s.io/docs/start/linux/)
 }
 
 
@@ -3952,7 +3949,7 @@ install_aichat() {  # https://github.com/sigoden/aichat
 
     # install shell completions:
     clone_repo_subdir  sigoden aichat "scripts" "$shell"
-    #execute "sudo cp -- '${shell}completions/aichat.zsh' $ZSH_COMPLETIONS/_aichat"
+    #exe "sudo cp -- '${shell}completions/aichat.zsh' $ZSH_COMPLETIONS/_aichat"
     create_link -s "${shell}completions/aichat.zsh" "$ZSH_COMPLETIONS/_aichat"
     create_link "${shell}completions/aichat.bash" "$BASH_COMPLETIONS/aichat"
 
@@ -4090,9 +4087,9 @@ install_mise() {
     [[ "$MODE" -eq 1 ]] && eval "$(mise activate bash --shims)"  # use shims to load dev tools
 
     # set up shell autocompletion: https://mise.jdx.dev/installing-mise.html#autocompletion
-    execute 'mise use --global usage'
-    execute "mise completion bash --include-bash-completion-lib | tee $BASH_COMPLETIONS/mise > /dev/null"
-    execute "mise completion zsh | sudo tee $ZSH_COMPLETIONS/_mise > /dev/null"
+    exe 'mise use --global usage'
+    exe "mise completion bash --include-bash-completion-lib | tee $BASH_COMPLETIONS/mise > /dev/null"
+    exe "mise completion zsh | sudo tee $ZSH_COMPLETIONS/_mise > /dev/null"
 }
 
 
@@ -4100,7 +4097,7 @@ install_webdev() {
     is_server && { report "we're server, skipping webdev env installation."; return; }
 
     install_mise
-    execute 'mise install'  # install the globally-defined tools (and local, if pwd has mise.toml)
+    exe 'mise install'  # install the globally-defined tools (and local, if pwd has mise.toml)
 
     # make sure the constant link to latest node exec ($NODE_LOC) is set up (normally managed by .bashrc, but might not have been created, as this is install_sys).
     # eg some nvim plugin(s) might reference $NODE_LOC
@@ -4108,18 +4105,18 @@ install_webdev() {
     #if [[ -n "$NODE_LOC" && ! -x "$NODE_LOC" ]]; then
         #local _latest_node_ver
         #_latest_node_ver="$(find "$ASDF_DATA_DIR/installs/nodejs/" -maxdepth 1 -mindepth 1 -type d | sort -n | tail -n 1)/bin/node"
-        #[[ -x "$_latest_node_ver" ]] && execute "ln -sf -- '$_latest_node_ver' '$NODE_LOC'"
+        #[[ -x "$_latest_node_ver" ]] && exe "ln -sf -- '$_latest_node_ver' '$NODE_LOC'"
     #fi
 
     # update npm:
     if command -v npm >/dev/null 2>&1; then
-        execute "$NPM_PRFX npm install npm@latest -g" && sleep 0.1
+        exe "$NPM_PRFX npm install npm@latest -g" && sleep 0.1
         # NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
-        execute "npm completion | tee $BASH_COMPLETIONS/npm > /dev/null"
+        exe "npm completion | tee $BASH_COMPLETIONS/npm > /dev/null"
 
         # install npm modules:  # TODO review what we want to install
         # note nwb (zero-config development setup) is dead - use vite instead: https://github.com/vitejs/vite
-        #execute "$NPM_PRFX npm install -g \
+        #exe "$NPM_PRFX npm install -g \
             #typescript \
         #"
     fi
@@ -4129,8 +4126,8 @@ install_webdev() {
     #rb_install sass
 
     # install yarn:  https://yarnpkg.com/getting-started/install
-    execute "corepack enable"  # note corepack is included w/ node, but is currently opt-in, hence 'enable'
-    execute "corepack prepare yarn@stable --activate"
+    exe "corepack enable"  # note corepack is included w/ node, but is currently opt-in, hence 'enable'
+    exe "corepack prepare yarn@stable --activate"
 }
 
 build_and_install_synergy_TODO_container_edition() {
@@ -4200,19 +4197,19 @@ install_copyq() {
         qtwayland5-dev-tools
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
+    exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     report "building copyq"
-    execute "pushd $tmpdir" || return 1
-    execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .' || { err; popd; return 1; }
-    execute "make" || { err; popd; return 1; }
+    exe "pushd $tmpdir" || return 1
+    exe 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local .' || { err; popd; return 1; }
+    exe "make" || { err; popd; return 1; }
 
     create_deb_install_and_store copyq || { popd; return 1; }
 
     # put package on hold so they don't get overridden by apt-upgrade:
-    execute 'sudo apt-mark hold  copyq'
+    exe 'sudo apt-mark hold  copyq'
 
-    execute "popd"
-    execute "sudo rm -rf -- $tmpdir"
+    exe "popd"
+    exe "sudo rm -rf -- $tmpdir"
 
     add_to_dl_log  copyq "$ver"
 
@@ -4230,10 +4227,10 @@ install_lesspipe() {
     ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" lesspipe && return 2
 
-    execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
-    execute "sudo install -C -m754 --group=$USER --target-directory=/usr/local/bin ${tmpdir}/{archive_color,lesspipe.sh}" || return 1
+    exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
+    exe "sudo install -C -m754 --group=$USER --target-directory=/usr/local/bin ${tmpdir}/{archive_color,lesspipe.sh}" || return 1
 
-    execute "sudo rm -rf -- $tmpdir"
+    exe "sudo rm -rf -- $tmpdir"
     add_to_dl_log  lesspipe "$ver"
 
     return 0
@@ -4256,17 +4253,17 @@ build_lesspipe() {
     ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" lesspipe && return 2
 
-    execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
-    execute "pushd $tmpdir" || return 1
+    exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
+    exe "pushd $tmpdir" || return 1
 
     report "building lesspipe..."
-    execute './configure' || { err; popd; return 1; }
-    execute make || { err; popd; return 1; }
+    exe './configure' || { err; popd; return 1; }
+    exe make || { err; popd; return 1; }
 
     create_deb_install_and_store lesspipe || { popd; return 1; }
 
-    execute "popd"
-    execute "sudo rm -rf -- $tmpdir"
+    exe "popd"
+    exe "sudo rm -rf -- $tmpdir"
 
     add_to_dl_log  lesspipe "$ver"
 
@@ -4302,7 +4299,7 @@ setup_keyd() {
     fi
 
     if [[ -s "$xcomp" ]]; then
-        execute "sudo install -m644 -CT '$conf_src' '$conf_target'" || { err "installing [$conf_src] failed w/ $?"; return 1; }
+        exe "sudo install -m644 -CT '$conf_src' '$conf_target'" || { err "installing [$conf_src] failed w/ $?"; return 1; }
     fi
 
     return 0
@@ -4324,7 +4321,7 @@ install_kanata() {
     add_user  kanata  'input,uinput'
 
     if [[ -s "$conf_src" ]]; then
-        execute "sudo install -m644 -CD '$conf_src' '$conf_target'" || { err "installing [$conf_src] failed w/ $?"; return 1; }
+        exe "sudo install -m644 -CD '$conf_src' '$conf_target'" || { err "installing [$conf_src] failed w/ $?"; return 1; }
     fi
 
     install_bin_from_git -N kanata -O root:kanata -P 754  jtroo/kanata 'kanata'
@@ -4363,25 +4360,25 @@ install_ddcutil() {
         libdrm-dev
         libjansson-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
-    execute "pushd $dir" || return 1
-    execute 'autoreconf --force --install' || { err; popd; return 1; }
-    execute './configure' || { err; popd; return 1; }
-    execute make || { err; popd; return 1; }
+    exe "pushd $dir" || return 1
+    exe 'autoreconf --force --install' || { err; popd; return 1; }
+    exe './configure' || { err; popd; return 1; }
+    exe make || { err; popd; return 1; }
 
     create_deb_install_and_store  ddcutil  # TODO: note still using checkinstall
 
     # put package on hold so they don't get overridden by apt-upgrade:
-    execute 'sudo apt-mark hold  ddcutil'
+    exe 'sudo apt-mark hold  ddcutil'
 
-    execute "popd"
-    execute "sudo rm -rf -- '$dir'"
+    exe "popd"
+    exe "sudo rm -rf -- '$dir'"
 }
 
 
 # trying out checkinstall replacement, based on fpm (https://fpm.readthedocs.io)
 # TODO wip
 create_deb_install_and_store2() {
-    execute 'sudo gem install fpm'
+    exe 'sudo gem install fpm'
 #######################
     local opt cmd ver pkg_name exit_sig OPTIND
 
@@ -4422,7 +4419,7 @@ create_deb_install_and_store() {
     report "creating [$pkg_name] .deb and installing with checkinstall..."
 
     # note --fstrans=no is because of checkinstall bug; see  https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=717778
-    execute "sudo checkinstall \
+    exe "sudo checkinstall \
         -D --default --fstrans=no \
         --pkgname=$pkg_name --pkgversion=$ver \
         --pakdir=$BASE_BUILDS_DIR $cmd"
@@ -4465,17 +4462,17 @@ install_goforit() {
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
 
-    execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
+    exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     report "building goforit..."
-    execute "mkdir $tmpdir/build"
-    execute "pushd $tmpdir/build" || return 1
-    execute 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..' || { err; popd; return 1; }
-    execute make || { err; popd; return 1; }
+    exe "mkdir $tmpdir/build"
+    exe "pushd $tmpdir/build" || return 1
+    exe 'cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..' || { err; popd; return 1; }
+    exe make || { err; popd; return 1; }
 
     create_deb_install_and_store  goforit || { popd; return 1; }
 
-    execute "popd"
-    execute "sudo rm -rf -- '$tmpdir'"
+    exe "popd"
+    exe "sudo rm -rf -- '$tmpdir'"
 
     add_to_dl_log  goforit "$ver"
 
@@ -4522,7 +4519,7 @@ install_keepassxc() {
 
 # https://keybase.io/docs/the_app/install_linux
 install_keybase() {
-    execute 'sudo touch /etc/default/keybase' || return 1  # this disables keybase adding pkg repository
+    exe 'sudo touch /etc/default/keybase' || return 1  # this disables keybase adding pkg repository
     install_from_url keybase 'https://prerelease.keybase.io/keybase_amd64.deb'
 }
 
@@ -4564,24 +4561,24 @@ install_i3lock() {
       ' || { err 'failed to install i3lock build deps. abort.'; return 1; }
 
     # clone the repository
-    execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
+    exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
     # create tag so a non-debug version is built:
-    execute "git -C '$tmpdir' tag -f 'git-$(git -C '$tmpdir' rev-parse --short HEAD)'" || return 1
+    exe "git -C '$tmpdir' tag -f 'git-$(git -C '$tmpdir' rev-parse --short HEAD)'" || return 1
 
     report "building i3lock..."
-    execute "pushd $tmpdir" || return 1
+    exe "pushd $tmpdir" || return 1
     build_deb i3lock-color || { err "build_deb() for i3lock-color failed"; popd; return 1; }
-    execute 'sudo dpkg -i ../i3lock-color_*.deb' || { err "installing i3lock-color failed"; popd; return 1; }
+    exe 'sudo dpkg -i ../i3lock-color_*.deb' || { err "installing i3lock-color failed"; popd; return 1; }
 
     # old, checkinstall-compliant logic:
     ## compile & install:
-    #execute 'autoreconf --install' || return 1
-    #execute './configure' || return 1
-    #execute 'make' || return 1
+    #exe 'autoreconf --install' || return 1
+    #exe './configure' || return 1
+    #exe 'make' || return 1
     #create_deb_install_and_store i3lock
 
-    execute "popd"
-    execute "sudo rm -rf -- '$tmpdir'"
+    exe "popd"
+    exe "sudo rm -rf -- '$tmpdir'"
 
     add_to_dl_log  i3lock-color "$ver"
 
@@ -4599,30 +4596,30 @@ install_i3lock_fancy() {
     is_installed "$ver" i3lock-fancy && return 2
 
     # clone the repository
-    execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
-    execute "pushd $tmpdir" || return 1
+    exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
+    exe "pushd $tmpdir" || return 1
 
 
     #build_deb -D '--parallel' i3lock-fancy || err "build_deb() for i3lock-fancy failed"
     #echo "got these: $(ls -lat ../*.deb)"
     #exit
-    #execute 'sudo dpkg -i ../i3lock-fancy_*.deb'
+    #exe 'sudo dpkg -i ../i3lock-fancy_*.deb'
 
     # old, checkinstall-compliant logic:
     ## compile & install:
-    #execute 'autoreconf --install' || return 1
-    #execute './configure' || return 1
-    #execute 'make' || return 1
+    #exe 'autoreconf --install' || return 1
+    #exe './configure' || return 1
+    #exe 'make' || return 1
 
     # TODO: note this guy will already install it! the makefile of fancy is odd...
     report "building i3lock-fancy..."
     create_deb_install_and_store i3lock-fancy || { popd; return 1; }
 
     # put package on hold so they don't get overridden by apt-upgrade:
-    execute 'sudo apt-mark hold  i3lock-fancy'
+    exe 'sudo apt-mark hold  i3lock-fancy'
 
-    execute "popd"
-    execute "sudo rm -rf -- '$tmpdir'"
+    exe "popd"
+    exe "sudo rm -rf -- '$tmpdir'"
 
     add_to_dl_log  i3lock-fancy "$ver"
 
@@ -4666,18 +4663,18 @@ install_brillo() {
     is_installed "$ver" brillo && return 2
 
     # clone the repository
-    execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
-    execute "pushd $tmpdir" || return 1
+    exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
+    exe "pushd $tmpdir" || return 1
 
     # install dependencies:
     install_block go-md2man
 
-    execute "make" || { err "[make] for brillo failed w/ $?"; popd; return 1; }
+    exe "make" || { err "[make] for brillo failed w/ $?"; popd; return 1; }
     build_deb  brillo || { err "build_deb for brillo failed"; popd; return 1; }
-    execute 'sudo dpkg -i ../brillo_*.deb'
+    exe 'sudo dpkg -i ../brillo_*.deb'
 
-    execute "popd"
-    execute "sudo rm -rf -- '$tmpdir'"
+    exe "popd"
+    exe "sudo rm -rf -- '$tmpdir'"
     add_to_dl_log  brillo "$ver"
 
     add_to_group  video
@@ -4700,14 +4697,14 @@ install_display_switch() {
         ver="$(get_git_sha "$repo")" || return 1
         is_installed "$ver" display-switch && return 2
 
-        execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
-        execute "pushd $tmpdir" || return 1
+        exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
+        exe "pushd $tmpdir" || return 1
 
-        execute 'cargo build --release' || return 1  # should produce binary at target/release/display_switch
-        execute "sudo install -m754 -C --group=$USER 'target/release/display_switch' '/usr/local/bin'" || return 1
+        exe 'cargo build --release' || return 1  # should produce binary at target/release/display_switch
+        exe "sudo install -m754 -C --group=$USER 'target/release/display_switch' '/usr/local/bin'" || return 1
 
-        execute popd
-        execute "sudo rm -rf -- '$tmpdir'"
+        exe popd
+        exe "sudo rm -rf -- '$tmpdir'"
         add_to_dl_log  display-switch "$ver"
     }
 
@@ -4758,8 +4755,8 @@ EOF
     is_installed "$ver" i3 && return 2
 
     # clone the repository
-    execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
-    execute "pushd $tmpdir" || return 1
+    exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
+    exe "pushd $tmpdir" || return 1
 
     _apply_patches  # TODO: should we bail on error?
     _fix_rules
@@ -4801,43 +4798,43 @@ EOF
     report "building i3...";
 
     build_deb || { err "build_deb() for i3 failed"; popd; return 1; }
-    execute 'sudo dpkg -i ../i3-wm_*.deb'
-    execute 'sudo dpkg -i ../i3_*.deb'
+    exe 'sudo dpkg -i ../i3-wm_*.deb'
+    exe 'sudo dpkg -i ../i3_*.deb'
 
     # put package on hold so they don't get overridden by apt-upgrade:
-    execute 'sudo apt-mark hold  i3 i3-wm i3-wm-build-deps'
+    exe 'sudo apt-mark hold  i3 i3-wm i3-wm-build-deps'
 
 
     # TODO: deprecated, check-install based way:
     ## compile & install
-    #execute 'autoreconf --force --install' || return 1
-    #execute 'rm -rf build/' || return 1
-    #execute 'mkdir -p build && pushd build/' || return 1
+    #exe 'autoreconf --force --install' || return 1
+    #exe 'rm -rf build/' || return 1
+    #exe 'mkdir -p build && pushd build/' || return 1
 
     ## Disabling sanitizers is important for release versions!
     ## The prefix and sysconfdir are, obviously, dependent on the distribution.
-    #execute '../configure --prefix=/usr/local --sysconfdir=/etc --disable-sanitizers' || return 1
-    #execute 'make'
+    #exe '../configure --prefix=/usr/local --sysconfdir=/etc --disable-sanitizers' || return 1
+    #exe 'make'
     #create_deb_install_and_store i3
-    #execute "popd"
+    #exe "popd"
 
     # --------------------------
     # install required perl modules (eg for i3-save-tree):
-    #execute "pushd AnyEvent-I3" || return 1
+    #exe "pushd AnyEvent-I3" || return 1
     # TODO: libanyevent-i3-perl from repo?
     #build_deb i3-anyevent || err "build_deb() for i3-anyevent failed"
     install_block 'libanyevent-i3-perl' # alternative to building it ourselves
 
     # TODO: deprecated, check-install based way:
-    #execute 'perl Makefile.PL'
-    #execute 'make'
+    #exe 'perl Makefile.PL'
+    #exe 'make'
     #create_deb_install_and_store i3-anyevent
     #install_block "libjson-any-perl"
-    #execute "popd"
+    #exe "popd"
     # --------------------------
 
-    execute "popd"
-    execute "sudo rm -rf -- '$tmpdir'"
+    exe "popd"
+    exe "sudo rm -rf -- '$tmpdir'"
     add_to_dl_log  i3 "$ver"
 
     return 0
@@ -4872,12 +4869,12 @@ py_install() {
     shift "$((OPTIND-1))"
 
     opts+=("$@")
-    execute "pipx install ${opts[*]}"
+    exe "pipx install ${opts[*]}"
 }
 
 
 rb_install() {
-    execute "gem install --user-install $*"
+    exe "gem install --user-install $*"
 }
 
 
@@ -4896,7 +4893,7 @@ fp_install() {  # flatpak install
     remote="${2:-flathub-verified}"
 
     name="${name:-$ref}"
-    execute "flatpak install -y --noninteractive '$remote' '$ref'" || return 1
+    exe "flatpak install -y --noninteractive '$remote' '$ref'" || return 1
 
     bin="/var/lib/flatpak/exports/bin/$ref"
     [[ -s "$bin" ]] || { err "[$bin] does not exist, cannot create shortcut link for [$name]"; return 1; }  # sanity
@@ -4945,8 +4942,8 @@ install_i3_deps() {
     # install i3-cycle-windows   # https://github.com/DavsX/dotfiles/blob/master/bin/i3_cycle_windows
     # this script defines a 'next' window, so we could bind it to someting like super+mouse_wheel;
     #curl --fail --output "$f" 'https://raw.githubusercontent.com/DavsX/dotfiles/master/bin/i3_cycle_windows' \
-            #&& execute "chmod +x -- '$f'" \
-            #&& execute "mv -- '$f' $HOME/bin/i3-cycle-windows" || err "installing i3-cycle-windows failed /w $?"
+            #&& exe "chmod +x -- '$f'" \
+            #&& exe "mv -- '$f' $HOME/bin/i3-cycle-windows" || err "installing i3-cycle-windows failed /w $?"
 
     # install i3move, allowing easier floating-window movement   # https://github.com/dmbuce/i3b
     # TODO: x11!
@@ -4961,7 +4958,7 @@ install_i3_deps() {
     # create links of our own i3 scripts on $PATH:
     create_symlinks "$BASE_DATA_DIR/dev/scripts/i3" "$HOME/bin"
 
-    execute "sudo rm -rf -- '$f'"
+    exe "sudo rm -rf -- '$f'"
 }
 
 
@@ -4973,7 +4970,7 @@ install_i3_deps() {
 install_polybar() {
     local dir
 
-    #execute "git clone --recursive ${GIT_OPTS[*]} https://github.com/polybar/polybar.git '$dir'" || return 1
+    #exe "git clone --recursive ${GIT_OPTS[*]} https://github.com/polybar/polybar.git '$dir'" || return 1
     dir="$(fetch_extract_tarball_from_git polybar/polybar 'polybar-\\d+\\.\\d+.*\\.tar\\.gz')" || return 1
 
     report "installing polybar build dependencies..."
@@ -5008,17 +5005,17 @@ install_polybar() {
         libnl-genl-3-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "pushd $dir" || return 1
-    execute "./build.sh --auto --all-features --no-install" || { popd; return 1; }
+    exe "pushd $dir" || return 1
+    exe "./build.sh --auto --all-features --no-install" || { popd; return 1; }
 
-    execute "pushd build/" || { popd; return 1; }
+    exe "pushd build/" || { popd; return 1; }
     create_deb_install_and_store polybar  # TODO: note still using checkinstall
 
     # put package on hold so they don't get overridden by apt-upgrade:
-    execute 'sudo apt-mark hold  polybar'
+    exe 'sudo apt-mark hold  polybar'
 
-    execute "popd; popd"
-    execute "sudo rm -rf -- '$dir'"
+    exe "popd; popd"
+    exe "sudo rm -rf -- '$dir'"
     return 0
 }
 
@@ -5109,12 +5106,12 @@ override_dh_gencontrol:
     fi
 
     # note built .deb will end up in a parent dir:
-    execute 'debuild -us -uc -b' || return 1
+    exe 'debuild -us -uc -b' || return 1
 
     # install:  # can't install here, as we don't know which debs to select
     #deb="$(find ../ -mindepth 1 -maxdepth 1 -type f -name '*.deb')"
     #[[ -f "$deb" ]] || { err "couldn't find built [$pkg_name] .deb in parent dir"; return 1; }
-    #execute "sudo dpkg -i '$deb'" || { err "installing built .deb [$deb] failed"; return 1; }
+    #exe "sudo dpkg -i '$deb'" || { err "installing built .deb [$deb] failed"; return 1; }
 }
 
 
@@ -5122,7 +5119,7 @@ setup_nvim() {
     #nvim_post_install_configuration
 
     if [[ "$MODE" -eq 1 ]]; then
-        execute "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"  # no vim pls
+        exe "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"  # no vim pls
         nvim +PlugInstall +qall
     fi
 
@@ -5184,7 +5181,7 @@ build_and_install_vim() {
 
     # TODO: should this removal only happen in mode=1 (ie full) mode?
     report "removing already installed vim components..."
-    execute "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common vim-nox"
+    exe "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common vim-nox"
 
     report "installing vim build dependencies..."
     install_block '
@@ -5202,15 +5199,15 @@ build_and_install_vim() {
         libperl-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
-    execute "pushd $tmpdir" || return 1
+    exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
+    exe "pushd $tmpdir" || return 1
 
     report "building vim..."
 
             # flags for py2 support (note python2 has been deprecated):
             #--enable-pythoninterp=yes \
             #--with-python-config-dir=$python_confdir \
-    execute "./configure \
+    exe "./configure \
             --with-features=huge \
             --enable-multibyte \
             --enable-rubyinterp=yes \
@@ -5223,12 +5220,12 @@ build_and_install_vim() {
             --prefix=/usr/local \
     " || { err 'vim configure build phase failed.'; popd; return 1; }
 
-    execute "make VIMRUNTIMEDIR=$expected_runtimedir" || { err 'vim make failed'; popd; return 1; }
+    exe "make VIMRUNTIMEDIR=$expected_runtimedir" || { err 'vim make failed'; popd; return 1; }
     #!(make sure rutimedir is correct; at this moment 74 was)
     create_deb_install_and_store vim || { err; popd; return 1; }  # TODO: remove checkinstall
 
-    execute "popd"
-    execute "sudo rm -rf -- '$tmpdir'"
+    exe "popd"
+    exe "sudo rm -rf -- '$tmpdir'"
     if ! [[ -d "$expected_runtimedir" ]]; then
         err "[$expected_runtimedir] is not a dir; these match 'vim' under [$(dirname -- "$expected_runtimedir")]:"
         err "$(find "$(dirname -- "$expected_runtimedir")" -maxdepth 1 -mindepth 1 -type d -name 'vim*' -print)"
@@ -5267,7 +5264,7 @@ install_YCM() {  # the quick-and-not-dirty install.py way
         return 1
     fi
 
-    execute "pushd -- $ycm_plugin_root" || return 1
+    exe "pushd -- $ycm_plugin_root" || return 1
     readonly ver="$(git rev-parse HEAD)"
     is_installed "$ver" YCM && { popd; return 2; }
 
@@ -5280,8 +5277,8 @@ install_YCM() {  # the quick-and-not-dirty install.py way
     '
 
     # install YCM
-    execute -i "python3 ./install.py --all" || { popd; return 1; }
-    execute "popd"
+    exe -i "python3 ./install.py --all" || { popd; return 1; }
+    exe "popd"
 
     add_to_dl_log  YCM "$ver"
 }
@@ -5346,18 +5343,18 @@ install_fonts() {
         is_installed "$ver" nerd-fonts && return 2
 
         # clone the repository
-        execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
-        execute "pushd $tmpdir" || return 1
+        exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
+        exe "pushd $tmpdir" || return 1
 
         report "installing nerd-fonts..."
         for i in "${fonts[@]}"; do
             IFS=: read -r i opts <<< "$i"
-            execute -i "./install.sh '$i'"
-            [[ "$opts" == *M* ]] && execute -i "./install.sh --mono '$i'"  # mono variant needs explicit installation, see https://github.com/ryanoasis/nerd-fonts/discussions/1903#discussioncomment-13948180
+            exe -i "./install.sh '$i'"
+            [[ "$opts" == *M* ]] && exe -i "./install.sh --mono '$i'"  # mono variant needs explicit installation, see https://github.com/ryanoasis/nerd-fonts/discussions/1903#discussioncomment-13948180
         done
 
-        execute "popd"
-        execute "sudo rm -rf -- '$tmpdir'"
+        exe "popd"
+        exe "sudo rm -rf -- '$tmpdir'"
 
         add_to_dl_log  nerd-fonts "$ver"
         return 0
@@ -5375,13 +5372,13 @@ install_fonts() {
         ver="$(get_git_sha "$repo")" || return 1
         is_installed "$ver" powerline-fonts && return 2
 
-        execute "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
-        execute "pushd $tmpdir" || return 1
+        exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
+        exe "pushd $tmpdir" || return 1
         report "installing powerline-fonts..."
-        execute "./install.sh" || return 1
+        exe "./install.sh" || return 1
 
-        execute "popd"
-        execute "sudo rm -rf -- '$tmpdir'"
+        exe "popd"
+        exe "sudo rm -rf -- '$tmpdir'"
 
         add_to_dl_log  powerline-fonts "$ver"
         return 0
@@ -5398,14 +5395,14 @@ install_fonts() {
         ver="$(get_git_sha "$repo")" || return 1
         is_installed "$ver" siji-font && return 2
 
-        execute "git clone ${GIT_OPTS[*]} $repo $tmpdir" || { err 'err cloning siji font'; return 1; }
-        execute "pushd $tmpdir" || return 1
+        exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || { err 'err cloning siji font'; return 1; }
+        exe "pushd $tmpdir" || return 1
 
         # by default installs into $HOME/.fonts
-        execute "./install.sh" || { err "siji-font install.sh failed with $?"; return 1; }
+        exe "./install.sh" || { err "siji-font install.sh failed with $?"; return 1; }
 
-        execute "popd"
-        execute "sudo rm -rf -- '$tmpdir'"
+        exe "popd"
+        exe "sudo rm -rf -- '$tmpdir'"
 
         add_to_dl_log  siji-font "$ver"
         return 0
@@ -5422,7 +5419,7 @@ install_fonts() {
         readonly bitmap_no='/etc/fonts/conf.d/70-no-bitmaps-except-emoji.conf'
         readonly bitmap_yes='/usr/share/fontconfig/conf.avail/70-yes-bitmaps.conf'
 
-        [[ ! -h "$bitmap_no" ]] || execute "sudo rm -- '$bitmap_no'" || return $?
+        [[ ! -h "$bitmap_no" ]] || exe "sudo rm -- '$bitmap_no'" || return $?
         [[ ! -f "$bitmap_yes" ]] || create_link -s "$bitmap_yes" /etc/fonts/conf.d/
     }
 
@@ -5435,25 +5432,25 @@ install_fonts() {
     install_siji; unset install_siji
 
     # TODO: guess we can't use xset when xserver is not yet running:
-    #execute "xset +fp ~/.fonts"
-    #execute "mkfontscale ~/.fonts"
-    #execute "mkfontdir ~/.fonts"
-    #execute "pushd ~/.fonts" || return 1
+    #exe "xset +fp ~/.fonts"
+    #exe "mkfontscale ~/.fonts"
+    #exe "mkfontdir ~/.fonts"
+    #exe "pushd ~/.fonts" || return 1
 
     ## also install fonts in sub-dirs:
     #for dir in ./* ; do
         #if [[ -d "$dir" ]]; then
-            #execute "pushd $dir" || return 1
-            #execute "xset +fp $PWD"
-            #execute "mkfontscale"
-            #execute "mkfontdir"
-            #execute "popd"
+            #exe "pushd $dir" || return 1
+            #exe "xset +fp $PWD"
+            #exe "mkfontscale"
+            #exe "mkfontdir"
+            #exe "popd"
         #fi
     #done
 
-    #execute "xset fp rehash"
-    #execute "fc-cache -fv"
-    #execute "popd"
+    #exe "xset fp rehash"
+    #exe "fc-cache -fv"
+    #exe "popd"
 }
 
 
@@ -5844,7 +5841,7 @@ install_from_repo() {
     is_native && blocks=(block1_nonwin block2_nonwin block3_nonwin block4_nonwin)
     blocks+=(block1 block2 block3 block4 block5)
 
-    execute "sudo apt-get --yes update"
+    exe "sudo apt-get --yes update"
     for block in "${blocks[@]}"; do
         install_block "$(eval echo "\${$block[@]}")" "${extra_apt_params[$block]}"
         if [[ "$?" -ne 0 && "$?" -ne "$SOME_PACKAGE_IGNORED_EXIT_CODE" ]]; then
@@ -5936,7 +5933,7 @@ install_from_flatpak() {
     if fp_install -n pinta  "$i"; then
         # enable pinta access to /tmp, as we need file IO in /tmp
         # due to our screenshooter: (see https://github.com/PintaProject/Pinta/issues/1357)
-        execute "sudo flatpak override $i --filesystem=/tmp"  # causes file @ /var/lib/flatpak/overrides/com.github.PintaProject.Pinta  to be created/modified
+        exe "sudo flatpak override $i --filesystem=/tmp"  # causes file @ /var/lib/flatpak/overrides/com.github.PintaProject.Pinta  to be created/modified
     fi
 
     # https://flathub.org/apps/engineer.atlas.Nyxt
@@ -5975,7 +5972,7 @@ install_vbox_guest() {
     install_block 'virtualbox-guest-dkms' || return 1
 
     ensure_d "$tmp_mount" || return 1
-    execute "sudo mount /dev/cdrom $tmp_mount" || { err "mounting guest-utils from /dev/cdrom to [$tmp_mount] failed w/ $? - is image mounted in vbox and in expected (likely first) slot?"; return 1; }
+    exe "sudo mount /dev/cdrom $tmp_mount" || { err "mounting guest-utils from /dev/cdrom to [$tmp_mount] failed w/ $? - is image mounted in vbox and in expected (likely first) slot?"; return 1; }
     [[ -x "$bin" ]] || { err "[$bin] not an executable file"; return 1; }
     label="$(grep --text -Po '^label=.\K.*(?="$)' "$bin")"  # or grep for 'INSTALLATION_VER'?
 
@@ -5986,8 +5983,8 @@ install_vbox_guest() {
     fi
 
     # append '--nox11' if installing in non-gui system:
-    execute -c 2 "sudo sh $bin" || err "looks like [sh $bin] failed w/ $?"
-    execute "sudo umount $tmp_mount" || err "unmounting cdrom from [$tmp_mount] failed w/ $?"
+    exe -c 2 "sudo sh $bin" || err "looks like [sh $bin] failed w/ $?"
+    exe "sudo umount $tmp_mount" || err "unmounting cdrom from [$tmp_mount] failed w/ $?"
 
     is_single "$label" && add_to_dl_log "vbox-guest-additions" "$label"
 }
@@ -6057,7 +6054,7 @@ _setup_podman() {
 
     # touch file to avoid msg printed to stdout whenever we use 'docker' command:
     # msg being [Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.]
-    [[ -e /etc/containers/nodocker ]] || execute 'sudo touch /etc/containers/nodocker' || return 1
+    [[ -e /etc/containers/nodocker ]] || exe 'sudo touch /etc/containers/nodocker' || return 1
 
     return 0  # atm not using btrfs storage driver, as it's not really recommended by the devs
 
@@ -6071,21 +6068,21 @@ _setup_podman() {
     # by default rootless storage is @ $XDG_DATA_HOME/containers/storage
     # change it, e.g. to benefit from a nocow dir:
     # from https://access.redhat.com/solutions/7007159
-    #execute "sudo crudini --set '$conf' storage rootless_storage_path '\"/var/lib/containers/user-storage/\$USER'\"" || return 1  # <-- do not expand $USER!
+    #exe "sudo crudini --set '$conf' storage rootless_storage_path '\"/var/lib/containers/user-storage/\$USER'\"" || return 1  # <-- do not expand $USER!
     #ensure_d -s "$user_storage" || return 1
-    #execute "sudo chown $USER:$USER '$user_storage'"  # TODO broken, as write permission should be given to entire /var/lib... dir path
+    #exe "sudo chown $USER:$USER '$user_storage'"  # TODO broken, as write permission should be given to entire /var/lib... dir path
 
     if is_btrfs; then
         if grep -qF btrfs "$conf"; then
             report "[btrfs] found in [$conf], assuming we're already set up..."
         else
             # podman-system-reset needs to be ran before changing certain conf items (e.g. storage.conf): https://docs.podman.io/en/latest/markdown/podman-system-reset.1.html
-            execute 'podman system reset'  # for rootless
-            execute 'sudo podman system reset'  # for root
+            exe 'podman system reset'  # for rootless
+            exe 'sudo podman system reset'  # for root
 
-            execute "sudo crudini --set '$conf' storage driver btrfs" || return 1
+            exe "sudo crudini --set '$conf' storage driver btrfs" || return 1
             ensure_d "$(dirname -- "$user_conf")" || return 1
-            execute "crudini --set '$user_conf' storage driver btrfs"
+            exe "crudini --set '$user_conf' storage driver btrfs"
         fi
     elif grep -qF btrfs "$conf" "$user_conf"; then
         err "[btrfs] in podman storage.conf but we're not using btrfs!"
@@ -6131,35 +6128,35 @@ _setup_snapper() {
             # Because we want to keep our snapshots separated from the backed up subvolume
             # itself we must remove the snapper created “.snapshot” subvolume and then
             # re-mount using the one that we created before in a separate subvolume at @snapshots
-            execute "sudo umount ${mp}.snapshots" || return 1
-            execute "sudo rm -r -- ${mp}.snapshots" || return 1
+            exe "sudo umount ${mp}.snapshots" || return 1
+            exe "sudo rm -r -- ${mp}.snapshots" || return 1
         fi
 
         # create new config(s):
         # this will likely create a new .snapshots/ dir as well a new btrfs subvol
         # of same name. we will rm this new subvol and link our own @snapshots
         # subvol to this path, so our snapshots are safely stored in different location.
-        execute "sudo snapper -c $name create-config $mountpoint" || return 1  # note returns 1 if $mountpoint is already covered
+        exe "sudo snapper -c $name create-config $mountpoint" || return 1  # note returns 1 if $mountpoint is already covered
 
         if [[ -n "$custom" ]]; then
-            execute "sudo btrfs subvolume delete '${mp}.snapshots'" || return 1  # delete auto-created subvol
+            exe "sudo btrfs subvolume delete '${mp}.snapshots'" || return 1  # delete auto-created subvol
             ensure_d -s "${mp}.snapshots" || return 1
-            execute "sudo mount -av" || return 1  # remount our @snapshots (or whatever is defined in fstab) to ${mp}.snapshots
+            exe "sudo mount -av" || return 1  # remount our @snapshots (or whatever is defined in fstab) to ${mp}.snapshots
         fi
 
-        execute "sudo snapper -c $name set-config 'ALLOW_GROUPS=sudo'"
-        execute "sudo snapper -c $name set-config 'SYNC_ACL=yes'"
-        #execute "sudo snapper -c $name set-config 'TIMELINE_CREATE=no'"  # disable hourly snaps; think this is also controlled by snapper-timeline.timer ?
+        exe "sudo snapper -c $name set-config 'ALLOW_GROUPS=sudo'"
+        exe "sudo snapper -c $name set-config 'SYNC_ACL=yes'"
+        #exe "sudo snapper -c $name set-config 'TIMELINE_CREATE=no'"  # disable hourly snaps; think this is also controlled by snapper-timeline.timer ?
         # reduce number of snapshots kept to avoid slowdowns:
-        execute "sudo snapper -c $name set-config 'TIMELINE_LIMIT_HOURLY=5'"
-        execute "sudo snapper -c $name set-config 'TIMELINE_LIMIT_DAILY=7'"
-        execute "sudo snapper -c $name set-config 'TIMELINE_LIMIT_WEEKLY=0'"
-        execute "sudo snapper -c $name set-config 'TIMELINE_LIMIT_MONTHLY=0'"
-        execute "sudo snapper -c $name set-config 'TIMELINE_LIMIT_YEARLY=0'"
+        exe "sudo snapper -c $name set-config 'TIMELINE_LIMIT_HOURLY=5'"
+        exe "sudo snapper -c $name set-config 'TIMELINE_LIMIT_DAILY=7'"
+        exe "sudo snapper -c $name set-config 'TIMELINE_LIMIT_WEEKLY=0'"
+        exe "sudo snapper -c $name set-config 'TIMELINE_LIMIT_MONTHLY=0'"
+        exe "sudo snapper -c $name set-config 'TIMELINE_LIMIT_YEARLY=0'"
 
-        execute "sudo snapper -c $name set-config 'NUMBER_LIMIT=10'"
-        execute "sudo snapper -c $name set-config 'NUMBER_LIMIT_IMPORTANT=10'"
-        #execute "sudo snapper -c $name set-config 'NUMBER_MIN_AGE=600'"
+        exe "sudo snapper -c $name set-config 'NUMBER_LIMIT=10'"
+        exe "sudo snapper -c $name set-config 'NUMBER_LIMIT_IMPORTANT=10'"
+        #exe "sudo snapper -c $name set-config 'NUMBER_MIN_AGE=600'"
     }
 
     install_block 'snapper snapper-gui' || return 1
@@ -6168,9 +6165,9 @@ _setup_snapper() {
     _enable -c home /home
 
     ######################################################################
-    execute "sudo systemctl disable snapper-boot.timer"  # disable taking snapshot of @root at boot
-    execute "sudo systemctl enable snapper-timeline.timer"
-    execute "sudo systemctl enable snapper-cleanup.timer"
+    exe "sudo systemctl disable snapper-boot.timer"  # disable taking snapshot of @root at boot
+    exe "sudo systemctl enable snapper-timeline.timer"
+    exe "sudo systemctl enable snapper-cleanup.timer"
 
     unset _enable
 }
@@ -6196,7 +6193,7 @@ install_nvidia() {
             # TODO: also/instead install  nvidia-detect and install the driver it suggests?
             report "installing NVIDIA drivers..."
             install_block 'nvidia-driver'
-            #execute "sudo nvidia-xconfig"  # not required as of Stretch
+            #exe "sudo nvidia-xconfig"  # not required as of Stretch
             return $?
         else
             report "we chose not to install nvidia drivers..."
@@ -6237,21 +6234,21 @@ install_block() {
             #packages_not_found+=( $pkg )
             #continue
         #fi
-        execute "sudo apt-get -qq --dry-run ${noinstall:+$noinstall }install $extra_apt_params $pkg"
+        exe "sudo apt-get -qq --dry-run ${noinstall:+$noinstall }install $extra_apt_params $pkg"
         sig=$?
 
         if [[ "$sig" -ne 0 ]]; then
-            execute 'sudo apt-get --yes update'
-            execute 'sudo apt-get --yes autoremove'
+            exe 'sudo apt-get --yes update'
+            exe 'sudo apt-get --yes autoremove'
 
-            if execute "sudo apt-get -qq --dry-run ${noinstall:+$noinstall }install $extra_apt_params $pkg"; then
+            if exe "sudo apt-get -qq --dry-run ${noinstall:+$noinstall }install $extra_apt_params $pkg"; then
                 #sleep 0.1
-                execute "sudo  DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
+                exe "sudo  DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
             else
                 dry_run_failed+=("$pkg")
             fi
         else
-            execute "sudo  DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
+            exe "sudo  DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
         fi
     done
 
@@ -6269,7 +6266,7 @@ install_block() {
     #fi
 
     #sleep 1  # just in case sleep for a bit
-    #execute "sudo apt-get --yes install $extra_apt_params ${list_to_install[*]}"
+    #exe "sudo apt-get --yes install $extra_apt_params ${list_to_install[*]}"
     #exit_sig_install_failed=$?
 
     #[[ -n "$exit_sig" ]] && return $exit_sig || return $exit_sig_install_failed
@@ -6544,8 +6541,8 @@ quick_refresh() {
     install_progs
     install_deps
 
-    execute 'pipx  upgrade-all'
-    execute 'flatpak -y --noninteractive update'
+    exe 'pipx  upgrade-all'
+    exe 'flatpak -y --noninteractive update'
 }
 
 
@@ -6560,8 +6557,8 @@ quicker_refresh() {
     post_install_progs_setup  # from install_progs()
     install_deps  # TODO: do we want this with mode=3?
 
-    execute 'pipx  upgrade-all'
-    execute 'flatpak -y --noninteractive update'
+    exe 'pipx  upgrade-all'
+    exe 'flatpak -y --noninteractive update'
 }
 
 
@@ -6573,7 +6570,7 @@ exe_work_funs() {
     # version where we resolve & execute _all_ functions prefixed w/ 'w_':
     #while read -r f; do
         #is_function "$f" || continue
-        #execute "$f"
+        #exe "$f"
     #done< <(declare -F | awk '{print $NF}' | grep '^w_')
 
     # another ver where we execute pre-defined set of funs, ie no resolving via prefix:
@@ -6581,7 +6578,7 @@ exe_work_funs() {
             palceholder_fun_doesnt_exist \
                 ; do
         is_function "$f" || continue
-        execute "$f"
+        exe "$f"
     done
 }
 
@@ -6665,10 +6662,10 @@ _sysctl_conf() {
     if [[ -f "$sysctl_conf" ]]; then
         grep -Eq "^${property}\s*=\s*${value}\$" "$sysctl_conf" && return 0  # value already set, nothing to do
         # delete all same prop definitions, regardless of its value:
-        execute "sudo sed -i --follow-symlinks '/^${property}\s*=/d' '$sysctl_conf'"
+        exe "sudo sed -i --follow-symlinks '/^${property}\s*=/d' '$sysctl_conf'"
     fi
 
-    execute "echo $property = $value | sudo tee --append $sysctl_conf > /dev/null"
+    exe "echo $property = $value | sudo tee --append $sysctl_conf > /dev/null"
 
     # mark our sysctl config has changed:
     SYSCTL_CHANGED=1
@@ -6686,7 +6683,7 @@ add_manpath() {
     [[ -d "$path" ]] || { err "[$path] is not a dir, can't add [$path -> $manpath] mapping"; return 1; }
     [[ -d "$manpath" ]] || { err "[$manpath] is not a dir, can't add [$path -> $manpath] mapping"; return 1; }
     grep -Eq "^MANPATH_MAP\s+${path}\s+${manpath}$" "$man_db" && return 0  # value already set, nothing to do
-    execute "echo 'MANPATH_MAP $path  $manpath' | sudo tee --append $man_db > /dev/null"
+    exe "echo 'MANPATH_MAP $path  $manpath' | sudo tee --append $man_db > /dev/null"
 }
 
 
@@ -6701,10 +6698,10 @@ setup_tcpdump() {
     [[ -x "$tcpd" ]] || { err "[$tcpd] exec does not exist"; return 1; }
 
     add_to_group  tcpdump
-    execute "sudo chown root:tcpdump $tcpd" || return 1
-    execute "sudo chmod 0750 $tcpd" || return 1
-    execute "sudo setcap 'CAP_NET_RAW+eip' $tcpd" || return 1
-    #execute "sudo setcap cap_net_raw,cap_net_admin=eip $tcpd" || return 1
+    exe "sudo chown root:tcpdump $tcpd" || return 1
+    exe "sudo chmod 0750 $tcpd" || return 1
+    exe "sudo setcap 'CAP_NET_RAW+eip' $tcpd" || return 1
+    #exe "sudo setcap cap_net_raw,cap_net_admin=eip $tcpd" || return 1
 }
 
 
@@ -6724,31 +6721,31 @@ setup_dnsmasq() {
     #     dig +short chaos txt cachesize.bind
     [[ -d "$dnsmasq_conf_dir" ]] || { err "[$dnsmasq_conf_dir] does not exist"; return 1; }
     is_f -nm 'cannot update config' "$dnsmasq_conf" || return 1
-    execute "sudo install -m644 -C '$dnsmasq_conf' '$dnsmasq_conf_dir'" || { err "installing [$dnsmasq_conf] failed w/ $?"; return 1; }
+    exe "sudo install -m644 -C '$dnsmasq_conf' '$dnsmasq_conf_dir'" || { err "installing [$dnsmasq_conf] failed w/ $?"; return 1; }
 
 
     # old ver, directly updating /etc/dnsmasq.conf:
-    #execute "sudo sed -i --follow-symlinks '/^cache-size=/d' '$dnsmasq_conf'"
-    #execute "echo cache-size=10000 | sudo tee --append $dnsmasq_conf > /dev/null"
+    #exe "sudo sed -i --follow-symlinks '/^cache-size=/d' '$dnsmasq_conf'"
+    #exe "echo cache-size=10000 | sudo tee --append $dnsmasq_conf > /dev/null"
 
-    #execute "sudo sed -i --follow-symlinks '/^local-ttl=/d' '$dnsmasq_conf'"
-    #execute "echo local-ttl=10 | sudo tee --append $dnsmasq_conf > /dev/null"
+    #exe "sudo sed -i --follow-symlinks '/^local-ttl=/d' '$dnsmasq_conf'"
+    #exe "echo local-ttl=10 | sudo tee --append $dnsmasq_conf > /dev/null"
 
     ## lock dnsmasq to be exposed only to localhost:
-    #execute "sudo sed -i --follow-symlinks '/^listen-address=/d' '$dnsmasq_conf'"
-    #execute "echo listen-address=::1,127.0.0.1 | sudo tee --append $dnsmasq_conf > /dev/null"
+    #exe "sudo sed -i --follow-symlinks '/^listen-address=/d' '$dnsmasq_conf'"
+    #exe "echo listen-address=::1,127.0.0.1 | sudo tee --append $dnsmasq_conf > /dev/null"
 
 
     # TODO: not sure about this bit:
     #if [[ "$PROFILE" != work ]]; then
-        #execute "sudo sed -i --follow-symlinks '/^server=/d' '$dnsmasq_conf'"
+        #exe "sudo sed -i --follow-symlinks '/^server=/d' '$dnsmasq_conf'"
         #for i in 1.1.1.1   8.8.8.8; do
-            #execute "echo server=$i | sudo tee --append $dnsmasq_conf > /dev/null"
+            #exe "echo server=$i | sudo tee --append $dnsmasq_conf > /dev/null"
         #done
 
         ## no-resolv stops dnsmasq from reading /etc/resolv.conf, and makes it only rely on servers defined in $dnsmasq_conf
         #if ! grep -Fxq 'no-resolv' "$dnsmasq_conf"; then
-            #execute "echo no-resolv | sudo tee --append $dnsmasq_conf > /dev/null"
+            #exe "echo no-resolv | sudo tee --append $dnsmasq_conf > /dev/null"
         #fi
     #fi
 }
@@ -6792,8 +6789,8 @@ enable_network_manager() {
         check_progs_installed  nmcli || return 1
         for i in "${network_names[@]}"; do
             if nmcli -f NAME connection show | grep -qFw "$i"; then  # verify connection has been set up/exists
-                execute "nmcli con mod $i ipv4.dns '$SERVER_IP  1.1.1.1  8.8.8.8'" || err "dns addition for connection [$i] failed w/ $?"
-                execute "nmcli con mod $i ipv4.ignore-auto-dns yes" || err "setting dns ignore-auto-dns for connection [$i] failed w/ $?"
+                exe "nmcli con mod $i ipv4.dns '$SERVER_IP  1.1.1.1  8.8.8.8'" || err "dns addition for connection [$i] failed w/ $?"
+                exe "nmcli con mod $i ipv4.ignore-auto-dns yes" || err "setting dns ignore-auto-dns for connection [$i] failed w/ $?"
             else
                 err "NM connection [$i] does not exist; either create it or remove from install script"
             fi
@@ -6816,7 +6813,7 @@ enable_network_manager() {
 
     is_d -m 'are you using NetworkManager? if not, this config logic should be removed' "$nm_conf_dir" || return 1
     is_f -nm 'cannot update config' "$nm_conf" || return 1
-    execute "sudo install -m644 -C '$nm_conf' '$nm_conf_dir'" || { err "installing [$nm_conf] to [$nm_conf_dir] failed w/ $?"; return 1; }
+    exe "sudo install -m644 -C '$nm_conf' '$nm_conf_dir'" || { err "installing [$nm_conf] to [$nm_conf_dir] failed w/ $?"; return 1; }
     _configure_con_dns
 
     # old ver, directly updating /etc/NetworkManager/NetworkManager.conf:
@@ -6852,14 +6849,14 @@ install_gtk_numix() {
     report "installing numix build dependencies..."
     rb_install sass || return 1
 
-    execute "git clone ${GIT_OPTS[*]} $theme_repo $tmpdir" || return 1
-    execute "pushd $tmpdir" || return 1
-    execute "make" || { err; popd; return 1; }
+    exe "git clone ${GIT_OPTS[*]} $theme_repo $tmpdir" || return 1
+    exe "pushd $tmpdir" || return 1
+    exe "make" || { err; popd; return 1; }
 
     create_deb_install_and_store numix || { popd; return 1; }
 
-    execute "popd"
-    execute "sudo rm -rf -- '$tmpdir'"
+    exe "popd"
+    exe "sudo rm -rf -- '$tmpdir'"
 
     add_to_dl_log  numix-gtk-theme "$ver"
 
@@ -6872,7 +6869,7 @@ install_gruvbox_gtk_theme() {
     install_block 'gtk2-engines-murrine gnome-themes-extra sassc'
 
     clone_or_pull_repo "Fausto-Korpsvart" "Gruvbox-GTK-Theme" "$BASE_PROGS_DIR"
-    execute "$BASE_PROGS_DIR/Gruvbox-GTK-Theme/themes/install.sh" || err "gruvbox theme installation failed w/ $?"  # TODO: sandbox! needs write access only to ~/.themes
+    exe "$BASE_PROGS_DIR/Gruvbox-GTK-Theme/themes/install.sh" || err "gruvbox theme installation failed w/ $?"  # TODO: sandbox! needs write access only to ~/.themes
 }
 
 
@@ -6914,7 +6911,7 @@ install_open_eid() {
     install_block -f 'opensc  open-eid' || return 1
 
     # Configure Chrome/Firefox PKCS11 driver for current user, /etc/xdg/autstart/ will init other users on next logon
-    execute '/usr/bin/pkcs11-register --skip-chrome=off --skip-firefox=off'
+    exe '/usr/bin/pkcs11-register --skip-chrome=off --skip-firefox=off'
 }
 
 
@@ -6997,7 +6994,7 @@ configure_ntp_for_work() {
     for i in "${servers[@]}"; do
         if ! grep -qFx "$i" "$conf"; then
             report "adding [$i] to $conf"
-            execute "echo $i | sudo tee --append $conf > /dev/null"
+            exe "echo $i | sudo tee --append $conf > /dev/null"
         fi
     done
 }
@@ -7078,7 +7075,7 @@ setup_seafile() {
 # - list ruleset:
 #    sudo nft list ruleset
 enable_fw() {
-    execute 'sudo systemctl enable nftables.service'
+    exe 'sudo systemctl enable nftables.service'
 }
 
 
@@ -7104,10 +7101,10 @@ setup_mopidy() {
 
     backup_original_and_copy_file --sudo "$file" "$mopidy_confdir"
     # when mopidy is ran as a service, the config file needs to be owned by mopidy user:
-    execute "sudo chown mopidy:root $mopidy_confdir/mopidy.conf" || return 1
+    exe "sudo chown mopidy:root $mopidy_confdir/mopidy.conf" || return 1
 
-    execute "sudo systemctl enable --now mopidy"  # note --now flag effectively also starts the service immediately
-    execute 'sudo mopidyctl local scan'     # update mopidy library;
+    exe "sudo systemctl enable --now mopidy"  # note --now flag effectively also starts the service immediately
+    exe 'sudo mopidyctl local scan'     # update mopidy library;
 }
 
 
@@ -7145,9 +7142,9 @@ install_setup_printing_cups() {
         err "[$conf_file] does not contain [DefaultAuthType], see what's what"
         return 1
     elif ! grep -Eq '^DefaultAuthType\s+None' "$conf_file"; then  # hasn't been changed yet
-        execute "sudo sed -i --follow-symlinks 's/^DefaultAuthType/#DefaultAuthType/g' $conf_file"  # comment out existing value
-        execute "echo 'DefaultAuthType None' | sudo tee --append '$conf_file' > /dev/null"
-        execute 'sudo service cups restart'
+        exe "sudo sed -i --follow-symlinks 's/^DefaultAuthType/#DefaultAuthType/g' $conf_file"  # comment out existing value
+        exe "echo 'DefaultAuthType None' | sudo tee --append '$conf_file' > /dev/null"
+        exe 'sudo service cups restart'
     fi
 
     # TODO: maybe deprecate this block, think the group is always 'lpadmin'
@@ -7182,17 +7179,17 @@ setup_firefox() {
     #                                      https://github.com/tridactyl/native_messenger
     # TODO: do we want this? increases attack surface?
     # TODO 2: does ff in flatpak even support this? note native messaging portal is not working in flatpak as of '25: https://github.com/flatpak/xdg-desktop-portal/issues/655
-    execute 'curl -fsSL https://raw.githubusercontent.com/tridactyl/native_messenger/master/installers/install.sh -o /tmp/trinativeinstall.sh && sh /tmp/trinativeinstall.sh master'  # 'master' refers to git ref/tag; can also remove that arg, so latest tag is installed instead.
+    exe 'curl -fsSL https://raw.githubusercontent.com/tridactyl/native_messenger/master/installers/install.sh -o /tmp/trinativeinstall.sh && sh /tmp/trinativeinstall.sh master'  # 'master' refers to git ref/tag; can also remove that arg, so latest tag is installed instead.
 
     # install custom css/styling {  # see also https://github.com/MrOtherGuy/firefox-csshacks
     [[ -d "$conf_dir" ]] || { err "[$conf_dir] not a dir"; return 1; }
     profile="$(find "$conf_dir" -mindepth 1 -maxdepth 1 -type d -name '*default-release')"
     [[ -d "$profile" ]] || { err "[$profile] not a dir"; return 1; }
     ensure_d "$profile/chrome" || return 1
-    execute "pushd $profile/chrome" || return 1
+    exe "pushd $profile/chrome" || return 1
     clone_or_pull_repo  MrOtherGuy  firefox-csshacks  './'
 
-    execute popd
+    exe popd
     # }
 
     # !!!!!!!!!!!!!!!! DO NOT MISS THESE !!!!!!!!!!!!!!!!
@@ -7224,8 +7221,8 @@ configure_updatedb() {
     done
 
     if [[ -n "$modified" ]]; then
-        [[ -s "$conf" ]] && execute "sudo sed -i --follow-symlinks '/^PRUNEPATHS=.*$/d' '$conf'"  # nuke previous setting
-        execute "echo 'PRUNEPATHS=\"$line\"' | sudo tee --append $conf > /dev/null"
+        [[ -s "$conf" ]] && exe "sudo sed -i --follow-symlinks '/^PRUNEPATHS=.*$/d' '$conf'"  # nuke previous setting
+        exe "echo 'PRUNEPATHS=\"$line\"' | sudo tee --append $conf > /dev/null"
     fi
 }
 
@@ -7236,14 +7233,14 @@ add_to_group() {
     readonly group="$1"
 
     if ! id -Gn "$USER" | grep -Eq "\b${group}\b"; then
-        execute "sudo adduser $USER $group" || return $?
+        exe "sudo adduser $USER $group" || return $?
     fi
 }
 
 
 add_group() {
     # note exit 9 means group exists
-    execute -c 0,9 "sudo groupadd $1" || return $?
+    exe -c 0,9 "sudo groupadd $1" || return $?
 }
 
 
@@ -7254,7 +7251,7 @@ add_user() {
 
     if ! id -- "$user" 2>/dev/null; then
         # note useradd exits w/ 9 just like groupadd if target already exists
-        execute "sudo useradd --no-create-home ${groups:+--groups $groups }--shell /bin/false --user-group $user" || return $?
+        exe "sudo useradd --no-create-home ${groups:+--groups $groups }--shell /bin/false --user-group $user" || return $?
     fi
     return 0
 }
@@ -7293,10 +7290,10 @@ post_install_progs_setup() {
     is_native && install_acpi_events   # has to be after install_progs(), so acpid is already insalled and events/ dir present;
     enable_network_manager
     is_native && install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present  # TODO: do we want to install these only on native systems?
-    #is_native && execute -i "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
+    #is_native && exe -i "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
     #is_native && setup_mopidy
-    is_native && execute 'sudo sensors-detect --auto'   # answer enter for default values (this is lm-sensors config)
-    is_pkg_installed 'command-not-found' && execute 'sudo apt-file update && sudo update-command-not-found'
+    is_native && exe 'sudo sensors-detect --auto'   # answer enter for default values (this is lm-sensors config)
+    is_pkg_installed 'command-not-found' && exe 'sudo apt-file update && sudo update-command-not-found'
     increase_inotify_watches_limit         # for intellij IDEA
     allow_user_run_dmesg
     #increase_ulimit
@@ -7316,10 +7313,10 @@ post_install_progs_setup() {
                                                 # see also https://unix.stackexchange.com/a/96227
                                                 # note debconf-get-selections is provided by debconf-utils pkg;
 
-    #execute "newgrp wireshark"                  # log us into the new group; !! will stop script execution
+    #exe "newgrp wireshark"                  # log us into the new group; !! will stop script execution
     is_native && is_pkg_installed virtualbox && add_to_group vboxusers   # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
     is_virtualbox && add_to_group vboxsf  # add user to vboxsf group (to be able to access mounted shared folders);
-    #execute "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
+    #exe "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
     #configure_ntp_for_work  # TODO: confirm if ntp needed in WSL
     is_native && enable_fw
     setup_nsswitch
@@ -7551,8 +7548,8 @@ sanitize_apt() {
         return 1
     fi
 
-    execute "sudo chown -R _apt:root '$target'"
-    execute "sudo chmod -R 700 '$target'"
+    exe "sudo chown -R _apt:root '$target'"
+    exe "sudo chmod -R 700 '$target'"
 }
 
 
@@ -7606,8 +7603,8 @@ generate_ssh_key() {
         read -r mail
     done
 
-    #execute "ssh-keygen -t rsa -b 4096 -C '$mail' -f '$PRIVATE_KEY_LOC'"  # legacy for RSA
-    execute "ssh-keygen -t ed25519 -C '$mail' -f '$PRIVATE_KEY_LOC'"
+    #exe "ssh-keygen -t rsa -b 4096 -C '$mail' -f '$PRIVATE_KEY_LOC'"  # legacy for RSA
+    exe "ssh-keygen -t ed25519 -C '$mail' -f '$PRIVATE_KEY_LOC'"
 }
 
 
@@ -7620,7 +7617,7 @@ generate_ssh_key() {
 #  -r       return the original return code in order to catch the code even when
 #           -c <code> or -i options were passed
 #  -s       silent stdout - do not print
-execute() {
+exe() {
     local opt OPTIND cmd exit_sig ignore_errs retain_code silent ok_code ok_codes
 
     ok_codes=(0)  # default
@@ -7643,7 +7640,7 @@ execute() {
 
     readonly cmd="$(sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' <<< "$1")"  # trim leading-trailing whitespace
 
-    [[ -z "$silent" ]] && >&2 echo -e "${COLORS[GREEN]}-->${COLORS[OFF]} executing [${COLORS[YELLOW]}${cmd}${COLORS[OFF]}]"
+    [[ -z "$silent" ]] && >&2 echo -e "${COLORS[GREEN]}-->${COLORS[OFF]} exe [${COLORS[YELLOW]}${cmd}${COLORS[OFF]}]"
     # TODO: collect and log command execution stderr?
     eval "$cmd"
     readonly exit_sig=$?
@@ -8087,8 +8084,8 @@ create_link() {
             trgt="$target"
         fi
 
-        $sudo test -h "$trgt" && execute "${sudo:+$sudo }rm -- '$trgt'"  # only remove $trgt if it's already a symlink
-        execute "${sudo:+$sudo }ln -s -- '$node' '$trgt'"
+        $sudo test -h "$trgt" && exe "${sudo:+$sudo }rm -- '$trgt'"  # only remove $trgt if it's already a symlink
+        exe "${sudo:+$sudo }ln -s -- '$node' '$trgt'"
     done
 
     return 0
@@ -8399,7 +8396,7 @@ ensure_d() {
         # note we set [umask 2] for root to make sure other group can read&traverse created dir; from https://unix.stackexchange.com/a/132201/47501
         if ! $sudo test -d "$d"; then
             [[ -e "$d" ]] && { err "[$d] exists, but is [$(file_type "$d")]" -1; e=1; continue; }
-            execute "(${sudo:+umask 2 && sudo }mkdir -p -- '$d')" || e=1
+            exe "(${sudo:+umask 2 && sudo }mkdir -p -- '$d')" || e=1
         fi
     done
     return ${e:-0}
@@ -8467,12 +8464,12 @@ cleanup() {
     [[ -s "$NPMRC_BAK" ]] && mv -- "$NPMRC_BAK" ~/.npmrc   # move back
 
     if [[ -d "$ZSH_COMPLETIONS" && "$ZSH_COMPLETIONS" == /usr/* ]]; then
-        execute -s "sudo chmod -R 'o+r' '$ZSH_COMPLETIONS'"  # ensure 'other' group has read rights
+        exe -s "sudo chmod -R 'o+r' '$ZSH_COMPLETIONS'"  # ensure 'other' group has read rights
     fi
 
     # shut down the build container:
     if command -v docker >/dev/null 2>&1 && [[ -n "$(docker ps -qa -f status=running -f name="$BUILD_DOCK")" ]]; then
-        execute "docker stop '$BUILD_DOCK'" || err "[cleanup] stopping build container [$BUILD_DOCK] failed"
+        exe "docker stop '$BUILD_DOCK'" || err "[cleanup] stopping build container [$BUILD_DOCK] failed"
     fi
 
     if [[ -n "${PACKAGES_IGNORED_TO_INSTALL[*]}" ]]; then
@@ -8527,13 +8524,13 @@ validate_and_init
 check_dependencies
 
 # we need to make sure our system clock is roughly right; otherwise stuff like apt-get might start failing:
-#is_native || execute "rdate -s tick.greyware.com"
-#is_native || execute "tlsdate -V -n -H encrypted.google.com"
+#is_native || exe "rdate -s tick.greyware.com"
+#is_native || exe "tlsdate -V -n -H encrypted.google.com"
 is_native || update_clock || exit 1  # needs to be done _after_ check_dependencies as update_clock() uses some
 
 choose_step
 
-[[ "$SYSCTL_CHANGED" == 1 ]] && execute 'sudo sysctl -p --system'
+[[ "$SYSCTL_CHANGED" == 1 ]] && exe 'sudo sysctl -p --system'
 
 exit 0
 
