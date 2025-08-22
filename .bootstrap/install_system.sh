@@ -258,7 +258,7 @@ install_acpi_events() {
     is_d -m 'skipping acpi event triggers installation' "$acpi_target" || return 1
 
     for dir in "${acpi_src[@]}"; do
-        [[ -d "$dir" ]] || continue
+        is_d -qn "$dir" || continue
         for file in "$dir/"*; do
             [[ -f "$file" ]] || continue  # TODO: how to validate acpi event files? what are the rules?
             tmpfile="$TMP_DIR/.acpi_setup-$RANDOM"
@@ -286,7 +286,7 @@ setup_udev() {
     is_d -m 'skipping udev file(s) installation' "$udev_target" || return 1
 
     for dir in "${udev_src[@]}"; do
-        [[ -d "$dir" ]] || continue
+        is_d -qn "$dir" || continue
         for file in "$dir/"*; do
             [[ -s "$file" && "$file" == *.rules ]] || continue  # note we require '.rules' suffix
             tmpfile="$TMP_DIR/.udev_setup-$RANDOM"
@@ -316,7 +316,7 @@ setup_pm() {
     is_d -m 'skipping pm file(s) installation' "$pm_target" || return 1
 
     for dir in "${pm_src[@]}"; do
-        [[ -d "$dir" ]] || continue
+        is_d -qn "$dir" || continue
         for pm_state_dir in "$dir/"*.d; do
             is_d "$pm_state_dir" || continue
             target="$pm_target/$(basename -- "$pm_state_dir")"  # e.g. /etc/pm/sleep.d, ...power.d
@@ -396,13 +396,10 @@ setup_needrestart() {
     is_laptop && src_dirs+=("$COMMON_PRIVATE_DOTFILES/backups/needrestart/laptop")
     #[[ -n "$PLATFORM" ]] && src_dirs+=("$PLATFORM_DOTFILES/systemd/global")
 
-    if ! [[ -d "$target_confdir" ]]; then
-        err "[$target_confdir] is not a dir; skipping needrestart file(s) installation"
-        return 1
-    fi
+    is_d -m 'skipping needrestart file(s) installation' "$target_confdir" || return 1
 
     for dir in "${src_dirs[@]}"; do
-        [[ -d "$dir" ]] || continue
+        is_d -qn "$dir" || continue
         for file in "$dir/"*; do
             [[ -f "$file" && "$file" =~ \.(conf)$ ]] || continue  # note we require certain suffix
             filename="$(basename -- "$file")"
@@ -458,10 +455,7 @@ setup_systemd() {
     is_laptop && global_sysd_src+=("$COMMON_PRIVATE_DOTFILES/backups/systemd/global/laptop") && usr_sysd_src+=("$COMMON_PRIVATE_DOTFILES/backups/systemd/user/laptop")
     [[ -n "$PLATFORM" ]] && global_sysd_src+=("$PLATFORM_DOTFILES/systemd/global") && usr_sysd_src+=("$PLATFORM_DOTFILES/systemd/user")
 
-    if ! [[ -d "$global_sysd_target" ]]; then
-        err "[$global_sysd_target] is not a dir; skipping systemd file(s) installation."
-        return 1
-    fi
+    is_d -m 'skipping systemd file(s) installation' "$global_sysd_target" || return 1
     ensure_d "$usr_sysd_target" || return 1
 
     __var_expand_move() {
@@ -659,13 +653,8 @@ setup_sudoers() {
     readonly tmpfile="$TMP_DIR/sudoers-$RANDOM"
     readonly file="$COMMON_PRIVATE_DOTFILES/backups/sudoers"
 
-    if ! [[ -d "$sudoers_dest" ]]; then
-        err "[$sudoers_dest] is not a dir; skipping sudoers file installation."
-        return 1
-    elif ! [[ -f "$file" ]]; then
-        err "expected configuration file at [$file] does not exist; won't install it."
-        return 1
-    fi
+    is_d -m 'skipping sudoers file installation' "$sudoers_dest" || return 1
+    is_f -m "won't install it" "$file" || return 1
 
     exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
     exe "sudo install -m440 -CT '$tmpfile' '$sudoers_dest/sudoers'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
@@ -678,7 +667,7 @@ setup_apt() {
 
     readonly apt_dir='/etc/apt'
 
-    [[ -d "$apt_dir" ]] || { err "[$apt_dir] is not a dir; skipping apt conf installation"; return 1; }
+    is_d -m 'skipping apt conf installation' "$apt_dir" || return 1
     for file in \
             preferences \
             apt.conf \
@@ -735,10 +724,7 @@ setup_crontab() {
     readonly file="$PRIVATE__DOTFILES/backups/crontab"
     readonly weekly_crondir='/etc/cron.weekly'
 
-    if ! [[ -d "$cron_dir" ]]; then
-        err "[$cron_dir] is not a dir; skipping crontab installation."
-        return 1
-    fi
+    is_d -m 'skipping crontab installation' "$cron_dir" || return 1
 
     if [[ -f "$file" ]]; then
         exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
@@ -749,19 +735,16 @@ setup_crontab() {
     fi
 
     # install/link weekly scripts:
-    if ! [[ -d "$weekly_crondir" ]]; then
-        err "[$weekly_crondir] is not a dir; skipping weekly scripts installation."
-    else
-        for i in \
-                hosts-block-update \
-                    ; do
-            i="$BASE_DATA_DIR/dev/scripts/$i"
-            is_f -nm "can't dump into $weekly_crondir" "$i" || continue
+    is_d -m 'skipping weekly scripts installation' "$weekly_crondir" || return 1
+    for i in \
+            hosts-block-update \
+                ; do
+        i="$BASE_DATA_DIR/dev/scripts/$i"
+        is_f -nm "can't dump into $weekly_crondir" "$i" || continue
 
-            #create_link -s "$i" "${weekly_crondir}/"  # linked crontabs don't work!
-            exe "sudo install -m644 -CT '$i' '$weekly_crondir/$(basename -- "$i")'" || { err "installing [$i] failed w/ $?"; return 1; }
-        done
-    fi
+        #create_link -s "$i" "${weekly_crondir}/"  # linked crontabs don't work!
+        exe "sudo install -m644 -CT '$i' '$weekly_crondir/$(basename -- "$i")'" || { err "installing [$i] failed w/ $?"; return 1; }
+    done
 }
 
 
@@ -879,7 +862,7 @@ install_nfs_server() {
 
         share=${share:-"$NFS_SERVER_SHARE"}
         [[ "$share" != /* ]] && { err "share needs to be defined as full path."; continue; }
-        [[ -d "$share" ]] || { err "[$share] is not a valid dir."; continue; }
+        is_d "$share" || continue
 
         # TODO: automate multi client/range options:
         # entries are basically:         directory machine1(option11,option12) machine2(option21,option22)
@@ -961,7 +944,7 @@ _install_nfs_client_laptop() {
 
     install_block 'autofs' || { err "unable to install autofs. aborting nfs client install/config."; return 1; }
 
-    [[ -d "$autofs_d" ]] || { err "[$autofs_d] is not a dir; cannot add autofs nfs config!"; return 1; }
+    is_d -m 'cannot add autofs nfs config' "$autofs_d" || return 1
     [[ -d "$root_confd" ]] && ! is_dir_empty "$root_confd" || return 0
 
     for i in "$root_confd/servers/"*; do
@@ -1022,7 +1005,7 @@ install_ssh_server() {
 
     install_block 'openssh-server' || { err "unable to install openssh-server. aborting sshd install/config."; return 1; }
 
-    [[ -d "$sshd_confdir" ]] || { err "[$sshd_confdir] is not a dir; skipping sshd conf installation."; return 1; }
+    is_d -m 'skipping sshd conf installation' "$sshd_confdir" || return 1
 
     # install sshd config:
     if [[ -f "$config" ]]; then
@@ -1210,7 +1193,7 @@ install_deps() {
         local plugins_dir plugin
 
         readonly plugins_dir="$HOME/.config/vifm/plugins"
-        [[ -d "$plugins_dir" ]] || { err "[$plugins_dir] not a dir, can't install vifm plugin(s)"; return 1; }
+        is_d -m "can't install vifm plugin(s)" "$plugins_dir" || return 1
 
         # https://github.com/vifm/vifm/tree/master/data/plugins/ueberzug
         for plugin in 'ueberzug'; do
@@ -1796,7 +1779,7 @@ setup_global_bash_settings() {
     # (BASH_ENV is documented here: https://www.gnu.org/software/bash/manual/bash.html#index-BASH_005fENV)
     # note we define & export BASH_ENV on separate files, as /etc/profile could be
     # read bu other shells than Bournes (see https://unix.stackexchange.com/a/541585/47501)
-    [[ -d "$global_profile" ]] || { err "[$global_profile] is not a dir!"; return 1; }
+    is_d "$global_profile" || return 1
     exe "echo -e 'BASH_ENV=/etc/.global-bash-init  # global_init_marker\nexport BASH_ENV' | sudo tee $global_profile/bash-init-global.sh > /dev/null"
 }
 
@@ -1837,18 +1820,15 @@ setup_config_files() {
 install_nm_dispatchers() {
     local dispatchers nm_wrapper_dest f
 
-    readonly nm_wrapper_dest="/etc/NetworkManager/dispatcher.d"
+    readonly nm_wrapper_dest='/etc/NetworkManager/dispatcher.d'
     readonly dispatchers=(
         "$BASE_DATA_DIR/dev/scripts/network_manager_SSID_checker_wrapper.sh"
     )
 
-    if ! [[ -d "$nm_wrapper_dest" ]]; then
-        err "[$nm_wrapper_dest] dir does not exist; network-manager dispatcher script(s) won't be installed"
-        return 1
-    fi
+    is_d -m "NM dispatcher script(s) won't be installed" "$nm_wrapper_dest" || return 1
 
     for f in "${dispatchers[@]}"; do
-        [[ -f "$f" ]] || { err "[$f] does not exist; this netw-manager dispatcher won't be installed"; continue; }
+        is_f -m "this NM dispatcher won't be installed" "$f" || continue
         exe "sudo install -m744 -C '$f' '$nm_wrapper_dest'" || { err "installing [$f] failed w/ $?"; return 1; }
     done
 }
@@ -1920,7 +1900,7 @@ setup_mok() {
         conf_dir='/etc/dkms/framework.conf.d'
         f="$COMMON_PRIVATE_DOTFILES/backups/use_user_mok.conf"
 
-        [[ -d "$conf_dir" ]] || { err "[$conf_dir] is not a dir; cannot setup DKMS to use our MOK keys"; return 1; }
+        is_d -m "cannot setup DKMS to use our MOK keys" "$conf_dir" || return 1
         is_f -nm 'skipping DKMS config to use our MOK keys' "$f" || return 1
 
         exe "sudo install -m644 -C '$f' '$conf_dir'" || { err "installing [$f] to [$conf_dir] failed w/ $?"; return 1; }
@@ -2867,7 +2847,7 @@ extract_tarball() {
 }
 
 
-# Fetch a file from given github /releases page, and install the binary
+# Fetch a file from given github /releases page, and install the executable binary.
 # Convenience function.
 install_bin_from_git() {
     # as to why we include 'sharedlib', see https://gitlab.freedesktop.org/xdg/shared-mime-info/-/issues/11 (e.g. some rust binaries are like that)
@@ -3129,8 +3109,8 @@ install_file() {
     file="$1"
     name="$2"  # OPTIONAL, unless installing whole uncompressed dir (-D opt)
 
-    [[ -f "$file" || -d "$file" ]] || { err "file [$file] not a regular file or dir"; return 1; }
-    [[ -d "$target" ]] || { err "target installation dir [$target] not a dir, can't install [${name:+$name///}$file]"; return 1; }
+    [[ -f "$file" || -d "$file" ]] || { err "node [$file] not a regular file nor a dir"; return 1; }
+    is_d -m "can't install [${name:+$name///}$file]" "$target" || return 1
     if list_contains '-f' "${extract_opts[@]}" || list_contains '-n' "${extract_opts[@]}"; then
         if list_contains '-D' "${extract_opts[@]}" || list_contains '-U' "${extract_opts[@]}"; then
             err '[fn|DU] options are mutually exclusive'
@@ -3551,7 +3531,7 @@ install_postman() {  # https://learning.postman.com/docs/getting-started/install
 
     # install .desktop:
     dsk="$HOME/.local/share/applications"
-    [[ -d "$dsk" ]] || { err "[$dsk] not a dir, cannot install postman .desktop entry"; return 1; }
+    is_d -m 'cannot install postman .desktop entry' "$dsk" || return 1
     echo "[Desktop Entry]
 Encoding=UTF-8
 Name=PostmanCanary
@@ -6050,7 +6030,7 @@ setup_btrfs() {
 # alternatives:
 # - containerd + nerdctl
 _setup_podman() {
-    [[ -d /etc/containers ]] || { err "[/etc/containers] is not a dir. is podman installed?"; return 1; }
+    is_d -m 'is podman installed?' /etc/containers || return 1
 
     # touch file to avoid msg printed to stdout whenever we use 'docker' command:
     # msg being [Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.]
@@ -6679,9 +6659,10 @@ add_manpath() {
     manpath="$2"
     man_db='/etc/manpath.config'
 
-    [[ -f "$man_db" ]] || { err "[$man_db] is not a file, can't add [$path -> $manpath] mapping"; return 1; }
-    [[ -d "$path" ]] || { err "[$path] is not a dir, can't add [$path -> $manpath] mapping"; return 1; }
-    [[ -d "$manpath" ]] || { err "[$manpath] is not a dir, can't add [$path -> $manpath] mapping"; return 1; }
+    is_f -m "can't add [$path -> $manpath] mapping" "$man_db" || return 1
+    is_d -m "can't add [$path -> $manpath] mapping" "$path" || return 1
+    is_d -m "can't add [$path -> $manpath] mapping" "$manpath" || return 1
+
     grep -Eq "^MANPATH_MAP\s+${path}\s+${manpath}$" "$man_db" && return 0  # value already set, nothing to do
     exe "echo 'MANPATH_MAP $path  $manpath' | sudo tee --append $man_db > /dev/null"
 }
@@ -6719,7 +6700,7 @@ setup_dnsmasq() {
     #     dig +short chaos txt hits.bind
     #     dig +short chaos txt misses.bind
     #     dig +short chaos txt cachesize.bind
-    [[ -d "$dnsmasq_conf_dir" ]] || { err "[$dnsmasq_conf_dir] does not exist"; return 1; }
+    is_d "$dnsmasq_conf_dir" || return 1
     is_f -nm 'cannot update config' "$dnsmasq_conf" || return 1
     exe "sudo install -m644 -C '$dnsmasq_conf' '$dnsmasq_conf_dir'" || { err "installing [$dnsmasq_conf] failed w/ $?"; return 1; }
 
@@ -6775,6 +6756,7 @@ setup_nsswitch() {
 # see also: systemd-networkd - possilby will replace NM in the future in Debian!
 # see also: https://wiki.debian.org/Netplan - write declarative network config for
 #                                             various backends such as NM or systemd-networkd
+# jut fyi, now there's also $ nmtui  command for manual interaction
 enable_network_manager() {
     local nm_conf nm_conf_dir
 
@@ -7006,7 +6988,7 @@ _init_seafile_cli() {
     readonly ccnet_conf="$HOME/.ccnet"
     readonly parent_dir="$BASE_DATA_DIR"
 
-    [[ -d "$parent_dir" ]] || { err "[$parent_dir] is not a valid dir, abort"; return 1; }
+    is_d "$parent_dir" || return 1
     [[ -f "$ccnet_conf/seafile.ini" && -d "$(cat "$ccnet_conf/seafile.ini")" ]] && return 0  # everything seems set, no need to init
 
     check_progs_installed  seaf-cli || return 1
@@ -7091,13 +7073,8 @@ setup_mopidy() {
     readonly mopidy_confdir='/etc/mopidy'
     readonly file="$COMMON_PRIVATE_DOTFILES/backups/mopidy.conf"  # note filename needs to match that of original/destination
 
-    if ! [[ -d "$mopidy_confdir" ]]; then
-        err "[$mopidy_confdir] is not a dir - is mopidy installed?"
-        return 1
-    elif ! [[ -f "$file" ]]; then
-        err "expected mopidy configuration file at [$file] does not exist; won't install it."
-        return 1
-    fi
+    is_d -m 'is mopidy installed?' "$mopidy_confdir" || return 1
+    is_f -m "won't install it" "$file" || return 1
 
     backup_original_and_copy_file --sudo "$file" "$mopidy_confdir"
     # when mopidy is ran as a service, the config file needs to be owned by mopidy user:
@@ -7182,9 +7159,9 @@ setup_firefox() {
     exe 'curl -fsSL https://raw.githubusercontent.com/tridactyl/native_messenger/master/installers/install.sh -o /tmp/trinativeinstall.sh && sh /tmp/trinativeinstall.sh master'  # 'master' refers to git ref/tag; can also remove that arg, so latest tag is installed instead.
 
     # install custom css/styling {  # see also https://github.com/MrOtherGuy/firefox-csshacks
-    [[ -d "$conf_dir" ]] || { err "[$conf_dir] not a dir"; return 1; }
+    is_d "$conf_dir" || return 1
     profile="$(find "$conf_dir" -mindepth 1 -maxdepth 1 -type d -name '*default-release')"
-    [[ -d "$profile" ]] || { err "[$profile] not a dir"; return 1; }
+    is_d "$profile" || return 1
     ensure_d "$profile/chrome" || return 1
     exe "pushd $profile/chrome" || return 1
     clone_or_pull_repo  MrOtherGuy  firefox-csshacks  './'
@@ -7554,12 +7531,7 @@ sanitize_apt() {
 
 
 _sanitize_ssh() {
-
-    if ! [[ -d "$HOME/.ssh" ]]; then
-        err "tried to sanitize [~/.ssh], but dir doesn't exist."
-        return 1
-    fi
-
+    is_d -m "cannot sanitize it" "$HOME/.ssh" || return 1
     find -L "$HOME/.ssh/" -maxdepth 25 \( -type f -o -type d \) -exec chmod 'u=rwX,g=,o=' -- '{}' \+
 }
 
@@ -8244,7 +8216,7 @@ create_symlinks() {
     src="$1"
     dest="$2"
 
-    [[ -d "$src" && -d "$dest" ]] || { err "given [$src] and/or [$dest] are not valid dirs"; return 1; }
+    is_d "$src" "$dest" || return 1
 
     # Create symlink of every file (note target file will be overwritten no matter what):
     find "$src" -maxdepth 1 -mindepth 1 -type f -printf 'ln -sf -- "%p" "$dest"\n' | dest="$dest" bash
