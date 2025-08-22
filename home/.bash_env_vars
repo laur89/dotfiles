@@ -37,7 +37,8 @@ if [[ "$-" != *i* ]]; then
         if [[ -n "$_disp" && "$(wc -l <<< "$_disp")" -eq 1 ]]; then
             export DISPLAY="$_disp"
         else
-            echo -e "\n\n    ERROR: couldn't find our \$DISPLAY from [$_disp]\n\n"  # eg during 1st installation this err is expected
+            echo -e "\n\n    ERROR: couldn't find our \$DISPLAY from [$_disp]\n\n"  # eg during 1st installation this err is expected; note NM dispatcher script also prints this to syslog; possibly at boot when we haven't logged in yet?
+            # TODO: default to export DISPLAY=':0'  ?
         fi
         unset _disp
     fi
@@ -397,7 +398,7 @@ for i in \
         j+="$i:"
     fi
 done
-[[ -n "$j" ]] && export PATH="${j}$PATH"
+[[ -z "$j" ]] || export PATH="${j}$PATH"
 ###############################
 
 # load our env/system specific overrides:
