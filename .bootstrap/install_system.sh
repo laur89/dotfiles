@@ -2524,8 +2524,7 @@ fetch_release_from_git() {
     [[ -z "$selector" ]] && selector=".assets[] | select(.name|test(\"$2\$\")) | .browser_download_url"
 
     readonly loc="https://api.github.com/repos/$1/releases/$ver"
-    token="$(getnetrc curl@ghapi.com)"
-    [[ -n "$token" ]] && token="-u $token" || err "couldn't resolve gh api token"
+    token="$(getnetrc curl@ghapi.com)" && token="-u $token" || err "couldn't resolve gh api token"
     # note including api version is recommended: https://docs.github.com/en/rest/using-the-rest-api/troubleshooting-the-rest-api#not-a-supported-version
     dl_url="$(curl -fsSL -A "$USER_AGENT" -H 'X-GitHub-Api-Version:2022-11-28' $token -- "$loc" \
         | jq -er "$selector")" || { err "asset url resolution from [$loc] via selector [$selector] failed w/ $?"; return 1; }
@@ -2612,7 +2611,7 @@ resolve_dl_urls() {
     shift "$((OPTIND-1))"
 
     readonly loc="$1"
-    grep_tail="$2"
+    readonly grep_tail="$2"
 
     domain="$(grep -Po '^https?://([^/]+)(?=)' <<< "$loc")"
     page="$(wget "$loc" --user-agent="$USER_AGENT" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
@@ -3060,7 +3059,7 @@ install_from_url_shell() {
     shell=bash  # default
     while getopts 's' opt; do
         case "$opt" in
-            s) shell='sh' ;;
+            s) shell='sh' ;;  # TODO: rename opt to d) for dash?
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -3708,7 +3707,6 @@ install_bitlbee() {  # https://github.com/bitlbee/bitlbee
         local name tmpdir repo ver
 
         readonly name=slack-libpurple
-        readonly tmpdir="$TMP_DIR/$name-build-${RANDOM}"
         readonly repo="https://github.com/dylex/slack-libpurple.git"
 
         ver="$(get_git_sha "$repo")" || return 1
@@ -3717,6 +3715,7 @@ install_bitlbee() {  # https://github.com/bitlbee/bitlbee
         report "installing $name build dependencies..."
         install_block 'libpurple-dev' || { err 'failed to install build deps. abort.'; return 1; }
 
+        tmpdir="$TMP_DIR/$name-build-${RANDOM}"
         exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
         report "building $name"
         exe "pushd $tmpdir" || return 1
@@ -4151,8 +4150,6 @@ build_and_install_synergy_TODO_container_edition() {
 install_copyq() {
     local tmpdir repo ver
 
-    readonly tmpdir="$TMP_DIR/copyq-build-${RANDOM}"
-
     repo='https://github.com/hluk/CopyQ.git'
     ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" copyq && return 2
@@ -4177,6 +4174,7 @@ install_copyq() {
         qtwayland5-dev-tools
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
+    tmpdir="$TMP_DIR/copyq-build-${RANDOM}"
     exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     report "building copyq"
     exe "pushd $tmpdir" || return 1
@@ -4197,16 +4195,21 @@ install_copyq() {
 }
 
 
+# custom logic used by lesspipe(.sh) to extend its logic
+install_lessfilter() {
+    install_from_url -d "$HOME" .lessfilter 'https://raw.githubusercontent.com/Freed-Wu/Freed-Wu/refs/heads/main/.lessfilter'
+}
+
+
 # https://github.com/wofr06/lesspipe/blob/lesspipe/INSTALL
 install_lesspipe() {
     local tmpdir repo ver
-
-    readonly tmpdir="$TMP_DIR/lesspipe-build-${RANDOM}"
 
     repo='https://github.com/wofr06/lesspipe.git'
     ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" lesspipe && return 2
 
+    tmpdir="$TMP_DIR/lesspipe-build-${RANDOM}"
     exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     exe "sudo install -C -m754 --group=$USER --target-directory=/usr/local/bin ${tmpdir}/{archive_color,lesspipe.sh}" || return 1
 
@@ -4217,22 +4220,15 @@ install_lesspipe() {
 }
 
 
-# custom logic used by lesspipe(.sh) to extend its logic
-install_lessfilter() {
-    install_from_url -d "$HOME" .lessfilter 'https://raw.githubusercontent.com/Freed-Wu/Freed-Wu/refs/heads/main/.lessfilter'
-}
-
-
 # https://github.com/wofr06/lesspipe/blob/lesspipe/INSTALL
 build_lesspipe() {
     local tmpdir repo ver
-
-    readonly tmpdir="$TMP_DIR/lesspipe-build-${RANDOM}"
 
     repo='https://github.com/wofr06/lesspipe.git'
     ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" lesspipe && return 2
 
+    tmpdir="$TMP_DIR/lesspipe-build-${RANDOM}"
     exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     exe "pushd $tmpdir" || return 1
 
@@ -4424,7 +4420,6 @@ install_goforit() {
     local repo tmpdir ver
 
     repo='https://github.com/JMoerman/Go-For-It'
-    readonly tmpdir="$TMP_DIR/goforit-build-${RANDOM}"
 
     ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" goforit && return 2
@@ -4441,7 +4436,7 @@ install_goforit() {
         libayatana-appindicator3-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-
+    tmpdir="$TMP_DIR/goforit-build-${RANDOM}"
     exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     report "building goforit..."
     exe "mkdir $tmpdir/build"
@@ -4510,8 +4505,6 @@ install_keybase() {
 install_i3lock() {
     local tmpdir repo ver
 
-    readonly tmpdir="$TMP_DIR/i3lock-build-${RANDOM}/build"
-
     repo='https://github.com/Raymo111/i3lock-color'
     ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" i3lock-color && return 2
@@ -4541,6 +4534,7 @@ install_i3lock() {
       ' || { err 'failed to install i3lock build deps. abort.'; return 1; }
 
     # clone the repository
+    tmpdir="$TMP_DIR/i3lock-build-${RANDOM}/build"
     exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
     # create tag so a non-debug version is built:
     exe "git -C '$tmpdir' tag -f 'git-$(git -C '$tmpdir' rev-parse --short HEAD)'" || return 1
@@ -4570,12 +4564,12 @@ install_i3lock_fancy() {
     local repo tmpdir ver
 
     repo='https://github.com/meskarune/i3lock-fancy'
-    readonly tmpdir="$TMP_DIR/i3lock-fancy-build-${RANDOM}/build"
 
     ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" i3lock-fancy && return 2
 
     # clone the repository
+    tmpdir="$TMP_DIR/i3lock-fancy-build-${RANDOM}/build"
     exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
     exe "pushd $tmpdir" || return 1
 
@@ -4637,12 +4631,12 @@ install_brillo() {
     local repo tmpdir ver
 
     repo="https://gitlab.com/cameronnemo/brillo.git"
-    tmpdir="$TMP_DIR/brillo-build-${RANDOM}/build"
 
     ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" brillo && return 2
 
     # clone the repository
+    tmpdir="$TMP_DIR/brillo-build-${RANDOM}/build"
     exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
     exe "pushd $tmpdir" || return 1
 
@@ -4672,11 +4666,11 @@ install_display_switch() {
     _build_install() {
         local repo tmpdir ver
         repo='git@github.com:haimgel/display-switch.git'
-        tmpdir="$TMP_DIR/display-switch-${RANDOM}"
 
         ver="$(get_git_sha "$repo")" || return 1
         is_installed "$ver" display-switch && return 2
 
+        tmpdir="$TMP_DIR/display-switch-${RANDOM}"
         exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
         exe "pushd $tmpdir" || return 1
 
@@ -4728,13 +4722,13 @@ override_dh_installman:
 EOF
     }
 
-    readonly tmpdir="$TMP_DIR/i3-build-${RANDOM}/build"
     readonly repo='https://github.com/i3/i3'
 
     ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" i3 && return 2
 
     # clone the repository
+    tmpdir="$TMP_DIR/i3-build-${RANDOM}/build"
     exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
     exe "pushd $tmpdir" || return 1
 
@@ -5152,7 +5146,6 @@ nvim_post_install_configuration() {
 build_and_install_vim() {
     local tmpdir expected_runtimedir repo ver
 
-    readonly tmpdir="$TMP_DIR/vim-build-${RANDOM}"
     readonly expected_runtimedir='/usr/local/share/vim/vim91'  # path depends on the ./configure --prefix
 
     repo='https://github.com/vim/vim.git'
@@ -5179,6 +5172,7 @@ build_and_install_vim() {
         libperl-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
+    tmpdir="$TMP_DIR/vim-build-${RANDOM}"
     exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     exe "pushd $tmpdir" || return 1
 
@@ -5303,7 +5297,6 @@ install_fonts() {
     install_nerd_fonts() {
         local tmpdir fonts repo ver i opts
 
-        readonly tmpdir="$TMP_DIR/nerd-fonts-${RANDOM}"
         fonts=(
             Hack
             SourceCodePro
@@ -5323,6 +5316,7 @@ install_fonts() {
         is_installed "$ver" nerd-fonts && return 2
 
         # clone the repository
+        tmpdir="$TMP_DIR/nerd-fonts-${RANDOM}"
         exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
         exe "pushd $tmpdir" || return 1
 
@@ -5346,12 +5340,11 @@ install_fonts() {
     install_powerline_fonts() {
         local tmpdir repo ver
 
-        readonly tmpdir="$TMP_DIR/powerline-fonts-${RANDOM}"
-
         repo='https://github.com/powerline/fonts'
         ver="$(get_git_sha "$repo")" || return 1
         is_installed "$ver" powerline-fonts && return 2
 
+        tmpdir="$TMP_DIR/powerline-fonts-${RANDOM}"
         exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
         exe "pushd $tmpdir" || return 1
         report "installing powerline-fonts..."
@@ -5369,12 +5362,12 @@ install_fonts() {
     install_siji() {
         local tmpdir repo ver
 
-        readonly tmpdir="$TMP_DIR/siji-font-$RANDOM"
         readonly repo='https://github.com/stark/siji'
 
         ver="$(get_git_sha "$repo")" || return 1
         is_installed "$ver" siji-font && return 2
 
+        tmpdir="$TMP_DIR/siji-font-$RANDOM"
         exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || { err 'err cloning siji font'; return 1; }
         exe "pushd $tmpdir" || return 1
 
@@ -6821,7 +6814,6 @@ install_gtk_numix() {
     local theme_repo tmpdir ver
 
     readonly theme_repo='https://github.com/numixproject/numix-gtk-theme.git'
-    readonly tmpdir="$TMP_DIR/numix-theme-build-${RANDOM}"
 
     ver="$(get_git_sha "$theme_repo")" || return 1
     is_installed "$ver" numix-gtk-theme && return 2
@@ -6831,6 +6823,7 @@ install_gtk_numix() {
     report "installing numix build dependencies..."
     rb_install sass || return 1
 
+    tmpdir="$TMP_DIR/numix-theme-build-${RANDOM}"
     exe "git clone ${GIT_OPTS[*]} $theme_repo $tmpdir" || return 1
     exe "pushd $tmpdir" || return 1
     exe "make" || { err; popd; return 1; }
@@ -7598,8 +7591,7 @@ exe() {
            i) ignore_errs=1 ;;
            r) retain_code=1 ;;
            s) silent=1 ;;
-           c)
-              IFS=',' read -ra ok_codes <<< "$OPTARG"
+           c) IFS=',' read -ra ok_codes <<< "$OPTARG"
               for ok_code in "${ok_codes[@]}"; do
                 is_digit "$ok_code" || { err "non-digit ok_code arg passed to ${FUNCNAME}: [$ok_code]"; return 1; }
                 [[ "${#ok_code}" -gt 3 ]] && { err "too long ok_code arg passed to ${FUNCNAME}: [$ok_code]"; return 1; }
@@ -8477,7 +8469,8 @@ while getopts 'NFSUQOP:L:T:h' OPT; do
         U) MODE=2 ;;  # update/quick_refresh
         Q) MODE=3 ;;  # even faster update/quick_refresh
         O) ALLOW_OFFLINE=1 ;;  # allow running offline
-        P) PLATFORM="$OPTARG" ;;  # force the platform-specific config to install (as opposed to deriving it from hostname); best not use it and let platform be resolved from our hostname
+        P) PLATFORM="$OPTARG" ;;  # force the platform-specific config to install (as opposed to deriving it from hostname);
+                                  # best not use it and let platform be resolved from our hostname
         L) LOGGING_LVL="$OPTARG"
            is_digit "$OPTARG" || fail "log level needs to be an int, but was [$OPTARG]"
             ;;
