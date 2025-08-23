@@ -52,8 +52,6 @@ PROFILE=''           # work || personal
 ALLOW_OFFLINE=0      # whether script is allowed to run when we're offline
 CONNECTED=0          # are we connected to the web? 1 || 0
 GIT_RLS_LOG=''       # log of all installed/fetched assets from git releases/latest page; will be defined later on at init;
-declare -a PACKAGES_IGNORED_TO_INSTALL=()  # list of all packages that failed to install during the setup
-declare -a PACKAGES_FAILED_TO_INSTALL=()
 LOGGING_LVL=0                   # execution logging level (full install mode logs everything);
                                 # don't set log level too soon; don't want to persist bullshit.
                                 # levels are currently 0, 1 and 10; 0 being no logging, 1 being the lowest (from lvl 1 to 9 only execute() errors are logged)
@@ -77,8 +75,6 @@ readonly COMMON_DOTFILES="$BASE_HOMESICK_REPOS_LOC/dotfiles"
 readonly COMMON_PRIVATE_DOTFILES="$BASE_HOMESICK_REPOS_LOC/private-common"
 PRIVATE__DOTFILES=''   # installation specific private castle location (eg for 'work' or 'personal')
 PLATFORM_DOTFILES=''   # platform-speific castle location for machine-specific configs; optional
-
-readonly SOME_PACKAGE_IGNORED_EXIT_CODE=199
 
 readonly SELF="${0##*/}"
 
@@ -204,7 +200,7 @@ check_dependencies() {
     )
 
     for prog in \
-            git cmp wc wget curl tar unzip atool \
+            git cmp comm wc wget curl tar unzip atool \
             realpath dirname basename head tee jq \
             gpg mktemp file date id html2text \
             pwd uniq sort xxd openssl mokutil \
@@ -5846,12 +5842,10 @@ install_from_repo() {
     is_native && blocks=(block1_nonwin block2_nonwin block3_nonwin block4_nonwin)
     blocks+=(block1 block2 block3 block4 block5)
 
-    exe "sudo apt-get --yes update"
+    exe 'sudo apt-get --yes update'
     for block in "${blocks[@]}"; do
-        install_block "$(eval echo "\${$block[@]}")" "${extra_apt_params[$block]}"
-        if [[ "$?" -ne 0 && "$?" -ne "$SOME_PACKAGE_IGNORED_EXIT_CODE" ]]; then
-            err "one of the main-block installation failed. these are the packages that have failed to install so far:"
-            err "[${PACKAGES_FAILED_TO_INSTALL[*]}]"
+        if ! install_block "$(eval echo "\${$block[@]}")" "${extra_apt_params[$block]}"; then
+            err "install block [$block] failed to install, see the logs"
             confirm -d Y "continue with setup? answering no will exit script" || exit 1
         fi
     done
@@ -6212,7 +6206,8 @@ install_nvidia() {
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
 install_block() {
-    local opt OPTIND noinstall list_to_install extra_apt_params dry_run_failed exit_sig exit_sig_install_failed pkg sig
+    local opt OPTIND noinstall list_to_install extra_apt_params
+    local pkg_cache grp_ptrn avail_pkgs missing_pkgs
 
     noinstall='--no-install-recommends'  # default
     while getopts 'f' opt; do
@@ -6223,59 +6218,25 @@ install_block() {
     done
     shift "$((OPTIND-1))"
 
-    declare -ar list_to_install=( $1 )
+    declare -ar list_to_install=($1)
     readonly extra_apt_params="$2"  # optional
 
-    declare -a dry_run_failed
-    exit_sig=0  # default
-
-    report "installing these packages:\n${list_to_install[*]}\n"
-
-    # extract packages, which, for whatever reason, cannot be installed:
-    for pkg in ${list_to_install[*]}; do
-        # TODO: is there any point for this?:
-        #result="$(apt-cache search  --names-only "^$pkg\$")" || { err "apt-cache search failed for \"$pkg\""; packages_not_found+=( $pkg ); continue; }
-        #if [[ -z "$result" ]]; then
-            #packages_not_found+=( $pkg )
-            #continue
-        #fi
-        exe "sudo apt-get -qq --dry-run ${noinstall:+$noinstall }install $extra_apt_params $pkg"
-        sig=$?
-
-        if [[ "$sig" -ne 0 ]]; then
-            exe 'sudo apt-get --yes update'
-            exe 'sudo apt-get --yes autoremove'
-
-            if exe "sudo apt-get -qq --dry-run ${noinstall:+$noinstall }install $extra_apt_params $pkg"; then
-                #sleep 0.1
-                exe "sudo  DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
-            else
-                dry_run_failed+=("$pkg")
-            fi
-        else
-            exe "sudo  DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params $pkg" || { exit_sig_install_failed=$?; PACKAGES_FAILED_TO_INSTALL+=("$pkg"); }
-        fi
-    done
-
-    if [[ "${#dry_run_failed[@]}" -ne 0 ]]; then
-        err "either these packages could not be found from the repo, or some other issue occurred; skipping installing these packages. this will be logged:"
-        err "${dry_run_failed[*]}"
-
-        PACKAGES_IGNORED_TO_INSTALL+=("${dry_run_failed[@]}")
-        exit_sig="$SOME_PACKAGE_IGNORED_EXIT_CODE"
+    # TODO: apt-cache also lists pkg avail from other releases than 'testing':
+    pkg_cache="$(apt-cache --generate pkgnames)"
+    grp_ptrn="$(join_by ' -e ' "${list_to_install[@]}")"
+    avail_pkgs="$(grep --line-regexp --fixed-strings -e $grp_ptrn <<< "$pkg_cache")"
+    missing_pkgs="$(comm -13 <(sort <<< "$avail_pkgs") <(printf '%s\n' "${list_to_install[@]}" | sort))"
+    if [[ -n "$missing_pkgs" ]]; then
+        err "following packages were not available in APT:"
+        err "${missing_pkgs//$'\n'/ }"
     fi
 
-    #if [[ -z "${list_to_install[*]}" ]]; then
-        #err "all packages got removed. skipping install block."
-        #return 1
-    #fi
+    # from https://askubuntu.com/a/1333505
+    report "installing these packages:\n${avail_pkgs}\n"
+    #report "installing these packages:\n${avail_pkgs//$'\n'/ }\n"
 
-    #sleep 1  # just in case sleep for a bit
-    #exe "sudo apt-get --yes install $extra_apt_params ${list_to_install[*]}"
-    #exit_sig_install_failed=$?
-
-    #[[ -n "$exit_sig" ]] && return $exit_sig || return $exit_sig_install_failed
-    [[ -n "$exit_sig_install_failed" ]] && return $exit_sig_install_failed || return $exit_sig
+    #xargs sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params <<< "$avail_pkgs"
+    exe "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params ${avail_pkgs//$'\n'/ }"
 }
 
 
@@ -8199,15 +8160,23 @@ retry() {
 
 
 # Builds comma separated list.
+# TODO: replaced by join_by()
 #
 # @param {string...}   list of elements to build string from.
 #
 # @returns {string}  comma separated list, eg "a, b, c"
 build_comma_separated_list() {
-    local list
-
-    list="$*"
+    local list="$*"
     echo "${list// /, }"
+}
+
+
+# see https://stackoverflow.com/a/17841619/1803648
+join_by() {
+    local d=${1-} f=${2-}
+    if shift 2; then
+        printf %s "$f" "${@/#/$d}"
+    fi
 }
 
 
@@ -8474,13 +8443,6 @@ cleanup() {
     # shut down the build container:
     if command -v docker >/dev/null 2>&1 && [[ -n "$(docker ps -qa -f status=running -f name="$BUILD_DOCK")" ]]; then
         exe "docker stop '$BUILD_DOCK'" || err "[cleanup] stopping build container [$BUILD_DOCK] failed"
-    fi
-
-    if [[ -n "${PACKAGES_IGNORED_TO_INSTALL[*]}" ]]; then
-        echo -e "    ERR INSTALL: [cleanup] dry run failed for these packages: [${PACKAGES_IGNORED_TO_INSTALL[*]}]" >> "$EXECUTION_LOG"
-    fi
-    if [[ -n "${PACKAGES_FAILED_TO_INSTALL[*]}" ]]; then
-        echo -e "    ERR INSTALL: [cleanup] failed installing these packages: [${PACKAGES_FAILED_TO_INSTALL[*]}]" >> "$EXECUTION_LOG"
     fi
 
     if [[ -e "$EXECUTION_LOG" ]]; then
