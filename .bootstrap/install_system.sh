@@ -2469,7 +2469,7 @@ bc_install() {
     local progs
 
     declare -ra progs=("$@")
-    bc_exe "DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${progs[*]}" || return 1
+    bc_exe "DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${progs[*]}" || return $?
 }
 
 
@@ -3945,6 +3945,8 @@ install_aichat() {  # https://github.com/sigoden/aichat
 # also avail in apt
 # read https://github.com/dalance/procs#usage
 #
+# examples:
+# $ procs --watch --sortd cpu
 install_procs() {  # https://github.com/dalance/procs
     install_bin_from_git -N procs dalance/procs  'x86_64-linux.zip'
 }
@@ -4499,9 +4501,10 @@ install_keybase() {
 }
 
 
-# TODO: build broken
 # https://github.com/Raymo111/i3lock-color
 # this is a depency for i3lock-fancy.
+#
+# for build hints, see https://github.com/Raymo111/i3lock-color/blob/master/build.sh
 install_i3lock() {
     local tmpdir repo ver
 
@@ -4534,14 +4537,14 @@ install_i3lock() {
       ' || { err 'failed to install i3lock build deps. abort.'; return 1; }
 
     # clone the repository
-    tmpdir="$TMP_DIR/i3lock-build-${RANDOM}/build"
+    tmpdir="$TMP_DIR/i3lock-build-${RANDOM}"
     exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
     # create tag so a non-debug version is built:
     exe "git -C '$tmpdir' tag -f 'git-$(git -C '$tmpdir' rev-parse --short HEAD)'" || return 1
 
-    report "building i3lock..."
-    exe "pushd $tmpdir" || return 1
-    build_deb i3lock-color || { err "build_deb() for i3lock-color failed"; popd; return 1; }
+    report 'building i3lock...'
+    mkpushd "$tmpdir/build" || return 1  # as per project's build.sh, build needs to be done from a subdir
+    build_deb  i3lock-color || { err "build_deb() for i3lock-color failed"; popd; return 1; }
     exe 'sudo dpkg -i ../i3lock-color_*.deb' || { err "installing i3lock-color failed"; popd; return 1; }
 
     # old, checkinstall-compliant logic:
@@ -4551,7 +4554,7 @@ install_i3lock() {
     #exe 'make' || return 1
     #create_deb_install_and_store i3lock
 
-    exe "popd"
+    exe popd
     exe "sudo rm -rf -- '$tmpdir'"
 
     add_to_dl_log  i3lock-color "$ver"
@@ -4643,7 +4646,7 @@ install_brillo() {
     # install dependencies:
     install_block go-md2man
 
-    exe "make" || { err "[make] for brillo failed w/ $?"; popd; return 1; }
+    exe 'make' || { err "[make] for brillo failed w/ $?"; popd; return 1; }
     build_deb  brillo || { err "build_deb for brillo failed"; popd; return 1; }
     exe 'sudo dpkg -i ../brillo_*.deb'
 
@@ -5070,17 +5073,23 @@ VERSION = 0.0.1
 PACKAGEVERSION = $(VERSION)-0~$(DISTRIBUTION)0
 
 %%:
-	dh $@ %s
+	dh $@%s
 
 override_dh_auto_test:
 override_dh_auto_configure:
 	dh_auto_configure -- %s --disable-sanitizers
 override_dh_gencontrol:
-	dh_gencontrol -- -v$(PACKAGEVERSION)' "$dh_extra" "$configure_extra" > debian/rules || return 1
+	dh_gencontrol -- -v$(PACKAGEVERSION)' "${dh_extra:+ $dh_extra}" "$configure_extra" > debian/rules || return 1
     fi
 
     # note built .deb will end up in a parent dir:
-    exe 'debuild -us -uc -b' || return 1
+    exe 'sbuild --dist=testing' || return $?
+
+    # older, debuild way:
+    # The options -uc -us will skip signing the resulting Debian source package and
+    # other build artifacts. The -b option will skip creating a source package and
+    # only build the (binary) *.deb packages:
+    #exe 'debuild -us -uc -b' || return 1
 
     # install:  # can't install here, as we don't know which debs to select
     #deb="$(find ../ -mindepth 1 -maxdepth 1 -type f -name '*.deb')"
@@ -8364,6 +8373,14 @@ ensure_d() {
         fi
     done
     return ${e:-0}
+}
+
+
+mkpushd() {
+    local d="$1"
+    # or:  exe "mkdir -p -- '$d' && cd '$dir'"
+    ensure_d "$d" || return 1
+    exe "pushd $d"
 }
 
 
