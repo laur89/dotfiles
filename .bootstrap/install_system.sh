@@ -155,7 +155,7 @@ validate_and_init() {
             unset i
         done
 
-        [[ -z "$i" ]] && err "selected platform [$PLATFORM] is not known" && exit 1
+        [[ -z "$i" ]] && fail "selected platform [$PLATFORM] is not known"
         # TODO: prompt if selected platform doesn't match our hostname?
         unset i
     elif [[ -n "${HOSTNAME_TO_PLATFORM[$HOSTNAME]}" ]]; then
@@ -209,7 +209,7 @@ check_dependencies() {
             report "[$prog] not installed yet, installing..."
             [[ -n "${exec_to_pkg[$prog]}" ]] && prog=${exec_to_pkg[$prog]}
 
-            install_block "$prog" || { err "unable to install required prog [$prog] this script depends on. abort."; exit 1; }
+            install_block "$prog" || fail "unable to install required prog [$prog] this script depends on. abort."
             report "...done"
         fi
     done
@@ -229,13 +229,12 @@ check_dependencies() {
             if confirm -d Y "[$dir] mountpoint/dir does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
                 ensure_d -s "$dir" || fail
             else
-                err "expected [$dir] to be an already-existing dir. abort"
-                exit 1
+                fail "expected [$dir] to be an already-existing dir. abort"
             fi
         fi
 
-        exe "sudo chown $USER:$USER -- '$dir'" || { err "unable to change [$dir] ownership to [$USER:$USER]. abort."; exit 1; }
-        exe "sudo chmod $perms -- '$dir'" || { err "unable to change [$dir] permissions to [$perms]. abort."; exit 1; }
+        exe "sudo chown $USER:$USER -- '$dir'" || fail "unable to change [$dir] ownership to [$USER:$USER]. abort."
+        exe "sudo chmod $perms -- '$dir'" || fail "unable to change [$dir] permissions to [$perms]. abort."
     done
 }
 
@@ -1639,9 +1638,7 @@ fetch_castles() {
         personal)
             clone_or_link_castle -HS "layr/$(basename -- "$PRIVATE__DOTFILES")" bitbucket.org || err "failed pulling personal dotfiles; won't abort"
             ;;
-        *)
-            err "unexpected \$PROFILE [$PROFILE]"; exit 1
-            ;;
+        *) fail "unexpected \$PROFILE [$PROFILE]" ;;
     esac
 
     if [[ -n "$PLATFORM" ]]; then
@@ -1905,7 +1902,7 @@ setup_mok() {
 
 
 setup() {
-    setup_homesick || { err "homesick setup failed; as homesick is necessary, script will exit"; exit 1; }
+    setup_homesick || fail "homesick setup failed; as homesick is necessary, script will exit"
     verify_ssh_key
     source_shell_conf  # so we get our env vars after dotfiles are pulled in
 
@@ -6249,8 +6246,7 @@ choose_step() {
           'fast-update'  ) MODE=3 ;;
           'full-install' ) MODE=1 ;;
           ''             ) exit 0 ;;
-          *) err "unsupported choice [$__SELECTED_ITEMS]"
-             exit 1 ;;
+          *) fail "unsupported choice [$__SELECTED_ITEMS]" ;;
        esac
     fi
 
