@@ -4747,48 +4747,49 @@ EOF
     _apply_patches  # TODO: should we bail on error?
     _fix_rules
 
+    #report "installing i3 build dependencies..."
+    #install_block '
+        #gcc
+        #make
+        #dh-autoreconf
+        #libxcb-keysyms1-dev
+        #libpango1.0-dev
+        #libxcb-util0-dev
+        #xcb
+        #libxcb1-dev
+        #libxcb-icccm4-dev
+        #libyajl-dev
+        #libev-dev
+        #libxcb-xkb-dev
+        #libxcb-cursor-dev
+        #libxkbcommon-dev
+        #libxcb-xinerama0-dev
+        #libxkbcommon-x11-dev
+        #libstartup-notification0-dev
+        #libxcb-randr0-dev
+        #libxcb-xrm0
+        #libxcb-xrm-dev
+        #libxcb-shape0-dev
+    #' || { err 'failed to install build deps. abort.'; return 1; }
 
-    report "installing i3 build dependencies..."
-    install_block '
-        gcc
-        make
-        dh-autoreconf
-        libxcb-keysyms1-dev
-        libpango1.0-dev
-        libxcb-util0-dev
-        xcb
-        libxcb1-dev
-        libxcb-icccm4-dev
-        libyajl-dev
-        libev-dev
-        libxcb-xkb-dev
-        libxcb-cursor-dev
-        libxkbcommon-dev
-        libxcb-xinerama0-dev
-        libxkbcommon-x11-dev
-        libstartup-notification0-dev
-        libxcb-randr0-dev
-        libxcb-xrm0
-        libxcb-xrm-dev
-        libxcb-shape0-dev
-    ' || { err 'failed to install build deps. abort.'; return 1; }
+    # alternatively, install build-deps based on what's in debian/control; this
+    # command packages up build deps listed under debian/; note -i flag installs it,
+    # -r removes the built .deb.
+    #
+    # - note mk-build-deps needs equivs pkg; mk-build-deps itself is provided by devscripts pkg;
+    # - alternative to mk-build-deps, could also do $ sudo apt-get -y build-dep i3-wm
+    #sudo mk-build-deps \
+            #-t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends -qqy' \
+            #-i -r debian/control || { err "automatic build-dep resolver for i3 failed w/ [$?]"; popd; return 1; }
 
+    report 'building i3...'
 
-    # alternatively, install build-deps based on what's in debian/control:
-    # (note mk-build-deps needs equivs pkg; mk-build-deps itself is provided by devscripts pkg)
-    sudo mk-build-deps \
-            -t 'apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends -qqy' \
-            -i -r debian/control || { err "automatic build-dep resolver for i3 failed w/ [$?]"; popd; return 1; }
-    # alternatively, could also do $ sudo apt-get -y build-dep i3-wm
-
-    report "building i3...";
-
-    build_deb || { err "build_deb() for i3 failed"; popd; return 1; }
+    build_deb || { err 'build_deb() for i3 failed'; popd; return 1; }
     exe 'sudo dpkg -i ../i3-wm_*.deb'
     exe 'sudo dpkg -i ../i3_*.deb'
 
     # put package on hold so they don't get overridden by apt-upgrade:
-    exe 'sudo apt-mark hold  i3 i3-wm i3-wm-build-deps'
+    exe 'sudo apt-mark hold  i3 i3-wm'
 
 
     # TODO: deprecated, check-install based way:
@@ -4819,7 +4820,7 @@ EOF
     #exe "popd"
     # --------------------------
 
-    exe "popd"
+    exe popd
     exe "sudo rm -rf -- '$tmpdir'"
     add_to_dl_log  i3 "$ver"
 
