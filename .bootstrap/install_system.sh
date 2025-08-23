@@ -2388,12 +2388,12 @@ install_own_builds() {
     install_neovide
     #install_keepassxc
     #install_keybase
-    #install_goforit
-    #install_copyq
+    #build_goforit
+    #build_copyq
     install_lesspipe
     install_lessfilter
     is_native && install_uhk_agent
-    is_native && install_ddcutil
+    #is_native && build_ddcutil  # currently installing from repo
     install_seafile_cli
     # TODO: why are ferdium&discord behind is_native?
     is_native && install_ferdium
@@ -2425,7 +2425,7 @@ install_own_builds() {
     install_kanata
     install_eza
     install_i3
-    #install_polybar  # currently installing from repo
+    #build_polybar  # currently installing from repo
     install_gruvbox_gtk_theme
     #install_weeslack
     install_gomuks
@@ -2440,8 +2440,8 @@ install_own_builds() {
     install_revanced
     install_apkeditor
 
-    is_native && install_i3lock
-    #is_native && install_i3lock_fancy
+    is_native && build_i3lock
+    #is_native && build_i3lock_fancy
     #is_native && install_betterlockscreen
     #is_native && install_acpilight
     is_native && install_brillo
@@ -3712,17 +3712,26 @@ install_bitlbee() {  # https://github.com/bitlbee/bitlbee
         ver="$(get_git_sha "$repo")" || return 1
         is_installed "$ver" "$name" && return 2
 
-        report "installing $name build dependencies..."
-        install_block 'libpurple-dev' || { err 'failed to install build deps. abort.'; return 1; }
-
-        tmpdir="$TMP_DIR/$name-build-${RANDOM}"
+        tmpdir="$TMP_DIR/$name-build-${RANDOM}/build"
         exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
-        report "building $name"
         exe "pushd $tmpdir" || return 1
-        exe "make" || { err; popd; return 1; }
-        # note this project also supports  $ make install-user
 
-        create_deb_install_and_store  "$name" || { popd; return 1; }
+        report "building $name..."
+
+        # old checkinstall way: {
+        #report "installing $name build dependencies..."
+        #install_block 'libpurple-dev' || { err 'failed to install build deps. abort.'; return 1; }
+
+        #exe "make" || { err; popd; return 1; }
+        # note this project also supports  $ make install-user
+        #create_deb_install_and_store  "$name" || { popd; return 1; }
+        # } new sbuild: {
+        # note as of '25 this fails w/ [dpkg-source: error: can't build with source format '3.0 (quilt)']
+        # as included debian/source/format defines that format; removing the file fixed the issue.
+        #exe 'dpkg-buildpackage -b'  # fyi this instead of build_deb() also works
+        build_deb  "$name" libpurple-dev || { err "build_deb() for $name failed"; popd; return 1; }
+        exe 'sudo dpkg -i ../purple-slack_*.deb' || { err "installing $name failed"; popd; return 1; }
+        # }
 
         # put package on hold so they don't get overridden by apt-upgrade:
         exe "sudo apt-mark hold  $name"
@@ -4149,7 +4158,7 @@ build_and_install_synergy_TODO_container_edition() {
 
 
 # building instructions from https://copyq.readthedocs.io/en/latest/build-source-code.html
-install_copyq() {
+build_copyq() {
     local tmpdir repo ver
 
     repo='https://github.com/hluk/CopyQ.git'
@@ -4230,17 +4239,21 @@ build_lesspipe() {
     ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" lesspipe && return 2
 
-    tmpdir="$TMP_DIR/lesspipe-build-${RANDOM}"
+    tmpdir="$TMP_DIR/lesspipe-build-${RANDOM}/build"
     exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     exe "pushd $tmpdir" || return 1
 
     report "building lesspipe..."
     exe './configure' || { err; popd; return 1; }
     exe make || { err; popd; return 1; }
-
     create_deb_install_and_store lesspipe || { popd; return 1; }
 
-    exe "popd"
+    # in '25 doesn't work, configure step doesn't recognize any of the opts, e.g. [Unknown option: build] {
+    #build_deb  lesspipe  || { err "build_deb() for lesspipe failed"; popd; return 1; }
+    #exe 'sudo dpkg -i ../lesspipe_*.deb' || { err "installing lesspipe failed"; popd; return 1; }
+    # }
+
+    exe popd
     exe "sudo rm -rf -- $tmpdir"
 
     add_to_dl_log  lesspipe "$ver"
@@ -4310,17 +4323,38 @@ install_kanata() {
 # https://www.ddcutil.com/building/
 #
 # pre-built binaries avail @ https://www.ddcutil.com/install/#prebuilt-packages-maintained-by-the-ddcutil-project
-install_ddcutil() {
-    install_block  ddcutil
-    return
-
-    # TODO leaving building instructions just in case:
-    local dir group
+# also avail in apk
+build_ddcutil() {
+    local dir group deps
 
     dir="$(fetch_extract_tarball_from_git -T  rockowitz/ddcutil)" || return 1
+    exe "pushd $dir" || return 1
 
-    report "installing ddcutil build dependencies..."
-    install_block '
+    #report "installing ddcutil build dependencies..."
+    #install_block '
+        #i2c-tools
+        #libglib2.0-0
+        #libgudev-1.0-0
+        #libusb-1.0-0
+        #libudev1
+        #libdrm2
+        #libjansson4
+        #libxrandr2
+        #hwdata
+        #libc6-dev
+        #libglib2.0-dev
+        #libusb-1.0-0-dev
+        #libudev-dev
+        #libxrandr-dev
+        #libdrm-dev
+        #libjansson-dev
+    #' || { err 'failed to install build deps. abort.'; return 1; }
+    #exe 'autoreconf --force --install' || { err; popd; return 1; }
+    #exe './configure' || { err; popd; return 1; }
+    #exe make || { err; popd; return 1; }
+    #create_deb_install_and_store  ddcutil  # TODO: note still using checkinstall
+
+    deps=(
         i2c-tools
         libglib2.0-0
         libgudev-1.0-0
@@ -4337,13 +4371,9 @@ install_ddcutil() {
         libxrandr-dev
         libdrm-dev
         libjansson-dev
-    ' || { err 'failed to install build deps. abort.'; return 1; }
-    exe "pushd $dir" || return 1
-    exe 'autoreconf --force --install' || { err; popd; return 1; }
-    exe './configure' || { err; popd; return 1; }
-    exe make || { err; popd; return 1; }
-
-    create_deb_install_and_store  ddcutil  # TODO: note still using checkinstall
+    )
+    build_deb  ddcutil "${deps[@]}" || { err "build_deb() for ddcutil failed"; popd; return 1; }
+    exe 'sudo dpkg -i ../ddcutil_*.deb' || { err "installing ddcutil failed"; popd; return 1; }
 
     # put package on hold so they don't get overridden by apt-upgrade:
     exe 'sudo apt-mark hold  ddcutil'
@@ -4413,7 +4443,7 @@ create_deb_install_and_store() {
 
 
 # https://github.com/JMoerman/Go-For-It
-install_goforit() {
+build_goforit() {
     # https://flathub.org/apps/de.manuel_kehl.go-for-it
     fp_install -n goforit  'de.manuel_kehl.go-for-it'
     return
@@ -4505,36 +4535,14 @@ install_keybase() {
 # this is a depency for i3lock-fancy.
 #
 # for build hints, see https://github.com/Raymo111/i3lock-color/blob/master/build.sh
-install_i3lock() {
-    local tmpdir repo ver
+build_i3lock() {
+    local tmpdir repo ver deps
 
     repo='https://github.com/Raymo111/i3lock-color'
     ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" i3lock-color && return 2
 
-    report "installing i3lock build dependencies..."
-    install_block '
-      autoconf
-      gcc
-      make
-      pkg-config
-      libpam0g-dev
-      libcairo2-dev
-      libfontconfig1-dev
-      libxcb-composite0-dev
-      libev-dev
-      libx11-xcb-dev
-      libxcb-xkb-dev
-      libxcb-xinerama0-dev
-      libxcb-randr0-dev
-      libxcb-image0-dev
-      libxcb-util0-dev
-      libxcb-xrm-dev
-      libxkbcommon-dev
-      libxkbcommon-x11-dev
-      libjpeg-dev
-      libgif-dev
-      ' || { err 'failed to install i3lock build deps. abort.'; return 1; }
+    deps=(autoconf gcc make pkg-config libpam0g-dev libcairo2-dev libfontconfig1-dev libxcb-composite0-dev libev-dev libx11-xcb-dev libxcb-xkb-dev libxcb-xinerama0-dev libxcb-randr0-dev libxcb-image0-dev libxcb-util0-dev libxcb-xrm-dev libxkbcommon-dev libxkbcommon-x11-dev libjpeg-dev libgif-dev)
 
     # clone the repository
     tmpdir="$TMP_DIR/i3lock-build-${RANDOM}"
@@ -4544,7 +4552,7 @@ install_i3lock() {
 
     report 'building i3lock...'
     mkpushd "$tmpdir/build" || return 1  # as per project's build.sh, build needs to be done from a subdir
-    build_deb  i3lock-color || { err "build_deb() for i3lock-color failed"; popd; return 1; }
+    build_deb  i3lock-color "${deps[@]}" || { err "build_deb() for i3lock-color failed"; popd; return 1; }
     exe 'sudo dpkg -i ../i3lock-color_*.deb' || { err "installing i3lock-color failed"; popd; return 1; }
 
     # old, checkinstall-compliant logic:
@@ -4563,7 +4571,8 @@ install_i3lock() {
 }
 
 
-install_i3lock_fancy() {
+# TODO: available on apt, at least for sid
+build_i3lock_fancy() {
     local repo tmpdir ver
 
     repo='https://github.com/meskarune/i3lock-fancy'
@@ -4590,7 +4599,13 @@ install_i3lock_fancy() {
 
     # TODO: note this guy will already install it! the makefile of fancy is odd...
     report "building i3lock-fancy..."
-    create_deb_install_and_store i3lock-fancy || { popd; return 1; }
+
+    # note this fails as-is, see https://github.com/meskarune/i3lock-fancy/issues/199
+    # as a workaround add line [override_dh_auto_build:] to debian/rules
+    build_deb  i3lock-fancy || { err "build_deb() for i3lock-fancy failed"; popd; return 1; }
+    exe 'sudo dpkg -i ../i3lock-fancy_*.deb' || { err "installing i3lock-fancy failed"; popd; return 1; }
+
+    #create_deb_install_and_store i3lock-fancy || { popd; return 1; }
 
     # put package on hold so they don't get overridden by apt-upgrade:
     exe 'sudo apt-mark hold  i3lock-fancy'
@@ -4643,11 +4658,7 @@ install_brillo() {
     exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
     exe "pushd $tmpdir" || return 1
 
-    # install dependencies:
-    install_block go-md2man
-
-    exe 'make' || { err "[make] for brillo failed w/ $?"; popd; return 1; }
-    build_deb  brillo || { err "build_deb for brillo failed"; popd; return 1; }
+    build_deb  brillo go-md2man || { err "build_deb for brillo failed"; popd; return 1; }
     exe 'sudo dpkg -i ../brillo_*.deb'
 
     exe "popd"
@@ -4944,54 +4955,62 @@ install_i3_deps() {
 # https://github.com/polybar/polybar
 #
 # note testing might have new enough package these days: https://packages.debian.org/testing/polybar
-install_polybar() {
-    local dir
+build_polybar() {
+    local dir deps
 
     #exe "git clone --recursive ${GIT_OPTS[*]} https://github.com/polybar/polybar.git '$dir'" || return 1
     dir="$(fetch_extract_tarball_from_git polybar/polybar 'polybar-\\d+\\.\\d+.*\\.tar\\.gz')" || return 1
 
-    report "installing polybar build dependencies..."
-    # note: clang is installed because of  https://github.com/polybar/polybar/issues/572
-    install_block '
-        clang
-        cmake
-        cmake-data
-        pkg-config
-        python3-sphinx
-        python3-packaging
-        libuv1-dev
-        libcairo2-dev
-        libxcb1-dev
-        libxcb-util0-dev
-        libxcb-randr0-dev
-        libxcb-composite0-dev
-        python3-xcbgen
-        xcb-proto
-        libxcb-image0-dev
-        libxcb-ewmh-dev
-        libxcb-icccm4-dev
-
-        libxcb-xkb-dev
-        libxcb-xrm-dev
-        libxcb-cursor-dev
-        libasound2-dev
-        libpulse-dev
-        libjsoncpp-dev
-        libmpdclient-dev
-        libcurl4-openssl-dev
-        libnl-genl-3-dev
-    ' || { err 'failed to install build deps. abort.'; return 1; }
-
     exe "pushd $dir" || return 1
-    exe "./build.sh --auto --all-features --no-install" || { popd; return 1; }
 
-    exe "pushd build/" || { popd; return 1; }
-    create_deb_install_and_store polybar  # TODO: note still using checkinstall
+    # note: clang is installed because of  https://github.com/polybar/polybar/issues/572
+    # old build.sh & checkinstall method {
+    #report "installing polybar build dependencies..."
+    #install_block '
+        #clang
+        #cmake
+        #cmake-data
+        #pkg-config
+        #python3-sphinx
+        #python3-packaging
+        #libuv1-dev
+        #libcairo2-dev
+        #libxcb1-dev
+        #libxcb-util0-dev
+        #libxcb-randr0-dev
+        #libxcb-composite0-dev
+        #python3-xcbgen
+        #xcb-proto
+        #libxcb-image0-dev
+        #libxcb-ewmh-dev
+        #libxcb-icccm4-dev
+
+        #libxcb-xkb-dev
+        #libxcb-xrm-dev
+        #libxcb-cursor-dev
+        #libasound2-dev
+        #libpulse-dev
+        #libjsoncpp-dev
+        #libmpdclient-dev
+        #libcurl4-openssl-dev
+        #libnl-genl-3-dev
+    #' || { err 'failed to install build deps. abort.'; return 1; }
+    #exe "./build.sh --auto --all-features --no-install" || { popd; return 1; }
+    #exe "pushd build/" || { popd; return 1; }
+    #create_deb_install_and_store polybar  # TODO: note still using checkinstall
+    #exe popd
+    # } build_deb way: {
+    # note requires removal of [override_dh_auto_configure:]  block in debian/rules:
+    deps=(clang build-essential git cmake cmake-data pkg-config python3-sphinx python3-packaging libuv1-dev libcairo2-dev libxcb1-dev libxcb-util0-dev libxcb-randr0-dev libxcb-composite0-dev python3-xcbgen xcb-proto libxcb-image0-dev libxcb-ewmh-dev libxcb-icccm4-dev)
+    report 'building i3lock...'
+    build_deb  polybar "${deps[@]}" || { err "build_deb() for polybar failed"; popd; return 1; }
+    exe 'sudo dpkg -i ../polybar_*.deb' || { err "installing polybar failed"; popd; return 1; }
+    #}
 
     # put package on hold so they don't get overridden by apt-upgrade:
     exe 'sudo apt-mark hold  polybar'
+    exe popd
 
-    exe "popd; popd"
     exe "sudo rm -rf -- '$dir'"
     return 0
 }
@@ -5008,18 +5027,20 @@ install_polybar() {
 # see also https://github.com/aidan-gallagher/debpic
 #   - short introduction @ https://www.reddit.com/r/debian/comments/1cy34sb/ive_created_a_tool_to_ease_building_debian/
 build_deb() {
-    local opt pkg_name configure_extra dh_extra deb OPTIND
+    local opt pkg_name configure_extra build_deps dh_extra deb OPTIND
 
     while getopts 'C:D:' opt; do
         case "$opt" in
             C) readonly configure_extra="$OPTARG" ;;
+            #B) readonly build_deps="$OPTARG" ;;
             D) readonly dh_extra="$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
-    pkg_name="$1"
+    pkg_name="$1"; shift
+    build_deps="$(build_comma_separated_list "$@")"
 
     if ! [[ -d debian ]]; then
         report "no debian/ in pwd, generating scaffolding..."
@@ -5037,7 +5058,7 @@ build_deb() {
         # create control:
         echo "Source: $pkg_name
 Maintainer: Laur Aliste <laur.aliste@packager.eu>
-Build-Depends: debhelper-compat (= 13)
+Build-Depends: ${build_deps:+$build_deps, }debhelper-compat (= 13)
 
 Package: $pkg_name
 Architecture: any
@@ -5082,8 +5103,10 @@ override_dh_gencontrol:
 	dh_gencontrol -- -v$(PACKAGEVERSION)' "${dh_extra:+ $dh_extra}" "$configure_extra" > debian/rules || return 1
     fi
 
-    # note built .deb will end up in a parent dir:
-    exe 'sbuild --dist=testing' || return $?
+    # - note built .deb will end up in a parent dir;
+    # - the --no-clean opt is as without it the clean step will require build deps to be
+    #   installed on host, see https://www.mail-archive.com/debian-bugs-dist@lists.debian.org/msg2002932.html
+    exe 'sbuild --dist=testing --no-clean' || return $?
 
     # older, debuild way:
     # The options -uc -us will skip signing the resulting Debian source package and
@@ -5478,6 +5501,7 @@ install_from_repo() {
         # edit: should not be needed, as jitter entropy collecter was introduced
         # already in kernel 5.4: https://wiki.debian.org/BoottimeEntropyStarvation
         #haveged
+        ddcutil
     )
     # old/deprecated block1_nonwin:
     #    ufw - simpler alternative to firewalld
@@ -6366,12 +6390,12 @@ __choose_prog_to_build() {
         install_YCM
         install_keepassxc
         install_keybase
-        install_goforit
-        install_copyq
+        build_goforit
+        build_copyq
         install_lesspipe
         install_lessfilter
         install_uhk_agent
-        install_ddcutil
+        build_ddcutil
         install_slides
         install_seafile_cli
         install_seafile_gui
@@ -6412,10 +6436,10 @@ __choose_prog_to_build() {
         build_i3
         install_i3
         install_i3_deps
-        install_i3lock
-        install_i3lock_fancy
+        build_i3lock
+        build_i3lock_fancy
         install_betterlockscreen
-        install_polybar
+        build_polybar
         install_saml2aws
         install_aia
         install_kustomize
