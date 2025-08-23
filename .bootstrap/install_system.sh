@@ -1207,16 +1207,19 @@ install_deps() {
         __install_wifi_driver() {
             local wifi_info rtl_driver
 
-            # TODO: entirety of this function needs a review
-            # TODO: lwfinger/rtlwifi_new repo doesn't exist, looks like each device has its own repo now, ie old repo was split up?
-            #       actually, it seems like https://github.com/lwfinger/rtw88 is the new repo?
+            # TODO: deprecated installation method, we should install via DKMS
+            #       instead: https://github.com/lwfinger/rtw88#installation-using-dkms-
             __install_rtlwifi_new() {  # custom driver installation, pulling from github
                 local repo tmpdir
 
-                repo="https://github.com/lwfinger/rtlwifi_new.git"
+                err "lwfinger github-hosted driver logic is out-dated in our script, have to abort until we've updated it :("
+                return 1
 
-                report "installing rtlwifi_new for card [$rtl_driver]"
-                tmpdir="$TMP_DIR/realtek-driver-${RANDOM}"
+                # TODO: different repo for different card series! e.g. there's also /rtw89
+                repo='https://github.com/lwfinger/rtw88'
+
+                report "installing Realtek rtw88 series driver for card [$rtl_driver]"
+                tmpdir="$TMP_DIR/realtek-driver-${RANDOM}/build"
                 exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
                 exe "pushd $tmpdir" || return 1
                 exe "make clean" || return 1
@@ -1235,28 +1238,23 @@ install_deps() {
             # wireless interface'; went ok after intel drivers were installed tho
             if grep -iq 'vendor.*Intel' <<< "$wifi_info"; then
                 report "we have intel wifi; installing intel drivers..."
-                install_block "firmware-iwlwifi"
+                install_block 'firmware-iwlwifi'
             elif grep -iq 'vendor.*Realtek' <<< "$wifi_info"; then
-                # TODO: delete these 2 lines once __install_rtlwifi_new() has been reviewed&updated:
-                err "lwfinger github-hosted driver logic is out-dated in our script, have to abort until we've updated it :("
-                return 1
-
-
                 report "we have realtek wifi; installing realtek drivers..."
                 rtl_driver="$(grep -Poi '\s+driver=\Krtl\w+(?=\s+\S+)' <<< "$(sudo lshw -C network)")"
                 is_single "$rtl_driver" || { err "realtek driver from lshw output was [$rtl_driver]"; return 1; }
 
-                #install_block "firmware-realtek"                     # either from repos, or...
-                __install_rtlwifi_new; unset __install_rtlwifi_new    # ...this
+                install_block 'firmware-realtek'                     # either from repos, or...
+                #__install_rtlwifi_new; unset __install_rtlwifi_new  # ...this
 
                 # add config to solve the intermittent disconnection problem; YMMV (https://github.com/lwfinger/rtlwifi_new/issues/126):
                 #     note: 'ips, swlps, fwlps' are power-saving options.
                 #     note2: ant_sel=1 or =2
                 #exe "echo options $rtl_driver ant_sel=1 fwlps=0 | sudo tee /etc/modprobe.d/$rtl_driver.conf"
-                exe "echo options $rtl_driver ant_sel=1 msi=1 ips=0 | sudo tee /etc/modprobe.d/$rtl_driver.conf"
+                #exe "echo options $rtl_driver ant_sel=1 msi=1 ips=0 | sudo tee /etc/modprobe.d/$rtl_driver.conf"
 
-                exe "sudo modprobe -r $rtl_driver" || { err "unable removing modprobe [$rtl_driver]"; return 1; }
-                exe "sudo modprobe $rtl_driver" || { err "unable adding modprobe [$rtl_driver]; make sure secure boot is turned off in BIOS"; return 1; }
+                #exe "sudo modprobe -r $rtl_driver" || { err "unable removing modprobe [$rtl_driver]"; return 1; }
+                #exe "sudo modprobe $rtl_driver" || { err "unable adding modprobe [$rtl_driver]; make sure secure boot is turned off in BIOS"; return 1; }
             else
                 err "can't detect Intel nor Realtek wifi; whose card do we have?"
             fi
