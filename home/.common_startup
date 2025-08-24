@@ -175,7 +175,7 @@ xcape -e 'Control_L=Escape'
 # export env variables to dbus & systemd: (we likely shouldn't be doing this: https://unix.stackexchange.com/questions/440044/xinitrc-set-dbus-session-bus-address)
 #dbus-update-activation-environment --all || err_display "dbus-update-activation-environment failed w/ $?" "$_SELF"  # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=842712 & https://wiki.archlinux.org/title/GNOME/Keyring#xinitrc
 
-#/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1 &  # atm started by i3
+#/usr/bin/lxpolkit &  # atm started by i3 or systemd
 
 # keyring is tricky with i3; see https://wiki.archlinux.org/index.php/GNOME/Keyring#PAM_step
 # if you'll return to debugging keyring-not-unlocking-on-login, check these:
