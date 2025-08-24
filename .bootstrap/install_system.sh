@@ -5556,7 +5556,7 @@ install_from_repo() {
         #fuseiso  # FUSE module to mount ISO filesystem images
         parallel
         progress  # Coreutils Progress Viewer; Linux-and-OSX-Only C command that looks for coreutils basic commands (cp, mv, dd, tar, gzip/gunzip, cat, etc.); https://github.com/Xfennec/progress
-        md5deep
+        hashdeep
         dconf-cli  # low-level key/value database designed for storing gnome desktop environment settings; https://wiki.gnome.org/Projects/dconf
         dconf-editor  # GUI frontend for dconf
     )
@@ -5760,7 +5760,7 @@ install_from_repo() {
         #links2  # terminal+GUI web browser; TODO: x11?!
         #w3m  # another CLI web browser
         tmux
-        neovim/unstable
+        neovim
         python3-pynvim  # Python3 library for scripting Neovim processes through its msgpack-rpc API; https://github.com/neovim/pynvim
         libxml2-utils  # provides xmllint, a tool for validating and reformatting XML documents, and xmlcatalog, a tool to parse and manipulate XML or SGML catalog files
         pidgin
@@ -6202,6 +6202,8 @@ install_nvidia() {
 
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
+#
+# TODO: current implementation doesn't allow for [pkgname/unstable] usage
 install_block() {
     local opt OPTIND noinstall list_to_install extra_apt_params
     local pkg_cache grp_ptrn avail_pkgs missing_pkgs
