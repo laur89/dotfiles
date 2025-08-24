@@ -5631,8 +5631,8 @@ install_from_repo() {
         gnome-keyring
         seahorse
         libpam-gnome-keyring  # PAM module to unlock the GNOME keyring upon login
-        policykit-1-gnome  # provides a D-Bus session bus service that is used to bring up authentication dialogs used for obtaining privileges
-                           # TODO: removed/dropped from debian, as it's no longer maintained??
+        lxpolkit           # provides a D-Bus session bus service that is used to bring up authentication dialogs used for obtaining privileges
+                           # NOTE: used to use policykit-1-gnome, but it got removed/dropped from debian, as it's no longer maintained.
                            #
                            # - forum thread https://forums.bunsenlabs.org/viewtopic.php?id=8595&p=2 discusses it:
                            #     - consensus as of May seems to be: lxpolkit, or mate-polit (as latter is gtk3)
