@@ -5765,8 +5765,8 @@ install_from_repo() {
         libxml2-utils  # provides xmllint, a tool for validating and reformatting XML documents, and xmlcatalog, a tool to parse and manipulate XML or SGML catalog files
         pidgin
         weechat  # like irssi but better; https://weechat.org/
-        bitlbee  # IRC to other chat networks gateway; http://www.bitlbee.org/
-        bitlbee-libpurple  # This package contains a version of BitlBee that uses the libpurple instant messaging library instead of built-in code, which adds support for more IM protocols (all protocols supported by Pidgin/Finch)
+        #bitlbee  # IRC to other chat networks gateway; http://www.bitlbee.org/
+        #bitlbee-libpurple  # This package contains a version of BitlBee that uses the libpurple instant messaging library instead of built-in code, which adds support for more IM protocols (all protocols supported by Pidgin/Finch)
         purple-discord  # libpurple/Pidgin plugin for Discord
         nheko  # Qt-based chat client for Matrix  # TODO: avail as flatpak
         signal-desktop
