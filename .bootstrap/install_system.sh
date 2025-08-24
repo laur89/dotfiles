@@ -6287,7 +6287,7 @@ choose_step() {
 choose_single_task() {
     local choices
 
-    [[ -z "$LOGGING_LVL" ]] && LOGGING_LVL=1
+    [[ "$LOGGING_LVL" -eq 0 ]] && LOGGING_LVL=1
     readonly MODE=0
 
     source_shell_conf
@@ -6476,7 +6476,7 @@ __choose_prog_to_build() {
 
 full_install() {
 
-    [[ -z "$LOGGING_LVL" ]] && LOGGING_LVL=10
+    [[ "$LOGGING_LVL" -eq 0 ]] && LOGGING_LVL=10
     readonly MODE=1
 
     setup
@@ -6497,7 +6497,7 @@ full_install() {
 
 # quicker update than full_install() to be executed periodically
 quick_refresh() {
-    [[ -z "$LOGGING_LVL" ]] && LOGGING_LVL=1
+    [[ "$LOGGING_LVL" -eq 0 ]] && LOGGING_LVL=1
     readonly MODE=2
 
     setup
@@ -6512,7 +6512,7 @@ quick_refresh() {
 
 # even faster refresher without the install_from_repo() step that's included in install_progs()
 quicker_refresh() {
-    [[ -z "$LOGGING_LVL" ]] && LOGGING_LVL=1
+    [[ "$LOGGING_LVL" -eq 0 ]] && LOGGING_LVL=1
     readonly MODE=3
 
     setup
