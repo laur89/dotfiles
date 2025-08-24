@@ -5661,7 +5661,7 @@ install_from_repo() {
         dos2unix  # convert text file line endings between CRLF and LF
         lxappearance  # TODO: x11
         qt5ct
-        qt5-style-plugins
+        #qt5-style-plugins
         qt6ct
         gtk2-engines-murrine
         gtk2-engines-pixbuf
