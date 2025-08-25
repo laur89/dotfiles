@@ -630,7 +630,7 @@ setup_hosts() {
         current_hostline="$(_extract_current_hostname_line /etc/hosts)" || return 1
         exe "sed -e 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' -e 's/{HOSTNAME}/$HOSTNAME/g' $file > $tmpfile" || { err; return 1; }
 
-        backup_original_and_copy_file --sudo "$tmpfile" /etc
+        exe "sudo install -m644 -C --backup=numbered '$tmpfile' /etc" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
         exe "rm -- '$tmpfile'"
     else
         err "expected configuration file at [$file] does not exist; won't install it."
@@ -670,7 +670,7 @@ setup_apt() {
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
         is_f -m "won't install it" "$file" || continue
-        backup_original_and_copy_file --sudo "$file" "$apt_dir"
+        exe "sudo install -m644 -C --backup=numbered '$file' '$apt_dir'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
     for file in \
@@ -744,7 +744,7 @@ setup_crontab() {
 
 
 # pass '-s' or '--sudo' as first arg to execute as sudo
-# TODO: mv, cp & ln commands have --backup option (eg --backup=numbered)
+# TODO: mv, cp, ln, install commands have --backup option (eg --backup=numbered)
 #
 backup_original_and_copy_file() {
     local sudo file dest_dir filename i old_suffixes
@@ -1004,7 +1004,7 @@ install_ssh_server() {
 
     # install sshd config:
     if [[ -f "$config" ]]; then
-        backup_original_and_copy_file --sudo "$config" "$sshd_confdir"
+        exe "sudo install -m644 -C '$config' '$sshd_confdir'" || { err "installing [$config] failed w/ $?"; return 1; }
     else
         err "expected configuration file at [$config] does not exist; aborting sshd configuration."
         return 1
@@ -1012,7 +1012,7 @@ install_ssh_server() {
 
     # install ssh banner:
     if [[ -f "$banner" ]]; then
-        backup_original_and_copy_file --sudo "$banner" "$sshd_confdir"
+        exe "sudo install -m644 -C '$banner' '$sshd_confdir'" || { err "installing [$banner] failed w/ $?"; return 1; }
     else
         err "expected sshd banner file at [$banner] does not exist; won't install it."
         #return 1  # don't return, it's just a banner.
@@ -7060,7 +7060,7 @@ setup_mopidy() {
     is_d -m 'is mopidy installed?' "$mopidy_confdir" || return 1
     is_f -m "won't install it" "$file" || return 1
 
-    backup_original_and_copy_file --sudo "$file" "$mopidy_confdir"
+    exe "sudo install -m644 -C '$file' '$mopidy_confdir'" || { err "installing [$file] failed w/ $?"; return 1; }
     # when mopidy is ran as a service, the config file needs to be owned by mopidy user:
     exe "sudo chown mopidy:root $mopidy_confdir/mopidy.conf" || return 1
 
