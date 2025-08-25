@@ -1912,7 +1912,6 @@ setup() {
     [[ "$MODE" -eq 1 ]] && install_flatpak
     setup_config_files
     setup_additional_apt_keys_and_sources
-    is_secure_boot && setup_mok
 
     [[ "$PROFILE" == work && -s ~/.npmrc ]] && mv -- ~/.npmrc "$NPMRC_BAK"  # work npmrc might define private registry
     # following npm hack is superseded by temporarily getting rid of ~/.npmrc above:
@@ -7284,6 +7283,7 @@ post_install_progs_setup() {
     #add_to_group fuse  # not needed anymore?
     setup_firefox
     configure_updatedb
+    is_secure_boot && setup_mok  # otherwise e.g. dkms dirs won't be there
 }
 
 
