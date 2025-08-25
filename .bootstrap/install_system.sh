@@ -1461,7 +1461,7 @@ install_deps() {
     # flashfocus - flash window when focus changes  https://github.com/fennerm/flashfocus
     # note on X systems it requires a compositor (e.g. picom) to be effective.
     # TODO: x11? project page mentions it's working on sway, but it has xcb dependencies, so...
-    install_block 'libxcb-render0-dev libffi-dev python-cffi'
+    install_block 'libxcb-render0-dev libffi-dev python3-cffi'
     py_install flashfocus
 
 
