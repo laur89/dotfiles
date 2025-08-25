@@ -2050,7 +2050,7 @@ setup_additional_apt_keys_and_sources() {
 
     # spotify: (from https://www.spotify.com/download/linux/):
     # consider also https://github.com/SpotX-Official/SpotX-Bash to patch the client
-    create_apt_source  spotify  https://download.spotify.com/debian/pubkey_C85668DF69375001.gpg  https://repository.spotify.com/ stable non-free
+    #create_apt_source  spotify  https://download.spotify.com/debian/pubkey_C85668DF69375001.gpg  https://repository.spotify.com/ stable non-free
 
     # !!! "Since 9.0.7 version, we only provide official packages in AppImage format" !!!
     # seafile-client: (from https://help.seafile.com/syncing_client/install_linux_client/):
@@ -5690,7 +5690,7 @@ install_from_repo() {
         # socat for mopidy+ncmpcpp visualisation;
 
     declare -ar block3_nonwin=(
-        spotify-client
+        #spotify-client
         #mopidy
         playerctl  # cli utility and library for controlling media players that implement the MPRIS D-Bus Interface Specification. Compatible players include audacious, cmus, mopidy, mpd, mpv, quod libet, rhythmbox, spotify, and vlc; https://github.com/altdesktop/playerctl
         socat
