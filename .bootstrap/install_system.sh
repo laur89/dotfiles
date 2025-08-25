@@ -3606,7 +3606,7 @@ install_alacritty() {
 # other terms to consider: kitty
 # avail as flatpak but not recommended: https://flathub.org/apps/org.wezfurlong.wezterm
 install_wezterm() {
-    install_block  wezterm
+    install_block  'wezterm/*'
 }
 
 
@@ -5738,7 +5738,7 @@ install_from_repo() {
         xdotool  # TODO: x11 - way not work w/ xwayland! !!! our screenshot.sh depends on it as of '25;  # https://github.com/jordansissel/xdotool/
         python3-xlib  # pure Python 3 implementation of the X11 protocol;  TODO: x11;  https://github.com/python-xlib/python-xlib
         exuberant-ctags  # parses source code and produces a sort of index mapping the names of significant entities (e.g. functions, classes, variables) to the location where that entity is defined
-        nushell
+        'nushell/*'
         shellcheck
         #ranger  # CLI File Manager with VI Key Bindings;  https://ranger.github.io/
         vifm  # alternatives: yazi
@@ -5767,7 +5767,7 @@ install_from_repo() {
         #bitlbee-libpurple  # This package contains a version of BitlBee that uses the libpurple instant messaging library instead of built-in code, which adds support for more IM protocols (all protocols supported by Pidgin/Finch)
         purple-discord  # libpurple/Pidgin plugin for Discord
         nheko  # Qt-based chat client for Matrix  # TODO: avail as flatpak
-        signal-desktop
+        'signal-desktop/*'
         #signald  # note this doesn't come from debian repos
         #lxrandr  # GUI application for the Lightweight X11 Desktop Environment (LXDE); TODO: x11!
         arandr  # visual front end for XRandR; TODO: x11
@@ -5822,7 +5822,7 @@ install_from_repo() {
         criu  # utilities to checkpoint and restore processes in userspace; It can freeze a running container (or an individual application) and checkpoint its state to disk
         mitmproxy  # SSL-capable man-in-the-middle HTTP proxy; https://github.com/mitmproxy/mitmproxy
         #charles-proxy5  # note also avail as tarball @ https://www.charlesproxy.com/download/
-        tofu
+        'tofu/*'
         gh  # github cli; also avail from debian
     )
     # old/deprecated block4:
@@ -6877,7 +6877,7 @@ install_hblock() {
 # note our setup logic configures apt repo
 # note digidoc4 client executable is likely `qdigidoc4`
 install_open_eid() {
-    install_block -f 'opensc  open-eid' || return 1
+    install_block -f 'opensc  open-eid/*' || return 1
 
     # Configure Chrome/Firefox PKCS11 driver for current user, /etc/xdg/autstart/ will init other users on next logon
     exe '/usr/bin/pkcs11-register --skip-chrome=off --skip-firefox=off'
