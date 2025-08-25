@@ -200,7 +200,7 @@ check_dependencies() {
     )
 
     for prog in \
-            git cmp comm wc wget curl tar unzip atool \
+            git cmp wc wget curl tar unzip atool \
             realpath dirname basename head tee jq \
             gpg mktemp file date id html2text \
             pwd uniq sort xxd openssl mokutil \
@@ -6204,8 +6204,9 @@ install_nvidia() {
 # TODO: current implementation doesn't allow for [pkgname/unstable] usage
 install_block() {
     local opt OPTIND noinstall list_to_install extra_apt_params
-    local pkg_cache grp_ptrn avail_pkgs missing_pkgs
+    local avail_pkgs missing_pkgs unavail_pkgs i cache_out
 
+    declare -a avail_pkgs missing_pkgs unavail_pkgs
     noinstall='--no-install-recommends'  # default
     while getopts 'f' opt; do
         case "$opt" in
@@ -6218,22 +6219,25 @@ install_block() {
     declare -ar list_to_install=($1)
     readonly extra_apt_params="$2"  # optional
 
-    # TODO: apt-cache also lists pkg avail from other releases than 'testing':
-    pkg_cache="$(apt-cache --generate pkgnames)"
-    grp_ptrn="$(join_by ' -e ' "${list_to_install[@]}")"
-    avail_pkgs="$(grep --line-regexp --fixed-strings -e $grp_ptrn <<< "$pkg_cache")"
-    missing_pkgs="$(comm -13 <(sort <<< "$avail_pkgs") <(printf '%s\n' "${list_to_install[@]}" | sort))"
-    if [[ -n "$missing_pkgs" ]]; then
-        err "following packages were not available in APT:"
-        err "${missing_pkgs//$'\n'/ }"
+    for i in "${list_to_install[@]}"; do
+        if ! cache_out="$(apt-cache -qq show "$i/testing" 2>/dev/null)"; then
+            unavail_pkgs+=("$i")
+        else
+            [[ -n "$cache_out" ]] && avail_pkgs+=("$i") || missing_pkgs+=("$i")
+        fi
+    done
+
+    if [[ "${#unavail_pkgs[@]}" -ne 0 ]]; then
+        err "${#unavail_pkgs[@]} packages were not available in APT"
+        err "${unavail_pkgs[*]}"
+    fi
+    if [[ "${#missing_pkgs[@]}" -ne 0 ]]; then
+        err "${#missing_pkgs[@]} packages were not available in APT for testing:"
+        err "${missing_pkgs[*]}"
     fi
 
-    # from https://askubuntu.com/a/1333505
-    report "installing these packages:\n${avail_pkgs}\n"
-    #report "installing these packages:\n${avail_pkgs//$'\n'/ }\n"
-
-    #xargs sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params <<< "$avail_pkgs"
-    exe "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params ${avail_pkgs//$'\n'/ }"
+    report "installing these packages:\n${avail_pkgs[*]}\n"
+    exe "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params ${avail_pkgs[*]}"
 }
 
 
