@@ -5664,7 +5664,7 @@ install_from_repo() {
         qt6ct
         gtk2-engines-murrine
         gtk2-engines-pixbuf
-        gnome-themes-standard
+        gnome-themes-extra
         arc-theme
         numix-gtk-theme
         greybird-gtk-theme
