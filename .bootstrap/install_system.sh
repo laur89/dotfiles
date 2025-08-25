@@ -5581,7 +5581,7 @@ install_from_repo() {
     declare -ar block2=(
         strace  # system call tracer, i.e. a debugging tool which prints out a trace of all the system calls made by another process/program
         net-tools  # includes the important tools for controlling the network subsystem of the Linux kernel. This includes arp, ifconfig, netstat, rarp, nameif and route
-        dnsutils  # provides dig, nslookup, nsupdate
+        bind9-dnsutils  # provides dig, nslookup, nsupdate
         dnstracer  # determines where a given Domain Name Server (DNS) gets its information from for a given hostname, and follows the chain of DNS servers back to the authoritative answer
         mtr  # mtr combines the functionality of the 'traceroute' and 'ping' programs in a single network diagnostic tool; GUI
         whois  # whois client
@@ -5647,7 +5647,7 @@ install_from_repo() {
         vdirsyncer  # synchronizes your calendars and addressbooks between two storages. The most popular purpose is to synchronize a CalDAV/CardDAV server with a local folder or file
         #calcurse  # calendar and todo list for the console which allows you to keep track of your appointments and everyday tasks; https://calcurse.org/
         #galculator  # https://github.com/galculator/galculator
-        speedcrunch  # https://heldercorreia.bitbucket.io/speedcrunch/
+        speedcrunch  # https://heldercorreia.bitbucket.io/speedcrunch/  TODO: not avail in testing in aug '25
         calc  # for cli
         bcal  # another cli calcultor/storage conversion tool; https://github.com/jarun/bcal
         atool  # provides aunpack command. instead of atool, consider https://github.com/mholt/archives
@@ -5667,7 +5667,7 @@ install_from_repo() {
         arc-theme
         numix-gtk-theme
         greybird-gtk-theme
-        materia-gtk-theme
+        #materia-gtk-theme  # TODO: not avail for testing in aug '25
         numix-icon-theme
         faba-icon-theme
         meld
@@ -5714,7 +5714,7 @@ install_from_repo() {
     )
 
     declare -ar block3=(
-        firefox  # TODO: avail as flatpak (does native messaging work tho?)
+        firefox-esr  # TODO: avail as flatpak (does native messaging work tho?); also can pull binaries from mozilla. see https://wiki.debian.org/Firefox#From_Mozilla_binaries
         profile-sync-daemon  # pseudo-daemon designed to manage your browsers profile in tmpfs and periodically sync it back to disk
         buku  # CLI bookmark manager; https://github.com/jarun/Buku
         chromium
@@ -6220,6 +6220,7 @@ install_block() {
     readonly extra_apt_params="$2"  # optional
 
     for i in "${list_to_install[@]}"; do
+        # other commands to consider: - apt list -a
         if ! cache_out="$(apt-cache -qq show "$i/testing" 2>/dev/null)"; then
             unavail_pkgs+=("$i")
         else
