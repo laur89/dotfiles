@@ -315,7 +315,7 @@ setup_pm() {
         for pm_state_dir in "$dir/"*.d; do
             is_d "$pm_state_dir" || continue
             target="$pm_target/$(basename -- "$pm_state_dir")"  # e.g. /etc/pm/sleep.d, ...power.d
-            [[ -d "$target" ]] || { err "[$target] does not exist. should we just create it?"; continue; }
+            is_d -m 'should we just create it?' "$target" || continue
 
             for file in "$pm_state_dir/"*; do
                 is_f -n "$file" || continue
@@ -625,17 +625,13 @@ setup_hosts() {
     }
 
     is_f /etc/hosts || return 1
+    is_f -m "won't install it" "$file" || return 1
 
-    if [[ -f "$file" ]]; then
-        current_hostline="$(_extract_current_hostname_line /etc/hosts)" || return 1
-        exe "sed -e 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' -e 's/{HOSTNAME}/$HOSTNAME/g' $file > $tmpfile" || { err; return 1; }
+    current_hostline="$(_extract_current_hostname_line /etc/hosts)" || return 1
+    exe "sed -e 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' -e 's/{HOSTNAME}/$HOSTNAME/g' $file > $tmpfile" || { err; return 1; }
 
-        exe "sudo install -m644 -C --backup=numbered '$tmpfile' /etc" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
-        exe "rm -- '$tmpfile'"
-    else
-        err "expected configuration file at [$file] does not exist; won't install it."
-        return 1
-    fi
+    exe "sudo install -m644 -C --backup=numbered '$tmpfile' /etc" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
+    exe "rm -- '$tmpfile'"
 
     unset _extract_current_hostname_line
 }
@@ -721,12 +717,10 @@ setup_crontab() {
 
     is_d -m 'skipping crontab installation' "$cron_dir" || return 1
 
-    if [[ -f "$file" ]]; then
+    if is_f -m "won't install it" "$file"; then
         exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
         exe "sudo install -m644 -CT '$tmpfile' '$cron_dir/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
         exe "rm -- '$tmpfile'"
-    else
-        err "expected configuration file at [$file] does not exist; won't install it."
     fi
 
     # install/link weekly scripts:
@@ -839,22 +833,20 @@ install_nfs_server() {
 
     readonly nfs_conf='/etc/exports'
 
-    confirm "wish to install & configure nfs server?" || return 1
-    is_laptop && ! confirm "you're on laptop; sure you wish to install nfs server?" && return 1
+    confirm "wish to install & configure NFS server?" || return 1
+    is_laptop && ! confirm "you're on laptop; sure you wish to install NFS server?" && return 1
 
-    install_block 'nfs-kernel-server' || { err "unable to install nfs-kernel-server. aborting nfs server install/config."; return 1; }
+    install_block 'nfs-kernel-server' || { err "unable to install nfs-kernel-server. aborting NFS server install/config."; return 1; }
 
-    is_f -m 'skipping nfs server installation' "$nfs_conf" || return 1
+    is_f -m 'skipping NFS server installation' "$nfs_conf" || return 1
 
     while true; do
         confirm "$(report "add ${client_ip:+another }client IP for the exports list?")" || break
 
         read -r -p "enter client ip: " client_ip
-
         is_valid_ip "$client_ip" || { err "not a valid ip: [$client_ip]"; continue; }
 
         read -r -p "enter share to expose (leave blank to default to [$NFS_SERVER_SHARE]): " share
-
         share=${share:-"$NFS_SERVER_SHARE"}
         [[ "$share" != /* ]] && { err "share needs to be defined as full path."; continue; }
         is_d "$share" || continue
@@ -871,7 +863,7 @@ install_nfs_server() {
     done
 
     # exports the shares:
-    exe 'sudo exportfs -ra' || err
+    exe 'sudo exportfs -ra'
 
     return 0
 }
@@ -893,19 +885,19 @@ _install_nfs_client_stationary() {
     prev_server_ip="$SERVER_IP"  # default
 
     while true; do
-        confirm "$(report "add ${server_ip:+another }nfs server entry to fstab?")" || break
+        confirm "$(report "add ${server_ip:+another }NFS server entry to fstab?")" || break
 
         read -r -p "enter server ip${prev_server_ip:+ (leave blank to default to [$prev_server_ip])}: " server_ip
-        [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
+        : ${server_ip:=$prev_server_ip}
         is_valid_ip "$server_ip" || { err "not a valid ip: [$server_ip]"; continue; }
 
-        read -r -p "enter local mountpoint to mount nfs share to (leave blank to default to [$default_mountpoint]): " mountpoint
-        [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
+        read -r -p "enter local mountpoint to mount NFS share to (leave blank to default to [$default_mountpoint]): " mountpoint
+        : ${mountpoint:=$default_mountpoint}
         list_contains "$mountpoint" "${used_mountpoints[@]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
         create_mountpoint "$mountpoint" || continue
 
         read -r -p "enter remote share to mount (leave blank to default to [$NFS_SERVER_SHARE]): " nfs_share
-        [[ -z "$nfs_share" ]] && nfs_share="$NFS_SERVER_SHARE"
+        : ${nfs_share:=$NFS_SERVER_SHARE}
         list_contains "${server_ip}${nfs_share}" "${mounted_shares[@]}" && { report "selected [${server_ip}:${nfs_share}] has already been used for previous definition"; continue; }
         [[ "$nfs_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
 
@@ -915,7 +907,7 @@ _install_nfs_client_stationary() {
                     | sudo tee --append $fstab > /dev/null"
             changed=1
         else
-            err "an nfs share entry for [${server_ip}:${nfs_share}] in $fstab already exists."
+            err "an NFS share entry for [${server_ip}:${nfs_share}] in $fstab already exists."
         fi
 
         prev_server_ip="$server_ip"
@@ -937,9 +929,9 @@ _install_nfs_client_laptop() {
     readonly autofs_d='/etc/auto.master.d'
     readonly root_confd="$COMMON_PRIVATE_DOTFILES/backups/autofs"
 
-    install_block 'autofs' || { err "unable to install autofs. aborting nfs client install/config."; return 1; }
+    install_block 'autofs' || { err "unable to install autofs. aborting NFS client install/config."; return 1; }
 
-    is_d -m 'cannot add autofs nfs config' "$autofs_d" || return 1
+    is_d -m 'cannot add autofs NFS config' "$autofs_d" || return 1
     [[ -d "$root_confd" ]] && ! is_dir_empty "$root_confd" || return 0
 
     for i in "$root_confd/servers/"*; do
@@ -969,9 +961,9 @@ _install_nfs_client_laptop() {
 
 
 install_nfs_client() {
-    confirm "wish to install & configure nfs client?" || return 1
+    confirm 'wish to install & configure NFS client?' || return 1
 
-    install_block 'nfs-common' || { err "unable to install nfs-common. aborting nfs client install/config."; return 1; }
+    install_block 'nfs-common' || { err "unable to install nfs-common. aborting NFS client install/config."; return 1; }
 
     if is_laptop; then
         _install_nfs_client_laptop
@@ -991,31 +983,24 @@ install_nfs_client() {
 install_ssh_server() {
     local sshd_confdir config banner
 
-    readonly sshd_confdir="/etc/ssh"
+    readonly sshd_confdir='/etc/ssh'
     readonly config="$COMMON_PRIVATE_DOTFILES/backups/sshd_config"
     readonly banner="$COMMON_PRIVATE_DOTFILES/backups/ssh_banner"
 
-    confirm "wish to install & configure ssh server?" || return 1
-    is_laptop && ! confirm "you're on laptop; sure you wish to install ssh server?" && return 1
+    confirm "wish to install & configure SSH server?" || return 1
+    is_laptop && ! confirm "you're on laptop; sure you wish to install SSH server?" && return 1
 
-    install_block 'openssh-server' || { err "unable to install openssh-server. aborting sshd install/config."; return 1; }
+    install_block 'openssh-server' || { err "unable to install openssh-server. aborting SSHD install/config."; return 1; }
 
-    is_d -m 'skipping sshd conf installation' "$sshd_confdir" || return 1
+    is_d -m 'skipping SSHD conf installation' "$sshd_confdir" || return 1
 
     # install sshd config:
-    if [[ -f "$config" ]]; then
-        exe "sudo install -m644 -C '$config' '$sshd_confdir'" || { err "installing [$config] failed w/ $?"; return 1; }
-    else
-        err "expected configuration file at [$config] does not exist; aborting sshd configuration."
-        return 1
-    fi
+    is_f -nm 'aborting SSHD config' "$config" || return 1
+    exe "sudo install -m644 -C '$config' '$sshd_confdir'" || { err "installing [$config] failed w/ $?"; return 1; }
 
     # install ssh banner:
-    if [[ -f "$banner" ]]; then
+    if is_f -nm "won't install it" "$banner"; then
         exe "sudo install -m644 -C '$banner' '$sshd_confdir'" || { err "installing [$banner] failed w/ $?"; return 1; }
-    else
-        err "expected sshd banner file at [$banner] does not exist; won't install it."
-        #return 1  # don't return, it's just a banner.
     fi
 
     exe "sudo systemctl enable --now sshd.service"  # note --now flag effectively also starts the service immediately
@@ -1031,8 +1016,7 @@ create_mountpoint() {
 
     [[ -z "$mountpoint" ]] && { err "cannot pass empty mountpoint arg"; return 1; }
     ensure_d -s "$mountpoint" || return 1
-    exe "sudo chmod 777 -- '$mountpoint'" || { err; return 1; }  # TODO: why 777 ???
-
+    exe "sudo chmod 777 -- '$mountpoint'" || return $?  # TODO: why 777 ???
     return 0
 }
 
@@ -1050,46 +1034,43 @@ install_sshfs() {
     declare -a mounted_shares used_mountpoints
     declare -A sel_ips_to_user
 
-    confirm "wish to install and configure sshfs?" || return 1
-    [[ -f "$fstab" ]] || { err "[$fstab] does not exist; cannot add fstab entry!"; return 1; }
-    if ! [[ -f "$identity_file" ]]; then
-        confirm "[$identity_file] ssh key does not exist; still continue?" || return 1
-    fi
-    install_block 'sshfs' || { err "unable to install sshfs. aborting sshfs install/config."; return 1; }
+    confirm "wish to install and configure SSHFS & mount external SSH share(s)?" || return 1
+    is_f -m 'cannot add an fstab entry!' "$fstab" || return 1
+    [[ -s "$identity_file" ]] || confirm "[$identity_file] SSH key does not exist; still continue?" || return 1
+    install_block 'sshfs' || { err "unable to install SSHFS. aborting SSHFS install/config."; return 1; }
 
     # note that 'user_allow_other' uncommenting makes sense only if our related fstab
     # entry has the 'allow_other' opt:
     if ! [[ -r "$fuse_conf" && -f "$fuse_conf" ]]; then
         err "[$fuse_conf] is not readable; cannot uncomment '#user_allow_other' prop in it."
     elif grep -Eq '^#user_allow_other' "$fuse_conf"; then  # hasn't been uncommented yet
-        exe "sudo sed -i --follow-symlinks 's/#user_allow_other/user_allow_other/g' $fuse_conf"
-        [[ $? -ne 0 ]] && { err "uncommenting '#user_allow_other' in [$fuse_conf] failed"; return 2; }
-    elif grep -q 'user_allow_other' "$fuse_conf"; then
+        exe "sudo sed -i --follow-symlinks 's/#user_allow_other/user_allow_other/g' $fuse_conf" || { err "uncommenting '#user_allow_other' in [$fuse_conf] failed"; return 2; }
+    elif grep -Eq '^user_allow_other' "$fuse_conf"; then
         true  # do nothing; already uncommented, all good;
     else
-        err "[$fuse_conf] appears not to contain config value 'user_allow_other'; check manually what's up; not aborting"
+        err "[$fuse_conf] appears not to contain config value [user_allow_other]; check manually what's up; not aborting"
     fi
 
     prev_server_ip="$SERVER_IP"  # default
 
     while true; do
-        confirm "$(report "add ${server_ip:+another }sshfs entry to fstab?")" || break
+        confirm "$(report "add ${server_ip:+another }SSHFS entry to fstab?")" || break
 
         read -r -p "enter server ip${prev_server_ip:+ (leave blank to default to [$prev_server_ip])}: " server_ip
-        [[ -z "$server_ip" ]] && server_ip="$prev_server_ip"
+        : ${server_ip:=$prev_server_ip}
         is_valid_ip "$server_ip" || { err "not a valid ip: [$server_ip]"; continue; }
 
-        read -r -p "enter remote user to log in as (leave blank to default to your local user, [$USER]): " remote_user
-        [[ -z "$remote_user" ]] && remote_user="$USER"
+        read -r -p "enter remote user to log in as (leave blank to default to your local user [$USER]): " remote_user
+        : ${remote_user:=$USER}
 
-        read -r -p "enter local mountpoint to mount sshfs share to (leave blank to default to [$default_mountpoint]): " mountpoint
-        [[ -z "$mountpoint" ]] && mountpoint="$default_mountpoint"
+        read -r -p "enter local mountpoint to mount SSHFS share to (leave blank to default to [$default_mountpoint]): " mountpoint
+        : ${mountpoint:=$default_mountpoint}
         list_contains "$mountpoint" "${used_mountpoints[@]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
         create_mountpoint "$mountpoint" || continue
 
         read -r -p "enter remote share to mount (leave blank to default to [$SSH_SERVER_SHARE]): " ssh_share
-        [[ -z "$ssh_share" ]] && ssh_share="$SSH_SERVER_SHARE"
-        list_contains "${server_ip}${ssh_share}" "${mounted_shares[@]}" && { report "selected [${server_ip}:${ssh_share}] has already been used for previous definition"; continue; }
+        : ${ssh_share:=$SSH_SERVER_SHARE}
+        list_contains "${server_ip}${ssh_share}" "${mounted_shares[@]}" && { report "selected remote [${server_ip}:${ssh_share}] has already been used for previous definition"; continue; }
         [[ "$ssh_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
 
         if ! grep -Eq "${remote_user}@${server_ip}:${ssh_share}.*${mountpoint}" "$fstab"; then
@@ -1100,7 +1081,7 @@ install_sshfs() {
 
             sel_ips_to_user["$server_ip"]="$remote_user"
         else
-            err "an ssh share entry for [${server_ip}:${ssh_share}] in $fstab already exists."
+            err "an SSH share entry for [${server_ip}:${ssh_share}] in $fstab already exists."
         fi
 
         prev_server_ip="$server_ip"
@@ -1113,18 +1094,18 @@ install_sshfs() {
 
     for server_ip in "${!sel_ips_to_user[@]}"; do
         remote_user="${sel_ips_to_user[$server_ip]}"
-        #report "testing ssh connection to ${remote_user}@${server_ip}..."
+        #report "testing SSH connection to ${remote_user}@${server_ip}..."
         #exe "sudo ssh -p ${ssh_port} -o ConnectTimeout=7 ${remote_user}@${server_ip} echo ok"
 
         if [[ -f "${identity_file}.pub" ]]; then
             if confirm "try to ssh-copy-id public key to [$server_ip]?"; then
                 # install public key on ssh server:
-                ssh-copy-id -i "${identity_file}.pub" -p "$ssh_port" ${remote_user}@${server_ip} || err "ssh-copy-id to [${remote_user}@${server_ip}] failed with $?"
+                ssh-copy-id -i "${identity_file}.pub" -p "$ssh_port" "${remote_user}@${server_ip}" || err "ssh-copy-id to [${remote_user}@${server_ip}] failed with $?"
             fi
         fi
 
         # add $server_ip to root's known_hosts, if not already present:
-        check_progs_installed  ssh-keygen ssh-keyscan || { err "some necessary ssh tools not installed, check that out"; return 1; }
+        check_progs_installed  ssh-keygen ssh-keyscan || { err "some necessary SSH tools not installed, check that out; skipping remote addition to root's known_hosts"; return 1; }
         if [[ -z "$(sudo ssh-keygen -F "$server_ip")" ]]; then
             exe "sudo ssh-keyscan -H '$server_ip' >> /root/.ssh/known_hosts" || err "adding host [$server_ip] to /root/.ssh/known_hosts failed"
         fi
@@ -1610,7 +1591,7 @@ fetch_castles() {
     if [[ "$MODE" -eq 1 ]]; then
         exe "cp -- $COMMON_PRIVATE_DOTFILES/home/.ssh/ssh_common_client_config ~/.ssh/config" || { err "ssh initial config copy failed w/ $?"; return 1; }
         _sanitize_ssh
-        is_proc_running ssh-agent || eval "$(ssh-agent)"
+        is_proc_running ssh-agent || eval "$(ssh-agent)" || err 'starting ssh-agent failed'
     fi
 
     # common public castles:
@@ -1978,9 +1959,9 @@ create_apt_source() {
     components="$5"
 
     if [[ "$suites" == */ ]]; then
-        [[ -n "$components" ]] && { err "if [Suites:] is a path (i.e. ends w/ a slash), then [Components:] must be empty"; return 1; }
+        [[ -z "$components" ]] || { err "if [Suites:] is a path (i.e. ends w/ a slash), then [Components:] must be empty"; return 1; }
     else
-        [[ -z "$components" ]] && { err "if [Suites:] is not a path (i.e. doesn't end w/ a slash), then [Components:] must be included"; return 1; }
+        [[ -n "$components" ]] || { err "if [Suites:] is not a path (i.e. doesn't end w/ a slash), then [Components:] must be included"; return 1; }
     fi
 
     # create (arbitrary) dir for our apt keys:
@@ -2120,7 +2101,7 @@ override_locale_time() {
     fi
 
     # generate missing locales: {{{
-    [[ -s "$loc_file" ]] || { err "cannot add locales: [$loc_file] does not exist; abort;"; return 1; }
+    is_f -nm 'cannot add locales' "$loc_file" || return 1
                 #'et_EE.UTF-8' \
     for i in \
                 'en_GB.UTF-8' \
@@ -2264,7 +2245,7 @@ install_kernel_modules() {
 
     conf='/etc/modules'
 
-    is_f -m 'skipping kernel module installation' "$conf" || return 1
+    is_f -m 'skipping extra kernel module(s) installation' "$conf" || return 1
 
     # note as per https://wiki.archlinux.org/title/Backlight :
     #   > Using ddcci and i2c-dev simultaneously may result in resource conflicts such as a Device or resource busy error.
@@ -2285,7 +2266,7 @@ install_kernel_modules() {
     install_block  ddcci-dkms || return 1
 
     for i in "${modules[@]}"; do
-        grep -Fxq "$i" "$conf" || exe "echo $i | sudo tee --append $conf > /dev/null"
+        grep -Fxq "$i" "$conf" || exe "echo $i | sudo tee --append '$conf' > /dev/null"
     done
 }
 
@@ -2311,7 +2292,7 @@ upgrade_kernel() {
         sleep 10
     fi
 
-    if is_noninteractive || [[ "$MODE" -ne 0 ]]; then return 0; fi  # only ask for custom kernel ver when we're in manual mode (single task), or we're in noninteractive node
+    is_interactive && [[ "$MODE" -eq 0 ]] || return 0
 
     # search for available kernel images:
     readarray -t kernels_list < <(apt-cache search --names-only "^linux-image-[-.0-9]+.*$arch\$" | cut -d' ' -f1 | sort -r --version-sort)
@@ -3407,7 +3388,7 @@ install_grpc_cli() {  # https://github.com/grpc/grpc/blob/master/doc/command_lin
 
     #install_block 'libgflags-dev' || return 1
     f="$(find . -mindepth 1 -type f -name 'grpc_cli')"
-    [[ -f "$f" ]] || { err "couldn't find grpc_cli"; return 1; }
+    is_f "$f" || return 1
     exe "mv -- '$f' '$HOME/bin/'" || return 1
 
     add_to_dl_log "grpc-cli" "$ver"
@@ -6067,7 +6048,7 @@ _setup_podman() {
     user_conf="$HOME/.config/containers/storage.conf"
     #user_storage="/var/lib/containers/user-storage/$USER"
 
-    #[[ -f "$conf" ]] || { err "[$conf] is not a valid file. is podman installed?"; return 1; }  # doesn't exist by default
+    #is_f -m 'is podman installed?' "$conf" || return 1  # doesn't exist by default
 
     # by default rootless storage is @ $XDG_DATA_HOME/containers/storage
     # change it, e.g. to benefit from a nocow dir:
@@ -7120,7 +7101,7 @@ install_setup_printing_cups() {
 
     install_block "${pkgs[*]}" || return 1
 
-    [[ -f "$conf_file" ]] || { err "cannot configure cupsd: [$conf_file] does not exist; abort;"; return 1; }
+    is_f -m 'cannot configure cupsd; abort' "$conf_file" || return 1
 
     # this bit (auth change/disabling) comes likely from https://serverfault.com/a/800901 or https://askubuntu.com/a/1142110
     if ! grep -q 'DefaultAuthType' "$conf_file"; then
@@ -7136,7 +7117,7 @@ install_setup_printing_cups() {
     # add our user to a group so we're allowed to modify printers & whatnot: {{{
     #   see https://unix.stackexchange.com/a/513983/47501
     #   and https://ro-che.info/articles/2016-07-08-debugging-cups-forbidden-error
-    [[ -f "$conf2" ]] || { err "cannot configure our user for cups: [$conf2] does not exist; abort;"; return 1; }
+    is_f -m 'cannot configure our user for cups; abort' "$conf2" || return 1
     group="$(grep ^SystemGroup "$conf2" | awk '{print $NF}')" || { err "grepping group from [$conf2] failed w/ $?"; return 1; }
     is_single "$group" || { err "found SystemGroup in [$conf2] was unexpected: [$group]"; return 1; }
     list_contains "$group" root sys && { err "found cups SystemGroup is [$group] - verify we want to be added to that group"; return 1; }  # failsafe for not adding oursevles to root or sys groups
@@ -7293,10 +7274,10 @@ post_install_progs_setup() {
                                                 # non-root users should be allowed to dump packets; this can later be reconfigured
                                                 # by running  $ sudo dpkg-reconfigure wireshark-common
                                                 # TODO: in order to avoid this extra step, see how to preseed debconf database.
-                                                # basically: install manually, then extract debconf stuff: $debconf-get-selections | grep wireshark
-                                                # then before auto-install, set it via :$ echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections
-                                                # see also https://unix.stackexchange.com/a/96227
-                                                # note debconf-get-selections is provided by debconf-utils pkg;
+                                                #       basically: install manually, then extract debconf stuff: $debconf-get-selections | grep wireshark
+                                                #       then before auto-install, set it via :$ echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections
+                                                #       see also https://unix.stackexchange.com/a/96227
+                                                #       note debconf-get-selections is provided by debconf-utils pkg;
 
     #exe "newgrp wireshark"                  # log us into the new group; !! will stop script execution
     is_native && is_pkg_installed virtualbox && add_to_group vboxusers   # add user to vboxusers group (to be able to pass usb devices for instance); (https://wiki.archlinux.org/index.php/VirtualBox#Add_usernames_to_the_vboxusers_group)
@@ -7315,17 +7296,16 @@ post_install_progs_setup() {
 install_ssh_server_or_client() {
     while true; do
         select_items -s -h 'installing ssh. what do you want to do' client-side server-side
-
         if [[ -n "$__SELECTED_ITEMS" ]]; then
             break
-        else
-            confirm "no items were selected; exit?" && return || continue
+        elif confirm 'no items were selected; quit SSH setup?'; then
+            return
         fi
     done
 
     case "$__SELECTED_ITEMS" in
-        'server-side' ) install_ssh_server ;;
-        'client-side' ) install_sshfs ;;
+        'server-side') install_ssh_server ;;
+        'client-side') install_sshfs ;;
     esac
 }
 
@@ -7333,19 +7313,19 @@ install_ssh_server_or_client() {
 install_nfs_server_or_client() {
     while true; do
         select_items -s -h 'installing nfs. what do you want to do' client-side server-side
-
         if [[ -n "$__SELECTED_ITEMS" ]]; then
             break
-        else
-            confirm "no items were selected; exit?" && return || continue
+        elif confirm 'no items were selected; quit NFS setup?'; then
+            return
         fi
     done
 
     case "$__SELECTED_ITEMS" in
-        'server-side' ) install_nfs_server ;;
-        'client-side' ) install_nfs_client ;;
+        'server-side') install_nfs_server ;;
+        'client-side') install_nfs_client ;;
     esac
 }
+
 
 add_to_dl_log() {
     local id url
