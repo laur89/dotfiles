@@ -3135,7 +3135,7 @@ install_file() {
 
     [[ -n "$asis" ]] && ftype='text/plain; charset=' || ftype="$(file -iLb -- "$file")"  # mock as-is filetype to enable simple file move logic
 
-    if [[ "$ftype" == 'text/plain; charset='* ]]; then  # same as executable/binary above, but do not set executable flag
+    if [[ "$ftype" == 'text/plain; charset='* ]]; then  # same as executable/binary logic, but do not set executable flag
         _process || return 1
         exe "sudo install -m644 -C --group=$USER '$file' '$target'" || return 1
         _owner_perms "$target/$(basename -- "$file")"
@@ -5455,10 +5455,13 @@ install_fonts() {
 #magnus - magnifier app
 # majority of packages get installed at this point;
 install_from_repo() {
-    local block blocks block1 block2 block3 block4 block5 extra_apt_params
-    local block1_nonwin block2_nonwin block3_nonwin block4_nonwin
+    local block blocks block1 block2 block3 block4 block5 extra_apt_params inst_block_params
+    local block1_nonwin block2_nonwin block3_nonwin block4_nonwin block_recommends
 
     declare -A extra_apt_params=(
+    )
+    declare -A inst_block_params=(
+        [block_recommends]='-f'
     )
 
     declare -ar block1_nonwin=(
@@ -5835,14 +5838,19 @@ install_from_repo() {
         libjson-perl  # module for manipulating JSON-formatted data
     )
 
+    declare -ar block_recommends=(
+        sbuild
+    )
+
+
     declare -a blocks
     is_native && blocks=(block1_nonwin block2_nonwin block3_nonwin block4_nonwin)
-    blocks+=(block1 block2 block3 block4 block5)
+    blocks+=(block1 block2 block3 block4 block5 block_recommends)
 
     exe 'sudo apt-get --yes update'
     for block in "${blocks[@]}"; do
-        if ! install_block "$(eval echo "\${$block[@]}")" "${extra_apt_params[$block]}"; then
-            err "install block [$block] failed to install, see the logs"
+        if ! install_block ${inst_block_params[$block]} "$(eval echo "\${$block[@]}")" "${extra_apt_params[$block]}"; then
+            err "install_block() [$block] failed to install, see the logs"
             confirm -d Y "continue with setup? answering no will exit script" || exit 1
         fi
     done
@@ -6202,12 +6210,17 @@ install_nvidia() {
 
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
+#
+# TODO: should we exit non-0 with unavail_pkgs or missing_pkgs?
 install_block() {
     local opt OPTIND noinstall list_to_install extra_apt_params
-    local avail_pkgs missing_pkgs unavail_pkgs i cache_out target_rls
+    local avail_pkgs missing_pkgs unavail_pkgs i cache_out target_rls opts
+    local -
+    set -o noglob  # because list_to_install arr is passed as str
 
     declare -a avail_pkgs missing_pkgs unavail_pkgs
     noinstall='--no-install-recommends'  # default
+
     while getopts 'f' opt; do
         case "$opt" in
            f) unset noinstall ;;  # mnemonic: full
@@ -6220,6 +6233,12 @@ install_block() {
     readonly extra_apt_params="$2"  # optional
 
     for i in "${list_to_install[@]}"; do
+        if [[ "$i" == *//* ]]; then
+            opts="${i##*//}"
+            i="${i%%//*}"
+            #[[ "$opts" == *F* ]] && unset noinstall  # !! cannot unset per pkg anymore!
+        fi
+
         target_rls=testing  # default
         [[ "$i" == */* ]] && target_rls="${i#*/}" || i+="/$target_rls"
         # other commands to consider: - apt list -a
@@ -8075,6 +8094,7 @@ list_contains() {
     #[[ -z "$element" ]]    && { err "element to check can't be empty string."; return 1; }  # it can!
     #[[ -z "${array[*]}" ]] && { err "array/list to check from can't be empty."; return 1; }  # is this check ok/necessary?
 
+    #for i; do  # also valid
     for i in "${array[@]}"; do
         [[ "$i" == "$element" ]] && return 0
     done
@@ -8407,7 +8427,7 @@ file_type() {
 mkt() {
     local tmpdir
     if ! tmpdir="$(mktemp -d -p "$TMP_DIR" -- "${1:-.mktemp}.XXXXX")"; then
-        err "unable to create tempdir with \$mktemp" -1
+        err "unable to create tempdir with [\$mktemp -d -p \"$TMP_DIR\" -- ${1:-.mktemp}.XXXXX]" -1
         return 1
     fi
     printf '%s' "$tmpdir"
