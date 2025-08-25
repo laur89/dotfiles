@@ -45,7 +45,7 @@ if [ $# -eq 0 ]; then
            '@home:home' \
            'snapshots/@home:home/.snapshots' \
            '@data:data' \
-           '@nocow:data/nocow:NOCOW' \
+           '@nocow:data/nocow:NOCOW-USROWN' \
            '@progs:progs' \
            '@opt:opt' \
            'var/@log:var/log' \
@@ -79,6 +79,10 @@ if [ "$APPLY_OPTS" == 1 ]; then
             # TODO: or should we set it on /mnt/$subvol? if so, we'd have to mount it first under /mnt again;
             # TODO 2: chattr not avail right after partitioning!
             in-target chattr +C -- "/$mountpoint" || exit 1  # confirm values via  $ lsattr  (e.g. lsattr -d /dir/path)
+        fi
+
+        if echo "$opts" | grep -q 'USROWN'; then
+            in-target chown 1000:1000 -- "/$mountpoint" || exit 1
         fi
     done
 
