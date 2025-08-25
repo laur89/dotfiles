@@ -2083,10 +2083,10 @@ setup_additional_apt_keys_and_sources() {
     create_apt_source  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub  https://installer.id.ee/media/ubuntu/ plucky main
 
     # mozilla/firefox:  https://support.mozilla.org/en-US/kb/install-firefox-linux#w_install-firefox-deb-package-for-debian-based-distributions
-    create_apt_source  mozilla  https://packages.mozilla.org/apt/repo-signing-key.gpg  https://packages.mozilla.org/apt/ mozilla main
+    #create_apt_source  mozilla  https://packages.mozilla.org/apt/repo-signing-key.gpg  https://packages.mozilla.org/apt/ mozilla main
 
     # gh: (from https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt):
-    create_apt_source -a  gh  https://cli.github.com/packages/githubcli-archive-keyring.gpg  https://cli.github.com/packages/ stable main
+    #create_apt_source -a  gh  https://cli.github.com/packages/githubcli-archive-keyring.gpg  https://cli.github.com/packages/ stable main
 
     # wezterm: (from https://wezterm.org/install/linux.html):
     create_apt_source  wezterm  https://apt.fury.io/wez/gpg.key  https://apt.fury.io/wez/ '*' '*'
@@ -5714,7 +5714,7 @@ install_from_repo() {
     )
 
     declare -ar block3=(
-        firefox-esr  # TODO: avail as flatpak (does native messaging work tho?); also can pull binaries from mozilla. see https://wiki.debian.org/Firefox#From_Mozilla_binaries
+        firefox/unstable  # TODO: avail as flatpak (does native messaging work tho?); also can pull binaries from mozilla. see https://wiki.debian.org/Firefox#From_Mozilla_binaries
         profile-sync-daemon  # pseudo-daemon designed to manage your browsers profile in tmpfs and periodically sync it back to disk
         buku  # CLI bookmark manager; https://github.com/jarun/Buku
         chromium
@@ -5823,7 +5823,7 @@ install_from_repo() {
         mitmproxy  # SSL-capable man-in-the-middle HTTP proxy; https://github.com/mitmproxy/mitmproxy
         #charles-proxy5  # note also avail as tarball @ https://www.charlesproxy.com/download/
         tofu
-        gh  # github cli
+        gh  # github cli; also avail from debian
     )
     # old/deprecated block4:
 
@@ -6200,11 +6200,9 @@ install_nvidia() {
 
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
-#
-# TODO: current implementation doesn't allow for [pkgname/unstable] usage
 install_block() {
     local opt OPTIND noinstall list_to_install extra_apt_params
-    local avail_pkgs missing_pkgs unavail_pkgs i cache_out
+    local avail_pkgs missing_pkgs unavail_pkgs i cache_out target_rls
 
     declare -a avail_pkgs missing_pkgs unavail_pkgs
     noinstall='--no-install-recommends'  # default
@@ -6220,8 +6218,10 @@ install_block() {
     readonly extra_apt_params="$2"  # optional
 
     for i in "${list_to_install[@]}"; do
+        target_rls=testing  # default
+        [[ "$i" == */* ]] && target_rls="${i#*/}" || i+="/$target_rls"
         # other commands to consider: - apt list -a
-        if ! cache_out="$(apt-cache -qq show "$i/testing" 2>/dev/null)"; then
+        if ! cache_out="$(apt-cache -qq show "$i" 2>/dev/null)"; then
             unavail_pkgs+=("$i")
         else
             [[ -n "$cache_out" ]] && avail_pkgs+=("$i") || missing_pkgs+=("$i")
@@ -6229,11 +6229,11 @@ install_block() {
     done
 
     if [[ "${#unavail_pkgs[@]}" -ne 0 ]]; then
-        err "${#unavail_pkgs[@]} packages were not available in APT"
+        err "${#unavail_pkgs[@]} packages were not available in APT for ANY release:"
         err "${unavail_pkgs[*]}"
     fi
     if [[ "${#missing_pkgs[@]}" -ne 0 ]]; then
-        err "${#missing_pkgs[@]} packages were not available in APT for testing:"
+        err "${#missing_pkgs[@]} packages were not available in APT for asked target_release:"
         err "${missing_pkgs[*]}"
     fi
 
