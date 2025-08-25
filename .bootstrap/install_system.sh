@@ -5524,7 +5524,6 @@ install_from_repo() {
                   # TODO: do we need to schedule 'apt-file update'?
         command-not-found  # automatically search repos when entering unrecognized command, needs apt-file; installs hook for bash, to use w/ zsh see https://github.com/Freed-Wu/zsh-command-not-found
         apt-show-versions
-        apt-xapian-index  # TODO: package no more?
         unattended-upgrades  # automatic installation of security upgrades
         apt-listchanges  # compare a new version of a package with the one currently installed and show what has been changed; TODO: we haven't provided configuration for it!
         sudo  # https://github.com/sudo-project/sudo
