@@ -61,6 +61,8 @@ EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%b-%y--%R).log"  # do not
                                                                         # up for false positives.
 SCRIPT_LOG="$HOME/installation-execution-term-$(date +%d-%b-%y--%R).log"
 SYSCTL_CHANGED=0       # states whether sysctl config got changed
+APT_ENVS='NEEDRESTART_MODE=l'
+APT_OPTS=''
 umask 0077  # keep this in sync with what we set via systemd & ~/.profile!
 
 #------------------------
@@ -118,6 +120,11 @@ print_usage() {
 
 validate_and_init() {
     local i
+
+    if is_noninteractive; then
+        APT_ENVS+="${APT_ENVS:+ }DEBIAN_FRONTEND=noninteractive"
+        APT_OPTS+="${APT_OPTS:+ }--yes"
+    fi
 
     check_connection && CONNECTED=1 || CONNECTED=0
     [[ "$CONNECTED" -eq 0 && "$ALLOW_OFFLINE" -ne 1 ]] && fail "no internet connection. abort."
@@ -2307,7 +2314,7 @@ upgrade_kernel() {
 
        if [[ -n "$__SELECTED_ITEMS" ]]; then
           report "installing ${__SELECTED_ITEMS}..."
-          exe "sudo apt-get --yes install $__SELECTED_ITEMS"
+          exe "sudo apt-get install $__SELECTED_ITEMS"
           break
        else
           confirm "no items were selected; skip kernel change?" && break
@@ -3132,7 +3139,7 @@ install_file() {
         exe "sudo install -m754 -C --group=$USER '$file' '$target'" || return 1
         _owner_perms "$target/$(basename -- "$file")"
     elif [[ "$ftype" == *'debian.binary-package; charset=binary' ]]; then
-        exe "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
+        exe "sudo $APT_ENVS  apt-get ${APT_OPTS:+$APT_OPTS }install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
         exe "rm -f -- '$file'"
     else
         err "dunno how to install file [$file] - unknown type [$ftype]"
@@ -5097,7 +5104,7 @@ setup_nvim() {
     #nvim_post_install_configuration
 
     if [[ "$MODE" -eq 1 ]]; then
-        exe "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"  # no vim pls
+        exe "sudo apt-get ${APT_OPTS:+$APT_OPTS }remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common"  # no vim pls
         nvim +PlugInstall +qall
     fi
 
@@ -5158,7 +5165,7 @@ build_and_install_vim() {
 
     # TODO: should this removal only happen in mode=1 (ie full) mode?
     report "removing already installed vim components..."
-    exe "sudo apt-get --yes remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common vim-nox"
+    exe "sudo apt-get ${APT_OPTS:+$APT_OPTS }remove vim vim-runtime gvim vim-tiny vim-common vim-gui-common vim-nox"
 
     report "installing vim build dependencies..."
     install_block '
@@ -6240,7 +6247,11 @@ install_block() {
     fi
 
     report "installing these packages:\n${avail_pkgs[*]}\n"
-    exe "sudo DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${noinstall:+$noinstall }$extra_apt_params ${avail_pkgs[*]}"
+
+    # note some posts allow also -qqq opt to apt-get: https://serverfault.com/questions/227190/how-do-i-ask-apt-get-to-skip-any-interactive-post-install-configuration-steps#comment1000493_227194
+    # some also tell to pipe 'yes' into it:    yes | sudo DEBIAN_FRONTEND=noninteractive apt-get -yqq purge 'my-package'
+    # be careful with -qq+ tho, as apt-get manual states: "you should never use -qq without a no-action modifier"
+    exe "sudo $APT_ENVS  apt-get ${APT_OPTS:+$APT_OPTS }install ${noinstall:+$noinstall }$extra_apt_params ${avail_pkgs[*]}"
 }
 
 
@@ -7267,7 +7278,7 @@ post_install_progs_setup() {
     setup_tcpdump
     setup_nvim
     #setup_keyd
-    is_native && add_to_group wireshark               # add user to wireshark group, so it could be run as non-root;
+    is_native && add_to_group wireshark         # add user to wireshark group, so it could be run as non-root;
                                                 # (implies wireshark is installed with allowing non-root users
                                                 # to capture packets - it asks this during installation); see https://github.com/wireshark/wireshark/blob/master/packaging/debian/README.Debian
                                                 # if wireshark is installed manually/interactively, then installer asks whether

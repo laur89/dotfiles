@@ -17,7 +17,7 @@ Package: *
 Pin: release l=Debian-Security
 Pin-Priority: 1000
 
-# from https://support.mozilla.org/en-US/kb/install-firefox-linux#w_install-firefox-deb-package-for-debian-based-distributions
+# from https://support.mozilla.org/en-US/kb/install-firefox-linux#w_install-firefox-deb-package-for-debian-based-distributions-recommended
 Package: *
 Pin: origin packages.mozilla.org
 Pin-Priority: 1000
