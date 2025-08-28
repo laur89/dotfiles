@@ -65,6 +65,8 @@ APT_ENVS='NEEDRESTART_MODE=l'
 APT_OPTS=''
 umask 0077  # keep this in sync with what we set via systemd & ~/.profile!
 
+unset _IS_WIN _IS_VIRT _IS_VIRTUALBOX _IS_NATIVE
+
 #------------------------
 #--- Global Constants ---
 #------------------------
@@ -4809,7 +4811,7 @@ EOF
 
 install_i3() {
     #build_i3   # do not return, as it might return w/ 2 because of is_installed()
-    install_block  i3
+    install_block  i3  # TODO: consider w/o no-recommends
     install_i3_deps
     install_i3_conf
 }
@@ -5990,9 +5992,9 @@ install_amd_gpu() {
     # TODO: consider  lspci -vnn | grep VGA | grep AMD
     if sudo lshw | grep -iA 5 'display' | grep -Eq 'vendor.*AMD'; then
         if confirm -d N "we seem to have AMD card; want to install AMD drivers?"; then  # TODO: should we default to _not_ installing in non-interactive mode?
-            report "installing AMD drivers & firmware..."
+            report "installing AMD drivers & firmware & other relevant tools..."
             # TODO: x11!:
-            install_block 'firmware-amd-graphics libgl1-mesa-dri libglx-mesa0 mesa-vulkan-drivers xserver-xorg-video-amdgpu radeontop'
+            install_block 'firmware-amd-graphics libgl1-mesa-dri libglx-mesa0 mesa-vulkan-drivers xserver-xorg-video-amdgpu radeontop lm-sensors fancontrol'
             return $?
         else
             report "we chose not to install AMD drivers..."
@@ -6049,6 +6051,7 @@ _setup_podman() {
     [[ -e /etc/containers/nodocker ]] || exe 'sudo touch /etc/containers/nodocker' || return 1
 
     return 0  # atm not using btrfs storage driver, as it's not really recommended by the devs
+    #################################################
 
     local conf user_conf user_storage
     conf='/etc/containers/storage.conf'
@@ -6076,7 +6079,7 @@ _setup_podman() {
             ensure_d "$(dirname -- "$user_conf")" || return 1
             exe "crudini --set '$user_conf' storage driver btrfs"
         fi
-    elif grep -qF btrfs "$conf" "$user_conf"; then
+    elif grep -iqF btrfs "$conf" "$user_conf"; then
         err "[btrfs] in podman storage.conf but we're not using btrfs!"
     fi
 }
@@ -6096,7 +6099,7 @@ _setup_podman() {
 # - https://github.com/digint/btrbk - remote transfer of snapshots for backup
 # - Timeshift
 _setup_snapper() {
-    [[ -e /etc/default/snapper ]] && return 0  # config file exists, assume we're already set up
+    [[ -e /etc/default/snapper ]] && report "[/etc/default/snapper] exists, assuming we're all set up" && return 0
 
     _enable() {
         local opt OPTIND custom name mountpoint mp
@@ -6184,7 +6187,7 @@ install_nvidia() {
         if confirm -d N "we seem to have NVIDIA card; want to install nvidia drivers?"; then  # TODO: should we default to _not_ installing in non-interactive mode?
             # TODO: also/instead install  nvidia-detect and install the driver it suggests?
             report "installing NVIDIA drivers..."
-            install_block 'nvidia-driver'
+            install_block 'nvidia-driver firmware-misc-nonfree'
             #exe "sudo nvidia-xconfig"  # not required as of Stretch
             return $?
         else
@@ -6224,6 +6227,7 @@ install_block() {
         if [[ "$i" == *//* ]]; then
             opts="${i##*//}"
             i="${i%%//*}"
+            [[ "$opts" == *N* ]] && ! is_native && continue
             #[[ "$opts" == *F* ]] && unset noinstall  # !! cannot unset per pkg anymore!
         fi
 
@@ -7269,7 +7273,7 @@ post_install_progs_setup() {
     is_native && install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present  # TODO: do we want to install these only on native systems?
     #is_native && exe -i "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
     #is_native && setup_mopidy
-    is_native && exe 'sudo sensors-detect --auto'   # answer enter for default values (this is lm-sensors config)
+    [[ "$MODE" -eq 1 ]] && is_native && is_pkg_installed lm-sensors && exe 'sudo sensors-detect --auto'   # answer enter for default values (this is lm-sensors config)
     is_pkg_installed 'command-not-found' && exe 'sudo apt-file update && sudo update-command-not-found'
     increase_inotify_watches_limit         # for intellij IDEA
     allow_user_run_dmesg
@@ -7278,7 +7282,7 @@ post_install_progs_setup() {
     setup_tcpdump
     setup_nvim
     #setup_keyd
-    is_native && add_to_group wireshark         # add user to wireshark group, so it could be run as non-root;
+    is_pkg_installed wireshark && add_to_group wireshark         # add user to wireshark group, so it could be run as non-root;
                                                 # (implies wireshark is installed with allowing non-root users
                                                 # to capture packets - it asks this during installation); see https://github.com/wireshark/wireshark/blob/master/packaging/debian/README.Debian
                                                 # if wireshark is installed manually/interactively, then installer asks whether
