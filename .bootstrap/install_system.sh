@@ -194,7 +194,7 @@ validate_and_init() {
     sudo --validate || fail "is user in sudoers file? is sudo installed? if not, then [su && apt-get install sudo]"
     #clear
 
-    # keep-alive: update existing `sudo` time stamp; search tags:  keep sudo, keepsudo, staysudo stay sudo
+    # keep-alive: update existing `sudo` time stamp; search tags:  keep sudo, keepsudo, sudokeep, staysudo stay sudo
     while true; do sudo -n true; sleep 30; kill -0 "$$" || exit; done 2>/dev/null &
 }
 
@@ -1529,6 +1529,13 @@ setup_dirs() {
 
 install_homesick() {
     clone_or_pull_repo "andsens" "homeshick" "$BASE_HOMESICK_REPOS_LOC" || return 1
+}
+
+
+# https://github.com/twpayne/chezmoi
+install_chezmoi() {
+    install_from_git twpayne/chezmoi '_linux_amd64.deb'
+    #install_bin_from_git -N chezmoi twpayne/chezmoi 'linux_amd64.tar.gz'
 }
 
 
@@ -6482,9 +6489,10 @@ __choose_prog_to_build() {
         install_aider
         install_aider_desk
         install_android_command_line_tools
+        install_chezmoi
     )
 
-    report "what do you want to build/install?"
+    report 'what do you want to build/install?'
 
     select_items -s "${choices[@]}"
     [[ -z "$__SELECTED_ITEMS" ]] && return
