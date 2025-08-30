@@ -1,6 +1,7 @@
 #
 # see https://wiki.debian.org/DebianTesting for configuration.
 # also https://wiki.debian.org/SourcesList
+# also https://www.debian.org/doc/manuals/debian-handbook/apt.en.html#sect.apt-sources.list.testing
 ######################################################
 Types: deb deb-src
 URIs: https://deb.debian.org/debian
