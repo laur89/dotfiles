@@ -670,12 +670,11 @@ setup_apt() {
     is_d -m 'skipping apt conf installation' "$apt_dir" || return 1
     for file in \
             preferences \
-            apt.conf \
                 ; do
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
         is_f -m "won't install it" "$file" || continue
-        exe "sudo install -m644 -C --backup=numbered '$file' '$apt_dir'" || { err "installing [$file] failed w/ $?"; return 1; }
+        exe "sudo install -m644 -C '$file' '$apt_dir/preferences.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
     for file in \
@@ -687,15 +686,6 @@ setup_apt() {
         exe "sudo install -m644 -C '$file' '$apt_dir/sources.list.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
-    # NOTE: 02periodic _might_ be duplicating the unattended-upgrades activation
-    # config located at apt/apt.conf.d/20auto-upgrades; you should go with either,
-    # not both (see the debian wiki link), ie it might be best to remove 20auto-upgrades; TODO: do it maybe automatically?
-    # if both it and 02periodic exist;
-    # # TODO 2: according to
-    # https://wiki.debian.org/UnattendedUpgrades#Modifying_download_and_upgrade_schedules_.28on_systemd.29,
-    # we _might_ need to install periodic, as systemd timers are already doing _something_
-    #
-    # copy to apt.conf.d/:
     for file in \
             02periodic \
                 ; do
@@ -705,11 +695,11 @@ setup_apt() {
         exe "sudo install -m644 -C '$file' '$apt_dir/apt.conf.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
-    retry 2 "sudo apt-get --allow-releaseinfo-change  -y update" || err "apt-get update failed with $?"
+    retry 2 "sudo apt-get --allow-releaseinfo-change ${APT_OPTS:+$APT_OPTS }update" || err "apt-get update failed with $?"
 
     if [[ "$MODE" -eq 1 ]]; then
-        retry 2 "sudo apt-get upgrade --without-new-pkgs -y" || err "[apt-get upgrade] failed with $?"
-        retry 2 "sudo apt-get dist-upgrade -y" || err "[apt-get dist-upgrade] failed with $?"
+        retry 2 "sudo apt-get upgrade --without-new-pkgs ${APT_OPTS:+$APT_OPTS }" || err "[apt-get upgrade] failed with $?"
+        retry 2 "sudo apt-get dist-upgrade ${APT_OPTS:+$APT_OPTS }" || err "[apt-get dist-upgrade] failed with $?"
     fi
 }
 
@@ -1693,6 +1683,18 @@ setup_homesick() {
         err "$https_castles"
         err
     fi
+}
+
+
+# https://www.chezmoi.io/quick-start/
+# Not yet using as of '25
+setup_chezmoi() {
+    install_chezmoi || return $?
+
+    #exe 'chezmoi init'  # creates a new git local repository in ~/.local/share/chezmoi where chezmoi will store its source state/working copy
+    exe 'chezmoi init --apply https://github.com/$GITHUB_USERNAME/dotfiles.git'  # install dotfiles
+    # add --verbose to get more info:
+    #chezmoi init --apply --verbose https://github.com/$GITHUB_USERNAME/dotfiles.git
 }
 
 
@@ -3446,6 +3448,8 @@ install_gitkraken() {
 # perforce git mergetool, alternative to meld;
 #
 # TODO: does not work in '25 - requires registration and whatnot
+# alternatives:
+# - beyond compare (lincence fee but recommended): https://www.scootersoftware.com/shop
 install_p4merge() {  # https://www.perforce.com/downloads/visual-merge-tool
     local ver loc
 
@@ -5522,12 +5526,13 @@ install_from_repo() {
         #nala  # another cli-based apt frontend; https://gitlab.com/volian/nala
         #gdebi  # GUI local deb file viewer/installer for gnome
         synaptic
+        software-properties-gtk  # GUI frontend for managing distribution and independent software vendor software sources
         apt-file  # command line tool for searching files contained in packages for the APT packaging system. You can search in which package a file is included or list the contents of a package without installing or fetching it
                   # TODO: do we need to schedule 'apt-file update'?
         command-not-found  # automatically search repos when entering unrecognized command, needs apt-file; installs hook for bash, to use w/ zsh see https://github.com/Freed-Wu/zsh-command-not-found
         apt-show-versions
         unattended-upgrades  # automatic installation of security upgrades
-        apt-listchanges  # compare a new version of a package with the one currently installed and show what has been changed; TODO: we haven't provided configuration for it!
+        apt-listchanges  # compare a new version of a package with the one currently installed and show what has been changed; TODO: we haven't provided configuration for it! one example: https://wiki.debian.org/PeriodicUpdates?action=show&redirect=UnattendedUpgrades#Get_more_information_about_changes
         sudo  # https://github.com/sudo-project/sudo
         libnotify-bin  # sends desktop notifications to a notification daemon; provides notify-send
         dunst  # notification-daemon; https://dunst-project.org/
@@ -8173,6 +8178,8 @@ retry() {
     local -r -i max_attempts="$1"; shift
     local -r cmd="$*"
     local -i attempt_num=1
+    #local -ra cmd=("$@")
+    #until "${cmd[@]}"; do
 
     until $cmd; do
         if (( attempt_num > max_attempts )); then
@@ -8489,7 +8496,7 @@ cleanup() {
 #----------------------------
 #---  Script entry point  ---
 #----------------------------
-ORIG_OPTS="$@"
+ORIG_OPTS=("$@")
 while getopts 'NFSUQOP:L:T:h' OPT; do
     case "$OPT" in
         N) NON_INTERACTIVE=1 ;;
