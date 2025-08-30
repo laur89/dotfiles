@@ -27,12 +27,12 @@ Pin: release a=testing
 Pin-Priority: 990
 
 Package: *
-Pin: release a=stable
-Pin-Priority: 650
+Pin: release a=unstable
+Pin-Priority: 90
 
 Package: *
-Pin: release a=unstable
-Pin-Priority: 50
+Pin: release a=stable
+Pin-Priority: 10
 
 Package: *
 Pin: release a=oldstable
