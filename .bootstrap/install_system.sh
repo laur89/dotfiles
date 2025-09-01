@@ -1792,7 +1792,7 @@ setup_config_files() {
     setup_logind
     is_native && setup_udev
     is_native && setup_pm
-    is_native && install_kernel_modules   # TODO: does this belong in setup_config_files()?
+    #is_native && install_kernel_modules   # TODO: does this belong in setup_config_files()?
     #is_native && setup_smartd  #TODO: uncomment once finished!
     setup_mail
     setup_global_shell_links
@@ -2258,6 +2258,7 @@ upgrade_firmware() {
 # /etc/modules-load.d/modules.conf -> /etc/modules, so who knows...
 #
 # Note: dashes & underscores are interchangeable in module names.
+# List loaded kernel modules via  $ lsmod | bat
 install_kernel_modules() {
     local conf modules i
 
@@ -2270,13 +2271,13 @@ install_kernel_modules() {
     #
     # list of modules to be added to $conf for auto-loading at boot:
     modules=(
-        ddcci
+        ddcci  # provided by ddcci-dkms
     )
 
-    # from https://www.ddcutil.com/kernel_module/ : only load
-    # i2c on demand if it's not already loaded into kernel:
+    # from https://www.ddcutil.com/kernel_module/ : only load i2c on demand if it's not already loaded into kernel:
+    # note: "As of release 1.4, ddcutil installation should automatically install this file, making manual configuration unnecessary."
     i="/lib/modules/$(uname -r)/modules.builtin"
-    [[ -s "$i" ]] || err "modules.builtin not a file, fix the logic!"  # sanity
+    is_f -nm 'fix the logic!' "$i"  # sanity
     grep -q  i2c-dev.ko  "$i" || modules+=(i2c-dev)
 
     # ddcci-dkms gives us DDC support so we can control also external monitor brightness (via brillo et al; not related to i2c-dev/ddcutil)
@@ -2433,7 +2434,7 @@ install_own_builds() {
     #is_native && build_i3lock_fancy
     #is_native && install_betterlockscreen
     #is_native && install_acpilight
-    is_native && install_brillo
+    #is_native && install_brillo
     is_native && install_display_switch
 
     [[ "$PROFILE" == work ]] && install_work_builds
@@ -4623,7 +4624,7 @@ install_betterlockscreen() {  # https://github.com/betterlockscreen/betterlocksc
 # alternatives:
 # - https://gitlab.com/cameronnemo/brillo  - untested, but looks to be working on multiple devices at same time!
 # - https://github.com/haikarainen/light  - project is EOL
-# - https://github.com/Hummer12007/brightnessctl
+# - https://github.com/Hummer12007/brightnessctl  - controls laptop brightness
 #
 # TODO need to install  ddcci-dkms  pkg and load ddcci module to get external display evices listed under /sys
 # TODO: last commit Oct '20
@@ -5498,7 +5499,9 @@ install_from_repo() {
         # edit: should not be needed, as jitter entropy collecter was introduced
         # already in kernel 5.4: https://wiki.debian.org/BoottimeEntropyStarvation
         #haveged
+        brightnessctl
         ddcutil
+        ddcui  # GUI for ddcutil
     )
     # old/deprecated block1_nonwin:
     #    ufw - simpler alternative to firewalld
@@ -5517,13 +5520,17 @@ install_from_repo() {
         alsa-utils  # Utilities for configuring and using ALSA, e.g. alsactl, alsamixer, amixer, aplay...
         pipewire
         pipewire-audio  # recommended set of PipeWire packages for a standard audio desktop use
+        #pipewire-alsa  # plugin for ALSA applications to output via PipeWire; already a dependency of pipewire-audio
         easyeffects  # Audio effects for PipeWire applications; https://github.com/wwmm/easyeffects; TODO: avail as flatpak
+                     # see also: https://github.com/Audio4Linux/JDSP4Linux#readme
+        wireplumber
         pulsemixer  # https://github.com/GeorgeFilipkin/pulsemixer
         pasystray  # PulseAudio controller for the system tray; should work w/ pipewire
-        qpwgraph  # visual representation of which audio devices are connected where; also allows point-and-click connections/configuration
+        qpwgraph  # visual representation of which audio devices are connected where; also allows point-and-click connections/configuration; inspired by Jack
+                  # other pw tools to keep an eye on: Sonusmix,
         ca-certificates
         aptitude  # ncurses-based cli apt manager; https://wiki.debian.org/Aptitude
-        #nala  # another cli-based apt frontend; https://gitlab.com/volian/nala
+        #nala  # another TUI apt frontend; https://gitlab.com/volian/nala
         #gdebi  # GUI local deb file viewer/installer for gnome
         synaptic
         software-properties-gtk  # GUI frontend for managing distribution and independent software vendor software sources
