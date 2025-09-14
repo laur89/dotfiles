@@ -1,0 +1,12 @@
+{
+    "notify": {
+        "icon": {
+            "root_dir": "/usr/share/icons/Numix/48/notifications",
+            "brightness_full": "notification-display-brightness-full.svg",
+            "brightness_high": "notification-display-brightness-high.svg",
+            "brightness_medium": "notification-display-brightness-medium.svg",
+            "brightness_low": "notification-display-brightness-low.svg",
+            "brightness_off": "notification-display-brightness-off.svg"
+        }
+    }
+}
