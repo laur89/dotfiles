@@ -2270,8 +2270,12 @@ install_kernel_modules() {
     #   > Using ddcci and i2c-dev simultaneously may result in resource conflicts such as a Device or resource busy error.
     #
     # list of modules to be added to $conf for auto-loading at boot:
+    # TODO: device detection w/ ddcci-dkms driver is problematic in '25; see:
+    #      - https://gitlab.com/ddcci-driver-linux/ddcci-driver-linux/-/issues/46
+    #      - https://gitlab.com/ddcci-driver-linux/ddcci-driver-linux/-/issues/42
+    #      - https://gitlab.com/ddcci-driver-linux/ddcci-driver-linux/-/issues/7
     modules=(
-        ddcci  # provided by ddcci-dkms
+        ddcci  # provided by ddcci-dkms; TODO: https://gitlab.com/wavexx/acpilight says [ddcci-backlight] module should be loaded! unsure about it
     )
 
     # from https://www.ddcutil.com/kernel_module/ : only load i2c on demand if it's not already loaded into kernel:
@@ -5499,8 +5503,8 @@ install_from_repo() {
         # edit: should not be needed, as jitter entropy collecter was introduced
         # already in kernel 5.4: https://wiki.debian.org/BoottimeEntropyStarvation
         #haveged
-        brightnessctl
-        ddcutil
+        #brightnessctl
+        ddcutil  # see also: ddccontrol
         ddcui  # GUI for ddcutil
     )
     # old/deprecated block1_nonwin:
@@ -5571,6 +5575,7 @@ install_from_repo() {
         hashdeep
         dconf-cli  # low-level key/value database designed for storing gnome desktop environment settings; https://wiki.gnome.org/Projects/dconf
         dconf-editor  # GUI frontend for dconf
+        d-feet  # D-Bus object browser, viewer and debugger
     )
 
     # for .NET dev, consider also nuget pkg;
@@ -6760,11 +6765,21 @@ setup_dnsmasq() {
 #
 # note https://manpages.debian.org/testing/libnss-myhostname/nss-myhostname.8.en.html states:
 # > It is recommended to place "myhostname" after "files" and before "dns"
-setup_nsswitch() {
+# note https://manpages.debian.org/unstable/libnss-mymachines/nss-mymachines.8.en.html states:
+# > It is recommended to place "mymachines" before the "resolve" or "dns" entry
+# note https://manpages.debian.org/unstable/libnss-resolve/nss-resolve.8.en.html states:
+# > add "resolve [!UNAVAIL=return]" before the "files" entry, since systemd-resolved
+#   supports /etc/hosts internally, but with caching. To the contrary, it should be
+#   after "mymachines", to give hostnames given to local VMs and containers precedence
+#   over names received over DNS. Finally, we recommend placing "dns" somewhere after
+#   "resolve", to fall back to nss-dns if systemd-resolved.service is not available.
+verify_nsswitch() {
     local conf target
 
     conf='/etc/nsswitch.conf'
-    target='hosts:          files resolve [!UNAVAIL=return] myhostname dns'
+    # current line taken from 'example' section of
+    # https://manpages.debian.org/unstable/libnss-myhostname/nss-myhostname.8.en.html :
+    target='hosts:          mymachines resolve [!UNAVAIL=return] files myhostname dns'
 
     if ! grep -qFx "$target" "$conf"; then
         err "[$conf] hosts: line needs fixing!!!"
@@ -7320,7 +7335,7 @@ post_install_progs_setup() {
     #exe "newgrp vboxusers"                  # log us into the new group; !! will stop script execution
     #configure_ntp_for_work  # TODO: confirm if ntp needed in WSL
     is_native && enable_fw
-    setup_nsswitch
+    verify_nsswitch
     #add_to_group fuse  # not needed anymore?
     setup_firefox
     configure_updatedb
@@ -8556,6 +8571,10 @@ exit 0
 # common debugging:
 #   sudo dmesg | grep -i apparmor | grep -i denied  <- shows if some stuff is blocked by apparmor (eg we had this issue with msmtp if .msmtprc was under /data, not somewhere under $HOME)
 #   sudo journalctl -u apparmor   <- eg when at boot-time it compalined 'Failed to load AppArmor profiles'
+#   journalctl --unit=fstrim.service
+#   journalctl --disk-usage
+#   journalctl --list-boot
+#   sudo journalctl --vacuum-size=200M  <-- to clear up journal
 
 # TODOS:
 # - if apt-get update fails, then we should fail script fast?
