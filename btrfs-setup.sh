@@ -51,10 +51,10 @@ if [ $# -eq 0 ]; then
            'var/@log:var/log' \
            'var/@tmp:var/tmp' \
            'var/@cache:var/cache' \
+           'var/lib/apt/@lists:var/lib/apt/lists' \
            'var/lib/@containers:var/lib/containers:NOCOW' \
            'var/lib/@machines:var/lib/machines:NOCOW' \
-           'var/lib/libvirt/@images:var/lib/libvirt/images:NOCOW' \
-           'var/lib/apt/@lists:var/lib/apt/lists:NOCOW'
+           'var/lib/libvirt/@images:var/lib/libvirt/images:NOCOW'
 fi
 #######################################################################
 
