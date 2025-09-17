@@ -5618,6 +5618,7 @@ install_from_repo() {
         iotop  # top-like I/O monitor; handy for answering the question "Why is the disk churning so much?"
         ncdu  # ncurses disk usage viewer
         pydf  # fully colourised df(1)-clone written in Python; https://github.com/garabik/pydf - or perhaps https://salsa.debian.org/salvage-team/pydf/ - see https://github.com/garabik/pydf/issues/9 ??
+        duf  # Disk Usage/Free Utility - a better 'df' alternative
         nethogs  # small 'net top' tool. Instead of breaking the traffic down per protocol or per subnet, like most tools do, it groups bandwidth by process; https://github.com/raboof/nethogs
         #vnstat  # console-based network traffic monitor; keeps a log of daily network traffic for the selected interface
         #nload  # monitors network traffic and bandwidth usage in real time.
