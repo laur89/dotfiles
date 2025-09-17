@@ -1,7 +1,13 @@
-// from https://wiki.debian.org/UnattendedUpgrades
+// from https://wiki.debian.org/UnattendedUpgrades / https://wiki.debian.org/PeriodicUpdates
 // to be placed in /etc/apt/apt.conf.d
 //
-// to manually debug the config, run $ sudo unattended-upgrade -d
+// to manually debug the config, run  $ sudo unattended-upgrade -d
+//
+// note the used sources are set by the [Unattended-Upgrade::Origins-Pattern] bit,
+// likely in /etc/apt/apt.conf.d/50unattended-upgrades
+//
+// this config is likely used by /usr/lib/apt/apt.systemd.daily that's
+// executed by systemd, see:  $ systemctl show apt-daily-upgrade.service
 ///////////////////////////////////////////////////////////
 // Control parameters for cron jobs by /etc/cron.daily/apt-compat //
 
