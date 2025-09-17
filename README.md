@@ -291,6 +291,7 @@ For GUI dconf editor install `dconf-editor` pkg.
 
 ## Notes/see also
 - [zfs installation script](https://github.com/danfossi/Debian-ZFS-Root-Installation-Script)
+- run windows apps in windows VM via [winapps](https://github.com/winapps-org/winapps)
 
 ## TODO
 
@@ -309,3 +310,4 @@ For GUI dconf editor install `dconf-editor` pkg.
     - https://github.com/infokiller/config-public
     - https://github.com/risu729/dotfiles (wsl stuff as well!)
     - https://gitlab.com/sio/server_common (from [this reddit post](https://www.reddit.com/r/linux/comments/vd9qkn/it_took_years_to_perfect_my_setup_and_now_i_want/ickhfsc/))
+1. look into [HTTP Boot](https://www.debian.org/releases/trixie/release-notes/whats-new.en.html#http-boot-support) - UEFI functionality to boot .iso from network
