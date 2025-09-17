@@ -320,7 +320,14 @@ mode "$mode_gaps_outer" {
 # Assign workspaces on specific screens:
 # note also multiple assignments are allowed:   workspace 5 output VGA1 LVDS1
 # also instead of xrandr output name, we can also use "primary" & "nonprimary"
+workspace $w1 output primary
+workspace $w2 output primary
+workspace $w3 output primary
 workspace $w4 output $sidescreen
+workspace $w5 output primary
+workspace $w6 output primary
+workspace $w7 output primary
+workspace $w8 output primary
 
 # Lock screen
 #bindsym Control+mod1+l   $ex  lock -f
@@ -367,8 +374,8 @@ bindsym Shift+XF86AudioNext  $ex  playerctl position 10+
 bindsym Shift+XF86AudioPrev  $ex  playerctl position 10-
 
 # Brightness control
-bindsym XF86MonBrightnessUp   $ex  change-brightness up
-bindsym XF86MonBrightnessDown $ex  change-brightness down
+bindsym XF86MonBrightnessUp   $ex  killall -s SIGUSR1 bctld
+bindsym XF86MonBrightnessDown $ex  killall -s SIGUSR2 bctld
 
 # Touchpad controls
 bindsym XF86TouchpadToggle  $ex /some/path/toggletouchpad.sh
