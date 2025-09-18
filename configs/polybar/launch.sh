@@ -5,11 +5,11 @@
 readonly SELF=polybar-launcher
 readonly _IF_DIR='/sys/class/net/'
 SELECTED_BAR=top
-TRAY_MONITOR_PREFERENCE=(
-    DisplayPort-3
-    DisplayPort-5
-    eDP
-)
+#TRAY_MONITOR_PREFERENCE=(
+    #DisplayPort-3
+    #DisplayPort-5
+    #eDP
+#)
 
 source /etc/.global-bash-init || exit 1
 
@@ -33,10 +33,10 @@ w="$(find -L "$_IF_DIR" -maxdepth 2 -mindepth 2 \
 # TODO: shouldn't we be using "xrandr --listactivemonitors"?
 IFS= readarray -t MONITORS < <(xrandr --listmonitors | awk '/^\s+[0-9]+:\s+/{print $NF}')  # or:  polybar --list-monitors | cut -d':' -f1
 
-tray_output="${MONITORS[0]}"  # default
-for m in "${TRAY_MONITOR_PREFERENCE[@]}"; do
-    list_contains "$m" "${MONITORS[@]}" && tray_output="$m" && break
-done
+tray_output="${MONITORS[0]}"  # assuming the primary monitor is listed first
+#for m in "${TRAY_MONITOR_PREFERENCE[@]}"; do
+    #list_contains "$m" "${MONITORS[@]}" && tray_output="$m" && break
+#done
 
 # note we pass env vars that are to be referenced in polybar config (WIRELESS/MONITOR...):
 for m in "${MONITORS[@]}"; do
@@ -44,7 +44,6 @@ for m in "${MONITORS[@]}"; do
     [[ "$tray_output" == "$m" ]] && bar+='-primary'
 
     # either launch via silent_background()...
-    unset WIRELESS  MONITOR
     export WIRELESS="$w"  MONITOR="$m"
     silent_background  polybar --reload "$bar"
     # ...or simply background here:
