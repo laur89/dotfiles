@@ -32,8 +32,8 @@ workspace_auto_back_and_forth yes
 floating_modifier $mod1
 
 # Start a terminal
-bindsym $mod+Return exec urxvtc
-#bindsym $mod+Return exec i3-sensible-terminal
+bindsym $mod+Return $ex urxvtc
+#bindsym $mod+Return $ex i3-sensible-terminal
 
 # Kill focused window
 bindsym $mod+c kill
@@ -43,7 +43,7 @@ bindsym $mod+c kill
 popup_during_fullscreen smart
 
 # Start dmenu:
-#bindsym $mod+d exec  dmenu_run -b -nf "#839496" -sb "#b58900" -sf "#002b36" -nb "#002b36" -fn "tewi-8"
+#bindsym $mod+d $ex  dmenu_run -b -nf "#839496" -sb "#b58900" -sf "#002b36" -nb "#002b36" -fn "tewi-8"
 
 # Start Rofi:
 #bindsym $mod+space $ex rofi -show combi -sorting-method fzf \
@@ -130,11 +130,11 @@ bindsym $mod1+semicolon move position center
 #$cmod2+semicolon move absolute position center
 
 # read 1 character and mark the current window with this character:
-bindsym $mod+t exec i3-input -F 'mark %s' -l 1 -P 'Mark: '
+bindsym $mod+t $ex i3-input -F 'mark %s' -l 1 -P 'Mark: '
 # read 1 character and go to the window marked with the character:
-bindsym $mod+g exec i3-input -F '[con_mark="^%s$"] focus' -l 1 -P 'Goto: '
+bindsym $mod+g $ex i3-input -F '[con_mark="^%s$"] focus' -l 1 -P 'Goto: '
 # swap window with name from your input:
-#$mod3+braceright exec i3-input -F 'swap with mark %s' -l 1 -P 'Mark: '
+#$mod3+braceright $ex i3-input -F 'swap with mark %s' -l 1 -P 'Mark: '
 
 # Focus the parent container
 bindsym $mod+a focus parent
@@ -202,10 +202,10 @@ bindsym $mod+Shift+9 move container to workspace $w9
 bindsym $mod+Shift+0 move container to workspace $w10
 
 # Reload the configuration file ('config' for c mnemonic)
-bindsym $mod+Shift+c exec $HOME/.config/i3/scripts/refresh-settings.sh; reload
+bindsym $mod+Shift+c $ex $HOME/.config/i3/scripts/refresh-settings.sh; reload; $ex i3-apply-rules.sh
 
 # Restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
-bindsym $mod+Shift+r exec $HOME/.config/i3/scripts/refresh-settings.sh; restart
+bindsym $mod+Shift+r $ex $HOME/.config/i3/scripts/refresh-settings.sh; restart; $ex i3-apply-rules.sh
 
 # Resize window (you can also use the mouse for that)
 #set $resize-label <span background='blue'>resize</span>
@@ -387,8 +387,8 @@ bindsym Print $ex   screenshot.sh #--auto
 
 # My apps shortcut
 # note all bindings get translated by Group1 keymap (see https://i3wm.org/docs/userguide.html#keybindings)
-#bindsym $mod+p exec pcmanfm
-#bindsym $mod+b exec firefox
+#bindsym $mod+p $ex pcmanfm
+#bindsym $mod+b $ex firefox
 
 # keycode 34 = ü on et, [ on us keymap:
 bindcode Control+34  $ex copyq toggle  >/dev/null
@@ -693,7 +693,7 @@ bindsym $mod+Control+Shift+z $ex i3-scratch-marker.sh scratch_mark
 # quake style terminal:
 # 1st ver, using urxvtq:--------
 #for_window [instance="^scratchpad_urxvt_top$"] border pixel 1, floating enable, move position 0 px 0 px, resize set 100 ppt 40 ppt
-#bindsym $mod1+i exec urxvtq scratchpad_urxvt_top
+#bindsym $mod1+i $ex urxvtq scratchpad_urxvt_top
 # ------------------------------
 # 2nd ver, using i3-quickterm:
 $exa i3-quickterm --daemon
