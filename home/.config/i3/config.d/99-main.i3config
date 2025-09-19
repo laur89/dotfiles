@@ -14,6 +14,7 @@ set $border 2
 
 set $ex     exec --no-startup-id
 set $exa    exec_always --no-startup-id
+set $exec_i3_groups exec --no-startup-id  i3-workspace-groups-client
 
 set $mod_j "exec --no-startup-id   sway-overfocus split-dt float-dt output-dw"
 set $mod_k "exec --no-startup-id   sway-overfocus split-ut float-ut output-uw"
@@ -156,16 +157,16 @@ set $w8   8:Misc
 
 # Switch to workspace
 # or: bindsym $mod+1 workspace number 1   ?
-bindsym $mod+1 workspace $w1
-bindsym $mod+2 workspace $w2
-bindsym $mod+3 workspace $w3
-bindsym $mod+4 workspace $w4
-bindsym $mod+5 workspace $w5
-bindsym $mod+6 workspace $w6
-bindsym $mod+7 workspace $w7
-bindsym $mod+8 workspace $w8
-bindsym $mod+9 workspace $w9
-bindsym $mod+0 workspace $w10
+bindsym $mod+1 workspace number 1
+bindsym $mod+2 workspace number 2
+bindsym $mod+3 workspace number 3
+bindsym $mod+4 workspace number 4
+bindsym $mod+5 workspace number 5
+bindsym $mod+6 workspace number 6
+bindsym $mod+7 workspace number 7
+bindsym $mod+8 workspace number 8
+bindsym $mod+9 workspace number 9
+bindsym $mod+0 workspace number 0
 bindsym $mod+Shift+Tab move container to workspace back_and_forth; workspace back_and_forth
 
 # Navigate workspaces next/previous:
@@ -190,16 +191,16 @@ bindsym $mod+Ctrl+Shift+question move workspace to output up
 bindsym $mod+Ctrl+Shift+m move workspace to output down
 
 # Move focused container to workspace; add '; workspace $wn' to navigate there
-bindsym $mod+Shift+1 move container to workspace $w1
-bindsym $mod+Shift+2 move container to workspace $w2
-bindsym $mod+Shift+3 move container to workspace $w3
-bindsym $mod+Shift+4 move container to workspace $w4
-bindsym $mod+Shift+5 move container to workspace $w5
-bindsym $mod+Shift+6 move container to workspace $w6
-bindsym $mod+Shift+7 move container to workspace $w7
-bindsym $mod+Shift+8 move container to workspace $w8
-bindsym $mod+Shift+9 move container to workspace $w9
-bindsym $mod+Shift+0 move container to workspace $w10
+bindsym $mod+Shift+1 move container to workspace number 1
+bindsym $mod+Shift+2 move container to workspace number 2
+bindsym $mod+Shift+3 move container to workspace number 3
+bindsym $mod+Shift+4 move container to workspace number 4
+bindsym $mod+Shift+5 move container to workspace number 5
+bindsym $mod+Shift+6 move container to workspace number 6
+bindsym $mod+Shift+7 move container to workspace number 7
+bindsym $mod+Shift+8 move container to workspace number 8
+bindsym $mod+Shift+9 move container to workspace number 9
+bindsym $mod+Shift+0 move container to workspace number 0
 
 # Reload the configuration file ('config' for c mnemonic)
 bindsym $mod+Shift+c $ex $HOME/.config/i3/scripts/refresh-settings.sh; reload; $ex i3-apply-rules.sh
