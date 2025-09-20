@@ -45,10 +45,16 @@ for m in "${MONITORS[@]}"; do
 
     # either launch via silent_background()...
     export WIRELESS="$w"  MONITOR="$m"
+
+    # enable the i3-workspace-groups support (see https://github.com/infokiller/i3-workspace-groups#polybar):
+    # note as of '25 we're not using workspace-groups, but leaving config in.
+    i3_mod_hook="i3-workspace-groups polybar-hook --monitor '$m'"
+    export I3_MOD_HOOK="$i3_mod_hook"
+
     silent_background  polybar --reload "$bar"
     # ...or simply background here:
-    #WIRELESS="$w" MONITOR="$m" polybar --reload "$bar" &
-    #WIRELESS="$w" MONITOR="$m" polybar --reload bar2 &  # in case you're running more than one bar
+    #WIRELESS="$w" MONITOR="$m" I3_MOD_HOOK="$i3_mod_hook" polybar --reload "$bar" &
+    #WIRELESS="$w" MONITOR="$m" I3_MOD_HOOK="$i3_mod_hook" polybar --reload bar2 &  # in case you're running more than one bar
     # to log:
     #polybar i3_bar 2>&1 | tee -a /tmp/polybar1.log & disown
 done
