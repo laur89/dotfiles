@@ -145,51 +145,41 @@ bindsym $mod+d focus child
 
 # Initialize workspace
 #                       
-#set $w1   1:Surf
-#set $w2   2:Code
-#set $w3   3:Chat
-#set $w4   4:Term
-#set $w5   5:Core
-#set $w6   6:Read
-#set $w7   7:Media
-#set $w8   8:Misc
-#set $w9   9:TODO
-#set $w0   0:TODO
-set $w1   1
-set $w2   2
-set $w3   3
-set $w4   4
-set $w5   5
-set $w6   6
-set $w7   7
-set $w8   8
-set $w9   9
-set $w0   0
+set $w1   1:Surf
+set $w2   2:Code
+set $w3   3:Chat
+set $w4   4:Term
+set $w5   5:Core
+set $w6   6:Read
+set $w7   7:Media
+set $w8   8:Misc
+set $w9   9:Misc
+set $w0   0:Misc
+#set $w1   1
+#set $w2   2
+#set $w3   3
+#set $w4   4
+#set $w5   5
+#set $w6   6
+#set $w7   7
+#set $w8   8
+#set $w9   9
+#set $w0   0
 
 
 # Switch to workspace
 # or: bindsym $mod+1 workspace number 1   ?
-bindsym $mod+1 $exec_i3_groups workspace-number $w1
-bindsym $mod+2 $exec_i3_groups workspace-number $w2
-bindsym $mod+3 $exec_i3_groups workspace-number $w3
-bindsym $mod+4 $exec_i3_groups workspace-number $w4
-bindsym $mod+5 $exec_i3_groups workspace-number $w5
-bindsym $mod+6 $exec_i3_groups workspace-number $w6
-bindsym $mod+7 $exec_i3_groups workspace-number $w7
-bindsym $mod+8 $exec_i3_groups workspace-number $w8
-bindsym $mod+9 $exec_i3_groups workspace-number $w9
-bindsym $mod+0 $exec_i3_groups workspace-number $w0
+bindsym $mod+1 workspace number 1
+bindsym $mod+2 workspace number 2
+bindsym $mod+3 workspace number 3
+bindsym $mod+4 workspace number 4
+bindsym $mod+5 workspace number 5
+bindsym $mod+6 workspace number 6
+bindsym $mod+7 workspace number 7
+bindsym $mod+8 workspace number 8
+bindsym $mod+9 workspace number 9
+bindsym $mod+0 workspace number 0
 bindsym $mod+Shift+Tab move container to workspace back_and_forth; workspace back_and_forth
-
-
-# Switch active workspace group
-bindsym $mod+Shift+g exec --no-startup-id i3-switch-active-workspace-group
-
-# Rename/renumber workspace. Uses Super+Alt+n
-bindsym $mod+$mod1+n exec --no-startup-id i3-rename-workspace
-
-# Move the focused container to another workspace
-#bindsym $mod+Shift+m exec --no-startup-id i3-move-to-workspace
 
 # Navigate workspaces next/previous:
 # note 'next_on_output' only only switches between wspaces available on active output/monitor;
@@ -213,16 +203,16 @@ bindsym $mod+Ctrl+Shift+question move workspace to output up
 bindsym $mod+Ctrl+Shift+m move workspace to output down
 
 # Move focused container to workspace; add '; workspace $wn' to navigate there
-bindsym $mod+Shift+1 $exec_i3_groups move-to-number $w1
-bindsym $mod+Shift+2 $exec_i3_groups move-to-number $w2
-bindsym $mod+Shift+3 $exec_i3_groups move-to-number $w3
-bindsym $mod+Shift+4 $exec_i3_groups move-to-number $w4
-bindsym $mod+Shift+5 $exec_i3_groups move-to-number $w5
-bindsym $mod+Shift+6 $exec_i3_groups move-to-number $w6
-bindsym $mod+Shift+7 $exec_i3_groups move-to-number $w7
-bindsym $mod+Shift+8 $exec_i3_groups move-to-number $w8
-bindsym $mod+Shift+9 $exec_i3_groups move-to-number $w9
-bindsym $mod+Shift+0 $exec_i3_groups move-to-number $w0
+bindsym $mod+Shift+1 move container to workspace number 1
+bindsym $mod+Shift+2 move container to workspace number 2
+bindsym $mod+Shift+3 move container to workspace number 3
+bindsym $mod+Shift+4 move container to workspace number 4
+bindsym $mod+Shift+5 move container to workspace number 5
+bindsym $mod+Shift+6 move container to workspace number 6
+bindsym $mod+Shift+7 move container to workspace number 7
+bindsym $mod+Shift+8 move container to workspace number 8
+bindsym $mod+Shift+9 move container to workspace number 9
+bindsym $mod+Shift+0 move container to workspace number 0
 
 # Reload the configuration file ('config' for c mnemonic)
 bindsym $mod+Shift+c $ex $HOME/.config/i3/scripts/refresh-settings.sh; reload; $ex i3-apply-rules.sh
@@ -298,7 +288,7 @@ hide_edge_borders smart
 set $mode_gaps Gaps: (o) outer, (i) inner
 set $mode_gaps_outer Outer Gaps: +|-|0 (local), Shift + +|-|0 (global)
 set $mode_gaps_inner Inner Gaps: +|-|0 (local), Shift + +|-|0 (global)
-#bindsym $mod+Shift+g mode "$mode_gaps"
+bindsym $mod+Shift+g mode "$mode_gaps"
 
 mode "$mode_gaps" {
         bindsym o      mode "$mode_gaps_outer"
