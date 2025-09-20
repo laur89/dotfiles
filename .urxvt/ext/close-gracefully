@@ -1,0 +1,26 @@
+#!/usr/bin/perl
+#
+# ring terminal bell when trying to close terminal window if there are
+# child processes (e.g. nvim) running
+# from https://unix.stackexchange.com/a/397807/47501
+#
+# !! note if you're also using tabbed/tabbedex plugin, then that defines
+# also a on_wm_delete_window() that conflicts with this; it's mentioned
+# in the same SO thread as linked above
+
+sub on_wm_delete_window {
+    my ($self, $event) = @_;
+    my $CP = `ps --ppid $self->{shell_pid} -o pid= | wc -l`;
+    chomp $CP;
+    if ( $CP != 0 ) {
+        $self->scr_bell;
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+sub on_child_start {
+    my($self, $pid) = @_;
+    $self->{shell_pid} = $pid;
+}
