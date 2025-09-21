@@ -195,6 +195,7 @@ export HISTFILE=~/.bash_hist
 
 shopt -u mailwarn       # disable mail notification:
 shopt -s cdspell        # try to correct typos in path
+shopt -s extglob        # enable extended pattern matching features
 shopt -s dotglob        # include dotfiles in path expansion
 shopt -s nullglob       # unmatching globs to expand into empty string/list instead of being left unexpanded
 shopt -s hostcomplete   # try to autocomplete hostnames
