@@ -20,15 +20,26 @@
     #find . -type f -iname '*'"$*"'*'  -ls
 #}
 
+# + to get pid of a program:
+#   - pgrep -x bctld
+#   - ps -C bctld -o pid=
+# + other relevant cmds:
+#   - print process tree up from given PID:  $ pstree -aps $pid
+#   - procs: add ppid to output:  $ procs -i Ppid
+#   - procs: search for 'tmux' and print only ppid:  $ procs --no-header -i Ppid --only Ppid -- tmux
 ffindproc() {
     [[ "$#" -ne 1 ]] && { err "exactly one arg (process name to search) allowed"; return 1; }
     [[ -z "$1" ]] && { err "process name required"; return 1; }
 
-    # last grep for re-coloring:
-    ps -ef | grep -v '\bgrep\b' | grep -i --color=auto -- "$1"
-
-    # TODO: add also exact match option?:
-    #   grep '\$1\b'
+    #if command -v procs > /dev/null; then
+        #procs --no-header -- "$1" | grep -v '\bgrep\b' | grep -i --color=auto -- "$1"
+        #procs --no-header  -i Ppid -i Pgid -i Group -- "$1"
+    #else
+        ## last grep for re-coloring:
+        #ps -ef | grep -v '\bgrep\b' | grep -i --color=auto -- "$1"
+    #fi
+    ps --no-headers -eo pid,ppid,pgid,egroup,command | \
+        grep -v "$USER     \bgrep\b .*$(rgxesc "$1")" | grep -i --color=auto -- "$1"
 }
 
 
@@ -2447,8 +2458,8 @@ sumtree() {
     # if you care also about metadata (ownership, perms), use tar:
     #tar -cf - ./ | md5sum
 
-    # md5deep alternative:
-    #md5deep -r -l -j0 . | md5sum  # follows symlinks by default!
+    # hashdeep alternative:
+    #hashdeep -r -l -j0 -c md5 . | md5sum  # follows symlinks by default!
 
     [[ -n "$dir" ]] && popd &> /dev/null
 }
@@ -3001,7 +3012,7 @@ fdu() {
         fi
     }
 
-    dir=$(_get_parent_dirs "$(realpath -- "${src:-$pwd}")" | fzf-tmux --tac)
+    dir=$(_get_parent_dirs "$(realpath -- "${src:-$pwd}")" | fzf --tmux --tac)
     cd -- "$dir"
 
     unset _get_parent_dirs
@@ -3327,7 +3338,7 @@ fbr() {
         sed "s/.* //"    | sed "s#remotes/[^/]*/##" |
         sort -u) || return
     branch=$(echo "$branches" |
-            fzf-tmux --select-1 --exit-0 --query="$q" -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
+            fzf --tmux --select-1 --exit-0 --query="$q" -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
             git checkout "$branch"
 }
 
@@ -3347,7 +3358,7 @@ fco() {
         sort -u          | awk '{print "\x1b[34;1mbranch\x1b[m\t" $1}') || return
     target=$(
         (echo "$tags"; echo "$branches") |
-        fzf-tmux -l30 -- --query="$q" --exit-0 --select-1 --no-hscroll --ansi +m -d "\t" -n 2) || return
+        fzf --tmux -l30 -- --query="$q" --exit-0 --select-1 --no-hscroll --ansi +m -d "\t" -n 2) || return
     git checkout "$(awk '{print $2}' <<< "$target")"
 }
 
@@ -3525,6 +3536,7 @@ fshow() {
 
     sha="$(grep -Po '^.*?\K[0-9a-f]{7}' <<< "${out[-1]}")" || { err "unable to parse out commit sha"; return 1; }
 
+    # note to squash everything up to initial commit, just run  $ git rebase -i --root
     case "$k" in
         'ctrl-s')
             if [[ "$sha" == "$(git log -n 1 --pretty=format:%h HEAD)" ]]; then
