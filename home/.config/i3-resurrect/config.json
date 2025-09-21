@@ -1,5 +1,5 @@
 {
-  "directory": "~/.i3/i3-resurrect/",
+  "directory": "~/.config/i3-resurrect/saved/",
   "window_command_mappings": [
     {
       "class": "Gnome-terminal",
