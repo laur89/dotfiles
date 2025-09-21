@@ -93,6 +93,7 @@ Plug 'jceb/vim-orgmode'  " text outlining (to use with note-taking plugins?); se
 " !!!! TODO: there's also https://github.com/nvim-neorg/neorg ;  how does it compare to orgmode? does this have roam alternative as org-roam?
 " note there seems to be some work done for org-roam alternative for neo-org: https://github.com/chipsenkbeil/org-roam.nvim
 " TODO: consdier also https://github.com/ranjithshegde/orgWiki.nvim as companion to orgmode?
+" also https://github.com/zk-org/zk
 
 " Selfexplanatory...
 "Plug 'jlanzarotta/bufexplorer'
