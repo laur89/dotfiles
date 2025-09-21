@@ -5825,7 +5825,6 @@ install_from_repo() {
         colorized-logs
         highlight  # syntax highlighting; https://gitlab.com/saalen/highlight
         python3-pygments  # syntax highlighting in py
-        silversearcher-ag
         ugrep  # Universal grep: ultra fast searcher of file systems, text and binary files, source code, archives, compressed files, documents, and more; https://github.com/Genivia/ugrep/
         gawk  # gnu awk
         plocate  # updatedb generates an index of files and directories. GNU locate can be used to quickly query this index
