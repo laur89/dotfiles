@@ -16,12 +16,13 @@ export DEFAULT_SSH_USER=laur
 #if [[ "$-" != *i* ]] && [[ -z "$DISPLAY" ]]; then
 #if [ "$PS1" ] ; then # interactive shell
 #if [[ "$EUID" -eq 0 && -z "$DISPLAY" ]] || [[ "$-" != *i* ]]; then
-if [[ "$-" != *i* ]]; then
-
 #if ! shopt -q login_shell; then
 #if [[ "$(tty)" != "/dev/tty1" ]] && [[ \"\$(who | cut -d' ' -f1 | sort -u)\" == \"\$usr\" ]]; do
+if [[ "$-" != *i* ]]; then
+    #echo "$(date):: .bash_env_vars called by noninteractive proc $$" >> /tmp/"$$.tree"  # debug
+    #echo "$(pstree -aps $$)" >> /tmp/"$$.tree"  # debug
 
-    # find currently active user/id: (note 'type' _should_ be x11 || wayland, but seems to be 'tty' with xinitrc;
+    # find currently active user/id: (note 'type' _should_ be x11 || wayland, but seems to be 'tty' with xinitrc (i.e. w/o a display manager);
     #for sessionid in $(loginctl list-sessions --no-legend | awk '{ print $1 }'); do
         #loginctl show-session -p Id -p Name -p User -p State -p Type -p Remote $sessionid | sort
     #done | awk -F= '/Name/ { name = $2 } /User/ { user = $2 } /State/ { state = $2 } /Type/ { type = $2 } /Remote/ { remote = $2 } /User/ && remote == "no" && state == "active" && (type == "tty" || type == "wayland") { print user, name }'
@@ -32,6 +33,7 @@ if [[ "$-" != *i* ]]; then
 
     # try to extract our DISPLAY value from $(w) output
     # NOTE: DISPLAY fails to resolve from $(who) command as of '25:  _disp="$(LANG= who -u | grep "^$MAIN_SYSTEM_USER\b" | grep -oP '\s+\(\K:[0-9](\.[0-9])?(?=\))' | sort -u)"
+    # TODO: handle for wayland & set WAYLAND_DISPLAY!
     if [[ -z "$DISPLAY" ]]; then
         _disp="$(LANG=C w --no-header --short "$MAIN_SYSTEM_USER" | grep -oP '\s+xinit .*\K:[0-9](\.[0-9])?(?=\s+)' | sort -u)"
         if [[ -n "$_disp" && "$(wc -l <<< "$_disp")" -eq 1 ]]; then
@@ -191,10 +193,11 @@ export _SCRIPTS_COMMONS="$_SCRIPTS_BIN/__utils.sh"
 
 command -v nvim > /dev/null 2>&1 && export EDITOR=nvim || export EDITOR=vim
 
-# VISUAL/EDITOR distinction is really historical; tl;dr is that VIAUL depends on
-# whether you ahve a term capable of cursor positioning, not whether you have a GUI/
+# VISUAL/EDITOR distinction is really historical; tl;dr is that VISUAL depends on
+# whether you have a term capable of cursor positioning, not whether you have a GUI/
 # window system avail; see https://unix.stackexchange.com/a/334022/47501
-command -v neovide > /dev/null 2>&1 && export VISUAL=neovide || export VISUAL="$EDITOR"  # note gvim doesn't play well with some stuff, eg with 'crontab -e'
+#command -v neovide > /dev/null 2>&1 && export VISUAL=neovide || export VISUAL="$EDITOR"  # note gvim doesn't play well with some stuff, eg with 'crontab -e'
+export VISUAL="$EDITOR"
 
 export PAGER=less
 # note this doesn't work, as systemd session where this is evaluated won't have $DISPLAY set:
@@ -365,30 +368,32 @@ export PERL5LIB="$PERL_BASE/lib/perl5"
 # Note  "$ANDROID_HOME/platform-tools"  would give us tools such as adb, but atm we install it from apt
 
 ###############################
-# add additional locations to PATH if not already present:
+# add additional locations to PATH if not already present.
+# remember: the first found in $PATH is the one used
 j=''
 for i in \
         /usr/local/sbin \
         /usr/sbin \
         /sbin \
         "$HOME/bin:F" \
+        "$BASE_DATA_DIR/dev/scripts/system" \
+        "$BASE_DATA_DIR/dev/scripts/shell" \
+        "$BASE_DATA_DIR/dev/scripts/git" \
+        "$BASE_DATA_DIR/dev/scripts/i3" \
         "$HOME/.local/bin:F" \
-        "$GRADLE_HOME/bin" \
-        "$HOME/.yarn/bin" \
-        /usr/local/go/bin \
+        "$PERL_BASE/bin" \
         "$ANDROID_HOME/cmdline-tools/bin" \
         "$GOPATH/bin" \
+        /usr/local/go/bin \
         "${KREW_ROOT:-$HOME/.krew}/bin" \
+        "$GRADLE_HOME/bin" \
+        "$HOME/.yarn/bin" \
+        "$BASE_PROGS_DIR/clojure/bin" \
         "$BASE_PROGS_DIR/git-fuzzy/bin" \
         "$HOME/.local/share/coursier/bin" \
-        "$BASE_PROGS_DIR/clojure/bin" \
         "$HOME/.config/nvim/bundle/vim-iced/bin" \
         "$HOME/.local/share/JetBrains/Toolbox/scripts" \
-        "$PERL_BASE/bin" \
         "$HOME/.tmux/plugins/tmux-nvr/bin" \
-        "$BASE_DATA_DIR/dev/scripts/system" \
-        "$BASE_DATA_DIR/dev/scripts/git" \
-        "$BASE_DATA_DIR/dev/scripts/shell" \
             ; do
     opts="$(cut -d: -f2 <<< "$i")"
     i="$(cut -d: -f1 <<< "$i")"
