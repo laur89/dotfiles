@@ -1444,6 +1444,7 @@ install_deps() {
     install_block 'libxcb-render0-dev libffi-dev python3-cffi'
     py_install flashfocus
 
+    py_install bctl  # brightness control, https://github.com/laur89/bctl
 
     # work deps:  # TODO remove block?
     #if [[ "$PROFILE" == work ]]; then
@@ -4897,7 +4898,9 @@ install_i3_conf() {
 
 # TODO: also consider:
 #  - https://gitlab.com/aquator/i3-scratchpad - docks/launches/toggles windows/apps at specific position on screen
-#  - https://github.com/justahuman1/i3-grid
+#  - https://github.com/justahuman1/i3-grid  - code smells, at least as of '25
+#  - https://github.com/yurikhan/firefox-i3-workspaces - positions multiple ff
+#    windows to correct workspaces
 install_i3_deps() {
     local f
     f="$TMP_DIR/i3-dep-${RANDOM}"
@@ -4937,11 +4940,13 @@ install_i3_deps() {
     # install sway-overfocus, allowing easier window focus change/movement   # https://github.com/korreman/sway-overfocus
     install_bin_from_git -N sway-overfocus korreman/sway-overfocus '-x86_64.tar.gz'
 
-    # TODO: consider https://github.com/infokiller/i3-workspace-groups
-    # TODO: consider https://github.com/JonnyHaystack/i3-resurrect
+    # https://gitlab.com/aquator/i3-scratchpad
+    install_from_url  i3-scratchpad 'https://gitlab.com/aquator/i3-scratchpad/-/raw/master/i3-scratchpad'
 
-    # create links of our own i3 scripts on $PATH:
-    create_symlinks "$BASE_DATA_DIR/dev/scripts/i3" "$HOME/bin"
+    # see also: https://github.com/jdholtz/i3-restore
+    py_install  i3-resurrect  # https://github.com/JonnyHaystack/i3-resurrect/
+
+    # TODO: consider https://github.com/infokiller/i3-workspace-groups
 
     exe "sudo rm -rf -- '$f'"
 }
@@ -5331,6 +5336,7 @@ install_fonts() {
             SourceCodePro
             AnonymousPro
             Terminus:M
+            RobotoMono
             Ubuntu
             UbuntuMono
             DejaVuSansMono
@@ -5433,7 +5439,7 @@ install_fonts() {
                                     #   Terminess Powerline (or any other as far as we can tell) font
     install_powerline_fonts; unset install_powerline_fonts  # note 'fonts-powerline' pkg in apt does not seem to work
 
-    install_siji; unset install_siji
+    #install_siji; unset install_siji
 
     # TODO: guess we can't use xset when xserver is not yet running:
     #exe "xset +fp ~/.fonts"
@@ -6015,17 +6021,25 @@ install_vbox_guest() {
 # https://wiki.debian.org/AtiHowTo
 install_amd_gpu() {
     # TODO: consider  lspci -vnn | grep VGA | grep AMD
-    if sudo lshw | grep -iA 5 'display' | grep -Eq 'vendor.*AMD'; then
-        if confirm -d N "we seem to have AMD card; want to install AMD drivers?"; then  # TODO: should we default to _not_ installing in non-interactive mode?
-            report "installing AMD drivers & firmware & other relevant tools..."
-            # TODO: x11!:
-            install_block 'firmware-amd-graphics libgl1-mesa-dri libglx-mesa0 mesa-vulkan-drivers xserver-xorg-video-amdgpu radeontop lm-sensors fancontrol'
-            return $?
-        else
-            report "we chose not to install AMD drivers..."
-        fi
-    else
+    if ! sudo lshw | grep -iA 5 'display' | grep -Eq 'vendor.*AMD'; then
         report "we don't have an AMD card; skipping installing their drivers..."
+        return 0
+    fi
+
+    if confirm -d N "we seem to have AMD card; want to install AMD drivers?"; then  # TODO: should we default to _not_ installing in non-interactive mode?
+        report "installing AMD drivers & firmware & other relevant tools..."
+        # TODO: x11!:
+        install_block 'firmware-amd-graphics libgl1-mesa-dri libglx-mesa0 mesa-vulkan-drivers xserver-xorg-video-amdgpu radeontop lm-sensors fancontrol'
+        return $?
+    else
+        report "we chose not to install AMD drivers..."
+    fi
+
+    # TODO: see https://wiki.archlinux.org/title/Variable_refresh_rate#Enable_on_AMDGPU
+    #       esp. VariableRefresh & AsyncFlipSecondaries options
+    #       - not sure when/if to enable it though...
+    if is_x; then
+        true  # TODO set up the opts?
     fi
 }
 
@@ -6488,6 +6502,7 @@ __choose_prog_to_build() {
         install_hblock
         install_open_eid
         install_binance
+        install_cointop
         install_electrum_wallet
         install_revanced
         install_apkeditor
@@ -6940,6 +6955,12 @@ install_open_eid() {
 # https://www.binance.com/en/download
 install_binance() {
     install_from_url  binance 'https://ftp.binance.com/electron-desktop/linux/production/binance-amd64-linux.deb'
+}
+
+
+# https://github.com/cointop-sh/cointop
+install_cointop() {
+    install_bin_from_git -N cointop cointop-sh/cointop '_linux_amd64.tar.gz'
 }
 
 
@@ -7979,24 +8000,33 @@ is_archive() {
 
 
 # Checks whether we're in graphical environment.
-# TODO: differentiate between x11 & GUI; perhaps is_gui() would be better?
 #
 # @returns {bool}  true, if we're currently in graphical env.
+is_gui() {
+    is_x || is_wayland
+
+    # from https://unix.stackexchange.com/a/681480/47501
+    #case $((0${DISPLAY:+1} | 0${WAYLAND_DISPLAY:+2})) in
+        #1) session=X11 ;;
+        #2) session=WAYLAND ;;
+        #3) session='both X11 and WAYLAND' ;;
+        #*) session='neither X11 nor WAYLAND' ;;
+    #esac
+}
+
+
+# @returns {bool}  true, if we're in an x11 session
 is_x() {
-    local exit_code
+    is_pkg_installed  xorg  # or xserver-xorg
 
-    if command -v xset > /dev/null 2>&1; then
-        xset q &>/dev/null
-        exit_code="$?"
-    elif command -v wmctrl > /dev/null 2>&1; then
-        wmctrl -m &>/dev/null
-        exit_code="$?"
-    else
-        err "can't check, neither [xset] nor [wmctrl] are installed"
-        return 2
-    fi
+    # TODO: confirm DISPLAY not set under wayland session!
+    #[[ "$XDG_SESSION_TYPE" == x11 || -n "$DISPLAY" ]]
+}
 
-    [[ "$exit_code" -eq 0 && -n "$DISPLAY" ]]
+
+# @returns {bool}  true, if we're running in a wayland session
+is_wayland() {
+    [[ "$XDG_SESSION_TYPE" == wayland || -n "$WAYLAND_DISPLAY" ]]
 }
 
 
