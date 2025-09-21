@@ -252,7 +252,6 @@ mvnclean() {
 
 #  Find a pattern in a set of files and highlight them:
 #+ (needs a recent version of grep).
-# !!! deprecated by ag/astr
 # TODO: find whether we could stop using find here and use grep --include & --exclude flags instead.
 ffstr() {
     local grepcase OPTIND usage opt max_result_line_length caseOptCounter force_case regex i
@@ -274,9 +273,6 @@ ffstr() {
         -c  collect matching filenames into global array instead of printing to stdout;
         -o  open found files;
         -r  enable regex on filename pattern"
-
-
-    command -v ag > /dev/null && report "consider using ag or its wrapper astr (same thing as $f(), but using ag instead of find+grep)\n"
 
     while getopts 'isrm:Lcoh' opt; do
         case "$opt" in
@@ -477,7 +473,7 @@ __mem_cpu_most_common_fun() {
     is_digit "$num" && [[ "$num" -gt 0 ]] || { err "nr of processes to show needs to be a positive digit, but was [$num]" -1; return 1; }
     # note we should try use '--ppid 2 -N' flag to filter out kernel threads (see https://unix.stackexchange.com/questions/258448/is-there-any-way-to-hide-kernel-threads-from-ps-command-results)
     ps_out="$(ps -ax --no-headers -o $first_ps_col,$second_ps_col,args --sort -${first_ps_col},-${second_ps_col})" || { err "ps command failed"; return 1; }
-    ps_out="$(head -n $num <<< "$ps_out")" || return 1
+    ps_out="$(head -n "$num" <<< "$ps_out")" || return 1
 
     # formats the default full ps output (some versions of ps don't offer --sort option)
     #
@@ -525,149 +521,46 @@ cpumost() {
     __mem_cpu_most_common_fun CPU MEM pcpu pmem "$@"
 }
 
-cpugt(){
-    # $1: percentage of cpu. Default 90%
+# $1: percentage of cpu. Default 90%
+cpugt() {
+    local perc ps_out
+    perc="$1"
+    [[ -z "$perc" ]] && perc=90
 
-    local perc=$1
-    [ "$perc" == "" ] && perc="90"
-
-    local ps_out=$(ps -auxf) || return 1
+    ps_out=$(ps -auxf) || return 1
     echo "$ps_out" | head -n 1
     echo "$ps_out" | sort -nr -k 3 | awk -v "q=$perc" '($3>=q){print $0}'
 }
 
-memgt(){
-    # $1: percentage of memory. Default 90%
-
-    local perc=$1
+# $1: percentage of memory. Default 90%
+memgt() {
+    local perc ps_out
+    perc="$1"
     [[ -z "$perc" ]] && perc=90
 
-    local ps_out=$(ps -auxf) || return 1
+    ps_out=$(ps -auxf) || return 1
     echo "$ps_out" | head -n 1
     echo "$ps_out" | sort -nr -k 4 | awk -v "q=$perc" '($4>=q){print $0}'
 }
 
 
+# show every process running as given user
+# $1: name of the user
 touser(){
-    # $1: name of the user
-    ps -U $1 -u $1 u
+    ps -U "$1" -u "$1" u
 }
 
+# $1: PID of the process
 frompid(){
-    # $1: PID of the process
-    ps -p $1 -o comm=
+    is_digit "$1" || return 1
+    #ps -p "$1" -o comm=
+    ps -p "$1" -o command=
 }
 
 
+# $1: name of the process
 topid(){
-    # $1: name of the process
-    ps -C $1 -o pid=
-}
-
-
-astr() {
-    local grepcase OPTIND usage opt file_pattern caseOptCounter maxDepth follow_links
-    local pattern defMaxDeptWithFollowLinks dir i f
-
-    readonly defMaxDeptWithFollowLinks=25
-    OPTIND=1
-    caseOptCounter=0
-
-    f="$(funname)"
-    readonly usage="\n$f: find string in files using ag. smartcase by default.
-    Usage: $f [options]  \"pattern\"  [filename pattern]  [starting dir]
-        -i  force case insensitive
-        -s  force case sensitivity
-        -L  follow symlinks
-        -m<digit>   max depth to descend; unlimited by default, but limited to $defMaxDeptWithFollowLinks if -L opt selected;"
-
-    check_progs_installed ag
-    report "consider using ag directly; it has really sane syntax (compared to find + grep)
-      for instance, with this wrapper you can't use the filetype & path options.\n"
-
-    while getopts 'isLhm:' opt; do
-        case "$opt" in
-           i)
-              [[ "$grepcase" != ' -i ' ]] && let caseOptCounter+=1
-              grepcase=' -i '
-                ;;
-           s)
-              [[ "$grepcase" != ' -s ' ]] && let caseOptCounter+=1
-              grepcase=' -s '
-                ;;
-           m) maxDepth="$OPTARG"
-                ;;
-           L) follow_links="--follow"
-                ;;
-           h) echo -e "$usage"
-              return 0
-              ;;
-           *) echo -e "$usage";
-              return 1
-              ;;
-        esac
-    done
-    shift "$((OPTIND-1))"
-
-    if [[ "$#" -eq 3 && ! -d "${@: -1}" ]]; then
-        err "last arg can only be starting dir"
-        return 1
-    elif [[ "$#" -gt 1 ]]; then
-        i="${@: -1}"  # last arg; alternatively ${@:$#}
-        if [[ -d "$i" ]]; then
-            [[ "$#" -lt 3 ]] && report "assuming starting path [$i] was given"  # if less than 3 args, we need to assume
-            dir="$i"  # optional
-            set -- "${@:1:${#}-1}"  # shift the last arg
-        fi
-        unset i
-    fi
-
-    pattern="$1"
-    file_pattern="$2"  # optional
-
-    if [[ "$#" -lt 1 || "$#" -gt 2 ]]; then
-        err "incorrect nr of arguments."
-        echo -e "$usage"
-        return 1;
-    elif [[ "$caseOptCounter" -gt 1 ]]; then
-        err "-i and -s flags are exclusive."
-        echo -e "$usage"
-        return 1
-    fi
-
-    if [[ -n "$maxDepth" ]]; then
-        if ! is_digit "$maxDepth" || [[ "$maxDepth" -le 0 ]]; then
-            err "maxdepth (-m flag) arg value has to be a positive digit, but was [$maxDepth]"
-            echo -e "$usage"
-            return 1
-        fi
-
-        maxDepthParam="--depth $maxDepth"
-    elif [[ -n "$follow_links" ]]; then
-        maxDepthParam="--depth $defMaxDeptWithFollowLinks"
-    fi
-
-    # regex sanity:
-    if [[ "$@" == *\** && "$@" != *\.\** ]]; then
-        err "use .* as wildcards, not a single *"
-        return 1
-    elif [[ "$(echo "$@" | tr -dc '.' | wc -m)" -lt "$(echo "$@" | tr -dc '*' | wc -m)" ]]; then
-        err "nr of periods (.) was less than stars (*); are you misusing regex?"
-        return 1
-    fi
-
-    if [[ -n "$file_pattern" ]]; then
-        if [[ "$file_pattern" == */* ]]; then
-            err "there are slashes in the filename."
-            return 1
-        elif [[ "$file_pattern" == *\ * ]]; then
-            err "there is whitespace in the filename."
-            return 1
-        fi
-        file_pattern="-G $file_pattern"
-    fi
-
-    ag $follow_links $maxDepthParam $file_pattern $grepcase -- "$pattern" $dir 2>/dev/null
+    ps -C "$1" -o pid=
 }
 
 
