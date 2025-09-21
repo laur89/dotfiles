@@ -16,18 +16,17 @@ configuration {
   fg: #c867eb;
   fg-alt: #7f849c;
 
-  
   border: 0;
   margin: 0;
   padding: 0;
   spacing: 0;
-
 }
 
 window {
   width: 60%;
-  height: 20%;
+  height: 0%;
   background-color: @bg;
+  //border-radius: 10px;  /* works with compositor */
 }
 
 element {
