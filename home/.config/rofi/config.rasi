@@ -2,6 +2,7 @@ configuration {
     terminal: "urxvtc";
     show-icons: true;
     font: "Droid Sans Mono for Powerline 10";
+    //modi: "drun,run,window";                    // Available modes
 
     // Key-bindings; note to use existing binding, you first need to re-bind its current action to something else in order to release it for re-binding
     // run [rofi -show keys] to see current bindings
