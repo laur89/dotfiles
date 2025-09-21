@@ -25,7 +25,7 @@ Xcursor.size: 24
 !
 ! note '-confirm-paste' disables the confirmation on paste, if test contains say newlines (or other control characters)
 URxvt.perl-ext-common: default,tabbedex,keyboard-select,selection-to-clipboard,vtwheel,matcher,xresources-256,-confirm-paste
-!URxvt.perl-lib: /your/folder/  ! only needed if you use a non-standard directory
+!URxvt.perl-lib: ~/.config/urxvt/ext  ! additional dirs to look perl extensions from;
 URxvt*geometry: 100x50
 ! comment the depth, otherwise w3m cant render images in urxvt:
 !URxvt.depth: 32
@@ -53,7 +53,8 @@ URxvt*modifier: alt
 !URxvt.kuake.hotkey: F12
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Matcher
-!   note: either use this, or url-select, not both
+!   note: either use this, or url-select, not
+!   both. although they should be able to coexist
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! open last url
 URxvt.keysym.C-Delete: perl:matcher:last
@@ -94,7 +95,7 @@ URxvt.matcher.render.4: fg=5
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !URxvt.keysym.M-u: perl:url-select:select_next
 !URxvt.url-select.underline: true
-!URxvt.url-select.launcher: /usr/bin/xdg-open
+!URxvt.url-select.launcher: xdg-open
 !!URvxt.url-select.button:    Mouse button to click-open URLs (default: 2)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
