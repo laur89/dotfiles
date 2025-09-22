@@ -13,7 +13,7 @@
     #geometry = "300x5-6-20" - this is our old, now-deprecated setting
     width = 300
     #height = 5
-    height = 300
+    height = (0, 300)
     offset = (6, 20)
     #offset = 10x50
     origin = bottom-right
