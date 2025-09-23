@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#
+#######################
+readonly SELF=${0##*/}       # (same as running `basename $0`)
+
+#### ENTRY ####
+source /etc/.global-bash-init || exit 1
+
+# call common hook(s) from private-common castle:
+common="$COMMON_PRIVATE_DOTFILES/.githooks/scripts/common"
+[[ -x "$common" ]] || fail_display "[$common] not found" "$SELF"
+"$common" "$@" || fail_display "common failed" "$SELF"
