@@ -214,10 +214,10 @@ bindsym $mod+Shift+9 move container to workspace $w9
 bindsym $mod+Shift+0 move container to workspace $w10
 
 # Reload the configuration file ('config' for c mnemonic)
-bindsym $mod+Shift+c $ex $HOME/.config/i3/scripts/refresh-settings.sh; reload; $ex i3-apply-rules.sh
+bindsym $mod+Shift+c $ex $HOME/.config/i3/scripts/i3-refresh-settings.sh; reload; $ex i3-apply-rules.sh
 
 # Restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
-bindsym $mod+Shift+r $ex $HOME/.config/i3/scripts/refresh-settings.sh; restart; $ex i3-apply-rules.sh
+bindsym $mod+Shift+r $ex $HOME/.config/i3/scripts/i3-refresh-settings.sh; restart
 
 # Resize window (you can also use the mouse for that)
 #set $resize-label <span background='blue'>resize</span>
@@ -511,7 +511,9 @@ bindsym  $mod1+o     $ex copyq toggle  >/dev/null
 # is used in the bar {} block.
 #font pango:Terminess Powerline 12px
 #font -*-terminus-*-*-*-*-12-*-*-*-*-*-*-13
-font pango:Hack Nerd Font Mono 8
+#font pango:DroidSansM Font 8
+#font pango:DejaVuSansM Font 8
+font pango:RobotoMono NerdFont 8
 #font pango:FiraCode Nerd Font 10
 #font pango:monospace 8
 #font Droid Sans Mono for Powerline 8
