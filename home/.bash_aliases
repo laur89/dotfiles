@@ -219,7 +219,7 @@ alias gitdi-prev='silent_background git difftool --dir-diff HEAD^ HEAD'    # loc
 alias gitdi-commit='silent_background git showtool'  # diff specific commit, or HEAD, if no arg was given
 #alias gitdi-stashed='silent_background git difftool --dir-diff stash@{0}^!'  # diff stash against its parent;
 alias gitdi-stashed='silent_background git difftool --dir-diff stash@{0}^ stash@{0}'  # diff stash against its parent;
-alias git-root='is_git && __grt="$(git rev-parse --show-toplevel)" && [[ -n "$__grt" ]] && cd -- "$__grt" && unset __grt || { err "are you in a git repo?"; unset __grt; }'  # go to project root
+alias git-root='is_git && __grt="$(get_git_root)" && [[ -n "$__grt" ]] && cd -- "$__grt" && unset __grt || { err "are you in a git repo?"; unset __grt; }'  # go to project root
 alias grt='git-root'
 alias gpushall='is_git || err "not in a git repo" && { git push --tags && git checkout master && git push && git checkout develop && git push; }'
 # forgit aliases: (https://github.com/wfxr/forgit)

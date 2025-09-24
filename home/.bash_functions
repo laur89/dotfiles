@@ -1461,7 +1461,7 @@ gito() {
 
     is_git || { err "not in git repo."; return 1; }
 
-    readonly git_root="$(git rev-parse --show-toplevel)" || { err "unable to find project root"; return 1; }
+    readonly git_root="$(get_git_root)" || { err "unable to find project root"; return 1; }
 
     if [[ -n "$src" ]]; then
         if [[ "$src" == *\** && "$src" != *\.\** ]]; then
@@ -1672,7 +1672,7 @@ gfrs() {
 
     declare -a expected_tags
 
-    pom="$(git rev-parse --show-toplevel)/pom.xml" || { err "unable to find git root"; return 1; }
+    pom="$(get_git_root)/pom.xml" || { err "unable to find git root"; return 1; }
     pom_ver="$(grep -Pos -m 1 '^\s+<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
     pom_wo_postfix="$(grep -Eos '^[0-9\.]+' <<< "$pom_ver" 2>/dev/null)"
 
@@ -1745,7 +1745,7 @@ gfrf() {
         return 1
     fi
 
-    pom="$(git rev-parse --show-toplevel)/pom.xml" || { err "unable to find git root"; return 1; }
+    pom="$(get_git_root)/pom.xml" || { err "unable to find git root"; return 1; }
     pom_ver="$(grep -Pos -m 1 '^\s+<version>\K.*(?=</version>.*)' "$pom" 2>/dev/null)"  # ignore errors; if no pom, let the var remain empty.
 
     if [[ -n "$pom_ver" ]]; then  # we're dealing with a maven project
@@ -3324,7 +3324,7 @@ fcol() {
 
     #[[ -z "$commit" ]] && { err "need to provide commit sha"; return 1; }
     #cwd="$(realpath "$PWD")"
-    #git_root="$(realpath "$(git rev-parse --show-toplevel)")" || { err "unable to find project root" -1; return 1; }
+    #git_root="$(realpath "$(get_git_root)")" || { err "unable to find project root" -1; return 1; }
 
     #[[ "$cwd" != "$git_root" ]] && pushd -- "$git_root" &> /dev/null  # git root
     #git difftool --dir-diff "$commit"^ "$commit"
@@ -3352,7 +3352,7 @@ fshow() {
 
     # first let's navigate to repo (ie git) root:
     #cwd="$(realpath "$PWD")"
-    #git_root="$(realpath "$(git rev-parse --show-toplevel)")" || { err "unable to find project root" -1; return 1; }
+    #git_root="$(realpath "$(get_git_root)")" || { err "unable to find project root" -1; return 1; }
     #[[ "$cwd" != "$git_root" ]] && pushd -- "$git_root" &> /dev/null
 
 
@@ -3395,19 +3395,8 @@ fshow() {
                 && { report \\\"sha is on clipboard\\\" $f; sleep 1; exit 0; } \
                 || err \\\"unable to copy sha to clipboard. here it is:\\\n\$i\\\" $f && sleep 3
         )\"
-        --bind=\"ctrl-f:execute(
-            source $_SCRIPTS_COMMONS;
-            c=\$(git diff --name-only --staged)
-            if [[ -n \\\"\$c\\\" ]]; then
-                i=\$($sha_extract_cmd)
-                git fixup \\\"\$i\\\" || { err \\\"git fixup failed\\\" $f; sleep 3; }
-            else
-                err \\\"no files staged, nothing to fixup\\\" $f && sleep 2
-            fi
 
-        )\"
-
-        --expect=ctrl-s,ctrl-b
+        --expect=ctrl-s,ctrl-b,ctrl-f
         --exit-0
         --print-query
         --no-sort
@@ -3444,6 +3433,13 @@ fshow() {
             return $? ;;
         'ctrl-b')
             git checkout "$sha"; return $? ;;
+        'ctrl-f')
+            if [[ -n "$(git diff --name-only --staged)" ]]; then
+                git fixup "$sha" || { err 'git fixup failed' "$f"; return 1; }
+            else
+                err "no files staged, nothing to fixup" "$f"; return 1
+            fi
+            ;;
         *)
             #__open_git_difftool_at_git_root "$sha"
             err "unexpected key-combo [$k]"; return 1 ;;
