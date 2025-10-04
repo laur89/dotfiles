@@ -303,12 +303,6 @@ fi
     #ssh-add
 #fi
 ##########################################
-
-# compile .ssh/config
-##########################################
-__check_for_change_and_compile_ssh_config.sh &
-disown $!
-########################################## fzf
 # https://github.com/junegunn/fzf#setting-up-shell-integration
 command -v fzf > /dev/null && eval -- "$(fzf --bash)"
 
@@ -414,14 +408,6 @@ fi
 #    unset _latest_node_ver
 #fi
 ########################################## /mise
-# generate .Xauth to be passed to (and used by) GUI (docker) containers:
-# TODO: move to systemd service & depend on x11
-export XAUTH='/tmp/.docker.xauth'
-if [[ ! -s "$XAUTH" && -n "$DISPLAY" ]]; then  # TODO: also check for is_x()?
-    touch "$XAUTH"
-    xauth nlist "$DISPLAY" | sed -e 's/^..../ffff/' | xauth -f "$XAUTH" nmerge -
-fi
-##########################################
 # kubernetes/k8s shell prompt: (https://github.com/jonmosco/kube-ps1)
 KUBE_PS1_PREFIX="$PROMPT_SEGMENT_PREFIX"
 KUBE_PS1_SUFFIX="$PROMPT_SEGMENT_SUFFIX"
