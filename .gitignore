@@ -3,6 +3,6 @@
 .mutt/temp/
 .fonts/siji.pcf
 .fonts/**/.uuid
-home/.config/i3/config.d/10-generated
+home/.config/i3/config.d/10-generated*
 home/.config/Signal
 home/.config/i3/config
