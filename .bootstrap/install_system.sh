@@ -1576,7 +1576,8 @@ clone_or_link_castle() {
             exe "git -C '$BASE_HOMESICK_REPOS_LOC/$castle' remote set-url origin git@${hub}:${repo}.git"
         fi
 
-        # note this assumes $castle repo has a .githooks symlink at its root that points to dir that contains the actual hooks!
+        # note this assumes $castle repo has a .githooks dir/symlink at its root that sets up the hooks;
+        # either by providing its own or points to dir that contains the actual hooks!
         if [[ "$set_hooks" == 1 ]]; then
             exe 'git -C '$BASE_HOMESICK_REPOS_LOC/$castle' config core.hooksPath .githooks' || err "git hook installation failed!"
         fi
@@ -2276,7 +2277,7 @@ install_kernel_modules() {
     #      - https://gitlab.com/ddcci-driver-linux/ddcci-driver-linux/-/issues/42
     #      - https://gitlab.com/ddcci-driver-linux/ddcci-driver-linux/-/issues/7
     modules=(
-        ddcci  # provided by ddcci-dkms; TODO: https://gitlab.com/wavexx/acpilight says [ddcci-backlight] module should be loaded! unsure about it
+        ddcci  # provided by ddcci-dkms
     )
 
     # from https://www.ddcutil.com/kernel_module/ : only load i2c on demand if it's not already loaded into kernel:
@@ -4299,17 +4300,18 @@ setup_keyd() {
 #
 # for quick debug, run as  $ sudo -u kanata kanata --cfg /path/to/conf.kbd
 install_kanata() {
-    local conf_src conf_target
+    local conf_src target_d
 
     conf_src="$COMMON_DOTFILES/backups/kanata.kbd"
-    conf_target='/etc/kanata'  # note this path is referenced in relevant systemd service file
+    target_d='/etc/kanata'  # note this path is referenced in relevant systemd service file
 
     # note group & user are also referenced in relevant systemd & udev files
-    add_group uinput
-    add_user  kanata  'input,uinput'
+    add_group -s uinput
+    add_user -g 'input,uinput' kanata
 
     if [[ -s "$conf_src" ]]; then
-        exe "sudo install -m644 -CD '$conf_src' '$conf_target'" || { err "installing [$conf_src] failed w/ $?"; return 1; }
+        ensure_d -s "$target_d" || return 1
+        exe "sudo install -m644 -CT '$conf_src' '$target_d/kanata.kbd'" || { err "installing [$conf_src] failed w/ $?"; return 1; }
     fi
 
     install_bin_from_git -N kanata -O root:kanata -P 754  jtroo/kanata 'kanata'
@@ -5325,6 +5327,7 @@ install_fonts() {
     '
 
     # note alternative bitmap font tool to fontforge is bitsnpicas
+    # another font editor: https://github.com/bezy-org/bezy
     is_native && install_block 'fontforge gucharmap'
 
     # https://github.com/ryanoasis/nerd-fonts#option-7-install-script
@@ -7276,19 +7279,42 @@ add_to_group() {
 
 
 add_group() {
+    local opts group opt OPTIND
+
+    opts=()
+    while getopts 's' opt; do
+        case "$opt" in
+            s) opts+=('--system') ;;
+            *) return 1 ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    group="$1"
+
     # note exit 9 means group exists
-    exe -c 0,9 "sudo groupadd $1" || return $?
+    exe -c 0,9 "sudo groupadd ${opts[*]} $group" || return $?
 }
 
 
 add_user() {
-    local user groups
+    local opts user opt OPTIND
+
+    opts=()
+    while getopts 'sg:' opt; do
+        case "$opt" in
+            s) opts+=('--system') ;;
+            g) opts+=('--groups' "$OPTARG") ;;  # comma-separated list of groups
+            *) return 1 ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
     user="$1"
-    groups="$2"  # optional; additional groups to add user to, comma-separated
 
     if ! id -- "$user" 2>/dev/null; then
         # note useradd exits w/ 9 just like groupadd if target already exists
-        exe "sudo useradd --no-create-home ${groups:+--groups $groups }--shell /bin/false --user-group $user" || return $?
+        exe "sudo useradd --no-create-home ${opts[*]} --shell /bin/false --user-group $user" || return $?
     fi
     return 0
 }
