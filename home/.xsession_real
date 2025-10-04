@@ -101,6 +101,14 @@ _setup_environment() {
     mv -f "${HOME}/.Xauthority" "${XAUTHORITY}"
   fi
 
+  # generate .Xauth to be passed to (and used by) GUI (docker) containers:
+  export XAUTH="$XDG_RUNTIME_DIR/.docker.xauth"
+  if [[ ! -s "$XAUTH" && -n "$DISPLAY" ]]; then
+      touch "$XAUTH"
+      xauth nlist "$DISPLAY" | sed -e 's/^..../ffff/' | xauth -f "$XAUTH" nmerge -
+  fi
+  ##########################################
+
   export XDG_SESSION_TYPE=x11
 
   #_set_gdk_scaling  # TODO: do we need this?
