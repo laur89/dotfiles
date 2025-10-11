@@ -172,6 +172,7 @@
     branch-delete = "!brnchdlt () { b=$1; git branch -D "$b" && git push origin --delete "$b"; }; brnchdlt $1"  # delete branch locally & on the remote
     ;branch-delete = branch -D -r -f  # delete branch locally & on the remote
     delete-branch = branch-delete
+    delete-gone = "!git fetch -p && git for-each-ref --format '%(refname:short) %(upstream:track)' | awk '$2 == "[gone]" {print $1}' | xargs --no-run-if-empty -- git branch -D"  # delete closed or merged branches that are gone @ upstream
 
     fixup = "!f() { [ -z "$(git diff --name-only --staged)" ] && echo 'no changes staged' && return 1; git commit --fixup=$1 && git rebase -i --autosquash --autostash $1~1; }; f"
 
