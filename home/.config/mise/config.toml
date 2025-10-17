@@ -3,6 +3,7 @@
 usage = "latest"
 java = "lts"
 node = "lts"
+deno = "latest"
 #python = {version='3.12'}  # caused some issues, best continue using system py version for global
 
 [settings]
