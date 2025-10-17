@@ -1368,6 +1368,7 @@ install_deps() {
 
     # this needs apt-get install  python-imaging ?:
     py_install scdl          # https://github.com/flyingrub/scdl (soundcloud downloader)
+                             # note yt-dl also supports soundcloud
     #py_install rtv           # https://github.com/michael-lazar/rtv (reddit reader)  # TODO: active development has ceased; alternatives @ https://gist.github.com/michael-lazar/8c31b9f637c3b9d7fbdcbb0eebcf2b0a
     py_install tuir-continued  # https://gitlab.com/Chocimier/tuir  (now-discontinued rtv continuation)
     py_install tldr          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
@@ -1382,6 +1383,8 @@ install_deps() {
     # alternatives to pywal:
     #   - rust: https://codeberg.org/explosion-mental/wallust
     #   - c: https://github.com/danihek/hellwal
+    # see also:
+    #   - https://www.npmjs.com/package/themer
     py_install pywal16          # https://github.com/eylles/pywal16/wiki/Installation#pip-install
 
     # consider also perl alternative @ https://github.com/pasky/speedread
@@ -2412,6 +2415,7 @@ install_own_builds() {
     install_sad
     install_glow
     install_btop
+    install_ytdl
     install_procs
     #install_alacritty
     install_wezterm
@@ -2504,9 +2508,9 @@ fetch_release_from_git() {
 
     declare -a opts
     ver=latest  # default
-    while getopts 'UDsf:n:TZv:' opt; do
+    while getopts 'UDsSf:n:TZv:' opt; do
         case "$opt" in
-            U|D|s) opts+=("-$opt") ;;
+            U|D|s|S) opts+=("-$opt") ;;
             f|n) opts+=("-$opt" "$OPTARG") ;;
             T) selector='.tarball_url' ;;
             Z) selector='.zipball_url' ;;
@@ -2541,11 +2545,11 @@ _fetch_release_common() {
     local opt extract_opts noextract skipadd id ver dl_url name tmpdir file OPTIND
 
     declare -a extract_opts
-    while getopts 'UsDf:n:' opt; do
+    while getopts 'UsDSf:n:' opt; do
         case "$opt" in
             U) noextract=TRUE ;;
             s) skipadd=TRUE ;;
-            D) extract_opts+=("-$opt") ;;
+            D|S) extract_opts+=("-$opt") ;;
             f|n) extract_opts+=("-$opt" "$OPTARG") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
@@ -2732,19 +2736,19 @@ install_from_any() {
 #                   _single_ dir in the result.
 # @returns {bool} true, if we found a _single_ dir in result
 fetch_extract_tarball_from_git() {
-    local fetch_rls_opts opt OPTIND
+    local opts opt OPTIND
 
-    fetch_rls_opts=(-D)
+    opts=(-D)
 
-    while getopts 'TZ' opt; do
+    while getopts 'TZS' opt; do
         case "$opt" in
-            T|Z) fetch_rls_opts+=("-$opt") ;;
-            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+            T|Z|S) opts+=("-$opt") ;;
+            *) fail "unexpected arg [$opt] passed to ${FUNCNAME}()" -1 ;;
         esac
     done
     shift "$((OPTIND-1))"
 
-    fetch_release_from_git "${fetch_rls_opts[@]}" "$1" "$2" || return $?
+    fetch_release_from_git "${opts[@]}" "$1" "$2" || return $?
 }
 
 
@@ -2818,11 +2822,11 @@ extract_tarball() {
     [[ "$standalone" != 1 ]] && exe popd
 
     if [[ "$dir_only" == 1 ]]; then
-        [[ -d "$dir" ]] || { err "couldn't find single extracted dir in extracted tarball"; return 1; }
+        [[ -d "$dir" ]] || { err "couldn't find single extracted dir in extracted tarball in [$(pwd -P)]"; return 1; }
         echo "$dir"
     else  # we're looking for a specific file (not a dir!) under extracted tarball
         unset file
-        [[ "$standalone" != 1 ]] && dir="$tmpdir" || dir='.'
+        [[ "$standalone" == 1 ]] && dir='.' || dir="$tmpdir"
 
         # TODO: support recursive extraction?
         if [[ -n "$file_filter" ]]; then
@@ -3149,7 +3153,7 @@ install_file() {
         [[ -z "$name" ]] && { err "[name] arg needs to be provided when installing a directory"; return 1; }
         _process || return 1
         target+="/$name"
-        [[ -d "$target" ]] && { exe "rm -rf -- '$target'" || return 1; }  # rm previous installation
+        exe "rm -rf -- '$target'" || return 1  # rm previous installation
         exe "mv -- '$file' '$target'" || return 1
     elif [[ "$ftype" == *'executable; charset=binary' || "$ftype" == 'text/x-shellscript; charset='* || "$ftype" == 'text/x-perl; charset='* ]]; then
         exe "chmod +x '$file'" || return 1
@@ -3780,7 +3784,7 @@ install_eclipse_mem_analyzer() {
     is_valid_url "$dl_url" || { err "[$dl_url] is not a valid download link"; return 1; }
 
     dir="$(extract_tarball -D "$dl_url")" || return 1
-    [[ -d "$target" ]] && { exe "rm -rf -- '$target'" || return 1; }  # rm previous installation
+    exe "rm -rf -- '$target'" || return 1  # rm previous installation
     exe "mv -- '$dir' '$target'" || return 1
     create_link "$target/MemoryAnalyzer" "$HOME/bin/MemoryAnalyzer"
 
@@ -3861,6 +3865,36 @@ install_glow() { # https://github.com/charmbracelet/glow
 
 install_btop() {  # https://github.com/aristocratos/btop
     install_bin_from_git -N btop aristocratos/btop  'btop-x86_64-linux-musl.tbz'
+}
+
+
+# currently not in use, installing via pipx instead
+#
+# ytdl plugins to consider:
+# - https://github.com/pukkandan/yt-dlp-YTAgeGateBypass
+# - https://github.com/bindestriche/srt_fix
+install_ytdl() {  # https://github.com/yt-dlp/yt-dlp
+    local dir target plugs_d
+
+    plugs_d="${XDG_CONFIG_HOME}/yt-dlp/plugins"
+
+    # not for runtime make sure to also start the docker container, as per https://github.com/Brainicism/bgutil-ytdlp-pot-provider#a-http-server-option
+    _install_pot_provider_plugin() {  # https://github.com/Brainicism/bgutil-ytdlp-pot-provider#installation
+        local dir target
+        dir="$(fetch_extract_tarball_from_git Brainicism/bgutil-ytdlp-pot-provider 'bgutil-ytdlp-pot-provider.zip')" || return 1
+        is_d -nm "cannot install ytdl POT provider plugin" "$dir" || return 1
+
+        target="$plugs_d/bgutil-ytdlp-pot-provider"
+        exe "rm -rf -- '$target'" || return 1  # rm previous installation
+        ensure_d "$target" || return 1
+        exe "mv -- '$dir' '$target/'" || return 1
+    }
+
+    #install_bin_from_git -N ytdl yt-dlp/yt-dlp 'yt-dlp_linux'
+    py_install '"yt-dlp[default,curl-cffi]"'  # note curl-cffi is for impersonation, see https://github.com/yt-dlp/yt-dlp#impersonation
+
+    # install plugins:
+    _install_pot_provider_plugin
 }
 
 
@@ -4086,6 +4120,7 @@ install_webdev() {
 
     install_mise
     exe 'mise install'  # install the globally-defined tools (and local, if pwd has mise.toml)
+    exe 'mise upgrade'  # upgrade tracked tools
 
     # make sure the constant link to latest node exec ($NODE_LOC) is set up (normally managed by .bashrc, but might not have been created, as this is install_sys).
     # eg some nvim plugin(s) might reference $NODE_LOC
@@ -5723,7 +5758,7 @@ install_from_repo() {
         #mopidy
         playerctl  # cli utility and library for controlling media players that implement the MPRIS D-Bus Interface Specification. Compatible players include audacious, cmus, mopidy, mpd, mpv, quod libet, rhythmbox, spotify, and vlc; https://github.com/altdesktop/playerctl
         socat
-        yt-dlp  # dl vids from yt & other sites; https://github.com/yt-dlp/yt-dlp
+        #yt-dlp  # dl vids from yt & other sites; https://github.com/yt-dlp/yt-dlp ; note we're installing it via git/pypi now as the project moves rather fast
         mpc  # cli tool to interface MPD; https://github.com/MusicPlayerDaemon/mpc
         ncmpc  # text-mode client for MPD; https://github.com/MusicPlayerDaemon/ncmpc
         ncmpcpp  # ncurses-based client for MPD; https://github.com/ncmpcpp/ncmpcpp
@@ -5801,7 +5836,7 @@ install_from_repo() {
         #lxrandr  # GUI application for the Lightweight X11 Desktop Environment (LXDE); TODO: x11!
         arandr  # visual front end for XRandR; TODO: x11
         autorandr  # TODO: x11
-        copyq  # TODO: avail as flatpak
+        copyq  # TODO: avail as flatpak; notable alternatives: https://github.com/NiffirgkcaJ/all-in-one-clipboard
         copyq-plugins
         #googler  # Google Site Search from the terminal; https://github.com/oksiquatzel/googler  # TODO: looks like it's broken: https://github.com/oksiquatzel/googler/issues/7
         msmtp  # msmtp is an SMTP client that can be used to send mails from Mutt and probably other MUAs (mail user agents)
@@ -6445,6 +6480,7 @@ __choose_prog_to_build() {
         install_viu
         install_glow
         install_btop
+        install_ytdl
         install_procs
         install_eza
         install_delta
@@ -8671,6 +8707,11 @@ exit 0
 #    - should we install auto-cpufreq w/ tlp?
 #      - its author says it works w/ TLP as long as you disable tlp's cpu settings: https://www.reddit.com/r/linux/comments/ejxx9f/github_autocpufreq_automatic_cpu_speed_power/fd4y36k/
 #    - it has USB_EXCLUDE_BTUSB opt to exclude bluetooth devices from usb autosuspend feature
+#    - there's also https://gitlab.freedesktop.org/upower/power-profiles-daemon
+#    - there's also powerprofilesctl
+#    - there's also https://tuned-project.org/
+#    - there's also https://github.com/intel/thermal_daemon (intel only?)
+#       - note auto-cpufreq readme recommends this
 #  - databse defrag/compactions should be scheduled, e.g. "notmuch compact"
 #  - consider installing & setting up logwatch & fwlogwatch
 #  - consider using Timeshift creator's tinytools: https://teejeetech.com/tinytools/
