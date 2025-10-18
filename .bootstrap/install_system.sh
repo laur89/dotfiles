@@ -1152,8 +1152,10 @@ install_deps() {
     }
 
     # see also: https://github.com/romkatv/zsh4humans
-    #           https://github.com/zimfw/zimfw (yes, for real)
+    #           https://github.com/zimfw/zimfw (yes, for real that's the name)
     # essentially the same installer stanza we have at the header of .zshrc
+    #
+    # from within zsh, upgrade plugins via  $ zinit update [--parallel]
     _install_zsh_deps() {
         local install_dir
 
@@ -1184,7 +1186,7 @@ install_deps() {
 
             # TODO: deprecated installation method, we should install via DKMS
             #       instead: https://github.com/lwfinger/rtw88#installation-using-dkms-
-            __install_rtlwifi_new() {  # custom driver installation, pulling from github
+            __install_rtlwifi() {  # custom driver installation, pulling from github
                 local repo tmpdir
 
                 err "lwfinger github-hosted driver logic is out-dated in our script, have to abort until we've updated it :("
@@ -1220,32 +1222,22 @@ install_deps() {
                 is_single "$rtl_driver" || { err "realtek driver from lshw output was [$rtl_driver]"; return 1; }
 
                 install_block 'firmware-realtek'                     # either from repos, or...
-                #__install_rtlwifi_new; unset __install_rtlwifi_new  # ...this
-
-                # add config to solve the intermittent disconnection problem; YMMV (https://github.com/lwfinger/rtlwifi_new/issues/126):
-                #     note: 'ips, swlps, fwlps' are power-saving options.
-                #     note2: ant_sel=1 or =2
-                #exe "echo options $rtl_driver ant_sel=1 fwlps=0 | sudo tee /etc/modprobe.d/$rtl_driver.conf"
-                #exe "echo options $rtl_driver ant_sel=1 msi=1 ips=0 | sudo tee /etc/modprobe.d/$rtl_driver.conf"
-
-                #exe "sudo modprobe -r $rtl_driver" || { err "unable removing modprobe [$rtl_driver]"; return 1; }
-                #exe "sudo modprobe $rtl_driver" || { err "unable adding modprobe [$rtl_driver]; make sure secure boot is turned off in BIOS"; return 1; }
+                #__install_rtlwifi; unset __install_rtlwifi          # ...this
             else
                 err "can't detect Intel nor Realtek wifi; whose card do we have?"
             fi
         }
 
         # xinput is for input device configuration; see  https://wiki.archlinux.org/index.php/Libinput
-        # evtest can display pressure and placement of touchpad input in realtime; note it cannot run together w/ xserver, so better ctrl+alt+F2 to another tty
+        # note [evtest] can display pressure and placement of touchpad input in realtime; note it cannot run together w/ xserver, so better ctrl+alt+F2 to another tty; it's EOL so not installing anymore
+        # TODO: xinput = x11
         # TODO: doesn't xinput depend on synaptic driver, ie it doesnt work with the newer libinput driver?
         #       fyi: "xinput is utility to list available input devices, query information about a device and change input device settings"
         #       note some of our scripts depend on xinput
         # note: blueman lists bluez as dep, that contains the daemon for bt devices
-        # note: evtest is EOL and evemu-record from evemu-tools pkg should be used
         install_block '
             libinput-tools
             xinput
-            evtest
             evemu-tools
             blueman
         '
