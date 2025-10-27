@@ -14,8 +14,8 @@
 ##################################
 
 SESSION_STARTFILE="$HOME/.session-startuplist"
-declare -a AUTOSTART=()
-_SELF='.common_startup'
+declare -a AUTOSTART
+_SELF=.common_startup
 ################################################
 
 #### ENTRY ####
@@ -60,6 +60,7 @@ enable_smart() {
         disk_check="$(sed 's/.*\///' <<< "$_disk")"  # strip everything before last slash (included)
         [[ -z "$disk_check" || "$disk_check" == */* ]] && { err_display "something went wrong with cleaning smartctl-returned disk; continuing." "$_SELF"; continue; }
 
+        # TODO: --scan returns something like [/dev/nvme0] for nvme drives, but /proc/partitions will have nvme0n1* entries;
         # sanity - check whether smartctl found disk is listed in /proc/partitions; if not, send error:
         if grep -Eq "\b${disk_check}\b" /proc/partitions; then
             #	-s on	enables SMART on device (off would disable); should be somewhere in machine startup script, like rc.local;
@@ -197,11 +198,8 @@ if [[ -d "$HOME/.config/autostart" ]]; then
     for n in $HOME/.config/autostart/*; do
         m=$(cat "$n")
         case "$m" in
-            *OnlyShowIn*) true
-                ;;
-            *)
-                AUTOSTART+=("$(echo "$m" | grep -m 1 "Exec=" | sed 's/Exec=//g')")
-                ;;
+            *OnlyShowIn*) true ;;
+            *) AUTOSTART+=("$(grep -m 1 'Exec=' <<< "$m" | sed 's/Exec=//g')") ;;
         esac
     done
     unset n m
@@ -240,9 +238,7 @@ if [[ -d /etc/xdg/autostart ]]; then
                 # There ain't no-one in the 'verse putting "OnlyShowIn=dwm" in a .desktop file
                 # Similarly, ain't no-one putting "NotShowIn=dwm" in a .desktop file. Hence, both cases are ignored
                 ;;
-            *)
-                AUTOSTART+=("$(echo "$x" | grep -m 1 "Exec=" | sed 's/Exec=//g')")
-                ;;
+            *) AUTOSTART+=("$(grep -m 1 'Exec=' <<< "$x" | sed 's/Exec=//g')") ;;
         esac
     done
     unset y x
