@@ -643,6 +643,7 @@ assign [class="^Signal$"]                $w3
 assign [class="^discord$"]               $w3
 assign [class="^Ferdium$"]               $w3
 assign [class="^mpv$"]                   $w4
+assign [class="^streamlink-twitch-gui$"] $w4
 assign [class="^VirtualBox$"]            $w7
 assign [class="^Gimp$"]                  $w8
 assign [class="^Wireshark"]              $w8
