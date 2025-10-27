@@ -256,8 +256,12 @@ install_acpi_events() {
         "$COMMON_DOTFILES/backups/acpi_event_triggers"
     )
 
-    is_laptop && acpi_src+=("$COMMON_DOTFILES/backups/acpi_event_triggers/laptop")
     [[ -n "$PLATFORM" ]] && acpi_src+=("$PLATFORM_DOTFILES/acpi_event_triggers")
+    if is_laptop; then
+        for dir in "${acpi_src[@]}"; do
+            acpi_src+=("$dir/laptop")
+        done
+    fi
 
     is_d -m 'skipping acpi event triggers installation' "$acpi_target" || return 1
 
@@ -284,8 +288,13 @@ setup_udev() {
         "$PRIVATE__DOTFILES/backups/udev"
     )
 
-    is_laptop && udev_src+=("$COMMON_PRIVATE_DOTFILES/backups/udev/laptop")
     [[ -n "$PLATFORM" ]] && udev_src+=("$PLATFORM_DOTFILES/udev")
+
+    if is_laptop; then
+        for dir in "${udev_src[@]}"; do
+            udev_src+=("$dir/laptop")
+        done
+    fi
 
     is_d -m 'skipping udev file(s) installation' "$udev_target" || return 1
 
@@ -314,8 +323,13 @@ setup_pm() {
         "$PRIVATE__DOTFILES/backups/pm"
     )
 
-    is_laptop && pm_src+=("$COMMON_PRIVATE_DOTFILES/backups/pm/laptop")
     [[ -n "$PLATFORM" ]] && pm_src+=("$PLATFORM_DOTFILES/pm")
+
+    if is_laptop; then
+        for dir in "${pm_src[@]}"; do
+            pm_src+=("$dir/laptop")
+        done
+    fi
 
     is_d -m 'skipping pm file(s) installation' "$pm_target" || return 1
 
@@ -356,20 +370,40 @@ install_flatpak() {
 
 
 # see https://wiki.archlinux.org/index.php/S.M.A.R.T.
+# NOTE: at boot time we still need to explicitly enable smart for individual
+#       drives; we likely have a systemd service that does it
 #
 # TODO: maybe instead of systemctl, enable smartd via     sudo vim /etc/default/smartmontools. Uncomment the line start_smartd=yes.   ?
-# TODO: enable smart on all drives if not enabeld & remove logic from common_startup?
+# TODO: enable smart on all drives if not enabled & remove logic from common_startup?
+#
+# some commands:
+# - get temp:  $ sudo smartctl -A /dev/nvme0n1 | grep '^Temperature'
+# - check system service:  $ sudo systemctl status smartd.service
 setup_smartd() {
-    local conf c
+    local conf tmpfile c
 
     conf='/etc/smartd.conf'
-    c='DEVICESCAN -a -o on -S on -n standby,q -s (S/../.././02|L/../../6/03) -W 4,35,40 -m smart_mail_alias -M exec /usr/local/bin/smartdnotify'  # TODO: create the script! from there we mail & notify; note script shouldn't write anything to stdout/stderr, otherwise it ends up in syslog
+    tmpfile="$TMP_DIR/.smartd_setup-$RANDOM"
 
-    is_f -m 'cannot configure smartd' "$conf" || return 1
-    exe "sudo sed -i --follow-symlinks '/^DEVICESCAN.*$/d' '$conf'"  # nuke previous setting
-    exe "echo '$c' | sudo tee --append $conf > /dev/null"
+    # - The -M test option causes a test email to be sent each time the smartd daemon starts (set in /etc/smartd.conf):
+    #          DEVICESCAN -m address@domain.com -M test
+    # - note -M still requires the usage of -m flag as well to function
+    # - If  a  word  of  the  comma separated list to -m opt has the form '@plugin', a custom script
+    #   /etc/smartmontools/smartd_warning.d/plugin is run and the word is removed from the list before sending mail
+    # - -m <nomailer> -M exec /path/script  --  mailing is ignored completely
+    # - -n standby,q  -- do not spin up platters if drive is in standby or sleep mode; q suppresses message stating check is skipped
+    # - the -s option there schedules a short self-test every day between 2-3am, and an extended self test weekly on Saturdays between 3-4am
+    # - -W 4,35,40 -- log changes of 4deg+, log when temp reaches 35deg, and log/mail warning when temp reaches 40
+    #c='DEVICESCAN -a -o on -S on -n standby,q -s (S/../.././02|L/../../6/03) -W 4,35,40 -m smart_mail_alias -M exec /usr/local/bin/smartdnotify'  # TODO: create the script! from there we mail & notify; note script shouldn't write anything to stdout/stderr, otherwise it ends up in syslog
+    c='DEVICESCAN -a -o on -S on -n standby,q -s (S/../.././02|L/../../6/03) -W 4,35,40 -m <nomailer> -M exec /data/dev/scripts/smartdnotify'
 
-    exe 'systemctl enable --now smartd.service'
+    is_f -nm 'cannot configure smartd' "$conf" || return 1
+    exe "cat '$conf' > $tmpfile" || return 1
+    exe "sed -i --follow-symlinks '/^DEVICESCAN.*$/d' '$tmpfile'"  # nuke previous setting
+    exe "echo '$c' >> '$tmpfile'" || return 1
+    exe "sudo install -m644 -CT '$tmpfile' '$conf'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
+
+    exe 'sudo systemctl enable smartmontools.service'  # TODO needed or not, as in does the pkg by default install&enable this unit?
 }
 
 
@@ -380,7 +414,8 @@ setup_gtk() {
 }
 
 
-# TODO: set up msmtprc for system (/etc/msmtprc ?) so sendmail works; don't forget to add aliases, eg 'smart_mail_alias'; refer to arch wiki for more info
+# TODO: set up msmtprc for system (/etc/msmtprc ?) so sendmail works; don't forget to add aliases,
+# eg 'smart_mail_alias' if we added smartd.conf DEVICESCAN option [-m smart_mail_alias]; refer to arch wiki for more info
 setup_mail() {
     true
 }
@@ -397,8 +432,12 @@ setup_needrestart() {
         "$PRIVATE__DOTFILES/backups/needrestart"
     )
 
-    is_laptop && src_dirs+=("$COMMON_PRIVATE_DOTFILES/backups/needrestart/laptop")
     #[[ -n "$PLATFORM" ]] && src_dirs+=("$PLATFORM_DOTFILES/systemd/global")
+    if is_laptop; then
+        for dir in "${src_dirs[@]}"; do
+            src_dirs+=("$dir/laptop")
+        done
+    fi
 
     is_d -m 'skipping needrestart file(s) installation' "$target_confdir" || return 1
 
@@ -456,8 +495,15 @@ setup_systemd() {
         "$PRIVATE__DOTFILES/backups/systemd/user"
     )
 
-    is_laptop && global_sysd_src+=("$COMMON_PRIVATE_DOTFILES/backups/systemd/global/laptop") && usr_sysd_src+=("$COMMON_PRIVATE_DOTFILES/backups/systemd/user/laptop")
     [[ -n "$PLATFORM" ]] && global_sysd_src+=("$PLATFORM_DOTFILES/systemd/global") && usr_sysd_src+=("$PLATFORM_DOTFILES/systemd/user")
+    if is_laptop; then
+        for dir in "${global_sysd_src[@]}"; do
+            global_sysd_src+=("$dir/laptop")
+        done
+        for dir in "${usr_sysd_src[@]}"; do
+            usr_sysd_src+=("$dir/laptop")
+        done
+    fi
 
     is_d -m 'skipping systemd file(s) installation' "$global_sysd_target" || return 1
     ensure_d "$usr_sysd_target" || return 1
@@ -477,30 +523,25 @@ setup_systemd() {
 
     __process() {
         local usr sudo dir tdir node fname t fname f
-        sudo='-s'
 
-        [[ "$1" == --user ]] && { readonly usr=TRUE; unset sudo; shift; }
+        [[ "$1" == --user ]] && { readonly usr=TRUE; shift; } || sudo='-s'
         readonly dir="$1"; readonly tdir="$2"  # indir, target_dir
 
-        [[ -d "$dir" ]] || return 1
+        is_d -nq "$dir" || return 1
         for node in "$dir/"*; do
             fname="$(basename -- "$node")"
             fname="${fname/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
 
-            if [[ -f "$node" && "$node" =~ \.(service|target|unit|timer)$ ]]; then  # note we require certain suffixes
+            if [[ -f "$node" && "$node" =~ \.(service|target|timer)$ ]]; then  # note we require certain suffixes
                 __var_expand_move $sudo "$node" "$tdir/$fname" || continue
 
-                # note do not use the '--now' flag with systemctl enable, nor exe systemctl start,
-                # as some service files might be listening on something like target.sleep - those shouldn't be started on-demand like that!
-                if [[ "$fname" == *.service ]]; then
-                    exe "${sudo:+sudo }systemctl ${usr:+--user }enable '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd service [$fname] failed w/ [$?]"; continue; }
-                elif [[ "$fname" == *.timer ]]; then
-                    exe "${sudo:+sudo }systemctl ${usr:+--user }enable --now '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd timer [$fname] failed w/ [$?]"; continue; }
-                fi
-            elif [[ -d "$node" && "$node" == *.d ]]; then
+                # note do not use the '--now' flag with systemctl enable, as some units
+                # might be listening on something like sleep.target or battery.target - those shouldn't be started on-demand like that!
+                exe "${sudo:+sudo }systemctl ${usr:+--user }enable --no-warn '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd unit [$fname] failed w/ [$?]"; continue; }
+            elif [[ "$node" == *.d ]] && is_d -nq "$node"; then
                 t="$tdir/$fname"
                 for f in "$node/"*; do
-                    is_f -n "$f" && [[ "$f" == *.conf ]] || continue  # note we require certain suffix
+                    [[ "$f" == *.conf ]] && is_f -n "$f" || continue  # note we require certain suffix
                     ensure_d $sudo "$t" || continue
                     __var_expand_move $sudo "$f" "$t/$(basename -- "$f")" || continue
                 done
@@ -523,7 +564,7 @@ setup_systemd() {
     done
 
     # reload the rules in case existing rules changed:
-    exe 'systemctl --user --now daemon-reload'  # --user flag manages the user services under ~/.config/systemd/user/
+    exe 'systemctl --user daemon-reload'  # --user flag manages the user services under ~/.config/systemd/user/
     exe 'sudo systemctl daemon-reload'
 
     unset __var_expand_move __process
@@ -574,7 +615,7 @@ setup_pam_login() {
 #   - scan apparomor audit messages, review them & update the profiles:
 #     sudo aa-logprof
 setup_apparmor() {
-    [[ "$(cat /sys/module/apparmor/parameters/enabled)" != Y ]] && err "apparmor not enabled!!"  # sanity
+    [[ "$(cat /sys/module/apparmor/parameters/enabled)" != Y ]] && err 'apparmor not enabled!'  # sanity
     add_to_group  adm  # adm used for system monitoring tasks; members can read log files etc
 
     # as per https://wiki.debian.org/AppArmor/HowToUse :
@@ -1002,7 +1043,7 @@ install_ssh_server() {
         exe "sudo install -m644 -C '$banner' '$sshd_confdir'" || { err "installing [$banner] failed w/ $?"; return 1; }
     fi
 
-    exe "sudo systemctl enable --now sshd.service"  # note --now flag effectively also starts the service immediately
+    exe "sudo systemctl enable sshd.service"
 
     return 0
 }
@@ -1790,7 +1831,7 @@ setup_config_files() {
     is_native && setup_udev
     is_native && setup_pm
     #is_native && install_kernel_modules   # TODO: does this belong in setup_config_files()?
-    #is_native && setup_smartd  #TODO: uncomment once finished!
+    is_native && setup_smartd
     setup_mail
     setup_global_shell_links
     setup_private_asset_perms
@@ -3164,6 +3205,12 @@ install_file() {
 }
 
 
+# for config, see https://github.com/streamlink/streamlink-twitch-gui/wiki/Recommendations
+install_streamlink_twitch_gui() {  # https://github.com/streamlink/streamlink-twitch-gui
+    install_bin_from_git -N twitch-gui  streamlink/streamlink-twitch-gui 'x86_64.AppImage'
+}
+
+
 install_zoom() {  # https://zoom.us/download
     install_from_url  zoom 'https://zoom.us/client/latest/zoom_amd64.deb'
 }
@@ -3684,6 +3731,9 @@ install_weechat_matrix_rs() {  # https://github.com/poljar/weechat-matrix-rs
 
 
 # go-based matrix client
+# alternatives:
+# - nheko
+# - https://github.com/ulyssa/iamb
 install_gomuks() {  # https://github.com/gomuks/gomuks
     #install_from_git gomuks/gomuks _amd64.deb
     install_bin_from_git -N gomuks gomuks/gomuks  gomuks-linux-amd64
@@ -4145,6 +4195,7 @@ install_webdev() {
     exe "corepack prepare yarn@stable --activate"
 }
 
+# TODO: synergy fork is input-leap
 build_and_install_synergy_TODO_container_edition() {
 
     prepare_build_container || { err "preparation of build container [$BUILD_DOCK] failed"; return 1; }
@@ -5332,6 +5383,16 @@ install_YCM() {  # the quick-and-not-dirty install.py way
 # https://gitlab.freedesktop.org/xorg/app/fonttosfnt
 #
 # TODO: wayland likely doens't support the bitmap glyph notes: https://unix.stackexchange.com/questions/795108
+# TODO: set terminus also for vconsole for early boot? e.g. '/etc/vconsole.conf:FONT=ter-u32n'
+# Other fonts to look into:
+# - TX-02 Berkeley Mono (paid, 75$! https://usgraphics.com/products/berkeley-mono)
+# - Typestar OCR
+# - Cascadia code
+# - Liliex https://github.com/mishamyrt/Lilex
+# - MonoLisa (paid, expensive)
+#   - Maple Mono is a free alternative: https://github.com/subframe7536/maple-font
+# - Hurmit Nerd Font
+# - Proggy Vector (https://github.com/bluescan/proggyfonts)
 install_fonts() {
     local dir
 
@@ -5509,6 +5570,7 @@ install_from_repo() {
     declare -ar block1_nonwin=(
         # firmware-linux  # bunch of firmware, free & non-free
         smartmontools
+        gsmartcontrol  # graphical user interface for smartctl; see also: qdiskinfo, https://github.com/AnalogJ/scrutiny
         pm-utils  # utilities and scripts for power management
         ntfs-3g  # TODO: note ntfs3 is in kernel nowadays, unsure if and when we want to remove ntfs-3g pkg - they're not the same
         kdeconnect
@@ -5713,6 +5775,7 @@ install_from_repo() {
         zip
         7zip
         dos2unix  # convert text file line endings between CRLF and LF
+        secure-delete  # provides srm, sfill, sswap and sdmem commands; esp. the 'srm' command is useful; similar to wipe & shred
         lxappearance  # TODO: x11
         qt5ct
         #qt5-style-plugins
@@ -5757,6 +5820,7 @@ install_from_repo() {
         #audacity  # TODO: there was a takeover by muse group, see https://hackaday.com/2021/07/13/muse-group-continues-tone-deaf-handling-of-audacity/
                    # was forked, see https://codeberg.org/tenacityteam/tenacity
         mpv  # video player based on MPlayer/mplayer2; https://mpv.io/
+        streamlink  # CLI utility which pipes video streams from various services into a video player; see also streamlink-twitch-gui that builds on this
         kdenlive  # video editor; TODO: avail as flatpak
         frei0r-plugins  # https://github.com/dyne/frei0r ; collection of free and open source video effects plugins
         gimp  # TODO: avail as flatpak
@@ -6447,6 +6511,7 @@ __choose_prog_to_build() {
         install_seafile_gui
         install_ferdium
         install_freetube
+        install_streamlink_twitch_gui
         install_zoom
         install_xournalpp
         install_zoxide
@@ -7101,6 +7166,7 @@ _init_seafile_cli() {
 #  - seaf-cli list-remote
 #  - seaf-cli status  -> see download/sync status of libraries
 #  - seaf-cli desync -d /path/to/local/library  -> desync with server
+# shellcheck disable=SC2329
 setup_seafile() {
     local ccnet_conf parent_dir libs lib user passwd libs_conf
 
@@ -8688,6 +8754,8 @@ exit 0
 #  TODO:
 #  - replace cron w/ systemd timers
 #    - consider installing systemd-cron if needed - converts legacy cron to sd-timers
+#    - see https://www.reddit.com/r/archlinux/comments/16x5ajh/example_here_is_a_reusable_systemd_timer_template/
+#      to create simple templates for timers
 #  - migrate to zfs (or bcachefs ?)
 #   - if zfs, look into installing timeshift & integrating it w/ zfs
 #   - same for btrfs - timeshift & snapper
@@ -8700,7 +8768,7 @@ exit 0
 #      - its author says it works w/ TLP as long as you disable tlp's cpu settings: https://www.reddit.com/r/linux/comments/ejxx9f/github_autocpufreq_automatic_cpu_speed_power/fd4y36k/
 #    - it has USB_EXCLUDE_BTUSB opt to exclude bluetooth devices from usb autosuspend feature
 #    - there's also https://gitlab.freedesktop.org/upower/power-profiles-daemon
-#    - there's also powerprofilesctl
+#    - there's also powerprofilesctl (cli for power-profiles-daemon)
 #    - there's also https://tuned-project.org/
 #    - there's also https://github.com/intel/thermal_daemon (intel only?)
 #       - note auto-cpufreq readme recommends this
@@ -8730,8 +8798,8 @@ exit 0
 #    - niri - another scrollable tiling wm
 #    - scroll - sway-compatible scroller: https://github.com/dawsers/scroll  ! looks cool !!
 #       - alternatively, there's also papersway: https://spwhitton.name/tech/code/papersway/
-#  - consider https://gitlab.com/Zesko/systemd-timer-notify/-/tree/e31e8ecf11a81f844ec3a2a699d7fa0f30f05e46/
-#    - display desktop notifications when systemd timers start services. Notifications close automatically when the services finish
+#  - consider https://gitlab.com/Zesko/systemd-timer-notify/
+#    - displays desktop notifications when systemd timers start services. Notifications close automatically when the services finish
 #
 #
 # list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/
