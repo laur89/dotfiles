@@ -38,10 +38,6 @@ readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
 readonly BUILD_DOCK='deb-build-box'          # name of the build container
 
-# just for info, current testing = trixie
-readonly DEB_STABLE=bookworm                 # current _stable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
-readonly DEB_OLDSTABLE=bullseye              # current _oldstable_ release codename; when updating it, verify that all the users have their counterparts (eg 3rd party apt repos)
-
 readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:141.0) Gecko/20100101 Firefox/141.0'
 #------------------------
 #--- Global Variables ---
@@ -2077,20 +2073,15 @@ EOF
 setup_additional_apt_keys_and_sources() {
 
     # mopidy: (from https://docs.mopidy.com/en/latest/installation/debian/):
-    # deb-line is from https://apt.mopidy.com/bookworm.sources:
-    #create_apt_source  mopidy  https://apt.mopidy.com/mopidy-archive-keyring.gpg  https://apt.mopidy.com/ $DEB_STABLE 'main contrib non-free'
+    # deb-line is from https://apt.mopidy.com/trixie.sources
+    #create_apt_source  mopidy  https://apt.mopidy.com/mopidy-archive-keyring.gpg  https://apt.mopidy.com trixie 'main contrib non-free'
 
     # spotify: (from https://www.spotify.com/download/linux/):
     # consider also https://github.com/SpotX-Official/SpotX-Bash to patch the client
     #create_apt_source  spotify  https://download.spotify.com/debian/pubkey_C85668DF69375001.gpg  https://repository.spotify.com/ stable non-free
 
-    # !!! "Since 9.0.7 version, we only provide official packages in AppImage format" !!!
-    # seafile-client: (from https://help.seafile.com/syncing_client/install_linux_client/):
-    #     seafile-drive instructions would be @ https://help.seafile.com/drive_client/drive_client_for_linux/
-    #create_apt_source -a  seafile  https://linux-clients.seafile.com/seafile.asc  https://linux-clients.seafile.com/seafile-deb/$DEB_OLDSTABLE/ stable main
-
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
-    create_apt_source  charles  https://www.charlesproxy.com/packages/apt/charles-repo.asc  https://www.charlesproxy.com/packages/apt/ charles-proxy main
+    #create_apt_source  charles  https://www.charlesproxy.com/packages/apt/charles-repo.asc  https://www.charlesproxy.com/packages/apt/ charles-proxy main
 
     # opentofu:  (from https://opentofu.org/docs/intro/install/deb/#set-up-the-opentofu-repository):
     # (open source terraform)
@@ -2127,7 +2118,8 @@ setup_additional_apt_keys_and_sources() {
     create_apt_source  nushell  https://apt.fury.io/nushell/gpg.key  https://apt.fury.io/nushell/  /
 
     # tailscale: https://tailscale.com/download/linux/debian-bookworm
-    #create_apt_source  tailscale  https://pkgs.tailscale.com/stable/debian/$DEB_STABLE.noarmor.gpg  https://pkgs.tailscale.com/stable/debian $DEB_STABLE main
+    # for params see also https://pkgs.tailscale.com/stable/debian/trixie.list & https://tailscale.com/install.sh
+    #create_apt_source  tailscale  https://pkgs.tailscale.com/stable/debian/trixie.noarmor.gpg  https://pkgs.tailscale.com/stable/debian trixie main
 
     exe 'sudo apt-get --yes update'
 }
