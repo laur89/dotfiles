@@ -623,14 +623,12 @@ setup_apparmor() {
     if is_pkg_installed 'auditd'; then
         local aa_notif_desktop=/etc/xdg/autostart/aa-notify.desktop
 
-        if [[ -s "$aa_notif_desktop" ]]; then
+        if is_f -nm 'is apparmor-notify pkg installed?' "$aa_notif_desktop"; then
             local cmd='Exec=sudo aa-notify -p -f /var/log/audit/audit.log'
             if ! grep -Fxq "$cmd" "$aa_notif_desktop"; then
                 exe "sudo sed -i --follow-symlinks 's/^Exec=/#Exec=/g' $aa_notif_desktop"  # comment original one out
                 exe "echo $cmd | sudo tee --append $aa_notif_desktop > /dev/null"
             fi
-        else
-            err "[$aa_notif_desktop] not a file - is apparmor-notify pkg installed?"
         fi
     fi
 }
@@ -661,12 +659,11 @@ setup_hosts() {
     readonly tmpfile="$TMP_DIR/hosts.head"  # note result file won't be 'hosts', but 'hosts.head'
 
     _extract_current_hostname_line() {
-        local file current
+        local current
 
-        readonly file="$1"
-        current="$(grep -E '^127\.0\.1\.1\s+' "$file")"
+        current="$(grep -E '^127\.0\.1\.1\s+' "$1")"
         if ! is_single "$current"; then
-            err "[$file] contained either more or less than 1 line(s) containing our hostname. check manually."
+            err "[$1] contained either more or less than 1 line(s) containing our hostname. check manually."
             return 1
         fi
 
@@ -928,16 +925,16 @@ _install_nfs_client_stationary() {
         confirm "$(report "add ${server_ip:+another }NFS server entry to fstab?")" || break
 
         read -r -p "enter server ip${prev_server_ip:+ (leave blank to default to [$prev_server_ip])}: " server_ip
-        : ${server_ip:=$prev_server_ip}
+        : "${server_ip:=$prev_server_ip}"
         is_valid_ip "$server_ip" || { err "not a valid ip: [$server_ip]"; continue; }
 
         read -r -p "enter local mountpoint to mount NFS share to (leave blank to default to [$default_mountpoint]): " mountpoint
-        : ${mountpoint:=$default_mountpoint}
+        : "${mountpoint:=$default_mountpoint}"
         list_contains "$mountpoint" "${used_mountpoints[@]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
         create_mountpoint "$mountpoint" || continue
 
         read -r -p "enter remote share to mount (leave blank to default to [$NFS_SERVER_SHARE]): " nfs_share
-        : ${nfs_share:=$NFS_SERVER_SHARE}
+        : "${nfs_share:=$NFS_SERVER_SHARE}"
         list_contains "${server_ip}${nfs_share}" "${mounted_shares[@]}" && { report "selected [${server_ip}:${nfs_share}] has already been used for previous definition"; continue; }
         [[ "$nfs_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
 
@@ -1097,19 +1094,19 @@ install_sshfs() {
         confirm "$(report "add ${server_ip:+another }SSHFS entry to fstab?")" || break
 
         read -r -p "enter server ip${prev_server_ip:+ (leave blank to default to [$prev_server_ip])}: " server_ip
-        : ${server_ip:=$prev_server_ip}
+        : "${server_ip:=$prev_server_ip}"
         is_valid_ip "$server_ip" || { err "not a valid ip: [$server_ip]"; continue; }
 
         read -r -p "enter remote user to log in as (leave blank to default to your local user [$USER]): " remote_user
-        : ${remote_user:=$USER}
+        : "${remote_user:=$USER}"
 
         read -r -p "enter local mountpoint to mount SSHFS share to (leave blank to default to [$default_mountpoint]): " mountpoint
-        : ${mountpoint:=$default_mountpoint}
+        : "${mountpoint:=$default_mountpoint}"
         list_contains "$mountpoint" "${used_mountpoints[@]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
         create_mountpoint "$mountpoint" || continue
 
         read -r -p "enter remote share to mount (leave blank to default to [$SSH_SERVER_SHARE]): " ssh_share
-        : ${ssh_share:=$SSH_SERVER_SHARE}
+        : "${ssh_share:=$SSH_SERVER_SHARE}"
         list_contains "${server_ip}${ssh_share}" "${mounted_shares[@]}" && { report "selected remote [${server_ip}:${ssh_share}] has already been used for previous definition"; continue; }
         [[ "$ssh_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
 
@@ -1815,7 +1812,8 @@ setup_global_bash_settings() {
 # setup system config files (the ones _not_ living under $HOME, ie not managed by homesick)
 # has to be invoked AFTER homeschick castles are cloned/pulled!
 #
-# note that this block overlaps logically a bit with post_install_progs_setup() (not really tho, as p_i_p_s() requires specific progs to be installed beforehand)
+# note that this block overlaps logically a bit with post_install_progs_setup()
+# (not really tho, as p_i_p_s() requires specific progs to be installed beforehand)
 setup_config_files() {
 
     #setup_swappiness
@@ -1824,14 +1822,11 @@ setup_config_files() {
     setup_sudoers
     setup_hosts
     setup_systemd
-    setup_apparmor
-    is_pkg_installed needrestart && setup_needrestart  # TODO: should we include needrestart pkg?
     setup_pam_login
     setup_logind
     is_native && setup_udev
     is_native && setup_pm
     #is_native && install_kernel_modules   # TODO: does this belong in setup_config_files()?
-    is_native && setup_smartd
     setup_mail
     setup_global_shell_links
     setup_private_asset_perms
@@ -7480,6 +7475,9 @@ post_install_progs_setup() {
     #add_to_group fuse  # not needed anymore?
     setup_firefox
     configure_updatedb
+    setup_apparmor
+    is_pkg_installed needrestart && setup_needrestart  # TODO: should we include needrestart pkg?
+    is_native && setup_smartd
     is_secure_boot && setup_mok  # otherwise e.g. dkms dirs won't be there
 }
 
