@@ -22,10 +22,13 @@ if [[ "$-" != *i* ]]; then
     #echo "$(date):: .bash_env_vars called by noninteractive proc $$" >> /tmp/"$$.tree"  # debug
     #echo "$(pstree -aps $$)" >> /tmp/"$$.tree"  # debug
 
-    # find currently active user/id: (note 'type' _should_ be x11 || wayland, but seems to be 'tty' with xinitrc (i.e. w/o a display manager);
+    # find currently active user/id...: (note 'type' _should_ be x11 || wayland, but seems to be 'tty' with xinitrc (i.e. w/o a display manager);
     #for sessionid in $(loginctl list-sessions --no-legend | awk '{ print $1 }'); do
         #loginctl show-session -p Id -p Name -p User -p State -p Type -p Remote $sessionid | sort
     #done | awk -F= '/Name/ { name = $2 } /User/ { user = $2 } /State/ { state = $2 } /Type/ { type = $2 } /Remote/ { remote = $2 } /User/ && remote == "no" && state == "active" && (type == "tty" || type == "wayland") { print user, name }'
+    #
+    # ...or even simpler:
+    #loginctl list-users --json short
 
     if [[ -z "$USER" ]]; then
         i="$(whoami)" && [[ -n "$i" && "$i" != root ]] && { export USER="$i"; export MAIN_SYSTEM_USER="$i"; }  # TODO: do we want to define/override MAIN_SYSTEM_USER here?
@@ -60,6 +63,17 @@ fi
 if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # env vars to be loaded in local systems only (ie remote sessions should ignore this)
     # needs to be in same dir as the sourcing env vars file.
+
+    # see https://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
+    # NOTE:  make sure you know what you do; eg setting XDG_DATA_DIRS below effed up meld
+    # - note XDG vars should be set via $HOME/.config/user-dirs.dirs
+    export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-/home/$USER/.config}"
+    export XDG_DATA_HOME="${XDG_DATA_HOME:-/home/$USER/.local/share}"
+    #export XDG_DATA_DIR="${XDG_DATA_DIR:-/home/$USER/.local/share}"
+    #export XDG_DATA_DIRS="${XDG_DATA_DIRS:-$XDG_DATA_DIR}"
+
+    export XDG_CACHE_HOME="${XDG_CACHE_HOME:-/home/$USER/.cache}"
+    export XDG_DOWNLOAD_DIR="${XDG_DOWNLOAD_DIR:-/home/$USER/Downloads}"
 
     export BASE_DATA_DIR='/data'
     export BASE_PROGS_DIR='/progs'
@@ -98,6 +112,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     #NODE_PATH="$NPM_PACKAGES/lib/node_modules:$NODE_PATH"
 
     export NVM_DIR="$HOME/.nvm"  # do not change location, keep _non-linked_ .nvm/ under ~
+    export ASDF_CONFIG_FILE="$XDG_CONFIG_HOME/asdfrc"  # defaults to ~/.asdfrc
     #export ASDF_DIR="$BASE_PROGS_DIR/asdf"  # https://asdf-vm.com/manage/configuration.html#asdf-dir
     #export ASDF_DATA_DIR="$ASDF_DIR"  # defaults to $HOME/.asdf
 
@@ -112,13 +127,13 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export CUSTOM_LOGDIR='/var/log/custom_logs'
     export PANEL_FIFO='/tmp/panel-fifo'  # for BSPWM
 
-    #export HGRCPATH="$HOME/.config/hg/hgrc"
-    export PASSWORD_STORE_DIR="$HOME/.config/password-store"  # used by pass?
+    #export HGRCPATH="$XDG_CONFIG_HOME/hg/hgrc"
+    export PASSWORD_STORE_DIR="$XDG_CONFIG_HOME/password-store"  # used by pass?
     export GNUPGHOME="$HOME/.gnupg"
     export GPGKEY=515503C58074FAB0  # key-id of our default key; aka 'long key-id', being last 16 chars of the key-id, which is 160bit fingerprint for a key
 
     # Update RC file locations for apps that don't support XDG:
-    #export GTK2_RC_FILES="$HOME/.config/gtk-2.0/gtkrc"
+    #export GTK2_RC_FILES="$XDG_CONFIG_HOME/gtk-2.0/gtkrc"
     export GTK2_RC_FILES=$HOME/.gtkrc-2.0
 
     # disable portal, as suggested here: https://wiki.archlinux.org/title/GTK#GTK_3_and_GTK_4
@@ -137,16 +152,6 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export QT_SCALE_FACTOR_ROUNDING_POLICY=PassThrough
     # TODO: should we wrap this env var around something like [if wm = i3]?:
     export QT_QPA_PLATFORMTHEME=qt5ct:qt6ct
-
-    # see https://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
-    # NOTE:  make sure you know what you do; eg setting XDG_DATA_DIRS below effed up meld
-    export XDG_CONFIG_HOME="/home/$USER/.config"
-    export XDG_DATA_HOME="/home/$USER/.local/share"
-    #export XDG_DATA_DIR="/home/$USER/.local/share"
-    #export XDG_DATA_DIRS="$XDG_DATA_DIR"
-
-    export XDG_CACHE_HOME="/home/$USER/.cache"
-    export XDG_DOWNLOAD_DIR="/home/$USER/Downloads"
 
     # these from https://github.com/vincentbernat/i3wm-configuration/blob/master/dotfiles/xsession
     export XDG_SESSION_DESKTOP=i3
@@ -308,6 +313,7 @@ export FZF_ALT_C_COMMAND="$FZF_DEFAULT_COMMAND --type d"
 
 export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200'"
 export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window down:3:wrap"  # show the longer history; helps if cmd line is extra long
+export FZF_CTRL_R_COMMAND=''  # disable ctrl+r binding (in cmd mode if using vi mode), both bash & zsh; introduced in https://github.com/junegunn/fzf/pull/4535
 #export FZF_TMUX=1  # if you want to start fzf in a tmux pane
 
 ################## fzf-colors
@@ -390,13 +396,16 @@ for i in \
         "$HOME/.yarn/bin" \
         "$BASE_PROGS_DIR/clojure/bin" \
         "$BASE_PROGS_DIR/git-fuzzy/bin" \
-        "$HOME/.local/share/coursier/bin" \
-        "$HOME/.config/nvim/bundle/vim-iced/bin" \
-        "$HOME/.local/share/JetBrains/Toolbox/scripts" \
+        "$XDG_DATA_HOME/coursier/bin" \
+        "$XDG_CONFIG_HOME/nvim/bundle/vim-iced/bin" \
+        "$XDG_DATA_HOME/JetBrains/Toolbox/scripts" \
         "$HOME/.tmux/plugins/tmux-nvr/bin" \
             ; do
-    opts="$(cut -d: -f2 <<< "$i")"
-    i="$(cut -d: -f1 <<< "$i")"
+    opts=''
+    if [[ "$i" == *:* ]]; then
+        opts="$(cut -d: -f2 <<< "$i")"
+        i="$(cut -d: -f1 <<< "$i")"
+    fi
 
     # add to PATH if dir exists, OR has force (F) option set:
     if [[ ":${PATH}:" != *":${i}:"* ]] && [[ "$opts" == *F* || -d "$i" ]]; then
