@@ -7,7 +7,11 @@
 #
 #####################################################
 # my notes:
-# see  $ man xdg-user-dirs-update
+# - if you make changes in this file, then apply them via
+#   $ xdg-user-dirs-update --force
+# - see  $ man xdg-user-dirs-update
+# - see set value for given dir is:
+#   $ xdg-user-dir TEMPLATES
 #
 # if you don't want to use given dir, point it at $HOME; leaving it undefined could
 # cause trouble in some applications as per  https://forums.linuxmint.com/viewtopic.php?t=364944
