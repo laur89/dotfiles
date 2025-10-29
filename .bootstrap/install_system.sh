@@ -5806,6 +5806,7 @@ install_from_repo() {
         ncmpcpp  # ncurses-based client for MPD; https://github.com/ncmpcpp/ncmpcpp
         #audacity  # TODO: there was a takeover by muse group, see https://hackaday.com/2021/07/13/muse-group-continues-tone-deaf-handling-of-audacity/
                    # was forked, see https://codeberg.org/tenacityteam/tenacity
+        #smplayer  # front-end for MPlayer and mpv
         mpv  # video player based on MPlayer/mplayer2; https://mpv.io/
         streamlink  # CLI utility which pipes video streams from various services into a video player; see also streamlink-twitch-gui that builds on this
         kdenlive  # video editor; TODO: avail as flatpak
@@ -5890,7 +5891,7 @@ install_from_repo() {
         abook  # ncurses address book application; to be used w/ mutt
         isync  # mbsync/isync is a command line application which synchronizes mailboxes; https://isync.sourceforge.io/
                # alternatives: getmail6
-        urlview  # utility used to extract URL from text files, especially from mail messages in order to launch some browser to view them (eg mutt)
+        urlview  # utility used to extract URL from text files, especially from mail messages in order to launch some browser to view them (eg mutt); its config is in $HOME/
         translate-shell  # cli translator powered by Google Translate (and others); https://github.com/soimort/translate-shell # TODO: also avail via docker
     )
     # old/deprecated block3:
@@ -6043,6 +6044,9 @@ install_from_flatpak() {
 
     # https://flathub.org/apps/engineer.atlas.Nyxt
     # web browser written in LISP
+    # see also:
+    # - https://github.com/fanglingsu/vimb
+    # - https://github.com/qutebrowser/qutebrowser
     fp_install -n nyxt  'engineer.atlas.Nyxt'
 
     # https://github.com/saivert/pwvucontrol
