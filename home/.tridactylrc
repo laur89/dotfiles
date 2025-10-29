@@ -38,6 +38,7 @@ bindurl ^https:\/\/(codeberg|gitlab\.freedesktop)\.org\/([^/]+\/){3} gu urlparen
 " release esc key on given urls: (https://github.com/tridactyl/tridactyl/discussions/5224)
 unbindurl ^https:\/\/\w+\.wikipedia\.org\/wiki\/.*#\/media\/File <Escape>
 unbindurl ^https:\/\/\w+\.delfi\.ee\/artikkel\/.*#article-image-id= <Escape>
+unbindurl ^https:\/\/\w+\.postimees\.ee\/video\/[0-9]+ <Escape>
 unbindurl ^https:\/\/\w+\.facebook\.com\/(reel|photo|[0-9]+\/videos)\/ <Escape>
 unbindurl ^https:\/\/x\.com\/.*\/photo\/[0-9]+ <Escape>
 unbindurl ^https:\/\/\w+\.imdb\.com\/title\/\w+\/mediaviewer\/ <Escape>
