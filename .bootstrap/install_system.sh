@@ -30,6 +30,7 @@ readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; e
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
 #readonly BASH_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # as per https://github.com/scop/bash-completion#faq  # cannot set before importing SHELL_ENVS!
+# TODO: sure we don't want ot use /usr/share/zsh/vendor-completions for zsh?
 readonly ZSH_COMPLETIONS='/usr/local/share/zsh/site-functions'  # as per https://unix.stackexchange.com/a/607810/47501
 readonly APT_KEY_DIR='/usr/local/share/keyrings'  # dir where per-application apt keys will be stored in
 readonly SERVER_IP='10.42.21.10'             # default server address; likely to be an address in our LAN
@@ -1502,6 +1503,7 @@ install_deps() {
 setup_dirs() {
     local dir opts
 
+    # could also use /usr/share/bash-completion/completions
     readonly BASH_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # as per https://github.com/scop/bash-completion#faq  # cannot set before importing SHELL_ENVS!
 
     # create dirs:
@@ -2452,6 +2454,7 @@ install_own_builds() {
     #is_native && install_slack_term
     #install_slack
     install_veracrypt
+    install_betterbird
     install_ueberzugpp
     #install_hblock
     install_open_eid
@@ -2701,7 +2704,7 @@ resolve_dl_urls() {
 # $3 - build/file regex to be used (for grep -Po) to parse correct item from git /releases page src;
 #      note it matches 'til the very end of url (ie you should only provide the latter bit);
 #
-# see also: install_from_url()
+# see also: install_from_url() - note effectively ...from_url() differs that it's not doing url parsing from the page, but it's fed the actual asset url as a param
 install_from_any() {
     local install_file_args skipadd opt relative
     local name loc url_ptrn dl_url ver f OPTIND tmpdir id
@@ -5799,6 +5802,7 @@ install_from_repo() {
         #spotify-client
         #mopidy
         playerctl  # cli utility and library for controlling media players that implement the MPRIS D-Bus Interface Specification. Compatible players include audacious, cmus, mopidy, mpd, mpv, quod libet, rhythmbox, spotify, and vlc; https://github.com/altdesktop/playerctl
+                   # note last commit is from '21
         socat
         #yt-dlp  # dl vids from yt & other sites; https://github.com/yt-dlp/yt-dlp ; note we're installing it via git/pypi now as the project moves rather fast
         mpc  # cli tool to interface MPD; https://github.com/MusicPlayerDaemon/mpc
@@ -5838,7 +5842,7 @@ install_from_repo() {
         geeqie  # GTK-based image/gallery viewer
         gthumb  # gnome image viewer
         imagemagick
-        inkscape  # vector-based drawing program  # TODO: avail as flatpak; alternatives: graphite (for raster AND vector)
+        inkscape  # vector-based drawing program  # TODO: avail as flatpak; alternatives: graphite (for raster AND vector); krita - raster/illustration; affinity - raster,vector,photo editor, not FOSS
         chafa  # image-to-text converter, i.e. images in terminals
         xsel  # TODO: x11
         wmctrl  # CLI tool to interact with an EWMH/NetWM compatible X Window Manager; TODO: x11; wayland alternative might be wlrctl
@@ -5885,7 +5889,7 @@ install_from_repo() {
         #googler  # Google Site Search from the terminal; https://github.com/oksiquatzel/googler  # TODO: looks like it's broken: https://github.com/oksiquatzel/googler/issues/7
         msmtp  # msmtp is an SMTP client that can be used to send mails from Mutt and probably other MUAs (mail user agents)
         msmtp-mta  # This package is compiled with SASL and TLS/SSL support
-        #thunderbird  # TODO: avail as flatpak
+        #thunderbird  # TODO: avail as flatpak; alternatives: betterbird
         neomutt
         notmuch
         abook  # ncurses address book application; to be used w/ mutt
@@ -6584,6 +6588,7 @@ __choose_prog_to_build() {
         install_gruvbox_gtk_theme
         install_gruvbox_material_gtk_theme
         install_veracrypt
+        install_betterbird
         install_ueberzugpp
         install_hblock
         install_open_eid
@@ -7016,6 +7021,15 @@ install_veracrypt() {
 }
 
 
+# thunderbird fork
+install_betterbird() {  # https://www.betterbird.eu/downloads/
+    local url='https://www.betterbird.eu/downloads/get.php?os=linux&lang=en-US&version=release'
+
+    install_from_url -D -d "$BASE_PROGS_DIR" betterbird "$url" || return 1
+    create_link "$BASE_PROGS_DIR/betterbird/betterbird" "$HOME/bin/betterbird"
+}
+
+
 # https://github.com/hectorm/hblock
 install_hblock() {
     #install_from_git -T -N hblock -n hblock -f 'text/x-shellscript' hectorm/hblock
@@ -7198,6 +7212,9 @@ setup_seafile() {
 #
 # see also:
 # - https://www.naturalborncoder.com/2024/10/installing-and-configuring-nftables-on-debian/
+# - https://github.com/evilsocket/opensnitch/
+#   - note it also allows configuring system's fw rules (nftables): https://github.com/evilsocket/opensnitch/wiki/System-rules
+#   - TODO: does it conflict with firewalld?
 #
 # config file @ /etc/nftables.conf
 #
@@ -8794,7 +8811,14 @@ exit 0
 #       - alternatively, there's also papersway: https://spwhitton.name/tech/code/papersway/
 #  - consider https://gitlab.com/Zesko/systemd-timer-notify/
 #    - displays desktop notifications when systemd timers start services. Notifications close automatically when the services finish
+#  - TODO: see how gpg agent is to be started; we used to start it from
+#          common_startup w/  $ eval "$(/usr/bin/gpg-agent --daemon)"
 #
 #
 # list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/
 #
+# some gsettings stuff:
+# $ gsettings get org.gnome.desktop.interface color-scheme
+#
+# for review/consideration, see also default bluefin packages:  https://github.com/ublue-os/bluefin/blob/main/build_files/base/04-packages.sh
+
