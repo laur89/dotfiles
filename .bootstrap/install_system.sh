@@ -529,7 +529,9 @@ setup_systemd() {
             fname="$(basename -- "$node")"
             fname="${fname/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
 
-            if [[ -f "$node" && "$node" =~ \.(service|target|timer)$ ]]; then  # note we require certain suffixes
+            # valid systemd units listed @ https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html
+            # as of '25 they are (ctrl+f this line in above page): ".service", ".socket", ".device", ".mount", ".automount", ".swap", ".target", ".path", ".timer", ".slice", or ".scope".
+            if [[ -f "$node" && "$node" =~ \.(service|socket|device|mount|automount|swap|target|path|timer|slice|scope)$ ]]; then  # note we require certain suffixes
                 __var_expand_move $sudo "$node" "$tdir/$fname" || continue
 
                 # note do not use the '--now' flag with systemctl enable, as some units
@@ -7116,8 +7118,21 @@ install_croc() {
 
 
 # https://github.com/ventoy/Ventoy
+# https://www.ventoy.net/en/doc_linux_gui.html
 install_ventoy() {
+    local tmpfile="$TMP_DIR/.ventoy-$RANDOM"
+
     install_from_git -D -d "$BASE_PROGS_DIR" -N ventoy  ventoy/Ventoy '-linux.tar.gz' || return 1
+
+    # note this doesn't work - executing via link simply doesn't work; see https://github.com/ventoy/Ventoy/issues/2512
+    #create_link "$BASE_PROGS_DIR/ventoy/VentoyGUI.x86_64" "$HOME/bin/ventoy"
+
+    # instead, we create our own wrapper:
+    cat <<EOF > "$tmpfile"
+#!/usr/bin/env sh
+exec "$BASE_PROGS_DIR/ventoy/VentoyGUI.x86_64"
+EOF
+    exe "install -m744 -C '$tmpfile' '$HOME/bin'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
 }
 
 
