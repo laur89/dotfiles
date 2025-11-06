@@ -175,7 +175,11 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export _WIRELESS_IF="/tmp/wireless_interfaces.dat"
     export _TRUSTED_CON_MARKER="/tmp/connected_trusted_NW.dat"
 
+    # 17ef:306f - p14s old dock
+    # 05e3:0610 - old ugreen usb switch
+    # 37a8:0003 - uhk keeb
     export _DOCK_USB_DEVICE_MARKER='17ef:306f'  # TODO: should this be moved to computer-specific overrides?
+    export _USB_SWITCHED_MARKER='05e3:0610'  # TODO: should this be moved to computer-specific overrides?
 
     export WALLPAPER_DIR="/home/$USER/Pictures/wallpapers"
     export DYN_WALLPAPER_DIR="/tmp/.dynamic_wallpapers"  # dir where scripts dynamically create walls into;

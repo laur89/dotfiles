@@ -27,6 +27,7 @@
 #   - print process tree up from given PID:  $ pstree -aps $pid
 #   - procs: add ppid to output:  $ procs -i Ppid
 #   - procs: search for 'tmux' and print only ppid:  $ procs --no-header -i Ppid --only Ppid -- tmux
+# TODO: when changing this logic, test it also on our remote nodes, e.g. seedbox
 ffindproc() {
     [[ "$#" -ne 1 ]] && { err "exactly one arg (process name to search) allowed"; return 1; }
     [[ -z "$1" ]] && { err "process name required"; return 1; }
