@@ -147,8 +147,8 @@ alias psef='ps -ef'
 alias gosu='sudo -E su'
 alias su='su --login'  # so env vars would be cleared
 alias lns='ln -s'
-alias svim='sudo nvim'
-alias snvim='sudo nvim'
+alias svim='sudoedit'
+alias snvim='sudoedit'
 alias root='sudo su'
 
 alias t1='tree -lL 1'
