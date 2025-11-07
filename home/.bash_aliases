@@ -49,7 +49,7 @@ alias py3='python3'
 alias ipy='ipython3 --no-banner --no-confirm-exit'
 alias dunc='ncdu'  # never remember it; if it starts w/ 'du', it'll be more likely to find
 alias wheresthespace='ncdu -x /'  # what's taking up the space? -x avoids cross-fs
-alias dfpy='pydf'
+alias dfpy=pydf
 alias tgo='tmux new-session -A -f no-detach-on-destroy -s'  # start a new tmux session of provided name, or attach to it if already exists
 #alias got='tgo'  # unused IMO
 alias ngo='nvim --listen /tmp/nvim_$USER' # start the _main_/master nvim process, listening on given socket; that socket will be used by nvr (neovim-remote)
@@ -104,15 +104,24 @@ alias cp='cp -rp'  # TODO: add -i for overwrite prompt? what about scripts that 
 alias scp='scp -rp'
 alias sync-monit='watch -d grep -e Dirty: -e Writeback: /proc/meminfo'  # or  $ sar -r 1
 alias dig='dig +search'  # https://serverfault.com/questions/434581/why-can-host-and-nslookup-resolve-a-name-but-dig-cannot/899996
-#alias dfh='df -h --local -x tmpfs -x devtmpfs -x nfs'  # note we're ignoring tmp & nfs filesystems; see also 'pydf' for py-based prettier df version
-command -v pydf > /dev/null 2>&1 && alias dfh='command pydf -h --local' || alias dfh='df -h --local -x tmpfs -x devtmpfs -x nfs'
-alias pydf=dfh
+if command -v duf > /dev/null 2>&1; then
+    # duf --hide network
+    # duf --only local
+    # duf --hide network --hide-fs tmpfs
+    # to see everything, including fuse:  $ duf --all
+    alias dfh='command duf --hide network --hide-fs tmpfs'
+elif command -v pydf > /dev/null 2>&1; then
+    alias dfh='command pydf -h --local'
+    alias pydf=dfh
+else
+    alias dfh='df -h --local -x tmpfs -x devtmpfs -x nfs'  # note we're ignoring tmp & nfs filesystems
+fi
 #alias less="less -IRKFX" # handled by the $LESS env var
 alias nano='nano --mouse'
 alias sysinfo='inxi -Fxxxz'
 alias rtv='tuir'
 ###############################
-alias ls='ls -h --color=auto --group-directories-first'
+alias ls='ls -Fh --color=auto --group-directories-first'
 alias ll='ls -l'
 alias lr='ls -lr'
 alias lsr='ls -lr'
