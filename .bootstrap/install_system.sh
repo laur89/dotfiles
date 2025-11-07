@@ -1194,9 +1194,6 @@ install_deps() {
     #
     # from within zsh, upgrade plugins via  $ zinit update [--parallel]
     _install_zsh_deps() {
-        local install_dir
-
-        readonly install_dir="$BASE_PROGS_DIR/zinit"
         clone_or_pull_repo zdharma-continuum zinit "$BASE_PROGS_DIR"  # https://github.com/zdharma-continuum/zinit#manual
 
         # default ZINIT[HOME_DIR], where zinit creates all working dirs:
@@ -4153,6 +4150,7 @@ install_webdev() {
     is_server && { report "we're server, skipping webdev env installation."; return; }
 
     install_mise
+    exe "mise trust --ignore '$COMMON_DOTFILES/home/.config/mise/config.toml'"  # ignore it, so we don't get warnings when we cd to $COMMON_DOTFILES/
     exe 'mise install'  # install the globally-defined tools (and local, if pwd has mise.toml)
     exe 'mise upgrade'  # upgrade tracked tools
 
@@ -4954,7 +4952,7 @@ fp_install() {  # flatpak install
     exe "flatpak install -y --noninteractive '$remote' '$ref'" || return 1
 
     bin="/var/lib/flatpak/exports/bin/$ref"
-    [[ -s "$bin" ]] || { err "[$bin] does not exist, cannot create shortcut link for [$name]"; return 1; }  # sanity
+    is_f -nm "cannot create shortcut link for [$name]" "$bin" || return 1  # sanity
     create_link "$bin" "$HOME/bin/$name"
 }
 
@@ -6061,11 +6059,19 @@ install_from_flatpak() {
     # https://flathub.org/apps/com.discordapp.Discord
     fp_install -n discord  'com.discordapp.Discord'
 
+    # https://flathub.org/apps/dev.vencord.Vesktop
+    # alternative discord client
+    # fyi there's also native .deb & appimage
+    fp_install -n vesktop  'dev.vencord.Vesktop'
+
     # https://flathub.org/apps/org.telegram.desktop
     fp_install -n telegram  'org.telegram.desktop'
 
     # https://flathub.org/apps/org.libreoffice.LibreOffice
     fp_install -n libreoffice  'org.libreoffice.LibreOffice'
+
+    # https://flathub.org/apps/org.localsend.localsend_app
+    fp_install -n localsend  'org.localsend.localsend_app'
 }
 
 # install/update the guest-utils/guest-additions.
@@ -7114,6 +7120,13 @@ install_android_command_line_tools() {
 # share files between computers/phones
 install_croc() {
     install_bin_from_git -N croc -n croc  schollz/croc  '_Linux-64bit.tar.gz'
+}
+
+
+install_localsend() {
+    err "do not call, using flatpak atm"
+    #install_from_git localsend/localsend '-linux-x86-64.deb'
+    #install_bin_from_git -N localsend localsend/localsend '-linux-x86-64.AppImage'
 }
 
 
@@ -8836,4 +8849,16 @@ exit 0
 # $ gsettings get org.gnome.desktop.interface color-scheme
 #
 # for review/consideration, see also default bluefin packages:  https://github.com/ublue-os/bluefin/blob/main/build_files/base/04-packages.sh
+# useful software list: https://www.reddit.com/r/linux/comments/1ol5a1k/my_musthave_apps_since_switching_to_linux/
+#   interesting ones from there:
+#   - https://github.com/espanso/espanso
+#   - okular
+#   - Czkawka
+#   - Heroic Games Launcher
+#   - lutris
+#   - newsboat
+#   - scrcpy - mirror android screen to pc
+#   - Opensnitch - see which programs communicate over network
+#   - Quod Libet - yet another music player
+#   - stremio + plugins (see https://stremio-addons.com/)
 
