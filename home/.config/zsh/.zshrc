@@ -626,7 +626,7 @@ alias zz=__zoxide_zi  # for interactive, as `zi` is taken by zinit
 
 ########################################## fzf
 # https://github.com/junegunn/fzf#setting-up-shell-integration
-# Set up fzf key bindings and fuzzy completion  # TODO: unsure we want this; eg it overrides fzf-tab's ctrl+r
+# Set up fzf key bindings and fuzzy completion  # NOTE: without explicitly setting FZF_CTRL_R_COMMAND to empty value, it overrides fzf-tab's ctrl+r
 command -v fzf > /dev/null && source <(fzf --zsh)
 # alternatively, some people source .zsh scripts from fzf themselves:
 #zinit ice lucid wait'0c' multisrc"shell/{completion,key-bindings}.zsh" id-as="junegunn/fzf_completions" pick="/dev/null"
@@ -711,7 +711,7 @@ command -v aichat > /dev/null && [[ -f "$i" ]] && source "$i"
 
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+[[ ! -f "$ZDOTDIR/p10k.zsh" ]] || source "$ZDOTDIR/p10k.zsh"
 #########################################################################
 #
 # think it's best to load compinit last, but unsure why

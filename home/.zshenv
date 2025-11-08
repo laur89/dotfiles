@@ -3,6 +3,8 @@
 # other dotfile sources to check out:
 # - https://github.com/KulkarniKaustubh/dotfiles/blob/main/zsh/.zshrc
 
+setopt no_global_rcs
+
 ##
 # This file, .zshenv, is the first file sourced by zsh for EACH shell, whether
 # it's interactive or not.
@@ -16,7 +18,7 @@
 
 # By default, Zsh will look for dotfiles in $HOME (and find this file), but
 # once $ZDOTDIR is defined, it will start looking in that dir instead.
-#ZDOTDIR=${XDG_CONFIG_HOME:=~/.config}/zsh
+ZDOTDIR=${XDG_CONFIG_HOME:=~/.config}/zsh
 
 # ${X:=Y} specifies a default value Y to use for parameter X, if X has not been
 # set or is null. This will actually create X, if necessary, and assign the
@@ -24,3 +26,6 @@
 # To set a default value that is returned *without* setting X, use ${X:-Y}
 # instead.
 # As in other shells, ~ expands to $HOME _at the beginning of a value only._
+
+# commented out, as also set in ~/.profile:
+#umask 0077  # keep this in sync with what we set via systemd!
