@@ -60,7 +60,7 @@ SCRIPT_LOG="$HOME/installation-execution-term-$(date +%d-%b-%y--%R).log"
 SYSCTL_CHANGED=0       # states whether sysctl config got changed
 APT_ENVS='NEEDRESTART_MODE=l'
 APT_OPTS=''
-umask 0077  # keep this in sync with what we set via systemd & ~/.profile!
+#umask 0077  # keep this in sync with what we set via systemd & ~/.profile!
 
 unset _IS_WIN _IS_VIRT _IS_VIRTUALBOX _IS_NATIVE
 
@@ -8603,10 +8603,14 @@ ensure_d() {
     shift "$((OPTIND-1))"
 
     for d in "$@"; do
-        # note we set [umask 2] for root to make sure other group can read&traverse created dir; from https://unix.stackexchange.com/a/132201/47501
         if ! $sudo test -d "$d"; then
             [[ -e "$d" ]] && { err "[$d] exists, but is [$(file_type "$d")]" -1; e=1; continue; }
-            exe "(${sudo:+umask 2 && sudo }mkdir -p -- '$d')" || e=1
+            # note we set [umask 2] for root to make sure other group can read&traverse created dir; from https://unix.stackexchange.com/a/132201/47501
+            # keep this in sync w/ value set in sudoers file, if we modify it there!
+            # NOTE: not doing this atm, as we're returning back to default umask AND
+            #       it's better to enforce sudo umask via sudoers conf:
+            #exe "(${sudo:+umask 2 && sudo }mkdir -p -- '$d')" || e=1
+            exe "${sudo:+sudo }mkdir -p -- '$d'" || e=1
         fi
     done
     return ${e:-0}
