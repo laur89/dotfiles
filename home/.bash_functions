@@ -40,7 +40,7 @@ ffindproc() {
         #ps -ef | grep -v '\bgrep\b' | grep -i --color=auto -- "$1"
     #fi
     ps --no-headers -eo pid,ppid,pgid,egroup,command | \
-        grep -v "$USER     \bgrep\b .*$(rgxesc "$1")" | grep -i --color=auto -- "$1"
+        grep -Ev "\b${USER}\b\s+\bgrep\b .*$(rgxesc "$1")" | grep -i --color=auto -- "$1"
 }
 
 
