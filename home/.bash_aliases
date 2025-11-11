@@ -160,11 +160,19 @@ alias svim='sudoedit'
 alias snvim='sudoedit'
 alias root='sudo su'
 
-alias t1='tree -lL 1'
-alias t2='tree -lL 2'
-alias t3='tree -lL 3'
-alias t4='tree -lL 4'
-alias t5='tree -lL 5'
+if command -v lsd > /dev/null 2>&1; then
+    alias t1='lsd -L --tree --depth=1'
+    alias t2='lsd -L --tree --depth=2'
+    alias t3='lsd -L --tree --depth=3'
+    alias t4='lsd -L --tree --depth=4'
+    alias t5='lsd -L --tree --depth=5'
+else
+    alias t1='tree -lL 1'
+    alias t2='tree -lL 2'
+    alias t3='tree -lL 3'
+    alias t4='tree -lL 4'
+    alias t5='tree -lL 5'
+fi
 
 #
 # hate the typos:
