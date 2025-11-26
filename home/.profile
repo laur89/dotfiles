@@ -54,6 +54,9 @@ select_wm() {
 }
 
 # start X; note the ssh-agent:
+# https://wiki.archlinux.org/title/Xinit#Autostart_X_at_login
+#   - per this article, we could check here as if [ -z "$DISPLAY" ] && [ "$XDG_VTNR" -le 3 ]  to use graphical logins on more than one virtual terminal
+#   - XDG_VTNR is alternative to $(tty) usage
 #if [ -z "$DISPLAY" ] && [ -n "$XDG_VTNR" ] && [ "$XDG_VTNR" -eq 1 ]; then
 if [ -z "$DISPLAY" ] && [ "$(tty)" == '/dev/tty1' ]; then
     if is_windows; then

@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 ############################
 # from https://github.com/infokiller/config-public/blob/master/.xsession
-# this file is ran when xstart is executed.
+# this file is ran when startx is executed.
 # some documentation: https://wiki.debian.org/Xsession
 #
 # note it's possible, at least on Debian, that this file would not get executed if
@@ -15,4 +15,5 @@
 # line numbers. Therefore, the actual xsession is executed from this script,
 # where it will be executed in an isolated and guaranteed bash environment.
 exec "$HOME/.xsession_real" "$@"
+#exec urxvt
 
