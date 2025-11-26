@@ -268,6 +268,8 @@ $ sudo btrfs subvolume snapshot /btrfs/@snapshots/root/15/snapshot /btrfs/@
 $ sudo mv /btrfs/@ /btrfs/@snapshots/old_root
 $ sudo btrfs su sn /btrfs/@snapshots/root/15/snapshot /btrfs/@
 ```
+- systemd-boot doesn't support booting into snapshots atm, but there are issues
+  open; for temporary workaround see https://en.opensuse.org/Systemd-boot
 
 
 ## Troubleshooting
@@ -292,6 +294,10 @@ For GUI dconf editor install `dconf-editor` pkg.
 ## Notes/see also
 - [zfs installation script](https://github.com/danfossi/Debian-ZFS-Root-Installation-Script)
 - run windows apps in windows VM via [winapps](https://github.com/winapps-org/winapps)
+- to access our secrets:
+> $ keepassxc-cli show --attributes password -- /path/to/secrets.kdbx 'entry name'
+  - if using passhole, then
+  > $ ph [--database /path/to/secrets.kdbx] show Internet/forums/forum.net [--field password]
 
 ## TODO
 
