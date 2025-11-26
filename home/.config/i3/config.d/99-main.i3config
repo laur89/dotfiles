@@ -1,9 +1,6 @@
 # vim:filetype=i3
 #
-# i3 version 4.12-8-gd7fd3c0 (2016-03-09, branch "gaps-next") © 2009 Michael Stapelberg and contributors
-# i3 config file.
 # Please see http://i3wm.org/docs/userguide.html for a complete reference!
-# Github https://github.com/mohabaks/dotfiles
 
 
 #*************** Keybindings ******************
@@ -52,6 +49,8 @@ bindsym $mod+space $ex rofi -show combi \
 # rofi-tmux (aka rft):
 #bindsym $mod+Shift+space  $ex rft sw  # invoking via client; prefer signal invocation if possible
 bindsym $mod+Shift+space  $ex killall -s SIGUSR1 rft-daemon
+# rofimoji:
+bindsym $mod+Shift+e  $ex rofimoji
 
 bindsym $mod+j $mod_j
 bindsym $mod+k $mod_k
@@ -388,6 +387,8 @@ bindsym Shift+XF86AudioPrev  $ex  playerctl position 10-
 # Brightness control
 bindsym XF86MonBrightnessUp   $ex  killall -s SIGUSR1 bctld
 bindsym XF86MonBrightnessDown $ex  killall -s SIGUSR2 bctld
+bindsym $mod+Shift+plus       $ex  killall -s SIGUSR1 bctld
+bindsym $mod+Shift+minus      $ex  killall -s SIGUSR2 bctld
 
 # Touchpad controls
 bindsym XF86TouchpadToggle  $ex /some/path/toggletouchpad.sh
@@ -617,6 +618,8 @@ for_window [class="^jetbrains-" title="^Import .*Settings"] floating enable, foc
 # automatic log off /restart dialog window:
 for_window [class="^install4j-jclient-Launcher$" instance="^sun-awt-X11-XFramePeer$" title=" Exit Session Setting$"] floating enable, border pixel $border
 
+for_window [class="^streamlink-twitch-gui$"] border pixel $border
+for_window [class="^mpv$"] border normal $border
 
 # for drawing specific icon for application:  (from https://gist.github.com/dmelliot/437924ff581f3f1edd59f44833be6cc6): {{{
 #for_window [class="(?i)firefox"] title_format "<tt></tt><span foreground='#FF6611'>  </span><tt> </tt>%title"
