@@ -481,7 +481,7 @@ setup_logind() {
 setup_systemd() {
     local global_sysd_src usr_sysd_src global_sysd_target usr_sysd_target dir
 
-    readonly global_sysd_target='/etc/systemd/system'
+    readonly global_sysd_target='/etc/systemd/system'  # from https://wiki.debian.org/systemd#Creating_or_altering_services
     readonly usr_sysd_target="$HOME/.config/systemd/user"
     global_sysd_src=(
         "$COMMON_PRIVATE_DOTFILES/backups/systemd/global"
@@ -1424,9 +1424,15 @@ install_deps() {
     py_install -g fdw/rofimoji  # https://github.com/fdw/rofimoji
 
     # keepass cli tool
+    # alternatives: kpcli
+    # - some useful commands:
+    #   $ ph grep -i someforum.net
+    #   $ ph show Internet/forums/SomeForum.net [--field password]
     py_install passhole     # https://github.com/Evidlo/passhole
 
-    # keepass rofi/demnu tool (similar to passhole (aka ph), but w/ rofi gui)
+    # keepass rofi/demnu tool (similar to passhole (aka ph), but w/ rofi/yofi/dmenu/etc gui)
+    # install deps (https://github.com/firecat53/keepmenu/blob/main/docs/install.md#requirements):
+    install_block 'python3-pykeepass python3-pynput'
     py_install keepmenu     # https://github.com/firecat53/keepmenu
 
     #if is_native; then
@@ -1470,6 +1476,8 @@ install_deps() {
     # flashfocus - flash window when focus changes  https://github.com/fennerm/flashfocus
     # note on X systems it requires a compositor (e.g. picom) to be effective.
     # TODO: x11? project page mentions it's working on sway, but it has xcb dependencies, so...
+    # alternatives:
+    # - https://github.com/moustacheful/glimmer
     install_block 'libxcb-render0-dev libffi-dev python3-cffi'
     py_install flashfocus
 
@@ -1937,9 +1945,10 @@ setup() {
 
     setup_install_log_file
 
+    setup_config_files
+
     setup_dirs  # has to come after $SHELL_ENVS sourcing so the env vars are in place
     [[ "$MODE" -eq 1 ]] && install_flatpak
-    setup_config_files
     setup_additional_apt_keys_and_sources
 
     [[ "$PROFILE" == work && -s ~/.npmrc ]] && mv -- ~/.npmrc "$NPMRC_BAK"  # work npmrc might define private registry
@@ -2393,6 +2402,9 @@ install_devstuff() {
     #install_coursier
 
     install_kubectl
+
+    #py_install pre-commit pre-commit-hooks
+    install_block pre-commit pre-commit-hooks
 }
 
 
@@ -2423,12 +2435,14 @@ install_own_builds() {
     install_rga
     #install_browsh
     #install_treesitter
-    install_vnote
+    #install_vnote
     #install_obsidian
     install_delta
     install_dust
     #install_bandwhich
     is_btrfs && install_btdu
+    install_uv
+    install_rmpc
     install_peco
     install_fd
     install_jd
@@ -3993,6 +4007,7 @@ install_open_interpreter() {
 # - https://github.com/simonw/llm
 # - https://github.com/charmbracelet/mods
 # - https://github.com/TheR1D/shell_gpt
+# - https://github.com/reugn/gemini-cli
 install_aichat() {  # https://github.com/sigoden/aichat
     local shell="$BASE_PROGS_DIR/aichat-shell-scripts/"  # trailing slash is important; note this path is also referenced in bash/zsh rc!
 
@@ -4012,6 +4027,41 @@ install_aichat() {  # https://github.com/sigoden/aichat
         #'https://raw.githubusercontent.com/sigoden/aichat/refs/heads/main/scripts/completions/aichat.bash'
 }
 
+
+install_gemini_cli() {  # https://github.com/reugn/gemini-cli
+    install_bin_from_git -N gemini reugn/gemini-cli '_linux_x86_64.tar.gz'
+}
+
+
+# install logic from https://github.com/coastalwhite/lemurs/blob/main/install.sh
+install_lemurs_display_manager() {  # https://github.com/coastalwhite/lemurs
+    local repo ver tmpdir
+
+    repo='https://github.com/coastalwhite/lemurs'
+    ver="$(get_git_sha "$repo")" || return 1
+    is_installed "$ver" lemurs && return 2
+
+    tmpdir="$(mkt lemurs-build)"
+    exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
+    report "building lemurs..."
+    exe "cargo -C '$tmpdir' build --release" || return 1
+
+    exe "sudo install -m644 -CT '$tmpdir/target/release/lemurs' '/usr/bin/lemurs'" || return 1
+    ensure_d -s '/etc/lemurs/wms' '/etc/lemurs/wayland' || return 1
+
+    exe "sudo install -m644 -CT '$tmpdir/extra/config.toml' '/etc/lemurs/config.toml'" || return 1
+    exe "sudo install -m644 -CT '$tmpdir/extra/xsetup.sh' '/etc/lemurs/xsetup.sh'" || return 1
+    exe "sudo install -m644 -CT '$tmpdir/extra/lemurs.pam' '/etc/pam.d/lemurs'" || return 1
+
+    # Cache the current user:
+    exe "echo 'xinitrc\n$USER' | sudo tee /var/cache/lemurs > /dev/null" || return 1
+    exe -c 0,1 "sudo systemctl disable display-manager.service" || return 1  # allowed to fail w/ 1 if service doesn't exist
+    exe "sudo install -m644 -CT '$tmpdir/extra/lemurs.service' '/usr/lib/systemd/system/lemurs.service'" || return 1
+    exe "sudo systemctl enable lemurs.service"
+
+    exe "sudo rm -rf -- '$tmpdir'"
+    add_to_dl_log  lemurs "$ver"
+}
 
 # rust replacement for ps
 # also avail in apt
@@ -4105,6 +4155,26 @@ install_bandwhich() {  # https://github.com/imsnif/bandwhich
 #   - for continuous snapshots however zfs/btrfs are still the wrong tool, you'd need something like NILFS
 install_btdu() {  # https://github.com/CyberShadow/btdu
     install_bin_from_git -N btdu  CyberShadow/btdu 'btdu-static-x86_64'
+}
+
+
+install_uv() {  # https://docs.astral.sh/uv/getting-started/installation/#github-releases
+    #install_bin_from_git -N uv  -n uv  astral-sh/uv 'uv-x86_64-unknown-linux-gnu.tar.gz' || return 1
+    #install_bin_from_git -N uvx -n uvx astral-sh/uv 'uv-x86_64-unknown-linux-gnu.tar.gz' || return 1
+    local dir
+    dir="$(fetch_extract_tarball_from_git  astral-sh/uv 'uv-x86_64-unknown-linux-gnu.tar.gz')" || return 1
+    install_file "$dir/uv" || return 1
+    install_file "$dir/uvx" || return 1
+
+    # shell completion:  # https://docs.astral.sh/uv/getting-started/installation/#shell-autocompletion
+    #echo 'eval "$(uv generate-shell-completion bash)"' >> ~/.bashrc
+    #echo 'eval "$(uvx --generate-shell-completion bash)"' >> ~/.bashrc
+}
+
+
+# MPD player akin to ncmpcpp
+install_rmpc() {  # https://github.com/mierak/rmpc
+    install_bin_from_git -N rmpc  mierak/rmpc 'x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
@@ -4392,7 +4462,7 @@ install_kanata() {
 # pre-built binaries avail @ https://www.ddcutil.com/install/#prebuilt-packages-maintained-by-the-ddcutil-project
 # also avail in apk
 build_ddcutil() {
-    local dir group deps
+    local dir deps
 
     dir="$(fetch_extract_tarball_from_git -T  rockowitz/ddcutil)" || return 1
     exe "pushd $dir" || return 1
@@ -4446,6 +4516,35 @@ build_ddcutil() {
     exe 'sudo apt-mark hold  ddcutil'
 
     exe "popd"
+    exe "sudo rm -rf -- '$dir'"
+}
+
+
+build_neowall() {  # https://github.com/1ay1/neowall
+    local dir deps
+
+    return 1  # TODO: build doesn't succeed yet, see the issue we opened
+
+    dir="$(fetch_extract_tarball_from_git -T  1ay1/neowall)" || return 1
+    #exe "make -j$(nproc) -C '$dir'" || return 1
+    deps=(
+        libx11-dev
+        libxrandr-dev
+        libegl1-mesa-dev
+        libgles2-mesa-dev
+        wayland-protocols
+        libwayland-dev
+        libwayland-egl-backend-dev
+        libpng-dev
+        libjpeg-dev
+        pkg-config
+    )
+    build_deb -C "$dir" neowall "${deps[@]}" || { err "build_deb() for neowall failed"; return 1; }
+    echo "dir: $dir"
+    return
+    exe 'sudo dpkg -i ../neowall_*.deb' || { err "installing neowall failed";  return 1; }
+    exe 'sudo apt-mark hold  neowall'  # put package on hold so they don't get overridden by apt-upgrade
+
     exe "sudo rm -rf -- '$dir'"
 }
 
@@ -4753,12 +4852,10 @@ install_display_switch() {
 
         tmpdir="$TMP_DIR/display-switch-${RANDOM}"
         exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
-        exe "pushd $tmpdir" || return 1
 
-        exe 'cargo build --release' || return 1  # should produce binary at target/release/display_switch
-        exe "sudo install -m754 -C --group=$USER 'target/release/display_switch' '/usr/local/bin'" || return 1
+        exe "cargo -C '$tmpdir' build --release" || return 1  # should produce binary at target/release/display_switch
+        exe "sudo install -m754 -C --group=$USER '$tmpdir/target/release/display_switch' '/usr/local/bin'" || return 1
 
-        exe popd
         exe "sudo rm -rf -- '$tmpdir'"
         add_to_dl_log  display-switch "$ver"
     }
@@ -5099,13 +5196,15 @@ build_polybar() {
 # see also https://github.com/aidan-gallagher/debpic
 #   - short introduction @ https://www.reddit.com/r/debian/comments/1cy34sb/ive_created_a_tool_to_ease_building_debian/
 build_deb() {
-    local opt pkg_name configure_extra build_deps dh_extra deb OPTIND
+    local opt pkg_name configure_extra build_deps dh_extra deb d OPTIND
 
-    while getopts 'C:D:' opt; do
+    d='.'
+    while getopts 'C:D:X:' opt; do
         case "$opt" in
-            C) readonly configure_extra="$OPTARG" ;;
+            C) d="${OPTARG%%+(/)}" ;;  # remove trailing slash(es)
             #B) readonly build_deps="$OPTARG" ;;
             D) readonly dh_extra="$OPTARG" ;;
+            X) readonly configure_extra="$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -5114,9 +5213,10 @@ build_deb() {
     pkg_name="$1"; shift
     build_deps="$(build_comma_separated_list "$@")"
 
-    if ! [[ -d debian ]]; then
-        report "no debian/ in pwd, generating scaffolding..."
-        ensure_d "debian" || return 1
+    is_d -m "cannot build-install [$pkg_name]" "$d" || return 1
+    if ! [[ -d "$d/debian" ]]; then
+        report "[$d/debian/] dir doesn't exist, generating scaffolding..."
+        ensure_d "$d/debian" || return 1
 
         # create changelog:
         echo "$pkg_name (0.0-0) UNRELEASED; urgency=medium
@@ -5124,7 +5224,7 @@ build_deb() {
   * New upstream release
 
  -- la.packager.eu <la@packager.eu>  $(date --rfc-email)
-" > debian/changelog || return 1
+" > "$d/debian/changelog" || return 1
         # OR use dhc:  $ dch --create -v 0.0-0 --package $pkg_name
 
         # create control:
@@ -5135,7 +5235,7 @@ Build-Depends: ${build_deps:+$build_deps, }debhelper-compat (= 13)
 Package: $pkg_name
 Architecture: any
 Description: custom-built $pkg_name package
-" > debian/control || return 1
+" > "$d/debian/control" || return 1
 
         # create rules:
         #printf '#!/usr/bin/make -f
@@ -5172,13 +5272,13 @@ override_dh_auto_test:
 override_dh_auto_configure:
 	dh_auto_configure -- %s --disable-sanitizers
 override_dh_gencontrol:
-	dh_gencontrol -- -v$(PACKAGEVERSION)' "${dh_extra:+ $dh_extra}" "$configure_extra" > debian/rules || return 1
+	dh_gencontrol -- -v$(PACKAGEVERSION)' "${dh_extra:+ $dh_extra}" "$configure_extra" > "$d/debian/rules" || return 1
     fi
 
-    # - note built .deb will end up in a parent dir;
+    # - note built .deb will end up in $d/ parent dir;
     # - the --no-clean opt is as without it the clean step will require build deps to be
     #   installed on host, see https://www.mail-archive.com/debian-bugs-dist@lists.debian.org/msg2002932.html
-    exe 'sbuild --dist=testing --no-clean' || return $?
+    exe "sbuild --dist=testing --no-clean -- '$d'" || return $?
 
     # older, debuild way:
     # The options -uc -us will skip signing the resulting Debian source package and
@@ -5782,6 +5882,11 @@ install_from_repo() {
         meld
         at-spi2-core  # at-spi2-core is some gnome accessibility provider; without it some py apps (eg meld) complain; # TODO: x11 deps??
         pastebinit  # https://github.com/pastebinit/pastebinit
+        # to unlock keepassxc at login via keyring, see https://github.com/keepassxreboot/keepassxc/issues/1267#issuecomment-398033268 (or https://github.com/keepassxreboot/keepassxc/issues/1404#issuecomment-551267244)
+        # a user also created a gist (from comment https://github.com/keepassxreboot/keepassxc/issues/1404#issuecomment-675059733): https://gist.github.com/innerand/405025e7fbae1b270025666418655d8b
+        # note this won't work if we're using KPXC _as_ the secret service provider.
+        # for that PAM integration is needed, but KPXC project is not really
+        # interested in taking care of one, so alternatives have emerged: https://github.com/sumwale/keepassxc-unlock
         keepassxc-full
         gnupg
         dirmngr  # server for managing and downloading OpenPGP and X.509 certificates, as well as updates and status signals related to those certificates;
@@ -5807,7 +5912,7 @@ install_from_repo() {
         #yt-dlp  # dl vids from yt & other sites; https://github.com/yt-dlp/yt-dlp ; note we're installing it via git/pypi now as the project moves rather fast
         mpc  # cli tool to interface MPD; https://github.com/MusicPlayerDaemon/mpc
         ncmpc  # text-mode client for MPD; https://github.com/MusicPlayerDaemon/ncmpc
-        ncmpcpp  # ncurses-based client for MPD; https://github.com/ncmpcpp/ncmpcpp
+        ncmpcpp  # ncurses-based client for MPD; https://github.com/ncmpcpp/ncmpcpp ; see also rmpc
         #audacity  # TODO: there was a takeover by muse group, see https://hackaday.com/2021/07/13/muse-group-continues-tone-deaf-handling-of-audacity/
                    # was forked, see https://codeberg.org/tenacityteam/tenacity
         #smplayer  # front-end for MPlayer and mpv
@@ -5884,7 +5989,8 @@ install_from_repo() {
         #lxrandr  # GUI application for the Lightweight X11 Desktop Environment (LXDE); TODO: x11!
         arandr  # visual front end for XRandR; TODO: x11
         autorandr  # TODO: x11
-        copyq  # TODO: avail as flatpak; notable alternatives: https://github.com/NiffirgkcaJ/all-in-one-clipboard
+        copyq  # TODO: avail as flatpak; notable alternatives: https://github.com/NiffirgkcaJ/all-in-one-clipboard - for gnome shell
+                                                               https://github.com/savedra1/clipse - nice TUI manager
         copyq-plugins
         #googler  # Google Site Search from the terminal; https://github.com/oksiquatzel/googler  # TODO: looks like it's broken: https://github.com/oksiquatzel/googler/issues/7
         msmtp  # msmtp is an SMTP client that can be used to send mails from Mutt and probably other MUAs (mail user agents)
@@ -6509,6 +6615,7 @@ __choose_prog_to_build() {
         install_lessfilter
         install_uhk_agent
         build_ddcutil
+        build_neowall
         install_slides
         install_seafile_cli
         install_seafile_gui
@@ -6547,6 +6654,8 @@ __choose_prog_to_build() {
         install_dust
         install_bandwhich
         install_btdu
+        install_uv
+        install_rmpc
         install_peco
         build_i3
         install_i3
@@ -6618,6 +6727,8 @@ __choose_prog_to_build() {
         install_plandex
         install_open_interpreter
         install_aichat
+        install_gemini_cli
+        install_lemurs_display_manager
         install_aider
         install_aider_desk
         install_android_command_line_tools
@@ -7569,14 +7680,14 @@ add_to_dl_log() {
 
 
 is_installed() {
-    local ver name
+    local ver id
 
     ver="$1"
-    name="$2"  # optional, just for better logging
+    id="$2"
 
-    [[ -z "$ver" ]] && { err "empty ver passed to ${FUNCNAME}()" -1; return 2; }  # sanity
-    if grep -Fq "$ver" "$GIT_RLS_LOG" 2>/dev/null; then
-        report "[${COLORS[GREEN]}$ver${COLORS[OFF]}] already processed, skipping ${name:+${COLORS[YELLOW]}$name${COLORS[OFF]} }installation..." -1
+    [[ "$#" -eq 2 ]] || { err "2 args needed for ${FUNCNAME}()" -1; return 2; }  # sanity
+    if grep -Pq "^${id}:\t$(rgxesc "$ver")" "$GIT_RLS_LOG" 2>/dev/null; then  # note -P flag is just so \t is matched
+        report "[${COLORS[GREEN]}$ver${COLORS[OFF]}] already processed, skipping ${id:+${COLORS[YELLOW]}${id}${COLORS[OFF]} }installation..." -1
         return 0
     fi
 
@@ -8657,6 +8768,12 @@ mkt() {
     fi
     printf '%s' "$tmpdir"
 }
+
+# tags: regex escape()
+rgxesc() {
+    sed 's/[].\*^$()+?{}|[]/\\&/g' <<< "$*"
+}
+
 
 
 # Verifies given string is non-empty, non-whitespace-only and on a single line.
