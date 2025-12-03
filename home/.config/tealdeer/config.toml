@@ -1,0 +1,19 @@
+[display]
+compact = false
+use_pager = true
+show_title = false
+
+[style.command_name]
+foreground = "red"
+
+[style.example_text]
+foreground = "green"
+
+[style.example_code]
+foreground = "red"
+
+[style.example_variable]
+foreground = "white"
+
+[updates]
+auto_update = true
