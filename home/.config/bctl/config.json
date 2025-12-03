@@ -1,4 +1,8 @@
 {
+    "brightness_step": 5,
+    "offset": {
+        "type": "soft"
+    },
     "notify": {
         "icon": {
             "root_dir": "/usr/share/icons/Numix/48/notifications",
