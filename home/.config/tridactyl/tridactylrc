@@ -47,18 +47,6 @@ unbindurl ^https:\/\/\w+\.imdb\.com\/title\/\w+\/mediaviewer\/ <Escape>
 " Defaults to 300ms; this is especially beneficial in vimperator hintmode
 "set hintdelay 100
 
-" these from https://git.belanyi.fr/ambroisie/dot-files/src/branch/main/tridactyl/.config/tridactyl/tridactylrc {
-" Only hint search results on Google
-bindurl www.google.com f hint -Jc .rc > .r > a
-bindurl www.google.com F hint -Jtc .rc>.r>a
-" Only hint search results on DuckDuckGo
-bindurl ^https://duckduckgo.com f hint -Jc [class=result__a]
-bindurl ^https://duckduckgo.com F hint -Jbc [class=result__a]
-" Only hint item pages on Hacker News
-bindurl news\.ycombinator\.com/news ;f hint -Jc .age > a
-bindurl news\.ycombinator\.com/news ;f hint -Jtc .age > a
-" }
-
 """""""""""""""""""""""""""""""""""""""""""""""""""
 " needs syntax plugin, see https://github.com/tridactyl/vim-tridactyl
 " vim: set filetype=tridactyl
