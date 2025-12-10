@@ -64,7 +64,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # env vars to be loaded in local systems only (ie remote sessions should ignore this)
     # needs to be in same dir as the sourcing env vars file.
 
-    # see https://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
+    # see https://specifications.freedesktop.org/basedir/latest/
     # NOTE:  make sure you know what you do; eg setting XDG_DATA_DIRS below effed up meld
     # - note XDG vars should be set via $HOME/.config/user-dirs.dirs
     export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-/home/$USER/.config}"
@@ -74,6 +74,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
 
     export XDG_CACHE_HOME="${XDG_CACHE_HOME:-/home/$USER/.cache}"
     export XDG_DOWNLOAD_DIR="${XDG_DOWNLOAD_DIR:-/home/$USER/Downloads}"
+    export XDG_STATE_HOME="${XDG_STATE_HOME:-/home/$USER/.local/state}"
 
     export BASE_DATA_DIR='/data'
     export BASE_PROGS_DIR='/progs'
