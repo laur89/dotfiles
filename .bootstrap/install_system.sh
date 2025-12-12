@@ -39,7 +39,7 @@ readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
 readonly BUILD_DOCK='deb-build-box'          # name of the build container
 
-readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:141.0) Gecko/20100101 Firefox/141.0'
+readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0'
 #------------------------
 #--- Global Variables ---
 #------------------------
@@ -1358,12 +1358,6 @@ install_deps() {
     create_link "${BASE_PROGS_DIR}/notify-send.sh/src/notify-send.sh" "$HOME/bin/"
 
 
-    # diff-so-fancy - human-readable git diff:  # https://github.com/so-fancy/diff-so-fancy#install
-    # note: alternative would be https://github.com/dandavison/delta
-    # either of those need manual setup in our gitconfig
-    clone_or_pull_repo "so-fancy" "diff-so-fancy" "$BASE_PROGS_DIR" || return 1
-    create_link "$BASE_PROGS_DIR/diff-so-fancy" "$HOME/bin/"
-
     # forgit - fzf-fueled git tool:  # https://github.com/wfxr/forgit
     clone_or_pull_repo "wfxr" "forgit" "$BASE_PROGS_DIR" || return 1
 
@@ -1395,9 +1389,11 @@ install_deps() {
     # this needs apt-get install  python-imaging ?:
     py_install scdl          # https://github.com/flyingrub/scdl (soundcloud downloader)
                              # note yt-dl also supports soundcloud
+                             # ! as of v3 this script is a wrapper around yt-dlp
     #py_install rtv           # https://github.com/michael-lazar/rtv (reddit reader)  # TODO: active development has ceased; alternatives @ https://gist.github.com/michael-lazar/8c31b9f637c3b9d7fbdcbb0eebcf2b0a
     py_install tuir-continued  # https://gitlab.com/Chocimier/tuir  (now-discontinued rtv continuation)
-    py_install tldr          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
+    #py_install tldr          # https://github.com/tldr-pages/tldr-python-client [tldr (short manpages) reader]
+                             # note tealdeer is a rust alternative
     py_install vit           # https://github.com/vit-project/vit (curses-based interface for taskwarrior (a todo list mngr we install from apt; executable is called 'task'))
                                                                                       #   note its conf is in bash_env_vars
     py_install httpstat       # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
@@ -1768,13 +1764,15 @@ setup_private_asset_perms() {
             ~/.gcalcli_oauth \
             ~/.msmtprc \
             ~/.irssi \
-            ~/.config/weechat \
+            "$XDG_CONFIG_HOME/weechat" \
             ~/.aider.conf.yml \
             "$GNUPGHOME" \
             ~/.gist \
             ~/.bash_hist \
             ~/.bash_history_eternal \
-            ~/.config/revolut-py \
+            ~/.local/share/atuin/history.db \
+            "$XDG_CONFIG_HOME/revolut-py" \
+            "$XDG_CONFIG_HOME/zsh" \
                 ; do
         [[ -e "$i" ]] || { err "expected to find [$i] for permission sanitization, but it doesn't exist; is it normal?"; continue; }
         [[ -d "$i" && "$i" != */ ]] && i+='/'
@@ -2433,6 +2431,7 @@ install_own_builds() {
     #install_zoxide
     install_ripgrep
     install_rga
+    install_gitlogue
     #install_browsh
     #install_treesitter
     #install_vnote
@@ -2441,6 +2440,7 @@ install_own_builds() {
     install_dust
     #install_bandwhich
     is_btrfs && install_btdu
+    install_difftastic
     install_uv
     install_rmpc
     install_peco
@@ -3320,6 +3320,13 @@ install_rga() {  # https://github.com/phiresky/ripgrep-all#debian-based
 }
 
 
+# replay git history
+# installation script @ https://raw.githubusercontent.com/unhappychoice/gitlogue/main/install.sh
+install_gitlogue() {  # https://github.com/unhappychoice/gitlogue/blob/main/docs/installation.md
+    install_bin_from_git -N gitlogue unhappychoice/gitlogue 'x86_64-unknown-linux-gnu.tar.gz'
+}
+
+
 # headless firefox in a terminal
 install_browsh() {  # https://github.com/browsh-org/browsh
     install_from_git browsh-org/browsh _linux_amd64.deb
@@ -4034,6 +4041,8 @@ install_gemini_cli() {  # https://github.com/reugn/gemini-cli
 
 
 # install logic from https://github.com/coastalwhite/lemurs/blob/main/install.sh
+#
+# tags: display manager login manager
 install_lemurs_display_manager() {  # https://github.com/coastalwhite/lemurs
     local repo ver tmpdir
 
@@ -4155,6 +4164,11 @@ install_bandwhich() {  # https://github.com/imsnif/bandwhich
 #   - for continuous snapshots however zfs/btrfs are still the wrong tool, you'd need something like NILFS
 install_btdu() {  # https://github.com/CyberShadow/btdu
     install_bin_from_git -N btdu  CyberShadow/btdu 'btdu-static-x86_64'
+}
+
+
+install_difftastic() {  # https://github.com/Wilfred/difftastic
+    install_bin_from_git -N difft  Wilfred/difftastic 'x86_64-unknown-linux-gnu.tar.gz'
 }
 
 
@@ -5799,6 +5813,7 @@ install_from_repo() {
         network-manager
         network-manager-gnome
         jq  # https://jqlang.github.io/jq
+            # see also go-qo: https://github.com/kiki-ki/go-qo
         crudini  # .ini file manipulation tool
         htop  # https://htop.dev/
         glances  # Curses-based monitoring tool; https://github.com/nicolargo/glances
@@ -5825,6 +5840,7 @@ install_from_repo() {
         taskwarrior  # https://taskwarrior.org/ ; executable is 'task'
         tree
         hyperfine  # cli benchmarking tool
+        # cpulimit - limit process to % of cpu, not related to nice; e.g. $ cpulimit --limit 50 -i npm run run
         #debian-goodies
         #subversion  # might be used as a dependency, e.g. by zinit plugin (no more - github no longer supports svn)
         git
@@ -5919,6 +5935,7 @@ install_from_repo() {
         mpv  # video player based on MPlayer/mplayer2; https://mpv.io/
         streamlink  # CLI utility which pipes video streams from various services into a video player; see also streamlink-twitch-gui that builds on this
         kdenlive  # video editor; TODO: avail as flatpak
+                  # alternatives: pitivi (gnome)
         frei0r-plugins  # https://github.com/dyne/frei0r ; collection of free and open source video effects plugins
         gimp  # TODO: avail as flatpak
         xss-lock  # TODO: x11!
@@ -5939,6 +5956,8 @@ install_from_repo() {
         rxvt-unicode  # https://cvs.schmorp.de/rxvt-unicode/
         colortest-python  # https://github.com/eikenb/terminal-colors
         zathura  # https://github.com/pwmt/zathura
+        #pdfarranger  # merge, split, rotate, cropt, rearrange pdf documents/pages; https://github.com/pdfarranger/pdfarranger
+        #bookletimposer  # pdf document imposition
         pandoc  # Universal markup converter; used as dependency by some other services
         procyon-decompiler  # https://github.com/mstrobel/procyon - java decompiler; used as dependency, eg. by lessopen to view .class files
         #mupdf  # more featureful pdf viewer
@@ -5948,6 +5967,7 @@ install_from_repo() {
         gthumb  # gnome image viewer
         imagemagick
         inkscape  # vector-based drawing program  # TODO: avail as flatpak; alternatives: graphite (for raster AND vector); krita - raster/illustration; affinity - raster,vector,photo editor, not FOSS
+        mat2  # metadata anonymisation toolkit; https://github.com/jvoisin/mat2
         chafa  # image-to-text converter, i.e. images in terminals
         xsel  # TODO: x11
         wmctrl  # CLI tool to interact with an EWMH/NetWM compatible X Window Manager; TODO: x11; wayland alternative might be wlrctl
@@ -5966,7 +5986,8 @@ install_from_repo() {
         ffmpegthumbnailer  # lightweight video thumbnailer that can be used by file managers to create thumbnails for your video files;  https://github.com/dirkvdb/ffmpegthumbnailer
         vokoscreen-ng  # https://github.com/vkohaupt/vokoscreenNG  # TODO: avail as flatpak
         peek  # simple screen recorder. It is optimized for generating animated GIFs; https://github.com/phw/peek; TODO: avail on flathub; TODO: x11! only runs in gnome shell wayland session via XWayland
-        cheese  # webcam/camera tester; https://wiki.gnome.org/Apps/Cheese
+        cheese  # webcam/camera tester; https://wiki.gnome.org/Apps/Cheese ; note: might be deprecated by gnome's snapshot:  flatpak install flathub org.gnome.Snapshot
+                # other alternatives: guvcview, kamoso, webcamoid
         #screenkey  # displays used keys; TODO: x11
         mediainfo  # utility used for retrieving technical information and other metadata about audio or video files; https://mediaarea.net/en/MediaInfo
         #screenruler  # gnome; display a ruler on screen which allows you to measure the other objects that you've there
@@ -6041,6 +6062,7 @@ install_from_repo() {
         #charles-proxy5  # note also avail as tarball @ https://www.charlesproxy.com/download/
         'tofu/*'
         gh  # github cli; also avail from debian
+        tealdeer  # rust-based tl;dr client
     )
     # old/deprecated block4:
 
@@ -6628,6 +6650,7 @@ __choose_prog_to_build() {
         install_fzf
         install_ripgrep
         install_rga
+        install_gitlogue
         install_browsh
         install_rebar
         install_treesitter
@@ -6654,6 +6677,7 @@ __choose_prog_to_build() {
         install_dust
         install_bandwhich
         install_btdu
+        install_difftastic
         install_uv
         install_rmpc
         install_peco
@@ -7129,8 +7153,20 @@ install_gruvbox_material_gtk_theme() {
 
 # https://veracrypt.io/en/Downloads.html
 # also consider the generic installer instead of .deb, eg https://launchpad.net/veracrypt/trunk/1.24-update7/+download/veracrypt-1.24-Update7-setup.tar.bz2
+# or appimage https://launchpad.net/veracrypt/trunk/1.26.24/+download/VeraCrypt-1.26.24-x86_64.AppImage
+# - GUI tutorial: https://veracrypt.io/en/Beginner%27s%20Tutorial.html
+# - some commands:
+#   - veracrypt --text --create
+#     - text-based volume creation wizard
+#   - veracrypt --mount $HOME/our-volume [/path/to/mountpoint]
+#   - veracrypt --mount -m rm [volume or mountpoint]
+#     - mounts as removable media - see https://veracrypt.io/en/Removable%20Medium%20Volume.html
+#     - think only makes sense on Windows boxes
+#   - veracrypt --unmount [volume or mountpoint]
+#     - if no volume or mountpoint given, unmounts all
+#
 # see also:
-# - https://github.com/FiloSottile/age
+# - https://github.com/FiloSottile/age (avail in apt)
 install_veracrypt() {
     local url
 
@@ -7351,6 +7387,7 @@ setup_seafile() {
 #
 # see also:
 # - https://www.naturalborncoder.com/2024/10/installing-and-configuring-nftables-on-debian/
+# - https://term7.info/intro-raspberry-pi/#FIREWALL
 # - https://github.com/evilsocket/opensnitch/
 #   - note it also allows configuring system's fw rules (nftables): https://github.com/evilsocket/opensnitch/wiki/System-rules
 #   - TODO: does it conflict with firewalld?
@@ -7397,6 +7434,7 @@ setup_mopidy() {
 #
 # see also https://github.com/openprinting/cups
 # - it also demos the lpadmin command usage
+# fyi list of no-driver printers: https://openprinting.github.io/printers/
 install_setup_printing_cups() {
     local conf_file conf2 group pkgs
 
@@ -7454,7 +7492,8 @@ install_setup_printing_cups() {
 setup_firefox() {
     local conf_dir profile
 
-    readonly conf_dir="$HOME/.mozilla/firefox"
+    #readonly conf_dir="$HOME/.mozilla/firefox"
+    readonly conf_dir="$HOME/.config/mozilla"   # as of ff v147  # TODO: confirm
 
     # install tridactyl native messenger:  https://github.com/tridactyl/tridactyl#extra-features
     #                                      https://github.com/tridactyl/native_messenger
@@ -8962,6 +9001,8 @@ exit 0
 #    - displays desktop notifications when systemd timers start services. Notifications close automatically when the services finish
 #  - TODO: see how gpg agent is to be started; we used to start it from
 #          common_startup w/  $ eval "$(/usr/bin/gpg-agent --daemon)"
+#  - consider replacing getnetrc w/ passhole (or keepassxc-cli)
+#  - TODO: verify which/if extra xdg-desktop-portal* packages are needed
 #
 #
 # list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/
