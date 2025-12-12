@@ -570,6 +570,7 @@ setup_systemd() {
 }
 
 # unlock default keyring on login
+# only needed if using gnome-keyring
 #
 # as per https://wiki.archlinux.org/title/GNOME/Keyring#PAM_step
 # this should only be used if not using DM/display manager
@@ -577,11 +578,14 @@ setup_systemd() {
 # see also: https://wiki.gnome.org/Projects/GnomeKeyring/Pam/Manual
 #
 # TODO: should we perhaps see if the line exists, but is commented out? note hyphen might be a valid comment-character for PAM files
-setup_pam_login() {
+setup_gnome_keyring_pam_module() {
     local f
     f='/etc/pam.d/login'
 
+    is_pkg_installed  gnome-keyring || return
+
     is_f "$f" || return 1
+    install_block 'libpam-gnome-keyring' || return 1  # PAM module to unlock the GNOME keyring upon login
 
     if ! grep -Eq '^auth\s+optional\s+pam_gnome_keyring.so$' "$f"; then
         exe "echo 'auth       optional     pam_gnome_keyring.so' | sudo tee --append '$f' > /dev/null"
@@ -1825,7 +1829,7 @@ setup_config_files() {
     setup_sudoers
     setup_hosts
     setup_systemd
-    setup_pam_login
+    setup_gnome_keyring_pam_module
     setup_logind
     is_native && setup_udev
     is_native && setup_pm
@@ -5850,9 +5854,8 @@ install_from_repo() {
         zenity
         #yad  # alternative to zenity
         gxmessage  # xmessage clone based on GTK+
-        gnome-keyring
-        seahorse
-        libpam-gnome-keyring  # PAM module to unlock the GNOME keyring upon login
+        #gnome-keyring
+        #seahorse  # gnome-keyring front-end
         lxpolkit           # provides a D-Bus session bus service that is used to bring up authentication dialogs used for obtaining privileges
                            # NOTE: used to use policykit-1-gnome, but it got removed/dropped from debian, as it's no longer maintained.
                            #
