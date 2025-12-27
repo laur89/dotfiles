@@ -25,7 +25,8 @@ set -o pipefail
 shopt -s nullglob       # unmatching globs to expand into empty string/list instead of being left unexpanded
 
 TMP_DIR=/tmp
-readonly PRIVATE_KEY_LOC="$HOME/.ssh/id_rsa"  # TODO: change to id_ed25519
+readonly KRING="$HOME/.local/share/kring.sala"  # note location is referenced in db's AutoOpen section
+readonly LUKS_USB="/mnt/luks-$RANDOM"
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
@@ -43,7 +44,6 @@ readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Fi
 #------------------------
 #--- Global Variables ---
 #------------------------
-IS_SSH_SETUP=0       # states whether our ssh keys are present. 1 || 0
 __SELECTED_ITEMS=''  # only select_items() *writes* into this one.
 PROFILE=''           # work || personal
 ALLOW_OFFLINE=0      # whether script is allowed to run when we're offline
@@ -177,16 +177,6 @@ validate_and_init() {
         report "no platform castle defined"
     fi
 
-    # verify we have our key(s) set up and available:
-    if is_ssh_key_available; then
-        _sanitize_ssh
-        IS_SSH_SETUP=1
-    else
-        report "ssh keys not present at the moment, be prepared to enter user & passwd for private git repos."
-        report "(unless they're pulled from elsewhere)"
-        IS_SSH_SETUP=0
-    fi
-
     # ask for the admin password upfront:
     sudo --validate || fail "is user in sudoers file? is sudo installed? if not, then [su && apt-get install sudo]"
     #clear
@@ -203,13 +193,17 @@ check_dependencies() {
     readonly perms='u=rwX,g=,o='  # can't be 777, nor 766, since then you'd be unable to ssh into;
     declare -A exec_to_pkg=(
         [gpg]=gnupg
+        [keepassxc-cli]=keepassxc-full
+        [ssh-add]=openssh-client
     )
 
     for prog in \
             git cmp wc wget curl tar unzip atool \
             realpath dirname basename head tee jq \
-            gpg mktemp file date id html2text \
+            mktemp file date id html2text \
             pwd uniq sort xxd openssl mokutil \
+            gpg keepassxc-cli ssh-add \
+            cryptsetup lsblk \
                 ; do
         if ! command -v "$prog" >/dev/null; then
             report "[$prog] not installed yet, installing..."
@@ -356,6 +350,8 @@ setup_pm() {
 #
 # useful commands:
 #   flatpak list --show-details
+# fyi:
+# - app data is under host's ~/.var/
 install_flatpak() {
     install_block 'flatpak flatseal' || return 1  # flatseal is GUI app to manage perms
     #exe 'sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo'  # <- normal/non-verified-only remote
@@ -535,7 +531,7 @@ setup_systemd() {
                 __var_expand_move $sudo "$node" "$tdir/$fname" || continue
 
                 # note do not use the '--now' flag with systemctl enable, as some units
-                # might be listening on something like sleep.target or battery.target - those shouldn't be started on-demand like that!
+                # might be listening on something like sleep.target or battery.target - those shouldn't be started like that!
                 exe "${sudo:+sudo }systemctl ${usr:+--user }enable --no-warn '$fname'" || { err "enabling ${usr:+user}${sudo:+global} systemd unit [$fname] failed w/ [$?]"; continue; }
             elif [[ "$node" == *.d ]] && is_d -nq "$node"; then
                 t="$tdir/$fname"
@@ -569,11 +565,61 @@ setup_systemd() {
     unset __var_expand_move __process
 }
 
-# unlock default keyring on login
-# only needed if using gnome-keyring
+
+# SS is the keyring implementation
+# - $ busctl --user status org.freedesktop.secrets
+#   to see which program acts as secret service
+setup_secret_service() {
+    if is_pkg_installed  gnome-keyring; then
+        setup_gnome_keyring_pam_module
+    else
+        setup_keepassxc_ss
+    fi
+}
+
+
+setup_keepassxc_ss() {
+    # make sure gnome-keyring is not installed, as it depends to be
+    # suggestion/recommendation of _many_ pkgs; note this implies we
+    # have some other secret service implementation in use.
+    exe "sudo apt-mark hold  gnome-keyring libpam-gnome-keyring"
+
+    # make secret service d-bus activatable. {{{
+    # without it, running $ secret-tool lookup nheko user    will error:
+    #    > secret-tool: The name org.freedesktop.secrets was not provided by any .service files
+    # ...instead of launching keepassxc.
+    mkdir -p "${XDG_DATA_HOME:-${HOME}/.local/share}/dbus-1/services"
+
+    # from https://github.com/keepassxreboot/keepassxc/issues/6274#issuecomment-810983553 or
+    # https://keepassxc.org/docs/KeePassXC_UserGuide#_enabling_the_integration :
+    #cat > "${XDG_DATA_HOME:-${HOME}/.local/share}/dbus-1/services/org.freedesktop.secrets.service" <<EOF
+#[D-BUS Service]
+#Name=org.freedesktop.secrets
+#Exec=/usr/bin/keepassxc
+#EOF
+    # instead of directly exec'ing keepassxc, we start systemd service per https://stackoverflow.com/a/31725112/1803648 :
+    cat > "${XDG_DATA_HOME:-${HOME}/.local/share}/dbus-1/services/org.freedesktop.secrets.service" <<EOF
+[D-BUS Service]
+Name=org.freedesktop.secrets
+Exec=/bin/false
+SystemdService=keepassxc.service
+EOF
+    # }}}
+
+    # copy over fresh keyring db:
+    if [[ -d "$LUKS_USB" ]]; then
+        exe "sudo install -m600 -CT --group=$USER --owner=$USER '$LUKS_USB/passdb/fresh_keyring.kdbx' '$KRING'" || return 1
+    else
+        err "[$LUKS_USB] not mounted, cannot init our secret service db; make sure to do this manually!"
+    fi
+}
+
+# unlock default keyring on login, only needed if using gnome-keyring.
+# note your keyring passwd needs to match user login passwd.
 #
 # as per https://wiki.archlinux.org/title/GNOME/Keyring#PAM_step
 # this should only be used if not using DM/display manager
+# - consider ssh integration, see https://wiki.archlinux.org/title/GNOME/Keyring#SSH_keys
 #
 # see also: https://wiki.gnome.org/Projects/GnomeKeyring/Pam/Manual
 #
@@ -582,17 +628,23 @@ setup_gnome_keyring_pam_module() {
     local f
     f='/etc/pam.d/login'
 
-    is_pkg_installed  gnome-keyring || return
-
     is_f "$f" || return 1
     install_block 'libpam-gnome-keyring' || return 1  # PAM module to unlock the GNOME keyring upon login
 
-    if ! grep -Eq '^auth\s+optional\s+pam_gnome_keyring.so$' "$f"; then
+    if ! grep -Eq '^auth\s+optional\s+pam_gnome_keyring.so' "$f"; then
         exe "echo 'auth       optional     pam_gnome_keyring.so' | sudo tee --append '$f' > /dev/null"
     fi
 
-    if ! grep -Eq '^session\s+optional\s+pam_gnome_keyring.so\s+auto_start$' "$f"; then
+    if ! grep -Eq '^session\s+optional\s+pam_gnome_keyring.so\s+auto_start' "$f"; then
         exe "echo 'session    optional     pam_gnome_keyring.so auto_start' | sudo tee --append '$f' > /dev/null"
+    fi
+
+    # to update keyring's passwd during user passwd change, make sure "password optional	pam_gnome_keyring.so" is somewhere in /etc/pam.d/*passw*:
+    # note it's not necessarily under $p, could be in file(s) sourced by it
+    f='/etc/pam.d/passwd'
+    is_f "$f" || return 1
+    if ! grep -REq '^password\s+optional\s+pam_gnome_keyring.so' /etc/pam.d/; then
+        exe "echo 'password	optional	pam_gnome_keyring.so' | sudo tee --append '$f' > /dev/null"
     fi
 }
 
@@ -859,7 +911,7 @@ clone_or_pull_repo() {
 
         exe "git -C '$install_dir' remote set-url origin git@${hub}:$user/${repo}.git" || return 1
         exe "git -C '$install_dir' remote set-url --push origin git@${hub}:$user/${repo}.git" || return 1
-    elif is_ssh_key_available; then
+    elif is_ssh_key_loaded; then
         exe "git -C '$install_dir' pull" || { err "git pull for [$hub/$user/$repo] failed w/ $?"; return 1; }  # TODO: retry?
         exe "git -C '$install_dir' submodule update --init --recursive" || return 1  # make sure to pull submodules
     fi
@@ -1518,7 +1570,9 @@ setup_dirs() {
             $TMP_DIR \
             $HOME/bin \
             $BASH_COMPLETIONS \
+            $XDG_DATA_HOME \
             "${ZSH_COMPLETIONS}:R" \
+            '/etc/cryptsetup-keys.d:R' \
             $HOME/.npm-packages \
             $BASE_DATA_DIR/.calendars \
             $BASE_DATA_DIR/.calendars/work \
@@ -1594,7 +1648,7 @@ clone_or_link_castle() {
     is_noninteractive && batch=' --batch'
 
     if [[ -d "$BASE_HOMESICK_REPOS_LOC/$castle" ]]; then
-        if is_ssh_key_available; then
+        if is_ssh_key_loaded; then
             report "[$castle] already exists; pulling & linking"
             retry 3 "${homesick_exe}$batch pull $castle" || { err "pulling castle [$castle] failed with $?"; return 1; }  # TODO: should we exit here?
         else
@@ -1604,7 +1658,7 @@ clone_or_link_castle() {
         exe "${homesick_exe}$batch link $castle" || { err "linking castle [$castle] failed with $?"; return 1; }  # TODO: should we exit here?
     else
         report "cloning castle ${castle}..."
-        if is_ssh_key_available || [[ "$force_ssh" == 1 ]]; then
+        if is_ssh_key_loaded || [[ "$force_ssh" == 1 ]]; then
             retry 3 "$homesick_exe clone git@${hub}:${repo}.git" || { err "cloning castle [$castle] failed with $?"; return 1; }
         else
             # note we clone via https, not ssh:
@@ -1620,12 +1674,6 @@ clone_or_link_castle() {
             exe 'git -C '$BASE_HOMESICK_REPOS_LOC/$castle' config core.hooksPath .githooks' || err "git hook installation failed!"
         fi
     fi
-
-    # just in case verify whether our ssh keys got cloned in:
-    if [[ "$IS_SSH_SETUP" -eq 0 ]] && is_ssh_key_available; then
-        _sanitize_ssh
-        IS_SSH_SETUP=1
-    fi
 }
 
 
@@ -1635,9 +1683,10 @@ fetch_castles() {
     # common private:
     clone_or_link_castle -H layr/private-common bitbucket.org || { err "failed pulling private dotfiles; it's required!"; return 1; }
     if [[ "$MODE" -eq 1 ]]; then
-        exe "cp -- $COMMON_PRIVATE_DOTFILES/home/.ssh/ssh_common_client_config ~/.ssh/config" || { err "ssh initial config copy failed w/ $?"; return 1; }
-        _sanitize_ssh
-        is_proc_running ssh-agent || eval "$(ssh-agent)" || err 'starting ssh-agent failed'
+        if ! [[ -s "$HOME/.ssh/config" ]]; then
+            exe "cp -- $COMMON_PRIVATE_DOTFILES/home/.ssh/ssh_common_client_config $HOME/.ssh/config" || { err "ssh initial config copy failed w/ $?"; return 1; }
+            _sanitize_ssh
+        fi
     fi
 
     # common public castles:
@@ -1692,18 +1741,50 @@ fetch_castles() {
 
 
 # check whether ssh key(s) were pulled with homeshick; if not, offer to create one:
-verify_ssh_key() {
+setup_ssh() {
+    is_proc_running  ssh-agent || eval "$(ssh-agent)" || err 'starting ssh-agent failed' || return 1
+    is_ssh_key_loaded && return 0
 
-    [[ "$IS_SSH_SETUP" -eq 1 ]] && return 0
-    err "expected ssh keys to be there after cloning repo(s), but weren't."
+    if [[ "$MODE" -ne 1 ]]; then
+        report "ssh keys not present at the moment, be prepared to enter user & passwd for private git repos."
+        return
+    fi
 
-    confirm -d N "do you wish to generate set of ssh keys?" || return
-    generate_ssh_key
+    report "!!! loading SSH key(s) !!!"
 
-    if is_ssh_key_available; then
-        IS_SSH_SETUP=1
+    if [[ -d "$LUKS_USB" ]]; then
+        command install -m700 <(echo "</dev/tty keepassxc-cli show --attributes password -- '$LUKS_USB/passdb/passwd_db.kdbx' 'master-ssh-key'") /tmp/.kps
+        while true; do
+            # TODO: keep an eye on keepassxc-cli, at one point it'll likely gain ssh-agent support
+            keepassxc-cli attachment-export --stdout -- "$LUKS_USB/passdb/passwd_db.kdbx" \
+                'master-ssh-key' priv_key | SSH_ASKPASS_REQUIRE=force SSH_ASKPASS=/tmp/.kps  ssh-add - && break
+            confirm "pulling SSH key from pass db failed; skip?" && break
+        done
     else
-        err "didn't find the key at [$PRIVATE_KEY_LOC] after generating keys."
+        err "[$LUKS_USB] not mounted, cannot import SSH keys for the duration of this session"
+        return 1
+    fi
+
+    # following bit only needed if systemd is decrypting some partition/drive and its key is needed to be copied over: {{{
+    #keepassxc-cli attachment-export -- "$LUKS_USB/passdb/passwd_db.kdbx" \
+        #'backup-USB-thumb' keyfile.bin /tmp/usb_thumb_1.key
+    #exe "sudo install -m600 -C '/tmp/usb_thumb_1.key' '/etc/cryptsetup-keys.d'"
+    #exe "rm -f -- '/tmp/usb_thumb_1.key'"
+    # }}}
+
+    # sanity:
+    if ! is_ssh_key_loaded; then
+        err "couldn't import our SSH keys"
+        confirm -d N "do you wish to generate set of ssh keys?" || return
+        generate_ssh_key || return 1
+        report 'loading generated key...'
+        exe  ssh-add
+
+        # sanity:
+        if ! is_ssh_key_loaded; then
+            err "ssh keys still not loaded after generating 'em"
+            return 1
+        fi
     fi
 }
 
@@ -1829,7 +1910,6 @@ setup_config_files() {
     setup_sudoers
     setup_hosts
     setup_systemd
-    setup_gnome_keyring_pam_module
     setup_logind
     is_native && setup_udev
     is_native && setup_pm
@@ -1940,9 +2020,37 @@ setup_mok() {
 }
 
 
+mount_usb() {
+    local partitions
+
+    while true; do
+        readarray -t partitions < <(lsblk --noheadings --filter 'TYPE=="part" && RM==1' --output NAME)
+        if [[ -z "${partitions[*]}" ]]; then
+            confirm "couldn't find any removable drives - do you want to skip mounting luks usb?" && return
+            continue
+        fi
+
+        #lsblk
+        lsblk --filter 'RM==1'
+        select_items -s -h 'select the luks partition' "${partitions[@]}"
+        if [[ -n "$__SELECTED_ITEMS" ]]; then
+            exe "sudo cryptsetup open ${__SELECTED_ITEMS} luksvol1" || { err "decrypting [${__SELECTED_ITEMS}] failed w/ $?"; continue; }
+            exe "sudo mount /dev/mapper/luksvol1 '$LUKS_USB'" || continue
+            # note unmount is done from cleanup():
+            #exe "sudo umount '$LUKS_USB'" || continue
+            #exe "sudo cryptsetup close luksvol1" || continue
+            return
+        else
+           confirm "no items were selected; skip mounting luks usb?" && return
+        fi
+    done
+}
+
+
 setup() {
+    is_interactive && [[ "$MODE" -eq 1 ]] && mount_usb
+    setup_ssh
     setup_homesick || fail "homesick setup failed; as homesick is necessary, script will exit"
-    verify_ssh_key
     source_shell_conf  # so we get our env vars after dotfiles are pulled in
 
     setup_install_log_file
@@ -2360,18 +2468,18 @@ upgrade_kernel() {
     [[ -z "${kernels_list[*]}" ]] && { err "apt-cache search didn't find any kernel images. skipping kernel upgrade"; sleep 5; return 1; }
 
     while true; do
-       echo
-       #report "note kernel was just updated, but you can select different ver:"
-       report "select kernel to install: (select none to skip kernel change)\n"
-       select_items -s "${kernels_list[@]}"
+        echo
+        #report "note kernel was just updated, but you can select different ver:"
+        report "select kernel to install: (select none to skip kernel change)\n"
+        select_items -s "${kernels_list[@]}"
 
-       if [[ -n "$__SELECTED_ITEMS" ]]; then
-          report "installing ${__SELECTED_ITEMS}..."
-          exe "sudo apt-get install $__SELECTED_ITEMS"
-          break
-       else
-          confirm "no items were selected; skip kernel change?" && break
-       fi
+        if [[ -n "$__SELECTED_ITEMS" ]]; then
+            report "installing ${__SELECTED_ITEMS}..."
+            exe "sudo apt-get install $__SELECTED_ITEMS"
+            break
+        else
+            confirm "no items were selected; skip kernel change?" && break
+        fi
     done
 
     unset __SELECTED_ITEMS
@@ -3324,7 +3432,7 @@ install_rga() {  # https://github.com/phiresky/ripgrep-all#debian-based
 }
 
 
-# replay git history
+# replay git history; tags: git-replay, git replay
 # installation script @ https://raw.githubusercontent.com/unhappychoice/gitlogue/main/install.sh
 install_gitlogue() {  # https://github.com/unhappychoice/gitlogue/blob/main/docs/installation.md
     install_bin_from_git -N gitlogue unhappychoice/gitlogue 'x86_64-unknown-linux-gnu.tar.gz'
@@ -5777,6 +5885,7 @@ install_from_repo() {
         fuse3  # simple interface for userspace programs to export a virtual filesystem to the Linux kernel; https://github.com/libfuse/libfuse/
         #fuseiso  # FUSE module to mount ISO filesystem images
         parallel
+        at  # Delayed job execution and batch processing
         progress  # Coreutils Progress Viewer; Linux-and-OSX-Only C command that looks for coreutils basic commands (cp, mv, dd, tar, gzip/gunzip, cat, etc.); https://github.com/Xfennec/progress
         hashdeep
         dconf-cli  # low-level key/value database designed for storing gnome desktop environment settings; https://wiki.gnome.org/Projects/dconf
@@ -5854,7 +5963,7 @@ install_from_repo() {
         zenity
         #yad  # alternative to zenity
         gxmessage  # xmessage clone based on GTK+
-        #gnome-keyring
+        #gnome-keyring  # currently secret-service provided by kpxc
         #seahorse  # gnome-keyring front-end
         lxpolkit           # provides a D-Bus session bus service that is used to bring up authentication dialogs used for obtaining privileges
                            # NOTE: used to use policykit-1-gnome, but it got removed/dropped from debian, as it's no longer maintained.
@@ -6590,6 +6699,7 @@ choose_single_task() {
         setup_apt
         setup_hosts
         setup_systemd
+        setup_udev
 
         generate_ssh_key
         install_nm_dispatchers
@@ -6789,7 +6899,7 @@ full_install() {
     setup_btrfs  # late, so snapper won't create bunch of snapshots due to apt operations
     is_pkg_installed podman && _setup_podman
 
-    remind_manually_installed_progs
+    remind_manual_steps
 }
 
 
@@ -6846,30 +6956,28 @@ exe_work_funs() {
 
 
 # programs that cannot be installed automatically should be reminded of
-remind_manually_installed_progs() {
-    local progs i
+remind_manual_steps() {
+    local steps i
 
-    declare -ar progs=(
+    declare -ar steps=(
         'GPG restore/import'
         'intelliJ toolbox'
         'install tmux plugins (prefix+I)'
         'ublock additional configs (EST, social media, ...)'
         'ublock whitelist, filters (should be saved somewhere)'
-        'import keepass-xc browser plugin config'
+        'import keepassxc browser plugin config'
         'install tridactyl native messenger/executable (:installnative)'
         'set the firefox config, see details @ setup_firefox()'
         'install/load chromium Surfingkeys plugin config from [https://github.com/laur89/surfingkeys-config/]'
-        'setup default keyring via seahorse'
         'update system firmware'
         'download seafile libraries'
         'setup Signal backup - follow reddit thread & finally _manually_ create link to our seafile lib'
-        'enroll secureboot MOK if using SB'
+        'enroll secureboot MOK if using SB - needs reboot'
+        'setup default keyring via seahorse if using gnome-keyring (TODO: think keyring needs to be named login)'
     )
 
-    for i in "${progs[@]}"; do
-        if ! command -v "$i" >/dev/null; then
-            report "    don't forget [$i]"
-        fi
+    for i in "${steps[@]}"; do
+        report "    don't forget [$i]"
     done
 }
 
@@ -7168,8 +7276,9 @@ install_gruvbox_material_gtk_theme() {
 #   - veracrypt --unmount [volume or mountpoint]
 #     - if no volume or mountpoint given, unmounts all
 #
-# see also:
+# see also/alternatives:
 # - https://github.com/FiloSottile/age (avail in apt)
+# - https://github.com/cryfs/cryfs
 install_veracrypt() {
     local url
 
@@ -7671,6 +7780,7 @@ post_install_progs_setup() {
     configure_updatedb
     setup_apparmor
     is_pkg_installed needrestart && setup_needrestart  # TODO: should we include needrestart pkg?
+    setup_secret_service
     is_native && setup_smartd
     is_secure_boot && setup_mok  # otherwise e.g. dkms dirs won't be there
 }
@@ -7908,8 +8018,9 @@ _sanitize_ssh() {
 }
 
 
-is_ssh_key_available() {
-    [[ -f "$PRIVATE_KEY_LOC" ]]
+# check whether _any_ key is loaded to ssh-agent
+is_ssh_key_loaded() {
+    ssh-add -l >/dev/null 2>&1
 }
 
 
@@ -7932,8 +8043,8 @@ generate_ssh_key() {
 
     readonly valid_mail_regex='^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+$'
 
-    if is_ssh_key_available; then
-        confirm -d N "key @ [$PRIVATE_KEY_LOC] already exists; still generate key?" || return 1
+    if is_ssh_key_loaded; then
+        confirm -d N "some key(s) are already loaded to agent; still generate key?" || return 1
     fi
 
     if ! command -v ssh-keygen >/dev/null; then
@@ -7947,8 +8058,8 @@ generate_ssh_key() {
         read -r mail
     done
 
-    #exe "ssh-keygen -t rsa -b 4096 -C '$mail' -f '$PRIVATE_KEY_LOC'"  # legacy for RSA
-    exe "ssh-keygen -t ed25519 -C '$mail' -f '$PRIVATE_KEY_LOC'"
+    exe "ssh-keygen -t ed25519 -C '$mail'" || return $?
+    #_sanitize_ssh
 }
 
 
@@ -8848,6 +8959,10 @@ cleanup() {
         exe -s "sudo chmod -R 'o+r' '$ZSH_COMPLETIONS'"  # ensure 'other' group has read rights
     fi
 
+    if [[ -d "$LUKS_USB" ]]; then
+        exe "sudo umount '$LUKS_USB' && sudo cryptsetup close luksvol1"
+    fi
+
     # shut down the build container:
     if command -v docker >/dev/null 2>&1 && [[ -n "$(docker ps -qa -f status=running -f name="$BUILD_DOCK")" ]]; then
         exe "docker stop '$BUILD_DOCK'" || err "[cleanup] stopping build container [$BUILD_DOCK] failed"
@@ -9006,6 +9121,8 @@ exit 0
 #          common_startup w/  $ eval "$(/usr/bin/gpg-agent --daemon)"
 #  - consider replacing getnetrc w/ passhole (or keepassxc-cli)
 #  - TODO: verify which/if extra xdg-desktop-portal* packages are needed
+#  - TODO: look into using https://github.com/CISOfy/lynis
+#          for paid security, see crowdstrike
 #
 #
 # list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/
