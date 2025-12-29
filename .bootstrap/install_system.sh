@@ -97,6 +97,22 @@ readonly GIT_OPTS=(--depth 1 -j8)
 declare -A HOSTNAME_TO_PLATFORM=(
     [p14s]="$BASE_HOMESICK_REPOS_LOC/p14s-dotfiles"
 )
+
+declare -a MANUAL_STEPS=(
+    'GPG restore/import'
+    'intelliJ toolbox'
+    'install tmux plugins (prefix+I)'
+    'ublock additional configs (EST, social media, ...)'
+    'ublock whitelist, filters (should be saved somewhere)'
+    'import keepassxc browser plugin config'
+    'install tridactyl native messenger/executable (:installnative)'
+    'set the firefox config, see details @ setup_firefox()'
+    'install/load chromium Surfingkeys plugin config from [https://github.com/laur89/surfingkeys-config/]'
+    'update system firmware'
+    'download seafile libraries'
+    'setup Signal backup - follow reddit thread & finally _manually_ create link to our seafile lib'
+)
+
 #-----------------------
 #---    Functions    ---
 #-----------------------
@@ -571,6 +587,7 @@ setup_systemd() {
 #   to see which program acts as secret service
 setup_secret_service() {
     if is_pkg_installed  gnome-keyring; then
+        MANUAL_STEPS+=('setup default keyring via seahorse if using gnome-keyring (TODO: think keyring needs to be named login)')
         setup_gnome_keyring_pam_module
     else
         setup_keepassxc_ss
@@ -1990,7 +2007,7 @@ setup_mok() {
     ensure_d -s "$target_dir" || return 1
     if ! is_dir_empty -s "$target_dir"; then
         report "[$target_dir] not empty, assuming MOK keys already created; testing key enrollment..."
-        # TODO: mokutil here exits /w 1 on success, so cannot use w/ pipefail:
+        # TODO: mokutil here exits w/ 1 on success, so cannot use w/ pipefail:
         #sudo mokutil --test-key "$target_dir/MOK.der" | grep -q 'is already enrolled' || { err "[$target_dir/MOK.der] not enrolled, verify MOK!"; return 1; }
         local i="$(sudo mokutil --test-key "$target_dir/MOK.der")"
         grep -qF 'is already enrolled' <<< "$i" || { err "[$target_dir/MOK.der] not enrolled, verify MOK!"; return 1; }
@@ -2017,6 +2034,7 @@ setup_mok() {
     }
 
     _instruct_dkms_to_use_keys
+    MANUAL_STEPS+=('enroll secureboot MOK - needs reboot')
 }
 
 
@@ -6957,26 +6975,9 @@ exe_work_funs() {
 
 # programs that cannot be installed automatically should be reminded of
 remind_manual_steps() {
-    local steps i
+    local i
 
-    declare -ar steps=(
-        'GPG restore/import'
-        'intelliJ toolbox'
-        'install tmux plugins (prefix+I)'
-        'ublock additional configs (EST, social media, ...)'
-        'ublock whitelist, filters (should be saved somewhere)'
-        'import keepassxc browser plugin config'
-        'install tridactyl native messenger/executable (:installnative)'
-        'set the firefox config, see details @ setup_firefox()'
-        'install/load chromium Surfingkeys plugin config from [https://github.com/laur89/surfingkeys-config/]'
-        'update system firmware'
-        'download seafile libraries'
-        'setup Signal backup - follow reddit thread & finally _manually_ create link to our seafile lib'
-        'enroll secureboot MOK if using SB - needs reboot'
-        'setup default keyring via seahorse if using gnome-keyring (TODO: think keyring needs to be named login)'
-    )
-
-    for i in "${steps[@]}"; do
+    for i in "${MANUAL_STEPS[@]}"; do
         report "    don't forget [$i]"
     done
 }
