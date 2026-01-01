@@ -3209,7 +3209,7 @@ install_from_url() {
     tmpdir="$(mkt "install-from-url-${name}")" || return 1
     exe "wget --content-disposition --user-agent='$USER_AGENT' -q --directory-prefix=$tmpdir '$loc'" || { err "wgetting [$loc] failed with $?"; return 1; }
     file="$(find "$tmpdir" -type f)"
-    [[ -s "$file" ]] || { err "couldn't find single downloaded file in [$tmpdir]"; return 1; }
+    is_f -nm "couldn't find single downloaded file in [$tmpdir]" "$file" || return 1
 
     install_file "${opts[@]}" "$file" "$name" || return 1
 
@@ -3219,6 +3219,7 @@ install_from_url() {
 
 
 # curl given $loc and pipe it to a $shell for installation
+# TODO: deprecate?
 install_from_url_shell() {
     local opt OPTIND shell name loc ver
 
@@ -3345,7 +3346,12 @@ install_streamlink_twitch_gui() {  # https://github.com/streamlink/streamlink-tw
 
 
 install_zoom() {  # https://zoom.us/download
-    install_from_url  zoom 'https://zoom.us/client/latest/zoom_amd64.deb'
+    local url='https://zoom.us/client/latest/zoom_x86_64.tar.xz'
+
+    install_from_url -D -d "$BASE_PROGS_DIR" zoom "$url" || return 1
+    create_link "$BASE_PROGS_DIR/zoom/zoom" "$HOME/bin/zoom"
+    # or alternative to a tarball, install deb:
+    #install_from_url  zoom 'https://zoom.us/client/latest/zoom_amd64.deb'
 }
 
 
