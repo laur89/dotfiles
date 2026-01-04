@@ -221,7 +221,7 @@ check_dependencies() {
             gpg keepassxc-cli ssh-add \
             cryptsetup lsblk \
                 ; do
-        if ! command -v "$prog" >/dev/null; then
+        if ! cmd_avail "$prog"; then
             report "[$prog] not installed yet, installing..."
             [[ -n "${exec_to_pkg[$prog]}" ]] && prog=${exec_to_pkg[$prog]}
 
@@ -2894,6 +2894,7 @@ install_from_any() {
 # Also note the operation is successful only if a single directory gets extracted out.
 #
 #   -T|Z     see doc on fetch_release_from_git()
+#   -S       see extract_tarball()
 #
 # $1 - git user/repo
 # $2 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
@@ -2914,7 +2915,7 @@ fetch_extract_tarball_from_git() {
     done
     shift "$((OPTIND-1))"
 
-    fetch_release_from_git "${opts[@]}" "$1" "$2" || return $?
+    fetch_release_from_git "${opts[@]}" "$1" "$2"
 }
 
 
@@ -3537,7 +3538,7 @@ install_kubectl() {
     install_from_url  kubectl  "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 
     # shell completion: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#bash
-    command -v kubectl >/dev/null && exe "kubectl completion bash | tee $BASH_COMPLETIONS/kubectl > /dev/null"
+    cmd_avail kubectl && exe "kubectl completion bash | tee $BASH_COMPLETIONS/kubectl > /dev/null"
 }
 
 # kubectx - kubernetes contex swithcher
@@ -4006,7 +4007,7 @@ install_minikube() {  # https://minikube.sigs.k8s.io/docs/start/
     # ...or from k8s page:  (https://minikube.sigs.k8s.io/docs/start/):
     #install_from_url  minikube  "https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb"
 
-    command -v minikube >/dev/null && _setup_minikube
+    cmd_avail minikube && _setup_minikube
 }
 
 
@@ -4337,7 +4338,7 @@ install_asdf() {
     ensure_d "$ASDF_DIR" || return 1
     install_bin_from_git -N asdf asdf-vm/asdf '-linux-amd64.tar.gz'
 
-    command -v asdf >/dev/null 2>&1 || { err 'asdf not on PATH??'; return 1; }  # sanity
+    cmd_avail asdf || { err 'asdf not on PATH??'; return 1; }  # sanity
 
     # asdf plugins:
     if ! [[ -d "$ASDF_DATA_DIR/plugins/nodejs" ]]; then
@@ -4355,7 +4356,7 @@ install_asdf() {
 # available tools: https://mise.jdx.dev/registry.html
 install_mise() {
     install_bin_from_git -N mise jdx/mise '-linux-x64' || return
-    command -v mise >/dev/null 2>&1 || { err '[mise] not on PATH?'; return 1; }  # sanity
+    cmd_avail mise || { err '[mise] not on PATH?'; return 1; }  # sanity
 
     [[ "$MODE" -eq 1 ]] && eval "$(mise activate bash --shims)"  # use shims to load dev tools
 
@@ -4384,7 +4385,7 @@ install_webdev() {
     #fi
 
     # update npm:
-    if command -v npm >/dev/null 2>&1; then
+    if cmd_avail npm; then
         exe "$NPM_PRFX npm install npm@latest -g" && sleep 0.1
         # NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
         exe "npm completion | tee $BASH_COMPLETIONS/npm > /dev/null"
@@ -6671,7 +6672,7 @@ choose_step() {
        esac
     fi
 
-    if [[ "$BOOTSTRAP_LAUNCHER_TAG" != Y ]] && [[ "$MODE" -eq 1 || "$LOGGING_LVL" -ge 20 ]] && command -v script >/dev/null; then
+    if [[ "$BOOTSTRAP_LAUNCHER_TAG" != Y ]] && [[ "$MODE" -eq 1 || "$LOGGING_LVL" -ge 20 ]] && cmd_avail script; then
         script --flush --quiet --return --log-out "$SCRIPT_LOG" --command "BOOTSTRAP_LAUNCHER_TAG=Y MODE=$MODE $0 ${ORIG_OPTS[*]}"
         ERR=$?
 
@@ -6680,7 +6681,7 @@ choose_step() {
         # $ ansi2txt <file.log | col -bp >| 111
         # - note both ansi2* commands come from [colorized-logs] package
         if is_f -n "$SCRIPT_LOG"; then
-            if command -v ansi2txt >/dev/null; then
+            if cmd_avail ansi2txt; then
                 ansi2txt <"$SCRIPT_LOG" | col -bp > "${SCRIPT_LOG}.cleaned"
                 echo -e "    cleaned up terminal log can be found at [${SCRIPT_LOG}.cleaned]"
             else
@@ -7835,13 +7836,13 @@ install_nfs_server_or_client() {
 
 
 add_to_dl_log() {
-    local id url
+    local id ver
 
     id="$1"
-    url="$2"
+    ver="$2"
 
-    [[ -s "$GIT_RLS_LOG" ]] && sed --follow-symlinks -i "/^$id:/d" "$GIT_RLS_LOG"
-    echo -e "${id}:\t$url\t$(date +'%d %b %Y %R')" >> "$GIT_RLS_LOG"
+    [[ -s "$GIT_RLS_LOG" ]] && sed --follow-symlinks -i "/^${id}:/d" "$GIT_RLS_LOG"
+    echo -e "${id}:\t${ver}\t$(date +'%d %b %Y %R')" >> "$GIT_RLS_LOG"
 }
 
 
@@ -8061,7 +8062,7 @@ generate_ssh_key() {
         confirm -d N "some key(s) are already loaded to agent; still generate key?" || return 1
     fi
 
-    if ! command -v ssh-keygen >/dev/null; then
+    if ! cmd_avail ssh-keygen; then
         err "ssh-keygen is not installed; won't generate ssh key."
         return 1
     fi
@@ -8169,7 +8170,7 @@ select_items() {
         return 0
     fi
 
-    if command -v fzf > /dev/null 2>&1; then
+    if cmd_avail fzf; then
         local opts out
 
         opts="$FZF_DEFAULT_OPTS "
@@ -8497,9 +8498,9 @@ is_efi() {
 # from https://wiki.debian.org/SecureBoot#Has_the_system_booted_via_Secure_Boot.3F
 # and https://wiki.debian.org/SecureBoot/VirtualMachine#Checking_if_secure_boot_is_active
 is_secure_boot() {
-    if command -v mokutil >/dev/null; then
+    if cmd_avail mokutil; then
         [[ "$(mokutil --sb-state)" == 'SecureBoot enabled' ]]
-    elif command -v bootctl >/dev/null; then
+    elif cmd_avail bootctl; then
         bootctl 2>/dev/null | grep -Eiq '^\s*secure boot:\s*enabled'
     else
         sudo dmesg | grep -Eiq 'secureboot: secure boot enabled'  # note need to exec as root as allow_user_run_dmesg() has not been set up yet
@@ -8700,9 +8701,9 @@ copy_to_clipboard() {
 
     readonly input="$1"
 
-    { command -v xsel >/dev/null 2>/dev/null && echo -n "$input" | xsel --clipboard; } \
-        || { command -v copyq >/dev/null 2>/dev/null && copyq add "$input" && copyq select 0; } \
-        || { command -v xclip >/dev/null 2>/dev/null && echo -n "$input" | xclip -selection clipboard; } \
+    { cmd_avail xsel && echo -n "$input" | xsel --clipboard; } \
+        || { cmd_avail copyq && copyq add "$input" && copyq select 0; } \
+        || { cmd_avail xclip && echo -n "$input" | xclip -selection clipboard; } \
         || return 1
 
     return 0
@@ -8965,7 +8966,7 @@ cleanup() {
     fi
 
     # shut down the build container:
-    if command -v docker >/dev/null 2>&1 && [[ -n "$(docker ps -qa -f status=running -f name="$BUILD_DOCK")" ]]; then
+    if cmd_avail docker && [[ -n "$(docker ps -qa -f status=running -f name="$BUILD_DOCK")" ]]; then
         exe "docker stop '$BUILD_DOCK'" || err "[cleanup] stopping build container [$BUILD_DOCK] failed"
     fi
 
