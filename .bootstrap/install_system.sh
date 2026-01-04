@@ -3328,7 +3328,7 @@ install_file() {
         exe "sudo install -m754 -C --group=$USER '$file' '$target'" || return 1
         _owner_perms "$target/$(basename -- "$file")"
     elif [[ "$ftype" == *'debian.binary-package; charset=binary' ]]; then
-        exe "sudo $APT_ENVS  apt-get ${APT_OPTS:+$APT_OPTS }install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
+        exe "sudo ${APT_ENVS:+$APT_ENVS }apt-get ${APT_OPTS:+$APT_OPTS }install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
         exe "rm -f -- '$file'"
     else
         err "dunno how to install file [$file] - unknown type [$ftype]"
@@ -6654,7 +6654,7 @@ install_block() {
     # note some posts allow also -qqq opt to apt-get: https://serverfault.com/questions/227190/how-do-i-ask-apt-get-to-skip-any-interactive-post-install-configuration-steps#comment1000493_227194
     # some also tell to pipe 'yes' into it:    yes | sudo DEBIAN_FRONTEND=noninteractive apt-get -yqq purge 'my-package'
     # be careful with -qq+ tho, as apt-get manual states: "you should never use -qq without a no-action modifier"
-    exe "sudo $APT_ENVS  apt-get ${APT_OPTS:+$APT_OPTS }install ${noinstall:+$noinstall }$extra_apt_params ${avail_pkgs[*]}"
+    exe "sudo ${APT_ENVS:+$APT_ENVS }apt-get ${APT_OPTS:+$APT_OPTS }install ${noinstall:+$noinstall }$extra_apt_params ${avail_pkgs[*]}"
 }
 
 
@@ -6872,6 +6872,7 @@ __choose_prog_to_build() {
         install_open_eid
         install_binance
         install_cointop
+        install_cloudflare_speed_cli
         install_electrum_wallet
         install_revanced
         install_apkeditor
@@ -7335,6 +7336,12 @@ install_binance() {
 # https://github.com/cointop-sh/cointop
 install_cointop() {
     install_bin_from_git -N cointop cointop-sh/cointop '_linux_amd64.tar.gz'
+}
+
+
+# https://github.com/kavehtehrani/cloudflare-speed-cli
+install_cloudflare_speed_cli() {
+    install_bin_from_git -N cloudflare-speed-cli kavehtehrani/cloudflare-speed-cli '-x86_64-unknown-linux-musl.tar.xz'
 }
 
 
@@ -8255,33 +8262,20 @@ extract() {
     fi
 
     case "$file" in
-        *.tar.bz2) tar xjf "$file"
-                ;;
-        *.tar.gz) tar xzf "$file"
-                ;;
-        *.tar.xz) tar xpvf "$file"
-                ;;
-        *.bz2) bunzip2 -k -- "$file"
-                ;;
-        *.rar) unrar x "$file"
-                ;;
-        *.gz) gunzip -kd -- "$file"
-                ;;
-        *.tar) tar xf "$file"
-                ;;
-        *.tbz|*.tbz2) tar xjf "$file"
-                ;;
-        *.tgz) tar xzf "$file"
-                ;;
-        *.zip) unzip -- "$file"
-                ;;
-        *.7z) 7z x -- "$file"
-                ;;
-        *.Z) uncompress -- "$file"
-                ;;
-        *) err "'$file' cannot be extracted; this filetype is not supported."
-           return 1
-                ;;
+        *.tar.bz2) tar xjf "$file" ;;
+        *.tar.gz) tar xzf "$file" ;;
+        *.tar.xz) tar xpvf "$file" ;;
+        *.bz2) bunzip2 -k -- "$file" ;;
+        *.rar) unrar x "$file" ;;
+        *.gz) gunzip -kd -- "$file" ;;
+        *.tar) tar xf "$file" ;;
+        *.tbz|*.tbz2) tar xjf "$file" ;;
+        *.tgz) tar xzf "$file" ;;
+        *.zip) unzip -- "$file" ;;
+        *.7z) 7z x -- "$file" ;;
+        *.Z) uncompress -- "$file" ;;
+        *) err "[$file] cannot be extracted; this filetype is not supported."
+           return 1 ;;
     esac
 }
 
