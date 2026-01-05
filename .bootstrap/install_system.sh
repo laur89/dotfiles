@@ -98,7 +98,7 @@ declare -A HOSTNAME_TO_PLATFORM=(
     [p14s]="$BASE_HOMESICK_REPOS_LOC/p14s-dotfiles"
 )
 
-declare -a MANUAL_STEPS=(
+declare -a MANUAL_STEPS=(  # note this list is potentially modified later on
     'GPG restore/import'
     'intelliJ toolbox'
     'install tmux plugins (prefix+I)'
@@ -134,8 +134,6 @@ print_usage() {
 
 
 validate_and_init() {
-    local i
-
     if is_noninteractive; then
         APT_ENVS+="${APT_ENVS:+ }DEBIAN_FRONTEND=noninteractive"
         APT_OPTS+="${APT_OPTS:+ }--yes"
@@ -172,14 +170,7 @@ validate_and_init() {
 
     # derive our platform castle from hostname, if not explicitly provided:
     if [[ -n "$PLATFORM" ]]; then  # provided via cmd opt
-        for i in "${!HOSTNAME_TO_PLATFORM[@]}"; do
-            [[ "$i" == "$PLATFORM" ]] && break
-            unset i
-        done
-
-        [[ -z "$i" ]] && fail "selected platform [$PLATFORM] is not known"
-        # TODO: prompt if selected platform doesn't match our hostname?
-        unset i
+        list_contains "$PLATFORM" "${!HOSTNAME_TO_PLATFORM[@]}" || fail "selected platform [$PLATFORM] is not known"
     elif [[ -n "${HOSTNAME_TO_PLATFORM[$HOSTNAME]}" ]]; then
         PLATFORM="$HOSTNAME"
     fi
@@ -190,7 +181,7 @@ validate_and_init() {
         report "platform castle defined as [$PLATFORM_DOTFILES]"
     else
         ! is_native || confirm "no platform selected nor automatically resolved -- continue?" || exit 1
-        report "no platform castle defined"
+        report "!!! no platform castle defined !!!"
     fi
 
     # ask for the admin password upfront:
