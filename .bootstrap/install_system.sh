@@ -2587,6 +2587,7 @@ install_own_builds() {
     install_i3
     #build_polybar  # currently installing from repo
     install_gruvbox_gtk_theme
+    install_darkman
     #install_weeslack
     install_gomuks
     #is_native && install_slack_term
@@ -5182,11 +5183,11 @@ rb_install() {
 
 # - ~/.var/app/ contains user-specific config
 fp_install() {  # flatpak install
-    local opt name ref bin remote OPTIND
+    local opt link ref bin remote OPTIND
 
-    while getopts 'n:' opt; do
+    while getopts 'l:' opt; do
         case "$opt" in
-            n) name="$OPTARG" ;;
+            l) link="$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -5199,15 +5200,15 @@ fp_install() {  # flatpak install
 
     # looks like link creation no longer required as of '26, as FP appears to be creating
     # .desktop files somewhere under ~/.local/share/flatpak/exports/share/applications that are picked up.
-    if [[ -n "$name" ]]; then
+    if [[ -n "$link" ]]; then
         # there's still some confusion, as by default $ flatpak install should
         # install system-wide (e.g. /var/lib/flatpak/exports/bin, I think), but
-        # now appears to install into $HOME/.local/share/flatpak/exports/bin
+        # appears to install into $HOME/.local/share/flatpak/exports/bin
         #
         #bin="/var/lib/flatpak/exports/bin/$ref"
         bin="$HOME/.local/share/flatpak/exports/bin/$ref"
-        is_f -nm "cannot create shortcut link for [$name]" "$bin" || return 1  # sanity
-        create_link "$bin" "$HOME/bin/$name"
+        is_f -nm "cannot create shortcut link for [$link]" "$bin" || return 1  # sanity
+        create_link "$bin" "$HOME/bin/$link"
     fi
 }
 
@@ -6951,6 +6952,7 @@ __choose_prog_to_build() {
         install_minikube
         install_gruvbox_gtk_theme
         install_gruvbox_material_gtk_theme
+        install_darkman
         install_veracrypt
         #install_betterbird
         install_ueberzugpp
@@ -7356,6 +7358,15 @@ install_gruvbox_material_gtk_theme() {
 }
 
 
+# service managing light/dark mode switch automatically
+# https://gitlab.com/WhyNotHugo/darkman/
+# see also:
+# - https://wiki.archlinux.org/title/Dark_mode_switching
+install_darkman() {
+    true  # TODO
+}
+
+
 # https://veracrypt.io/en/Downloads.html
 # also consider the generic installer instead of .deb, eg https://launchpad.net/veracrypt/trunk/1.24-update7/+download/veracrypt-1.24-Update7-setup.tar.bz2
 # or appimage https://launchpad.net/veracrypt/trunk/1.26.24/+download/VeraCrypt-1.26.24-x86_64.AppImage
@@ -7699,6 +7710,7 @@ install_setup_printing_cups() {
 # TODO: consider https://github.com/yokoffing/Betterfox  <-- real cool!
 # see also:
 # - https://wiki.archlinux.org/title/Firefox/Tweaks
+# - https://wiki.archlinux.org/title/Firefox
 # - https://github.com/artsyfriedchicken/EdgyArc-fr/
 # - https://github.com/sainnhe/dotfiles/tree/master/.firefox
 # - https://wiki.archlinux.org/title/Firefox/Profile_on_RAM !!!
