@@ -6331,15 +6331,17 @@ install_from_flatpak() {
     fp_install 'com.saivert.pwvucontrol'
 
     # https://flathub.org/apps/com.discordapp.Discord
-    fp_install 'com.discordapp.Discord'
+    #fp_install 'com.discordapp.Discord'
 
     # https://flathub.org/apps/dev.vencord.Vesktop
     # alternative discord client
     # fyi there's also native .deb & appimage
-    fp_install 'dev.vencord.Vesktop'
+    # for config/tips, see https://vesktop.dev/wiki/linux/tips/
+    #fp_install 'dev.vencord.Vesktop'
 
     # https://flathub.org/en/apps/org.equicord.equibop
     # fork of vesktop (alternative discord client)
+    # for config/tips, see https://vesktop.dev/wiki/linux/tips/
     fp_install 'org.equicord.equibop'
 
     # https://flathub.org/apps/org.telegram.desktop
