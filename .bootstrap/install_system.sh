@@ -360,6 +360,7 @@ setup_pm() {
 # fyi:
 # - app data is under host's ~/.var/
 install_flatpak() {
+    # note flatseal itself is avail as flatpak: https://flathub.org/en/apps/com.github.tchx84.Flatseal
     install_block 'flatpak flatseal' || return 1  # flatseal is GUI app to manage perms
     #exe 'sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo'  # <- normal/non-verified-only remote
 
@@ -1481,6 +1482,8 @@ install_deps() {
 
     # rofi-based emoji picker
     # change rofi command to something like [-modi combi#ssh#emoji:rofimoji] to use.
+    # alternatives:
+    # - https://github.com/vemonet/EmojiMart (avail as flatpak)
     py_install -g fdw/rofimoji  # https://github.com/fdw/rofimoji
 
     # keepass cli tool
@@ -2352,6 +2355,7 @@ install_progs() {
 }
 
 
+# TODO: avail as flatpak: https://flathub.org/en/apps/org.xonotic.Xonotic
 install_xonotic() {
     local url
 
@@ -2515,7 +2519,7 @@ install_devstuff() {
     install_sops
     is_native && install_grpcui
     #install_postman
-    install_bruno
+    #install_bruno
     #install_terragrunt
     install_minikube
     #install_coursier
@@ -2588,7 +2592,6 @@ install_own_builds() {
     #is_native && install_slack_term
     #install_slack
     install_veracrypt
-    install_betterbird
     install_ueberzugpp
     #install_hblock
     install_open_eid
@@ -3064,6 +3067,7 @@ install_slides() {  # https://github.com/maaslalani/slides
 # might also consider free rambox: https://rambox.app/download-linux/
 # another alternative: https://github.com/getstation/desktop-app
 #                      https://github.com/beeper <- selfhostable built on matrix?
+# note: avail as flatpak!
 install_ferdium() {  # https://github.com/ferdium/ferdium-app
     #install_from_git ferdium/ferdium-app '-amd64.deb'
     install_bin_from_git -N ferdium ferdium/ferdium-app 'x86_64.AppImage'
@@ -3626,6 +3630,8 @@ install_dbeaver() {  # https://dbeaver.io/download/
 
 
 # https://www.gitkraken.com/download
+# see also:
+# - https://flathub.org/en/apps/io.github.pol_rivero.github-desktop-plus
 install_gitkraken() {
     # deb url    :  https://api.gitkraken.dev/releases/production/linux/x64/active/gitkraken-amd64.deb
     # tarball url:  https://api.gitkraken.dev/releases/production/linux/x64/active/gitkraken-amd64.tar.gz
@@ -3742,6 +3748,7 @@ install_arc() {
 # haven't checked, but also https://github.com/manatlan/reqman
 # there's also CLI client wrapping curl that uses toml-like config: https://github.com/jonaslu/ain
 install_bruno() {
+    err "do not call, using flatpak atm"; return
     install_bin_from_git -N bruno usebruno/bruno  _x86_64_linux.AppImage
     # or deb:
     #install_from_git  usebruno/bruno '_amd64_linux.deb'
@@ -5173,6 +5180,7 @@ rb_install() {
 }
 
 
+# - ~/.var/app/ contains user-specific config
 fp_install() {  # flatpak install
     local opt name ref bin remote OPTIND
 
@@ -5187,12 +5195,20 @@ fp_install() {  # flatpak install
     ref="$1"
     remote="${2:-flathub-verified}"
 
-    name="${name:-$ref}"
     exe "flatpak install -y --noninteractive '$remote' '$ref'" || return 1
 
-    bin="/var/lib/flatpak/exports/bin/$ref"
-    is_f -nm "cannot create shortcut link for [$name]" "$bin" || return 1  # sanity
-    create_link "$bin" "$HOME/bin/$name"
+    # looks like link creation no longer required as of '26, as FP appears to be creating
+    # .desktop files somewhere under ~/.local/share/flatpak/exports/share/applications that are picked up.
+    if [[ -n "$name" ]]; then
+        # there's still some confusion, as by default $ flatpak install should
+        # install system-wide (e.g. /var/lib/flatpak/exports/bin, I think), but
+        # now appears to install into $HOME/.local/share/flatpak/exports/bin
+        #
+        #bin="/var/lib/flatpak/exports/bin/$ref"
+        bin="$HOME/.local/share/flatpak/exports/bin/$ref"
+        is_f -nm "cannot create shortcut link for [$name]" "$bin" || return 1  # sanity
+        create_link "$bin" "$HOME/bin/$name"
+    fi
 }
 
 
@@ -5919,7 +5935,7 @@ install_from_repo() {
         #openvpn3
         #network-manager-openvpn-gnome  # OpenVPN plugin GNOME GUI
         gparted  # GNOME partition editor; https://gparted.org/
-        gnome-disk-utility  # manage and configure disk drives and media
+        gnome-disk-utility  # manage and configure disk drives and media; launch via $ disks
         gnome-usage  # simple system monitor app for GNOME (cpu, mem, disk space...)
         aircrack-ng  # wireless WEP/WPA cracking utilities
         hashcat  # fastest and most advanced password recovery utility
@@ -6092,7 +6108,7 @@ install_from_repo() {
         feh  # TODO x11; TODO: wallpaper_changer.sh dependency; https://github.com/derf/feh/ (mirror)
         nsxiv  # TODO: x11; # TODO: consider [imv] that supports both wayland & x11
         geeqie  # GTK-based image/gallery viewer
-        gthumb  # gnome image viewer
+        gthumb  # gnome image viewer; alternatives: https://flathub.org/en/apps/org.kde.koko,
         imagemagick
         inkscape  # vector-based drawing program  # TODO: avail as flatpak; alternatives: graphite (for raster AND vector); krita - raster/illustration; affinity - raster,vector,photo editor, not FOSS
         mat2  # metadata anonymisation toolkit; https://github.com/jvoisin/mat2
@@ -6109,7 +6125,7 @@ install_from_repo() {
         vifm  # alternatives: yazi
         fastfetch  # takes screenshots of your desktop
         maim  # TODO: x11!  - screenshot.sh depends on it; one wayland alternative: grim: https://sr.ht/~emersion/grim/ ; see https://github.com/naelstrof/maim/issues/67#issuecomment-974622572 for usage
-        flameshot  # https://github.com/flameshot-org/flameshot ; x11? looks like there's _some_ wayland support there
+        flameshot  # https://github.com/flameshot-org/flameshot ; x11? looks like there's _some_ wayland support there; also avail as flatpak
         ffmpeg
         ffmpegthumbnailer  # lightweight video thumbnailer that can be used by file managers to create thumbnails for your video files;  https://github.com/dirkvdb/ffmpegthumbnailer
         vokoscreen-ng  # https://github.com/vkohaupt/vokoscreenNG  # TODO: avail as flatpak
@@ -6303,10 +6319,12 @@ install_from_flatpak() {
     fi
 
     # https://flathub.org/apps/engineer.atlas.Nyxt
+    # https://github.com/atlas-engineer/nyxt
     # web browser written in LISP
     # see also:
     # - https://github.com/fanglingsu/vimb
     # - https://github.com/qutebrowser/qutebrowser
+    # - ladybird browser that's WIP: https://ladybird.org/#news
     fp_install -n nyxt  'engineer.atlas.Nyxt'
 
     # https://github.com/saivert/pwvucontrol
@@ -6320,6 +6338,10 @@ install_from_flatpak() {
     # fyi there's also native .deb & appimage
     fp_install -n vesktop  'dev.vencord.Vesktop'
 
+    # https://flathub.org/en/apps/org.equicord.equibop
+    # fork of vesktop (alternative discord client)
+    fp_install -n equibop  'org.equicord.equibop'
+
     # https://flathub.org/apps/org.telegram.desktop
     fp_install -n telegram  'org.telegram.desktop'
 
@@ -6328,6 +6350,76 @@ install_from_flatpak() {
 
     # https://flathub.org/apps/org.localsend.localsend_app
     fp_install -n localsend  'org.localsend.localsend_app'
+
+    # https://flathub.org/en/apps/eu.betterbird.Betterbird
+    fp_install -n betterbird  'eu.betterbird.Betterbird'
+
+    # https://flathub.org/en/apps/com.usebruno.Bruno
+    fp_install -n bruno  'com.usebruno.Bruno'
+
+    # https://flathub.org/en/apps/org.gnome.Logs
+    # GUI systemd journal log viewer
+    fp_install -n logs  'org.gnome.Logs'
+
+    # https://flathub.org/en/apps/io.podman_desktop.PodmanDesktop
+    fp_install -n podman-desktop  'io.podman_desktop.PodmanDesktop'
+
+    # other projects to consider:
+    # ######################################
+
+    # podman manager:
+    # https://flathub.org/en/apps/com.github.marhkb.Pods
+
+    # look up guitar chords:
+    # https://flathub.org/en/apps/dev.bragefuglseth.Fretboard
+
+    # turn any Linux device (including mobile devices) into a second monitor:
+    # https://flathub.org/en/apps/eu.nokun.MirrorHall
+
+    # GUI git client (think gitkraken):
+    # https://flathub.org/en/apps/io.github.pol_rivero.github-desktop-plus
+
+    # another git GUI client:
+    # https://flathub.org/en/apps/org.gnome.gitg
+
+    # pentest tool:
+    # https://flathub.org/en/apps/org.zaproxy.ZAP
+
+    # listen to your mic:
+    # https://flathub.org/en/apps/it.mijorus.whisper
+
+    # network scanner - discover devices on your network:
+    # https://flathub.org/en/apps/io.github.zingytomato.netpeek
+
+    # speed reading software:
+    # https://flathub.org/en/apps/com.github.Darazaki.Spedread
+
+    # gnome calendar:
+    # https://flathub.org/en/apps/org.gnome.Calendar
+
+    # gnome weather:
+    # https://flathub.org/en/apps/org.gnome.Weather
+
+    # cryptomator:
+    # https://flathub.org/en/apps/org.cryptomator.Cryptomator
+
+    # multi-touch gestures:
+    # https://flathub.org/en/apps/com.github.joseexposito.touche
+
+    # simple docker container manager:
+    # https://flathub.org/en/apps/com.github.sdv43.whaler
+
+    # GUI speedtest client for librespeed:
+    # https://flathub.org/en/apps/xyz.ketok.Speedtest
+
+    # KDE calculator:
+    # https://flathub.org/en/apps/org.kde.kcalc
+
+    # flatpak manager:
+    # https://flathub.org/en/apps/io.github.flattool.Warehouse
+
+    # system resource utilization visualizer:
+    # https://flathub.org/en/apps/net.nokyan.Resources
 }
 
 # install/update the guest-utils/guest-additions.
@@ -6842,7 +6934,7 @@ __choose_prog_to_build() {
         install_obsidian
         install_postman
         install_arc
-        install_bruno
+        #install_bruno
         install_alacritty
         install_wezterm
         install_atuin
@@ -6858,7 +6950,7 @@ __choose_prog_to_build() {
         install_gruvbox_gtk_theme
         install_gruvbox_material_gtk_theme
         install_veracrypt
-        install_betterbird
+        #install_betterbird
         install_ueberzugpp
         install_hblock
         install_open_eid
@@ -7256,9 +7348,9 @@ install_gruvbox_gtk_theme() {
 
 
 # https://github.com/TheGreatMcPain/gruvbox-material-gtk
+# note it's not maintained in '25, consider its upstream instead: https://github.com/sainnhe/gruvbox-material
 install_gruvbox_material_gtk_theme() {
     err 'not implemented'
-    true  # TODO
 }
 
 
@@ -7290,6 +7382,7 @@ install_veracrypt() {
 
 # thunderbird fork
 install_betterbird() {  # https://www.betterbird.eu/downloads/
+    err "do not call, using flatpak atm"; return
     local url='https://www.betterbird.eu/downloads/get.php?os=linux&lang=en-US&version=release'
 
     install_from_url -D -d "$BASE_PROGS_DIR" betterbird "$url" || return 1
@@ -7326,6 +7419,7 @@ install_binance() {
 
 
 # https://github.com/cointop-sh/cointop
+# archived in '25
 install_cointop() {
     install_bin_from_git -N cointop cointop-sh/cointop '_linux_amd64.tar.gz'
 }
@@ -7408,9 +7502,10 @@ install_ventoy() {
     # instead, we create our own wrapper:
     cat <<EOF > "$tmpfile"
 #!/usr/bin/env sh
+# this wrapper exists as ventoy cannot be executed via links, see https://github.com/ventoy/Ventoy/issues/2512
 exec "$BASE_PROGS_DIR/ventoy/VentoyGUI.x86_64"
 EOF
-    exe "install -m744 -C '$tmpfile' '$HOME/bin'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
+    exe "install -m744 -CT '$tmpfile' '$HOME/bin/ventoy'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
 }
 
 
@@ -9133,6 +9228,7 @@ exit 0
 #   - lutris
 #   - newsboat
 #   - scrcpy - mirror android screen to pc
+#     - also Aurynk - https://flathub.org/en/apps/io.github.IshuSinghSE.aurynk
 #   - Opensnitch - see which programs communicate over network
 #   - Quod Libet - yet another music player
 #   - stremio + plugins (see https://stremio-addons.com/)
