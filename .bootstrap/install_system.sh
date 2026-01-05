@@ -4760,7 +4760,7 @@ create_deb_install_and_store() {
 # https://github.com/JMoerman/Go-For-It
 build_goforit() {
     # https://flathub.org/apps/de.manuel_kehl.go-for-it
-    fp_install -n goforit  'de.manuel_kehl.go-for-it'
+    fp_install 'de.manuel_kehl.go-for-it'
     return
 
     # build logic:
@@ -6312,7 +6312,7 @@ install_from_flatpak() {
 
     # https://flathub.org/apps/com.github.PintaProject.Pinta
     i='com.github.PintaProject.Pinta'
-    if fp_install -n pinta  "$i"; then
+    if fp_install "$i"; then
         # enable pinta access to /tmp, as we need file IO in /tmp
         # due to our screenshooter: (see https://github.com/PintaProject/Pinta/issues/1357)
         exe "sudo flatpak override $i --filesystem=/tmp"  # causes file @ /var/lib/flatpak/overrides/com.github.PintaProject.Pinta  to be created/modified
@@ -6325,44 +6325,44 @@ install_from_flatpak() {
     # - https://github.com/fanglingsu/vimb
     # - https://github.com/qutebrowser/qutebrowser
     # - ladybird browser that's WIP: https://ladybird.org/#news
-    fp_install -n nyxt  'engineer.atlas.Nyxt'
+    fp_install 'engineer.atlas.Nyxt'
 
     # https://github.com/saivert/pwvucontrol
-    fp_install -n pwvucontrol  'com.saivert.pwvucontrol'
+    fp_install 'com.saivert.pwvucontrol'
 
     # https://flathub.org/apps/com.discordapp.Discord
-    fp_install -n discord  'com.discordapp.Discord'
+    fp_install 'com.discordapp.Discord'
 
     # https://flathub.org/apps/dev.vencord.Vesktop
     # alternative discord client
     # fyi there's also native .deb & appimage
-    fp_install -n vesktop  'dev.vencord.Vesktop'
+    fp_install 'dev.vencord.Vesktop'
 
     # https://flathub.org/en/apps/org.equicord.equibop
     # fork of vesktop (alternative discord client)
-    fp_install -n equibop  'org.equicord.equibop'
+    fp_install 'org.equicord.equibop'
 
     # https://flathub.org/apps/org.telegram.desktop
-    fp_install -n telegram  'org.telegram.desktop'
+    fp_install 'org.telegram.desktop'
 
     # https://flathub.org/apps/org.libreoffice.LibreOffice
-    fp_install -n libreoffice  'org.libreoffice.LibreOffice'
+    fp_install 'org.libreoffice.LibreOffice'
 
     # https://flathub.org/apps/org.localsend.localsend_app
-    fp_install -n localsend  'org.localsend.localsend_app'
+    fp_install 'org.localsend.localsend_app'
 
     # https://flathub.org/en/apps/eu.betterbird.Betterbird
-    fp_install -n betterbird  'eu.betterbird.Betterbird'
+    fp_install 'eu.betterbird.Betterbird'
 
     # https://flathub.org/en/apps/com.usebruno.Bruno
-    fp_install -n bruno  'com.usebruno.Bruno'
+    fp_install 'com.usebruno.Bruno'
 
     # https://flathub.org/en/apps/org.gnome.Logs
     # GUI systemd journal log viewer
-    fp_install -n logs  'org.gnome.Logs'
+    fp_install 'org.gnome.Logs'
 
     # https://flathub.org/en/apps/io.podman_desktop.PodmanDesktop
-    fp_install -n podman-desktop  'io.podman_desktop.PodmanDesktop'
+    fp_install 'io.podman_desktop.PodmanDesktop'
 
     # other projects to consider:
     # ######################################
