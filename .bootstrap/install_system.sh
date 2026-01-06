@@ -22,11 +22,13 @@
 #---   Configuration  ---
 #------------------------
 set -o pipefail
-shopt -s nullglob       # unmatching globs to expand into empty string/list instead of being left unexpanded
+shopt -s nullglob  # unmatching globs to expand into empty string/list instead of being left unexpanded
 
-TMP_DIR=/tmp
+TMP_DIR=/tmp  # changeable via an option
 readonly KRING="$HOME/.local/share/kring.sala"  # note location is referenced in db's AutoOpen section
-readonly LUKS_USB="/mnt/luks-$RANDOM"
+readonly LUKS_USB="/tmp/usb-luks-$RANDOM"  # mountpoint
+readonly KPCX_DB="$LUKS_USB/passdb/passwd_db.kdbx"
+readonly KPCX_KRING_DB="$LUKS_USB/passdb/fresh_keyring.kdbx"
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
@@ -202,6 +204,7 @@ check_dependencies() {
         [gpg]=gnupg
         [keepassxc-cli]=keepassxc-full
         [ssh-add]=openssh-client
+        [ssh-agent]=openssh-client
     )
 
     for prog in \
@@ -209,7 +212,7 @@ check_dependencies() {
             realpath dirname basename head tee jq \
             mktemp file date id html2text \
             pwd uniq sort xxd openssl mokutil \
-            gpg keepassxc-cli ssh-add \
+            gpg keepassxc-cli ssh-add ssh-agent \
             cryptsetup lsblk \
                 ; do
         if ! cmd_avail "$prog"; then
@@ -617,7 +620,7 @@ EOF
 
     # copy over fresh keyring db:
     if [[ -d "$LUKS_USB" ]]; then
-        exe "sudo install -m600 -CT --group=$USER --owner=$USER '$LUKS_USB/passdb/fresh_keyring.kdbx' '$KRING'" || return 1
+        exe "sudo install -m600 -CT --group=$USER --owner=$USER '$KPCX_KRING_DB' '$KRING'" || return 1
     else
         err "[$LUKS_USB] not mounted, cannot init our secret service db; make sure to do this manually!"
     fi
@@ -944,10 +947,10 @@ install_nfs_server() {
     while true; do
         confirm "$(report "add ${client_ip:+another }client IP for the exports list?")" || break
 
-        read -r -p "enter client ip: " client_ip
+        read -rp "enter client ip: " client_ip
         is_valid_ip "$client_ip" || { err "not a valid ip: [$client_ip]"; continue; }
 
-        read -r -p "enter share to expose (leave blank to default to [$NFS_SERVER_SHARE]): " share
+        read -rp "enter share to expose (leave blank to default to [$NFS_SERVER_SHARE]): " share
         share=${share:-"$NFS_SERVER_SHARE"}
         [[ "$share" != /* ]] && { err "share needs to be defined as full path."; continue; }
         is_d "$share" || continue
@@ -988,16 +991,16 @@ _install_nfs_client_stationary() {
     while true; do
         confirm "$(report "add ${server_ip:+another }NFS server entry to fstab?")" || break
 
-        read -r -p "enter server ip${prev_server_ip:+ (leave blank to default to [$prev_server_ip])}: " server_ip
+        read -rp "enter server ip${prev_server_ip:+ (leave blank to default to [$prev_server_ip])}: " server_ip
         : "${server_ip:=$prev_server_ip}"
         is_valid_ip "$server_ip" || { err "not a valid ip: [$server_ip]"; continue; }
 
-        read -r -p "enter local mountpoint to mount NFS share to (leave blank to default to [$default_mountpoint]): " mountpoint
+        read -rp "enter local mountpoint to mount NFS share to (leave blank to default to [$default_mountpoint]): " mountpoint
         : "${mountpoint:=$default_mountpoint}"
         list_contains "$mountpoint" "${used_mountpoints[@]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
         create_mountpoint "$mountpoint" || continue
 
-        read -r -p "enter remote share to mount (leave blank to default to [$NFS_SERVER_SHARE]): " nfs_share
+        read -rp "enter remote share to mount (leave blank to default to [$NFS_SERVER_SHARE]): " nfs_share
         : "${nfs_share:=$NFS_SERVER_SHARE}"
         list_contains "${server_ip}${nfs_share}" "${mounted_shares[@]}" && { report "selected [${server_ip}:${nfs_share}] has already been used for previous definition"; continue; }
         [[ "$nfs_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
@@ -1157,19 +1160,19 @@ install_sshfs() {
     while true; do
         confirm "$(report "add ${server_ip:+another }SSHFS entry to fstab?")" || break
 
-        read -r -p "enter server ip${prev_server_ip:+ (leave blank to default to [$prev_server_ip])}: " server_ip
+        read -rp "enter server ip${prev_server_ip:+ (leave blank to default to [$prev_server_ip])}: " server_ip
         : "${server_ip:=$prev_server_ip}"
         is_valid_ip "$server_ip" || { err "not a valid ip: [$server_ip]"; continue; }
 
-        read -r -p "enter remote user to log in as (leave blank to default to your local user [$USER]): " remote_user
+        read -rp "enter remote user to log in as (leave blank to default to your local user [$USER]): " remote_user
         : "${remote_user:=$USER}"
 
-        read -r -p "enter local mountpoint to mount SSHFS share to (leave blank to default to [$default_mountpoint]): " mountpoint
+        read -rp "enter local mountpoint to mount SSHFS share to (leave blank to default to [$default_mountpoint]): " mountpoint
         : "${mountpoint:=$default_mountpoint}"
         list_contains "$mountpoint" "${used_mountpoints[@]}" && { report "selected mountpoint [$mountpoint] has already been used for previous definition"; continue; }
         create_mountpoint "$mountpoint" || continue
 
-        read -r -p "enter remote share to mount (leave blank to default to [$SSH_SERVER_SHARE]): " ssh_share
+        read -rp "enter remote share to mount (leave blank to default to [$SSH_SERVER_SHARE]): " ssh_share
         : "${ssh_share:=$SSH_SERVER_SHARE}"
         list_contains "${server_ip}${ssh_share}" "${mounted_shares[@]}" && { report "selected remote [${server_ip}:${ssh_share}] has already been used for previous definition"; continue; }
         [[ "$ssh_share" != /* ]] && { err "remote share needs to be defined as full path."; continue; }
@@ -1764,21 +1767,22 @@ setup_ssh() {
     report "!!! loading SSH key(s) !!!"
 
     if [[ -d "$LUKS_USB" ]]; then
-        command install -m700 <(echo "</dev/tty keepassxc-cli show --attributes password -- '$LUKS_USB/passdb/passwd_db.kdbx' 'master-ssh-key'") /tmp/.kps
-        while true; do
-            # TODO: keep an eye on keepassxc-cli, at one point it'll likely gain ssh-agent support
-            keepassxc-cli attachment-export --stdout -- "$LUKS_USB/passdb/passwd_db.kdbx" \
-                'master-ssh-key' priv_key | SSH_ASKPASS_REQUIRE=force SSH_ASKPASS=/tmp/.kps  ssh-add - && break
-            confirm "pulling SSH key from pass db failed; skip?" && break
-        done
+        command install -m700 <(echo -e "#!/usr/bin/env bash\nkeepassxc-cli show -q --attributes password -- '$KPCX_DB' 'master-ssh-key' <<< \"\$KPCX_PASS\"") /tmp/.kps
+        set_kpcx_pass || return 1
+        # TODO: keep an eye on keepassxc-cli, at one point it'll likely gain ssh-agent support
+        # note we run in subshell just so the export is not global:
+        if ! ( export KPCX_PASS; keepassxc-cli attachment-export --stdout -q -- "$KPCX_DB" \
+                'master-ssh-key' priv_key <<< "$KPCX_PASS" | SSH_ASKPASS_REQUIRE=force SSH_ASKPASS=/tmp/.kps  ssh-add - ); then
+            err "pulling SSH key from pass db failed; skipping ssh keys import"
+            return 1
+        fi
     else
         err "[$LUKS_USB] not mounted, cannot import SSH keys for the duration of this session"
         return 1
     fi
 
     # following bit only needed if systemd is decrypting some partition/drive and its key is needed to be copied over: {{{
-    #keepassxc-cli attachment-export -- "$LUKS_USB/passdb/passwd_db.kdbx" \
-        #'backup-USB-thumb' keyfile.bin /tmp/usb_thumb_1.key
+    #keepassxc-cli attachment-export -- "$KPCX_DB" 'backup-USB-thumb' keyfile.bin /tmp/usb_thumb_1.key
     #exe "sudo install -m600 -C '/tmp/usb_thumb_1.key' '/etc/cryptsetup-keys.d'"
     #exe "rm -f -- '/tmp/usb_thumb_1.key'"
     # }}}
@@ -1796,6 +1800,55 @@ setup_ssh() {
             err "ssh keys still not loaded after generating 'em"
             return 1
         fi
+    fi
+}
+
+
+set_kpcx_pass() {
+    [[ -n "$KPCX_PASS" ]] && return 0
+    is_f -nm 'no point in setting pass for it' "$KPCX_DB" || return 1
+    while true; do
+        read -rsp 'enter kpcx pass: ' KPCX_PASS
+        # test the pass:
+        keepassxc-cli ls -q "$KPCX_DB" <<< "$KPCX_PASS" > /dev/null && return 0
+        err "incorrect pass, try again"
+        unset KPCX_PASS
+    done
+}
+
+
+# restore our gpg key(s) from backups
+setup_gpg() {
+    local keyring_pass
+
+    # cannot check the existence of $GNUPGHOME itself, as dotfiles likely created it already:
+    [[ -e "$GNUPGHOME/pubring.kbx" ]] && return 0  # already set up
+
+    _import_gpg() {
+        local key="$1"  # key entry name in KPCX
+        if ! gpg --batch --pinentry-mode loopback --import-options restore \
+                --passphrase-file <(keepassxc-cli show -q --attributes password -- "$KPCX_KRING_DB" "$key" <<< "$keyring_pass") \
+                --import <(keepassxc-cli attachment-export --stdout -q -- "$KPCX_KRING_DB" "$key" backupkeys.pgp <<< "$keyring_pass"); then
+            err "importing [$key] gpg keys from backup failed; skipping setting up gpg"
+            rm -rf -- "$GNUPGHOME"   # as even failed restoration sets up scaffolding
+            return 1
+        fi
+    }
+
+    if [[ -d "$LUKS_USB" ]]; then
+        set_kpcx_pass || return 1
+        if ! keyring_pass="$(keepassxc-cli show -q --attributes password -- "$KPCX_DB" 'secret-service-db' <<< "$KPCX_PASS")"; then
+            err "pulling keyring pass from pass db failed; skipping setting up gpg"
+            return 1
+        fi
+        _import_gpg  main-gpg || return 1
+        _import_gpg  github-gpg || return 1
+        # restore trust db:
+        rm -f -- "$GNUPGHOME/trustdb.gpg"
+        gpg --import-ownertrust < <(keepassxc-cli attachment-export --stdout -q -- "$KPCX_KRING_DB" 'main-gpg' otrust.txt <<< "$keyring_pass") || err "importing gpg trust db failed w/ $?"
+    else
+        err "[$LUKS_USB] not mounted, cannot import GPG keys & trust db"
+        return 1
     fi
 }
 
@@ -2036,21 +2089,20 @@ mount_usb() {
     local partitions
 
     while true; do
-        readarray -t partitions < <(lsblk --noheadings --filter 'TYPE=="part" && RM==1' --output NAME)
+        readarray -t partitions < <(lsblk --noheadings --filter 'TYPE=="part" && RM==1' --output PATH)
         if [[ -z "${partitions[*]}" ]]; then
             confirm "couldn't find any removable drives - do you want to skip mounting luks usb?" && return
             continue
         fi
 
-        #lsblk
         lsblk --filter 'RM==1'
         select_items -s -h 'select the luks partition' "${partitions[@]}"
         if [[ -n "$__SELECTED_ITEMS" ]]; then
-            exe "sudo cryptsetup open ${__SELECTED_ITEMS} luksvol1" || { err "decrypting [${__SELECTED_ITEMS}] failed w/ $?"; continue; }
-            exe "sudo mount /dev/mapper/luksvol1 '$LUKS_USB'" || continue
-            # note unmount is done from cleanup():
-            #exe "sudo umount '$LUKS_USB'" || continue
-            #exe "sudo cryptsetup close luksvol1" || continue
+            report "pass for our LUKS-encrypted USB drive is now asked..."
+            exe "sudo cryptsetup open ${__SELECTED_ITEMS} luksvol1" || { err "decrypting [$__SELECTED_ITEMS] failed w/ $?"; continue; }
+            exe "sudo mkdir -p -- '$LUKS_USB'" || continue
+            exe "sudo mount /dev/mapper/luksvol1 '$LUKS_USB'" || { sudo rm -r -- "$LUKS_USB"; continue; }
+            # note unmount is done from cleanup()
             return
         else
            confirm "no items were selected; skip mounting luks usb?" && return
@@ -2060,10 +2112,13 @@ mount_usb() {
 
 
 setup() {
-    is_interactive && [[ "$MODE" -eq 1 ]] && mount_usb
-    setup_ssh
+    if is_interactive && [[ "$MODE" -eq 1 ]]; then
+        mount_usb
+        setup_ssh
+    fi
     setup_homesick || fail "homesick setup failed; as homesick is necessary, script will exit"
     source_shell_conf  # so we get our env vars after dotfiles are pulled in
+    is_interactive && [[ "$MODE" -eq 1 ]] && setup_gpg  # call after source_shell_conf()
 
     setup_install_log_file
 
@@ -6040,6 +6095,8 @@ install_from_repo() {
         #materia-gtk-theme  # TODO: not avail for testing in aug '25
         numix-icon-theme
         faba-icon-theme
+        gtk-3-examples  # provides gtk3-widget-factory command to test gtk3 look-and-feel
+        gtk-4-examples  # provides gtk4-widget-factory command to test gtk3 look-and-feel
         meld
         at-spi2-core  # at-spi2-core is some gnome accessibility provider; without it some py apps (eg meld) complain; # TODO: x11 deps??
         pastebinit  # https://github.com/pastebinit/pastebinit
@@ -7574,7 +7631,7 @@ _init_seafile_cli() {
 #  - seaf-cli desync -d /path/to/local/library  -> desync with server
 # shellcheck disable=SC2329
 setup_seafile() {
-    local ccnet_conf parent_dir libs lib user passwd libs_conf
+    local ccnet_conf parent_dir libs lib domain user passwd libs_conf
 
     readonly ccnet_conf="$HOME/.ccnet"
     readonly parent_dir="$BASE_DATA_DIR/seafile"  # where libraries will be downloaded into
@@ -7598,11 +7655,12 @@ setup_seafile() {
     select_items -h 'choose libraries to sync' "${libs[@]}" || return
 
     for lib in "${__SELECTED_ITEMS[@]}"; do
-        [[ -z "$user" ]] && read -r -p 'enter seafile user (should be mail): ' user
-        [[ -z "$passwd" ]] && read -r -p 'enter seafile pass: ' passwd
-        [[ -z "$user" || -z "$passwd" ]] && { err "user and/or pass were not given"; return 1; }
+        [[ -z "$domain" ]] && read -rp 'enter seafile domain (e.g. https://sea.example.com): ' domain
+        [[ -z "$user" ]] && read -rp 'enter seafile user (should be mail): ' user
+        [[ -z "$passwd" ]] && read -rsp 'enter seafile pass: ' passwd
+        [[ -z "$domain" || -z "$user" || -z "$passwd" ]] && { err "some of {domain,user,pass} were not given"; return 1; }
 
-        seaf-cli download-by-name --libraryname "$lib" -s 'https://seafile.aliste.eu' \
+        seaf-cli download-by-name --libraryname "$lib" -s "$domain" \
             -d "$parent_dir" -u "$user" -p "$passwd" || { err "[seaf-cli download-by-name] for lib [$lib] failed w/ $?"; continue; }
     done
 }
@@ -9062,7 +9120,7 @@ cleanup() {
     fi
 
     if [[ -d "$LUKS_USB" ]]; then
-        exe "sudo umount '$LUKS_USB' && sudo cryptsetup close luksvol1"
+        exe "sudo umount '$LUKS_USB' && sudo cryptsetup close luksvol1 && sudo rm -r -- '$LUKS_USB'"
     fi
 
     # shut down the build container:
