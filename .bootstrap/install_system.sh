@@ -42,7 +42,7 @@ readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
 readonly BUILD_DOCK='deb-build-box'          # name of the build container
 
-readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0'
+readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0'
 #------------------------
 #--- Global Variables ---
 #------------------------
@@ -76,8 +76,8 @@ readonly BASE_BUILDS_DIR="$BASE_PROGS_DIR/custom_builds"  # hosts our built prog
 readonly BASE_HOMESICK_REPOS_LOC="$HOME/.homesick/repos"  # !! keep real location in $HOME! otherwise some apparmor whitelisting won't work (eg for msmtp)
 readonly COMMON_DOTFILES="$BASE_HOMESICK_REPOS_LOC/dotfiles"
 readonly COMMON_PRIVATE_DOTFILES="$BASE_HOMESICK_REPOS_LOC/private-common"
-PRIVATE__DOTFILES=''   # installation specific private castle location (eg for 'work' or 'personal')
-PLATFORM_DOTFILES=''   # platform-speific castle location for machine-specific configs; optional
+PRIVATE__DOTFILES=''  # installation specific private castle location (eg for 'work' or 'personal')
+PLATFORM_DOTFILES=''  # platform-speific castle location for machine-specific configs; optional
 
 readonly SELF="${0##*/}"
 
@@ -2488,7 +2488,7 @@ install_kernel_modules() {
     #      - https://gitlab.com/ddcci-driver-linux/ddcci-driver-linux/-/issues/42
     #      - https://gitlab.com/ddcci-driver-linux/ddcci-driver-linux/-/issues/7
     modules=(
-        ddcci  # provided by ddcci-dkms
+        ddcci  # provided by ddcci-dkms pkg
     )
 
     # from https://www.ddcutil.com/kernel_module/ : only load i2c on demand if it's not already loaded into kernel:
@@ -2686,6 +2686,7 @@ bc_install() {
 
     declare -ra progs=("$@")
     bc_exe "DEBIAN_FRONTEND=noninteractive  NEEDRESTART_MODE=l  apt-get --yes install ${progs[*]}" || return $?
+    #bc_exe "${APT_ENVS:+$APT_ENVS }apt-get ${APT_OPTS:+$APT_OPTS } --yes install ${progs[*]}" || return $?
 }
 
 
@@ -5930,7 +5931,7 @@ install_from_repo() {
         easyeffects  # Audio effects for PipeWire applications; https://github.com/wwmm/easyeffects; TODO: avail as flatpak
                      # see also: https://github.com/Audio4Linux/JDSP4Linux#readme
         wireplumber
-        pulsemixer  # https://github.com/GeorgeFilipkin/pulsemixer
+        #pulsemixer  # https://github.com/GeorgeFilipkin/pulsemixer  # last commit in '20
         pasystray  # PulseAudio controller for the system tray; should work w/ pipewire
         qpwgraph  # visual representation of which audio devices are connected where; also allows point-and-click connections/configuration; inspired by Jack
                   # other pw tools to keep an eye on: Sonusmix,
@@ -5949,7 +5950,7 @@ install_from_repo() {
         sudo  # https://github.com/sudo-project/sudo
         libnotify-bin  # sends desktop notifications to a notification daemon; provides notify-send
         dunst  # notification-daemon; https://dunst-project.org/
-        rofi  # TODO: x11!
+        rofi  # supports both x11 & wayland
         picom  # picom is a compositor for X11; https://github.com/yshui/picom ; for wayland consider https://github.com/WayfireWM/wayfire
         dosfstools  # utilities for making and checking MS-DOS FAT filesystems; https://github.com/dosfstools/dosfstools
         #alien  # convert LSB, Red Hat, Stampede and Slackware Packages into Debian packages
@@ -6159,16 +6160,19 @@ install_from_repo() {
         colortest-python  # https://github.com/eikenb/terminal-colors
         zathura  # https://github.com/pwmt/zathura
         #pdfarranger  # merge, split, rotate, cropt, rearrange pdf documents/pages; https://github.com/pdfarranger/pdfarranger
-        #bookletimposer  # pdf document imposition
+        #bookletimposer  # pdf document imposition; https://kjo.herbesfolles.org/bookletimposer
         pandoc  # Universal markup converter; used as dependency by some other services
         procyon-decompiler  # https://github.com/mstrobel/procyon - java decompiler; used as dependency, eg. by lessopen to view .class files
-        #mupdf  # more featureful pdf viewer
+        #mupdf  # more featureful pdf viewer; https://github.com/ArtifexSoftware/mupdf
         feh  # TODO x11; TODO: wallpaper_changer.sh dependency; https://github.com/derf/feh (mirror)
         nsxiv  # TODO: x11; # TODO: consider [imv] that supports both wayland & x11
-        geeqie  # GTK-based image/gallery viewer
-        gthumb  # gnome image viewer; alternatives: https://flathub.org/en/apps/org.kde.koko,
+        geeqie  # GTK-based image/gallery viewer; avail as flatpak; https://www.geeqie.org/
+        gthumb  # gnome image viewer; avail as flatpak; alternatives: https://flathub.org/en/apps/org.kde.koko,
         imagemagick
-        inkscape  # vector-based drawing program  # TODO: avail as flatpak; alternatives: graphite (for raster AND vector); krita - raster/illustration; affinity - raster,vector,photo editor, not FOSS
+        inkscape  # vector-based drawing program  # TODO: avail as flatpak; alternatives:
+                                                                                # graphite (for raster AND vector)
+                                                                                # krita - raster/illustration
+                                                                                # affinity - raster,vector,photo editor, not FOSS
         mat2  # metadata anonymisation toolkit; https://github.com/jvoisin/mat2
         chafa  # image-to-text converter, i.e. images in terminals
         xsel  # TODO: x11
@@ -6211,7 +6215,7 @@ install_from_repo() {
         #signald  # note this doesn't come from debian repos
         #lxrandr  # GUI application for the Lightweight X11 Desktop Environment (LXDE); TODO: x11!
         arandr  # visual front end for XRandR; TODO: x11
-        autorandr  # TODO: x11
+        autorandr  # TODO: x11; https://github.com/phillipberndt/autorandr
         copyq  # TODO: avail as flatpak; notable alternatives: https://github.com/NiffirgkcaJ/all-in-one-clipboard - for gnome shell
                                                                https://github.com/savedra1/clipse - nice TUI manager
         copyq-plugins
@@ -6223,7 +6227,7 @@ install_from_repo() {
         abook  # ncurses address book application; to be used w/ mutt
         isync  # mbsync/isync is a command line application which synchronizes mailboxes; https://isync.sourceforge.io/
                # alternatives: getmail6
-        urlview  # utility used to extract URL from text files, especially from mail messages in order to launch some browser to view them (eg mutt); its config is in $HOME/
+        urlview  # utility used to extract URL from text files, especially from mail messages in order to launch some browser to view them (eg mutt); its config is in $HOME/; https://sr.ht/~nabijaczleweli/urlview-ng/
         translate-shell  # cli translator powered by Google Translate (and others); https://github.com/soimort/translate-shell # TODO: also avail via docker
     )
     # old/deprecated block3:
@@ -6232,7 +6236,7 @@ install_from_repo() {
     #
 
     declare -ar block4_nonwin=(
-        adb
+        adb  # https://developer.android.com/tools/releases/platform-tools
     )
 
     declare -ar block4=(
@@ -6252,7 +6256,7 @@ install_from_repo() {
         xplanet-images  # includes some map files that can be used with xplanet; TODO: x11
         #redshift  # TODO: x11!
         gammastep  # redshift alternative: https://gitlab.com/chinstrap/gammastep ; should support _some_ (wlroots) wayland as well
-        geoclue-2.0  # D-Bus geoinformation service; https://gitlab.freedesktop.org/geoclue/geoclue/
+        geoclue-2.0  # D-Bus geoinformation service. The goal of the Geoclue project is to make creating location-aware applications as simple as possible; https://gitlab.freedesktop.org/geoclue/geoclue/
         podman
         podman-docker  # installs a Docker-compatible CLI interface
         uidmap  # needed to run podman containers as non-root; note it's also a recommended pkg for podman; see https://forum.openmediavault.org/index.php?thread/42841-podman-seams-to-miss-uidmap/
@@ -6264,7 +6268,7 @@ install_from_repo() {
         #charles-proxy5  # note also avail as tarball @ https://www.charlesproxy.com/download/
         'tofu/*'
         gh  # github cli; also avail from debian
-        tealdeer  # rust-based tl;dr client
+        tealdeer  # rust-based tl;dr client  # https://github.com/tealdeer-rs/tealdeer/
     )
     # old/deprecated block4:
 
@@ -9220,7 +9224,7 @@ exit 0
 # - for laptop power management, see also laptop-mode-tools https://github.com/rickysarraf/laptop-mode-tools (there's also arch wiki on it)
 #
 # OTHER PROGS:
-# - another raster image editor: krita (more for painting & illustration)
+# - another raster image editor: krita (more for painting/raster & illustration)
 # - TODO/productivity mngr: https://github.com/johannesjo/super-productivity
 #
 # vifm alternatives:
