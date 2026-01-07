@@ -2292,7 +2292,7 @@ setup_additional_apt_keys_and_sources() {
     #create_apt_source -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh  https://installer.id.ee/media/ubuntu/ plucky main
     create_apt_source  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub  https://installer.id.ee/media/ubuntu/ plucky main
 
-    # mozilla/firefox:  https://support.mozilla.org/en-US/kb/install-firefox-linux#w_install-firefox-deb-package-for-debian-based-distributions
+    # mozilla/firefox:  https://support.mozilla.org/en-US/kb/install-firefox-linux#w_install-firefox-deb-package-for-debian-based-distributions-recommended
     #create_apt_source  mozilla  https://packages.mozilla.org/apt/repo-signing-key.gpg  https://packages.mozilla.org/apt/ mozilla main
 
     # gh: (from https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt):
@@ -6095,7 +6095,7 @@ install_from_repo() {
         #materia-gtk-theme  # TODO: not avail for testing in aug '25
         numix-icon-theme
         faba-icon-theme
-        gtk-3-examples  # provides gtk3-widget-factory command to test gtk3 look-and-feel
+        gtk-3-examples  # provides gtk3-widget-factory command to test gtk3 look-and-feel; note gtk3 is deprecated, support is dropped once gtk5 is released
         gtk-4-examples  # provides gtk4-widget-factory command to test gtk3 look-and-feel
         meld
         at-spi2-core  # at-spi2-core is some gnome accessibility provider; without it some py apps (eg meld) complain; # TODO: x11 deps??
@@ -6163,7 +6163,7 @@ install_from_repo() {
         pandoc  # Universal markup converter; used as dependency by some other services
         procyon-decompiler  # https://github.com/mstrobel/procyon - java decompiler; used as dependency, eg. by lessopen to view .class files
         #mupdf  # more featureful pdf viewer
-        feh  # TODO x11; TODO: wallpaper_changer.sh dependency; https://github.com/derf/feh/ (mirror)
+        feh  # TODO x11; TODO: wallpaper_changer.sh dependency; https://github.com/derf/feh (mirror)
         nsxiv  # TODO: x11; # TODO: consider [imv] that supports both wayland & x11
         geeqie  # GTK-based image/gallery viewer
         gthumb  # gnome image viewer; alternatives: https://flathub.org/en/apps/org.kde.koko,
@@ -6182,14 +6182,14 @@ install_from_repo() {
         #ranger  # CLI File Manager with VI Key Bindings;  https://ranger.github.io/
         vifm  # alternatives: yazi
         fastfetch  # takes screenshots of your desktop
-        maim  # TODO: x11!  - screenshot.sh depends on it; one wayland alternative: grim: https://sr.ht/~emersion/grim/ ; see https://github.com/naelstrof/maim/issues/67#issuecomment-974622572 for usage
-        flameshot  # https://github.com/flameshot-org/flameshot ; x11? looks like there's _some_ wayland support there; also avail as flatpak
+        maim  # TODO: x11!  - screenshot.sh depends on it; one wayland alternative: grim: https://gitlab.freedesktop.org/emersion/grim ; see https://github.com/naelstrof/maim/issues/67#issuecomment-974622572 for usage
+        #flameshot  # https://github.com/flameshot-org/flameshot ; x11? looks like there's _some_ wayland support there; also avail as flatpak
         ffmpeg
         ffmpegthumbnailer  # lightweight video thumbnailer that can be used by file managers to create thumbnails for your video files;  https://github.com/dirkvdb/ffmpegthumbnailer
-        vokoscreen-ng  # https://github.com/vkohaupt/vokoscreenNG  # TODO: avail as flatpak
-        peek  # simple screen recorder. It is optimized for generating animated GIFs; https://github.com/phw/peek; TODO: avail on flathub; TODO: x11! only runs in gnome shell wayland session via XWayland
-        cheese  # webcam/camera tester; https://wiki.gnome.org/Apps/Cheese ; note: might be deprecated by gnome's snapshot:  flatpak install flathub org.gnome.Snapshot
-                # other alternatives: guvcview, kamoso, webcamoid
+        vokoscreen-ng  # https://github.com/vkohaupt/vokoscreenNG  # TODO: avail as flatpak; alternatives: Kooha (flatpak),
+        #peek  # simple partial screen recorder. It is optimized for generating animated GIFs; https://github.com/phw/peek  TODO: x11! only runs in gnome shell wayland session via XWayland; works fine under x11/gtk3, but wayland is iffy. DEPRECATED/abandoned
+        #cheese  # webcam/camera tester; https://wiki.gnome.org/Apps/Cheese -- archived/deprecated, might've been deprecated by gnome's snapshot:  flatpak install flathub org.gnome.Snapshot or apt pkg gnome-snapshot
+                 # other alternatives: guvcview, kamoso, webcamoid
         #screenkey  # displays used keys; TODO: x11
         mediainfo  # utility used for retrieving technical information and other metadata about audio or video files; https://mediaarea.net/en/MediaInfo
         #screenruler  # gnome; display a ruler on screen which allows you to measure the other objects that you've there
@@ -6215,7 +6215,6 @@ install_from_repo() {
         copyq  # TODO: avail as flatpak; notable alternatives: https://github.com/NiffirgkcaJ/all-in-one-clipboard - for gnome shell
                                                                https://github.com/savedra1/clipse - nice TUI manager
         copyq-plugins
-        #googler  # Google Site Search from the terminal; https://github.com/oksiquatzel/googler  # TODO: looks like it's broken: https://github.com/oksiquatzel/googler/issues/7
         msmtp  # msmtp is an SMTP client that can be used to send mails from Mutt and probably other MUAs (mail user agents)
         msmtp-mta  # This package is compiled with SASL and TLS/SSL support
         #thunderbird  # TODO: avail as flatpak; alternatives: betterbird
@@ -6252,12 +6251,13 @@ install_from_repo() {
         xplanet  # renders an image of a planet into an X window or a file; TODO: x11
         xplanet-images  # includes some map files that can be used with xplanet; TODO: x11
         #redshift  # TODO: x11!
-        gammastep  # redshift alternative: https://gitlab.com/chinstrap/gammastep ; should support some wayland as well
+        gammastep  # redshift alternative: https://gitlab.com/chinstrap/gammastep ; should support _some_ (wlroots) wayland as well
         geoclue-2.0  # D-Bus geoinformation service; https://gitlab.freedesktop.org/geoclue/geoclue/
         podman
         podman-docker  # installs a Docker-compatible CLI interface
         uidmap  # needed to run podman containers as non-root; note it's also a recommended pkg for podman; see https://forum.openmediavault.org/index.php?thread/42841-podman-seams-to-miss-uidmap/
         passt   # needed for non-root podman container networking; note it's also a recommended pkg for podman;
+        #buildah  # OCI image build tool; kind of alternative to dockerfiles, see https://github.com/containers/buildah#example
         # slirp4netns   # fills similar needs to passt/pasta, but is older; also recommended pkg for podman
         criu  # utilities to checkpoint and restore processes in userspace; It can freeze a running container (or an individual application) and checkpoint its state to disk
         mitmproxy  # SSL-capable man-in-the-middle HTTP proxy; https://github.com/mitmproxy/mitmproxy
@@ -6426,6 +6426,9 @@ install_from_flatpak() {
 
     # other projects to consider:
     # ######################################
+
+    # screen recorder:
+    # https://flathub.org/en/apps/io.github.seadve.Kooha
 
     # podman manager:
     # https://flathub.org/en/apps/com.github.marhkb.Pods
