@@ -27,8 +27,8 @@ shopt -s nullglob  # unmatching globs to expand into empty string/list instead o
 TMP_DIR=/tmp  # changeable via an option
 readonly KRING="$HOME/.local/share/kring.sala"  # note location is referenced in db's AutoOpen section
 readonly LUKS_USB="/tmp/usb-luks-$RANDOM"  # mountpoint
-readonly KPCX_DB="$LUKS_USB/passdb/passwd_db.kdbx"
-readonly KPCX_KRING_DB="$LUKS_USB/passdb/fresh_keyring.kdbx"
+readonly KPXC_DB="$LUKS_USB/passdb/passwd_db.kdbx"
+readonly KPXC_KRING_DB="$LUKS_USB/passdb/fresh_keyring.kdbx"
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
@@ -620,7 +620,7 @@ EOF
 
     # copy over fresh keyring db:
     if [[ -d "$LUKS_USB" ]]; then
-        exe "sudo install -m600 -CT --group=$USER --owner=$USER '$KPCX_KRING_DB' '$KRING'" || return 1
+        exe "sudo install -m600 -CT --group=$USER --owner=$USER '$KPXC_KRING_DB' '$KRING'" || return 1
     else
         err "[$LUKS_USB] not mounted, cannot init our secret service db; make sure to do this manually!"
     fi
@@ -1757,22 +1757,18 @@ fetch_castles() {
 # check whether ssh key(s) were pulled with homeshick; if not, offer to create one:
 setup_ssh() {
     is_proc_running  ssh-agent || eval "$(ssh-agent)" || err 'starting ssh-agent failed' || return 1
-    is_ssh_key_loaded && return 0
+    is_ssh_key_loaded && report 'SSH already set up' && return 0
 
-    if [[ "$MODE" -ne 1 ]]; then
-        report "ssh keys not present at the moment, be prepared to enter user & passwd for private git repos."
-        return
-    fi
-
-    report "!!! loading SSH key(s) !!!"
+    [[ "$MODE" -eq 0 ]] && [[ ! -d "$LUKS_USB" ]] && mount_usb
 
     if [[ -d "$LUKS_USB" ]]; then
-        command install -m700 <(echo -e "#!/usr/bin/env bash\nkeepassxc-cli show -q --attributes password -- '$KPCX_DB' 'master-ssh-key' <<< \"\$KPCX_PASS\"") /tmp/.kps
-        set_kpcx_pass || return 1
+        report "!!! loading SSH key(s)..."
+        command install -m700 <(echo -e "#!/usr/bin/env bash\nkeepassxc-cli show -q --attributes password -- '$KPXC_DB' 'master-ssh-key' <<< \"\$KPXC_PASS\"") /tmp/.kps
+        set_kpxc_pass || return 1
         # TODO: keep an eye on keepassxc-cli, at one point it'll likely gain ssh-agent support
         # note we run in subshell just so the export is not global:
-        if ! ( export KPCX_PASS; keepassxc-cli attachment-export --stdout -q -- "$KPCX_DB" \
-                'master-ssh-key' priv_key <<< "$KPCX_PASS" | SSH_ASKPASS_REQUIRE=force SSH_ASKPASS=/tmp/.kps  ssh-add - ); then
+        if ! ( export KPXC_PASS; keepassxc-cli attachment-export --stdout -q -- "$KPXC_DB" \
+                'master-ssh-key' priv_key <<< "$KPXC_PASS" | SSH_ASKPASS_REQUIRE=force SSH_ASKPASS=/tmp/.kps  ssh-add - ); then
             err "pulling SSH key from pass db failed; skipping ssh keys import"
             return 1
         fi
@@ -1782,7 +1778,7 @@ setup_ssh() {
     fi
 
     # following bit only needed if systemd is decrypting some partition/drive and its key is needed to be copied over: {{{
-    #keepassxc-cli attachment-export -- "$KPCX_DB" 'backup-USB-thumb' keyfile.bin /tmp/usb_thumb_1.key
+    #keepassxc-cli attachment-export -- "$KPXC_DB" 'backup-USB-thumb' keyfile.bin /tmp/usb_thumb_1.key
     #exe "sudo install -m600 -C '/tmp/usb_thumb_1.key' '/etc/cryptsetup-keys.d'"
     #exe "rm -f -- '/tmp/usb_thumb_1.key'"
     # }}}
@@ -1804,15 +1800,15 @@ setup_ssh() {
 }
 
 
-set_kpcx_pass() {
-    [[ -n "$KPCX_PASS" ]] && return 0
-    is_f -nm 'no point in setting pass for it' "$KPCX_DB" || return 1
+set_kpxc_pass() {
+    [[ -n "$KPXC_PASS" ]] && return 0
+    is_f -nm 'no point in setting pass for it' "$KPXC_DB" || return 1
     while true; do
-        read -rsp 'enter kpcx pass: ' KPCX_PASS
+        read -rsp 'enter kpxc pass: ' KPXC_PASS
         # test the pass:
-        keepassxc-cli ls -q "$KPCX_DB" <<< "$KPCX_PASS" > /dev/null && return 0
+        keepassxc-cli ls -q "$KPXC_DB" <<< "$KPXC_PASS" > /dev/null && return 0
         err "incorrect pass, try again"
-        unset KPCX_PASS
+        unset KPXC_PASS
     done
 }
 
@@ -1822,13 +1818,15 @@ setup_gpg() {
     local keyring_pass
 
     # cannot check the existence of $GNUPGHOME itself, as dotfiles likely created it already:
-    [[ -e "$GNUPGHOME/pubring.kbx" ]] && return 0  # already set up
+    [[ -e "$GNUPGHOME/pubring.kbx" ]] && report 'gpg already set up' && return 0  # already set up
+
+    [[ "$MODE" -eq 0 ]] && [[ ! -d "$LUKS_USB" ]] && mount_usb
 
     _import_gpg() {
-        local key="$1"  # key entry name in KPCX
+        local key="$1"  # key entry name in KPXC
         if ! gpg --batch --pinentry-mode loopback --import-options restore \
-                --passphrase-file <(keepassxc-cli show -q --attributes password -- "$KPCX_KRING_DB" "$key" <<< "$keyring_pass") \
-                --import <(keepassxc-cli attachment-export --stdout -q -- "$KPCX_KRING_DB" "$key" backupkeys.pgp <<< "$keyring_pass"); then
+                --passphrase-file <(keepassxc-cli show -q --attributes password -- "$KPXC_KRING_DB" "$key" <<< "$keyring_pass") \
+                --import <(keepassxc-cli attachment-export --stdout -q -- "$KPXC_KRING_DB" "$key" backupkeys.pgp <<< "$keyring_pass"); then
             err "importing [$key] gpg keys from backup failed; skipping setting up gpg"
             rm -rf -- "$GNUPGHOME"   # as even failed restoration sets up scaffolding
             return 1
@@ -1836,8 +1834,9 @@ setup_gpg() {
     }
 
     if [[ -d "$LUKS_USB" ]]; then
-        set_kpcx_pass || return 1
-        if ! keyring_pass="$(keepassxc-cli show -q --attributes password -- "$KPCX_DB" 'secret-service-db' <<< "$KPCX_PASS")"; then
+        report "restoring GPG keys from backup..."
+        set_kpxc_pass || return 1
+        if ! keyring_pass="$(keepassxc-cli show -q --attributes password -- "$KPXC_DB" 'secret-service-db' <<< "$KPXC_PASS")"; then
             err "pulling keyring pass from pass db failed; skipping setting up gpg"
             return 1
         fi
@@ -1845,7 +1844,7 @@ setup_gpg() {
         _import_gpg  github-gpg || return 1
         # restore trust db:
         rm -f -- "$GNUPGHOME/trustdb.gpg"
-        gpg --import-ownertrust < <(keepassxc-cli attachment-export --stdout -q -- "$KPCX_KRING_DB" 'main-gpg' otrust.txt <<< "$keyring_pass") || err "importing gpg trust db failed w/ $?"
+        gpg --import-ownertrust < <(keepassxc-cli attachment-export --stdout -q -- "$KPXC_KRING_DB" 'main-gpg' otrust.txt <<< "$keyring_pass") || err "importing gpg trust db failed w/ $?"
     else
         err "[$LUKS_USB] not mounted, cannot import GPG keys & trust db"
         return 1
@@ -3509,7 +3508,7 @@ install_rga() {  # https://github.com/phiresky/ripgrep-all#debian-based
 }
 
 
-# replay git history; tags: git-replay, git replay
+# replay git history; tags: git-replay, git replay, git-history, git history
 # installation script @ https://raw.githubusercontent.com/unhappychoice/gitlogue/main/install.sh
 install_gitlogue() {  # https://github.com/unhappychoice/gitlogue/blob/main/docs/installation.md
     install_bin_from_git -N gitlogue unhappychoice/gitlogue 'x86_64-unknown-linux-gnu.tar.gz'
@@ -6875,6 +6874,8 @@ choose_single_task() {
         setup_hosts
         setup_systemd
         setup_udev
+        setup_ssh
+        setup_gpg
 
         generate_ssh_key
         install_nm_dispatchers
