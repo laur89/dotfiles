@@ -64,9 +64,10 @@ steps separately apart from the full installation mode.
 1. install sudo, if not already installed:
     * su
     * apt-get install sudo
-1. add your user to sudo group (if not already done so by the preseed):
+1. add your user to sudo group (likely already done by preseed):
     * `/usr/sbin/adduser $USER  sudo`    (and logout + login afterwards!)
 1. sudo apt-get update
+1. insert our LUKS usb (for secrets)
 1. execute script:
     * `./install_system.sh -F personal|work`
     * optionally pass `-N` option for non-interactive (ie standalone) mode,
@@ -298,6 +299,7 @@ For GUI dconf editor install `dconf-editor` pkg.
 > $ keepassxc-cli show --attributes password -- /path/to/secrets.kdbx 'entry name'
   - if using passhole, then
   > $ ph [--database /path/to/secrets.kdbx] show Internet/forums/forum.net [--field password]
+- unlock root LUKS with key on USB drive: https://filis.me/posts/how-to-decrypt-a-luks-setup-with-a-pendrive
 
 ## TODO
 
