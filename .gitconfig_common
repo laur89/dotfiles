@@ -1,6 +1,7 @@
 ; interesting resources:
 ;  - https://github.com/intelfx/dotfiles/blob/master/.gitconfig
 ;  - github PR management: https://gist.github.com/gnarf/5406589
+;  - see https://codeberg.org/mergiraf/mergiraf for automatic-ish merge conflict solving!
 
 ;[name]  ! name block doesn't belong in common gitconfig !
 [merge]
@@ -53,17 +54,27 @@
     autoSquash = true  ; automatically handle the !fixup & !squash commits, see https://thoughtbot.com/blog/autosquashing-git-commits
     updateRefs = true  ; automatically handle stacked branches updates, see https://dev.to/onepoint/git-update-refs-in-a-nutshell-574c
 [difftool]
-    prompt = true
+    # Run the difftool immediately, don't ask 'are you sure' each time:
+    prompt = false
 [difftool "nvr"]
     cmd = nvr -s -d $LOCAL $REMOTE
+[difftool "difftastic"]
+    # from https://difftastic.wilfred.me.uk/git.html#difftool
+    # See `man git-difftool` for a description of MERGED, LOCAL and REMOTE.
+    # TODO: does not work, see our issue at https://github.com/Wilfred/difftastic/issues/932
+    cmd = difft "$MERGED" "$LOCAL" "abcdef1" "100644" "$REMOTE" "abcdef2" "100644"
 [diff]
     tool = meld
+    ;tool = difftastic
     ;tool = p4merge
     ;tool = nvr
     ;tool = vimdiff
     renames = true
     colorMoved = default
 [pager]
+    # Use a pager if the difftool output is larger than one screenful,
+    # consistent with the behaviour of `git diff`:
+    ;difftool = true  # <-- !note this will stop launching meld w/ $ gitdi
     difftool = false
     ;diff = diff-so-fancy | less --tabs=4 -RFXS --pattern '^(Date|added|deleted|modified): '
 [interactive]
