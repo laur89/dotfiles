@@ -128,6 +128,7 @@ print_usage() {
           -S            single task
           -U            update/quick refresh
           -Q            faster update
+          -O            allow running in offline mode
           -P platform   force platform dots castle
           -L log_lvl    int, log level to use
           -T /tmp/dir/  path to temp dir to use, defaults to /tmp
@@ -1756,14 +1757,14 @@ fetch_castles() {
 
 # check whether ssh key(s) were pulled with homeshick; if not, offer to create one:
 setup_ssh() {
-    is_proc_running  ssh-agent || eval "$(ssh-agent)" || err 'starting ssh-agent failed' || return 1
+    is_proc_running  ssh-agent || eval "$(ssh-agent)" || { err 'starting ssh-agent failed'; return 1; }
     is_ssh_key_loaded && report 'SSH already set up' && return 0
 
     [[ "$MODE" -eq 0 ]] && [[ ! -d "$LUKS_USB" ]] && mount_usb
 
     if [[ -d "$LUKS_USB" ]]; then
         report "!!! loading SSH key(s)..."
-        command install -m700 <(echo -e "#!/usr/bin/env bash\nkeepassxc-cli show -q --attributes password -- '$KPXC_DB' 'master-ssh-key' <<< \"\$KPXC_PASS\"") /tmp/.kps
+        command install -Tm500 <(echo -e "#!/usr/bin/env bash\nkeepassxc-cli show -q --attributes password -- '$KPXC_DB' 'master-ssh-key' <<< \"\$KPXC_PASS\"") /tmp/.kps
         set_kpxc_pass || return 1
         # TODO: keep an eye on keepassxc-cli, at one point it'll likely gain ssh-agent support
         # note we run in subshell just so the export is not global:
@@ -1818,7 +1819,7 @@ setup_gpg() {
     local keyring_pass
 
     # cannot check the existence of $GNUPGHOME itself, as dotfiles likely created it already:
-    [[ -e "$GNUPGHOME/pubring.kbx" ]] && report 'gpg already set up' && return 0  # already set up
+    [[ -e "$GNUPGHOME/pubring.kbx" ]] && report 'gpg already set up' && return 0
 
     [[ "$MODE" -eq 0 ]] && [[ ! -d "$LUKS_USB" ]] && mount_usb
 
@@ -3161,8 +3162,8 @@ install_seafile_gui() {
 #
 # also avail in apt, and as appimage
 install_xournalpp() {  # https://github.com/xournalpp/xournalpp
-    install_from_git xournalpp/xournalpp 'Debian-.*x86_64.deb'
-    #install_bin_from_git -N xournalpp xournalpp/xournalpp '-x86_64.AppImage'
+    #install_from_git xournalpp/xournalpp 'Debian-.*x86_64.deb'
+    install_bin_from_git -N xournalpp xournalpp/xournalpp '-x86_64.AppImage'
 }
 
 
@@ -8339,8 +8340,8 @@ select_items() {
     if cmd_avail fzf; then
         local opts out
 
-        opts="$FZF_DEFAULT_OPTS "
-        [[ "$is_single_selection" -eq 1 ]] && opts+=' --no-multi ' || opts+=' --multi '
+        opts="$FZF_DEFAULT_OPTS --height 50%"
+        [[ "$is_single_selection" -eq 1 ]] && opts+=' --no-multi' || opts+=' --multi'
 
         out="$(printf '%s\n' "${options[@]}" | FZF_DEFAULT_OPTS="$opts" fzf --header "$hdr")" || return 1
         mapfile -t __SELECTED_ITEMS <<< "$out"
@@ -8352,7 +8353,7 @@ select_items() {
         __menu() {
             local i
 
-            echo -e "\n---------------------"
+            echo -e '\n---------------------'
             echo "$hdr"
 
             #for i in "${!options[@]}"; do
