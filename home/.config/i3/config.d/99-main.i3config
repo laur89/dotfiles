@@ -642,9 +642,7 @@ assign [class="^Tor Browser$"]           $w1
 assign [class="^[fF]irefox$" instance="^Navigator$"]  $w1
 assign [class="^jetbrains-(idea|studio)$"]       $w2
 #assign [class="^Zathura"]                $w3
-assign [class="^(Signal|discord|Ferdium)$"]                $w3
-#assign [class="^discord$"]               $w3
-#assign [class="^Ferdium$"]               $w3
+assign [class="^(Signal|discord|vesktop|equibop|Ferdium|Pidgin)$"]                $w3
 assign [class="^(mpv|MPlayer|smplayer)$"] $w4
 assign [class="^streamlink-twitch-gui$"] $w4
 assign [class="^(VirtualBox|Virt-manager)$"]            $w7
