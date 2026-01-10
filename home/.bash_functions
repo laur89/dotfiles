@@ -71,6 +71,8 @@ aptsrc() { aptsearch "$@"; }  # alias
 #    wajig size
 #    or:
 #    start aptitude, select Views > New Flat Package List, plress l and enter ~i, press S and enter ~installsize
+# - find why given pkg is installed:
+#   apt-cache rdepends --installed pkg
 nondebpkgs() {
     apt list '?narrow(?installed, ?not(?origin(Debian)))'
     # or:
@@ -2219,6 +2221,10 @@ __fo() {
             check_progs_installed "$office" || return 1
             "$office" "${files[@]}" &  # libreoffice doesn't like option ending marker '--'
             ;;
+        *'(No such file or directory)')  # e.g. when file has been deleted, but not yet staged by git
+            err "file does not exist" -1
+            return 1
+            ;;
         *)
             err "dunno what to open this type of file with: [$filetype]" -1
             return 1
@@ -2829,19 +2835,19 @@ pubkey() {
     o=0
     while getopts 'sg' opt; do
         case "$opt" in
-           s)
-              let o++
-              s=ssh
-              local key="$HOME/.ssh/id_rsa.pub"
-              [[ -f "$key" ]] || { err "[$key] does not exist"; return 1; }
-              contents="$(cat -- "$key")" || { err "cat-ing [$key] failed."; return 1; }
-              ;;
-           g)
-              let o++
-              s=gpg
-              contents="$(gpg --output - --armor --export "${GPGKEY:-$USER}")" || { err "retrieving gpg pubkey failed."; return 1; }
-              ;;
-           *) err "need to choose which public key to copy: -s & -g for ssh & gpg respectively"; return 1 ;;
+            s)
+                let o++
+                s=ssh
+                local key="$HOME/.ssh/main.pub"
+                [[ -f "$key" ]] || { err "[$key] does not exist"; return 1; }
+                contents="$(cat -- "$key")" || { err "cat-ing [$key] failed."; return 1; }
+                ;;
+            g)
+                let o++
+                s=gpg
+                contents="$(gpg --output - --armor --export "${GPGKEY:-$USER}")" || { err "retrieving gpg pubkey failed."; return 1; }
+                ;;
+            *) err "need to choose which public key to copy: -s & -g for ssh & gpg respectively"; return 1 ;;
         esac
     done
     shift "$((OPTIND-1))"
