@@ -3,15 +3,52 @@
 #
 # In nut shell highest PIN gets installed
 #
-# Pining default are as follow which are in addition to our settings:
-#   990 - for version that are not installed but DO belong to our `APT::Default-Relase "stable"` setting.
-#   500 - for versions that are not installed and do not belong to the target release
-#   100 - for packages that already installed, this also means other versions of same package
-#     1 - for experimental packages; packages with "NotAutomatic: yes"
+# Rough pinning explanations from  $ man apt_preferences:
+#   P >= 1000 - causes a version to be installed even if this constitutes a downgrade of the package
+#   990 <= P < 1000 - causes a version to be installed even if it does not come from the target release, unless the installed version is more recent
+#   500 <= P < 990 - causes a version to be installed unless there is a version available belonging to the target release or the installed version is more recent
+#   100 <= P < 500 - causes a version to be installed unless there is a version available belonging to some other distribution or the installed version is more recent
+#   0 < P < 100 - causes a version to be installed only if there is no installed version of the package
+#   P < 0 - prevents the version from being installed
+#   P = 0 - has undefined behaviour, do not use it.
 #
-# Our Pinnings
-#   400 - backports that can safely be installed without the need to update other packages
-#    50 - unstable packages, install forced in the details screen, can result in conflicts
+# - per https://wiki.debian.org/AptConfiguration :
+#   - P < 100 will prevent automatic upgrades
+#   - default priority is 500
+# - to view priority of a package:  $ apt-cache policy package
+# - to view the global priority for each Apt source (repository):  $ apt-cache policy
+#
+# Example from manpage: {
+#           Package: *
+#           Pin: release a=testing
+#           Pin-Priority: 900
+#
+#           Package: *
+#           Pin: release a=unstable
+#           Pin-Priority: 800
+#
+#           Package: *
+#           Pin: release o=Debian
+#           Pin-Priority: -10
+#
+# will result [apt-get install package-name] or [apt-get upgrade|dist-upgrade] in
+# upgrading to latest ver from testing. [apt-get install package/unstable] will cause APT to upgrade the specified package to the latest version from the unstable distribution.
+# Thereafter, apt-get upgrade will upgrade the package to the most recent testing version if that is more recent than the installed version, otherwise, to the most recent unstable
+# version if that is more recent than the installed version.
+# }
+#
+# Another example from manpage: {
+#           Package: *
+#           Pin: release a=stable
+#           Pin-Priority: 900
+#
+#           Package: *
+#           Pin: release o=Debian
+#           Pin-Priority: -10
+# will result [apt-get install package-name] or [apt-get upgrade|dist-upgrade] in
+# upgrading to latest ver from stable. [apt-get install package/testing] will cause APT to upgrade the specified package to the latest version from the testing distribution;
+# the package will not be upgraded again unless this command is given again.
+# }
 
 Package: *
 Pin: release l=Debian-Security
@@ -28,12 +65,16 @@ Pin-Priority: 990
 
 Package: *
 Pin: release a=unstable
-Pin-Priority: 90
+Pin-Priority: 800
+
+#Package: *
+#Pin: release a=stable
+#Pin-Priority: 10
+
+#Package: *
+#Pin: release a=oldstable
+#Pin-Priority: 1
 
 Package: *
-Pin: release a=stable
-Pin-Priority: 10
-
-Package: *
-Pin: release a=oldstable
-Pin-Priority: 1
+Pin: release o=Debian
+Pin-Priority: -10
