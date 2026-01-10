@@ -1,5 +1,7 @@
 {
     "brightness_step": 5,
+    "ddcutil_gvcp_flags": ["--brief"],
+    "sync_brightness": true,
     "offset": {
         "type": "soft"
     },
