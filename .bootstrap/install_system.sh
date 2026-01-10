@@ -775,11 +775,11 @@ setup_apt() {
 
     is_d -m 'skipping apt conf installation' "$apt_dir" || return 1
     for file in \
-            preferences \
+            00-main.pref \
                 ; do
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
-        is_f -m "won't install it" "$file" || continue
+        is_f -nm "won't install it" "$file" || continue
         exe "sudo install -m644 -C '$file' '$apt_dir/preferences.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
@@ -788,7 +788,7 @@ setup_apt() {
                 ; do
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
-        is_f -m "won't install it" "$file" || continue
+        is_f -nm "won't install it" "$file" || continue
         exe "sudo install -m644 -C '$file' '$apt_dir/sources.list.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
@@ -797,7 +797,7 @@ setup_apt() {
                 ; do
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
 
-        is_f -m "won't install it" "$file" || continue
+        is_f -nm "won't install it" "$file" || continue
         exe "sudo install -m644 -C '$file' '$apt_dir/apt.conf.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
