@@ -43,6 +43,9 @@ if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != 'loaded' ]]; then
 fi
 
 # this needs to be outside env_vars, unless you're gonna load those every time bashrc is loaded;
+#
+# The environment variable TERM tells applications the name of a terminal description
+# to read from the terminfo(5) database, see https://github.com/tmux/tmux/wiki/FAQ#what-is-term-and-what-does-it-do
 case "$TERM" in
     xterm* | rxvt-unicode-256color) export TERM=xterm-256color ;;
 esac
