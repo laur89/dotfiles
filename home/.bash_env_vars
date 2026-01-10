@@ -77,7 +77,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export XDG_STATE_HOME="${XDG_STATE_HOME:-/home/$USER/.local/state}"
 
     export BASE_DATA_DIR='/data'
-    export BASE_PROGS_DIR='/progs'
+    export BASE_PROGS_DIR='/progs'  # TODO: consider deprecating and using /opt
 
     # !! note homeshick env vars are likely also defined/duplicated in our install bootstrap script !!
     export BASE_HOMESICK_REPOS_LOC="$HOME/.homesick/repos"  # !! keep real location in $HOME! otherwise some apparmor whitelisting won't work (eg for msmtp)
@@ -131,7 +131,8 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     #export HGRCPATH="$XDG_CONFIG_HOME/hg/hgrc"
     export PASSWORD_STORE_DIR="$XDG_CONFIG_HOME/password-store"  # used by pass?
     export GNUPGHOME="$HOME/.gnupg"
-    export GPGKEY=515503C58074FAB0  # key-id of our default key; aka 'long key-id', being last 16 chars of the key-id, which is 160bit fingerprint for a key
+    export GPGKEY=01BD7014E2B721D5  # key-id of our default key; aka 'long key-id', being last 16 chars of the key-id, which is 160bit fingerprint for a key
+                                    # find via  $ gpg --list-secret-keys --keyid-format LONG | grep -Po '^sec\s+\w+/\K\S+'
 
     # Update RC file locations for apps that don't support XDG:
     #export GTK2_RC_FILES="$XDG_CONFIG_HOME/gtk-2.0/gtkrc"
@@ -152,11 +153,19 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export QT_AUTO_SCREEN_SCALE_FACTOR=1
     export QT_SCALE_FACTOR_ROUNDING_POLICY=PassThrough
     # TODO: should we wrap this env var around something like [if wm = i3]?:
-    export QT_QPA_PLATFORMTHEME=qt5ct:qt6ct
+    export QT_QPA_PLATFORMTHEME=qt5ct  # or qt6ct
+
+    # see https://wiki.archlinux.org/title/Wayland#Qt
+    #export QT_QPA_PLATFORM=wayland
+    #export QT_QPA_PLATFORM=xcb  # to force the usage of X11 on a Wayland session
+    export QT_QPA_PLATFORM='wayland;xcb'  # allows Qt to use the xcb (X11) plugin instead if Wayland is not available
 
     # these from https://github.com/vincentbernat/i3wm-configuration/blob/master/dotfiles/xsession
     export XDG_SESSION_DESKTOP=i3
     export XDG_CURRENT_DESKTOP=i3  # TODO: should this be set to 'GNOME' instead, as per https://wiki.archlinux.org/title/Qt#Configuration_of_Qt_5/6_applications_under_environments_other_than_KDE_Plasma ?
+                                   # NOTE: one user of XDG_CURRENT_DESKTOP env var is xdg-desktop-portal to choose config var per https://wiki.archlinux.org/title/XDG_Desktop_Portal#Configuration
+                                   #       setting it here however won't likely work, as it needs to be set for the
+                                   #       xdg-desktop-portal.service drop-in snippet, explained in https://wiki.archlinux.org/title/XDG_Desktop_Portal#Force_desktop_environment
 
     #export POWERLINE_CONFIG_COMMAND="powerline-config"
     ## /usr/local/bin/powerline-config
@@ -187,7 +196,9 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
                                                          # needs to be outside of synced wallpapers dir, as
                                                          # they *might* be system specific (eg resolution).
 
-    # which diff-so-fancy (git differ) executable to use; referenced eg by some functions in ~/.bash_functions:
+    # which git differ to use; started out w/ diff-so-fancy, hence the var name.
+    # note the expectation is git should be able to pipe into this executable.
+    # referenced eg. by some functions in ~/.bash_functions:
     export _DSF='delta'  # alternatively: diff-so-fancy
 
     # set SUDO_ASKPASS so vim/nvim w!! command can save file as sudo: (from https://stackoverflow.com/a/79329426/1803648)
