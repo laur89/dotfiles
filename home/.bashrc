@@ -524,4 +524,7 @@ i="$BASE_DATA_DIR/dev/scripts/bash-fancy-ctrl-z"
 # - as per automated setup logic, atuin is sourced _after_ bash-preexec
 command -v atuin > /dev/null && eval -- "$(atuin init bash --disable-up-arrow)"
 
+GPG_TTY=$(tty)
+export GPG_TTY  # to make sure git tag properly launches pinentry; instructed by gpg manual: https://www.gnupg.org/documentation/manuals/gnupg/Invoking-GPG_002dAGENT.html
+
 unset i

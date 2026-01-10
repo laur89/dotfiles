@@ -5,6 +5,7 @@
 # - good starter when coming from bash: https://www.bash2zsh.com/zsh_refcard/refcard.pdf
 # - you should always load the module zsh/complist before autoloading compinit
 #   - why tho?
+# - to profile zsh startup: https://scottspence.com/posts/speeding-up-my-zsh-shell#how-to-profile-your-zsh
 # commands:
 #   - zsh -o SOURCE_TRACE -lic ''
 #     - print traces of files that get sourced
@@ -718,5 +719,8 @@ command -v aichat > /dev/null && [[ -f "$i" ]] && source "$i"
 # note compinit & cdreplay are commented out, as are invoked by zinit's "zpcompinit;zpcdreplay"
 #autoload -Uz compinit; compinit
 #zinit cdreplay -q  # needs to be after compinit call; see https://github.com/zdharma-continuum/zinit#calling-compinit-without-turbo-mode
+
+GPG_TTY=$(tty)
+export GPG_TTY  # to make sure git tag properly launches pinentry; instructed by gpg manual: https://www.gnupg.org/documentation/manuals/gnupg/Invoking-GPG_002dAGENT.html
 
 unset i
