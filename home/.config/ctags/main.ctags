@@ -1,3 +1,39 @@
+# config file for Universal Ctags
+# docs: https://docs.ctags.io/en/latest/option-file.html#order-of-loading-option-files
+#
+#--exclude=*.cache
+#--exclude=test
+#--exclude=tests
+#--exclude=build
+#--exclude=public
+#--exclude=libs
+#--exclude=db
+#--exclude=*.html
+--exclude=.git
+--exclude=node_modules
+--exclude=.svn
+--exclude=.hg
+--exclude=*.min.*
+--exclude=*.map
+--exclude=*.swp
+--exclude=*.bak
+--exclude=*.pyc
+--exclude=*.class
+--exclude=*.sln
+--exclude=*.Master
+--exclude=*.csproj
+--exclude=*.csproj.user
+--exclude=*.dll
+--exclude=*.pdb
+--exclude=tags
+--exclude=cscope.*
+--exclude=*.tar.*
+--exclude=dist
+--exclude=tmp
+--exclude=.tmp
+--exclude=*bundle.*
+--exclude=log
+
 --langdef=js
 --langmap=js:.js
 --regex-JavaScript=/([A-Za-z0-9._$]+)[ \t]*[:=][ \t]*\{/\1/o,object/
