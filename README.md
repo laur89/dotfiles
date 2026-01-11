@@ -20,7 +20,7 @@ steps separately apart from the full installation mode.
 1. Install Debian testing release netinstall (in reality, any Debian base distro
    should work fine).
     * can be found from https://www.debian.org/devel/debian-installer/
-      - [daily build](https://cdimage.debian.org/cdimage/daily-builds/daily/arch-latest/amd64/iso-cd/)
+      - [daily build](https://cdimage.debian.org/cdimage/daily-builds/daily/arch-latest/amd64/iso-cd/) (or [this link](https://cdimage.debian.org/cdimage/daily-builds/daily/current/amd64/iso-cd/))
       - [weekly build](https://cdimage.debian.org/cdimage/weekly-builds/amd64/iso-cd/)
     * *Note*: sometimes the daily images are broken, verify the build is passing [here](https://d-i.debian.org/daily-images/daily-build-overview.html)
       before downloading.
@@ -300,6 +300,12 @@ For GUI dconf editor install `dconf-editor` pkg.
   - if using passhole, then
   > $ ph [--database /path/to/secrets.kdbx] show Internet/forums/forum.net [--field password]
 - unlock root LUKS with key on USB drive: https://filis.me/posts/how-to-decrypt-a-luks-setup-with-a-pendrive
+- [debian wiki/DebianTesting](https://wiki.debian.org/DebianTesting)
+- [debian wiki/best-practices-for-testing-sid-users](https://wiki.debian.org/DebianUnstable#What_are_some_best_practices_for_testing.2Fsid_users.3F)
+
+## Prior to OS reinstall
+- back up GPG owner trust & store in secrets
+- back up installed packages: `dpkg --get-selections > packages.dpkg`
 
 ## TODO
 
