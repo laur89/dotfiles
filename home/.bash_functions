@@ -64,6 +64,7 @@ aptsrc() { aptsearch "$@"; }  # alias
 # - inspect state of all pkgs:
 #    dpkg -l
 #    dpkg --get-selections '*' | bat
+#    dpkg --get-selections > packages.dpkg
 #    apt list --installed | bat
 # - find biggest packages:
 #    dpigs
@@ -73,6 +74,8 @@ aptsrc() { aptsearch "$@"; }  # alias
 #    start aptitude, select Views > New Flat Package List, plress l and enter ~i, press S and enter ~installsize
 # - find why given pkg is installed:
 #   apt-cache rdepends --installed pkg
+# - list packages from experimental repos:
+#   aptitude search ~S~i~Aexperimental
 nondebpkgs() {
     apt list '?narrow(?installed, ?not(?origin(Debian)))'
     # or:
@@ -163,9 +166,9 @@ upgrade() {
         apt-get ${full:+--allow-releaseinfo-change} -y update && \
         rep_ running apt-get upgrade --without-new-pkgs && \
         NEEDRESTART_MODE=l  apt-get upgrade --without-new-pkgs -y && \
-        rep_ running apt-get dist-upgrade && \
-        NEEDRESTART_MODE=l  apt-get dist-upgrade -y && \
-        #NEEDRESTART_MODE=l  apt full-upgrade  # alternative to apt-get dist-upgrade
+        rep_ running apt-get ${full:+dist-}upgrade && \
+        NEEDRESTART_MODE=l  apt-get ${full:+dist-}upgrade -y && \
+        #NEEDRESTART_MODE=l  apt ${full:+full-}upgrade  # alternative to apt-get dist-upgrade
         rep_ running apt-get autoremove --purge && \
         NEEDRESTART_MODE=l  apt-get autoremove --purge -y || exit \$?
 
