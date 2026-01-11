@@ -605,13 +605,13 @@ setup_keepassxc_ss() {
 
     # from https://github.com/keepassxreboot/keepassxc/issues/6274#issuecomment-810983553 or
     # https://keepassxc.org/docs/KeePassXC_UserGuide#_enabling_the_integration :
-    #cat > "${XDG_DATA_HOME:-${HOME}/.local/share}/dbus-1/services/org.freedesktop.secrets.service" <<EOF
+    #cat >| "${XDG_DATA_HOME:-${HOME}/.local/share}/dbus-1/services/org.freedesktop.secrets.service" <<EOF
 #[D-BUS Service]
 #Name=org.freedesktop.secrets
 #Exec=/usr/bin/keepassxc
 #EOF
     # instead of directly exec'ing keepassxc, we start systemd service per https://stackoverflow.com/a/31725112/1803648 :
-    cat > "${XDG_DATA_HOME:-${HOME}/.local/share}/dbus-1/services/org.freedesktop.secrets.service" <<EOF
+    cat >| "${XDG_DATA_HOME:-${HOME}/.local/share}/dbus-1/services/org.freedesktop.secrets.service" <<EOF
 [D-BUS Service]
 Name=org.freedesktop.secrets
 Exec=/bin/false
@@ -621,7 +621,7 @@ EOF
 
     # copy over fresh keyring db:
     if [[ -d "$LUKS_USB" ]]; then
-        exe "sudo install -m600 -CT --group=$USER --owner=$USER '$KPXC_KRING_DB' '$KRING'" || return 1
+        exe "sudo install -m600 -CT --group=$USER --owner=$USER '$KPXC_KRING_DB' '$KRING'"
     else
         err "[$LUKS_USB] not mounted, cannot init our secret service db; make sure to do this manually!"
     fi
@@ -5947,6 +5947,9 @@ install_from_repo() {
         apt-show-versions
         unattended-upgrades  # automatic installation of security upgrades
         apt-listchanges  # compare a new version of a package with the one currently installed and show what has been changed; TODO: we haven't provided configuration for it! one example: https://wiki.debian.org/PeriodicUpdates?action=show&redirect=UnattendedUpgrades#Get_more_information_about_changes
+        apt-listbugs  # retrieves bug reports from the Debian Bug Tracking System and lists them. Especially, it is intended to be invoked before each installation/upgrade by APT
+        debsecan  # Debian Security Analyzer - tool to generate a list of vulnerabilities which affect a particular Debian installation
+                  # note it's also dependency for https://github.com/khimaros/debian-hybrid (project that generates automatic higher apt-pins for security updates from unstable)
         sudo  # https://github.com/sudo-project/sudo
         libnotify-bin  # sends desktop notifications to a notification daemon; provides notify-send
         dunst  # notification-daemon; https://dunst-project.org/
