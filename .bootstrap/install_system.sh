@@ -1502,6 +1502,9 @@ install_deps() {
     install_block 'python3-pykeepass python3-pynput'
     py_install keepmenu     # https://github.com/firecat53/keepmenu
 
+    # goobook - Access your Google contacts from the command line;  tags: email
+    py_install goobook https://gitlab.com/goobook/goobook
+
     #if is_native; then
         ## mopidy-spotify        # https://mopidy.com/ext/mpd/
         ##py_install Mopidy-MPD
