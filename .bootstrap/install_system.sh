@@ -2636,6 +2636,7 @@ install_own_builds() {
     install_btop
     install_ytdl
     install_procs
+    install_procinfo
     #install_alacritty
     install_wezterm
     install_atuin
@@ -4279,8 +4280,17 @@ install_lemurs_display_manager() {  # https://github.com/coastalwhite/lemurs
 #
 # examples:
 # $ procs --watch --sortd cpu
+# $ procs --tree
 install_procs() {  # https://github.com/dalance/procs
     install_bin_from_git -N procs dalance/procs  'x86_64-linux.zip'
+}
+
+
+# portable process inspector for Linux, written in bash
+# alternatives:
+# - https://github.com/pranshuparmar/witr
+install_procinfo() {  # https://github.com/wenekar/procinfo
+    install_from_url  procinfo 'https://raw.githubusercontent.com/wenekar/procinfo/refs/heads/main/procinfo.sh'
 }
 
 
@@ -6168,7 +6178,7 @@ install_from_repo() {
         #transmission
         #transmission-remote-cli
         #transmission-remote-gtk
-        etckeeper
+        etckeeper  # TODO: configure
     )
 
     declare -ar block3=(
@@ -6180,6 +6190,7 @@ install_from_repo() {
         rxvt-unicode  # https://cvs.schmorp.de/rxvt-unicode/
         colortest-python  # https://github.com/eikenb/terminal-colors
         zathura  # https://github.com/pwmt/zathura
+                 # alternatives: foliate
         #pdfarranger  # merge, split, rotate, cropt, rearrange pdf documents/pages; https://github.com/pdfarranger/pdfarranger
         #bookletimposer  # pdf document imposition; https://kjo.herbesfolles.org/bookletimposer
         pandoc  # Universal markup converter; used as dependency by some other services
@@ -6982,6 +6993,7 @@ __choose_prog_to_build() {
         install_btop
         install_ytdl
         install_procs
+        install_procinfo
         install_eza
         install_delta
         install_dust
