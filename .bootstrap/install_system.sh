@@ -2621,6 +2621,7 @@ install_own_builds() {
     #install_obsidian
     install_delta
     install_dust
+    install_ctags
     #install_bandwhich
     is_btrfs && install_btdu
     install_difftastic
@@ -3046,19 +3047,24 @@ extract_tarball() {
         [[ -d "$dir" ]] || { err "couldn't find single extracted dir in extracted tarball in [$(pwd -P)]"; return 1; }
         echo "$dir"
     else  # we're looking for a specific file (not a dir!) under extracted tarball
-        unset file
         [[ "$standalone" == 1 ]] && dir='.' || dir="$tmpdir"
 
         # TODO: support recursive extraction?
         if [[ -n "$file_filter" ]]; then
+            local files
             while IFS= read -r -d $'\0' file; do
-                file -iLb "$file" | grep -Eq "$file_filter" && break || unset file
+                file -iLb "$file" | grep -Eq "$file_filter" && files+=("$file")
             done < <(find "$dir" -name "${name_filter:-*}" -type f -print0)
+            if [[ "${#files[@]}" -ne 1 ]]; then
+                err "matched [${#files[@]}] extracted/uncompressed files in [$(realpath "$dir")], expected 1"
+                return 1
+            fi
+            file="${files[0]}"
         else
             file="$(find "$dir" -name "${name_filter:-*}" -type f)"
+            [[ -f "$file" ]] || { err "couldn't locate single extracted/uncompressed file in [$(realpath "$dir")]; resulting/found asset is [$file]"; return 1; }
         fi
 
-        [[ -f "$file" ]] || { err "couldn't locate single extracted/uncompressed file in [$(realpath "$dir")]; resulting/found asset is [$file]"; return 1; }
         echo "$file"
     fi
 
@@ -4343,6 +4349,14 @@ install_delta() {  # https://github.com/dandavison/delta
 install_dust() {  # https://github.com/bootandy/dust
     #install_from_git  bootandy/dust  '_amd64.deb'
     install_bin_from_git -N dust  bootandy/dust 'x86_64-unknown-linux-gnu.tar.gz'
+}
+
+
+# https://github.com/universal-ctags/ctags
+# https://docs.ctags.io/en/latest/
+install_ctags() {
+    #install_bin_from_git -N ctags -n ctags universal-ctags/ctags-nightly-build '-linux-x86_64.release.tar.xz'
+    install_from_git universal-ctags/ctags-nightly-build '-linux-x86_64.deb'
 }
 
 
@@ -6186,7 +6200,6 @@ install_from_repo() {
         polybar  # TODO: x11
         xdotool  # TODO: x11 - way not work w/ xwayland! !!! our screenshot.sh depends on it as of '25;  # https://github.com/jordansissel/xdotool/
         python3-xlib  # pure Python 3 implementation of the X11 protocol;  TODO: x11;  https://github.com/python-xlib/python-xlib
-        exuberant-ctags  # parses source code and produces a sort of index mapping the names of significant entities (e.g. functions, classes, variables) to the location where that entity is defined
         'nushell/*'
         shellcheck
         #ranger  # CLI File Manager with VI Key Bindings;  https://ranger.github.io/
@@ -6971,6 +6984,7 @@ __choose_prog_to_build() {
         install_eza
         install_delta
         install_dust
+        install_ctags
         install_bandwhich
         install_btdu
         install_difftastic
