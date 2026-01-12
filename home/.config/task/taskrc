@@ -20,8 +20,8 @@ data.location=/data/.task
 # To use the default location of the XDG directories,
 # move this configuration file from ~/.taskrc to ~/.config/task/taskrc and uncomment below
 
-#data.location=~/.local/share/task
-#hooks.location=~/.config/task/hooks
+data.location=~/.local/share/task
+hooks.location=~/.config/task/hooks
 
 weekstart=monday
 
