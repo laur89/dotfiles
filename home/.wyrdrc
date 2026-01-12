@@ -2,7 +2,6 @@
 # others' dotfiles:
 # - https://github.com/joshaw/dotfiles2/blob/master/wyrdrc
 #
-include "/etc/wyrdrc"
 
 # command for editing an old appointment, given a line number %line% and filename %file%
 set edit_old_command="$EDITOR +%line% %file%"
