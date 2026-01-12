@@ -5310,7 +5310,8 @@ install_i3_deps() {
     #py_install i3ipc      # https://github.com/altdesktop/i3ipc-python
 
     # rofi-tmux (aka rft):
-    py_install rofi-tmux-ng  # https://github.com/laur89/rofi-tmux-ng
+    #py_install rofi-tmux-ng  # TODO: unreleased as of Nov '24 due to drone.ci's plugins/pypi image using outdated twine
+    py_install -g laur89/rofi-tmux-ng  # https://github.com/laur89/rofi-tmux-ng
 
     # install i3expo:
     py_install i3expo
