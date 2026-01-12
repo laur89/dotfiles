@@ -18,6 +18,8 @@
 --exclude=*.swp
 --exclude=*.bak
 --exclude=*.pyc
+--exclude=*.venv
+--exclude=*venv
 --exclude=*.class
 --exclude=*.sln
 --exclude=*.Master
