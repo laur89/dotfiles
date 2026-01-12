@@ -161,7 +161,7 @@ fi
     #urxvtc
 #) &
 
-# from https://www.roaringpenguin.com/wiki/index.php/Remind_use_case_1
+# from https://dianne.skoll.ca/wiki/Remind_use_case_1
 if ! is_proc_running remind; then
     # note: notification command should be kept sync with the one in show_reminders.sh
     [[ -f "$HOME/.reminders" ]] && remind -z -k'notify-send -t 0 -i gtk-dialog-info reminder -- "%s" &' ~/.reminders &
