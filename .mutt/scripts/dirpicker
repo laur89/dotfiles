@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
+#
 # from https://github.com/anufrievroman/neomutt-file-picker/blob/master/dirpicker
 
-tmpfile=$HOME/.config/mutt/.picker.tmp
+# note tempfile is referenced from muttrc macro, so cannot be randomized!
+#tmpfile=$HOME/.config/mutt/.picker.tmp
+tmpfile=/tmp/.mutt-file-picker.tmp
 
 if \[ -z "$1" \]; then
     #ranger --choosedir $tmpfile &&    # Use Ranger
     vifm --choose-dir "$tmpfile" &&    # Use Vifm
+    # yazi "$@" --cwd-file="$tmpfile" && # Use Yazi
     sed --follow-symlinks -i 's/ /^V /g' "$tmpfile" &&
-    echo "$(awk 'BEGIN {printf "%s", "push "} {printf "%s", "<save-entry>\""$0"\"<enter>"}' "$tmpfile")" > "$tmpfile"
+    awk 'BEGIN {printf "%s", "push "} {printf "%s", "<save-entry>\""$0"\"<enter>"}' "$tmpfile" >| "$tmpfile"
 elif \[ "$1" == clean \]; then
     rm -- "$tmpfile"
 fi
