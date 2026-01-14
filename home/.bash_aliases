@@ -56,6 +56,13 @@ alias lofi='mpv --no-video https://youtu.be/jfKfPfyJRdk'  # play lo-fi music
 alias pdx=plandex
 pdxn() { [[ "$#" -eq 1 ]] || { err 'need one arg - new plan name to create'; return 1; }; plandex new -n "$1"; }
 
+# change dir, as that's where attachments will be saved to by default: (from https://wiki.archlinux.org/title/Mutt#Default_folder_for_saving_attachments)
+# note this should be possibly handled from within neomutt as well: https://neomutt.org/guide/configuration.html#7-%C2%A0changing-the-current-working-directory
+alias neomutt='pushd $HOME/Downloads/mutt; neomutt; popd'
+alias vifm='vifmrun'  # vifmrun is our script
+command -v vim > /dev/null 2>&1 || alias vim='nvim'  # yup
+command -v nvim > /dev/null 2>&1 || alias nvim='vim'
+
 # note following uses the 'none' driver, now effectively superseded by 'docker' driver:   # https://minikube.sigs.k8s.io/docs/drivers/none/
 #alias mkstart='CHANGE_MINIKUBE_NONE_USER=true sudo -E minikube start --driver=none --extra-config=apiserver.service-node-port-range=80-32767 --apiserver-ips 127.0.0.1 --apiserver-name localhost'
 # ...and this is using docker driver:
@@ -178,11 +185,8 @@ alias ehco='echo'
 alias mut='neomutt'
 alias utt='neomutt'
 alias mutt='neomutt'
-alias vifm='vifmrun'  # latter being our script
 alias cim='nvim'
 alias vin='nvim'
-command -v vim > /dev/null 2>&1 || alias vim='nvim'  # yup
-command -v nvim > /dev/null 2>&1 || alias nvim='vim'
 alias bim='nvim'
 alias nbim='nvim'
 alias nivm='nvim'
