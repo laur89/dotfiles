@@ -32,17 +32,27 @@ macro index ,u "\
 #macro index \Cr "T~U<enter><tag-prefix><clear-flag>N<untag-pattern>.<enter>" "mark all messages as read"
 macro index <esc>m "T~N<enter>;WNT~O<enter>;WO\CT~T<enter>" "mark all messages read"
 macro index \Cr "<tag-prefix><clear-flag>N" "mark tagged messages as read"
-macro pager \cb "<enter-command>unset wait_key<enter><pipe-entry>'urlview'<enter>" 'Follow links with urlview'
-# or:
-#macro pager \Cu "|urlview<enter>" "call urlview to open links"
+
+# archive Gmail mail: (from https://wiki.archlinux.org/title/Mutt#Archive_treated_e-mails)
+macro index \' "<tag-pattern>~R !~D !~F<enter><tag-prefix><save-message>+[Gmail]/All <enter>" "Archive"
+
+# open urls: {{{
+#macro index,pager \cb "<pipe-message> urlview<Enter>" "call urlview to extract URLs out of a message"
+#macro attach,compose \cb "<pipe-entry> urlview<Enter>" "call urlview to extract URLs out of a message"
 
 # urlscan is an alternative to urlview:  https://github.com/firecat53/urlscan
-#macro index,pager \cb "<pipe-message> urlscan<Enter>" "call urlscan to extract URLs out of a message"
-#macro attach,compose \cb "<pipe-entry> urlscan<Enter>" "call urlscan to extract URLs out of a message"
+macro index,pager \cb "<pipe-message> urlscan<Enter>" "call urlscan to extract URLs out of a message"
+macro attach,compose \cb "<pipe-entry> urlscan<Enter>" "call urlscan to extract URLs out of a message"
+# }}} /open urls
 
-macro attach 'V' "<pipe-entry>cat >~/.cache/mutt/mail.html && $BROWSER ~/.cache/mutt/mail.html && rm ~/.cache/mutt/mail.html<enter>" "open mail in graphical browser"
-macro index b '<enter-command>toggle sidebar_visible<enter><refresh>'
-macro pager b '<enter-command>toggle sidebar_visible<enter><redraw-screen>'
+#macro attach 'V' "<pipe-entry>cat >~/.cache/mutt/mail.html && $BROWSER ~/.cache/mutt/mail.html && rm ~/.cache/mutt/mail.html<enter>" "open mail in graphical browser"
+# note following macro requires setting intl.charset.fallback.utf8_for_file = true in about:config if $BROWSER=firefox, per https://wiki.archlinux.org/title/Mutt#Viewing_HTML :
+macro attach 'V' "<pipe-entry>iconv -c --to-code=UTF8 > ~/.cache/mutt/mail.html<enter><shell-escape>$BROWSER ~/.cache/mutt/mail.html<enter>" "open mail in graphical browser"
+
+#macro index b '<enter-command>toggle sidebar_visible<enter><refresh>'
+#macro pager b '<enter-command>toggle sidebar_visible<enter><redraw-screen>'
+bind index,pager b sidebar-toggle-visible
+
 macro index 'c' '<change-folder>?<change-dir><home>^K=<enter>'
 # note, this one shadows the create_alias:
 
@@ -62,10 +72,10 @@ macro index \\\\ "<vfolder-from-query>" "Search mailbox"
 # toggle between mailboxes and virtual mailboxes:
 #bind index,pager ??? sidebar-toggle-virtual
 
-# attach & save attachments using external program; from https://github.com/anufrievroman/neomutt-file-picker/ {{{
+# attach & save attachments using external program; from https://github.com/anufrievroman/neomutt-file-picker {{{
 # type A instead of standard a to call the script that opens vifm:
-macro compose A "<shell-escape>bash $HOME/.config/mutt/filepicker<enter><enter-command>source $HOME/.config/mutt/tmpfile<enter><shell-escape>bash $HOME/.config/mutt/filepicker clean<enter>" "Attach with your file manager"
-# on the attachment screen (by default reached w/ v), type S instead of standard s to
+macro compose A "<shell-escape>bash $HOME/.mutt/scripts/filepicker<enter><enter-command>source /tmp/.mutt-file-picker.tmp<enter><shell-escape>bash $HOME/.mutt/scripts/filepicker clean<enter>" "Attach with your file manager"
+# on the attachment _saving_ screen (by default reached w/ 'v'), type S instead of standard s to
 # call the script - vifm is opened; choose folder & quit:
-macro attach S "<shell-escape>bash $HOME/.config/mutt/dirpicker<enter><enter-command>source $HOME/.config/mutt/tmpfile<enter>o" "Choose folder with ranger"
+macro attach S "<shell-escape>bash $HOME/.mutt/scripts/dirpicker<enter><enter-command>source /tmp/.mutt-file-picker.tmp<enter>y<enter>" "Choose folder with ranger"
 # }}} /attachments

@@ -306,6 +306,7 @@ For GUI dconf editor install `dconf-editor` pkg.
 ## Prior to OS reinstall
 - back up GPG owner trust & store in secrets
 - back up installed packages: `dpkg --get-selections > packages.dpkg`
+- TODO: back up `$XDG_DATA_HOME/atuin/history.db`?
 
 ## TODO
 

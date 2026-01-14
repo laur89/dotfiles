@@ -23,7 +23,8 @@ if is_work; then
     commands="$(cat -- "$WORK_BOX")"
     #commands+="$PERSONAL_BOX_SEPARATOR"
     #commands="$(cat -- "$PERSONAL_BOX")"
-    commands+="\nset spool_file = +work/Inbox"
+    # not setting spool_file atm, it's already set from accounts/work
+    #commands+="\nset spool_file = +work/Inbox"  # note + is substitution to our configured 'folder' path
 #elif ! is_laptop; then
     #commands="$(cat -- "$PERSONAL_BOX")"
 else
@@ -33,7 +34,8 @@ else
         commands+="$WORK_BOX_SEPARATOR"
         commands+="$(cat -- "$WORK_BOX")"
     fi
-    commands+="\nset spool_file = +personal/INBOX"
+    # not setting spool_file atm, it's already set from accounts/personal
+    #commands+="\nset spool_file = +personal/INBOX"  # note + is substitution to our configured 'folder' path
 fi
 
 echo -e "$commands"

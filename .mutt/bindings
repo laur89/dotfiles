@@ -14,6 +14,8 @@ bind pager k previous-line
 bind pager g noop  # https://neomutt.org/guide/configuration.html#bind-warnings
 bind pager gg top
 bind pager G bottom
+## default binding for help is ?
+bind index,pager,attach			<F1>			help
 bind index,pager \# noop
 bind index,pager \& noop
 bind index,pager R group-reply
@@ -43,8 +45,7 @@ bind index,pager ,t modify-labels
 bind compose p postpone-message
 # to edit the postponed drafts locally, recall them:
 bind index p recall-message
-# contacts query stuff?:
-bind editor <Tab> complete-query
+bind editor <Tab> complete-query   # complete e.g. abook alias query
 bind editor ^T    complete
 #
 

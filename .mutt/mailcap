@@ -1,10 +1,16 @@
+# Note we could also open stuff w/ xdg-open, see https://wiki.archlinux.org/title/Mutt#Open_attachments_or_view_HTML_email_in_the_background
+#
+#
 application/octet-stream ; echo %s "can be anything...ie unidentified"                    ; copiousoutput
 #application/octet-stream; ~/.mutt/view_attachment.sh %s "-"
-text/html                ; /usr/bin/elinks -dump %s ; nametemplate=%s.html ; copiousoutput
-#text/html                ; lynx -assume_charset=%{charset} -display_charset=utf-8 -dump %s; nametemplate=%s.html; copiousoutput
-#application/pdf          ; /usr/bin/evince %s                             ; copiousoutput
 
-application/pdf          ; /usr/bin/zathura %s                             ; copiousoutput
+#text/html                ; /usr/bin/elinks -dump %s ; nametemplate=%s.html ; copiousoutput
+text/html                ; elinks -dump -dump-color-mode 1; copiousoutput;
+#text/html               ; lynx -assume_charset=%{charset} -display_charset=utf-8 -collapse_br_tags -dump %s; nametemplate=%s.html; copiousoutput
+#text/html               ; w3m -I %{charset} -T text/html; copiousoutput;
+
+#application/pdf          ; /usr/bin/evince %s                             ; copiousoutput
+application/pdf          ; zathura %s                             ;
 
 application/msword       ; /usr/bin/libreoffice %s                         ; copiousoutput
 application/odt; libreoffice %s ; copiousoutput

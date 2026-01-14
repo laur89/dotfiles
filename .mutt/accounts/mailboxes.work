@@ -1,3 +1,6 @@
+# note from arch wiki: > You must set the mailboxes variables or the imap_check_subscribed
+#                        to tell the sidebar which folder should be displayed
+#
 # Any imap folders that should be checked regularly for new mail should be listed here:
 mailboxes +work/Inbox \
           +work/Inbox/.sb \

@@ -7,27 +7,28 @@
 set realname      = "Laur Aliste"
 set from          = "laur.aliste@williamhill.com"
 #set sendmail      = "/usr/bin/msmtp -a work"  # defaults to /usr/sbin/sendmail
-set sendmail      = "/usr/share/doc/msmtp/examples/msmtpqueue/msmtp-enqueue.sh -a work"  # to be able to send while offline;
-                                                                                         # make sure it's the same as in checkmail.sh
+set sendmail      = "/usr/libexec/msmtp/msmtpqueue/msmtp-enqueue.sh -a work"  # to be able to send while offline;
+                                                                              # make sure it's the same as in checkmail.sh
 set trash         = "+work/Trash"
 #folder-hook work/Trash unset trash  # unset trash if you're in trash folder as per http://unix.stackexchange.com/a/105608
 set mbox          = "+work/Archive"  # If you want to save (move) mails out of the inbox which you've read instead of deleting them right on (or cluttering up your inbox).
                                      # read mail gets moved if 'move' var is set or as a result of mbox-hook;
-set postponed     = "+work/Drafts"
+set postponed     = "+work/Drafts"   # where to save and/or look for postponed messages
 
-set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh -a ~/.abook/work_addressbook'
-#set query_command = "echo; ~/.local/bin/gcontacts pbrisbin@gmail.com 'getnetrc pbrisbin@gmail.com' '%s'"
-#set query_command = "contacts -Sf '%eTOKEN%n' '%s' | sed -e 's/TOKEN/\t/g'"
-# goobook address qyery (executed by Tab binding):
-#set query_command="goobook query '%s'"
-#macro index,pager ,a "<pipe-message>goobook add<return>" "add sender to google contacts"
+set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh -a ~/.mutt/accounts/work.abook'
+#set query_command = "echo; ~/.local/bin/gcontacts pbrisbin@gmail.com 'getnetrc pbrisbin@gmail.com' %s"
+#set query_command = "contacts -Sf '%eTOKEN%n' %s | sed -e 's/TOKEN/\t/g'"
+
+# goobook binds:
+#set query_command="goobook query %s"
+#macro index,pager A "<pipe-message>goobook add<return>" "add sender to google contacts"
+
 # abook binds:
-set query_command="abook --mutt-query '%s'"
-macro generic,index,pager \ca "<shell-escape>abook<return>" "launch abook"
-macro index,pager A "<pipe-message>abook --add-email-quiet<return>" "add the sender address to abook"
+set query_command="abook --datafile ~/.mutt/accounts/work.abook --mutt-query %s"
+macro generic,index,pager \ca "<shell-escape>abook --datafile ~/.mutt/accounts/work.abook<return>" "launch abook"
+macro index,pager A "<pipe-message>abook --datafile ~/.mutt/accounts/work.abook --add-email-quiet<return>" "Add this sender to Abook"
 
-    set header_cache = ~/.mutt/caches/wh-headercache       # where to store hdrs
-    set message_cachedir = ~/.mutt/caches/wh-messagecache  # where to store bodies
+# TODO: instead of abook, goobook, consider khard
 
 macro index ,c "<change-folder>+personal/INBOX<enter>" "change to personal account"
 macro index ,z "<shell-escape>mbsync --pull-new work<enter>" "sync IMAP"
@@ -54,7 +55,6 @@ macro index S "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch.py
 # perform notmuch query, showin only the results:
 #macro index L "<enter-command>unset wait_key<enter><shell-escape>read -p 'notmuch query: ' x; echo \$x >~/.cache/mutt_terms<enter><limit>~i \"\`notmuch search --output=messages \$(cat ~/.cache/mutt_terms) | head -n 600 | perl -le '@a=<>;chomp@a;s/\^id:// for@a;$,=\"|\";print@a'\`\"<enter>" "show only messages matching a notmuch pattern"
 
-
 macro index,pager a "\
     <save-message>=work/Archive<enter>" \
     "Archive message"
@@ -77,9 +77,17 @@ macro index,pager a "\
 #macro index,pager ,r ":unset wait_key; set pipe_decode\n|icalview.rb\n:set wait_key; unset pipe_decode\n" "record a reminder"
 macro index,pager ,r ":unset wait_key; set pipe_decode\n|vim -\n:set wait_key; unset pipe_decode\n" "record a reminder"
 
+# signature:
+set sig_dashes = yes  # If set, a line containing "-- " (note the trailing space) will be inserted before your $signature
+set signature         = ~/.mutt/signature
+
 set spool_file = "+work/Inbox"
 
-my_hdr Company: William Hill Online  # add company header
+#my_hdr Company: TODO Company Name  # add custom header(s)
+## This header only appears to MS Outlook users:
+#my_hdr X-Message-Flag: WARNING!! Outlook sucks
+## Custom Mail-User-Agent ID:
+#my_hdr User-Agent: Every email client sucks, this one just sucks less.
 
 # set status color so it's visually clear which account you're on:
 color status cyan default

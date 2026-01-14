@@ -7,19 +7,23 @@
 set realname      = "Laur Aliste"
 set from          = "laur.aliste@gmail.com"
 #set sendmail      = "/usr/bin/msmtp -a personal"  # defaults to /usr/sbin/sendmail
-set sendmail      = "/usr/share/doc/msmtp/examples/msmtpqueue/msmtp-enqueue.sh -a personal"  # to be able to send while offline;
-                                                                                             # make sure it's the same as in checkmail.sh
+set sendmail      = "/usr/libexec/msmtp/msmtpqueue/msmtp-enqueue.sh -a personal"  # to be able to send while offline;
+                                                                                  # make sure it's the same as in checkmail.sh
 set trash         = "+personal/trash"
 #folder-hook personal/trash unset trash  # unset trash if you're in trash folder as per http://unix.stackexchange.com/a/105608
 set mbox          = "+personal/archive"  # If you want to save (move) mails out of the inbox which you've read instead of deleting them right on (or cluttering up your inbox).
                                          # read mail gets moved if 'move' var is set or as a result of mbox-hook;
-set postponed     = "+personal/drafts"
+set postponed     = "+personal/drafts"   # where to save and/or look for postponed messages
 
-set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh -a ~/.abook/personal_addressbook'
+set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh -a ~/.mutt/accounts/personal.abook'
 #set query_command = "echo; ~/.local/bin/gcontacts pbrisbin@gmail.com 'getnetrc pbrisbin@gmail.com' '%s'"
 
-    set header_cache = ~/.mutt/caches/personal-headercache       # where to store hdrs
-    set message_cachedir = ~/.mutt/caches/personal-messagecache  # where to store bodies
+# abook binds:
+set query_command="abook --datafile ~/.mutt/accounts/personal.abook --mutt-query %s"
+macro generic,index,pager \ca "<shell-escape>abook --datafile ~/.mutt/accounts/personal.abook<return>" "launch abook"
+macro index,pager A "<pipe-message>abook --datafile ~/.mutt/accounts/personal.abook --add-email-quiet<return>" "Add this sender to Abook"
+
+# TODO: instead of abook, goobook, consider khard
 
 macro index ,c "<change-folder>+work/Inbox<enter>" "change to work account"
 macro index ,z "<shell-escape>mbsync --pull-new personal<enter>" "sync IMAP"
@@ -40,7 +44,13 @@ macro index ,z "<shell-escape>mbsync --pull-new personal<enter>" "sync IMAP"
 #macro index,pager <f3> '<sync-mailbox><enter-command>source ~/.mutt/work<enter><change-folder>!<enter>'
 macro index S "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch.py -g ~/mail/personal/temp/search<enter><change-folder-readonly>+personal/temp/search<enter>" "search mail (using notmuch)"
 
+# signature:
+unset sig_dashes  # If set, a line containing "-- " (note the trailing space) will be inserted before your $signature
+unset signature   # remove our signature
+
 set spool_file = "+personal/INBOX"
+
+unmy_hdr *  # reset any custom headers set by my_hdr function (possibly by other account config)
 
 macro index,pager a "\
     <save-message>=personal/archive<enter>" \
