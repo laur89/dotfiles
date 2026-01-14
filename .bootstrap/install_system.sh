@@ -206,6 +206,7 @@ check_dependencies() {
         [keepassxc-cli]=keepassxc-full
         [ssh-add]=openssh-client
         [ssh-agent]=openssh-client
+        [ansi2txt]=colorized-logs
     )
 
     for prog in \
@@ -214,7 +215,7 @@ check_dependencies() {
             mktemp file date id html2text \
             pwd uniq sort xxd openssl mokutil \
             gpg keepassxc-cli ssh-add ssh-agent \
-            cryptsetup lsblk \
+            ansi2txt cryptsetup lsblk \
                 ; do
         if ! cmd_avail "$prog"; then
             report "[$prog] not installed yet, installing..."
@@ -538,7 +539,7 @@ setup_systemd() {
             fname="${fname/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
 
             # valid systemd units listed @ https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html
-            # as of '25 they are (ctrl+f this line in above page): ".service", ".socket", ".device", ".mount", ".automount", ".swap", ".target", ".path", ".timer", ".slice", or ".scope".
+            # as of '25 they are (ctrl+f following line in above page): ".service", ".socket", ".device", ".mount", ".automount", ".swap", ".target", ".path", ".timer", ".slice", or ".scope".
             if [[ -f "$node" && "$node" =~ \.(service|socket|device|mount|automount|swap|target|path|timer|slice|scope)$ ]]; then  # note we require certain suffixes
                 __var_expand_move $sudo "$node" "$tdir/$fname" || continue
 
@@ -1253,8 +1254,11 @@ install_deps() {
         install_bin_from_git -N tmux-fingers  Morantron/tmux-fingers '-linux-x86_64'  # expected binary name from https://github.com/Morantron/tmux-fingers/blob/master/tmux-fingers.tmux
     }
 
+    # see also/consider:
+    # - https://github.com/monkeyxite/muttlook?tab=readme-ov-file
     _install_mutt_deps() {
-        true
+        # https://github.com/Konfekt/mutt-trim
+        install_from_url  mutt-trim 'https://raw.githubusercontent.com/Konfekt/mutt-trim/refs/heads/master/mutt-trim'
     }
 
     # see also: https://github.com/romkatv/zsh4humans
@@ -1502,7 +1506,8 @@ install_deps() {
     install_block 'python3-pykeepass python3-pynput'
     py_install keepmenu     # https://github.com/firecat53/keepmenu
 
-    # goobook - Access your Google contacts from the command line;  tags: email
+    # goobook - Access your Google contacts from the command line;  tags: email,
+    #                                                               similar to: abook, khard
     py_install goobook https://gitlab.com/goobook/goobook
 
     #if is_native; then
@@ -1608,6 +1613,7 @@ setup_dirs() {
             $BASE_DATA_DIR/mail/work \
             $BASE_DATA_DIR/mail/personal \
             $BASE_DATA_DIR/Downloads \
+            $BASE_DATA_DIR/Downloads/mutt \
             $BASE_DATA_DIR/Videos \
             $BASE_DATA_DIR/Music \
             $BASE_DATA_DIR/Documents \
@@ -6047,6 +6053,9 @@ install_from_repo() {
         network-manager-gnome
         jq  # https://jqlang.github.io/jq
             # see also go-qo: https://github.com/kiki-ki/go-qo
+        pv  # pv (Pipe Viewer) can be inserted into any normal pipeline between two processes to give a visual indication of how quickly data is passing through,
+            # how long it has taken, how near to completion it is, and an estimate of how long it will be until completion
+            # https://www.ivarch.com/programs/pv.shtml
         crudini  # .ini file manipulation tool
         htop  # https://htop.dev/
         glances  # Curses-based monitoring tool; https://github.com/nicolargo/glances
@@ -6072,7 +6081,8 @@ install_from_repo() {
         wyrd  # ncurses-based frontend for remind; https://gitlab.com/wyrd-calendar/wyrd
         taskwarrior  # https://taskwarrior.org/ ; executable is 'task'
         tree
-        hyperfine  # cli benchmarking tool
+        hyperfine  # cli benchmarking tool; alternatives: - multitime (only avail from sid likely)
+        #                                                 - poop (https://github.com/andrewrk/poop); newer than hyperfine, written in zig
         # cpulimit - limit process to % of cpu, not related to nice; e.g. $ cpulimit --limit 50 -i npm run run
         #debian-goodies
         #subversion  # might be used as a dependency, e.g. by zinit plugin (no more - github no longer supports svn)
@@ -6188,7 +6198,7 @@ install_from_repo() {
         chromium
         chromium-sandbox  # TODO: doucment what's this about
         rxvt-unicode  # https://cvs.schmorp.de/rxvt-unicode/
-        colortest-python  # https://github.com/eikenb/terminal-colors
+        colortest-python  # https://github.com/eikenb/terminal-colors ; try options --rgb , -o , -n
         zathura  # https://github.com/pwmt/zathura
                  # alternatives: foliate
         #pdfarranger  # merge, split, rotate, cropt, rearrange pdf documents/pages; https://github.com/pdfarranger/pdfarranger
@@ -6216,7 +6226,7 @@ install_from_repo() {
         shellcheck
         #ranger  # CLI File Manager with VI Key Bindings;  https://ranger.github.io/
         vifm  # alternatives: yazi
-        fastfetch  # takes screenshots of your desktop
+        fastfetch  # screenshot tool
         maim  # TODO: x11!  - screenshot.sh depends on it; one wayland alternative: grim: https://gitlab.freedesktop.org/emersion/grim ; see https://github.com/naelstrof/maim/issues/67#issuecomment-974622572 for usage
         #flameshot  # https://github.com/flameshot-org/flameshot ; x11? looks like there's _some_ wayland support there; also avail as flatpak
         ffmpeg
@@ -6231,7 +6241,7 @@ install_from_repo() {
         lynx  # terminal web browser;
         elinks  # terminal web browser; has tabs! https://github.com/rkd77/elinks/
         #links2  # terminal+GUI web browser; TODO: x11?!
-        #w3m  # another CLI web browser
+        #w3m  # another CLI web browser; belive it's unmaintained from ~ '23
         tmux
         neovim
         python3-pynvim  # Python3 library for scripting Neovim processes through its msgpack-rpc API; https://github.com/neovim/pynvim
@@ -6253,12 +6263,16 @@ install_from_repo() {
         msmtp  # msmtp is an SMTP client that can be used to send mails from Mutt and probably other MUAs (mail user agents)
         msmtp-mta  # This package is compiled with SASL and TLS/SSL support
         #thunderbird  # TODO: avail as flatpak; alternatives: betterbird
-        neomutt
+        neomutt  # alternatives: aerc (TUI MUA for notmuch), astroid (GUI MUA for notmuch)
         notmuch
         abook  # ncurses address book application; to be used w/ mutt
+        khard  # address book for the Linux console; It creates, reads, modifies and removes vCard address book entries at your local machine. Khard is also compatible w/ mutt
         isync  # mbsync/isync is a command line application which synchronizes mailboxes; https://isync.sourceforge.io/
                # alternatives: getmail6
         urlview  # utility used to extract URL from text files, especially from mail messages in order to launch some browser to view them (eg mutt); its config is in $HOME/; https://sr.ht/~nabijaczleweli/urlview-ng/
+                 # alternatives: urlscan
+        urlscan  # slightly better alternative to urlview. likely used by our mutt config.
+                 # one advantage over urlview is it handles long urls better
         translate-shell  # cli translator powered by Google Translate (and others); https://github.com/soimort/translate-shell # TODO: also avail via docker
     )
     # old/deprecated block3:
@@ -6271,7 +6285,8 @@ install_from_repo() {
     )
 
     declare -ar block4=(
-        colorized-logs
+        colorized-logs  # Some tools like gcc, dmesg, grep --color, colordiff, ccze, etc can enhance their output with color, making reading a lot more pleasant.
+                        # You can usually view that only on your terminal or with "less -R"; https://github.com/kilobyte/colorized-logs
         highlight  # syntax highlighting; https://gitlab.com/saalen/highlight
         python3-pygments  # syntax highlighting in py
         ugrep  # Universal grep: ultra fast searcher of file systems, text and binary files, source code, archives, compressed files, documents, and more; https://github.com/Genivia/ugrep/
