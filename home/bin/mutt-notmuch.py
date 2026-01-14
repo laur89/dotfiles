@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+#
+# from https://github.com/honza/mutt-notmuch-py
 """
 mutt-notmuch-py
 
@@ -16,23 +18,43 @@ This script overrides the $HOME/.cache/mutt_results each time you run a query.
 
 Install this by adding this file somewhere on your PATH.
 
-Tested on OSX Lion and Arch Linux.
+Tested on OSX Lion, OSX El Capitan, Fedora 23, and Arch Linux.
 
-(c) 2012 - Honza Pokorny
+(c) 2012-2016 --- Honza Pokorny
 Licensed under BSD
 """
 
+from __future__ import print_function
 import os
 import hashlib
 
-from commands import getoutput
+try:
+    from shlex import quote
+except ImportError:
+    from pipes import quote
+
+import sys
+
 from mailbox import Maildir
 from optparse import OptionParser
 from collections import defaultdict
+import readline
+
+VERSION = '1.3.0'
+
+try:
+    from commands import getoutput
+except ImportError:
+    from subprocess import getoutput
+
+try:
+    input = raw_input
+except NameError:
+    pass
 
 
 def digest(filename):
-    with open(filename) as f:
+    with open(filename, 'rb') as f:
         return hashlib.sha1(f.read()).hexdigest()
 
 
@@ -51,21 +73,38 @@ def command(cmd):
     return getoutput(cmd)
 
 
-def main(dest_box, is_gmail):
-    query = raw_input('Query: ')
+def normalize(path):
+    if path:
+      # Use expanduser() so that os.symlink() won't get weirded out by
+      # tildes.
+      return os.path.expanduser(path).rstrip('/')
+
+
+def main(dest_box, options):
+    is_gmail = options.gmail
+    filter_path = options.base_path
+    history_path = normalize(options.history_path)
+    if history_path and os.path.exists(history_path):
+        readline.read_history_file(history_path)
+    query = input('Query: ')
+    if history_path:
+      readline.write_history_file(history_path)
 
     command('mkdir -p %s/cur' % dest_box)
     command('mkdir -p %s/new' % dest_box)
 
     empty_dir(dest_box)
 
-    files = command('notmuch search --output=files %s' % query).split('\n')
+    files = command('notmuch search --output=files {}'.format(quote(query))).split('\n')
 
     data = defaultdict(list)
     messages = []
 
     for f in files:
         if not f:
+            continue
+
+        if filter_path is not None and filter_path not in f:
             continue
 
         try:
@@ -96,7 +135,13 @@ if __name__ == '__main__':
                  help='gmail-specific behavior')
     p.add_option('-G', '--not-gmail', dest='gmail',
                  action='store_false',
-                 help='gmail-specific behavior')
+                 help='Normal, non-gmail-specific behavior')
+    p.add_option('-p', '--base-path', dest='base_path',
+                 help='Only include messages in given base path')
+    p.add_option('--history-path', dest='history_path',
+                 help='Save/restore query history to given path')
+    p.add_option('-v', '--version', dest='version', action='store_true',
+                 help='Show version')
     (options, args) = p.parse_args()
 
     if args:
@@ -104,5 +149,11 @@ if __name__ == '__main__':
     else:
         dest = '~/.cache/mutt_results'
 
-    # Use expanduser() so that os.symlink() won't get weirded out by tildes.
-    main(os.path.expanduser(dest).rstrip('/'), options.gmail)
+    if options.version:
+        print(VERSION)
+        sys.exit(0)
+
+    try:
+        main(normalize(dest), options)
+    except KeyboardInterrupt:
+        pass
