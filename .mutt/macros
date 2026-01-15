@@ -1,40 +1,24 @@
 # vim: syntax=neomuttrc
 macro index ,i      "<change-folder>!<enter>"  "go to inbox"
 #macro index ,p      "<pipe-message>cat > ~/"   "save message as"
-macro index <space> "<collapse-thread>"        "[un]collapse thread"
+#macro index <space> "<collapse-thread>"        "[un]collapse thread"  # already set in bindings!
 
-# TODO: notmuch-mutt should be deprecated, as neomutt includes notmuch patch integration
-macro index ,s "\
-  <enter-command>\
-    set my_old_wait_key=\$wait_key \
-    nowait_key \
-  <enter>\
-  <shell-escape>notmuch-mutt --prompt search<enter>\
-  <change-folder-readonly>~/.cache/notmuch/mutt/results<enter>\
-  <enter-command>\
-    set wait_key=\$my_old_wait_key \
-  <enter>" \
-  "search"
-
-macro index ,u "\
-  <enter-command>set \
-    my_old_pipe_decode=\$pipe_decode \
-    nopipe_decode \
-  <enter>\
-  <pipe-message>ghu<enter>\
-  <delete-thread>\
-  <enter-command>set \
-    pipe_decode=\$my_old_pipe_decode \
-  <enter>" \
-  "Unsubscribe from any email with a List-Unsubscribe header"
+#macro index ,u "\
+  #<enter-command>set \
+    #my_old_pipe_decode=\$pipe_decode \
+    #nopipe_decode \
+  #<enter>\
+  #<pipe-message>ghu<enter>\
+  #<delete-thread>\
+  #<enter-command>set \
+    #pipe_decode=\$my_old_pipe_decode \
+  #<enter>" \
+  #"Unsubscribe from any email with a List-Unsubscribe header"
 
 # Ctrl-R to mark all as read:
 #macro index \Cr "T~U<enter><tag-prefix><clear-flag>N<untag-pattern>.<enter>" "mark all messages as read"
 macro index <esc>m "T~N<enter>;WNT~O<enter>;WO\CT~T<enter>" "mark all messages read"
 macro index \Cr "<tag-prefix><clear-flag>N" "mark tagged messages as read"
-
-# archive Gmail mail: (from https://wiki.archlinux.org/title/Mutt#Archive_treated_e-mails)
-macro index \' "<tag-pattern>~R !~D !~F<enter><tag-prefix><save-message>+[Gmail]/All <enter>" "Archive"
 
 # open urls: {{{
 #macro index,pager \cb "<pipe-message> urlview<Enter>" "call urlview to extract URLs out of a message"
@@ -49,13 +33,9 @@ macro attach,compose \cb "<pipe-entry> urlscan<Enter>" "call urlscan to extract 
 # note following macro requires setting intl.charset.fallback.utf8_for_file = true in about:config if $BROWSER=firefox, per https://wiki.archlinux.org/title/Mutt#Viewing_HTML :
 macro attach 'V' "<pipe-entry>iconv -c --to-code=UTF8 > ~/.cache/mutt/mail.html<enter><shell-escape>$BROWSER ~/.cache/mutt/mail.html<enter>" "open mail in graphical browser"
 
+# note we now have sidebar toggle in bindings instead:
 #macro index b '<enter-command>toggle sidebar_visible<enter><refresh>'
 #macro pager b '<enter-command>toggle sidebar_visible<enter><redraw-screen>'
-bind index,pager b sidebar-toggle-visible
-
-macro index 'c' '<change-folder>?<change-dir><home>^K=<enter>'
-# note, this one shadows the create_alias:
-
 
 macro pager     i       ":set pager_index_lines=10\r"  # restore incex split with X lines
 macro pager     I       ":set pager_index_lines=0\r"   # hide index split
@@ -65,12 +45,15 @@ macro pager     U       |urlscan\r
 #macro pager     z       ":set wrap=0\r"
 #macro pager Z ":set wrap=80\r"
 
-#macro index A "<modify-labels>+archive -unread -inbox\\n" "Archive message"  # archive usin notmuch tags
+# archive Gmail mail: (from https://wiki.archlinux.org/title/Mutt#Archive_treated_e-mails)
+macro index \' "<tag-pattern>~R !~D !~F<enter><tag-prefix><save-message>+[Gmail]/All <enter>" "Archive"
+#macro index A "<modify-labels>+archive -unread -inbox\\n" "Archive message"  # archive using notmuch tags
 macro index c "<change-vfolder>?" "Change to vfolder overview"
-#bind index,pager + entire-thread "read entire thread of current msg"
+#bind index,pager c change-vfolder
+#macro index c '<change-folder>?<change-dir><home>^K=<enter>'  # TODO: this seems broken
+
+# generate virtual folder from query (note we also have similar function in bindings):
 macro index \\\\ "<vfolder-from-query>" "Search mailbox"
-# toggle between mailboxes and virtual mailboxes:
-#bind index,pager ??? sidebar-toggle-virtual
 
 # attach & save attachments using external program; from https://github.com/anufrievroman/neomutt-file-picker {{{
 # type A instead of standard a to call the script that opens vifm:

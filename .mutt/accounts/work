@@ -26,7 +26,11 @@ set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh -a ~/.mutt/acco
 # abook binds:
 set query_command="abook --datafile ~/.mutt/accounts/work.abook --mutt-query %s"
 macro generic,index,pager \ca "<shell-escape>abook --datafile ~/.mutt/accounts/work.abook<return>" "launch abook"
-macro index,pager A "<pipe-message>abook --datafile ~/.mutt/accounts/work.abook --add-email-quiet<return>" "Add this sender to Abook"
+
+# note following abook command is poor as it's not idempotent - dupes are added;
+# plus quite likely we have some script (by display_filter?) already automatically
+# managing the contact additions:
+#macro index,pager A "<pipe-message>abook --datafile ~/.mutt/accounts/work.abook --add-email-quiet<return>" "Add this sender to Abook"
 
 # TODO: instead of abook, goobook, consider khard
 
@@ -48,13 +52,16 @@ macro index ,z "<shell-escape>mbsync --pull-new work<enter>" "sync IMAP"
   #"<tag-pattern>all<enter><tag-prefix><save-message>+work/Archive<enter>" \
   #"archive all"
 
-# indexing: (if changing dir, do not forgot to change in crontab as well!); this is for py ver (https://github.com/honza/mutt-notmuch-py):
-macro index S "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch.py -G ~/mail/work/temp/search<enter><change-folder-readonly>+work/temp/search<enter>" "search mail (using notmuch)"
+# search using notmuch:
+#macro index S "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch.py -G ~/mail/work/temp/search<enter><change-folder-readonly>+work/temp/search<enter>" "search mail (using notmuch)"
+macro index / "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch-py<enter><change-folder-readonly>~/.cache/mutt_results<enter>" \
+            "search mail (using notmuch)"
 
 # same, but uses the deb repo version(ie perl) of notmuch-mutt:
-# perform notmuch query, showin only the results:
+# perform notmuch query, showing only the results:
 #macro index L "<enter-command>unset wait_key<enter><shell-escape>read -p 'notmuch query: ' x; echo \$x >~/.cache/mutt_terms<enter><limit>~i \"\`notmuch search --output=messages \$(cat ~/.cache/mutt_terms) | head -n 600 | perl -le '@a=<>;chomp@a;s/\^id:// for@a;$,=\"|\";print@a'\`\"<enter>" "show only messages matching a notmuch pattern"
 
+# note this archiving macro possibly collides with or duplicates global one set in macros:
 macro index,pager a "\
     <save-message>=work/Archive<enter>" \
     "Archive message"
@@ -88,6 +95,9 @@ set spool_file = "+work/Inbox"
 #my_hdr X-Message-Flag: WARNING!! Outlook sucks
 ## Custom Mail-User-Agent ID:
 #my_hdr User-Agent: Every email client sucks, this one just sucks less.
+#my_hdr Accept-Language: et, en
+#my_hdr X-URL: http://www.the-compiler.org/
+#my_hdr X-PGP-Key: http://www.the-compiler.org/pubkey.asc
 
 # set status color so it's visually clear which account you're on:
 color status cyan default

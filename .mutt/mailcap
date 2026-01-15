@@ -1,4 +1,5 @@
 # Note we could also open stuff w/ xdg-open, see https://wiki.archlinux.org/title/Mutt#Open_attachments_or_view_HTML_email_in_the_background
+# or: https://github.com/jamesnvc/dotfiles/blob/master/mutt/view_attachment.sh
 #
 #
 application/octet-stream ; echo %s "can be anything...ie unidentified"                    ; copiousoutput
@@ -9,7 +10,7 @@ text/html                ; elinks -dump -dump-color-mode 1; copiousoutput;
 #text/html               ; lynx -assume_charset=%{charset} -display_charset=utf-8 -collapse_br_tags -dump %s; nametemplate=%s.html; copiousoutput
 #text/html               ; w3m -I %{charset} -T text/html; copiousoutput;
 
-#application/pdf          ; /usr/bin/evince %s                             ; copiousoutput
+#application/pdf          ; pdftotext -layout -l 10 -nopgbrk /dev/stdin -; copiousoutput
 application/pdf          ; zathura %s                             ;
 
 application/msword       ; /usr/bin/libreoffice %s                         ; copiousoutput
@@ -21,8 +22,10 @@ application/ods; libreoffice %s ; copiousoutput
 #image/*                  ; ~/bin/muttshowimage2.sh %s                       ; copiousoutput
 #image/*; feh %s
 image/*                  ; nsxiv %s
-audio/*                  ; /usr/bin/mplayer %s                             ; copiousoutput
-video/*                  ; /usr/bin/mplayer %s                             ; copiousoutput
+audio/*                  ; mplayer %s                             ; copiousoutput
+video/*                  ; mplayer %s                             ; copiousoutput
+# note this requires libcaca video output driver:
+#video/*                 ; mplayer -vo caca %s;   needsterminal
 
 text/calendar; ical-prettyprint.py %s; copiousoutput;  # see http://simonjbeaumont.com/posts/mutt-exchange/
 application/ics; ical-prettyprint.py %s; copiousoutput;
@@ -31,7 +34,14 @@ application/ics; ical-prettyprint.py %s; copiousoutput;
 # note this one did not work: text/calendar; khal -a my_calendar import;
 #text/calendar; khal import -a work %s;
 
+# archives
+#application/x-tar;             als %s;                copiousoutput
+#application/zip;               als %s;                copiousoutput
+#application/x-bzip2;           als %s;                copiousoutput
+#application/rar;               als %s;                copiousoutput
+
 # TODO: look into using lesspipe.sh (https://neomutt.org/contrib/useful-programs#converting-text-formats):
+# #####################################################
 #text/*;                           LESSQUIET=1 lesspipe.sh '%s'; copiousoutput
 #application/*;                    LESSQUIET=1 lesspipe.sh '%s'; copiousoutput
 #image/*;                          LESSQUIET=1 lesspipe.sh '%s'; copiousoutput

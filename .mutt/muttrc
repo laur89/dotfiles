@@ -8,27 +8,46 @@
 # more noteworthy dotfiles for mutt:
 # - https://github.com/cyphar/dotfiles/blob/main/.mutt/muttrc
 # - https://github.com/tshirtman/.mutt/tree/master
+#   - note they also have decent collection of mutt-related scripts
 #
 # + some tips/shortcuts/keybinds:
 # - limit/filter shown emails by l key; to view all again/reset, use "all" keyword
 #   ~F for flagged messages; ~U for unread
 # - o to change sorting in index
 #
+# + other projects/info of interest:
+# - https://gitlab.com/shackra/goimapnotify - trigger mbsync on imap mailbox changes; see https://wiki.archlinux.org/title/Isync#With_imapnotify
+# - https://anarc.at/blog/2021-11-21-mbsync-vs-offlineimap/ - mail stack blog
+# - https://github.com/monkeyxite/muttlook
+# - https://github.com/Konfekt/mutt-trim
+#   - similar program, but intended to use in display_filter chain: t-prot; e.g. set display_filter  = "t-prot -cemtS -M=mutt --spass"
+# - this mailthread (https://mailman.neomutt.org/pipermail/neomutt-users-neomutt.org/2020-February/000711.html)
+#   discuss how to use MIMEmbellish script which basically passes it throguh a 
+#   pandoc and generates a multipart email w/ HTML. that thread is about having
+#   a way to toggle whether this html multipart should be generated or not.
+#   - the actual script can likely be found via web archive, but one copy is also @ https://github.com/tshirtman/.mutt/blob/master/MIMEmbellish
+#
 # main opts:
   set ask_cc  # prompt for carbon-copy (Cc) recipients before editing the body of an outgoing message.
-unset confirmappend  # don't ask
+unset confirm_append  # do not prompt for confirmation when appending messages to an existing mailbox.
   set delete  # don't ask for deletion confirmation
   set quit    # dont ask
-  unset move  # gmail and xchange does that
+  unset move  # Stop asking to "move read messages to mbox"; gmail and xchange does that
   set alias_file = '~/.mutt/alias'  # default file in which to save aliases created by the <create-alias> function.
                                     # note this will be unused if using abook, goobook et.al
   set edit_headers  # make the headers editable
+  #set auto_edit  # when set along w/ $edit_headers, skip the initial send-menu prompt for subj & recipients and immediately begin editing in editor;
+                  # note with this you can't use send-hooks that depend on recipients
+                  # when composing a new message, as the initial list of recipients is empty
   auto_view text/html text/calendar  # automatically open these mimetypes per programs in mailcap
-  set editor            = "nvim +/^$"  # skip to 1st blank line
+  #mime_lookup       application/octet-stream  # list of “data” MIME content types for which NeoMutt will try to determine the actual file type from the file name, and not use a mailcap(5) entry
+  #set editor = "nvim +/^$"  # skip to 1st blank line
+  set editor = "mutt-trim %s; nvim +/^$ -- %s"  # remove clutter of quoted text when responding; skip to 1st blank line in editor
   set send_charset="us-ascii:utf-8"  # A colon-delimited list of character sets for outgoing messages
   set fast_reply  # skip to compose when replying, instead of being prompted who to reply to
   set include     # include msg in replies, instead of being prompted whether we want to include original mail
   set folder            = ~/mail  # mail in here; do not end with slash!
+  #set folder            = ~/mail/.notmuch/  # if we want to show notmuch's virtual mailboxes, assuming we're importing ~/.mailboxes at one point; unconfimred it works!
   set forward_quote  # include msg in forwards
   set quote_regex = "^( {0,4}[>|:#%]| {0,4}[a-z0-9]+[>|]+)+"
   # if you have more than a few emails, you *really* want this
@@ -40,7 +59,6 @@ unset help
   set mailcap_path      = ~/.mutt/mailcap  # see also auto_view config to auto-view some types in pager
 unset mark_old   # read/new is ok enough
 #set beep_new  # bell on new mail
-unset markers  # no ugly plus signs; if set, a "+" marker is displayed at the beginning of wrapped lines
   set mbox_type         = Maildir  # default mailbox type used when creating new folders.
   set menu_scroll  # scroll in menus
   set pager_context     = 5  # retain 5 lines of previous page when scrolling
@@ -51,11 +69,12 @@ unset markers  # no ugly plus signs; if set, a "+" marker is displayed at the be
   set forward_decode  # decode when fwding
   set check_new = yes
   set realname          = "Laur Aliste"  # !! possibly re-defined by per-account config!
-  set abort_nosubject = yes
+  set abort_nosubject = yes  # abort composition if no subject is given at subject prompt
   set recall=no  # do not offer to recall a postponed msg when you start composig new one
-  set text_flowed=yes  # flow the lines of quoted text in outher mailclients,
+  set text_flowed=yes  # flow the lines of quoted text in other mailclients,
                        # instead of producing ugly linebreaks (read http://joeclark.org/ffaq.html)
   #set print_command="/usr/bin/muttprint %s -p {PrinterName}"  # for printing, install muttprint pkg, and uncomment
+  #set abort_key = "<Esc>"  # overrides the default abort-prompt keybind that defaults to ctrl-G (i.e. ^g)
 
 # this block from https://github.com/smemsh/.mutt/
 # Postfix uses the envelope sender to determine which from
@@ -111,6 +130,7 @@ set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh'
     set sidebar_visible=yes
     set sidebar_width   = 25
     set sidebar_format="%B%*  %S%?N?(%N)?%?F?[%F]?"
+    #set sidebar_format = "%B%<F? [%F]>%* %<N?%N/>%S"
     set sidebar_indent_string=" "
     #set sidebar_component_depth=1  # Shorten mailbox names (truncate 1 subdirs)
     #set sidebar_delim_chars="/"  # Delete everything up to the last or nth / character
@@ -120,10 +140,17 @@ set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh'
     set sidebar_non_empty_mailbox_only=yes   # sidebar will only display mailboxes that contain one or more mails;
                                              # note it'll filter out also empty virtual mailboxes
     #set sidebar_sort = unread  # default is unsorted
-  color sidebar_new yellow default   # mailboxes containing new mail
+    #set sidebar_divider_char = '|'
+  #color sidebar_new yellow default   # mailboxes containing new mail
   #color sidebar_indicator default color17
   #color sidebar_new color221 color233
-  #set sidebar_divider_char = '|'
+  color sidebar_divider 		color240 	color0
+  color sidebar_flagged 		color33 	color0
+  color sidebar_highlight 	color0 		color136
+  color sidebar_indicator 	color0 		color137
+  color sidebar_new 		color7  	color0
+  color sidebar_spoolfile 	color37 	color0
+  color sidebar_ordinary  	color240 	color0
 
 
 #set reverse_alias  # show names from alias file in index
@@ -143,6 +170,7 @@ unset sig_dashes  # If set, a line containing "-- " (note the trailing space) wi
   # spoolfile is the folder where (unfiltered) email arrives; most services
   # conventionally name it INBOX; you can use = or + as a substitution for the
   # configured 'folder' path, e.g. set spoolfile=+INBOX
+  # some people also describe this as "initial mailbox"
   # note our spool_file is currently set by detect-mailboxes.sh!
   #set spool_file         = "+work/Inbox"  # work is default inbox; so-called startup folder
   set sort_re  # thread based on regex
@@ -152,7 +180,11 @@ unset sig_dashes  # If set, a line containing "-- " (note the trailing space) wi
   #set status_on_top  # status bar on top
   set status_chars = " *%A"  # Controls the characters used by the "%r" indicator in $status_format; rtfm
   #set status_format     = "-%r- %f%?t? Tagged:%t?%?p? Drafts:%p? -%>-"
-  set status_format = "───[ Folder: %f ]───[%r%m messages%?n? (%n new)?%?d? (%d to delete)?%?t? (%t tagged)? ]───%>─%?p?( %p postponed )?───"
+  set status_format = "───[ Folder: %f ]─%V──[%r%m messages%?n? (%n new)?%?d? (%d to delete)?%?t? (%t tagged)? ]───%>─%?p?( %p postponed )?───"
+  # other interesting status_format format strings to consider:
+  # - %l     * Size (in bytes) of the current mailbox (see formatstrings-size)
+  # - %L     * Size (in bytes) of the messages shown (i.e., which match the current limit) (see formatstrings-size)
+  #   - eg modify status_format tail-end to "...postponed )?─── %l|%L"
 
   index-format-hook  date  "~d<1d"    "%[%H:%M]"
   index-format-hook  date  "~d<1w"    "%[%a %H:%m]"
@@ -195,13 +227,14 @@ unset sig_dashes  # If set, a line containing "-- " (note the trailing space) wi
   #set index_format='%4C|%<[y?%<[m?%<[d?%[     %H:%M]&%[    %a %d]>&%[    %b %d]>&%[%d/%m/%Y]>| %-25.25F%< M?(%3M)&      > %@iconflag@ %?GR?%GR&　? %?GA?%GA&　? %?GD?%GD&%GC?  %s'
   # }}}
 
-  set alias_format = "%4n %t %-20a %r"
+  set alias_format = "%4n %t %-20a %r"  # Specifies the format of the data displayed for the "alias" menu.
 #color status red default  # colors come from included file
 
   set auto_tag = yes  # apply commands to all tagged messages by default
   set strict_threads
   set thorough_search  # the headers and body/attachments of messages to be searched are decoded before searching
   set tilde  # the internal-pager will pad blank lines to the bottom of the screen with a tilde
+unset markers  # no ugly plus signs; if set, a "+" marker is displayed at the beginning of wrapped lines
   set timeout           = 3  # When NeoMutt is waiting for user input either idling in menus or in an interactive prompt, NeoMutt would block until input is present
   set tmp_dir            = ~/.mutt/temp
   set mask=""  # show all files/directories in the browser (eg dotfiles included)
@@ -212,13 +245,14 @@ unset sig_dashes  # If set, a line containing "-- " (note the trailing space) wi
 # this allows to skip replying to our own mail when group-replying to a mail we were cc'ed:
 #alternates .*@pbrisbin\.com .*@brisb\.in
 
-# defines an order of preference that is used by NeoMutt to determine which part of a multipart/alternative body to display:
-alternative_order text/calendar text/plain text/enriched text/html text/* text  # order matters
+# defines an order of preference that is used by NeoMutt to determine which part of
+# a multipart/alternative body to display:
+alternative_order text/calendar text/plain text/enriched text/html text/* text
 
 ignore *  # ignore all hdrs
-unignore from: to: cc: date: subject:  # show only these
+unignore from: to: cc: date: subject: List-Id: X-Mailer:  # show only these
 unhdr_order *                          # some distros order things by default, clear their rules first
-hdr_order from: to: cc: date: subject:
+hdr_order from: to: cc: date: subject: List-Id: X-Mailer:
 
 # NeoMutt notmuch config:
 # -------------------------------------
@@ -233,7 +267,7 @@ hdr_order from: to: cc: date: subject:
 # that case, start using virtual boxes: https://www.reddit.com/r/commandline/comments/53dh17/mutt_getting_thread_replies_in_inbox/
 
 # note from arch wiki: "You must set the mailboxes variables or the imap_check_subscribed to tell the sidebar which folder should be displayed"
-source ~/.mailboxes        # source virtual boxes; (if not listed in sidebar, then look up macro for 'change-vfolder')
+source ~/.mailboxes  # source virtual boxes; (if not listed in sidebar, then look up macro for 'change-vfolder')
 
 # This variable allows you to customize the file browser display
 #set folder_format = "%6n(%6N) %f"

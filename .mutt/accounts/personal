@@ -21,7 +21,11 @@ set display_filter = '~/dev/scripts/mutt/display_filter_entry.sh -a ~/.mutt/acco
 # abook binds:
 set query_command="abook --datafile ~/.mutt/accounts/personal.abook --mutt-query %s"
 macro generic,index,pager \ca "<shell-escape>abook --datafile ~/.mutt/accounts/personal.abook<return>" "launch abook"
-macro index,pager A "<pipe-message>abook --datafile ~/.mutt/accounts/personal.abook --add-email-quiet<return>" "Add this sender to Abook"
+
+# note following abook command is poor as it's not idempotent - dupes are added;
+# plus quite likely we have some script (by display_filter?) already automatically
+# managing the contact additions:
+#macro index,pager A "<pipe-message>abook --datafile ~/.mutt/accounts/personal.abook --add-email-quiet<return>" "Add this sender to Abook"
 
 # TODO: instead of abook, goobook, consider khard
 
@@ -42,7 +46,11 @@ macro index ,z "<shell-escape>mbsync --pull-new personal<enter>" "sync IMAP"
 # to change folder to different mailboxes: (do i want these?)
 #macro index,pager <f2> '<sync-mailbox><enter-command>source ~/.mutt/personal<enter><change-folder>!<enter>'
 #macro index,pager <f3> '<sync-mailbox><enter-command>source ~/.mutt/work<enter><change-folder>!<enter>'
-macro index S "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch.py -g ~/mail/personal/temp/search<enter><change-folder-readonly>+personal/temp/search<enter>" "search mail (using notmuch)"
+
+# search using notmuch:
+#macro index S "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch.py -g ~/mail/personal/temp/search<enter><change-folder-readonly>+personal/temp/search<enter>" "search mail (using notmuch)"
+macro index / "<enter-command>unset wait_key<enter><shell-escape>mutt-notmuch-py<enter><change-folder-readonly>~/.cache/mutt_results<enter>" \
+            "search mail (using notmuch)"
 
 # signature:
 unset sig_dashes  # If set, a line containing "-- " (note the trailing space) will be inserted before your $signature
@@ -52,6 +60,7 @@ set spool_file = "+personal/INBOX"
 
 unmy_hdr *  # reset any custom headers set by my_hdr function (possibly by other account config)
 
+# note this archiving macro possibly collides with or duplicates global one set in macros:
 macro index,pager a "\
     <save-message>=personal/archive<enter>" \
     "Archive message"
@@ -60,3 +69,9 @@ macro index,pager a "\
 # set status color so it's visually clear which account you're on:
 color status green default
 
+# some other mailbox navigation macros: {
+#macro index,pager gi "=INBOX" "Go to inbox"
+#macro index,pager ga "=[Gmail]/Tous les messages" "Go to all mail"
+#macro index,pager gs "=[Gmail]/Messages envoyés" "Go to starred messages"
+#macro index,pager gd "=[Gmail]/Drafts" "Go to drafts"
+# }

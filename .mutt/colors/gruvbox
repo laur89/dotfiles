@@ -2,8 +2,8 @@
 # file from https://github.com/tomauty/dotfiles/blob/master/mutt/.mutt/colors/gruvbox-256
 #
 # see also:
-#   - http://www.davep.org/mutt/muttrc/colours.html
 #   - http://www.guckes.net/Setup/mutt.color.body
+#   - https://github.com/tshirtman/.mutt/blob/master/colors
 #
 # ###################################################
 # author: Tom Auty

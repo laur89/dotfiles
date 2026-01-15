@@ -28,3 +28,7 @@ source ~/.mutt/accounts/personal  # default account
 #     <enter> \
 #   '"
 
+# reply-hook commands are used to exec config commands based on recipients of the
+# message, see https://neomutt.org/guide/configuration.html#reply-hook
+# note it's matched against the message you are replying _to_, instead of the message
+# you are _sending_; send-hook is matched against all messages, both new & replies.
