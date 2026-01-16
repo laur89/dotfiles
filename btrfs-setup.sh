@@ -59,12 +59,12 @@ fi
 #######################################################################
 
 # upstream scripts import this common lib, e.g. https://salsa.debian.org/installer-team/partman-basicfilesystems/-/blob/master/finish.d/aptinstall_basicfilesystems
-#. /lib/partman/lib/base.sh
+#. /usr/lib/partman/lib/base.sh
 
 [ -s /target/etc/fstab ] || exit 1  # sanity
 
 # verify whether we've partitioned using btrfs; if not, bail successfully.
-# note upstream scripts do it differently, see script under /lib/partman/finish.d/70aptinstall_btrfs
+# note upstream scripts do it differently, see script under /usr/lib/partman/finish.d/70aptinstall_btrfs
 grep -Eq -m 1 "\s+/\s+btrfs\s+.*=${DEFAULT_ROOT_SUBVOL}\s+" /target/etc/fstab || exit 0
 
 # chattr is not avail right after partitioning, hence why these options need to be set later

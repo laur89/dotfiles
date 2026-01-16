@@ -31,7 +31,7 @@ steps separately apart from the full installation mode.
 1. optionally preseed the installation (`esc` when graphical menu appears):
 
 ```
-    auto url=webserver.eu/path/preseed.cfg
+    auto url=webserver.com/path/preseed.cfg
     debian-installer/allow_unauthenticated_ssl=true
     hostname=myhostname domain=internal.yourdomain.tld
     passwd/root-password=r00tpass

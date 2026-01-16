@@ -5609,7 +5609,7 @@ install_zed() {
 # NO plugin config should go here (as it's not guaranteed they've been installed by this time)
 # TODO: is this fine? see https://vi.stackexchange.com/questions/46887
 nvim_post_install_configuration() {
-    local i nvim_confdir
+    local nvim_confdir
 
     readonly nvim_confdir="$HOME/.config/nvim"
 
@@ -5618,11 +5618,13 @@ nvim_post_install_configuration() {
 }
 
 
-# building instructions from https://github.com/Valloric/YouCompleteMe/wiki/Building-Vim-from-source
+# building instructions from https://github.com/ycm-core/YouCompleteMe/wiki/Building-Vim-from-source
 build_and_install_vim() {
     local tmpdir expected_runtimedir repo ver
 
-    readonly expected_runtimedir='/usr/local/share/vim/vim91'  # path depends on the ./configure --prefix
+    readonly expected_runtimedir='/usr/local/share/vim/vim91'  # path depends on the ./configure --prefix; version can be found in src/version.h file:
+                                                               #   #define VIM_VERSION_MAJOR               9
+                                                               #   #define VIM_VERSION_MINOR               1
 
     repo='https://github.com/vim/vim.git'
     ver="$(get_git_sha "$repo")" || return 1
