@@ -302,6 +302,7 @@ For GUI dconf editor install `dconf-editor` pkg.
 - unlock root LUKS with key on USB drive: https://filis.me/posts/how-to-decrypt-a-luks-setup-with-a-pendrive
 - [debian wiki/DebianTesting](https://wiki.debian.org/DebianTesting)
 - [debian wiki/best-practices-for-testing-sid-users](https://wiki.debian.org/DebianUnstable#What_are_some_best_practices_for_testing.2Fsid_users.3F)
+- [privacy guide](https://www.privacyguides.org/en/os/linux-overview/)
 
 ## Prior to OS reinstall
 - back up GPG owner trust & store in secrets
