@@ -1594,6 +1594,7 @@ setup_dirs() {
             $HOME/bin \
             $BASH_COMPLETIONS \
             $XDG_DATA_HOME \
+            $XDG_DATA_HOME/rlwrap \
             "${ZSH_COMPLETIONS}:R" \
             '/etc/cryptsetup-keys.d:R' \
             $HOME/.npm-packages \
@@ -4491,10 +4492,6 @@ install_webdev() {
     # install ruby modules:          # sass: http://sass-lang.com/install
     # TODO sass deprecated, use https://github.com/sass/dart-sass instead; note there's also sassc (also avail in apk)
     #rb_install sass
-
-    # install yarn:  https://yarnpkg.com/getting-started/install
-    exe "corepack enable"  # note corepack is included w/ node, but is currently opt-in, hence 'enable'
-    exe "corepack prepare yarn@stable --activate"
 }
 
 # TODO: synergy fork is input-leap
@@ -6277,6 +6274,7 @@ install_from_repo() {
         urlscan  # slightly better alternative to urlview. likely used by our mutt config.
                  # one advantage over urlview is it handles long urls better
         translate-shell  # cli translator powered by Google Translate (and others); https://github.com/soimort/translate-shell # TODO: also avail via docker
+                         # last commit '24
     )
     # old/deprecated block3:
     #         spacefm-gtk3
