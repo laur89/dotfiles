@@ -3143,6 +3143,11 @@ install_slides() {  # https://github.com/maaslalani/slides
 # might also consider free rambox: https://rambox.app/download-linux/
 # another alternative: https://github.com/getstation/desktop-app
 #                      https://github.com/beeper <- selfhostable built on matrix?
+#                        - universal messaging app built on top of Matrix that lets you chat seamlessly across more than 10 chat networks, including WhatsApp, Telegram, and more
+#                        - per https://news.ycombinator.com/item?id=39368800 :
+#                          > Beeper is essentially a Matrix homeserver, plus a bunch of hosted Matrix bridges
+#                        - so essentially an Element competitor/alternative
+#                      qTox: https://github.com/TokTok/qTox - qTox is a chat, voice, video, and file transfer instant messaging client using the encrypted peer-to-peer Tox protocol
 # note: avail as flatpak!
 install_ferdium() {  # https://github.com/ferdium/ferdium-app
     #install_from_git ferdium/ferdium-app '-amd64.deb'
@@ -3708,6 +3713,12 @@ install_dbeaver() {  # https://dbeaver.io/download/
 }
 
 
+# minimal CLI tool for managing and executing SQL queries across multiple databases
+install_pam() {  # https://github.com/eduardofuncao/pam
+    install_bin_from_git -N pam eduardofuncao/pam 'pam-linux-amd64'
+}
+
+
 # https://www.gitkraken.com/download
 # see also:
 # - https://flathub.org/en/apps/io.github.pol_rivero.github-desktop-plus
@@ -4106,6 +4117,12 @@ install_jd() {  # https://github.com/josephburnett/jd
 install_bat() {  # https://github.com/sharkdp/bat
     #install_from_git sharkdp/bat 'bat_[-0-9.]+_amd64.deb'
     install_bin_from_git -N bat sharkdp/bat 'x86_64-unknown-linux-gnu.tar.gz'
+}
+
+
+# TUI to organize your time: Pomodoro, Countdown, Timer, Event
+install_timr() {  # https://github.com/sectore/timr-tui
+    install_bin_from_git -N timr sectore/timr-tui '-linux_x86_64.tar.gz'
 }
 
 
@@ -7028,6 +7045,7 @@ __choose_prog_to_build() {
         install_fd
         install_jd
         install_bat
+        install_timr
         install_sad
         install_viu
         install_glow
@@ -7066,6 +7084,7 @@ __choose_prog_to_build() {
         install_grpcui
         install_grpc_cli
         install_dbeaver
+        install_pam
         install_gitkraken
         install_p4merge
         install_steam
