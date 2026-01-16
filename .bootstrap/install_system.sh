@@ -1255,7 +1255,7 @@ install_deps() {
     }
 
     # see also/consider:
-    # - https://github.com/monkeyxite/muttlook?tab=readme-ov-file
+    # - https://github.com/monkeyxite/muttlook
     _install_mutt_deps() {
         # https://github.com/Konfekt/mutt-trim
         install_from_url  mutt-trim 'https://raw.githubusercontent.com/Konfekt/mutt-trim/refs/heads/master/mutt-trim'
@@ -1270,7 +1270,7 @@ install_deps() {
         clone_or_pull_repo zdharma-continuum zinit "$BASE_PROGS_DIR"  # https://github.com/zdharma-continuum/zinit#manual
 
         # default ZINIT[HOME_DIR], where zinit creates all working dirs:
-        ensure_d "$HOME/.local/share/zinit/"
+        ensure_d "$HOME/.local/share/zinit/"  # same as $XDG_DATA_HOME/zinit/
     }
 
     _install_vifm_deps() {
@@ -3513,6 +3513,9 @@ install_coursier() {  # https://github.com/coursier/coursier
 }
 
 # also avail in apt
+# see also:
+# - recoll: GUI full-text search program - https://www.recoll.org
+#   - see also https://www.recoll.org//faqsandhowtos/MuttAndRecoll.html
 install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
     install_from_git BurntSushi/ripgrep _amd64.deb
 }
@@ -3787,7 +3790,7 @@ install_postman() {  # https://learning.postman.com/docs/getting-started/install
     target="$BASE_PROGS_DIR/Postman"
 
     # install .desktop:
-    dsk="$HOME/.local/share/applications"
+    dsk="$HOME/.local/share/applications"  # i.e. $XDG_DATA_HOME/applications
     is_d -m 'cannot install postman .desktop entry' "$dsk" || return 1
     echo "[Desktop Entry]
 Encoding=UTF-8
@@ -3907,7 +3910,7 @@ install_slack_term() {  # https://github.com/jpbruinsslot/slack-term
 # follow instruction at https://github.com/wee-slack/wee-slack#get-a-session-token
 install_weeslack() {  # https://github.com/wee-slack/wee-slack
     local d
-    d="$HOME/.local/share/weechat/python"
+    d="$HOME/.local/share/weechat/python"  # i.e. $XDG_DATA_HOME/weechat/python
     install_block 'weechat-python python3-websocket' || return 1
 
     ensure_d "$d/autoload" || return 1
@@ -3928,7 +3931,7 @@ install_weeslack() {  # https://github.com/wee-slack/wee-slack
 # superseded by https://github.com/poljar/weechat-matrix-rs
 install_weechat_matrix() {  # https://github.com/poljar/weechat-matrix
     local d deps
-    d="$HOME/.local/share/weechat/python"
+    d="$HOME/.local/share/weechat/python"  # i.e. $XDG_DATA_HOME/weechat/python
     deps="${BASE_PROGS_DIR}/weechat-matrix"
 
     install_block 'libolm-dev' || return 1
@@ -5295,7 +5298,7 @@ fp_install() {  # flatpak install
         # appears to install into $HOME/.local/share/flatpak/exports/bin
         #
         #bin="/var/lib/flatpak/exports/bin/$ref"
-        bin="$HOME/.local/share/flatpak/exports/bin/$ref"
+        bin="$HOME/.local/share/flatpak/exports/bin/$ref"  # i.e. $XDG_DATA_HOME/flatpak/exports/bin/$ref
         is_f -nm "cannot create shortcut link for [$link]" "$bin" || return 1  # sanity
         create_link "$bin" "$HOME/bin/$link"
     fi
@@ -6263,7 +6266,7 @@ install_from_repo() {
         msmtp  # msmtp is an SMTP client that can be used to send mails from Mutt and probably other MUAs (mail user agents)
         msmtp-mta  # This package is compiled with SASL and TLS/SSL support
         #thunderbird  # TODO: avail as flatpak; alternatives: betterbird
-        neomutt  # alternatives: aerc (TUI MUA for notmuch), astroid (GUI MUA for notmuch)
+        neomutt  # alternatives: aerc (TUI MUA for notmuch), astroid (GUI MUA for notmuch), meli: https://meli-email.org
         notmuch
         abook  # ncurses address book application; to be used w/ mutt
         khard  # address book for the Linux console; It creates, reads, modifies and removes vCard address book entries at your local machine. Khard is also compatible w/ mutt
