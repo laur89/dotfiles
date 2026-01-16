@@ -40,9 +40,9 @@ readonly SERVER_IP='10.42.21.10'             # default server address; likely to
 readonly NFS_SERVER_SHARE='/data'            # default node to share over NFS
 readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
-readonly BUILD_DOCK='deb-build-box'          # name of the build container
+readonly BUILD_DOCK='deb-build-box'          # name of the build container; TODO: deprecate
 
-readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0'
+readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0'
 #------------------------
 #--- Global Variables ---
 #------------------------
@@ -1582,6 +1582,8 @@ install_deps() {
 }
 
 
+# TODO: instead of creation here, consider creating .gitkeep in our dotfiles repo
+#       wherever possible
 setup_dirs() {
     local dir opts
 
@@ -5576,10 +5578,31 @@ install_neovide() {  # rust-based GUI front-end to neovim
 # also available in apt repo
 # see also:
 # - kakoune - https://github.com/mawww/kakoune (avail on apt)
+# - zed (below)
 install_helix() {
     #install_bin_from_git -N hx helix-editor/helix 'x86_64.AppImage'
     #install_bin_from_git -N hx -n hx  helix-editor/helix '-x86_64-linux.tar.xz'
     install_from_git helix-editor/helix _amd64.deb
+}
+
+
+# https://github.com/zed-industries/zed
+# see also their own installation script (e.g. where icon replace logic is from) @ https://zed.dev/install.sh
+install_zed() {
+    local dsk desktop_file_path
+
+    install_from_git -D -d "$BASE_PROGS_DIR" -N zed  zed-industries/zed 'zed-linux-x86_64.tar.gz' || return 1
+    #create_link "$BASE_PROGS_DIR/zed/bin/zed" "$HOME/bin/zed"  # not needed as we set full path in .desktop file
+
+    # install .desktop:
+    dsk="$HOME/.local/share/applications"  # i.e. $XDG_DATA_HOME/applications
+    is_d -m 'cannot install zed .desktop entry' "$dsk" || return 1
+    desktop_file_path="$BASE_PROGS_DIR/zed/share/applications/zed.desktop"
+    is_f -nm 'cannot install zed .desktop entry' "$desktop_file_path" || return 1
+
+    sed -i --follow-symlinks "s|Icon=zed|Icon=$BASE_PROGS_DIR/zed/share/icons/hicolor/512x512/apps/zed.png|g" "$desktop_file_path"
+    sed -i --follow-symlinks "s|Exec=zed|Exec=$BASE_PROGS_DIR/zed/bin/zed|g" "$desktop_file_path"
+    exe "install -m644 -CT '$desktop_file_path' '$dsk/zed.desktop'" || { err "installing [$desktop_file_path] file failed w/ $?"; return 1; }
 }
 
 
@@ -7085,6 +7108,7 @@ __choose_prog_to_build() {
         install_display_switch
         install_neovide
         install_helix
+        install_zed
         install_mise
         install_croc
         install_ventoy
