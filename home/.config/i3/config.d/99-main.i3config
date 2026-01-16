@@ -620,6 +620,7 @@ for_window [class="^install4j-jclient-Launcher$" instance="^sun-awt-X11-XFramePe
 
 for_window [class="^streamlink-twitch-gui$"] border pixel $border
 for_window [class="^mpv$"] border normal $border
+for_window [class="^Meld$"] border pixel $border
 
 # for drawing specific icon for application:  (from https://gist.github.com/dmelliot/437924ff581f3f1edd59f44833be6cc6): {{{
 #for_window [class="(?i)firefox"] title_format "<tt></tt><span foreground='#FF6611'>  </span><tt> </tt>%title"
