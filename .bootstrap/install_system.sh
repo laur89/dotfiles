@@ -542,6 +542,7 @@ setup_systemd() {
             # as of '25 they are (ctrl+f following line in above page): ".service", ".socket", ".device", ".mount", ".automount", ".swap", ".target", ".path", ".timer", ".slice", or ".scope".
             if [[ -f "$node" && "$node" =~ \.(service|socket|device|mount|automount|swap|target|path|timer|slice|scope)$ ]]; then  # note we require certain suffixes
                 __var_expand_move $sudo "$node" "$tdir/$fname" || continue
+                [[ "$node" == *@.* ]] && continue  # bail as cannot enable (uninstantiated) template units
 
                 # note do not use the '--now' flag with systemctl enable, as some units
                 # might be listening on something like sleep.target or battery.target - those shouldn't be started like that!
@@ -570,6 +571,10 @@ setup_systemd() {
     for dir in "${usr_sysd_src[@]}"; do
         __process --user "$dir" "$usr_sysd_target" || continue
     done
+
+    # enable some/known templated units:
+    #exe "sudo systemctl enable --no-warn 'checkmail@personal.timer'"
+    #__is_work && exe "sudo systemctl enable --no-warn 'checkmail@work.timer'"
 
     # reload the rules in case existing rules changed:
     exe 'systemctl --user daemon-reload'  # --user flag manages the user services under ~/.config/systemd/user/
@@ -758,7 +763,7 @@ setup_sudoers() {
 
     readonly sudoers_dest='/etc/sudoers.d'
     readonly tmpfile="$TMP_DIR/sudoers-$RANDOM"
-    readonly file="$COMMON_PRIVATE_DOTFILES/backups/sudoers"
+    readonly file="$COMMON_PRIVATE_DOTFILES/backups/00_sudoers_first"
 
     is_d -m 'skipping sudoers file installation' "$sudoers_dest" || return 1
     is_f -m "won't install it" "$file" || return 1
@@ -1259,6 +1264,10 @@ install_deps() {
     _install_mutt_deps() {
         # https://github.com/Konfekt/mutt-trim
         install_from_url  mutt-trim 'https://raw.githubusercontent.com/Konfekt/mutt-trim/refs/heads/master/mutt-trim'
+
+        # goobook - Access your Google contacts from the command line;  tags: email,
+        #                                                               similar to: abook, khard
+        py_install goobook  # https://gitlab.com/goobook/goobook
     }
 
     # see also: https://github.com/romkatv/zsh4humans
@@ -1506,10 +1515,6 @@ install_deps() {
     install_block 'python3-pykeepass python3-pynput'
     py_install keepmenu     # https://github.com/firecat53/keepmenu
 
-    # goobook - Access your Google contacts from the command line;  tags: email,
-    #                                                               similar to: abook, khard
-    py_install goobook https://gitlab.com/goobook/goobook
-
     #if is_native; then
         ## mopidy-spotify        # https://mopidy.com/ext/mpd/
         ##py_install Mopidy-MPD
@@ -1620,6 +1625,7 @@ setup_dirs() {
             $BASE_DATA_DIR/Videos \
             $BASE_DATA_DIR/Music \
             $BASE_DATA_DIR/Documents \
+            $XDG_CACHE_HOME/mutt \
                 ; do
         IFS=: read -r dir opts <<< "$dir"
         [[ "$opts" == *R* ]] && ensure_d -s "$dir" || ensure_d "$dir"
@@ -3522,7 +3528,7 @@ install_coursier() {  # https://github.com/coursier/coursier
 
 # also avail in apt
 # see also:
-# - recoll: GUI full-text search program - https://www.recoll.org
+# - recoll: GUI full-text search program w/ xapian backend - https://www.recoll.org
 #   - see also https://www.recoll.org//faqsandhowtos/MuttAndRecoll.html
 install_ripgrep() {  # https://github.com/BurntSushi/ripgrep
     install_from_git BurntSushi/ripgrep _amd64.deb
@@ -4045,7 +4051,7 @@ install_eclipse_mem_analyzer() {
 
     target="$BASE_PROGS_DIR/mat"
     loc='https://eclipse.dev/mat/download'
-    mirror=1208  # 1208 = france, 1301,1190,1045 = germany, 1099 = czech
+    mirror=1208  # 1208 = france, 1301,1190,1045 = germany, 1099 = czech, 1285|1186 = NL
 
     page="$(wget "$loc" -q --user-agent="$USER_AGENT" -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
     loc="$(grep -Po '.*a href="\K.*/\d+\.\d+\.\d+.*linux.gtk.x86_64.zip(?=")' <<< "$page")" || { err "parsing download link from [$loc] content failed"; return 1; }
@@ -6117,6 +6123,7 @@ install_from_repo() {
         #ngrep  # grep for network traffic; https://github.com/jpr5/ngrep
         #ncat  # reimplementation of Netcat by the NMAP project; https://nmap.org/
         nmap  # list listening ports on given address
+        #zenmap  # Nmap frontend
         gping  # ping, but with a graph; https://github.com/orf/gping
         remind
         tkremind
@@ -6306,7 +6313,8 @@ install_from_repo() {
         msmtp-mta  # This package is compiled with SASL and TLS/SSL support
         #thunderbird  # TODO: avail as flatpak; alternatives: betterbird
         neomutt  # alternatives: aerc (TUI MUA for notmuch), astroid (GUI MUA for notmuch), meli: https://meli-email.org
-        notmuch
+        notmuch  # mail indexer/tagger
+        afew  # Tagging script for notmuch mail
         abook  # ncurses address book application; to be used w/ mutt
         khard  # address book for the Linux console; It creates, reads, modifies and removes vCard address book entries at your local machine. Khard is also compatible w/ mutt
         isync  # mbsync/isync is a command line application which synchronizes mailboxes; https://isync.sourceforge.io/
