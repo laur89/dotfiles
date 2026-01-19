@@ -5969,6 +5969,7 @@ install_from_repo() {
         #xsensors  # xsensors reads data from the libsensors library regarding hardware health such as temperature, voltage and fan speed and displays the information in a digital read-out; https://github.com/Mystro256/xsensors
         hardinfo2  # !! good GUI !!; offers System Information and Benchmark for Linux Systems. https://github.com/hardinfo2/hardinfo2
         inxi  # full featured system information script (cli)
+        lshw  # list hardware; https://github.com/lyonel/lshw
         macchanger  # utility for manipulating the MAC address of network interfaces; https://github.com/alobbs/macchanger
         #nftables  # debian default since Buster!
         firewalld  # nft wrapper
@@ -6005,8 +6006,10 @@ install_from_repo() {
         #x11-apps  # already a dependecy of xorg
         #xinit  # xinit and startx are programs which facilitate starting an X server, and loading a base X session; already dependency of xorg
         psmisc  # miscellaneous utilities that use the proc FS, e.g. killall & pstree
-        ssh-askpass  # under X, asks user for a passphrase for ssh-add; TODO: x11?
+        #ssh-askpass  # under X, asks user for a passphrase for ssh-add; TODO: x11?
         alsa-utils  # Utilities for configuring and using ALSA, e.g. alsactl, alsamixer, amixer, aplay...
+                    # TODO: good candidate for deprecation; some scripts _might_
+                    # still depend on amixer
         pipewire
         pipewire-audio  # recommended set of PipeWire packages for a standard audio desktop use
         #pipewire-alsa  # plugin for ALSA applications to output via PipeWire; already a dependency of pipewire-audio
@@ -6022,7 +6025,7 @@ install_from_repo() {
         #nala  # another TUI apt frontend; https://gitlab.com/volian/nala
         #gdebi  # GUI local deb file viewer/installer for gnome
         synaptic
-        software-properties-gtk  # GUI frontend for managing distribution and independent software vendor software sources
+        #software-properties-gtk  # GUI frontend for managing distribution and independent software vendor software sources
         apt-file  # command line tool for searching files contained in packages for the APT packaging system. You can search in which package a file is included or list the contents of a package without installing or fetching it
                   # TODO: do we need to schedule 'apt-file update'?
         command-not-found  # automatically search repos when entering unrecognized command, needs apt-file; installs hook for bash, to use w/ zsh see https://github.com/Freed-Wu/zsh-command-not-found
@@ -6055,7 +6058,6 @@ install_from_repo() {
         pipx  # https://github.com/pypa/pipx
         curl
         httpie  # CLI, cURL-like tool for humans; https://httpie.io/
-        lshw  # list hardware; https://github.com/lyonel/lshw
         fuse3  # simple interface for userspace programs to export a virtual filesystem to the Linux kernel; https://github.com/libfuse/libfuse/
         #fuseiso  # FUSE module to mount ISO filesystem images
         parallel
@@ -6063,7 +6065,7 @@ install_from_repo() {
         progress  # Coreutils Progress Viewer; Linux-and-OSX-Only C command that looks for coreutils basic commands (cp, mv, dd, tar, gzip/gunzip, cat, etc.); https://github.com/Xfennec/progress
         hashdeep
         dconf-cli  # low-level key/value database designed for storing gnome desktop environment settings; https://wiki.gnome.org/Projects/dconf
-        dconf-editor  # GUI frontend for dconf
+        dconf-editor  # GUI frontend for dconf (gnome)
         d-feet  # D-Bus object browser, viewer and debugger
     )
 
@@ -6088,9 +6090,11 @@ install_from_repo() {
 
     declare -ar block2=(
         strace  # system call tracer, i.e. a debugging tool which prints out a trace of all the system calls made by another process/program
-        net-tools  # includes the important tools for controlling the network subsystem of the Linux kernel. This includes arp, ifconfig, netstat, rarp, nameif and route
+        net-tools  # includes the important tools for controlling the network subsystem of the Linux kernel.
+                   # This includes arp, ifconfig, netstat, rarp, nameif and route
         bind9-dnsutils  # provides dig, nslookup, nsupdate
-        dnstracer  # determines where a given Domain Name Server (DNS) gets its information from for a given hostname, and follows the chain of DNS servers back to the authoritative answer
+        dnstracer  # determines where a given Domain Name Server (DNS) gets its information fromfor a given
+                   # hostname, and follows the chain of DNS servers back to the authoritative answer
         mtr  # mtr combines the functionality of the 'traceroute' and 'ping' programs in a single network diagnostic tool; GUI
         whois  # whois client
         systemd-timesyncd
@@ -6098,11 +6102,11 @@ install_from_repo() {
                            # NOTE: installation requires networking stack restart, see https://forums.debian.net/viewtopic.php?t=163267
                            #       that's why its installation has been moved to preseed
         network-manager
-        network-manager-gnome
+        network-manager-gnome  # provides network-manager-applet and nm-connection-editor
         jq  # https://jqlang.github.io/jq
             # see also go-qo: https://github.com/kiki-ki/go-qo
-        pv  # pv (Pipe Viewer) can be inserted into any normal pipeline between two processes to give a visual indication of how quickly data is passing through,
-            # how long it has taken, how near to completion it is, and an estimate of how long it will be until completion
+        pv  # pv (Pipe Viewer) can be inserted into any normal pipeline between two processes to give a visual indication of how quickly data
+            # is passing through, how long it has taken, how near to completion it is, and an estimate of how long it will be until completion
             # https://www.ivarch.com/programs/pv.shtml
         crudini  # .ini file manipulation tool
         htop  # https://htop.dev/
@@ -6112,7 +6116,8 @@ install_from_repo() {
         ncdu  # ncurses disk usage viewer
         pydf  # fully colourised df(1)-clone written in Python; https://github.com/garabik/pydf - or perhaps https://salsa.debian.org/salvage-team/pydf/ - see https://github.com/garabik/pydf/issues/9 ??
         duf  # Disk Usage/Free Utility - a better 'df' alternative
-        nethogs  # small 'net top' tool. Instead of breaking the traffic down per protocol or per subnet, like most tools do, it groups bandwidth by process; https://github.com/raboof/nethogs
+        nethogs  # small 'net top' tool. Instead of breaking the traffic down per protocol or per subnet,
+                 # like most tools do, it groups bandwidth by process; https://github.com/raboof/nethogs
         #vnstat  # console-based network traffic monitor; keeps a log of daily network traffic for the selected interface
         #nload  # monitors network traffic and bandwidth usage in real time.
         #iftop  # displays bandwidth usage information on an network interface
@@ -6138,7 +6143,7 @@ install_from_repo() {
         git
         tig  # https://github.com/jonas/tig
         git-cola
-        git-extras  # https://github.com/tj/git-extras
+        git-extras  # extra git commands, e.g. git-ignore, git-setup, git-changelog, git-release, git-effort;  https://github.com/tj/git-extras
         zenity
         #yad  # alternative to zenity
         gxmessage  # xmessage clone based on GTK+
@@ -6157,14 +6162,15 @@ install_from_repo() {
                            #             decided on lxpolkit: https://www.reddit.com/r/debian/comments/1ktoa6m/debian_13_upgrade_report/
                            #         - what about polkitd - what does it provicde? text-based, not graphical?
         libsecret-tools  # can be used to store and retrieve passwords for desktop applications; provides us w/ 'secret-tool' cmd for interfacing w/ keyring
-        gsimplecal
+        gsimplecal  # https://github.com/dmedvinsky/gsimplecal
         khal  # https://github.com/pimutils/khal - CLI calendar program, able to sync w/ caldav servers through vdirsyncer
-        vdirsyncer  # synchronizes your calendars and addressbooks between two storages. The most popular purpose is to synchronize a CalDAV/CardDAV server with a local folder or file
+        vdirsyncer  # synchronizes your calendars and addressbooks between two storages. The most popular
+                    # purpose is to synchronize a CalDAV/CardDAV server with a local folder or file
         #calcurse  # calendar and todo list for the console which allows you to keep track of your appointments and everyday tasks; https://calcurse.org/
         #galculator  # https://github.com/galculator/galculator
         speedcrunch  # https://heldercorreia.bitbucket.io/speedcrunch/  TODO: not avail in testing in aug '25
         calc  # for cli
-        bcal  # another cli calcultor/storage conversion tool; https://github.com/jarun/bcal
+        #bcal  # Bits, bytes and address calculator; https://github.com/jarun/bcal
         atool  # provides aunpack command. instead of atool, consider https://github.com/mholt/archives
         file-roller  # archive manager for gnome
         rar
@@ -6182,10 +6188,8 @@ install_from_repo() {
         gnome-themes-extra
         arc-theme
         numix-gtk-theme
-        greybird-gtk-theme
-        #materia-gtk-theme  # TODO: not avail for testing in aug '25
         numix-icon-theme
-        faba-icon-theme
+        #materia-gtk-theme  # TODO: not avail for testing in aug '25
         gtk-3-examples  # provides gtk3-widget-factory command to test gtk3 look-and-feel; note gtk3 is deprecated, support is dropped once gtk5 is released
         gtk-4-examples  # provides gtk4-widget-factory command to test gtk3 look-and-feel
         meld
@@ -6210,7 +6214,7 @@ install_from_repo() {
         #- !! gksu no moar recommended; pkexec advised; to use pkexec, you need to define its
         #     action in /usr/share/polkit-1/actions.
 
-        # socat for mopidy+ncmpcpp visualisation;
+        # socat for mopidy+ncmpcpp visualisation, communicating w/ bctld;
 
     declare -ar block3_nonwin=(
         #spotify-client
@@ -6218,7 +6222,8 @@ install_from_repo() {
         playerctl  # cli utility and library for controlling media players that implement the MPRIS D-Bus Interface Specification. Compatible players include audacious, cmus, mopidy, mpd, mpv, quod libet, rhythmbox, spotify, and vlc; https://github.com/altdesktop/playerctl
                    # note last commit is from '21
         socat
-        #yt-dlp  # dl vids from yt & other sites; https://github.com/yt-dlp/yt-dlp ; note we're installing it via git/pypi now as the project moves rather fast
+        #yt-dlp  # dl vids from yt & other sites; https://github.com/yt-dlp/yt-dlp
+                 # note we're installing it via git/pypi now as the project moves rather fast
         mpc  # cli tool to interface MPD; https://github.com/MusicPlayerDaemon/mpc
         ncmpc  # text-mode client for MPD; https://github.com/MusicPlayerDaemon/ncmpc
         ncmpcpp  # ncurses-based client for MPD; https://github.com/ncmpcpp/ncmpcpp ; see also rmpc
@@ -6270,7 +6275,7 @@ install_from_repo() {
         wmctrl  # CLI tool to interact with an EWMH/NetWM compatible X Window Manager; TODO: x11; wayland alternative might be wlrctl
         polybar  # TODO: x11
         xdotool  # TODO: x11 - way not work w/ xwayland! !!! our screenshot.sh depends on it as of '25;  # https://github.com/jordansissel/xdotool/
-        python3-xlib  # pure Python 3 implementation of the X11 protocol;  TODO: x11;  https://github.com/python-xlib/python-xlib
+        #python3-xlib  # pure Python 3 implementation of the X11 protocol;  TODO: x11;  https://github.com/python-xlib/python-xlib
         'nushell/*'
         shellcheck
         #ranger  # CLI File Manager with VI Key Bindings;  https://ranger.github.io/
@@ -6309,8 +6314,8 @@ install_from_repo() {
         copyq  # TODO: avail as flatpak; notable alternatives: https://github.com/NiffirgkcaJ/all-in-one-clipboard - for gnome shell
                                                                https://github.com/savedra1/clipse - nice TUI manager
         copyq-plugins
-        msmtp  # msmtp is an SMTP client that can be used to send mails from Mutt and probably other MUAs (mail user agents)
-        msmtp-mta  # This package is compiled with SASL and TLS/SSL support
+        msmtp-mta  # msmtp is an SMTP client that can be used to send mails from Mutt and probably other
+                   # MUAs (mail user agents)  # This package is compiled with SASL and TLS/SSL support
         #thunderbird  # TODO: avail as flatpak; alternatives: betterbird
         neomutt  # alternatives: aerc (TUI MUA for notmuch), astroid (GUI MUA for notmuch), meli: https://meli-email.org
         notmuch  # mail indexer/tagger
@@ -6344,11 +6349,11 @@ install_from_repo() {
         gawk  # gnu awk
         plocate  # updatedb generates an index of files and directories. GNU locate can be used to quickly query this index
         fzy  # different fuzzy finder take than fzf (faster, possibly better results); https://github.com/jhawthorn/fzy
+        figlet  # creates large ascii characters out of ordinary screen characters
         cowsay
         #cowsay-off  # offensive
-        toilet  # prints text using large characters made of smaller characters
-        lolcat  # like cat, but colours it;  https://github.com/busyloop/lolcat
-        figlet  # creates large ascii characters out of ordinary screen characters
+        #toilet  # prints text using large characters made of smaller characters
+        #lolcat  # like cat, but colours it;  https://github.com/busyloop/lolcat
         xplanet  # renders an image of a planet into an X window or a file; TODO: x11
         xplanet-images  # includes some map files that can be used with xplanet; TODO: x11
         #redshift  # TODO: x11!
