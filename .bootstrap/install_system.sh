@@ -1549,7 +1549,7 @@ install_deps() {
                                                                                       #   note its conf is in bash_env_vars
     py_install httpstat       # https://github.com/reorx/httpstat  curl wrapper to get request stats (think chrome devtools)
     py_install yamllint       # https://github.com/adrienverge/yamllint
-    py_install awscli         # https://docs.aws.amazon.com/en_pv/cli/latest/userguide/install-linux.html#install-linux-awscli
+    #py_install awscli         # https://docs.aws.amazon.com/en_pv/cli/latest/userguide/install-linux.html#install-linux-awscli
 
     # colorscheme generator:
     # see also complementing script @ https://github.com/dylanaraps/bin/blob/master/wal-set
@@ -1774,7 +1774,7 @@ clone_or_link_castle() {
         fi
 
         # note this assumes $castle repo has a .githooks dir/symlink at its root that sets up the hooks;
-        # either by providing its own or points to dir that contains the actual hooks!
+        # either by providing its own or pointing to dir that contains the actual hooks (likely private-common)!
         if [[ "$set_hooks" == 1 ]]; then
             exe 'git -C '$BASE_HOMESICK_REPOS_LOC/$castle' config core.hooksPath .githooks' || err "git hook installation failed!"
         fi
@@ -1847,6 +1847,8 @@ fetch_castles() {
 
 # check whether ssh key(s) were pulled with homeshick; if not, offer to create one:
 setup_ssh() {
+    local err
+
     is_proc_running  ssh-agent || eval "$(ssh-agent)" || { err 'starting ssh-agent failed'; return 1; }
     is_ssh_key_loaded && report 'SSH already set up' && return 0
 
@@ -1854,11 +1856,13 @@ setup_ssh() {
 
     report "!!! loading SSH key(s)..."
     command install -Tm500 <(echo -e "#!/usr/bin/env bash\nkeepassxc-cli show -q --attributes password -- '$KPXC_DB' 'master-ssh-key' <<< \"\$KPXC_PASS\"") /tmp/.kps
-    # TODO: keep an eye on keepassxc-cli, at one point it'll likely gain ssh-agent support
+    # TODO: keep an eye on keepassxc-cli, at one point it'll likely gain ssh-agent support.
     # note we run in subshell just so the export is not global:
-    if ! ( export KPXC_PASS; keepassxc-cli attachment-export --stdout -q -- "$KPXC_DB" \
-            'master-ssh-key' priv_key <<< "$KPXC_PASS" | SSH_ASKPASS_REQUIRE=force SSH_ASKPASS=/tmp/.kps  ssh-add - ); then
-        err "pulling SSH key from pass db failed; skipping ssh keys import"
+    ( export KPXC_PASS; keepassxc-cli attachment-export --stdout -q -- "$KPXC_DB" \
+            'master-ssh-key' priv_key <<< "$KPXC_PASS" | SSH_ASKPASS_REQUIRE=force SSH_ASKPASS=/tmp/.kps  ssh-add - )
+    err=$?
+    if [[ "$err" -ne 0 ]]; then
+        err "pulling SSH key from pass db failed w/ $err; skipping ssh keys import"
         return 1
     fi
 
@@ -1967,7 +1971,7 @@ setup_homesick() {
 setup_chezmoi() {
     install_chezmoi || return $?
     exe 'chezmoi init --apply --verbose git@github.com:laur89/dots.git'  # pull & install dotfiles
-    # note modify_mngr doctor can only be ran after init, as otherwise it'll complain about missing ~/.local/share/chezmoi/:
+    # note modify_mngr doctor can only be ran _after_ init, as otherwise it'll complain about missing ~/.local/share/chezmoi/:
     chezmoi_modify_manager --doctor || err "[chezmoi_modify_manager --doctor] failed w/ $?"  # verify all's well from manager's perspective
 }
 
@@ -2737,7 +2741,7 @@ install_own_builds() {
     install_gruvbox_gtk_theme
     install_darkman
     #install_weeslack
-    install_gomuks
+    #install_gomuks
     #is_native && install_slack_term
     #install_slack
     install_veracrypt
@@ -4051,6 +4055,8 @@ install_weechat_matrix_rs() {  # https://github.com/poljar/weechat-matrix-rs
 # alternatives:
 # - nheko
 # - https://github.com/ulyssa/iamb
+# TODO: as of '26 needs reviewing, as they're moving to new framework altogether,
+#       splitting backend & frontends
 install_gomuks() {  # https://github.com/gomuks/gomuks
     #install_from_git gomuks/gomuks _amd64.deb
     install_bin_from_git -N gomuks gomuks/gomuks  gomuks-linux-amd64
@@ -4229,7 +4235,7 @@ install_glow() { # https://github.com/charmbracelet/glow
 
 
 install_btop() {  # https://github.com/aristocratos/btop
-    install_bin_from_git -N btop aristocratos/btop  'btop-x86_64-linux-musl.tbz'
+    install_bin_from_git -N btop aristocratos/btop  'btop-x86_64-unknown-linux-musl.tbz'
 }
 
 
@@ -4792,7 +4798,7 @@ install_kanata() {
         exe "sudo install -m644 -CT '$conf_src' '$target_d/kanata.kbd'" || { err "installing [$conf_src] failed w/ $?"; return 1; }
     fi
 
-    install_bin_from_git -N kanata -O root:kanata -P 754  jtroo/kanata 'kanata'
+    install_bin_from_git -n 'kanata_linux_cmd_allowed_x64' -N kanata -O root:kanata -P 754  jtroo/kanata 'kanata-linux-binaries-.*-x64.zip'
 }
 
 
@@ -6156,7 +6162,7 @@ install_from_repo() {
         hashdeep
         dconf-cli  # low-level key/value database designed for storing gnome desktop environment settings; https://wiki.gnome.org/Projects/dconf
         dconf-editor  # GUI frontend for dconf (gnome)
-        d-feet  # D-Bus object browser, viewer and debugger
+        d-spy  # tool to explore and test end-points and interfaces on the System or Session D-Bus
     )
 
     # for .NET dev, consider also nuget pkg;
@@ -6273,7 +6279,6 @@ install_from_repo() {
         qt5ct
         #qt5-style-plugins
         qt6ct
-        gtk2-engines-murrine
         gtk2-engines-pixbuf
         gnome-themes-extra
         arc-theme
@@ -6395,14 +6400,14 @@ install_from_repo() {
         #bitlbee  # IRC to other chat networks gateway; http://www.bitlbee.org/
         #bitlbee-libpurple  # This package contains a version of BitlBee that uses the libpurple instant messaging library instead of built-in code, which adds support for more IM protocols (all protocols supported by Pidgin/Finch)
         purple-discord  # libpurple/Pidgin plugin for Discord
-        nheko  # Qt-based chat client for Matrix  # TODO: avail as flatpak
+        #nheko  # Qt-based chat client for Matrix  # TODO: avail as flatpak
         'signal-desktop/*'
         #signald  # note this doesn't come from debian repos; no longer maintained as of '25; use https://github.com/AsamK/signal-cli instead
         #lxrandr  # GUI application for the Lightweight X11 Desktop Environment (LXDE); TODO: x11!
         arandr  # visual front end for XRandR; TODO: x11
         autorandr  # TODO: x11; https://github.com/phillipberndt/autorandr
-        copyq  # TODO: avail as flatpak; notable alternatives: https://github.com/NiffirgkcaJ/all-in-one-clipboard - for gnome shell
-                                                               https://github.com/savedra1/clipse - nice TUI manager
+        copyq  # TODO: avail as flatpak; notable alternatives: - https://github.com/NiffirgkcaJ/all-in-one-clipboard - for gnome shell
+                                                             # - https://github.com/savedra1/clipse - nice TUI manager
         copyq-plugins
         msmtp-mta  # msmtp is an SMTP client that can be used to send mails from Mutt and probably other
                    # MUAs (mail user agents)  # This package is compiled with SASL and TLS/SSL support
@@ -7522,9 +7527,10 @@ verify_nsswitch() {
     fi
 }
 
+
 # https://wiki.debian.org/NetworkManager
 #
-# puts networkManager to manage our network interfaces;
+# configures networkManager to manage our network interfaces;
 # alternatively, you can remove your interface name from /etc/network/interfaces
 # (bottom) line; eg from 'iface wlan0 inet dhcp' to 'iface inet dhcp'
 #
