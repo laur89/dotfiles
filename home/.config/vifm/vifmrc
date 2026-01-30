@@ -232,4 +232,4 @@ mark w ~/Pictures/wallpapers/
 " some cool commands from https://github.com/vifm/vifm/issues/279#issuecomment-319980898:
 command! fzfDrecent :execute 'cd "'.system('fasd -dl | grep -v cache | fzf 2>/dev/tty').'"'
 " ------------------------------------------------------------------------------
-source ~/.vifm_devicons/favicons.vifm
+source ~/.config/vifm/favicons.vifm
