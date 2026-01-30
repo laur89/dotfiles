@@ -29,7 +29,7 @@ readonly KRING="$HOME/.local/share/kring.sala"  # note location is referenced in
 readonly LUKS_USB="/tmp/usb-luks-$RANDOM"  # mountpoint
 readonly KPXC_KRING_DB="$LUKS_USB/passdb/fresh_keyring.kdbx"
 KPXC_DB=''  # will be defined downstream
-readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
+readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via dotfiles mngr;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
 #readonly BASH_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # as per https://github.com/scop/bash-completion#faq  # cannot set before importing SHELL_ENVS!
@@ -106,6 +106,7 @@ declare -a MANUAL_STEPS=(  # note this list is potentially modified later on
     'install tmux plugins (prefix+I)'
     'ublock additional configs (EST, social media, ...)'
     'ublock whitelist, filters (should be saved somewhere)'
+    'run install_keepassxc_unlock() interactively'
     'import keepassxc browser plugin config'
     'install tridactyl native messenger/executable (:installnative)'
     'set the firefox config, see details @ setup_firefox()'
@@ -3400,7 +3401,7 @@ install_from_url_shell() {
         return 2
     fi
 
-    exe "curl -fsSL -A "$USER_AGENT" '$loc' | $shell" || return 1
+    exe "curl -fsSL -A '$USER_AGENT' '$loc' | $shell" || return 1
     add_to_dl_log "$name" "$ver"
 }
 
@@ -3561,7 +3562,7 @@ install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instruc
     report "installing $name dependencies..."
     install_block 'rlwrap' || { err 'failed to install deps. abort.'; return 1; }
 
-    exe "curl -fsSL -A "$USER_AGENT" 'https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh' -o '$f'" || return 1
+    exe "curl -fsSL -A '$USER_AGENT' 'https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh' -o '$f'" || return 1
     exe "chmod +x '$f'" || return 1
 
     exe "$f --prefix $install_target" || return 1
@@ -5025,6 +5026,13 @@ build_and_install_keepassxc_TODO_container_edition() {
 #   - https://github.com/hrehfeld/python-keepassxc-browser
 install_keepassxc() {
     install_bin_from_git -N keepassxc keepassxreboot/keepassxc 'x86_64.AppImage'
+}
+
+
+install_keepassxc_unlock() {  # https://github.com/sumwale/keepassxc-unlock
+    is_noninteractive && { err "do not exec $FUNCNAME() in non-interactive mode"; return 1; }
+    install_block  tpm2-tools  # provides TPM apis
+    install_from_url_shell  kpxc-unlock 'https://raw.githubusercontent.com/sumwale/keepassxc-unlock/refs/heads/main/install.sh'
 }
 
 
@@ -7117,6 +7125,7 @@ __choose_prog_to_build() {
     declare -ar choices=(
         install_YCM
         install_keepassxc
+        install_keepassxc_unlock
         install_keybase
         build_goforit
         build_copyq
