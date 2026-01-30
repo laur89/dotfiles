@@ -1724,7 +1724,6 @@ install_chezmoi() {
 
     # install 3rd party extensions; cz project lists them @ https://www.chezmoi.io/links/related-software/
     install_bin_from_git -N chezmoi_modify_manager VorpalBlade/chezmoi_modify_manager 'x86_64-unknown-linux-gnu.tar.gz'
-    chezmoi_modify_manager --doctor || err "[chezmoi_modify_manager --doctor] failed w/ $?"  # verify all's well from manager's perspective
 }
 
 
@@ -1968,6 +1967,8 @@ setup_homesick() {
 setup_chezmoi() {
     install_chezmoi || return $?
     exe 'chezmoi init --apply --verbose git@github.com:laur89/dots.git'  # pull & install dotfiles
+    # note modify_mngr doctor can only be ran after init, as otherwise it'll complain about missing ~/.local/share/chezmoi/:
+    chezmoi_modify_manager --doctor || err "[chezmoi_modify_manager --doctor] failed w/ $?"  # verify all's well from manager's perspective
 }
 
 
@@ -2202,7 +2203,7 @@ mount_usb() {
 
 setup() {
     if is_interactive && [[ "$MODE" -eq 1 ]]; then
-        mount_usb
+        mount_usb  # TODO: detect not only MODE=1, but _very initial_ installation
         setup_ssh
     fi
     # note: set up homeshick before chezmoi, as some stuff might depend on symlinks set up by the former
