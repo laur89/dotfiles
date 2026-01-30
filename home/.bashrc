@@ -513,6 +513,7 @@ i="$BASE_PROGS_DIR/bash-preexec/bash-preexec.sh"
 
 # fancy-ctrl-z:
 # depends on bash-preexec
+# NOTE! it messes up fzf's alt+c binding!
 i="$BASE_DATA_DIR/dev/scripts/bash-fancy-ctrl-z"
 [[ ! -f "$i" ]] || source "$i"
 

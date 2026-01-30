@@ -89,7 +89,9 @@ aptclean() {
 
     report "note that sudo passwd is required"
 
+    report 'running apt-get clean...'
     sudo apt-get clean
+    report 'running apt-get autoremove...'
     sudo apt-get autoremove  # remove forgotten packages, i.e. dependencies of already-removed packages
 
     # TODO: instead of nuking $apt_lists_dir contents, consider  # apt-get distclean
