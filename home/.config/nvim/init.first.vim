@@ -238,9 +238,9 @@ endif
 """ }}}
 
 """ Text formatting {{{
-    set textwidth=85
-    set colorcolumn=85
-    set formatoptions=qrn1j
+    set textwidth=80
+    set colorcolumn=80
+    set formatoptions=blqrn1j
     set autoindent                                  " preserve indentation
     set smartindent                                 " similar to autoindent, but adds some C syntax stuff
     set backspace=indent,eol,start                  " smart backspace
@@ -472,7 +472,7 @@ endif
             nnoremap <leader>s :call ToggleSyntaxHighlighthing()<CR>
         """ }}}
 
-        """ Highlight characters past 85, toggle with <leader>h
+        """ Highlight characters past 80, toggle with <leader>h
         """ You might want to override this function and its variables with
         """ your own in .vimrc.last which might set for example colorcolumn or
         """ even the textwidth. See https://github.com/timss/vimconf/pull/4 {{{
@@ -481,7 +481,7 @@ endif
 
             function! ToggleOverLength()
                 if g:overlength_enabled == 0
-                    match OverLength /\%85v.*/
+                    match OverLength /\%80v.*/
                     let g:overlength_enabled = 1
                     echo 'OverLength highlighting turned on'
                 else
