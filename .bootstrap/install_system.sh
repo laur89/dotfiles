@@ -6962,14 +6962,14 @@ install_nvidia() {
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
 #
-# TODO: should we exit non-0 with unavail_pkgs or missing_pkgs?
+# TODO: should we exit non-0 with unavail_pkgs?
 install_block() {
     local opt OPTIND noinstall list_to_install extra_apt_params
-    local avail_pkgs missing_pkgs unavail_pkgs i cache_out target_rls opts
+    local avail_pkgs unavail_pkgs i opts
     local -
     set -o noglob  # because list_to_install arr is passed as str
 
-    declare -a avail_pkgs missing_pkgs unavail_pkgs
+    declare -a avail_pkgs unavail_pkgs
     noinstall='--no-install-recommends'  # default
 
     while getopts 'f' opt; do
@@ -6991,23 +6991,15 @@ install_block() {
             #[[ "$opts" == *F* ]] && unset noinstall  # !! cannot unset per pkg anymore!
         fi
 
-        target_rls=testing  # default
-        [[ "$i" == */* ]] && target_rls="${i#*/}" || i+="/$target_rls"
-        # other commands to consider: - apt list -a
-        if ! cache_out="$(apt-cache -qq show "$i" 2>/dev/null)"; then
-            unavail_pkgs+=("$i")
-        else
-            [[ -n "$cache_out" ]] && avail_pkgs+=("$i") || missing_pkgs+=("$i")
-        fi
+        # other commands to consider: - apt list -a (think this one's slower tho)
+        [[ -n "$(apt-cache -qq show "$i" 2>/dev/null)" ]] && avail_pkgs+=("$i") || unavail_pkgs+=("$i")
+        # note above apt-cache command exits in non-zero only if pkg is not
+        # found in _any_ releases; but it'll output to stdout only if it's installable
     done
 
     if [[ "${#unavail_pkgs[@]}" -ne 0 ]]; then
-        err "${#unavail_pkgs[@]} packages were not available in APT for ANY release:"
+        err "${#unavail_pkgs[@]} packages were not available in APT for any release:"
         err "${unavail_pkgs[*]}"
-    fi
-    if [[ "${#missing_pkgs[@]}" -ne 0 ]]; then
-        err "${#missing_pkgs[@]} packages were not available in APT for asked target_release:"
-        err "${missing_pkgs[*]}"
     fi
 
     report "installing these packages:\n${avail_pkgs[*]}\n"
