@@ -415,6 +415,8 @@ setup_smartd() {
 
 # needed for wayland, see https://github.com/swaywm/sway/wiki/GTK-3-settings-on-Wayland
 # also read this: https://wiki.archlinux.org/title/GTK#Wayland_backend
+# - per https://michael.stapelberg.ch/posts/2026-01-04-wayland-sway-in-2026#font-rendering :
+#   > under Wayland, GTK3 ignores the ~/.config/gtk-3.0/settings.ini configuration file and uses dconf exclusively
 setup_gtk() {
     true  # TODO
 }
@@ -2489,7 +2491,11 @@ upgrade_firmware() {
 # /etc/modules-load.d/modules.conf -> /etc/modules, so who knows...
 #
 # Note: dashes & underscores are interchangeable in module names.
-# List loaded kernel modules via  $ lsmod | bat
+# List loaded kernel modules via  `lsmod | bat`
+#
+# TODO:
+# - block following modules:
+#   - blacklist pcspkr  (see https://wiki.archlinux.org/title/PC_speaker#Globally)
 install_kernel_modules() {
     local conf modules i
 
@@ -3895,7 +3901,9 @@ install_alacritty() {
 
 # https://wezterm.org/install/linux.html
 #
-# other terms to consider: kitty
+# other terms to consider:
+#  - kitty
+#  - foot (wayland only)
 # avail as flatpak but not recommended: https://flathub.org/apps/org.wezfurlong.wezterm
 install_wezterm() {
     install_block  'wezterm/*'
@@ -5387,7 +5395,9 @@ install_i3_deps() {
     # see also: https://github.com/jdholtz/i3-restore
     py_install  i3-resurrect  # https://github.com/JonnyHaystack/i3-resurrect/
 
-    # TODO: consider https://github.com/infokiller/i3-workspace-groups
+    # TODO: consider:
+    #  - https://github.com/infokiller/i3-workspace-groups
+    #  - https://github.com/stapelberg/wsmgr-for-i3 - GUI workspace manager by stapelberg
 
     exe "sudo rm -rf -- '$f'"
 }
@@ -7893,8 +7903,7 @@ install_setup_printing_cups() {
 setup_firefox() {
     local conf_dir profile
 
-    #readonly conf_dir="$HOME/.mozilla/firefox"
-    readonly conf_dir="$HOME/.config/mozilla"   # as of ff v147  # TODO: confirm
+    readonly conf_dir="$HOME/.config/mozilla"
 
     # install tridactyl native messenger:  https://github.com/tridactyl/tridactyl#extra-features
     #                                      https://github.com/tridactyl/native_messenger
@@ -7902,24 +7911,25 @@ setup_firefox() {
     # TODO 2: does ff in flatpak even support this? note native messaging portal is not working in flatpak as of '25: https://github.com/flatpak/xdg-desktop-portal/issues/655
     exe 'curl -fsSL https://raw.githubusercontent.com/tridactyl/native_messenger/master/installers/install.sh -o /tmp/trinativeinstall.sh && sh /tmp/trinativeinstall.sh master'  # 'master' refers to git ref/tag; can also remove that arg, so latest tag is installed instead.
 
+    return # TODO !!!! verify below and remove this line
+
     # install custom css/styling {  # see also https://github.com/MrOtherGuy/firefox-csshacks
     is_d "$conf_dir" || return 1
     profile="$(find "$conf_dir" -mindepth 1 -maxdepth 1 -type d -name '*default-release')"
     is_d "$profile" || return 1
     ensure_d "$profile/chrome" || return 1
-    exe "pushd $profile/chrome" || return 1
-    clone_or_pull_repo  MrOtherGuy  firefox-csshacks  './'
-
-    exe popd
+    clone_or_pull_repo  MrOtherGuy  firefox-csshacks  "$profile/chrome/"
     # }
 
     # !!!!!!!!!!!!!!!! DO NOT MISS THESE !!!!!!!!!!!!!!!!
     # manual edits in about:config :
     # -  toolkit.cosmeticAnimations.enabled -> false   # remove fullscreen animation
     # -  full-screen-api.ignore-widgets -> true        # remove window decorations in non-fullscreen; note it still requires F11 toggle!
+    # -  intl.charset.fallback.utf8_for_file -> true   # per https://wiki.archlinux.org/title/Mutt#Viewing_HTML ; see neomutt/macros for [iconv -c --to-code=UTF8]
     # - change these 2 pre-existing values to 127.0.0.1:  # TODO: is it really needed? those addresses could already be blocked by hosts?
     #   - toolkit.telemetry.dap_leader
     #   - toolkit.telemetry.dap_helper
+
     # !!!!!!!!!!!!!!!! DO NOT MISS THESE !!!!!!!!!!!!!!!!
 }
 
