@@ -58,8 +58,16 @@ _load_system_config() {
   fi
 }
 
-# NOTE: This must stay in sync with the `set_dpi_and_xresources` function in
-# set-x11-settings.
+#
+# Needed for GTK3 programs like Evince, Geeqie, GIMP 3, … to scale correctly:
+#
+# Note from https://github.com/stapelberg/configfiles/blob/master/xsession :
+#  > NOTE: Chrome 131+ scales incorrectly when GDK_SCALE is set:
+#  > https://mas.to/@zekjur/113475631028231867
+#  > …but that needs to be worked around in Chrome,
+#  > e.g. by using --force-device-scale-factor=3 in ~/.config/chrome-flags.conf
+#
+# NOTE: This must stay in sync with the `set_dpi_and_xresources` function in set-x11-settings.
 _set_gdk_scaling() {
   local gsettings_scaling_factor=1
   local gdk3_scale=1

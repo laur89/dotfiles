@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 #
 # from https://github.com/honza/mutt-notmuch-py
+#
+# TODO: consider PR https://github.com/honza/mutt-notmuch-py/pull/12
+# TODO2: isn't this script nowadays deprecated by
+#  > macro index \Cf "<vfolder-from-query>" "show only messages matching a notmuch pattern"  ?
+#######################################################
 """
 mutt-notmuch-py
 

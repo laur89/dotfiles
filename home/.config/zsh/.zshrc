@@ -25,6 +25,8 @@
 # - as alternative to zinit, consider zim: https://github.com/zimfw/zimfw
 # - https://gist.github.com/mattmc3/c490d01751d6eb80aa541711ab1d54b1
 # - https://github.com/Freed-Wu/Freed-Wu/blob/main/.zshrc
+# - https://github.com/intelfx/dotfiles/blob/master/.zshrc.d/fzf
+#   - zsh config is split over many files, but has some interesting stuff like this fzf-specific conf
 ##############################
 
 #zmodload zsh/zprof  # for debugging shell startup speed
