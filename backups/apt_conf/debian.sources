@@ -1,20 +1,25 @@
 #
 # see https://wiki.debian.org/DebianTesting for configuration.
+# from https://wiki.debian.org/DebianTesting#Best_practices_for_Testing_users :
+# > It is a good idea to include unstable and experimental in your apt sources so
+#   that you have access to newer packages when needed. /-/ if you manually upgrade
+#   some packages to unstable or experimental, then you will get upgrades within that
+#   suite until those packages migrate down to unstable or testing. The apt pinning
+#   needs priorities lower than 990 and equal to or higher than 500 for this to work nicely
+# > It is a good idea to install security updates from unstable since they take extra
+#   time to reach testing and the security team only releases updates to unstable.
+#
 # also https://wiki.debian.org/SourcesList
 # also https://www.debian.org/doc/manuals/debian-handbook/apt.en.html#sect.apt-sources.list.testing
 ######################################################
+Enabled: yes
 Types: deb deb-src
 URIs: https://deb.debian.org/debian
-Suites: stable oldstable unstable
-Components: main contrib non-free
-Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
-
-Types: deb deb-src
-URIs: https://deb.debian.org/debian
-Suites: testing testing-updates
+Suites: testing testing-updates stable oldstable unstable experimental
 Components: main contrib non-free non-free-firmware
 Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 
+Enabled: yes
 Types: deb deb-src
 URIs: https://security.debian.org/debian-security
 Suites: testing-security
@@ -23,7 +28,7 @@ Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 
 
 # bookworm-backports, previously on backports.debian.org
-# do NOT use backports if on testing; testing doesnt have those:
+# do NOT use backports if on testing; testing doesn't have those:
 #deb https://deb.debian.org/debian bookworm-backports main contrib non-free
 #deb-src https://deb.debian.org/debian bookworm-backports main contrib non-free
 

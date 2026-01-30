@@ -4,6 +4,7 @@
 # In nut shell highest PIN gets installed
 #
 # Rough pinning explanations from  $ man apt_preferences:
+#   P := APT Pin Priority
 #   P >= 1000 - causes a version to be installed even if this constitutes a downgrade of the package
 #   990 <= P < 1000 - causes a version to be installed even if it does not come from the target release, unless the installed version is more recent
 #   500 <= P < 990 - causes a version to be installed unless there is a version available belonging to the target release or the installed version is more recent
@@ -59,6 +60,16 @@ Package: *
 Pin: origin packages.mozilla.org
 Pin-Priority: 1000
 
+# https://wiki.debian.org/DebianTesting#Best_practices_for_Testing_users states:
+# > For some packages almost every upload to unstable is a security update, so you can just pin those to unstable directly
+# Laur: I personally don't like this. There are better solutions to temorarily
+#       get higher pins for security updates from unstable, e.g. https://github.com/khimaros/debian-hybrid
+#       that grew out of this thread: https://bugs.debian.org/725934
+#Package: src:chromium src:firefox src:firefox-esr src:linux src:linux-signed-amd64
+#Explanation: these packages are always security updates updated in unstable first
+#Pin: release a=/^(unstable|unstable-debug|buildd-unstable|buildd-unstable-debug)$/
+#Pin-Priority: 991
+
 Package: *
 Pin: release a=testing
 Pin-Priority: 990
@@ -74,6 +85,10 @@ Pin-Priority: 800
 #Package: *
 #Pin: release a=oldstable
 #Pin-Priority: 1
+
+Package: *
+Pin: release a=experimental
+Pin-Priority: 1
 
 Package: *
 Pin: release o=Debian

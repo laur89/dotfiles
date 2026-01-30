@@ -8,6 +8,11 @@
 //
 // this config is likely used by /usr/lib/apt/apt.systemd.daily that's
 // executed by systemd, see:  $ systemctl show apt-daily-upgrade.service
+//
+// note https://wiki.debian.org/DebianUnstable#What_are_some_best_practices_for_testing.2Fsid_users.3F
+// recommends disabling unattended upgrades:
+// > Consider (especially when using unstable) if you need to disable or remove
+//   unattended-upgrades in order to control when package updates take place
 ///////////////////////////////////////////////////////////
 // Control parameters for cron jobs by /etc/cron.daily/apt-compat //
 
