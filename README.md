@@ -71,7 +71,8 @@ steps separately apart from the full installation mode.
 1. execute script:
     * `./install_system.sh -F personal|work`
     * optionally pass `-N` option for non-interactive (ie standalone) mode,
-      e.g. `./install_system.sh -N personal`
+      e.g. `./install_system.sh -N personal`; don't do this for the first full
+      install tho.
 
 ### Single task:
 
@@ -305,9 +306,10 @@ For GUI dconf editor install `dconf-editor` pkg.
 - [privacy guide](https://www.privacyguides.org/en/os/linux-overview/)
 
 ## Prior to OS reinstall
-- back up GPG owner trust & store in secrets
+- back up GPG owner trust & store in our pwdmngr
 - back up installed packages: `dpkg --get-selections > packages.dpkg`
 - TODO: back up `$XDG_DATA_HOME/atuin/history.db`?
+- back up `~/mail/**/.{gmailieer,credentials.gmailieer}.json` to our pwdmngr
 
 ## TODO
 

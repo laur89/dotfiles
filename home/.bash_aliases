@@ -34,7 +34,6 @@ alias fileroller='file-roller'
 alias vscode='$BASE_PROGS_DIR/VSCode-linux-x64/Code'  # MS Visual Code (editor)
 #alias franz='$BASE_PROGS_DIR/franz/franz'  # client that manages loads of different chat clients (via their web frontends)
 alias mattermost='$BASE_PROGS_DIR/mattermost/mattermost'
-alias pastebinit='pastebinit -P'
 alias uptime='uptime --pretty'
 alias xo='xdg-open'
 alias printer-config='system-config-printer'
@@ -54,14 +53,20 @@ alias gist='gist --private --copy'
 alias tkremind='tkremind -m -b1'
 alias lofi='mpv --no-video https://youtu.be/jfKfPfyJRdk'  # play lo-fi music
 alias pdx=plandex
+alias lgit=lazygit
+
+alias yarn='yarn --use-yarnrc "$XDG_CONFIG_HOME/yarn/config"'  # current work-around for XDG compliance: https://github.com/yarnpkg/yarn/issues/2334#issuecomment-3559816403
 pdxn() { [[ "$#" -eq 1 ]] || { err 'need one arg - new plan name to create'; return 1; }; plandex new -n "$1"; }
 
 # change dir, as that's where attachments will be saved to by default: (from https://wiki.archlinux.org/title/Mutt#Default_folder_for_saving_attachments)
 # note this should be possibly handled from within neomutt as well: https://neomutt.org/guide/configuration.html#7-%C2%A0changing-the-current-working-directory
-alias neomutt='pushd $HOME/Downloads/mutt; neomutt; popd'
+neomutt() { pushd "$HOME/Downloads/mutt" >/dev/null && { command neomutt "$@"; popd > /dev/null; } }
 alias vifm='vifmrun'  # vifmrun is our script
 command -v vim > /dev/null 2>&1 || alias vim='nvim'  # yup
 command -v nvim > /dev/null 2>&1 || alias nvim='vim'
+alias cz=chezmoi
+# aka chezmoi-cd; because `chezmoi cd` spawns a subshell (see https://www.chezmoi.io/user-guide/frequently-asked-questions/design/#why-does-chezmoi-cd-spawn-a-shell-instead-of-just-changing-directory)
+ccd() { pushd "$(chezmoi source-path)" >/dev/null; }
 
 # note following uses the 'none' driver, now effectively superseded by 'docker' driver:   # https://minikube.sigs.k8s.io/docs/drivers/none/
 #alias mkstart='CHANGE_MINIKUBE_NONE_USER=true sudo -E minikube start --driver=none --extra-config=apiserver.service-node-port-range=80-32767 --apiserver-ips 127.0.0.1 --apiserver-name localhost'

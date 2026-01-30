@@ -44,9 +44,9 @@ if [ $# -eq 0 ]; then
     set -- 'snapshots/@root:.snapshots' \
            '@home:home' \
            'snapshots/@home:home/.snapshots' \
-           '@data:data' \
+           '@data:data:USROWN' \
            '@nocow:data/nocow:NOCOW-USROWN' \
-           '@progs:progs' \
+           '@progs:progs:USROWN' \
            '@opt:opt' \
            'var/@log:var/log' \
            'var/@tmp:var/tmp' \
