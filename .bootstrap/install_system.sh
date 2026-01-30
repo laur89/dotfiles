@@ -27,8 +27,8 @@ shopt -s nullglob  # unmatching globs to expand into empty string/list instead o
 TMP_DIR=/tmp  # changeable via an option
 readonly KRING="$HOME/.local/share/kring.sala"  # note location is referenced in db's AutoOpen section
 readonly LUKS_USB="/tmp/usb-luks-$RANDOM"  # mountpoint
-readonly KPXC_DB="$LUKS_USB/passdb/passwd_db.kdbx"
 readonly KPXC_KRING_DB="$LUKS_USB/passdb/fresh_keyring.kdbx"
+KPXC_DB=''  # will be defined downstream
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via homesick;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
@@ -417,6 +417,8 @@ setup_smartd() {
 # also read this: https://wiki.archlinux.org/title/GTK#Wayland_backend
 # - per https://michael.stapelberg.ch/posts/2026-01-04-wayland-sway-in-2026#font-rendering :
 #   > under Wayland, GTK3 ignores the ~/.config/gtk-3.0/settings.ini configuration file and uses dconf exclusively
+# - to see current gnome settings, do `dconf dump / | bat`
+#  - note related to dconf is gsettings cmd
 setup_gtk() {
     true  # TODO
 }
@@ -425,7 +427,73 @@ setup_gtk() {
 # TODO: set up msmtprc for system (/etc/msmtprc ?) so sendmail works; don't forget to add aliases,
 # eg 'smart_mail_alias' if we added smartd.conf DEVICESCAN option [-m smart_mail_alias]; refer to arch wiki for more info
 setup_mail() {
-    true
+    local mail_root lieer_accounts acc
+
+    # note we store mail in our nocow subvolume as some syncing tools perform
+    # crazy amount of writes, see https://github.com/gauteh/lieer/issues/309
+    mail_root="$BASE_DATA_DIR/nocow/mail"
+
+    # note this represents both the dir under $mail_root, and notmuch profile
+    lieer_accounts=(
+        'personal.gmail'
+        'work.gmail'
+    )
+
+    is_noninteractive && { report "not running $FUNCNAME() in non-interactive mode"; return 1; }
+
+    if ! is_pkg_installed lieer; then
+        err "lieer pkg not installed"; return 1
+    fi
+
+    confirm "NOTE PULLING THE MAIL CAN TAKE AGES -- continue?" || return
+    select_items -h 'choose accounts to initialize' "${lieer_accounts[@]}" || return
+
+    for acc in "${__SELECTED_ITEMS[@]}"; do
+        _setup_lieer_account "$acc" "$mail_root"
+    done
+}
+
+
+# https://github.com/gauteh/lieer
+_setup_lieer_account() {
+    local acc acc_root nm_conf i
+
+    acc="$1"
+    acc_root="$2/$acc"
+
+    nm_conf="$HOME/.config/notmuch/$acc/config"
+
+    is_f -nm "cannot setup account for [$acc]" "$nm_conf"
+    if [[ -d "$acc_root/.notmuch" ]]; then
+        report "[$acc_root/.notmuch/] exists, assuming mailbox set up"
+        return 0
+    fi
+    define_secret || return 1
+
+    NOTMUCH_CONFIG="$nm_conf" notmuch new || { err "[notmuch new] failed w/ $?"; return 1; }  # note this will create necessary dir(s), including .notmuch
+    exe "mkdir -p $acc_root/mail/{new,tmp,cur}"  # without this `gmi set -C $acc_root` complains "local repository not initialized: could not find mail dir structure"
+
+    for i in .gmailieer.json .credentials.gmailieer.json; do
+        keepassxc-cli attachment-export -q -- "$KPXC_DB" 'lieer-personal' "$i" "$acc_root/$i" <<< "$KPXC_PASS" || { err "[$i] export for [$acc_root] failed w/ $?"; return 1; }
+    done
+
+    #NOTMUCH_CONFIG="$nm_conf" gmi init -C "$acc_root" || { err "[gmi init] failed w/ $?"; return 1; }
+    #NOTMUCH_CONFIG="$nm_conf" gmi init -C $acc_root -c /path/to/our-lieer-client.secret.json  our.user@gmail.com || { err "[gmi init] failed w/ $?"; return 1; }
+    #   - this is not needed/will fail if .gmailieer.json already exists (which it should)
+
+    NOTMUCH_CONFIG="$nm_conf" gmi pull -C "$acc_root" || { err "[gmi pull -C $acc_root] failed w/ $?"; return 1; }
+    #   - performs the initial pull; after that [sync] command should be preferred
+    NOTMUCH_CONFIG="$nm_conf" notmuch new || { err "[notmuch new] failed w/ $?"; return 1; }  # note this will create necessary dir(s), including .notmuch
+    exe "sudo systemctl enable --no-warn 'checkmail@${acc}-gmailieer.timer'"
+
+    #   one gmi init example (note ~/mail/.notmuch dir needs to exist for gmi not to complain):
+    # NOTMUCH_CONFIG="$nm_conf"  notmuch new  # note this will create necessary dir(s), including .notmuch
+    # mkdir -p /data/nocow/mail/personal.gmail/mail/{new,tmp,cur}
+    #   - without this `gmi set -C /data/nocow/mail/personal.gmail` complains "local repository not initialized: could not find mail dir structure"
+    # NOTMUCH_CONFIG="$nm_conf" gmi init -C ~/mail -c /path/to/our-lieer-client.secret.json  our.user@gmail.com
+    #   - this is not needed/will fail if .gmailieer.json already exists
+    # NOTMUCH_CONFIG="$nm_conf" gmi pull -C ~/mail
+    #   - performs the initial pull; after that [sync] command should be preferred
 }
 
 
@@ -573,10 +641,6 @@ setup_systemd() {
     for dir in "${usr_sysd_src[@]}"; do
         __process --user "$dir" "$usr_sysd_target" || continue
     done
-
-    # enable some/known templated units:
-    #exe "sudo systemctl enable --no-warn 'checkmail@personal.timer'"
-    #__is_work && exe "sudo systemctl enable --no-warn 'checkmail@work.timer'"
 
     # reload the rules in case existing rules changed:
     exe 'systemctl --user daemon-reload'  # --user flag manages the user services under ~/.config/systemd/user/
@@ -967,6 +1031,9 @@ install_nfs_server() {
         # TODO: automate multi client/range options:
         # entries are basically:         directory machine1(option11,option12) machine2(option21,option22)
         # to set a range of ips, then:   directory 192.168.0.0/255.255.255.0(ro)
+        # Other interesting options (see https://dietpi.com/blog/?p=3581#improving_security & https://wiki.archlinux.org/title/NFS):
+        # - root_squash - Maps requests from the root user on the client to an anonymous user
+        # - all_squash - Maps all user and group IDs to the anonymous user
         if ! grep -q "${share}.*${client_ip}" "$nfs_conf"; then
             report "adding [$share] for $client_ip to $nfs_conf"
             exe "echo $share ${client_ip}\(rw,sync,no_subtree_check\) | sudo tee --append $nfs_conf > /dev/null"
@@ -1426,11 +1493,7 @@ install_deps() {
 
     # leiningen bash completion:  # https://codeberg.org/leiningen/leiningen/src/branch/main/bash_completion.bash
     #
-    install_from_url -A -d "$BASH_COMPLETIONS" lein  "https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash"
-
-    # vifm filetype icons: https://github.com/thimc/vifm_devicons
-    clone_or_pull_repo "thimc" "vifm_devicons" "$BASE_PROGS_DIR"
-    create_link "${BASE_PROGS_DIR}/vifm_devicons" "$HOME/.vifm_devicons"
+    install_from_url -Ad "$BASH_COMPLETIONS" lein  "https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash"
 
     # git-fuzzy (yet another git fzf tool)   # https://github.com/bigH/git-fuzzy
     clone_or_pull_repo "bigH" "git-fuzzy" "$BASE_PROGS_DIR"
@@ -1462,6 +1525,9 @@ install_deps() {
     # vifm plugins:
     # note ueberzug plugin commented out atm as we're using scripts from https://github.com/thimc/vifmimg
     #_install_vifm_deps; unset _install_vifm_deps
+
+    # vifm filetype icons: https://github.com/thimc/vifm_devicons
+    install_from_url -Ad "$HOME/.config/vifm"  favicons.vifm 'https://raw.githubusercontent.com/thimc/vifm_devicons/refs/heads/master/favicons.vifm'
 
     # cheat.sh:  # https://github.com/chubin/cheat.sh#installation
     # see also:
@@ -1654,6 +1720,10 @@ install_homesick() {
 install_chezmoi() {
     install_from_git twpayne/chezmoi '_linux_amd64.deb'
     #install_bin_from_git -N chezmoi twpayne/chezmoi 'linux_amd64.tar.gz'
+
+    # install 3rd party extensions; cz project lists them @ https://www.chezmoi.io/links/related-software/
+    install_bin_from_git -N chezmoi_modify_manager VorpalBlade/chezmoi_modify_manager 'x86_64-unknown-linux-gnu.tar.gz'
+    chezmoi_modify_manager --doctor || err "[chezmoi_modify_manager --doctor] failed w/ $?"  # verify all's well from manager's perspective
 }
 
 
@@ -1780,21 +1850,15 @@ setup_ssh() {
     is_proc_running  ssh-agent || eval "$(ssh-agent)" || { err 'starting ssh-agent failed'; return 1; }
     is_ssh_key_loaded && report 'SSH already set up' && return 0
 
-    [[ "$MODE" -eq 0 ]] && [[ ! -d "$LUKS_USB" ]] && mount_usb
+    define_secret || return 1
 
-    if [[ -d "$LUKS_USB" ]]; then
-        report "!!! loading SSH key(s)..."
-        command install -Tm500 <(echo -e "#!/usr/bin/env bash\nkeepassxc-cli show -q --attributes password -- '$KPXC_DB' 'master-ssh-key' <<< \"\$KPXC_PASS\"") /tmp/.kps
-        set_kpxc_pass || return 1
-        # TODO: keep an eye on keepassxc-cli, at one point it'll likely gain ssh-agent support
-        # note we run in subshell just so the export is not global:
-        if ! ( export KPXC_PASS; keepassxc-cli attachment-export --stdout -q -- "$KPXC_DB" \
-                'master-ssh-key' priv_key <<< "$KPXC_PASS" | SSH_ASKPASS_REQUIRE=force SSH_ASKPASS=/tmp/.kps  ssh-add - ); then
-            err "pulling SSH key from pass db failed; skipping ssh keys import"
-            return 1
-        fi
-    else
-        err "[$LUKS_USB] not mounted, cannot import SSH keys for the duration of this session"
+    report "!!! loading SSH key(s)..."
+    command install -Tm500 <(echo -e "#!/usr/bin/env bash\nkeepassxc-cli show -q --attributes password -- '$KPXC_DB' 'master-ssh-key' <<< \"\$KPXC_PASS\"") /tmp/.kps
+    # TODO: keep an eye on keepassxc-cli, at one point it'll likely gain ssh-agent support
+    # note we run in subshell just so the export is not global:
+    if ! ( export KPXC_PASS; keepassxc-cli attachment-export --stdout -q -- "$KPXC_DB" \
+            'master-ssh-key' priv_key <<< "$KPXC_PASS" | SSH_ASKPASS_REQUIRE=force SSH_ASKPASS=/tmp/.kps  ssh-add - ); then
+        err "pulling SSH key from pass db failed; skipping ssh keys import"
         return 1
     fi
 
@@ -1821,6 +1885,20 @@ setup_ssh() {
 }
 
 
+# sets global KPXC_DB; note this also sets global passwd var
+define_secret() {
+    if ! [[ -s "$KPXC_DB" ]]; then
+        while true; do
+            read -rp 'enter kpxc db location: ' KPXC_DB
+            is_f -nm 'try again' "$KPXC_DB" && break
+            unset KPXC_DB
+        done
+    fi
+    set_kpxc_pass || return 1
+    return 0
+}
+
+
 set_kpxc_pass() {
     [[ -n "$KPXC_PASS" ]] && return 0
     is_f -nm 'no point in setting pass for it' "$KPXC_DB" || return 1
@@ -1841,7 +1919,7 @@ setup_gpg() {
     # cannot check the existence of $GNUPGHOME itself, as dotfiles likely created it already:
     [[ -e "$GNUPGHOME/pubring.kbx" ]] && report 'gpg already set up' && return 0
 
-    [[ "$MODE" -eq 0 ]] && [[ ! -d "$LUKS_USB" ]] && mount_usb
+    define_secret || return 1
 
     _import_gpg() {
         local key="$1"  # key entry name in KPXC
@@ -1854,22 +1932,16 @@ setup_gpg() {
         fi
     }
 
-    if [[ -d "$LUKS_USB" ]]; then
-        report "restoring GPG keys from backup..."
-        set_kpxc_pass || return 1
-        if ! keyring_pass="$(keepassxc-cli show -q --attributes password -- "$KPXC_DB" 'secret-service-db' <<< "$KPXC_PASS")"; then
-            err "pulling keyring pass from pass db failed; skipping setting up gpg"
-            return 1
-        fi
-        _import_gpg  main-gpg || return 1
-        _import_gpg  github-gpg || return 1
-        # restore trust db:
-        rm -f -- "$GNUPGHOME/trustdb.gpg"
-        gpg --import-ownertrust < <(keepassxc-cli attachment-export --stdout -q -- "$KPXC_KRING_DB" 'main-gpg' otrust.txt <<< "$keyring_pass") || err "importing gpg trust db failed w/ $?"
-    else
-        err "[$LUKS_USB] not mounted, cannot import GPG keys & trust db"
+    report "restoring GPG keys from backup..."
+    if ! keyring_pass="$(keepassxc-cli show -q --attributes password -- "$KPXC_DB" 'secret-service-db' <<< "$KPXC_PASS")"; then
+        err "pulling keyring pass from pass db failed; skipping setting up gpg"
         return 1
     fi
+    _import_gpg  main-gpg || return 1
+    _import_gpg  github-gpg || return 1
+    # restore trust db:
+    rm -f -- "$GNUPGHOME/trustdb.gpg"
+    gpg --import-ownertrust < <(keepassxc-cli attachment-export --stdout -q -- "$KPXC_KRING_DB" 'main-gpg' otrust.txt <<< "$keyring_pass") || err "importing gpg trust db failed w/ $?"
 }
 
 
@@ -1892,14 +1964,9 @@ setup_homesick() {
 
 
 # https://www.chezmoi.io/quick-start/
-# Not yet using as of '25
 setup_chezmoi() {
     install_chezmoi || return $?
-
-    #exe 'chezmoi init'  # creates a new git local repository in ~/.local/share/chezmoi where chezmoi will store its source state/working copy
-    exe 'chezmoi init --apply https://github.com/$GITHUB_USERNAME/dotfiles.git'  # install dotfiles
-    # add --verbose to get more info:
-    #chezmoi init --apply --verbose https://github.com/$GITHUB_USERNAME/dotfiles.git
+    exe 'chezmoi init --apply --verbose git@github.com:laur89/dots.git'  # pull & install dotfiles
 }
 
 
@@ -1998,7 +2065,6 @@ setup_config_files() {
     is_native && setup_udev
     is_native && setup_pm
     #is_native && install_kernel_modules   # TODO: does this belong in setup_config_files()?
-    setup_mail
     setup_global_shell_links
     setup_private_asset_perms
     setup_global_bash_settings
@@ -2105,6 +2171,7 @@ setup_mok() {
 }
 
 
+# note this also sets global KPXC_DB
 mount_usb() {
     local partitions
 
@@ -2122,6 +2189,7 @@ mount_usb() {
             exe "sudo cryptsetup open ${__SELECTED_ITEMS} luksvol1" || { err "decrypting [$__SELECTED_ITEMS] failed w/ $?"; continue; }
             exe "sudo mkdir -p -- '$LUKS_USB'" || continue
             exe "sudo mount /dev/mapper/luksvol1 '$LUKS_USB'" || { sudo rm -r -- "$LUKS_USB"; continue; }
+            KPXC_DB="$LUKS_USB/passdb/passwd_db.kdbx"
             # note unmount is done from cleanup()
             return
         else
@@ -2136,7 +2204,9 @@ setup() {
         mount_usb
         setup_ssh
     fi
+    # note: set up homeshick before chezmoi, as some stuff might depend on symlinks set up by the former
     setup_homesick || fail "homesick setup failed; as homesick is necessary, script will exit"
+    is_interactive && setup_chezmoi  # interactive as templates might prompt for data
     source_shell_conf  # so we get our env vars after dotfiles are pulled in
     is_interactive && [[ "$MODE" -eq 1 ]] && setup_gpg  # call after source_shell_conf()
 
@@ -2299,11 +2369,6 @@ setup_additional_apt_keys_and_sources() {
 
     # signal: (from https://signal.org/en/download/):
     create_apt_source -a  signal  https://updates.signal.org/desktop/apt/keys.asc  https://updates.signal.org/desktop/apt/ xenial main
-
-    # signald: (from https://signald.org/articles/install/debian/):
-    # TODO: using http instead of https as per note in https://signald.org/articles/install/debian/ (apt-update gives error otherwise)
-    # TODO 2: believe this was to be used by hoehermann/libpurple-signald, which is deprecated?
-    #create_apt_source -a  signald  https://signald.org/signald.gpg  http://updates.signald.org/ unstable main
 
     # estonian open eid: (from https://installer.id.ee/media/install-scripts/install-open-eid.sh):
     # latest/current key can be found from https://installer.id.ee/media/install-scripts/
@@ -3904,6 +3969,7 @@ install_alacritty() {
 # other terms to consider:
 #  - kitty
 #  - foot (wayland only)
+#  - wave (warp foss alternative): https://github.com/wavetermdev/waveterm
 # avail as flatpak but not recommended: https://flathub.org/apps/org.wezfurlong.wezterm
 install_wezterm() {
     install_block  'wezterm/*'
@@ -3991,7 +4057,7 @@ install_gomuks() {  # https://github.com/gomuks/gomuks
 
 # IRC to other chat networks gateway - https://www.bitlbee.org
 # wiki: https://wiki.bitlbee.org/
-#
+# - https://wiki.archlinux.org/title/Bitlbee
 install_bitlbee() {  # https://github.com/bitlbee/bitlbee
 
     # slack support: https://github.com/dylex/slack-libpurple
@@ -5474,11 +5540,16 @@ build_polybar() {
 #
 # https://github.com/phusion/debian-packaging-for-the-modern-developer/tree/master/tutorial-1
 #
-# see also pbuilder, https://wiki.debian.org/SystemBuildTools
-# see also https://github.com/makedeb/makedeb
-# see also https://github.com/FooBarWidget/debian-packaging-for-the-modern-developer
-# see also https://github.com/aidan-gallagher/debpic
+# see also:
+# - pbuilder, https://wiki.debian.org/SystemBuildTools
+# - https://github.com/makedeb/makedeb
+# - https://github.com/FooBarWidget/debian-packaging-for-the-modern-developer
+#   - deb packaging tutorials; last commit in '20
+# - https://github.com/aidan-gallagher/debpic
+#   - build Debian packages in an isolated Docker environment
 #   - short introduction @ https://www.reddit.com/r/debian/comments/1cy34sb/ive_created_a_tool_to_ease_building_debian/
+# - https://github.com/Vladimir-csp/uwsm/blob/master/build-deb.sh
+#   - example of similar stuff this function does
 build_deb() {
     local opt pkg_name configure_extra build_deps dh_extra deb d OPTIND
 
@@ -6317,7 +6388,7 @@ install_from_repo() {
         purple-discord  # libpurple/Pidgin plugin for Discord
         nheko  # Qt-based chat client for Matrix  # TODO: avail as flatpak
         'signal-desktop/*'
-        #signald  # note this doesn't come from debian repos
+        #signald  # note this doesn't come from debian repos; no longer maintained as of '25; use https://github.com/AsamK/signal-cli instead
         #lxrandr  # GUI application for the Lightweight X11 Desktop Environment (LXDE); TODO: x11!
         arandr  # visual front end for XRandR; TODO: x11
         autorandr  # TODO: x11; https://github.com/phillipberndt/autorandr
@@ -6327,13 +6398,14 @@ install_from_repo() {
         msmtp-mta  # msmtp is an SMTP client that can be used to send mails from Mutt and probably other
                    # MUAs (mail user agents)  # This package is compiled with SASL and TLS/SSL support
         #thunderbird  # TODO: avail as flatpak; alternatives: betterbird
-        neomutt  # alternatives: aerc (TUI MUA for notmuch), astroid (GUI MUA for notmuch), meli: https://meli-email.org
+        neomutt  # alternatives: aerc, alot (TUI MUA for notmuch), astroid (GUI MUA for notmuch), meli: https://meli-email.org
         notmuch  # mail indexer/tagger
         afew  # Tagging script for notmuch mail
         abook  # ncurses address book application; to be used w/ mutt
         khard  # address book for the Linux console; It creates, reads, modifies and removes vCard address book entries at your local machine. Khard is also compatible w/ mutt
         isync  # mbsync/isync is a command line application which synchronizes mailboxes; https://isync.sourceforge.io/
-               # alternatives: getmail6
+               # alternatives: getmail6, lieer (for gmail only),
+        lieer  # email-fetching, sending, and two-way tag synchronization between notmuch and GMail
         urlview  # utility used to extract URL from text files, especially from mail messages in order to launch some browser to view them (eg mutt); its config is in $HOME/; https://sr.ht/~nabijaczleweli/urlview-ng/
                  # alternatives: urlscan
         urlscan  # slightly better alternative to urlview. likely used by our mutt config.
@@ -6527,8 +6599,9 @@ install_from_flatpak() {
     # https://flathub.org/apps/org.localsend.localsend_app
     fp_install 'org.localsend.localsend_app'
 
+    # thunderbird fork
     # https://flathub.org/en/apps/eu.betterbird.Betterbird
-    fp_install 'eu.betterbird.Betterbird'
+    #fp_install 'eu.betterbird.Betterbird'
 
     # https://flathub.org/en/apps/com.usebruno.Bruno
     fp_install 'com.usebruno.Bruno'
@@ -6830,6 +6903,17 @@ _setup_snapper() {
 }
 
 
+# this installs https://github.com/bus1/dbus-broker
+# instruction from https://github.com/bus1/dbus-broker/wiki#using-dbus-broker
+# TODO: replace this once/if it becomes default implementation in debian!
+install_dbus_broker() {
+    is_pkg_installed dbus-broker && return 0  # assuming already set up
+    install_block dbus-broker || return 1
+    exe "sudo systemctl enable dbus-broker.service"
+    exe "sudo systemctl --global enable dbus-broker.service"  # enables for all local users
+}
+
+
 # offers to install nvidia drivers, if NVIDIA card is detected.
 #
 # in order to reinstall the dkms part, purge nvidia-driver and then reinstall.
@@ -6983,6 +7067,7 @@ choose_single_task() {
         setup
         setup_homesick
         setup_seafile
+        setup_mail
         setup_apt
         setup_hosts
         setup_systemd
@@ -7188,6 +7273,7 @@ full_install() {
     is_windows || upgrade_kernel  # keep this check is_windows(), not is_native();
     install_fonts
     install_progs
+    install_dbus_broker
     install_deps
     is_interactive && is_native && install_ssh_server_or_client
     is_interactive && is_native && install_nfs_server_or_client
@@ -7678,6 +7764,8 @@ install_croc() {
 }
 
 
+# see also:
+# - https://github.com/magic-wormhole/magic-wormhole
 install_localsend() {
     err "do not call, using flatpak atm"
     #install_from_git localsend/localsend '-linux-x86-64.deb'
@@ -8147,7 +8235,8 @@ is_installed() {
 
 
 is_pkg_installed() {
-    apt list -qq --installed "$*" | grep -q .
+    # TODO: consider considerably faster [[ "$(dpkg-query -Wf '${db:Status-Status}' "$*" 2>/dev/null)" == installed ]]
+    apt list -qq --installed "$*" 2>/dev/null | grep -q .
 }
 
 
@@ -9352,6 +9441,7 @@ exit 0
 #  - https://github.com/sxyazi/yazi    - rust
 #    - tl;dr: better OOTB ux than vifm?
 #    - has zoxide integration?
+#    - see gruvbox theme: https://github.com/bennyyip/gruvbox-dark.yazi
 #  - https://github.com/dylanaraps/fff - bash file mngr [deprecated]
 #
 #  TODO:
@@ -9413,7 +9503,7 @@ exit 0
 #
 # list of sysadmin cmds:  https://haydenjames.io/90-linux-commands-frequently-used-by-linux-sysadmins/
 #
-# some gsettings stuff:
+# some gsettings stuff: related to gsettings is dconf family of commands
 # $ gsettings get org.gnome.desktop.interface color-scheme
 #
 # for review/consideration, see also default bluefin packages:  https://github.com/ublue-os/bluefin/blob/main/build_files/base/04-packages.sh
