@@ -99,7 +99,10 @@ Plug 'jceb/vim-orgmode'  " text outlining (to use with note-taking plugins?); se
 "Plug 'jlanzarotta/bufexplorer'
 
 " File browser
-" TODO: consider https://github.com/nvim-neo-tree/neo-tree.nvim or https://github.com/nvim-tree/nvim-tree.lua
+" TODO: alternatives:
+" - https://github.com/nvim-neo-tree/neo-tree.nvim
+" - https://github.com/nvim-tree/nvim-tree.lua  <-- !!!
+" - https://github.com/lambdalisue/vim-fern
 Plug 'preservim/nerdtree', { 'on': ['NERDTreeToggle', 'NERDTreeFind'] }
 
 " Visualise the undo tree
@@ -138,6 +141,8 @@ Plug 'derekwyatt/vim-scala', { 'for': 'scala' }
 "Plug 'OmniSharp/omnisharp-vim'  " using one provided by YCM
 
 " navigate seamlessly btw vim & tmux splits (don't forget tmux plugin or bindings in .tmux.conf as well):
+" TODO: see also https://github.com/mrjones2014/smart-splits.nvim
+"   - see this for comparison: https://github.com/mrjones2014/smart-splits.nvim/discussions/420#discussioncomment-15562791
 Plug 'christoomey/vim-tmux-navigator'
 
 " yankring: hold copy of yanked elements:
@@ -273,3 +278,7 @@ Plug 'junegunn/fzf.vim'
 
 " plugins to consider once we migrate config over to lua:
 " - https://github.com/LintaoAmons/bookmarks.nvim
+" - https://github.com/sphamba/smear-cursor.nvim
+" - https://github.com/jpalardy/vim-slime - REPL
+" - https://github.com/2KAbhishek/seeker.nvim - progressive file seeker
+" - https://github.com/alker0/chezmoi.vim - syntax highlighting with [chezmoi edit]
