@@ -2001,18 +2001,20 @@ setup_private_asset_perms() {
     for i in \
             ~/.ssh \
             ~/.netrc \
+            ~/.pypirc \
             ~/.electrum \
-            ~/.gcalclirc \
-            ~/.gcalcli_oauth \
-            ~/.msmtprc \
+            "$XDG_CONFIG_HOME/gcalcli/" \
+            "$XDG_CONFIG_HOME/neomutt/" \
+            "$XDG_DATA_HOME/goobook_auth.json" \
+            "$XDG_CACHE_HOME/goobook_cache" \
+            "$XDG_CONFIG_HOME/msmtp/" \
             ~/.irssi \
             "$XDG_CONFIG_HOME/weechat" \
             ~/.aider.conf.yml \
             "$GNUPGHOME" \
-            ~/.gist \
             ~/.bash_hist \
             ~/.bash_history_eternal \
-            ~/.local/share/atuin/history.db \
+            "$XDG_DATA_HOME/atuin/history.db" \
             "$XDG_CONFIG_HOME/revolut-py" \
             "$XDG_CONFIG_HOME/zsh" \
                 ; do
@@ -2207,7 +2209,7 @@ mount_usb() {
 
 setup() {
     if is_interactive && [[ "$MODE" -eq 1 ]]; then
-        mount_usb  # TODO: detect not only MODE=1, but _very initial_ installation
+        mount_usb  # TODO: detect not only MODE==1, but if _very initial_ installation
         setup_ssh
     fi
     # note: set up homeshick before chezmoi, as some stuff might depend on symlinks set up by the former
@@ -2838,7 +2840,7 @@ fetch_release_from_git() {
     [[ -z "$selector" ]] && selector=".assets[] | select(.name|test(\"$2\$\")) | .browser_download_url"
 
     readonly loc="https://api.github.com/repos/$1/releases/$ver"
-    token="$(getnetrc curl@ghapi.com)" && token="-u $token" || err "couldn't resolve gh api token"
+    token="$(getnetrc curl@ghapi.com)" && token="-u $token" || report "couldn't resolve gh api token"
     # note including api version is recommended: https://docs.github.com/en/rest/using-the-rest-api/troubleshooting-the-rest-api#not-a-supported-version
     dl_url="$(curl -fsSL -A "$USER_AGENT" -H 'X-GitHub-Api-Version:2022-11-28' $token -- "$loc" \
         | jq -er "$selector")" || { err "asset url resolution from [$loc] via selector [$selector] failed w/ $?"; return 1; }
@@ -3279,6 +3281,34 @@ install_xournalpp() {  # https://github.com/xournalpp/xournalpp
 install_ueberzugpp() {  # https://github.com/jstkdng/ueberzugpp
     install_from_any  ueberzugpp  'https://software.opensuse.org/download.html?project=home%3Ajustkidding&package=ueberzugpp#directDebian' \
         'Debian_Testing.*[-0-9.]+_amd64\.deb'
+}
+
+
+# TODO: seems to build fine, but no idea how to pass flags to cmake such as -DCMAKE_BUILD_TYPE=Release
+#       or this for wayland: -DCMAKE_BUILD_TYPE=Release -DENABLE_X11=OFF ENABLE_WAYLAND=ON
+build_ueberzugpp() {  # https://github.com/jstkdng/ueberzugpp#build-from-source
+    local tmpdir repo ver deps
+
+    repo='https://github.com/jstkdng/ueberzugpp'
+    ver="$(get_git_sha "$repo")" || return 1
+    is_installed "$ver" ueberzugpp && return 2
+
+    deps=(libssl-dev libvips-dev libsixel-dev libchafa-dev libtbb-dev)
+
+    tmpdir="$TMP_DIR/ueberzugpp-build-${RANDOM}"
+    exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
+
+    report 'building ueberzugpp...'
+    mkpushd "$tmpdir/build" || return 1
+    build_deb  ueberzugpp "${deps[@]}" || { err "build_deb() for ueberzugpp failed"; popd; return 1; }
+    exe 'sudo dpkg -i ../ueberzugpp_*.deb' || { err "installing ueberzugpp failed"; popd; return 1; }
+
+    exe popd
+    exe "sudo rm -rf -- '$tmpdir'"
+
+    add_to_dl_log  ueberzugpp "$ver"
+
+    return 0
 }
 
 
@@ -4372,7 +4402,7 @@ install_lemurs_display_manager() {  # https://github.com/coastalwhite/lemurs
     tmpdir="$(mkt lemurs-build)"
     exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     report "building lemurs..."
-    exe "cargo -C '$tmpdir' build --release" || return 1
+    exe "cargo -Z unstable-options -C '$tmpdir' build --release" || return 1
 
     exe "sudo install -m644 -CT '$tmpdir/target/release/lemurs' '/usr/bin/lemurs'" || return 1
     ensure_d -s '/etc/lemurs/wms' '/etc/lemurs/wayland' || return 1
@@ -5206,7 +5236,7 @@ install_display_switch() {
         tmpdir="$TMP_DIR/display-switch-${RANDOM}"
         exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
 
-        exe "cargo -C '$tmpdir' build --release" || return 1  # should produce binary at target/release/display_switch
+        exe "cargo -Z unstable-options -C '$tmpdir' build --release" || return 1  # should produce binary at target/release/display_switch
         exe "sudo install -m754 -C --group=$USER '$tmpdir/target/release/display_switch' '/usr/local/bin'" || return 1
 
         exe "sudo rm -rf -- '$tmpdir'"
@@ -5315,7 +5345,7 @@ EOF
     ## compile & install
     #exe 'autoreconf --force --install' || return 1
     #exe 'rm -rf build/' || return 1
-    #exe 'mkdir -p build && pushd build/' || return 1
+    #mkpushd "build" || return 1
 
     ## Disabling sanitizers is important for release versions!
     ## The prefix and sysconfdir are, obviously, dependent on the distribution.
@@ -7230,6 +7260,7 @@ __choose_prog_to_build() {
         install_veracrypt
         #install_betterbird
         install_ueberzugpp
+        build_ueberzugpp
         install_hblock
         install_open_eid
         install_binance
@@ -7258,6 +7289,7 @@ __choose_prog_to_build() {
         install_aider_desk
         install_android_command_line_tools
         install_chezmoi
+        install_anything_sync
     )
 
     report 'what do you want to build/install?'
@@ -7985,6 +8017,40 @@ install_setup_printing_cups() {
 }
 
 
+# similar to profile-sync-daemon, but generic
+# https://github.com/graysky2/anything-sync-daemon
+# https://github.com/graysky2/anything-sync-daemon/blob/master/INSTALL
+install_anything_sync() {
+    local conf repo ver tmpdir
+
+    repo='https://github.com/graysky2/anything-sync-daemon'
+    ver="$(get_git_sha "$repo")" || return 1
+    is_installed "$ver" anything-sync-daemon && return 2
+
+    tmpdir="$(mkt anything-sync-daemon-build)"
+    exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
+    report "installing anything-sync-daemon..."
+    exe "make -C '$tmpdir'" || return 1
+    exe "sudo make -C '$tmpdir' install-systemd-all" || return 1
+
+    exe "sudo rm -rf -- '$tmpdir'"
+    add_to_dl_log  anything-sync-daemon "$ver"
+
+    # configure to sync firefox cache:
+    conf='/etc/asd.conf'
+    is_f -n "$conf" || return 1
+    if ! sudo grep -q "^WHATTOSYNC.*firefox" "$conf"; then
+        exe "sudo sed -i --follow-symlinks '/^WHATTOSYNC=/d' '$conf'" || return 1
+        exe "echo 'WHATTOSYNC=(/home/$USER/.cache/mozilla/firefox)' | sudo tee --append $conf > /dev/null"
+        #exe "sudo sed -i --follow-symlinks 's|^WHATTOSYNC=.*|WHATTOSYNC=(/home/$USER/.cache/mozilla/firefox)|g' $conf"
+    fi
+    if ! sudo grep -q "^USE_BACKUPS=no" "$conf"; then
+        exe "sudo sed -i --follow-symlinks '/^USE_BACKUPS=/d' '$conf'" || return 1
+        exe "echo 'USE_BACKUPS=no' | sudo tee --append $conf > /dev/null"
+    fi
+}
+
+
 # ff & extension configs/customisation
 # TODO: conf_dir does not exist during initial full install!
 # TODO: consider https://github.com/yokoffing/Betterfox  <-- real cool!
@@ -8006,6 +8072,7 @@ setup_firefox() {
     # TODO: do we want this? increases attack surface?
     # TODO 2: does ff in flatpak even support this? note native messaging portal is not working in flatpak as of '25: https://github.com/flatpak/xdg-desktop-portal/issues/655
     exe 'curl -fsSL https://raw.githubusercontent.com/tridactyl/native_messenger/master/installers/install.sh -o /tmp/trinativeinstall.sh && sh /tmp/trinativeinstall.sh master'  # 'master' refers to git ref/tag; can also remove that arg, so latest tag is installed instead.
+    install_anything_sync
 
     return # TODO !!!! verify below and remove this line
 
@@ -8025,6 +8092,7 @@ setup_firefox() {
     # - change these 2 pre-existing values to 127.0.0.1:  # TODO: is it really needed? those addresses could already be blocked by hosts?
     #   - toolkit.telemetry.dap_leader
     #   - toolkit.telemetry.dap_helper
+    # - browser.sessionstore.interval -> 600000        # store current session status to disk every 10m (default is 15s); TODO: any point if profile is in memory anyway?
 
     # !!!!!!!!!!!!!!!! DO NOT MISS THESE !!!!!!!!!!!!!!!!
 }
