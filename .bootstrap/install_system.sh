@@ -7025,7 +7025,7 @@ install_nvidia() {
 # TODO: should we exit non-0 with unavail_pkgs?
 install_block() {
     local opt OPTIND noinstall list_to_install extra_apt_params
-    local avail_pkgs unavail_pkgs i opts
+    local avail_pkgs unavail_pkgs i opts res target_rls
     local -
     set -o noglob  # because list_to_install arr is passed as str
 
@@ -7042,23 +7042,24 @@ install_block() {
 
     declare -ar list_to_install=($1)
     readonly extra_apt_params="$2"  # optional
-
     for i in "${list_to_install[@]}"; do
         if [[ "$i" == *//* ]]; then
             opts="${i##*//}"
             i="${i%%//*}"
             [[ "$opts" == *N* ]] && ! is_native && continue
-            #[[ "$opts" == *F* ]] && unset noinstall  # !! cannot unset per pkg anymore!
+            #[[ "$opts" == *F* ]] && unset noinstall  # !! cannot unset per pkg anymore as we're not installing pkgs individually
         fi
-
-        # other commands to consider: - apt list -a (think this one's slower tho)
-        [[ -n "$(apt-cache -qq show "$i" 2>/dev/null)" ]] && avail_pkgs+=("$i") || unavail_pkgs+=("$i")
-        # note above apt-cache command exits in non-zero only if pkg is not
-        # found in _any_ releases; but it'll output to stdout only if it's installable
+        [[ "$i" == */* ]] && target_rls="t ${i#*/}" || unset target_rls
+        res="$(apt-cache -qq${target_rls} policy "${i%%/*}" 2>/dev/null)"
+        if [[ -n "$res" && "$res" != *'Candidate: (none)'* ]]; then
+            avail_pkgs+=("$i")
+        else
+            unavail_pkgs+=("$i")
+        fi
     done
 
     if [[ "${#unavail_pkgs[@]}" -ne 0 ]]; then
-        err "${#unavail_pkgs[@]} packages were not available in APT for any release:"
+        err "${#unavail_pkgs[@]} packages were not available:"
         err "${unavail_pkgs[*]}"
     fi
 
