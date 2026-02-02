@@ -310,6 +310,7 @@ For GUI dconf editor install `dconf-editor` pkg.
 - back up installed packages: `dpkg --get-selections > packages.dpkg`
 - TODO: back up `$XDG_DATA_HOME/atuin/history.db`?
 - back up `~/mail/**/.{gmailieer,credentials.gmailieer}.json` to our pwdmngr
+- back up `~/.netrc` to our pwdmngr
 
 ## TODO
 

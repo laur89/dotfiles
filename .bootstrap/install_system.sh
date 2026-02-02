@@ -17,6 +17,7 @@
 #   - has some WSL logic as well; note they install dbus-x11 if wsl - why's that?
 # - ansible playbooks:
 #   - https://gitlab.com/folliehiyuki/sysconfig
+#   - not really ansible, but interesting source: https://github.com/alexmyczko/autoexec.bat
 #
 #------------------------
 #---   Configuration  ---
