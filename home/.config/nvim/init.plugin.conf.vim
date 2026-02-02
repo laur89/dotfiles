@@ -114,6 +114,12 @@
     "let g:airline#extensions#bufferline#overwrite_variables = 1
     let g:airline#extensions#tabline#enabled = 1  "when using this, comment out tab colring (doesn't break it, just pointless)
     let g:airline#extensions#coc#enabled = 1
+    " nvim 0.11 has reversed statusline colors, need to reset it (from https://github.com/vim-airline/vim-airline/issues/2693) {{{
+    hi statusline cterm=NONE gui=NONE
+    hi tabline cterm=NONE gui=NONE
+    hi winbar cterm=NONE gui=NONE
+    hi statuslinenc cterm=NONE gui=NONE
+    " }}}
 
     " vim-bufferline:
     "let g:bufferline_active_buffer_left = '['

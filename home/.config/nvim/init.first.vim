@@ -151,7 +151,9 @@ endif
                                                     " for file-specific settings.
     set nomodeline                                  " security
     set lazyredraw                                  " redraw only when need to
-    set pastetoggle=<F6>                            " key for toggling paste mode (TODO: move to 'Keybindings' section?)
+    if !has('nvim')
+        set pastetoggle=<F6>                            " key for toggling paste mode (TODO: move to 'Keybindings' section?)
+    endif
 
 
     if !has('nvim') && !exists("$__REMOTE_SSH")
