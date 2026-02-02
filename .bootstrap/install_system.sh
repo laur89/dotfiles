@@ -1311,7 +1311,7 @@ install_deps() {
     _install_tmux_deps() {
         local plugins_dir dir
 
-        readonly plugins_dir="$HOME/.tmux/plugins"
+        readonly plugins_dir="$XDG_CONFIG_HOME/tmux/plugins"
 
         if ! [[ -d "$plugins_dir/tpm" ]]; then
             clone_or_pull_repo "tmux-plugins" "tpm" "$plugins_dir"
@@ -2705,7 +2705,8 @@ install_own_builds() {
     # TODO: why are ferdium&discord behind is_native?
     is_native && install_ferdium
     #install_xournalpp
-    #install_zoxide
+    install_zoxide
+    install_sesh
     install_ripgrep
     install_rga
     install_gitlogue
@@ -2748,6 +2749,7 @@ install_own_builds() {
     #install_slack
     install_veracrypt
     install_ueberzugpp
+    install_xdg_ninja
     #install_hblock
     install_open_eid
     #install_binance
@@ -3284,6 +3286,14 @@ install_ueberzugpp() {  # https://github.com/jstkdng/ueberzugpp
 }
 
 
+# When xdg-ninja encounters a file or directory it knows about, it will tell you
+# whether it's possible to move it to the XDG location, and how to do it.
+install_xdg_ninja() {  # https://github.com/b3nj5m1n/xdg-ninja
+    clone_or_pull_repo "b3nj5m1n" "xdg-ninja" "$BASE_PROGS_DIR"
+    create_link "${BASE_PROGS_DIR}/xdg-ninja/xdg-ninja.sh" "$HOME/bin/xdg-ninja"
+}
+
+
 # TODO: seems to build fine, but no idea how to pass flags to cmake such as -DCMAKE_BUILD_TYPE=Release
 #       or this for wayland: -DCMAKE_BUILD_TYPE=Release -DENABLE_X11=OFF ENABLE_WAYLAND=ON
 build_ueberzugpp() {  # https://github.com/jstkdng/ueberzugpp#build-from-source
@@ -3550,6 +3560,14 @@ install_zoom() {  # https://zoom.us/download
 install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
     #install_bin_from_git -N zoxide ajeetdsouza/zoxide '-x86_64-unknown-linux-musl.tar.gz'
     install_from_git ajeetdsouza/zoxide '_amd64.deb'
+}
+
+# Smart session manager for the terminal; good description from the creator:
+#  > Sesh will sort the folders you use the most on the top in the fzf filter, it does not have any sort of resurrect or continue features.
+# tl;dr you configure set of tmux sessions and folders, and optionally
+# execute a command when entering said dir; works w/ zoxide?!
+install_sesh() {  # https://github.com/joshmedeski/sesh
+    install_bin_from_git -N sesh joshmedeski/sesh 'Linux_x86_64.tar.gz'
 }
 
 
@@ -7171,6 +7189,7 @@ __choose_prog_to_build() {
         install_zoom
         install_xournalpp
         install_zoxide
+        install_sesh
         install_fzf
         install_ripgrep
         install_rga
@@ -7260,6 +7279,7 @@ __choose_prog_to_build() {
         install_veracrypt
         #install_betterbird
         install_ueberzugpp
+        install_xdg_ninja
         build_ueberzugpp
         install_hblock
         install_open_eid
