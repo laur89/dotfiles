@@ -312,7 +312,7 @@ if [[ -x /usr/bin/dircolors ]]; then
     if [[ -f "$BASE_PROGS_DIR/LS_COLORS/lscolors.sh" ]]; then
         source "$BASE_PROGS_DIR/LS_COLORS/lscolors.sh"
     else
-        [[ -r "$HOME/.dircolors" ]] && eval "$(dircolors -b "$HOME/.dircolors")" || eval "$(dircolors -b)"
+        [[ -r "$HOME/.dir_colors" ]] && eval "$(dircolors -b "$HOME/.dir_colors")" || eval "$(dircolors -b)"
     fi
 fi
 
