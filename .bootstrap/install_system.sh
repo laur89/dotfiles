@@ -6067,10 +6067,10 @@ install_fonts() {
     #enable_bitmap_rendering; unset enable_bitmap_rendering
     install_nerd_fonts; unset install_nerd_fonts
 
-    #install_block fonts-powerline  # TODO: suspect this pkg contains only the symbols? think that's the case, as
+    install_block fonts-powerline  # TODO: suspect this pkg contains only the symbols? think that's the case, as
                                     #   fonts-powerline pkg, at least as of '25 (v2.8.4-1), does not install
                                     #   Terminess Powerline (or any other as far as we can tell) font
-    install_powerline_fonts; unset install_powerline_fonts  # note 'fonts-powerline' pkg in apt does not seem to work
+    #install_powerline_fonts; unset install_powerline_fonts  # note 'fonts-powerline' pkg in apt does not seem to work
 
     #install_siji; unset install_siji
 
