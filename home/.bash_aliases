@@ -54,6 +54,7 @@ alias tkremind='tkremind -m -b1'
 alias lofi='mpv --no-video https://youtu.be/jfKfPfyJRdk'  # play lo-fi music
 alias pdx=plandex
 alias lgit=lazygit
+alias iotop='iotop --accumulated --processes'
 
 alias yarn='yarn --use-yarnrc "$XDG_CONFIG_HOME/yarn/config"'  # current work-around for XDG compliance: https://github.com/yarnpkg/yarn/issues/2334#issuecomment-3559816403
 pdxn() { [[ "$#" -eq 1 ]] || { err 'need one arg - new plan name to create'; return 1; }; plandex new -n "$1"; }
@@ -86,6 +87,7 @@ alias kof='kubeoff'
 ##################################
 #alias clean_failed_mvn="$(find ~/.m2 -name *.lastUpdated -delete)"
 #alias amq="$BASE_PROGS_DIR/apache-activemq-5.10.0/bin/activemq > /tmp/activemq.log 2>&1 &"
+# for logout see also https://unix.stackexchange.com/a/292048/47501
 #alias ulogout="sudo pkill -KILL -u $1"  # user logout
 alias logout="pkill -TERM -u $(whoami) & sleep 5 && pkill -KILL -u $(whoami) && exit 0"  # perhaps consider $ killall5
 #alias logout="pkill -u $USER"   # by default pkill sends SIGTERM signal
@@ -218,7 +220,7 @@ alias mkdi='mkdir'
 alias mkd='mkdir'
 alias mkcs='mkcd'
 alias cd-='cd -'
-alias -- -='cd -'
+alias -- -='cd -'  # alias for '-'
 
 # git:
 alias gitst='git st'
