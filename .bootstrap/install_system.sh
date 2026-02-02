@@ -1980,6 +1980,7 @@ setup_homesick() {
 # https://www.chezmoi.io/quick-start/
 setup_chezmoi() {
     install_chezmoi || return $?
+    report "initializing our chezmoi store; note some data will be queried..."
     exe 'chezmoi init --apply --verbose git@github.com:laur89/dots.git'  # pull & install dotfiles
     # note modify_mngr doctor can only be ran _after_ init, as otherwise it'll complain about missing ~/.local/share/chezmoi/:
     chezmoi_modify_manager --doctor || err "[chezmoi_modify_manager --doctor] failed w/ $?"  # verify all's well from manager's perspective
@@ -6302,7 +6303,6 @@ install_from_repo() {
         git-extras  # extra git commands, e.g. git-ignore, git-setup, git-changelog, git-release, git-effort;  https://github.com/tj/git-extras
         zenity
         #yad  # alternative to zenity
-        gxmessage  # xmessage clone based on GTK+
         #gnome-keyring  # currently secret-service provided by kpxc
         #seahorse  # gnome-keyring front-end
         lxpolkit           # provides a D-Bus session bus service that is used to bring up authentication dialogs used for obtaining privileges
@@ -7085,6 +7085,8 @@ choose_step() {
     fi
 
     if [[ "$BOOTSTRAP_LAUNCHER_TAG" != Y ]] && [[ "$MODE" -eq 1 || "$LOGGING_LVL" -ge 20 ]] && cmd_avail script; then
+        report "re-starting script via [script] to capture terminal output; sudo passwd will likely be asked again..."
+        sleep 2
         script --flush --quiet --return --log-out "$SCRIPT_LOG" --command "BOOTSTRAP_LAUNCHER_TAG=Y MODE=$MODE $0 ${ORIG_OPTS[*]}"
         ERR=$?
 
