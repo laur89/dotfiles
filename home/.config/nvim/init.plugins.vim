@@ -140,7 +140,7 @@ Plug 'derekwyatt/vim-scala', { 'for': 'scala' }
 " C# support: (requires mono)    https://github.com/OmniSharp/omnisharp-vim
 "Plug 'OmniSharp/omnisharp-vim'  " using one provided by YCM
 
-" navigate seamlessly btw vim & tmux splits (don't forget tmux plugin or bindings in .tmux.conf as well):
+" navigate seamlessly btw vim & tmux splits (don't forget tmux plugin or bindings in tmux.conf as well):
 " TODO: see also https://github.com/mrjones2014/smart-splits.nvim
 "   - see this for comparison: https://github.com/mrjones2014/smart-splits.nvim/discussions/420#discussioncomment-15562791
 Plug 'christoomey/vim-tmux-navigator'
@@ -275,6 +275,9 @@ Plug 'farmergreg/vim-lastplace'
 "       looks like clap&telescope have some overlap: https://github.com/nvim-telescope/telescope.nvim/issues/121
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
+
+" https://github.com/ryanoasis/vim-devicons
+Plug 'ryanoasis/vim-devicons'
 
 " plugins to consider once we migrate config over to lua:
 " - https://github.com/LintaoAmons/bookmarks.nvim
