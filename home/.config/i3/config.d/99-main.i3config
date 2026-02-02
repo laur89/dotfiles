@@ -603,6 +603,7 @@ for_window [class="^com-charlesproxy-main-MainWithClassLoader$" title="^win"] fl
 # our own invented title to force some wins (eg terminals) float with no titlebar:
 for_window [title="^_wm_float_no_titlebar$"] floating enable, border pixel $border, focus
 for_window [class="^org.remmina.Remmina$" title="^Remmina Preferences$"] floating enable, border pixel $border, focus
+for_window [class="^fontforge$" title="^Warnings$"] floating enable, border pixel $border, focus
 
 # some other per-app configs:
 #  we occupy first index; note 'scratch_mark' is a pre-set prefix used elsewhere in this config!:
