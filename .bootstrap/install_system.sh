@@ -1889,6 +1889,15 @@ setup_ssh() {
 }
 
 
+import_netrc() {
+    local t="$HOME/.netrc"
+    define_secret || return 1
+    report 'loading netrc...'
+    keepassxc-cli attachment-export -q -- "$KPXC_DB" 'netrc' netrc "$t" <<< "$KPXC_PASS" || { err "[netrc] import failed w/ $?"; return 1; }
+    chmod 600 "$t"
+}
+
+
 # sets global KPXC_DB; note this also sets global passwd var
 define_secret() {
     if ! [[ -s "$KPXC_DB" ]]; then
@@ -2211,6 +2220,7 @@ setup() {
     if is_interactive && [[ "$MODE" -eq 1 ]]; then
         mount_usb  # TODO: detect not only MODE==1, but if _very initial_ installation
         setup_ssh
+        import_netrc
     fi
     # note: set up homeshick before chezmoi, as some stuff might depend on symlinks set up by the former
     setup_homesick || fail "homesick setup failed; as homesick is necessary, script will exit"
@@ -5993,7 +6003,8 @@ install_fonts() {
 
     # https://github.com/powerline/fonts
     # note this is same as 'fonts-powerline' pkg, although at least in 2021 the package didn't work
-    # TODO: unsure if it really is the same - suspect the deb pkg _only_ provides the symbols
+    # TODO: unsure if it really is the same - suspect the deb pkg _only_ provides the symbols.
+    #       yet readme claims it's the same thing
     install_powerline_fonts() {
         local tmpdir repo ver
 
