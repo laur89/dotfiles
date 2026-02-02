@@ -7,6 +7,7 @@ Plug 'lambdalisue/vim-suda'
 " A pretty statusline, bufferline integration:
 "Plug 'itchyny/lightline.vim'  " too minimalist for me
 Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
 "Plug 'bling/vim-bufferline'
 
 " Easy... motions... yeah.

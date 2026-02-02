@@ -107,7 +107,7 @@
     " vim-airline - automatically populate g:airline_symbols dictionary w/
     " powerline symbols:
     let g:airline_powerline_fonts = 1
-    let g:airline_theme='dark'
+    let g:airline_theme='base16_gruvbox_dark_hard'
     " integrate with https://github.com/edkolev/tmuxline.vim:
     "let g:airline#extensions#tmuxline#enabled = 1
     let g:airline#extensions#bufferline#enabled = 1

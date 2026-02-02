@@ -57,6 +57,7 @@ steps separately apart from the full installation mode.
     - note to preseed hostname, we _have to_ provide it as kernel params, so
       this option would leave our domain as default `debian`
 
+1. follow the [manual partitioning](#manual-partitioning) from below
 1. wget https://github.com/laur89/dotfiles/raw/master/.bootstrap/install_system.sh
     * or `wget https://github.com/laur89/dotfiles/raw/develop/.bootstrap/install_system.sh`
       for develop branch.
