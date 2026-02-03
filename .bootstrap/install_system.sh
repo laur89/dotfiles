@@ -582,6 +582,14 @@ setup_systemd() {
             usr_sysd_src+=("$dir/laptop")
         done
     fi
+    if is_native; then  # note this comes _after_ laptop
+        for dir in "${global_sysd_src[@]}"; do
+            global_sysd_src+=("$dir/native")
+        done
+        for dir in "${usr_sysd_src[@]}"; do
+            usr_sysd_src+=("$dir/native")
+        done
+    fi
 
     is_d -m 'skipping systemd file(s) installation' "$global_sysd_target" || return 1
     ensure_d "$usr_sysd_target" || return 1
