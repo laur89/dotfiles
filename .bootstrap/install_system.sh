@@ -1631,7 +1631,7 @@ install_deps() {
     install_block 'libxcb-render0-dev libffi-dev python3-cffi'
     py_install flashfocus
 
-    py_install bctl  # brightness control, https://github.com/laur89/bctl
+    is_native && py_install bctl  # brightness control, https://github.com/laur89/bctl
 
     # work deps:  # TODO remove block?
     #if [[ "$PROFILE" == work ]]; then
@@ -6004,9 +6004,11 @@ install_fonts() {
     }
 
     # https://github.com/powerline/fonts
-    # note this is same as 'fonts-powerline' pkg, although at least in 2021 the package didn't work
-    # TODO: unsure if it really is the same - suspect the deb pkg _only_ provides the symbols.
-    #       yet readme claims it's the same thing
+    # note this is same as 'fonts-powerline' pkg, although at least in 2021 the package didn't work.
+    # TODO: there is _some_ discrepancy. when comparing the `fc-list` output, then
+    #       the pkg adds '/usr/share/fonts/opentype/PowerlineSymbols.otf',
+    #       whereas install.sh installs _bunch_ of fonts in ~/.local/share/fonts,
+    #       including 'xos4 Terminess Powerline' we used in ~/.Xresources
     install_powerline_fonts() {
         local tmpdir repo ver
 
@@ -6069,7 +6071,7 @@ install_fonts() {
     #enable_bitmap_rendering; unset enable_bitmap_rendering
     install_nerd_fonts; unset install_nerd_fonts
 
-    install_block fonts-powerline  # TODO: suspect this pkg contains only the symbols? think that's the case, as
+    #install_block fonts-powerline  # TODO: suspect this pkg contains only the symbols? think that's the case, as
                                     #   fonts-powerline pkg, at least as of '25 (v2.8.4-1), does not install
                                     #   Terminess Powerline (or any other as far as we can tell) font
     #install_powerline_fonts; unset install_powerline_fonts  # note 'fonts-powerline' pkg in apt does not seem to work
