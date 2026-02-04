@@ -367,8 +367,12 @@ setup_pm() {
 # fyi:
 # - app data is under host's ~/.var/
 install_flatpak() {
-    # note flatseal itself is avail as flatpak: https://flathub.org/en/apps/com.github.tchx84.Flatseal
-    install_block 'flatpak flatseal' || return 1  # flatseal is GUI app to manage perms
+    # - flatseal is GUI app to manage perms
+    #   - also avail as flatpak: https://flathub.org/en/apps/com.github.tchx84.Flatseal
+    # - xdg-desktop-portal provides sandboxed programs mediated D-Bus interfaces
+    #   for file access, URI opening, printing and similar desktop integration features
+    #   - gtk version is one of its implementing backends
+    install_block 'flatpak flatseal xdg-desktop-portal xdg-desktop-portal-gtk' || return 1
     #exe 'sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo'  # <- normal/non-verified-only remote
 
     # only include the 'verified' packages, taken from this secureblue comment:
@@ -420,7 +424,7 @@ setup_smartd() {
 # - per https://michael.stapelberg.ch/posts/2026-01-04-wayland-sway-in-2026#font-rendering :
 #   > under Wayland, GTK3 ignores the ~/.config/gtk-3.0/settings.ini configuration file and uses dconf exclusively
 # - to see current gnome settings, do `dconf dump / | bat`
-#  - note related to dconf is gsettings cmd
+#  - note related to dconf is gsettings cmd that sets/gets values directly from the db
 setup_gtk() {
     true  # TODO
 }
@@ -5923,6 +5927,8 @@ install_YCM() {  # the quick-and-not-dirty install.py way
 }
 
 
+# see also a font preview tool that also integrates w/ vifm: https://github.com/sdushantha/fontpreview
+#
 # consider also https://github.com/whitelynx/artwiz-fonts-wl
 # consider also https://github.com/slavfox/Cozette
 #
@@ -6063,7 +6069,8 @@ install_fonts() {
 
     # see  https://wiki.archlinux.org/index.php/Font_configuration#Disable_bitmap_fonts
     #
-    # to list font families, do [fc-list -f '%{family[0]}\n' | bat]
+    # to list font families, do `fc-list -f '%{family[0]}\n' | bat`
+    #   - or `fc-list : family style | bat`
     # NOTE: should no longer be needed, as we're now enabling specific bitmap fonts
     #       explicitly in ~/.config/fontconfig/fonts.conf
     enable_bitmap_rendering() {
@@ -6276,6 +6283,7 @@ install_from_repo() {
             # is passing through, how long it has taken, how near to completion it is, and an estimate of how long it will be until completion
             # https://www.ivarch.com/programs/pv.shtml
         crudini  # .ini file manipulation tool
+        #lxtask  # GUI task manager for the LXDE
         htop  # https://htop.dev/
         glances  # Curses-based monitoring tool; https://github.com/nicolargo/glances
         #bpytop  # btop command; https://github.com/aristocratos/bpytop
@@ -6351,6 +6359,7 @@ install_from_repo() {
         qt6ct
         gtk2-engines-pixbuf
         gnome-themes-extra
+        gnome-extra-icons
         arc-theme
         numix-gtk-theme
         numix-icon-theme
@@ -7364,8 +7373,6 @@ full_install() {
     [[ "$PROFILE" == work ]] && exe_work_funs
     setup_btrfs  # late, so snapper won't create bunch of snapshots due to apt operations
     is_pkg_installed podman && _setup_podman
-
-    remind_manual_steps
 }
 
 
@@ -8357,6 +8364,9 @@ is_installed() {
 
 is_pkg_installed() {
     # TODO: consider considerably faster [[ "$(dpkg-query -Wf '${db:Status-Status}' "$*" 2>/dev/null)" == installed ]]
+    #       or:
+              #local res="$(apt-cache -qq policy "$*" 2>/dev/null)"
+              #[[ -n "$res" && "$res" != *'Installed: (none)'* ]]
     apt list -qq --installed "$*" 2>/dev/null | grep -q .
 }
 
@@ -9473,6 +9483,8 @@ cleanup() {
         copy_to_clipboard "$EXECUTION_LOG" && echo -e '(logfile location has been copied to clipboard)'
         echo -e "___________________________________________"
     fi
+
+    [[ "$MODE" -eq 1 ]] && remind_manual_steps
 
     readonly __CLEANUP_EXECUTED_MARKER=1  # states cleanup() has been invoked;
 }
