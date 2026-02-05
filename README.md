@@ -295,7 +295,8 @@ For GUI dconf editor install `dconf-editor` pkg.
 - for theming under Wayland, read [this!](https://github.com/swaywm/sway/wiki/GTK-3-settings-on-Wayland)
 
 ## Notes/see also
-- [zfs installation script](https://github.com/danfossi/Debian-ZFS-Root-Installation-Script)
+
+- [ZFS installation script](https://github.com/danfossi/Debian-ZFS-Root-Installation-Script)
 - run windows apps in windows VM via [winapps](https://github.com/winapps-org/winapps)
 - to access our secrets:
 > $ keepassxc-cli show --attributes password -- /path/to/secrets.kdbx 'entry name'
@@ -307,11 +308,13 @@ For GUI dconf editor install `dconf-editor` pkg.
 - [privacy guide](https://www.privacyguides.org/en/os/linux-overview/)
 
 ## Prior to OS reinstall
+
 - back up GPG owner trust & store in our pwdmngr
 - back up installed packages: `dpkg --get-selections > packages.dpkg`
 - TODO: back up `$XDG_DATA_HOME/atuin/history.db`?
 - back up `~/mail/**/.{gmailieer,credentials.gmailieer}.json` to our pwdmngr
 - back up `~/.netrc` to our pwdmngr
+- just in case dump dconf db: `dconf dump / > dump-file`
 
 ## TODO
 
@@ -331,3 +334,4 @@ For GUI dconf editor install `dconf-editor` pkg.
     - https://github.com/risu729/dotfiles (wsl stuff as well!)
     - https://gitlab.com/sio/server_common (from [this reddit post](https://www.reddit.com/r/linux/comments/vd9qkn/it_took_years_to_perfect_my_setup_and_now_i_want/ickhfsc/))
 1. look into [HTTP Boot](https://www.debian.org/releases/trixie/release-notes/whats-new.en.html#http-boot-support) - UEFI functionality to boot .iso from network
+
