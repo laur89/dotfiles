@@ -4432,7 +4432,7 @@ install_gemini_cli() {  # https://github.com/reugn/gemini-cli
 # install logic from https://github.com/coastalwhite/lemurs/blob/main/install.sh
 #
 # tags: display manager login manager
-# TODO: didn't work in '26, dunno
+# TODO: as of '26 login fails, see https://github.com/coastalwhite/lemurs/issues/166
 # alternatives:
 # - https://codeberg.org/fairyglade/ly
 install_lemurs_display_manager() {  # https://github.com/coastalwhite/lemurs
@@ -4466,24 +4466,31 @@ install_lemurs_display_manager() {  # https://github.com/coastalwhite/lemurs
 }
 
 
+# config file in /etc/ly/config.ini
+# - interesting config keys: vi_default_mode, vi_mode, login_cmd, default_input, custom_sessions, clock, brightness_up_cmd, brightness_down_cmd, box_title
 install_ly_display_manager() {  # https://codeberg.org/fairyglade/ly
     local dir deps
 
     dir="$(fetch_extract_tarball_from_git -T fairyglade/ly)" || return 1
-
     deps=(
         libpam0g-dev
         libxcb-xkb-dev
-        xauth
-        xserver-xorg
-        brightnessctl
+        #xauth
+        #xserver-xorg
+        #brightnessctl
     )
-    build_deb -C "$dir" ly "${deps[@]}" || { err "build_deb() for ly failed"; return 1; }
-    exe "sudo dpkg -i $dir/ly_0.0.1-*.deb" || { err "installing ly failed"; return 1; }
-
-    # put package on hold so they don't get overridden by apt-upgrade:
-    exe 'sudo apt-mark hold  ly'
-    exe "sudo rm -rf -- '$dir'"
+    # either build_deb way # TODO: not working  {{{
+    #build_deb -C "$dir" ly "${deps[@]}" || { err "build_deb() for ly failed"; return 1; }
+    #exe "sudo dpkg -i $dir/ly_0.0.1-*.deb" || { err "installing ly failed"; return 1; }
+    #exe 'sudo apt-mark hold  ly'
+    #exe "sudo rm -rf -- '$dir'"
+    # }}} ...or manual: {{{
+    install_block "${deps[*]}"
+    exe "pushd $dir"
+    exe "zig build" || { popd; return 1; }
+    exe "sudo env 'PATH=$PATH' zig build installnoconf -Dinit_system=systemd" || { popd; return 1; }  # PATH=$PATH as zig is avail as a shim; also see https://codeberg.org/fairyglade/ly/issues/921#issuecomment-10424028
+    exe popd
+    # }}}
 
     exe -c 0,1 "sudo systemctl disable lightdm.service display-manager.service lemurs.service" || return 1  # allowed to fail w/ 1 if service doesn't exist
     exe "sudo systemctl disable getty@tty2.service"
@@ -4499,8 +4506,8 @@ install_lightdm() {  # https://wiki.debian.org/LightDM
 
     install_block  lightdm || return 1
     ensure_d -s "$conf_dir" || return 1
-    exe 'sudo dpkg-reconfigure lightdm'  # change the current default display manager
     exe -c 0,1 "sudo systemctl disable display-manager.service lemurs.service ly@tty2.service" || return 1  # allowed to fail w/ 1 if service doesn't exist
+    exe 'sudo dpkg-reconfigure lightdm'  # change the current default display manager
 }
 
 # rust replacement for ps
@@ -6439,9 +6446,9 @@ install_from_repo() {
         rxvt-unicode  # https://cvs.schmorp.de/rxvt-unicode/
         colortest-python  # https://github.com/eikenb/terminal-colors ; try options --rgb , -o , -n
         zathura  # https://github.com/pwmt/zathura
-                 # alternatives: foliate
         #pdfarranger  # merge, split, rotate, cropt, rearrange pdf documents/pages; https://github.com/pdfarranger/pdfarranger
         #bookletimposer  # pdf document imposition; https://kjo.herbesfolles.org/bookletimposer
+        #foliate  # ebook reader; alternatives: https://github.com/bugzmanov/bookokrat
         pandoc  # Universal markup converter; used as dependency by some other services
         procyon-decompiler  # https://github.com/mstrobel/procyon - java decompiler; used as dependency, eg. by lessopen to view .class files
         #mupdf  # more featureful pdf viewer; https://github.com/ArtifexSoftware/mupdf
@@ -8278,7 +8285,7 @@ post_install_progs_setup() {
     enable_network_manager
     is_native && install_nm_dispatchers  # has to come after install_progs; otherwise NM wrapper dir won't be present  # TODO: do we want to install these only on native systems?
     #is_native && exe -i "sudo alsactl init"  # TODO: cannot be done after reboot and/or xsession.
-    #is_native && setup_mopidy
+    #is_native && is_pkg_installed mopidy && setup_mopidy
     [[ "$MODE" -eq 1 ]] && is_native && is_pkg_installed lm-sensors && exe 'sudo sensors-detect --auto'   # answer enter for default values (this is lm-sensors config)
     is_pkg_installed 'command-not-found' && exe 'sudo apt-file update && sudo update-command-not-found'
     increase_inotify_watches_limit         # for intellij IDEA
