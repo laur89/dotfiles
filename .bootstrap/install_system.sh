@@ -3295,7 +3295,7 @@ install_seafile_gui() {
 #
 # how to sign pdf: https://viktorsmari.github.io/linux/pdf/2018/08/23/annotate-pdf-linux.html
 #
-# also avail in apt, and as appimage
+# also avail in apt
 install_xournalpp() {  # https://github.com/xournalpp/xournalpp
     #install_from_git xournalpp/xournalpp 'Debian-.*x86_64.deb'
     install_bin_from_git -N xournalpp xournalpp/xournalpp '-x86_64.AppImage'
@@ -3335,7 +3335,7 @@ build_ueberzugpp() {  # https://github.com/jstkdng/ueberzugpp#build-from-source
     report 'building ueberzugpp...'
     mkpushd "$tmpdir/build" || return 1
     build_deb  ueberzugpp "${deps[@]}" || { err "build_deb() for ueberzugpp failed"; popd; return 1; }
-    exe 'sudo dpkg -i ../ueberzugpp_*.deb' || { err "installing ueberzugpp failed"; popd; return 1; }
+    exe 'sudo dpkg -i ./ueberzugpp_*.deb' || { err "installing ueberzugpp failed"; popd; return 1; }
 
     exe popd
     exe "sudo rm -rf -- '$tmpdir'"
@@ -4153,7 +4153,6 @@ install_bitlbee() {  # https://github.com/bitlbee/bitlbee
 
         tmpdir="$TMP_DIR/$name-build-${RANDOM}/build"
         exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
-        exe "pushd $tmpdir" || return 1
 
         report "building $name..."
 
@@ -4161,23 +4160,22 @@ install_bitlbee() {  # https://github.com/bitlbee/bitlbee
         #report "installing $name build dependencies..."
         #install_block 'libpurple-dev' || { err 'failed to install build deps. abort.'; return 1; }
 
+        #exe "pushd $tmpdir" || return 1
         #exe "make" || { err; popd; return 1; }
         # note this project also supports  $ make install-user
         #create_deb_install_and_store  "$name" || { popd; return 1; }
+        #exe 'popd'
         # } new sbuild: {
         # note as of '25 this fails w/ [dpkg-source: error: can't build with source format '3.0 (quilt)']
         # as included debian/source/format defines that format; removing the file fixed the issue.
         #exe 'dpkg-buildpackage -b'  # fyi this instead of build_deb() also works
-        build_deb  "$name" libpurple-dev || { err "build_deb() for $name failed"; popd; return 1; }
-        exe 'sudo dpkg -i ../purple-slack_*.deb' || { err "installing $name failed"; popd; return 1; }
+        build_deb -C "$tmpdir"  "$name" libpurple-dev || { err "build_deb() for $name failed"; return 1; }
+        exe "sudo dpkg -i $tmpdir/purple-slack_*.deb" || { err "installing $name failed"; return 1; }
         # }
 
         # put package on hold so they don't get overridden by apt-upgrade:
         exe "sudo apt-mark hold  $name"
-
-        exe 'popd'
         exe "sudo rm -rf -- $tmpdir"
-
         add_to_dl_log  "$name" "$ver"
 
         return 0
@@ -4434,6 +4432,9 @@ install_gemini_cli() {  # https://github.com/reugn/gemini-cli
 # install logic from https://github.com/coastalwhite/lemurs/blob/main/install.sh
 #
 # tags: display manager login manager
+# TODO: didn't work in '26, dunno
+# alternatives:
+# - https://codeberg.org/fairyglade/ly
 install_lemurs_display_manager() {  # https://github.com/coastalwhite/lemurs
     local repo ver tmpdir
 
@@ -4446,7 +4447,7 @@ install_lemurs_display_manager() {  # https://github.com/coastalwhite/lemurs
     report "building lemurs..."
     exe "cargo -Z unstable-options -C '$tmpdir' build --release" || return 1
 
-    exe "sudo install -m644 -CT '$tmpdir/target/release/lemurs' '/usr/bin/lemurs'" || return 1
+    exe "sudo install -m755 -CT '$tmpdir/target/release/lemurs' '/usr/bin/lemurs'" || return 1
     ensure_d -s '/etc/lemurs/wms' '/etc/lemurs/wayland' || return 1
 
     exe "sudo install -m644 -CT '$tmpdir/extra/config.toml' '/etc/lemurs/config.toml'" || return 1
@@ -4455,12 +4456,51 @@ install_lemurs_display_manager() {  # https://github.com/coastalwhite/lemurs
 
     # Cache the current user:
     exe "echo 'xinitrc\n$USER' | sudo tee /var/cache/lemurs > /dev/null" || return 1
-    exe -c 0,1 "sudo systemctl disable display-manager.service" || return 1  # allowed to fail w/ 1 if service doesn't exist
+    exe -c 0,1 "sudo systemctl disable lightdm.service display-manager.service ly@tty2.service" || return 1  # allowed to fail w/ 1 if service doesn't exist
+
     exe "sudo install -m644 -CT '$tmpdir/extra/lemurs.service' '/usr/lib/systemd/system/lemurs.service'" || return 1
     exe "sudo systemctl enable lemurs.service"
 
     exe "sudo rm -rf -- '$tmpdir'"
     add_to_dl_log  lemurs "$ver"
+}
+
+
+install_ly_display_manager() {  # https://codeberg.org/fairyglade/ly
+    local dir deps
+
+    dir="$(fetch_extract_tarball_from_git -T fairyglade/ly)" || return 1
+
+    deps=(
+        libpam0g-dev
+        libxcb-xkb-dev
+        xauth
+        xserver-xorg
+        brightnessctl
+    )
+    build_deb -C "$dir" ly "${deps[@]}" || { err "build_deb() for ly failed"; return 1; }
+    exe "sudo dpkg -i $dir/ly_0.0.1-*.deb" || { err "installing ly failed"; return 1; }
+
+    # put package on hold so they don't get overridden by apt-upgrade:
+    exe 'sudo apt-mark hold  ly'
+    exe "sudo rm -rf -- '$dir'"
+
+    exe -c 0,1 "sudo systemctl disable lightdm.service display-manager.service lemurs.service" || return 1  # allowed to fail w/ 1 if service doesn't exist
+    exe "sudo systemctl disable getty@tty2.service"
+    exe "sudo systemctl enable ly@tty2.service"
+}
+
+
+# commands:
+# - view effective config: lightdm --show-config
+install_lightdm() {  # https://wiki.debian.org/LightDM
+    local conf_dir
+    conf_dir='/etc/lightdm/lightdm.conf.d'
+
+    install_block  lightdm || return 1
+    ensure_d -s "$conf_dir" || return 1
+    exe 'sudo dpkg-reconfigure lightdm'  # change the current default display manager
+    exe -c 0,1 "sudo systemctl disable display-manager.service lemurs.service ly@tty2.service" || return 1  # allowed to fail w/ 1 if service doesn't exist
 }
 
 # rust replacement for ps
@@ -4883,31 +4923,6 @@ build_ddcutil() {
     local dir deps
 
     dir="$(fetch_extract_tarball_from_git -T  rockowitz/ddcutil)" || return 1
-    exe "pushd $dir" || return 1
-
-    #report "installing ddcutil build dependencies..."
-    #install_block '
-        #i2c-tools
-        #libglib2.0-0
-        #libgudev-1.0-0
-        #libusb-1.0-0
-        #libudev1
-        #libdrm2
-        #libjansson4
-        #libxrandr2
-        #hwdata
-        #libc6-dev
-        #libglib2.0-dev
-        #libusb-1.0-0-dev
-        #libudev-dev
-        #libxrandr-dev
-        #libdrm-dev
-        #libjansson-dev
-    #' || { err 'failed to install build deps. abort.'; return 1; }
-    #exe 'autoreconf --force --install' || { err; popd; return 1; }
-    #exe './configure' || { err; popd; return 1; }
-    #exe make || { err; popd; return 1; }
-    #create_deb_install_and_store  ddcutil  # TODO: note still using checkinstall
 
     deps=(
         i2c-tools
@@ -4927,17 +4942,16 @@ build_ddcutil() {
         libdrm-dev
         libjansson-dev
     )
-    build_deb  ddcutil "${deps[@]}" || { err "build_deb() for ddcutil failed"; popd; return 1; }
-    exe 'sudo dpkg -i ../ddcutil_*.deb' || { err "installing ddcutil failed"; popd; return 1; }
+    build_deb -C "$dir" ddcutil "${deps[@]}" || { err "build_deb() for ddcutil failed"; return 1; }
+    exe "sudo dpkg -i $dir/ddcutil_*.deb" || { err "installing ddcutil failed"; return 1; }
 
     # put package on hold so they don't get overridden by apt-upgrade:
     exe 'sudo apt-mark hold  ddcutil'
-
-    exe "popd"
     exe "sudo rm -rf -- '$dir'"
 }
 
 
+# TODO: WIP
 build_neowall() {  # https://github.com/1ay1/neowall
     local dir deps
 
@@ -4960,7 +4974,7 @@ build_neowall() {  # https://github.com/1ay1/neowall
     build_deb -C "$dir" neowall "${deps[@]}" || { err "build_deb() for neowall failed"; return 1; }
     echo "dir: $dir"
     return
-    exe 'sudo dpkg -i ../neowall_*.deb' || { err "installing neowall failed";  return 1; }
+    exe 'sudo dpkg -i $dir/neowall_*.deb' || { err "installing neowall failed"; return 1; }
     exe 'sudo apt-mark hold  neowall'  # put package on hold so they don't get overridden by apt-upgrade
 
     exe "sudo rm -rf -- '$dir'"
@@ -5247,12 +5261,10 @@ install_brillo() {
     # clone the repository
     tmpdir="$TMP_DIR/brillo-build-${RANDOM}/build"
     exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
-    exe "pushd $tmpdir" || return 1
 
-    build_deb  brillo go-md2man || { err "build_deb for brillo failed"; popd; return 1; }
-    exe 'sudo dpkg -i ../brillo_*.deb'
+    build_deb -C "$tmpdir" brillo go-md2man || { err "build_deb for brillo failed"; return 1; }
+    exe "sudo dpkg -i $tmpdir/brillo_*.deb" || return 1
 
-    exe "popd"
     exe "sudo rm -rf -- '$tmpdir'"
     add_to_dl_log  brillo "$ver"
 
@@ -5567,8 +5579,6 @@ build_polybar() {
     #exe "git clone --recursive ${GIT_OPTS[*]} https://github.com/polybar/polybar.git '$dir'" || return 1
     dir="$(fetch_extract_tarball_from_git polybar/polybar 'polybar-\\d+\\.\\d+.*\\.tar\\.gz')" || return 1
 
-    exe "pushd $dir" || return 1
-
     # note: clang is installed because of  https://github.com/polybar/polybar/issues/572
     # old build.sh & checkinstall method {
     #report "installing polybar build dependencies..."
@@ -5601,22 +5611,21 @@ build_polybar() {
         #libcurl4-openssl-dev
         #libnl-genl-3-dev
     #' || { err 'failed to install build deps. abort.'; return 1; }
+    #exe "pushd $dir" || return 1
     #exe "./build.sh --auto --all-features --no-install" || { popd; return 1; }
     #exe "pushd build/" || { popd; return 1; }
     #create_deb_install_and_store polybar  # TODO: note still using checkinstall
-    #exe popd
+    #exe popd; exe popd
     # } build_deb way: {
     # note requires removal of [override_dh_auto_configure:]  block in debian/rules:
     deps=(clang build-essential git cmake cmake-data pkg-config python3-sphinx python3-packaging libuv1-dev libcairo2-dev libxcb1-dev libxcb-util0-dev libxcb-randr0-dev libxcb-composite0-dev python3-xcbgen xcb-proto libxcb-image0-dev libxcb-ewmh-dev libxcb-icccm4-dev)
     report 'building i3lock...'
-    build_deb  polybar "${deps[@]}" || { err "build_deb() for polybar failed"; popd; return 1; }
-    exe 'sudo dpkg -i ../polybar_*.deb' || { err "installing polybar failed"; popd; return 1; }
+    build_deb -C "$dir" polybar "${deps[@]}" || { err "build_deb() for polybar failed"; return 1; }
+    exe "sudo dpkg -i $dir/polybar_*.deb" || { err "installing polybar failed"; return 1; }
     #}
 
     # put package on hold so they don't get overridden by apt-upgrade:
     exe 'sudo apt-mark hold  polybar'
-    exe popd
-
     exe "sudo rm -rf -- '$dir'"
     return 0
 }
@@ -5661,6 +5670,7 @@ build_deb() {
         ensure_d "$d/debian" || return 1
 
         # create changelog:
+        # - see also `dch --create`
         echo "$pkg_name (0.0-0) UNRELEASED; urgency=medium
 
   * New upstream release
@@ -5720,7 +5730,7 @@ override_dh_gencontrol:
     # - note built .deb will end up in $d/ parent dir;
     # - the --no-clean opt is as without it the clean step will require build deps to be
     #   installed on host, see https://www.mail-archive.com/debian-bugs-dist@lists.debian.org/msg2002932.html
-    exe "sbuild --dist=testing --no-clean -- '$d'" || return $?
+    exe "sbuild --dist=testing --no-clean --build-dir='$d' -- '$d'" || return $?
 
     # older, debuild way:
     # The options -uc -us will skip signing the resulting Debian source package and
@@ -6367,7 +6377,8 @@ install_from_repo() {
         gtk-3-examples  # provides gtk3-widget-factory command to test gtk3 look-and-feel; note gtk3 is deprecated, support is dropped once gtk5 is released
         gtk-4-examples  # provides gtk4-widget-factory command to test gtk3 look-and-feel
         meld
-        at-spi2-core  # at-spi2-core is some gnome accessibility provider; without it some py apps (eg meld) complain; # TODO: x11 deps??
+        at-spi2-core  # at-spi2-core provides core components of GNOME Accessibility;
+                      # without it some py apps (eg meld) complain; # TODO: x11 deps??
         pastebinit  # https://github.com/pastebinit/pastebinit
         # to unlock keepassxc at login via keyring, see https://github.com/keepassxreboot/keepassxc/issues/1267#issuecomment-398033268 (or https://github.com/keepassxreboot/keepassxc/issues/1404#issuecomment-551267244)
         # a user also created a gist (from comment https://github.com/keepassxreboot/keepassxc/issues/1404#issuecomment-675059733): https://gist.github.com/innerand/405025e7fbae1b270025666418655d8b
@@ -6706,6 +6717,7 @@ install_from_flatpak() {
     # https://flathub.org/en/apps/io.podman_desktop.PodmanDesktop
     fp_install 'io.podman_desktop.PodmanDesktop'
 
+    # ######################################
     # other projects to consider:
     # ######################################
 
@@ -6765,6 +6777,9 @@ install_from_flatpak() {
 
     # system resource utilization visualizer:
     # https://flathub.org/en/apps/net.nokyan.Resources
+
+    # get rid of the residue left on your system by uninstalled Flatpaks:
+    # https://flathub.org/en/apps/io.github.giantpinkrobots.flatsweep
 }
 
 # install/update the guest-utils/guest-additions.
@@ -7339,6 +7354,8 @@ __choose_prog_to_build() {
         install_aichat
         install_gemini_cli
         install_lemurs_display_manager
+        install_ly_display_manager
+        install_lightdm
         install_aider
         install_aider_desk
         install_android_command_line_tools
@@ -9420,9 +9437,18 @@ file_type() {
 
 
 mkt() {
-    local tmpdir
-    if ! tmpdir="$(mktemp -d -p "$TMP_DIR" -- "${1:-.mktemp}.XXXXX")"; then
-        err "unable to create tempdir with [\$mktemp -d -p \"$TMP_DIR\" -- ${1:-.mktemp}.XXXXX]" -1
+    local template parent tmpdir
+    template="${1:-.mktemp}"
+
+    parent="$TMP_DIR"
+    if [[ "$template" == */* ]]; then
+        parent+="/${template%/*}"
+        ensure_d "$parent" || return 1
+        template="${template##*/}"
+    fi
+
+    if ! tmpdir="$(mktemp -d -p "$parent" -- "${template}.XXXXX")"; then
+        err "unable to create tempdir with [\$mktemp -d -p '$parent' -- ${template}.XXXXX]" -1
         return 1
     fi
     printf '%s' "$tmpdir"
