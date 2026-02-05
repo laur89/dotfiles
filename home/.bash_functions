@@ -969,6 +969,7 @@ extract() {
 
 # to check included fonts: xlsfonts | grep fontname
 # list all installed fonts: fc-list
+# - or `fc-list : family style | bat` for more brevity
 fontreset() {
     local dir
 

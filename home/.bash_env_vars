@@ -173,9 +173,13 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # these from https://github.com/vincentbernat/i3wm-configuration/blob/master/dotfiles/xsession
     export XDG_SESSION_DESKTOP=i3
     export XDG_CURRENT_DESKTOP=i3  # TODO: should this be set to 'GNOME' instead, as per https://wiki.archlinux.org/title/Qt#Configuration_of_Qt_5/6_applications_under_environments_other_than_KDE_Plasma ?
+                                   # can contain multiple values, e.g 'Budgie:GNOME'
                                    # NOTE: one user of XDG_CURRENT_DESKTOP env var is xdg-desktop-portal to choose config var per https://wiki.archlinux.org/title/XDG_Desktop_Portal#Configuration
                                    #       setting it here however won't likely work, as it needs to be set for the
                                    #       xdg-desktop-portal.service drop-in snippet, explained in https://wiki.archlinux.org/title/XDG_Desktop_Portal#Force_desktop_environment
+                                   #       portals also uses this value to match DE-provided config, e.g. /usr/share/xdg-desktop-portal/DESKTOP-portals.conf, or
+                                   #       ~/.config/xdg-desktop-portal/DESKTOP-portals.conf
+                                   #       Note 'DESKTOP' above in filenames should always  be lower case
 
     #export POWERLINE_CONFIG_COMMAND="powerline-config"
     ## /usr/local/bin/powerline-config

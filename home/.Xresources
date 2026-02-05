@@ -184,6 +184,7 @@ URxvt.iso14755_52: false
 ! -------------------------------------------------
 ! FONTS
 ! $ fc-list lists available fonts
+! - or `fc-list : family style | bat` for more brevity
 URxvt.allow_bold:           true
 URxvt.boldColors:           on
 
