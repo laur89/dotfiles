@@ -392,9 +392,10 @@ install_flatpak() {
 # - get temp:  $ sudo smartctl -A /dev/nvme0n1 | grep '^Temperature'
 # - check system service:  $ sudo systemctl status smartd.service
 setup_smartd() {
-    local conf tmpfile c
+    local conf notif tmpfile c
 
     conf='/etc/smartd.conf'
+    notif='/data/dev/scripts/smartdnotify'
     tmpfile="$TMP_DIR/.smartd_setup-$RANDOM"
 
     # - The -M test option causes a test email to be sent each time the smartd daemon starts (set in /etc/smartd.conf):
@@ -407,7 +408,8 @@ setup_smartd() {
     # - the -s option there schedules a short self-test every day between 2-3am, and an extended self test weekly on Saturdays between 3-4am
     # - -W 4,35,40 -- log changes of 4deg+, log when temp reaches 35deg, and log/mail warning when temp reaches 40
     #c='DEVICESCAN -a -o on -S on -n standby,q -s (S/../.././02|L/../../6/03) -W 4,35,40 -m smart_mail_alias -M exec /usr/local/bin/smartdnotify'  # TODO: create the script! from there we mail & notify; note script shouldn't write anything to stdout/stderr, otherwise it ends up in syslog
-    c='DEVICESCAN -a -o on -S on -n standby,q -s (S/../.././02|L/../../6/03) -W 4,35,40 -m <nomailer> -M exec /data/dev/scripts/smartdnotify'
+    is_f -nm 'cannot configure smart' "$notif" || return 1
+    c="DEVICESCAN -a -o on -S on -n standby,q -s (S/../.././02|L/../../6/03) -W 4,35,40 -m <nomailer> -M exec $notif"
 
     is_f -nm 'cannot configure smartd' "$conf" || return 1
     exe "cat '$conf' > $tmpfile" || return 1
@@ -2780,6 +2782,7 @@ install_own_builds() {
     install_electrum_wallet
     install_revanced
     install_apkeditor
+    install_display_manager
 
     is_native && build_i3lock
     #is_native && build_i3lock_fancy
@@ -2837,6 +2840,7 @@ prepare_build_container() {  # TODO container build env not used atm
 # -T      - instead of grepping via asset rgx, go with the latest tarball
 # -Z      - instead of grepping via asset rgx, go with the latest zipball
 # -v ver  - specify tag to install; this is to pin a version
+# -C      - pull from codeberg forge
 #
 # $1 - git user/repo
 # $2 - asset regex to be used (for jq's test()) to parse correct item from git /releases page. note jq requires most likely double-backslashes!
@@ -2846,17 +2850,19 @@ prepare_build_container() {  # TODO container build env not used atm
 #  - https://github.com/OhMyMndy/bin-get
 #  - https://github.com/wimpysworld/deb-get
 fetch_release_from_git() {
-    local opt loc id OPTIND dl_url opts selector ver token
+    local opt loc id OPTIND dl_url opts selector ver token forge
 
     declare -a opts
-    ver=latest  # default
-    while getopts 'UDsSf:n:TZv:' opt; do
+    ver=latest    # default
+    forge=github  # default
+    while getopts 'UDsSf:n:TZv:C' opt; do
         case "$opt" in
             U|D|s|S) opts+=("-$opt") ;;
             f|n) opts+=("-$opt" "$OPTARG") ;;
             T) selector='.tarball_url' ;;
             Z) selector='.zipball_url' ;;
             v) ver="tags/$OPTARG" ;;
+            C) forge='codeberg' ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -2865,13 +2871,23 @@ fetch_release_from_git() {
     [[ -n "$selector" && -n "$2" ]] && { err "if -T or -Z options provided, then asset regex should not be given as it won't be used"; return 1; }
     [[ -z "$selector" ]] && selector=".assets[] | select(.name|test(\"$2\$\")) | .browser_download_url"
 
-    readonly loc="https://api.github.com/repos/$1/releases/$ver"
-    token="$(getnetrc curl@ghapi.com)" && token="-u $token" || report "couldn't resolve gh api token"
-    # note including api version is recommended: https://docs.github.com/en/rest/using-the-rest-api/troubleshooting-the-rest-api#not-a-supported-version
-    dl_url="$(curl -fsSL -A "$USER_AGENT" -H 'X-GitHub-Api-Version:2022-11-28' $token -- "$loc" \
-        | jq -er "$selector")" || { err "asset url resolution from [$loc] via selector [$selector] failed w/ $?"; return 1; }
-    readonly id="github-${1//\//-}${3:+-$3}"  # note we append name to the id when defined (same repo might contain multiple binaries we're installing)
+    case "$forge" in
+        github)
+            readonly loc="https://api.github.com/repos/$1/releases/$ver"
+            token="$(getnetrc curl@ghapi.com)" && token="-u $token" || report "couldn't resolve gh api token"
+            # note including api version is recommended: https://docs.github.com/en/rest/using-the-rest-api/troubleshooting-the-rest-api#not-a-supported-version
+            dl_url="$(curl -fsSL -A "$USER_AGENT" -H 'X-GitHub-Api-Version:2022-11-28' $token -- "$loc" \
+                | jq -er "$selector")" || { err "asset url resolution from [$loc] via selector [$selector] failed w/ $?"; return 1; }
+            ;;
+        codeberg)
+            readonly loc="https://codeberg.org/api/v1/repos/$1/releases/$ver"
+            dl_url="$(curl -fsSL -A "$USER_AGENT" -- "$loc" \
+                | jq -er "$selector")" || { err "asset url resolution from [$loc] via selector [$selector] failed w/ $?"; return 1; }
+            ;;
+        *) fail "unexpected forge source [$forge]" ;;
+    esac
 
+    readonly id="${forge}-${1//\//-}${3:+-$3}"  # note we append name to the id when defined (same repo might contain multiple binaries we're installing)
     is_valid_url "$dl_url" || { err "resolved url for ${id} is improper: [$dl_url]; aborting"; return 1; }
     _fetch_release_common "${opts[@]}" "$id" "$dl_url" "$dl_url" "$3"
 }
@@ -3069,7 +3085,7 @@ install_from_any() {
 #
 # Also note the operation is successful only if a single directory gets extracted out.
 #
-#   -T|Z     see doc on fetch_release_from_git()
+#   -T|Z|C   see doc on fetch_release_from_git()
 #   -S       see extract_tarball()
 #
 # $1 - git user/repo
@@ -3083,9 +3099,9 @@ fetch_extract_tarball_from_git() {
 
     opts=(-D)
 
-    while getopts 'TZS' opt; do
+    while getopts 'TZCS' opt; do
         case "$opt" in
-            T|Z|S) opts+=("-$opt") ;;
+            T|Z|C|S) opts+=("-$opt") ;;
             *) fail "unexpected arg [$opt] passed to ${FUNCNAME}()" -1 ;;
         esac
     done
@@ -3213,7 +3229,7 @@ install_bin_from_git() {
 # -O, -P             - see install_file()
 # -d /target/dir     - dir to install pulled binary in, optional
 # -N name            - what to name pulled file/dir to, optional, but recommended
-# -n, -f, -v, -T, -Z, -D - see fetch_release_from_git()
+# -n, -f, -v, -T, -Z, -C, -D - see fetch_release_from_git()
 # $1 - git user/repo
 # $2 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
 install_from_git() {
@@ -3221,7 +3237,7 @@ install_from_git() {
 
     declare -a install_file_args fetch_git_args
 
-    while getopts 'UDAN:O:P:d:n:f:v:TZ' opt; do
+    while getopts 'UDAN:O:P:d:n:f:v:TZC' opt; do
         case "$opt" in
             U|D) install_file_args+=("-$opt")
                  fetch_git_args+=("-$opt") ;;
@@ -3230,7 +3246,7 @@ install_from_git() {
             N) name="$OPTARG" ;;
             O|P|d) install_file_args+=("-$opt" "$OPTARG") ;;
             n|f|v) fetch_git_args+=("-$opt" "$OPTARG") ;;
-            T|Z) fetch_git_args+=("-$opt") ;;
+            T|Z|C) fetch_git_args+=("-$opt") ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -4429,6 +4445,13 @@ install_gemini_cli() {  # https://github.com/reugn/gemini-cli
 }
 
 
+install_display_manager() {
+    #install_lemurs_display_manager
+    #install_lightdm
+    install_ly_display_manager
+}
+
+
 # install logic from https://github.com/coastalwhite/lemurs/blob/main/install.sh
 #
 # tags: display manager login manager
@@ -4468,10 +4491,11 @@ install_lemurs_display_manager() {  # https://github.com/coastalwhite/lemurs
 
 # config file in /etc/ly/config.ini
 # - interesting config keys: vi_default_mode, vi_mode, login_cmd, default_input, custom_sessions, clock, brightness_up_cmd, brightness_down_cmd, box_title
+# see also:
+# - https://wiki.debian.org/Xsession#User_configuration
 install_ly_display_manager() {  # https://codeberg.org/fairyglade/ly
     local dir deps
-
-    dir="$(fetch_extract_tarball_from_git -T fairyglade/ly)" || return 1
+    dir="$(fetch_extract_tarball_from_git -CT fairyglade/ly)" || return 1
     deps=(
         libpam0g-dev
         libxcb-xkb-dev
@@ -4492,9 +4516,22 @@ install_ly_display_manager() {  # https://codeberg.org/fairyglade/ly
     exe popd
     # }}}
 
+    exe "sudo install -m644 -CT '$COMMON_PRIVATE_DOTFILES/backups/display_manager/ly.ini' /etc/ly/config.ini" || { err "installing ly conf failed w/ $?"; return 1; }
     exe -c 0,1 "sudo systemctl disable lightdm.service display-manager.service lemurs.service" || return 1  # allowed to fail w/ 1 if service doesn't exist
     exe "sudo systemctl disable getty@tty2.service"
     exe "sudo systemctl enable ly@tty2.service"
+
+    # install our WM session definitions: {
+    local custom_sess_dir sessions_src i
+    readonly custom_sess_dir='/etc/ly/custom-sessions'
+    readonly sessions_src="$COMMON_PRIVATE_DOTFILES/backups/display_manager/wm_sessions"
+
+    is_d -m 'cannot install our WM session(s)' "$custom_sess_dir" || return 1
+    is_d -n "$sessions_src" || return 1
+    while IFS= read -r -d $'\0' i; do
+        exe "sudo install -m644 -C '$i' '$custom_sess_dir'" || { err "installing [$i] failed w/ $?"; return 1; }
+    done < <(find "$sessions_src" -name '*.desktop' -type f -print0)
+    # } /sessions
 }
 
 
@@ -7362,6 +7399,7 @@ __choose_prog_to_build() {
         install_gemini_cli
         install_lemurs_display_manager
         install_ly_display_manager
+        install_display_manager
         install_lightdm
         install_aider
         install_aider_desk
