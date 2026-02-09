@@ -94,7 +94,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export COMMON_PRIVATE_DOTFILES="$BASE_HOMESICK_REPOS_LOC/private-common"
 
     # golang stuff:
-    export GOPATH="$BASE_DATA_DIR/.repos/go"  # .repos/ will likely contain stuff like m2, go, etc repos...
+    export GOPATH="$BASE_DATA_DIR/repositories/go"  # repositories/ contain stuff like m2, gradle etc repos...
 
     # kubectl configs:
     #export KUBECONFIG="${KUBECONFIG:+$KUBECONFIG:}$HOME/.kube/config:$HOME/.kube/work-config"
@@ -105,21 +105,9 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     #export M2_HOME=$BASE_PROGS_DIR/maven/mvn_link
     #export M2=$M2_HOME/bin
     #export GRADLE_HOME=/usr/share/gradle
-    #export GRADLE_USER_HOME=$BASE_DATA_DIR/apps/gradle   # defaults to ~/.gradle; afaik we currently link it from ~/.gradle to $BASE_DATA_DIR via homeshick
+    #export GRADLE_USER_HOME=$BASE_DATA_DIR/repositories/gradle   # defaults to ~/.gradle; afaik we currently link it from ~/.gradle to $BASE_DATA_DIR
 
     export KAFKA_HOME=$BASE_PROGS_DIR/kafka/kafka
-
-    # set path for global, but non-sudo, npm pacakges:  (https://stackoverflow.com/questions/10081293/install-npm-into-home-directory-with-distribution-nodejs-package-ubuntu/13021677#13021677)
-    # note this also requires ~/.npmrc with 'prefix = ~/.npm-packages', which is not
-    # supported by nvm:
-    # ###############################################
-    #export NPM_PACKAGES="$HOME/.npm-packages"
-    #export PATH="$NPM_PACKAGES/bin:$PATH"
-    ## Unset manpath so we can inherit from /etc/manpath via the `manpath` command:
-    #unset MANPATH  # delete if you already modified MANPATH elsewhere in your configuration
-    #MANPATH="$NPM_PACKAGES/share/man:$(manpath)"
-    ## Tell Node about these packages
-    #NODE_PATH="$NPM_PACKAGES/lib/node_modules:$NODE_PATH"
 
     export NVM_DIR="$HOME/.nvm"  # do not change location, keep _non-linked_ .nvm/ under ~
     export ASDF_CONFIG_FILE="$XDG_CONFIG_HOME/asdfrc"  # defaults to ~/.asdfrc
@@ -172,14 +160,16 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
 
     # these from https://github.com/vincentbernat/i3wm-configuration/blob/master/dotfiles/xsession
     export XDG_SESSION_DESKTOP=i3
-    export XDG_CURRENT_DESKTOP=i3  # TODO: should this be set to 'GNOME' instead, as per https://wiki.archlinux.org/title/Qt#Configuration_of_Qt_5/6_applications_under_environments_other_than_KDE_Plasma ?
-                                   # can contain multiple values, e.g 'Budgie:GNOME'
-                                   # NOTE: one user of XDG_CURRENT_DESKTOP env var is xdg-desktop-portal to choose config var per https://wiki.archlinux.org/title/XDG_Desktop_Portal#Configuration
-                                   #       setting it here however won't likely work, as it needs to be set for the
-                                   #       xdg-desktop-portal.service drop-in snippet, explained in https://wiki.archlinux.org/title/XDG_Desktop_Portal#Force_desktop_environment
-                                   #       portals also uses this value to match DE-provided config, e.g. /usr/share/xdg-desktop-portal/DESKTOP-portals.conf, or
-                                   #       ~/.config/xdg-desktop-portal/DESKTOP-portals.conf
-                                   #       Note 'DESKTOP' above in filenames should always  be lower case
+    export XDG_CURRENT_DESKTOP=i3  # TODO:  should this be set to 'GNOME' instead, as per https://wiki.archlinux.org/title/Qt#Configuration_of_Qt_5/6_applications_under_environments_other_than_KDE_Plasma ?
+                                   #        can contain multiple values, e.g 'Budgie:GNOME'
+                                   # NOTE:  one user of XDG_CURRENT_DESKTOP env var is xdg-desktop-portal to choose config var per https://wiki.archlinux.org/title/XDG_Desktop_Portal#Configuration
+                                   #        setting it here however won't likely work, as it needs to be set for the
+                                   #        xdg-desktop-portal.service drop-in snippet, explained in https://wiki.archlinux.org/title/XDG_Desktop_Portal#Force_desktop_environment
+                                   #        portals also uses this value to match DE-provided config, e.g. /usr/share/xdg-desktop-portal/DESKTOP-portals.conf, or
+                                   #        ~/.config/xdg-desktop-portal/DESKTOP-portals.conf
+                                   #        Note 'DESKTOP' above in filenames should always  be lower case
+                                   # NOTE2: both  XDG_SESSION_DESKTOP and XDG_CURRENT_DESKTOP environment variables are also set by 'DesktopNames' value in .desktop files that
+                                   #        define sessions; e.g. see /etc/ly/custom-sessions/README. Meaning if we use display manager, those should set/define the values!
 
     #export POWERLINE_CONFIG_COMMAND="powerline-config"
     ## /usr/local/bin/powerline-config
@@ -253,7 +243,7 @@ export LESS="-FRXKi --mouse"  # note -r flag might cause problems, so avoid it: 
 export SYSTEMD_LESS="-FRSXMKi --mouse"  # default is "FRSXMK"
 export MANPAGER='less -s -M +Gg --mouse'  # display scroll percentage in manpages
                                   # TODO: consider using bat as pager: https://github.com/sharkdp/bat#man
-export LESSCOLORIZER='batcat --theme=default'       # from https://github.com/wofr06/lesspipe
+export LESSCOLORIZER='bat --theme=default'       # from https://github.com/wofr06/lesspipe
 export LESSUTFCHARDEF=e000-f8ff:p,f0001-fffff:p  # enable glyphs in less; from https://github.com/ryanoasis/nerd-fonts/wiki/FAQ-and-Troubleshooting#less-settings
 export GROFF_NO_SGR=1                  # for konsole and gnome-terminal
 # colorize:
