@@ -18,6 +18,7 @@ readonly DEFAULT_ROOT_SUBVOL='@rootfs'  # default root subvol name used by debia
 #   - see https://archive.kernel.org/oldwiki/btrfs.wiki.kernel.org/index.php/FAQ.html#Can_I_mount_subvolumes_with_different_mount_options.3F
 # - TODO:  I make /home/<user>/.cache a separate BTRFS subvolume and I mark that directory as nodatacow. But that's really a separate discussion.
 # - some people set +C on entire /var - reasonable?
+# - reddit thread on which volumes to make nocow; tl;dr - as litte as possible: https://www.reddit.com/r/btrfs/comments/n6slx3/what_is_the_advantage_of_nodatacowdisabling_cow/
 BTRFS_MOUNT_OPTS='defaults,noatime,compress=zstd:1'  # optional; leave blank to use default opts set by debian installer.
                                                      # note it should _not_ include the ",subvolume=" tail
 ROOT_SUBVOL="$DEFAULT_ROOT_SUBVOL"  # if you want to rename the default root subvol,
@@ -41,6 +42,7 @@ shift "$((OPTIND - 1))"
 if [ $# -eq 0 ]; then
     # default subvolume-to-mountpoint mappings to create:
     # - note /var/log/journal is automatically set NOCOW, so no need to do it ourselves
+    # - note /var/lib/machines is where systemd-nspawn containers are stored
     set -- 'snapshots/@root:.snapshots' \
            '@home:home' \
            'snapshots/@home:home/.snapshots' \
