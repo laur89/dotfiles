@@ -439,12 +439,13 @@ setup_mail() {
 
     # note we store mail in our nocow subvolume as some syncing tools perform
     # crazy amount of writes, see https://github.com/gauteh/lieer/issues/309
+    # note this is also referenced in muttrc!
     mail_root="$BASE_DATA_DIR/nocow/mail"
 
-    # note this represents both the dir under $mail_root, and notmuch profile
+    # note this represents the dir under $mail_root, notmuch profile, and kpcx entry
     lieer_accounts=(
-        'personal.gmail'
-        'work.gmail'
+        'personal-gmailieer'
+        'work-gmailieer'
     )
 
     is_noninteractive && { report "not running $FUNCNAME() in non-interactive mode"; return 1; }
@@ -482,7 +483,8 @@ _setup_lieer_account() {
     exe "mkdir -p $acc_root/mail/{new,tmp,cur}"  # without this `gmi set -C $acc_root` complains "local repository not initialized: could not find mail dir structure"
 
     for i in .gmailieer.json .credentials.gmailieer.json; do
-        keepassxc-cli attachment-export -q -- "$KPXC_DB" 'lieer-personal' "$i" "$acc_root/$i" <<< "$KPXC_PASS" || { err "[$i] export for [$acc_root] failed w/ $?"; return 1; }
+        keepassxc-cli attachment-export -q -- "$KPXC_DB" "$acc" "$i" \
+            "$acc_root/$i" <<< "$KPXC_PASS" || { err "[$i] export for [$acc_root] failed w/ $?"; return 1; }
     done
 
     #NOTMUCH_CONFIG="$nm_conf" gmi init -C "$acc_root" || { err "[gmi init] failed w/ $?"; return 1; }
@@ -492,12 +494,12 @@ _setup_lieer_account() {
     NOTMUCH_CONFIG="$nm_conf" gmi pull -C "$acc_root" || { err "[gmi pull -C $acc_root] failed w/ $?"; return 1; }
     #   - performs the initial pull; after that [sync] command should be preferred
     NOTMUCH_CONFIG="$nm_conf" notmuch new || { err "[notmuch new] failed w/ $?"; return 1; }  # note this will create necessary dir(s), including .notmuch
-    exe "sudo systemctl enable --no-warn 'checkmail@${acc}-gmailieer.timer'"
+    exe "sudo systemctl enable --no-warn 'checkmail@${acc}:gmailieer.timer'"  # note account:mbox_type is tied to checkmail service logic!
 
     #   one gmi init example (note ~/mail/.notmuch dir needs to exist for gmi not to complain):
     # NOTMUCH_CONFIG="$nm_conf"  notmuch new  # note this will create necessary dir(s), including .notmuch
-    # mkdir -p /data/nocow/mail/personal.gmail/mail/{new,tmp,cur}
-    #   - without this `gmi set -C /data/nocow/mail/personal.gmail` complains "local repository not initialized: could not find mail dir structure"
+    # mkdir -p /data/nocow/mail/personal-gmailieer/mail/{new,tmp,cur}
+    #   - without this `gmi set -C /data/nocow/mail/personal-gmailieer` complains "local repository not initialized: could not find mail dir structure"
     # NOTMUCH_CONFIG="$nm_conf" gmi init -C ~/mail -c /path/to/our-lieer-client.secret.json  our.user@gmail.com
     #   - this is not needed/will fail if .gmailieer.json already exists
     # NOTMUCH_CONFIG="$nm_conf" gmi pull -C ~/mail
@@ -1435,11 +1437,12 @@ install_deps() {
         # TODO: doesn't xinput depend on synaptic driver, ie it doesnt work with the newer libinput driver?
         #       fyi: "xinput is utility to list available input devices, query information about a device and change input device settings"
         #       note some of our scripts depend on xinput
-        # note: blueman lists bluez as dep, that contains the daemon for bt devices
+        # TODO: consider using https://github.com/pythops/bluetui - TUI for managing bluetooth on Linux
         install_block '
             libinput-tools
             xinput
             evemu-tools
+            bluez
             blueman
         '
         # old removed ones:
@@ -1688,22 +1691,15 @@ setup_dirs() {
             $XDG_DATA_HOME/rlwrap \
             "${ZSH_COMPLETIONS}:R" \
             '/etc/cryptsetup-keys.d:R' \
-            $HOME/.npm-packages \
             $BASE_DATA_DIR/.calendars \
             $BASE_DATA_DIR/.calendars/work \
-            $BASE_DATA_DIR/.rsync \
-            $BASE_DATA_DIR/.repos \
             $BASE_DATA_DIR/tmp \
-            $BASE_DATA_DIR/vbox_vms \
             $BASE_PROGS_DIR \
             $BASE_BUILDS_DIR \
             $BASE_DATA_DIR/dev \
-            $BASE_DATA_DIR/apps \
-            $BASE_DATA_DIR/apps/maven/repo \
-            $BASE_DATA_DIR/apps/gradle \
-            $BASE_DATA_DIR/mail \
-            $BASE_DATA_DIR/mail/work \
-            $BASE_DATA_DIR/mail/personal \
+            $BASE_DATA_DIR/repositories \
+            $BASE_DATA_DIR/repositories/maven \
+            $BASE_DATA_DIR/repositories/gradle \
             $BASE_DATA_DIR/Downloads \
             $BASE_DATA_DIR/Downloads/mutt \
             $BASE_DATA_DIR/Videos \
@@ -1724,6 +1720,9 @@ setup_dirs() {
         exe "sudo chown root:$USER -- $CUSTOM_LOGDIR"
         exe "sudo chmod 'u=rwX,g=rwX,o=' -- $CUSTOM_LOGDIR"
     fi
+
+    # create our xdg dirs (config read from ~/.config/user-dirs.dirs):
+    exe 'xdg-user-dirs-update --force'
 }
 
 
@@ -4065,6 +4064,8 @@ install_alacritty() {
 #  - foot (wayland only)
 #  - wave (warp foss alternative): https://github.com/wavetermdev/waveterm
 # avail as flatpak but not recommended: https://flathub.org/apps/org.wezfurlong.wezterm
+# for configuration, see:
+# - https://github.com/sravioli/wezterm
 install_wezterm() {
     install_block  'wezterm'
 }
@@ -4511,7 +4512,7 @@ install_ly_display_manager() {  # https://codeberg.org/fairyglade/ly
     # }}} ...or manual: {{{
     install_block "${deps[*]}"
     exe "pushd $dir"
-    exe "zig build" || { popd; return 1; }
+    exe 'zig build' || { popd; return 1; }
     exe "sudo env 'PATH=$PATH' zig build installnoconf -Dinit_system=systemd" || { popd; return 1; }  # PATH=$PATH as zig is avail as a shim; also see https://codeberg.org/fairyglade/ly/issues/921#issuecomment-10424028
     exe popd
     # }}}
@@ -5556,8 +5557,7 @@ install_i3_conf() {
 # TODO: also consider:
 #  - https://gitlab.com/aquator/i3-scratchpad - docks/launches/toggles windows/apps at specific position on screen
 #  - https://github.com/justahuman1/i3-grid  - code smells, at least as of '25
-#  - https://github.com/yurikhan/firefox-i3-workspaces - positions multiple ff
-#    windows to correct workspaces
+#  - https://github.com/yurikhan/firefox-i3-workspaces - positions multiple ff windows in correct i3 workspace
 install_i3_deps() {
     local f
     f="$TMP_DIR/i3-dep-${RANDOM}"
@@ -5601,7 +5601,7 @@ install_i3_deps() {
     # https://gitlab.com/aquator/i3-scratchpad
     install_from_url  i3-scratchpad 'https://gitlab.com/aquator/i3-scratchpad/-/raw/master/i3-scratchpad'
 
-    # see also: https://github.com/jdholtz/i3-restore
+    # see also: https://github.com/jdholtz/i3-restore - supposedly easier than i3-resurrect
     py_install  i3-resurrect  # https://github.com/JonnyHaystack/i3-resurrect/
 
     # TODO: consider:
@@ -5690,6 +5690,7 @@ build_polybar() {
 #   - short introduction @ https://www.reddit.com/r/debian/comments/1cy34sb/ive_created_a_tool_to_ease_building_debian/
 # - https://github.com/Vladimir-csp/uwsm/blob/master/build-deb.sh
 #   - example of similar stuff this function does
+# - https://optimizedbyotto.com/post/debian-packaging-from-git/
 build_deb() {
     local opt pkg_name configure_extra build_deps dh_extra deb d OPTIND
 
@@ -6331,6 +6332,7 @@ install_from_repo() {
                            #       that's why its installation has been moved to preseed
         network-manager
         network-manager-gnome  # provides network-manager-applet and nm-connection-editor
+                               # alternative to nm, consider systemd-networkd
         jq  # https://jqlang.github.io/jq
             # see also go-qo: https://github.com/kiki-ki/go-qo
         pv  # pv (Pipe Viewer) can be inserted into any normal pipeline between two processes to give a visual indication of how quickly data
@@ -8176,6 +8178,9 @@ install_anything_sync() {
 # - https://wiki.archlinux.org/title/Firefox/Profile_on_RAM !!!
 #   - note this should be in addition to profile-sync-daemon, see https://wiki.archlinux.org/title/Profile-sync-daemon / https://wiki.archlinux.org/title/Firefox/Profile_on_RAM
 # - find how to best move cache to RAM; there's Anything-sync-daemon, but not avail in deb repo
+# check out these extensions:
+# - https://github.com/mbnuqw/sidebery
+# - https://github.com/openstyles/stylus
 setup_firefox() {
     local conf_dir profile
 
@@ -8213,6 +8218,7 @@ setup_firefox() {
 
 
 # locate / plocate conf
+# note plocate has its db in /var/lib/plocate
 configure_updatedb() {
     local conf paths line i modified
 
@@ -9663,6 +9669,8 @@ exit 0
 #    - there's tlpui for GUI
 #    - should we install auto-cpufreq w/ tlp?
 #      - its author says it works w/ TLP as long as you disable tlp's cpu settings: https://www.reddit.com/r/linux/comments/ejxx9f/github_autocpufreq_automatic_cpu_speed_power/fd4y36k/
+#      - some other discussion in the project recommends just not using TLP; but
+#        how to do battery threshold?
 #    - it has USB_EXCLUDE_BTUSB opt to exclude bluetooth devices from usb autosuspend feature
 #    - there's also https://gitlab.freedesktop.org/upower/power-profiles-daemon
 #    - there's also powerprofilesctl (cli for power-profiles-daemon)
@@ -9724,4 +9732,5 @@ exit 0
 #   - Opensnitch - see which programs communicate over network
 #   - Quod Libet - yet another music player
 #   - stremio + plugins (see https://stremio-addons.com/)
+#   - usbguard (https://github.com/infokiller/config-public/tree/master/install#whitelist-needed-usb-devices-in-usbguard)
 
