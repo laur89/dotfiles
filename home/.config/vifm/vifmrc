@@ -116,8 +116,8 @@ filetype {*.o},<application/x-object>
 
 " remaining files:
 filetype * xdg-open
-fileviewer * batcat --color always --plain %c, echo "bat failed, baw :("
-fileviewer .* batcat --color always --plain %c, echo "bat failed, baw :("
+fileviewer * bat --color always --plain %c, echo "bat failed, baw :("
+fileviewer .* bat --color always --plain %c, echo "bat failed, baw :("
 " ------------------------------------------------------------------------------
 
 " What should be saved automatically between vifm sessions.  Drop "savedirs"
