@@ -17,6 +17,7 @@ steps separately apart from the full installation mode.
 
 ### Full install:
 
+1. enable secure boot
 1. Install Debian testing release netinstall (in reality, any Debian base distro
    should work fine).
     * can be found from https://www.debian.org/devel/debian-installer/
