@@ -134,7 +134,6 @@ aptbiggest() { aptlargest "$@"; }  # alias
 #   apt purge '~c'
 #
 # provide -f flag to allow for release codename change (ie to upgrade to new codename)
-# TODO: remove -f support here as it's also defined on update()?
 upgrade() {
     local f usage start res fmt opt OPTIND full
 
@@ -172,7 +171,7 @@ upgrade() {
         NEEDRESTART_MODE=l  apt-get ${full:+dist-}upgrade -y && \
         #NEEDRESTART_MODE=l  apt ${full:+full-}upgrade  # alternative to apt-get dist-upgrade
         rep_ running apt-get autoremove --purge && \
-        NEEDRESTART_MODE=l  apt-get autoremove --purge -y || exit \$?
+        NEEDRESTART_MODE=l  apt-get autoremove --purge || exit \$?
 
         # nuke removed packages' configs:  TODO: isn't there 'apt-get autopurge' for this? note autopurge is same as 'autoremove --purge'
         #__prgs_to_purge="\$(dpkg -l | awk '/^rc/ { print \$2 }')" || exit \$?
