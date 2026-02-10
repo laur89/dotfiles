@@ -144,6 +144,8 @@ validate_and_init() {
         APT_OPTS+="${APT_OPTS:+ }--yes"
     fi
 
+    [[ -d "$TMP_DIR" ]] || fail "tempdir [$TMP_DIR] is not a dir"
+    [[ "$TMP_DIR" == /* ]] || fail "tempdir [$TMP_DIR] needs to be defined as a full path"
     check_connection && CONNECTED=1 || CONNECTED=0
     [[ "$CONNECTED" -eq 0 && "$ALLOW_OFFLINE" -ne 1 ]] && fail "no internet connection. abort."
 
@@ -1994,7 +1996,9 @@ setup_homesick() {
 setup_chezmoi() {
     install_chezmoi || return $?
     report "initializing our chezmoi store; note some data will be queried..."
-    exe 'chezmoi init --apply --verbose git@github.com:laur89/dots.git'  # pull & install dotfiles
+    # do not add --verbose flag to following command, as the massive diff in
+    # stdout screeches the term to a halt:
+    exe 'chezmoi init --apply git@github.com:laur89/dots.git'  # pull & install dotfiles
     # note modify_mngr doctor can only be ran _after_ init, as otherwise it'll complain about missing ~/.local/share/chezmoi/:
     chezmoi_modify_manager --doctor || err "[chezmoi_modify_manager --doctor] failed w/ $?"  # verify all's well from manager's perspective
 }
@@ -4955,7 +4959,7 @@ install_kanata() {
         exe "sudo install -m644 -CT '$conf_src' '$target_d/kanata.kbd'" || { err "installing [$conf_src] failed w/ $?"; return 1; }
     fi
 
-    install_bin_from_git -n 'kanata_linux_cmd_allowed_x64' -N kanata -O root:kanata -P 754  jtroo/kanata 'kanata-linux-binaries-.*-x64.zip'
+    install_bin_from_git -n 'kanata_linux_cmd_allowed_x64' -N kanata -O root:kanata -P 754  jtroo/kanata 'linux-binaries-x64.zip'
 }
 
 
