@@ -574,3 +574,12 @@ endif
         """ }}}
 
     """ }}}
+""" }}}
+
+set notermguicolors  " without this nvim background doesn't change in tmux depending whether it's in active pane or not
+"if exists("$TMUX")
+        ""set t_Co=256
+        "set notermguicolors
+"else
+        "set termguicolors
+"endif
