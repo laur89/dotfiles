@@ -3,7 +3,8 @@
 usage = "latest"
 java = "lts"
 node = "lts"
-deno = "latest"
+#deno = "latest"
+bun = "latest"
 yarn = "latest"
 zig = "latest"
 # zig language server:
