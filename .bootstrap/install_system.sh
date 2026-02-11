@@ -102,7 +102,6 @@ declare -A HOSTNAME_TO_PLATFORM=(
 )
 
 declare -a MANUAL_STEPS=(  # note this list is potentially modified later on
-    'GPG restore/import'
     'intelliJ toolbox'
     'install tmux plugins (prefix+I)'
     'ublock additional configs (EST, social media, ...)'
@@ -219,12 +218,13 @@ check_dependencies() {
             mktemp file date id html2text \
             pwd uniq sort xxd openssl mokutil \
             gpg keepassxc-cli ssh-add ssh-agent \
-            ansi2txt cryptsetup lsblk \
+            ansi2txt cryptsetup lsblk fzf \
                 ; do
         if ! cmd_avail "$prog"; then
             report "[$prog] not installed yet, installing..."
             [[ -n "${exec_to_pkg[$prog]}" ]] && prog=${exec_to_pkg[$prog]}
 
+            # TODO: currently does not fail even when prog is not avail!
             install_block "$prog" || fail "unable to install required prog [$prog] this script depends on. abort."
             report "...done"
         fi
@@ -1998,6 +1998,7 @@ setup_chezmoi() {
     report "initializing our chezmoi store; note some data will be queried..."
     # do not add --verbose flag to following command, as the massive diff in
     # stdout screeches the term to a halt:
+    # TODO: init takes currently ages, some 3+ minutes. find out why
     exe 'chezmoi init --apply git@github.com:laur89/dots.git'  # pull & install dotfiles
     # note modify_mngr doctor can only be ran _after_ init, as otherwise it'll complain about missing ~/.local/share/chezmoi/:
     chezmoi_modify_manager --doctor || err "[chezmoi_modify_manager --doctor] failed w/ $?"  # verify all's well from manager's perspective
@@ -2515,7 +2516,6 @@ swap_caps_lock_and_esc() {
 
 
 install_progs() {
-
     exe "sudo apt-get --yes update"
 
     install_webdev
@@ -2720,7 +2720,7 @@ install_own_builds() {
 
     #prepare_build_container
 
-    install_fzf
+    #install_fzf
     install_neovide
     #install_keepassxc
     #install_keybase
@@ -4516,8 +4516,9 @@ install_ly_display_manager() {  # https://codeberg.org/fairyglade/ly
     # }}} ...or manual: {{{
     install_block "${deps[*]}"
     exe "pushd $dir"
-    exe 'zig build' || { popd; return 1; }
-    exe "sudo env 'PATH=$PATH' zig build installnoconf -Dinit_system=systemd" || { popd; return 1; }  # PATH=$PATH as zig is avail as a shim; also see https://codeberg.org/fairyglade/ly/issues/921#issuecomment-10424028
+    # as for why we pass via mise exec, see https://github.com/jdx/mise/discussions/8088
+    exe 'mise x -- zig build' || { popd; return 1; }
+    exe "mise x -- sudo env 'PATH=$PATH' zig build installnoconf -Dinit_system=systemd" || { popd; return 1; }  # PATH=$PATH as zig is avail as a shim; also see https://codeberg.org/fairyglade/ly/issues/921#issuecomment-10424028
     exe popd
     # }}}
 
@@ -4724,6 +4725,11 @@ install_mise() {
     exe 'mise use --global usage'
     exe "mise completion bash --include-bash-completion-lib | tee $BASH_COMPLETIONS/mise > /dev/null"
     exe "mise completion zsh | sudo tee $ZSH_COMPLETIONS/_mise > /dev/null"
+
+    # trust our user config, otherwise the initial installation of e.g. ly fails; see https://github.com/jdx/mise/discussions/8088
+    # (as for -C opt, see https://stackoverflow.com/a/39549585/1803648)
+    sudo -C64 install -DCTm644 <(printf '[settings]\ntrusted_config_paths=["%s/.config/mise/config.toml"]' "$HOME") \
+        /root/.config/mise/config.toml || err "trusting $USER mise config failed w/ $?"
 }
 
 
@@ -6500,10 +6506,10 @@ install_from_repo() {
         geeqie  # GTK-based image/gallery viewer; avail as flatpak; https://www.geeqie.org/
         gthumb  # gnome image viewer; avail as flatpak; alternatives: https://flathub.org/en/apps/org.kde.koko,
         imagemagick
-        inkscape  # vector-based drawing program  # TODO: avail as flatpak; alternatives:
-                                                                                # graphite (for raster AND vector)
-                                                                                # krita - raster/illustration
-                                                                                # affinity - raster,vector,photo editor, not FOSS
+        inkscape  # vector-based drawing program; can also erease text from pdf;  # TODO: avail as flatpak; alternatives:
+                                                                                        # graphite (for raster AND vector)
+                                                                                        # krita - raster/illustration
+                                                                                        # affinity - raster,vector,photo editor, not FOSS
         mat2  # metadata anonymisation toolkit; https://github.com/jvoisin/mat2
         chafa  # image-to-text converter, i.e. images in terminals
         xsel  # TODO: x11
@@ -7289,7 +7295,7 @@ __choose_prog_to_build() {
         install_xournalpp
         install_zoxide
         install_sesh
-        install_fzf
+        #install_fzf
         install_ripgrep
         install_rga
         install_gitlogue
@@ -9234,6 +9240,7 @@ retry() {
     #local -ra cmd=("$@")
     #until "${cmd[@]}"; do
 
+    # TODO: run via exe()
     until $cmd; do
         if (( attempt_num > max_attempts )); then
             err "Attempt $attempt_num failed and there are no more attempts left!"
