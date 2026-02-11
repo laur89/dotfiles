@@ -21,7 +21,8 @@ Plug 'rhysd/clever-f.vim'
 " Glorious colorscheme
 "Plug 'nanotech/jellybeans.vim'
 "Plug 'mhinz/vim-janah'  " A dark colorscheme for Vim.
-Plug 'morhetz/gruvbox'  " TODO: consider changing to gruvbox-community/gruvbox
+Plug 'gruvbox-community/gruvbox'
+" note for lua apparently this is supposedly better: https://github.com/ellisonleao/gruvbox.nvim
 
 " Super easy commenting, toggle comments etc
 Plug 'preservim/nerdcommenter'
@@ -286,3 +287,4 @@ Plug 'ryanoasis/vim-devicons'
 " - https://github.com/jpalardy/vim-slime - REPL
 " - https://github.com/2KAbhishek/seeker.nvim - progressive file seeker
 " - https://github.com/alker0/chezmoi.vim - syntax highlighting with [chezmoi edit]
+" - https://github.com/folke/styler.nvim - plugin to set a different colorscheme per filetype
