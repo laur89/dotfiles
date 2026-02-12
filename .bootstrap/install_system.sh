@@ -4752,7 +4752,7 @@ install_webdev() {
 
     # update npm:
     if cmd_avail npm; then
-        exe "$NPM_PRFX npm install npm@latest -g" && sleep 0.1
+        exe "$NPM_PRFX npm install npm@latest -g"
         # NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
         exe "npm completion | tee $BASH_COMPLETIONS/npm > /dev/null"
 
