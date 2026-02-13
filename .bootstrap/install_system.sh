@@ -562,6 +562,38 @@ setup_logind() {
 }
 
 
+_var_expand_install() {
+    local OPTIND opt sudo install_opts perms in dest tmpfile
+
+    install_opts='-C'
+    perms=644  # default
+    while getopts 'sDTm:' opt; do
+        case "$opt" in
+            s) sudo=TRUE ;;
+            D|T) install_opts+="$opt" ;;
+            m) perms="$OPTARG" ;;
+            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    in="$1"; dest="$2"
+    tmpfile="$TMP_DIR/.expand-install-$RANDOM"
+
+    is_f -nm "cannot install it into [$dest]" "$in" || return 1
+    if [[ "$install_opts" == *T* ]]; then
+        [[ -d "$dest" ]] && { err "with -T opt dest [$dest] cannot be a dir, but a target file"; return 1; }
+    elif ! [[ -d "$dest" ]]; then
+        [[ -e "$dest" ]] && { err "dest [$dest] is not a dir, but exists and is [$(file_type "$dest")]"; return 1; }
+        [[ "$install_opts" != *D* ]] && { err "dest [$dest] is not a dir and -D flag not provided"; return 1; }
+    fi
+    exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$in' > '$tmpfile'" || { err "sed-ing file [$in] failed"; return $?; }
+    exe "${sudo:+sudo }install -m$perms $install_opts '$tmpfile' '$dest'" || { err "installing [$in] to [$dest] failed"; return 1; }
+    rm -- "$tmpfile"
+    return 0
+}
+
+
 # to temporarily disable lid-switch events:   systemd-inhibit --what=handle-lid-switch sleep 1d
 # Note: for env variables, see https://wiki.archlinux.org/title/Systemd/User#Environment_variables
 #       likely reasonable to create .conf file in ~/.config/environment.d/ dir
@@ -4452,8 +4484,23 @@ install_gemini_cli() {  # https://github.com/reugn/gemini-cli
 
 install_display_manager() {
     #install_lemurs_display_manager
-    #install_lightdm
-    install_ly_display_manager
+    #install_ly_display_manager
+    install_lightdm
+
+    # install our WM session definitions: {
+    local x_sess_src x_sess_target i
+    x_sess_src="$COMMON_PRIVATE_DOTFILES/backups/display_manager/sessions/x11"
+    x_sess_target='/usr/share/xsessions'
+    if [[ -d "$x_sess_target" ]]; then
+        is_d -nm "won't install any x11 sessions" "$x_sess_src"
+        while IFS= read -r -d $'\0' i; do
+            is_f -nq "$i" || continue
+            _var_expand_install -sT "$i" "$x_sess_target/$(basename -- "$i")" || continue
+        done < <(find "$x_sess_src" -name '*.desktop' -type f -print0)
+    else
+        report "[$x_sess_target] does not exist, not installing x11 sessions"
+    fi
+    # } /sessions
 }
 
 
@@ -4526,18 +4573,6 @@ install_ly_display_manager() {  # https://codeberg.org/fairyglade/ly
     exe -c 0,1 "sudo systemctl disable lightdm.service display-manager.service lemurs.service" || return 1  # allowed to fail w/ 1 if service doesn't exist
     exe "sudo systemctl disable getty@tty2.service"
     exe "sudo systemctl enable ly@tty2.service"
-
-    # install our WM session definitions: {
-    local custom_sess_dir sessions_src i
-    readonly custom_sess_dir='/etc/ly/custom-sessions'
-    readonly sessions_src="$COMMON_PRIVATE_DOTFILES/backups/display_manager/wm_sessions"
-
-    is_d -m 'cannot install our WM session(s)' "$custom_sess_dir" || return 1
-    is_d -n "$sessions_src" || return 1
-    while IFS= read -r -d $'\0' i; do
-        exe "sudo install -m644 -C '$i' '$custom_sess_dir'" || { err "installing [$i] failed w/ $?"; return 1; }
-    done < <(find "$sessions_src" -name '*.desktop' -type f -print0)
-    # } /sessions
 }
 
 
@@ -4550,6 +4585,7 @@ install_lightdm() {  # https://wiki.debian.org/LightDM
     install_block  lightdm || return 1
     ensure_d -s "$conf_dir" || return 1
     exe -c 0,1 "sudo systemctl disable display-manager.service lemurs.service ly@tty2.service" || return 1  # allowed to fail w/ 1 if service doesn't exist
+    exe "sudo systemctl enable getty@tty2.service"  # to un-do ly's doing
     exe 'sudo dpkg-reconfigure lightdm'  # change the current default display manager
 }
 

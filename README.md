@@ -310,12 +310,13 @@ For GUI dconf editor install `dconf-editor` pkg.
 
 ## Prior to OS reinstall
 
+- back up Signal db/conf
 - back up GPG owner trust & store in our pwdmngr
 - back up installed packages: `dpkg --get-selections > packages.dpkg`
 - TODO: back up `$XDG_DATA_HOME/atuin/history.db`?
 - back up `~/mail/**/.{gmailieer,credentials.gmailieer}.json` to our pwdmngr
 - back up `~/.netrc` to our pwdmngr
-- back up Signal db/conf
+- back up browser extensions' settings
 - just in case dump dconf db: `dconf dump / > dump-file`
 
 ## TODO
