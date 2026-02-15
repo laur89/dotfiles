@@ -2,5 +2,4 @@
 .mutt/caches/
 .mutt/temp/
 home/.config/i3/config.d/10-generated*
-home/.config/Signal
 home/.config/i3/config
