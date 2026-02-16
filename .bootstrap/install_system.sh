@@ -108,7 +108,6 @@ declare -a MANUAL_STEPS=(  # note this list is potentially modified later on
     'ublock whitelist, filters (should be saved somewhere)'
     'run install_keepassxc_unlock() interactively'
     'import keepassxc browser plugin config'
-    'install tridactyl native messenger/executable (:installnative)'
     'set the firefox config, see details @ setup_firefox()'
     'install/load chromium Surfingkeys plugin config from [https://github.com/laur89/surfingkeys-config/]'
     'update system firmware'
@@ -466,6 +465,8 @@ setup_mail() {
 
 
 # https://github.com/gauteh/lieer
+# TODO: quite sure we can't continue with our recoveredd credentials and have
+#       to re-auth, see https://github.com/gauteh/lieer/issues/298
 _setup_lieer_account() {
     local acc acc_root nm_conf i
 
@@ -474,17 +475,18 @@ _setup_lieer_account() {
 
     nm_conf="$HOME/.config/notmuch/$acc/config"
 
-    is_f -nm "cannot setup account for [$acc]" "$nm_conf"
+    is_f -nm "cannot setup account for [$acc]" "$nm_conf" || return 1
     if [[ -d "$acc_root/.notmuch" ]]; then
         report "[$acc_root/.notmuch/] exists, assuming mailbox set up"
         return 0
     fi
-    define_secret || return 1
 
     NOTMUCH_CONFIG="$nm_conf" notmuch new || { err "[notmuch new] failed w/ $?"; return 1; }  # note this will create necessary dir(s), including .notmuch
     exe "mkdir -p $acc_root/mail/{new,tmp,cur}"  # without this `gmi set -C $acc_root` complains "local repository not initialized: could not find mail dir structure"
 
     for i in .gmailieer.json .credentials.gmailieer.json; do
+        [[ -e "$acc_root/$i" ]] && continue
+        define_secret || return 1
         keepassxc-cli attachment-export -q -- "$KPXC_DB" "$acc" "$i" \
             "$acc_root/$i" <<< "$KPXC_PASS" || { err "[$i] export for [$acc_root] failed w/ $?"; return 1; }
     done
@@ -3098,7 +3100,7 @@ install_from_any() {
 
     id="${id:-$name}"
 
-    dl_url="$(resolve_dl_urls "$loc" "${relative:+/}.*$url_ptrn")" || return 1  # note we might be looking for a relative url
+    dl_url="$(resolve_dl_urls "$loc" "${relative:+/}[^\" ]*$url_ptrn")" || return 1  # note we might be looking for a relative url
     ver="$(resolve_ver "$dl_url")" || return 1
     [[ -z "$skipadd" ]] && is_installed "$ver" "$id" && return 2
 
@@ -3298,6 +3300,11 @@ install_from_git() {
 # another, more rich alternative: https://github.com/slidevjs/slidev
 install_slides() {  # https://github.com/maaslalani/slides
     install_bin_from_git -N slides maaslalani/slides '_linux_amd64.tar.gz'
+}
+
+
+install_cursor() {  # https://github.com/ferdium/ferdium-app
+    install_from_any  cursor-ide 'https://cursor.com/download' '/linux-x64/cursor/[0-9.]+'
 }
 
 
@@ -6293,6 +6300,7 @@ install_from_repo() {
         wireplumber
         #pulsemixer  # https://github.com/GeorgeFilipkin/pulsemixer  # last commit in '20
         pasystray  # PulseAudio controller for the system tray; should work w/ pipewire
+        pulseaudio-utils  # gives us e.g. pactl cmd
         qpwgraph  # visual representation of which audio devices are connected where; also allows point-and-click connections/configuration; inspired by Jack
                   # other pw tools to keep an eye on: Sonusmix,
         ca-certificates
@@ -6527,10 +6535,11 @@ install_from_repo() {
         profile-sync-daemon  # pseudo-daemon designed to manage your browsers profile in tmpfs and periodically sync it back to disk
         buku  # CLI bookmark manager; https://github.com/jarun/Buku
         chromium
-        chromium-sandbox  # TODO: doucment what's this about
+        chromium-sandbox  # TODO: document what's this about
         rxvt-unicode  # https://cvs.schmorp.de/rxvt-unicode/
         colortest-python  # https://github.com/eikenb/terminal-colors ; try options --rgb , -o , -n
         zathura  # https://github.com/pwmt/zathura
+        xournalpp
         #pdfarranger  # merge, split, rotate, cropt, rearrange pdf documents/pages; https://github.com/pdfarranger/pdfarranger
         #bookletimposer  # pdf document imposition; https://kjo.herbesfolles.org/bookletimposer
         #foliate  # ebook reader; alternatives: https://github.com/bugzmanov/bookokrat
@@ -7322,6 +7331,7 @@ __choose_prog_to_build() {
         build_ddcutil
         build_neowall
         install_slides
+        install_cursor
         install_seafile_cli
         install_seafile_gui
         install_ferdium
@@ -8028,6 +8038,7 @@ _init_seafile_cli() {
 
     check_progs_installed  seaf-cli || return 1
     seaf-cli init -c "$ccnet_conf" -d "$parent_dir" || { err "[seaf-cli init] failed w/ $?"; return 1; }
+    exe 'systemctl --user start seafile-client.service' && sleep 2  # needed on fresh setups where service would not yet be running as it fails to start if ~/.ccnet does not exist
 }
 
 
