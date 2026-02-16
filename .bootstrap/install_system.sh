@@ -2134,7 +2134,6 @@ setup_config_files() {
     setup_systemd
     setup_logind
     is_native && setup_udev
-    is_native && setup_pm
     #is_native && install_kernel_modules   # TODO: does this belong in setup_config_files()?
     setup_global_shell_links
     setup_private_asset_perms
@@ -8422,6 +8421,7 @@ post_install_progs_setup() {
     is_pkg_installed needrestart && setup_needrestart  # TODO: should we include needrestart pkg?
     setup_secret_service
     is_native && setup_smartd
+    is_native && setup_pm
     is_secure_boot && setup_mok  # otherwise e.g. dkms dirs won't be there
 }
 
