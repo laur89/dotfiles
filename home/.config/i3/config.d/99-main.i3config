@@ -344,7 +344,7 @@ workspace $w8 output primary
 #bindsym Control+mod1+l   $ex  lock -f
 # or maybe would be better to trigger via xset, as otherwise xss-lock would not about the locking state:
 # note instead of 'xset s activate' you could also use 'loginctl lock-session', assuming systemd usage.
-bindsym Control+mod1+l   $ex  xset s activate
+bindsym Control+mod1+l   $ex  loginctl lock-session
 #
 # first switch to likely-unused ws to avoid typing passwd for the world:
 #bindsym Control+mod1+Delete $ex i3-msg workspace $w8 && /usr/local/bin/lock
@@ -646,7 +646,7 @@ assign [class="^Tor Browser$"]           $w1
 assign [class="^[fF]irefox$" instance="^Navigator$"]  $w1
 assign [class="^jetbrains-(idea|studio)$"]       $w2
 #assign [class="^Zathura"]                $w3
-assign [class="^(Signal|discord|vesktop|equibop|Ferdium|TelegramDesktop|Pidgin)$"]                $w3
+assign [class="^(Slack|Signal|discord|vesktop|equibop|Ferdium|TelegramDesktop|Pidgin)$"]                $w3
 assign [class="^(mpv|MPlayer|smplayer)$"] $w4
 assign [class="^streamlink-twitch-gui$"] $w4
 assign [class="^(VirtualBox|Virt-manager)$"]            $w7
