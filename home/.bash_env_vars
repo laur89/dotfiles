@@ -35,10 +35,12 @@ if [[ "$-" != *i* ]]; then
     fi
 
     # try to extract our DISPLAY value from $(w) output
-    # NOTE: DISPLAY fails to resolve from $(who) command as of '25:  _disp="$(LANG= who -u | grep "^$MAIN_SYSTEM_USER\b" | grep -oP '\s+\(\K:[0-9](\.[0-9])?(?=\))' | sort -u)"
     # TODO: handle for wayland & set WAYLAND_DISPLAY!
     if [[ -z "$DISPLAY" ]]; then
-        _disp="$(LANG=C w --no-header --short "$MAIN_SYSTEM_USER" | grep -oP '\s+xinit .*\K:[0-9](\.[0-9])?(?=\s+)' | sort -u)"
+        # first method should work when display manager is in use...:
+        _disp="$(LANG= who -u | grep -oP "^$MAIN_SYSTEM_USER"'\s+\S+.*\s+\(\K:[0-9](\.[0-9])?(?=\))' | sort -u)"
+        # ...and this one when we're using simple `startx` from profile:
+        [[ -z "$_disp" ]] && _disp="$(LANG=C w --no-header --short "$MAIN_SYSTEM_USER" | grep -oP '\s+xinit .*\K:[0-9](\.[0-9])?(?=\s+)' | sort -u)"
         if [[ -n "$_disp" && "$(wc -l <<< "$_disp")" -eq 1 ]]; then
             export DISPLAY="$_disp"
         else
