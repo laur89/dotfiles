@@ -316,7 +316,15 @@ For GUI dconf editor install `dconf-editor` pkg.
 - TODO: back up `$XDG_DATA_HOME/atuin/history.db`?
 - back up `~/mail/**/.{gmailieer,credentials.gmailieer}.json` to our pwdmngr
 - back up `~/.netrc` to our pwdmngr
-- back up browser extensions' settings
+- back up FF extensions' settings:
+  - keepassxc
+  - ublock origin: settings -> `Back up to file...`, i.e. do not back up
+    individual per-tab data such as 'My filters'
+  - SponsorBlock -> `Import/Export All Options`
+  - Enhancer for YouTube -> `Export` (at bottom of settings page)
+  - Privacy Badger -> Manage Data -> `Export user data`
+  - Tab Session Manager -> `Export settings`
+  - Form hisotry control -> Save/Restore -> `Save options`
 - just in case dump dconf db: `dconf dump / > dump-file`
 
 ## TODO
