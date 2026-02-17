@@ -44,4 +44,7 @@
 --no-require-git
 
 # do not cross filesystem boundaries:
---one-file-system
+# !! note this also limits search to a given btrfs subvol !!
+#--one-file-system
+
+--glob=!{/.snapshots,/home/.snapshots,/proc,/sys,**/.git/*}
