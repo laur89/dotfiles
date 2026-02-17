@@ -84,6 +84,8 @@ __pycache__/
 
 # system
 /proc/
+/.snapshots/
+/home/.snapshots/
 
 # aider (AI coding tool)
 .aider*
