@@ -1,0 +1,5 @@
+/.snapshots/
+/home/.snapshots/
+/proc/
+/sys
+**/.git/*
