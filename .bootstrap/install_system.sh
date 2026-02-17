@@ -2435,8 +2435,8 @@ setup_additional_apt_keys_and_sources() {
     # (open source terraform)
     create_apt_source -a  opentofu  https://get.opentofu.org/opentofu.gpg,https://packages.opentofu.org/opentofu/tofu/gpgkey  https://packages.opentofu.org/opentofu/tofu/any/ any main
 
-    # openvpn3:  (from https://openvpn.net/cloud-docs/openvpn-3-client-for-linux/):
-    #create_apt_source -a  openvpn  https://packages.openvpn.net/packages-repo.gpg  https://packages.openvpn.net/openvpn3/debian $STABLE main
+    # openvpn3:  (from https://community.openvpn.net/Pages/OpenVPN3Linux#stable-repository-debian-ubuntu):
+    #create_apt_source -a  openvpn  https://packages.openvpn.net/packages-repo.gpg  https://packages.openvpn.net/openvpn3/debian trixie main
 
     # signal: (from https://signal.org/en/download/):
     create_apt_source -a  signal  https://updates.signal.org/desktop/apt/keys.asc  https://updates.signal.org/desktop/apt/ xenial main
@@ -6358,8 +6358,8 @@ install_from_repo() {
         rsync
         wireguard
         #tailscale  # note depends on custom apt entry
-        #openvpn3
-        #network-manager-openvpn-gnome  # OpenVPN plugin GNOME GUI
+        openvpn3-client  # note as of '26 it's avail in debian own repos
+        network-manager-openvpn-gnome  # OpenVPN plugin GNOME GUI
         gparted  # GNOME partition editor; https://gparted.org/
         gnome-disk-utility  # manage and configure disk drives and media; launch via $ disks
         gnome-usage  # simple system monitor app for GNOME (cpu, mem, disk space...)
@@ -6471,7 +6471,8 @@ install_from_repo() {
         gnome-extra-icons
         arc-theme
         numix-gtk-theme
-        numix-icon-theme
+        numix-icon-theme  # possibly used by bctl config
+        papirus-icon-theme  # possibly used by dunst
         #materia-gtk-theme  # TODO: not avail for testing in aug '25
         gtk-3-examples  # provides gtk3-widget-factory command to test gtk3 look-and-feel; note gtk3 is deprecated, support is dropped once gtk5 is released
         gtk-4-examples  # provides gtk4-widget-factory command to test gtk3 look-and-feel
@@ -7703,6 +7704,7 @@ setup_dnsmasq() {
 # > It is recommended to place "myhostname" after "files" and before "dns"
 # note https://manpages.debian.org/unstable/libnss-mymachines/nss-mymachines.8.en.html states:
 # > It is recommended to place "mymachines" before the "resolve" or "dns" entry
+#  - this requires libnss-mymachines package, no?
 # note https://manpages.debian.org/unstable/libnss-resolve/nss-resolve.8.en.html states:
 # > add "resolve [!UNAVAIL=return]" before the "files" entry, since systemd-resolved
 #   supports /etc/hosts internally, but with caching. To the contrary, it should be
