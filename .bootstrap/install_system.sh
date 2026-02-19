@@ -364,7 +364,10 @@ setup_pm() {
 #   (note providing --user flag would make it per-user, skipping need for sudo)
 #
 # useful commands:
-#   flatpak list --show-details
+#   - flatpak list --show-details
+#   - list remotes: `flatpak remotes -d`
+#   - flatpak info --show-permissions com.github.PintaProject.Pinta
+#   - flatpak permission-show com.github.PintaProject.Pinta
 # fyi:
 # - app data is under host's ~/.var/
 install_flatpak() {
@@ -376,9 +379,10 @@ install_flatpak() {
     install_block 'flatpak flatseal xdg-desktop-portal xdg-desktop-portal-gtk' || return 1
     #exe 'sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo'  # <- normal/non-verified-only remote
 
-    # only include the 'verified' packages, taken from this secureblue comment:
+    # by default we install from the 'verified' repo, taken from this secureblue comment:
     # https://www.reddit.com/r/linux/comments/1bq9d3b/flathub_now_marks_unverified_apps/kx1adws/ :
     exe 'sudo flatpak remote-add --if-not-exists --subset=verified flathub-verified https://flathub.org/repo/flathub.flatpakrepo'
+    exe 'sudo flatpak remote-add --if-not-exists flathub-main https://flathub.org/repo/flathub.flatpakrepo'
 }
 
 
@@ -894,7 +898,7 @@ setup_sudoers() {
 
 
 # https://wiki.debian.org/UnattendedUpgrades for unattended-upgrades setup
-setup_apt() {
+setup_apt_dpkg() {
     local apt_dir file
 
     readonly apt_dir='/etc/apt'
@@ -904,7 +908,6 @@ setup_apt() {
             00-main.pref \
                 ; do
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
-
         is_f -nm "won't install it" "$file" || continue
         exe "sudo install -m644 -C '$file' '$apt_dir/preferences.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
@@ -913,7 +916,6 @@ setup_apt() {
             debian.sources \
                 ; do
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
-
         is_f -nm "won't install it" "$file" || continue
         exe "sudo install -m644 -C '$file' '$apt_dir/sources.list.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
@@ -922,12 +924,20 @@ setup_apt() {
             02periodic \
                 ; do
         file="$COMMON_DOTFILES/backups/apt_conf/$file"
-
         is_f -nm "won't install it" "$file" || continue
         exe "sudo install -m644 -C '$file' '$apt_dir/apt.conf.d'" || { err "installing [$file] failed w/ $?"; return 1; }
     done
 
-    retry 2 "sudo apt-get --allow-releaseinfo-change ${APT_OPTS:+$APT_OPTS }update" || err "apt-get update failed with $?"
+    # dpkg config:
+    for file in \
+            dpkg-excludes \
+                ; do
+        file="$COMMON_DOTFILES/backups/apt_conf/$file"
+        is_f -nm "won't install it" "$file" || continue
+        exe "sudo install -m644 -C '$file' '/etc/dpkg/dpkg.cfg.d'" || { err "installing [$file] failed w/ $?"; return 1; }
+    done
+
+    retry 2 "sudo apt-get ${APT_OPTS:+$APT_OPTS }update" || err "apt-get update failed with $?"
 
     if [[ "$MODE" -eq 1 ]]; then
         retry 2 "sudo apt-get upgrade --without-new-pkgs ${APT_OPTS:+$APT_OPTS }" || err "[apt-get upgrade] failed with $?"
@@ -1541,14 +1551,18 @@ install_deps() {
     clone_or_pull_repo "juven" "maven-bash-completion" "$BASE_PROGS_DIR"  # https://github.com/juven/maven-bash-completion
     create_link "${BASE_PROGS_DIR}/maven-bash-completion/bash_completion.bash" "$BASH_COMPLETIONS/mvn"
 
-    # gradle bash completion:  # https://github.com/gradle/gradle-completion/blob/master/README.md#installation-for-bash-32
-    #curl -LA gradle-completion https://edub.me/gradle-completion-bash -o $HOME/.bash_completion.d/
+    # gradle shell completion:  # https://github.com/gradle/gradle-completion/blob/master/README.md#installation-for-zsh-50
     clone_or_pull_repo "gradle" "gradle-completion" "$BASE_PROGS_DIR"
     create_link "${BASE_PROGS_DIR}/gradle-completion/gradle-completion.bash" "$BASH_COMPLETIONS/gradle"
+    create_link -s "${BASE_PROGS_DIR}/gradle-completion/_gradle" "$ZSH_COMPLETIONS/_gradle"
 
-    # leiningen bash completion:  # https://codeberg.org/leiningen/leiningen/src/branch/main/bash_completion.bash
+    # leiningen shell completion:  # https://codeberg.org/leiningen/leiningen/src/branch/main
     #
-    install_from_url -Ad "$BASH_COMPLETIONS" lein  "https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash"
+    #clone_or_pull_repo leiningen leiningen "$BASE_PROGS_DIR" codeberg.org
+    #create_link "${BASE_PROGS_DIR}/leiningen/bash_completion.bash" "$BASH_COMPLETIONS/lein"
+    #create_link -s "${BASE_PROGS_DIR}/leiningen/zsh_completion.zsh" "$ZSH_COMPLETIONS/_lein"
+    install_from_url -Ad "$BASH_COMPLETIONS" lein-bash 'https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash'
+    install_from_url -Ad "$ZSH_COMPLETIONS"  _lein     'https://codeberg.org/leiningen/leiningen/raw/branch/main/zsh_completion.zsh'
 
     # git-fuzzy (yet another git fzf tool)   # https://github.com/bigH/git-fuzzy
     clone_or_pull_repo "bigH" "git-fuzzy" "$BASE_PROGS_DIR"
@@ -2127,7 +2141,7 @@ setup_global_bash_settings() {
 setup_config_files() {
 
     #setup_swappiness
-    setup_apt
+    setup_apt_dpkg
     #setup_crontab
     setup_sudoers
     setup_hosts
@@ -2275,9 +2289,9 @@ setup() {
         setup_ssh
         import_netrc
     fi
-    # note: set up homeshick before chezmoi, as some stuff might depend on symlinks set up by the former
-    setup_homesick || fail "homesick setup failed; as homesick is necessary, script will exit"
+    # note: set up chezmoi before homeshick, as some stuff might depend on symlinks set up by the former
     is_interactive && setup_chezmoi  # interactive as templates might prompt for data
+    setup_homesick || fail "homesick setup failed; as homesick is necessary, script will exit"
     source_shell_conf  # so we get our env vars after dotfiles are pulled in
     is_interactive && [[ "$MODE" -eq 1 ]] && setup_gpg  # call after source_shell_conf()
 
@@ -3307,6 +3321,13 @@ install_cursor() {  # https://github.com/ferdium/ferdium-app
 }
 
 
+# note as of '26 it's avail in debian own repos, so no need to add their repos
+install_openvpn() {
+    openvpn3-client
+    network-manager-openvpn-gnome  # OpenVPN plugin GNOME GUI
+}
+
+
 # Franz nag-less fork.
 # might also consider free rambox: https://rambox.app/download-linux/
 # another alternative: https://github.com/getstation/desktop-app
@@ -3626,10 +3647,9 @@ install_streamlink_twitch_gui() {  # https://github.com/streamlink/streamlink-tw
 }
 
 
+# also avail as unverified flatpak: https://flathub.org/en/apps/us.zoom.Zoom
 install_zoom() {  # https://zoom.us/download
-    local url='https://zoom.us/client/latest/zoom_x86_64.tar.xz'
-
-    install_from_url -D -d "$BASE_PROGS_DIR" zoom "$url" || return 1
+    install_from_url -D -d "$BASE_PROGS_DIR" zoom 'https://zoom.us/client/latest/zoom_x86_64.tar.xz' || return 1
     create_link "$BASE_PROGS_DIR/zoom/zoom" "$HOME/bin/zoom"
     # or alternative to a tarball, install deb:
     #install_from_url  zoom 'https://zoom.us/client/latest/zoom_amd64.deb'
@@ -3666,8 +3686,11 @@ install_fzf() {
 
 
 # TODO: looks like after initial installation apt keeps updating it automatically?!
+#       yup, slack .deb is cancer: it adds sources.list and a daily cron that
+#       re-creates it; prefer flatpak
 install_slack() {  # https://slack.com/help/articles/212924728-Download-Slack-for-Linux--beta-
-    install_from_any  slack 'https://slack.com/downloads/instructions/linux?build=deb' '-amd64\.deb'
+    #install_from_any  slack 'https://slack.com/downloads/instructions/linux?build=deb' '-amd64\.deb'
+    fp_install 'com.slack.Slack' flathub-main
 }
 
 
@@ -5229,6 +5252,7 @@ install_keepassxc_unlock() {  # https://github.com/sumwale/keepassxc-unlock
 # https://keybase.io/docs/the_app/install_linux
 install_keybase() {
     exe 'sudo touch /etc/default/keybase' || return 1  # this disables keybase adding pkg repository
+                                                       # TODO: as of '26 does not work, /etc/apt/sources.list.d/keybase.list is still created
     install_from_url keybase 'https://prerelease.keybase.io/keybase_amd64.deb'
 }
 
@@ -6358,8 +6382,6 @@ install_from_repo() {
         rsync
         wireguard
         #tailscale  # note depends on custom apt entry
-        openvpn3-client  # note as of '26 it's avail in debian own repos
-        network-manager-openvpn-gnome  # OpenVPN plugin GNOME GUI
         gparted  # GNOME partition editor; https://gparted.org/
         gnome-disk-utility  # manage and configure disk drives and media; launch via $ disks
         gnome-usage  # simple system monitor app for GNOME (cpu, mem, disk space...)
@@ -6391,6 +6413,7 @@ install_from_repo() {
         pv  # pv (Pipe Viewer) can be inserted into any normal pipeline between two processes to give a visual indication of how quickly data
             # is passing through, how long it has taken, how near to completion it is, and an estimate of how long it will be until completion
             # https://www.ivarch.com/programs/pv.shtml
+        # for html parser, see pup: https://github.com/gromgit/pup
         crudini  # .ini file manipulation tool
         #lxtask  # GUI task manager for the LXDE
         htop  # https://htop.dev/
@@ -6447,6 +6470,7 @@ install_from_repo() {
         libsecret-tools  # can be used to store and retrieve passwords for desktop applications; provides us w/ 'secret-tool' cmd for interfacing w/ keyring
         gsimplecal  # https://github.com/dmedvinsky/gsimplecal
         khal  # https://github.com/pimutils/khal - CLI calendar program, able to sync w/ caldav servers through vdirsyncer
+        ncal
         vdirsyncer  # synchronizes your calendars and addressbooks between two storages. The most popular
                     # purpose is to synchronize a CalDAV/CardDAV server with a local folder or file
         #calcurse  # calendar and todo list for the console which allows you to keep track of your appointments and everyday tasks; https://calcurse.org/
@@ -6755,19 +6779,9 @@ install_kvm() {
 }
 
 
-# commands:
-# - flatpak info --show-permissions com.github.PintaProject.Pinta
-# - flatpak permission-show com.github.PintaProject.Pinta
 install_from_flatpak() {
-    local i
-
     # https://flathub.org/apps/com.github.PintaProject.Pinta
-    i='com.github.PintaProject.Pinta'
-    if fp_install "$i"; then
-        # enable pinta access to /tmp, as we need file IO in /tmp
-        # due to our screenshooter: (see https://github.com/PintaProject/Pinta/issues/1357)
-        exe "sudo flatpak override $i --filesystem=/tmp"  # causes file @ /var/lib/flatpak/overrides/com.github.PintaProject.Pinta  to be created/modified
-    fi
+    fp_install 'com.github.PintaProject.Pinta'
 
     # https://flathub.org/apps/engineer.atlas.Nyxt
     # https://github.com/atlas-engineer/nyxt
@@ -6992,7 +7006,8 @@ _setup_podman() {
 
     # touch file to avoid msg printed to stdout whenever we use 'docker' command:
     # msg being [Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.]
-    [[ -e /etc/containers/nodocker ]] || exe 'sudo touch /etc/containers/nodocker' || return 1
+    [[ -e /etc/containers/nodocker ]] || exe 'sudo touch /etc/containers/nodocker'
+    exe 'systemctl --user enable podman.socket'  # see https://golang.testcontainers.org/system_requirements/using_podman/#podman-socket-activation
 
     return 0  # atm not using btrfs storage driver, as it's not really recommended by the devs
     #################################################
@@ -7272,7 +7287,7 @@ choose_single_task() {
         setup_homesick
         setup_seafile
         setup_mail
-        setup_apt
+        setup_apt_dpkg
         setup_hosts
         setup_systemd
         setup_udev
@@ -7332,6 +7347,7 @@ __choose_prog_to_build() {
         build_neowall
         install_slides
         install_cursor
+        install_openvpn
         install_seafile_cli
         install_seafile_gui
         install_ferdium
@@ -8111,6 +8127,9 @@ setup_seafile() {
 #    sudo nft list ruleset
 enable_fw() {
     exe 'sudo systemctl enable nftables.service'
+    # enable kdeconnect:
+    # note 'kdeconnect' here is one of pre-defined services, see all via `firewall-cmd --get-services`
+    exe 'sudo firewall-cmd --permanent --zone=public --add-service=kdeconnect'
 }
 
 
@@ -9656,6 +9675,7 @@ readonly PROFILE="$1"   # work | personal
 [[ "$EUID" -eq 0 ]] && fail "don't run as root"
 
 validate_and_init
+exe "cd -- '$TMP_DIR'" || fail
 check_dependencies
 
 # we need to make sure our system clock is roughly right; otherwise stuff like apt-get might start failing:
