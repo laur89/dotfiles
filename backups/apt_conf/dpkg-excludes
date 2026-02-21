@@ -1,0 +1,14 @@
+# this config is to blacklist _target_ files that should never be installed
+# by any package. note to add directory, you have to use globs.
+#
+# this is sort of similar to dpkg-divert, but the problem w/ diversion is
+# it does a file rename (aka diversion), not removal (see https://askubuntu.com/q/1197767/1002165)
+# #####################################
+#
+# Prevent packages from installing new sources under /etc/apt/sources.list.d
+path-exclude=/etc/apt/sources.list.d/*
+
+# same for known cancerous packages installing keys/cronjobs etc:
+path-exclude=/etc/apt/trusted.gpg.d/slack-desktop.gpg
+path-exclude=/etc/cron.daily/slack
+
