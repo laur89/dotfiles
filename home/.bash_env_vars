@@ -227,6 +227,13 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # into their own dict: (from https://github.com/soimort/translate-shell/issues/395#issuecomment-1288415702)
     export RLWRAP_HOME="$XDG_DATA_HOME/rlwrap"
     # /rlwrap }}}
+
+    # podman {{{  see https://java.testcontainers.org/supported_docker_environment/#podman
+    export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/podman/podman.sock  # used by testcontainers' container reaper; if not defined, then disable RYUK:
+                                                                     # also without this testcontainers will fail w/ err like:
+                                                                     #   > Could not find a valid Docker environment. Please see logs and check configuration
+    #export TESTCONTAINERS_RYUK_DISABLED=true
+    # }}}
 fi
 
 export _SCRIPTS_COMMONS="$_SCRIPTS_BIN/__utils.sh"
