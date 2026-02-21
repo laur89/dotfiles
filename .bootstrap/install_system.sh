@@ -320,45 +320,6 @@ setup_udev() {
 }
 
 
-setup_pm() {
-    local pm_src pm_target file dir pm_state_dir tmpfile target
-
-    readonly pm_target='/etc/pm'
-    pm_src=(
-        "$COMMON_PRIVATE_DOTFILES/backups/pm"
-        "$PRIVATE__DOTFILES/backups/pm"
-    )
-
-    [[ -n "$PLATFORM" ]] && pm_src+=("$PLATFORM_DOTFILES/pm")
-
-    if is_laptop; then
-        for dir in "${pm_src[@]}"; do
-            pm_src+=("$dir/laptop")
-        done
-    fi
-
-    is_d -m 'skipping pm file(s) installation' "$pm_target" || return 1
-
-    for dir in "${pm_src[@]}"; do
-        is_d -qn "$dir" || continue
-        for pm_state_dir in "$dir/"*.d; do
-            is_d "$pm_state_dir" || continue
-            target="$pm_target/$(basename -- "$pm_state_dir")"  # e.g. /etc/pm/sleep.d, ...power.d
-            is_d -m 'should we just create it?' "$target" || continue
-
-            for file in "$pm_state_dir/"*; do
-                is_f -n "$file" || continue
-                tmpfile="$TMP_DIR/.pm_setup-$RANDOM"
-                exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
-                exe "sudo install -m755 -CT '$tmpfile' '$target/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
-            done
-        done
-    done
-
-    return 0
-}
-
-
 # https://flatpak.org/setup/Debian
 # https://docs.flathub.org/docs/for-users/verification
 #   (note providing --user flag would make it per-user, skipping need for sudo)
@@ -1543,6 +1504,7 @@ install_deps() {
     # alternatives:
     #   - https://github.com/ajeetdsouza/zoxide
     #   - https://github.com/wyne/fasder  - go reimplementation
+    #   - https://github.com/andrewferrier/memy
     clone_or_pull_repo "whjvenyl" "fasd" "$BASE_PROGS_DIR"  # https://github.com/whjvenyl/fasd
     create_link "$BASE_PROGS_DIR/fasd/fasd" "$HOME/bin/fasd"
     ensure_d "$XDG_DATA_HOME/fasd"  # referenced by ~/.config/fasd/config
@@ -3674,6 +3636,8 @@ install_sesh() {  # https://github.com/joshmedeski/sesh
 
 # fuzzy file finder/command completer etc
 # https://github.com/junegunn/fzf
+# some advanced fzf usage examples:
+# - https://gist.github.com/neverkas/40639a8f362d23b3dc88fa42543d12fe#fzf-tmux
 install_fzf() {
     install_bin_from_git -N fzf junegunn/fzf 'linux_amd64.tar.gz'
 }
@@ -4143,6 +4107,8 @@ install_wezterm() {
 # - https://github.com/cantino/mcfly
 install_atuin() {  # https://github.com/atuinsh/atuin
     install_bin_from_git -N atuin atuinsh/atuin 'atuin-x86_64-unknown-linux-gnu.tar.gz'
+    # TODO: also consider runbook/documentation combo atuin-desktop:
+    #install_from_git atuinsh/desktop '_amd64.deb'
 }
 
 
@@ -4428,6 +4394,8 @@ install_ytdl() {  # https://github.com/yt-dlp/yt-dlp
 #  - https://github.com/All-Hands-AI/OpenHands
 #  - https://github.com/zed-industries/zed ?
 #       - comes w/ its own editor
+#  - claude code
+#  - opencode
 #
 # chat-based pair-programming. as opposed to plandex which has git-like CLI with various stateful commands.
 # plandex itself is more stateful - it accumulates changes to its own git repo you
@@ -4453,8 +4421,15 @@ install_aider_desk() {  # https://github.com/hotovo/aider-desk
 }
 
 
+# note there's also a desktop app:  opencode-desktop-linux-amd64.deb
+install_opencode() {  # https://github.com/anomalyco/opencode
+    install_bin_from_git -N opencode anomalyco/opencode 'opencode-linux-x64.tar.gz'
+}
+
+
 # plandex CLI
 # installation logic from https://raw.githubusercontent.com/plandex-ai/plandex/main/app/cli/install.sh
+# TODO: deprecated?
 install_plandex() {
     local VERSION RELEASES_URL ENCODED_TAG url
 
@@ -6263,7 +6238,6 @@ install_from_repo() {
         # firmware-linux  # bunch of firmware, free & non-free
         smartmontools
         gsmartcontrol  # graphical user interface for smartctl; see also: qdiskinfo, https://github.com/AnalogJ/scrutiny
-        pm-utils  # utilities and scripts for power management
         ntfs-3g  # TODO: note ntfs3 is in kernel nowadays, unsure if and when we want to remove ntfs-3g pkg - they're not the same
         kdeconnect
         #erlang  # avail in mise
@@ -6423,6 +6397,7 @@ install_from_repo() {
         ncdu  # ncurses disk usage viewer
         pydf  # fully colourised df(1)-clone written in Python; https://github.com/garabik/pydf - or perhaps https://salsa.debian.org/salvage-team/pydf/ - see https://github.com/garabik/pydf/issues/9 ??
         duf  # Disk Usage/Free Utility - a better 'df' alternative
+        dysk  # another df alternative
         nethogs  # small 'net top' tool. Instead of breaking the traffic down per protocol or per subnet,
                  # like most tools do, it groups bandwidth by process; https://github.com/raboof/nethogs
         #vnstat  # console-based network traffic monitor; keeps a log of daily network traffic for the selected interface
@@ -6755,6 +6730,9 @@ install_from_repo() {
 # commands:
 # - list vms:
 #   virsh list --all
+# - list networks: `virsh --connect "qemu:///system" net-list --all`
+#   - as opposed to session mode daemon 'qemu:///session'
+# - start net: `virsh --connect "qemu:///system" net-start default`
 #
 # collection of relevant scripts: https://github.com/sej7278/virt-installs
 # - to inject debian preseed file: https://github.com/sej7278/virt-installs/blob/master/preseed_deb10/debian10_preseed.sh
@@ -7477,6 +7455,7 @@ __choose_prog_to_build() {
         install_lightdm
         install_aider
         install_aider_desk
+        install_opencode
         install_android_command_line_tools
         install_chezmoi
         install_anything_sync
@@ -8442,7 +8421,6 @@ post_install_progs_setup() {
     is_pkg_installed needrestart && setup_needrestart  # TODO: should we include needrestart pkg?
     setup_secret_service
     is_native && setup_smartd
-    is_native && setup_pm
     is_secure_boot && setup_mok  # otherwise e.g. dkms dirs won't be there
 }
 
