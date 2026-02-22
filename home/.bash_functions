@@ -2572,7 +2572,7 @@ g() {
     # clean paths:
     # TODO: what if the first path element is '.'?
     for i in "${!paths[@]}"; do
-        [[ -z "${paths[$i]}" || "${paths[$i]}" == . ]] && unset "paths[$i]"
+        [[ -z "${paths[$i]}" || "${paths[$i]}" == . ]] && unset 'paths[i]'
     done
     [[ "${#paths[@]}" -eq 0 ]] && paths=('*')
     #echo "cleaned paths: [${paths[@]}]"
@@ -3016,7 +3016,7 @@ fif() {
     unset _rg_find
     readarray -t out <<< "$out"
 
-    k="${out[0]}"; unset out[0]
+    k="${out[0]}"; unset 'out[0]'
     [[ -z "$k" ]] && return 0  # got no --expect keypress event, exit
     [[ -z "${out[*]}" ]] && return 0  # no files selected
 
@@ -3262,67 +3262,9 @@ fco() {
         sed "s/.* //"    | sed "s#remotes/[^/]*/##" |
         sort -u          | awk '{print "\x1b[34;1mbranch\x1b[m\t" $1}') || return
     target=$(
-        (echo "$tags"; echo "$branches") |
-        fzf --tmux -l30 -- --query="$q" --exit-0 --select-1 --no-hscroll --ansi +m -d "\t" -n 2) || return
+        ([[ -n "$tags" ]] && echo "$tags"; [[ -n "$branches" ]] && echo "$branches") |
+        fzf --tmux 'left,30%' -- --query="$q" --exit-0 --select-1 --no-hscroll --ansi +m -d "\t" -n 2) || return
     git checkout "$(awk '{print $2}' <<< "$target")"
-}
-
-
-# fcoc - checkout git commit (as in commit hash, not branch or tag)
-fcoc() {
-    local commits commit q
-
-    q="$*"
-    check_progs_installed fzf git || return 1
-    is_git || { err "not in git repo."; return 1; }
-
-    commits=$(git log --pretty=oneline --abbrev-commit --reverse) &&
-            commit=$(echo "$commits" | fzf --select-1 --query="$q" --tac +s +m -e --exit-0) &&
-            git checkout "$(sed 's/ .*//' <<< "$commit")"
-}
-
-
-# fcol - checkout git LOST commit (as in search for dangling commits);
-# good for recovering lost commits (especially lost stashes);
-#
-# needs to be ran before git has garbage collected the deleted commit
-#
-# accepts number of paths to filter by as per usual.
-fcol() {
-    local dsf sha_extract_cmd preview_cmd difftool_cmd opts
-
-    check_progs_installed fzf git || return 1
-    is_git || { err "not in git repo."; return 1; }
-    hash "$_DSF" &>/dev/null && dsf="|$_DSF"
-
-    sha_extract_cmd="grep -Po '^.*?\\\K[0-9a-f]+' <<< {}"
-    preview_cmd="i=\$($sha_extract_cmd) || exit; git show --stat --color=always \$i -- $*; echo -e '\\\n\\\n'; git diff \$i^..\$i -- $* $dsf"  # TODO: need to sort out range
-    difftool_cmd="$sha_extract_cmd |xargs -I% git difftool --dir-diff %^ % -- $*"
-    opts="
-        $FZF_DEFAULT_OPTS
-        +m --tiebreak=index --preview=\"$preview_cmd\"
-        --bind=\"enter:execute($difftool_cmd)\"
-        --bind=\"ctrl-t:execute(
-            source $_SCRIPTS_COMMONS;
-            i=\$($sha_extract_cmd)
-            copy_to_clipboard \\\"\$i\\\" \
-                && { report \\\"sha is on clipboard\\\"; sleep 1; exit 0; } \
-                || err \\\"unable to copy sha to clipboard. here it is:\\\n\$i\\\" && sleep 3
-        )\"
-
-        --exit-0
-        --no-sort
-        --tac
-        --ansi
-        --height='80%'
-        --preview-window='right:60%'
-    "
-
-    #commits=$(git log --oneline --decorate --all --reverse $(git fsck --no-reflog | awk '/dangling commit/ {print $3}')) &&
-    git log --color \
-        --pretty=format:'%C(red)%h %C(green)[%s]%C(reset) %C(blue)%cr%C(reset) by %C(yellow)%cn%C(reset); parents: %C(yellow)%p' \
-        --abbrev-commit --decorate --all --reverse \
-        $(git fsck --no-reflog | awk '/dangling commit/ {print $3}') -- $* | FZF_DEFAULT_OPTS="$opts" fzf
 }
 
 
@@ -3342,218 +3284,6 @@ fcol() {
     #git difftool --dir-diff "$commit"^ "$commit"
     #[[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back to starting dir
 #}
-
-
-# fshow - git commit diff browser; pass path(s) as optional args
-# - enter shows the changes of the commit
-# - ctrl-s lets you squash commits - select the *last* commit that should be squashed.
-# - ctrl-c generates the jira commit message.
-# - ctrl-u generates gitlab commit url.
-# - ctrl-t copies commit sha to clipboard.
-# - ctrl-f fixup given commit with already-starged changes.
-# - ctrl-b check the selected commit out.
-fshow() {
-    local f q dsf k out sha sha_extract_cmd preview_cmd difftool_cmd opts git_log_cmd
-
-    f="$(funname)"
-    hash "$_DSF" &>/dev/null && dsf="|$_DSF"
-
-    check_progs_installed fzf git || return 1
-    is_git || { err "not in git repo."; return 1; }
-    #git log -i --all --graph --source --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative |
-
-    # first let's navigate to repo (ie git) root:
-    #cwd="$(realpath "$PWD")"
-    #git_root="$(realpath "$(get_git_root)")" || { err "unable to find project root" -1; return 1; }
-    #[[ "$cwd" != "$git_root" ]] && pushd -- "$git_root" &> /dev/null
-
-
-
-    # this from glo():
-    #sha_extract_cmd="echo {} | grep -Po '^[|\\\ /\\\\\\*]+\\\s*\\\K[a-f0-9]+'"
-    sha_extract_cmd="grep -Po '^.*?\\\K[0-9a-f]+' <<< {}"
-    #sha_extract_cmd="echo {} |grep -Eo '[a-f0-9]+' |head -1"  # default from forgit
-
-    #preview_cmd="$sha_extract_cmd |xargs -I% git show --color=always % $dsf"  # default from forgit
-    #preview_cmd="i=\$($sha_extract_cmd); test -z \$i && exit; p=\$(git cat-file -p \$i | grep -Po '^parent\\\s+\\\K.*' | head -1); git show --stat --color=always \$i; echo -e '\\\n\\\n'; git diff \$p..\$i $dsf"  # TODO: need to sort out range
-    #preview_cmd="i=\$($sha_extract_cmd) || exit; p=\$(git cat-file -p \$i | grep -Po '^parent\\\s+\\\K.*' | head -1); git show --stat --color=always \$i -- $*; echo -e '\\\n\\\n'; git diff \$p..\$i -- $* $dsf"  # TODO: need to sort out range
-    preview_cmd="i=\$($sha_extract_cmd) || exit; git show --stat --color=always \$i -- $*; echo -e '\\\n\\\n'; git diff \$i^..\$i -- $* $dsf"  # TODO: need to sort out range
-    difftool_cmd="$sha_extract_cmd |xargs -I% git difftool --dir-diff %^ % -- $*"
-    opts="
-        $FZF_DEFAULT_OPTS
-        +m --tiebreak=index --preview=\"$preview_cmd\"
-        --bind=\"enter:execute($difftool_cmd)\"
-        --bind=\"ctrl-y:execute-silent(echo {} | grep -Eo '[a-f0-9]+' | head -1 | tr -d '\n' |${FORGIT_COPY_CMD:-pbcopy})\"
-        --bind=\"ctrl-c:execute(
-            source $_SCRIPTS_COMMONS;
-            i=\$($sha_extract_cmd)
-            is_function generate_jira_commit_comment || { err \\\"can't generate commit msg as dependency is missing\\\" $f; sleep 1.5; exit 1; }
-            generate_jira_commit_comment \$i
-            exit
-        )\"
-        --bind=\"ctrl-u:execute(
-            source $_SCRIPTS_COMMONS;
-            i=\$($sha_extract_cmd)
-            is_function generate_git_commit_url || { err \\\"can't generate git commit url as dependency is missing\\\" $f; sleep 1.5; exit 1; }
-            url=\$(generate_git_commit_url \$i) || { err \\\"creating commit url failed\\\" $f; sleep 1.5; exit 1; }
-            copy_to_clipboard \\\"\$url\\\" \
-                && { report \\\"git commit url on clipboard\\\" $f; sleep 1; exit 0; } \
-                || err \\\"unable to copy git commit url to clipboard. here it is:\\\n\$url\\\" $f && sleep 4
-        )\"
-        --bind=\"ctrl-t:execute(
-            source $_SCRIPTS_COMMONS;
-            i=\$($sha_extract_cmd)
-            copy_to_clipboard \\\"\$i\\\" \
-                && { report \\\"sha is on clipboard\\\" $f; sleep 1; exit 0; } \
-                || err \\\"unable to copy sha to clipboard. here it is:\\\n\$i\\\" $f && sleep 3
-        )\"
-
-        --expect=ctrl-s,ctrl-b,ctrl-f
-        --exit-0
-        --print-query
-        --no-sort
-        --reverse
-        --ansi
-        --height='80%'
-        --preview-window='right:60%'
-    "
-    git_log_cmd="git log --graph --color=always \
-                --format='%C(auto)%h%d %s %C(black)%C(bold)(%cr) %C(bold blue)<%an>%Creset' -- $*"
-
-    out="$(eval "$git_log_cmd" | FZF_DEFAULT_OPTS="$opts" fzf)"
-    #[[ "$cwd" != "$git_root" ]] && popd &> /dev/null  # go back to starting dir
-
-    mapfile -t out <<< "$out"
-    q="${out[0]}"
-    k="${out[1]}"
-    [[ -z "$k" ]] && return 0  # got no --expect keypress event, exit
-
-    sha="$(grep -Po '^.*?\K[0-9a-f]{7}' <<< "${out[-1]}")" || { err "unable to parse out commit sha"; return 1; }
-
-    # note to squash everything up to initial commit, just run  $ git rebase -i --root
-    case "$k" in
-        'ctrl-s')
-            if [[ "$sha" == "$(git log -n 1 --pretty=format:%h HEAD)" ]]; then
-                report "won't rebase on HEAD lol"; return
-            elif [[ -n "$*" ]]; then
-                confirm "\nyou've filtered commits by path(s) [$*]; still continue with rebase?" || return
-            elif [[ -n "$q" ]]; then
-                confirm "\nyou've filtered commits by query [$q]; still continue with rebase?" || return
-            fi
-
-            git rebase -i "$sha"~
-            return $? ;;
-        'ctrl-b')
-            git checkout "$sha"; return $? ;;
-        'ctrl-f')
-            if [[ -n "$(git diff --name-only --staged)" ]]; then
-                git fixup "$sha" || { err 'git fixup failed' "$f"; return 1; }
-            else
-                err "no files staged, nothing to fixup" "$f"; return 1
-            fi
-            ;;
-        *)
-            #__open_git_difftool_at_git_root "$sha"
-            err "unexpected key-combo [$k]"; return 1 ;;
-    esac
-}
-
-
-# fsha - get git commit sha; allows multiple selections
-# example usage: git rebase -i `fsha`
-fsha() {
-    local commits i
-
-    check_progs_installed fzf git || return 1
-    is_git || { err "not in git repo."; return 1; }
-
-    while IFS= read -r -d $'\0' i; do
-        commits+=("${i%% *}")
-    done < <(git log --color=always --pretty=oneline --abbrev-commit --reverse | fzf --tac +s -m -e --ansi --reverse --exit-0 --print0)
-    #readarray -t -d $'\0' commits < <(git log --color=always --pretty=oneline --abbrev-commit --reverse | fzf --tac +s -m -e --ansi --reverse --exit-0 --print0| xargs -0 awk '{print $1;}' )
-
-    [[ ${#commits[@]} -eq 0 ]] && return 1
-    copy_to_clipboard "${commits[*]}" && report "copied commit sha(s) [${commits[*]}] to clipboard"
-}
-
-
-# fstash - easier way to deal with stashes; type fstash to get a list of your stashes.
-# - enter shows you the contents of the stash
-# - ctrl-d asks to drop the selected stash
-# - ctrl-a asks to apply (pop) the selected stash
-# - ctrl-b checks the stash out as a branch, for easier merging (TODO: not avail atm)
-#
-# note fstash accepts path(s) similar to fshow(); only that stash list command is
-# not affected by it, as git stash doesn't accept paths;
-#
-# NOTE possibly also implemented by forgit ('gss' command)
-fstash() {
-    local dsf sha_extract_cmd preview_cmd difftool_cmd opts stash_cmd out q k stsh stash_name_regex stash_name
-
-    readonly stash_name_regex='^\s*(\S+\s+){7}\K.*'
-    hash "$_DSF" &>/dev/null && dsf="|$_DSF"
-
-    check_progs_installed fzf git || return 1
-    is_git || { err "not in git repo."; return 1; }
-
-    #cmd="git stash show \$(echo {}| cut -d: -f1) --color=always --ext-diff $forgit_fancy"  # this to use with  --bind=\"enter:execute($cmd |LESS='-R' less
-    sha_extract_cmd="grep -Po '^\\\S+(?=)' <<< {}"
-    preview_cmd="i=\$($sha_extract_cmd) || exit; git show --stat --color=always \$i -- $*; echo -e '\\\n\\\n'; git diff \$i^..\$i -- $* $dsf"  # TODO: need to sort out range
-    difftool_cmd="$sha_extract_cmd |xargs -I% git difftool --dir-diff %^ % -- $*"
-    opts="
-        $FZF_DEFAULT_OPTS
-        +m --tiebreak=index --preview=\"$preview_cmd\"
-        --bind=\"enter:execute($difftool_cmd)\"
-        --expect=ctrl-a,ctrl-d
-        --exit-0
-        --print-query
-        --no-sort
-        --ansi
-        --height='80%'
-        --preview-window='top:70%'
-    "
-    #stash_cmd="git stash list --pretty=format:'%C(red)%h%C(reset) - %C(dim yellow)(%C(bold magenta)%gd%C(dim yellow))%C(reset) %<(70,trunc)%s %C(green)(%cr) %C(bold blue)<%an>%C(reset)'"
-    stash_cmd="git stash list --color --pretty=format:'%C(red)%gd %C(green)(%cr) %C(blue)%gs'"
-
-    while out="$(eval "$stash_cmd" | FZF_DEFAULT_OPTS="$opts" fzf)"; do
-        mapfile -t out <<< "$out"
-        q="${out[0]}"
-        k="${out[1]}"
-        stsh="${out[-1]}"
-        stsh="${stsh%% *}"
-        [[ -z "$k" ]] && return 0  # got no --expect keypress event, exit
-        [[ -z "$stsh" ]] && continue
-
-        stash_name="$(echo "${out[-1]}" | grep -Po "$stash_name_regex")"  # name/description of the stash
-
-        case "$k" in
-            'ctrl-d')
-                confirm " -> drop stash $stsh ($stash_name)?" || continue
-                git stash drop "$stsh" || { err "something went wrong (code $?)"; return 1; }
-                unset stsh  # so it wouldn't get copied to clipboard
-                ;;
-            'ctrl-a')
-                confirm " -> apply (pop) stash $stsh ($stash_name)?" || continue
-                git stash pop "$stsh" || { err "something went wrong (code $?)"; return 1; }
-                unset stsh  # so it wouldn't get copied to clipboard
-                ;;
-            'ctrl-b')
-                report "not using c-b binding atm" && return
-                git stash branch "stash-$sha" "$sha"
-                break;
-                ;;
-            *)
-                err "unexpected key-combo [$k]"
-                return 1
-                ;;
-        esac
-    done
-
-    # copy last viewed stash id to clipboard: (commented out for now, don't think i ever needed this)
-    #[[ -z "$k" && -n "$stsh" ]] \
-        #&& copy_to_clipboard "$stsh" \
-        #&& echo && report " -> copied [$stsh] to clipboard"
-}
 
 
 # select recent file with fasd and open for editing
