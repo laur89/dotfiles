@@ -3299,10 +3299,10 @@ install_openvpn() {
 #                          > Beeper is essentially a Matrix homeserver, plus a bunch of hosted Matrix bridges
 #                        - so essentially an Element competitor/alternative
 #                      qTox: https://github.com/TokTok/qTox - qTox is a chat, voice, video, and file transfer instant messaging client using the encrypted peer-to-peer Tox protocol
-# note: avail as flatpak!
 install_ferdium() {  # https://github.com/ferdium/ferdium-app
     #install_from_git ferdium/ferdium-app '-amd64.deb'
-    install_bin_from_git -N ferdium ferdium/ferdium-app 'x86_64.AppImage'
+    #install_bin_from_git -N ferdium ferdium/ferdium-app 'x86_64.AppImage'
+    fp_install 'org.ferdium.Ferdium'
 }
 
 
@@ -4965,7 +4965,7 @@ install_uhk_agent() {
 #    - its readme lists bunch of other alternatives
 #  - https://github.com/kmonad/kmonad
 #
-#  For both keyd & kanata config examples, see https://github.com/argenkiwi/kenkyo/
+#  For both keyd & kanata config examples, see https://github.com/argenkiwi/kenkyo
 setup_keyd() {
     local conf_src conf_target xcomp
 
@@ -4973,12 +4973,12 @@ setup_keyd() {
     conf_target='/etc/keyd/default.conf'
     xcomp='/usr/share/keyd/keyd.compose'
 
-    if [[ -s "$conf_src" ]]; then
+    if is_f -n "$xcomp"; then
         create_link    "$xcomp" "$HOME/.XCompose"
         create_link -s "$xcomp" '/root/.XCompose'
     fi
 
-    if [[ -s "$xcomp" ]]; then
+    if is_f -n "$conf_src"; then
         exe "sudo install -m644 -CT '$conf_src' '$conf_target'" || { err "installing [$conf_src] failed w/ $?"; return 1; }
     fi
 
@@ -6961,9 +6961,6 @@ install_cpu_microcode_pkg() {
 #   - overview of all devices in pool, statuses etc
 # - btrfs su list /
 # - btrfs filesystem usage /
-#
-# TODO:
-# - if we use snapper, add it to PRUNEPATHS of configure_updatedb()
 setup_btrfs() {
     if is_btrfs; then
         # TODO: do we need to set up btrfsmaintenance? think we need to manually schedule it, e.g. scrub
@@ -7590,6 +7587,7 @@ enable_unprivileged_containers_for_regular_users() {
     _sysctl_conf '70-enable-unprivileged-containers.conf' 'kernel.unprivileged_userns_clone' 1
 }
 
+# set kernel params
 _sysctl_conf() {
     local sysctl_dir sysctl_conf property value
 
@@ -7606,7 +7604,7 @@ _sysctl_conf() {
         exe "sudo sed -i --follow-symlinks '/^${property}\s*=/d' '$sysctl_conf'"
     fi
 
-    exe "echo $property = $value | sudo tee --append $sysctl_conf > /dev/null"
+    exe "echo $property = $value | sudo tee --append '$sysctl_conf' > /dev/null"
 
     # mark our sysctl config has changed:
     SYSCTL_CHANGED=1
@@ -8279,7 +8277,7 @@ configure_updatedb() {
     local conf paths line i modified
 
     conf='/etc/updatedb.conf'
-    paths=(/mnt /media /var/cache /data/seafile-data "$HOME/.cache")  # paths to be added to PRUNEPATHS definition
+    paths=(/mnt /run/media /media /var/cache /data/seafile-data "$HOME/.cache")  # paths to be added to PRUNEPATHS definition
 
     is_btrfs && paths+=("$HOME/.snapshots" /.snapshots)  # */.snapshots are snapper/btrfs location
     is_f -n "$conf" || return 1
