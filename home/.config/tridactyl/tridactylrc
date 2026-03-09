@@ -8,6 +8,11 @@
 " other resources:
 " - autoconfig to focus page instead of ombibar, e.g. when new tab is opened w/ ctrl+t:
 "   https://github.com/tridactyl/tridactyl/discussions/4967#discussioncomment-12716215
+"
+" NOTE:
+" - in some cases just changing this file & restarting browser does not 
+"   do the trick, you gotta `:sanitise tridactyllocal` followed by `:source`
+"   see https://github.com/tridactyl/tridactyl/discussions/5208#discussioncomment-12803381
 """""""""""""""""""""""""""""""""""""""""""""""""""
 
 bind J tabnext
@@ -30,7 +35,7 @@ bindurl reddit.com gu urlparent 3
 
 " Make gu take you back to project root: (see https://github.com/tridactyl/tridactyl/discussions/5208)
 alias urlparent_fromroot js -p let u=tri.excmds.urlmodify_js("-g",JS_ARG||0,""); u.hash=""; window.location.href=u.href
-bindurl ^https:\/\/(github|gitlab)\.com\/([^/]+\/){3} gu urlparent_fromroot 2
+bindurl ^https:\/\/git(hub|lab)\.com\/([^/]+\/){3} gu urlparent_fromroot 2
 bindurl ^https:\/\/(codeberg|gitlab\.freedesktop)\.org\/([^/]+\/){3} gu urlparent_fromroot 2
 " ...or without alias:
 "bindurl ^https:\/\/github\.com\/([^/]+\/){3} gu js window.location.href=window.location.href.match(/^https:\/\/github\.com\/([^/]+\/){2}/)[0]
@@ -42,6 +47,11 @@ unbindurl ^https:\/\/\w+\.postimees\.ee\/video\/[0-9]+ <Escape>
 unbindurl ^https:\/\/\w+\.facebook\.com\/(reel|photo|[0-9]+\/videos)\/ <Escape>
 unbindurl ^https:\/\/x\.com\/.*\/photo\/[0-9]+ <Escape>
 unbindurl ^https:\/\/\w+\.imdb\.com\/title\/\w+\/mediaviewer\/ <Escape>
+
+" ignore everything on _some_ domains:
+"autocmd DocStart ^https:\/\/meet\.google\.com mode ignore
+unbindurl ^https:\/\/meet\.google\.com <C-d>
+unbindurl ^https:\/\/meet\.google\.com <C-e>
 
 " note hintdelay was introduced in https://github.com/tridactyl/tridactyl/commit/aaa0016fc5e5e160462555ab8ec517dcf9e7421e
 " Defaults to 300ms; this is especially beneficial in vimperator hintmode
