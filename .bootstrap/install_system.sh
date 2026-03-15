@@ -1926,6 +1926,15 @@ import_netrc() {
 
 # sets global KPXC_DB; note this also sets global passwd var
 define_secret() {
+    _set_kpxc_pass() {
+        while true; do
+            read -rsp 'enter kpxc pass: ' KPXC_PASS
+            # test the pass:
+            keepassxc-cli ls -q "$KPXC_DB" <<< "$KPXC_PASS" > /dev/null && return 0
+            err "incorrect pass, try again"
+            unset KPXC_PASS
+        done
+    }
     if ! [[ -s "$KPXC_DB" ]]; then
         while true; do
             read -rp 'enter kpxc db location: ' KPXC_DB
@@ -1933,21 +1942,8 @@ define_secret() {
             unset KPXC_DB
         done
     fi
-    set_kpxc_pass || return 1
+    [[ -n "$KPXC_PASS" ]] || _set_kpxc_pass || return 1
     return 0
-}
-
-
-set_kpxc_pass() {
-    [[ -n "$KPXC_PASS" ]] && return 0
-    is_f -nm 'no point in setting pass for it' "$KPXC_DB" || return 1
-    while true; do
-        read -rsp 'enter kpxc pass: ' KPXC_PASS
-        # test the pass:
-        keepassxc-cli ls -q "$KPXC_DB" <<< "$KPXC_PASS" > /dev/null && return 0
-        err "incorrect pass, try again"
-        unset KPXC_PASS
-    done
 }
 
 
@@ -6531,6 +6527,7 @@ install_from_repo() {
 
     declare -ar block3=(
         firefox/unstable  # TODO: avail as flatpak (does native messaging work tho?); also can pull binaries from mozilla. see https://wiki.debian.org/Firefox#From_Mozilla_binaries
+                          # note for flatpak native messaging, see https://github.com/flatpak/xdg-desktop-portal/issues/655#issuecomment-4048570056 and a solution/hack it links to: https://github.com/keepassxreboot/keepassxc/issues/7352#issuecomment-2409096972
         profile-sync-daemon  # pseudo-daemon designed to manage your browsers profile in tmpfs and periodically sync it back to disk
         buku  # CLI bookmark manager; https://github.com/jarun/Buku
         chromium
@@ -6541,6 +6538,7 @@ install_from_repo() {
         xournalpp
         #pdfarranger  # merge, split, rotate, cropt, rearrange pdf documents/pages; https://github.com/pdfarranger/pdfarranger
         #bookletimposer  # pdf document imposition; https://kjo.herbesfolles.org/bookletimposer
+        # for other pdf editors, see also onlyoffice
         #foliate  # ebook reader; alternatives: https://github.com/bugzmanov/bookokrat
         pandoc  # Universal markup converter; used as dependency by some other services
         procyon-decompiler  # https://github.com/mstrobel/procyon - java decompiler; used as dependency, eg. by lessopen to view .class files
@@ -6595,6 +6593,7 @@ install_from_repo() {
         #signald  # note this doesn't come from debian repos; no longer maintained as of '25; use https://github.com/AsamK/signal-cli instead
         #lxrandr  # GUI application for the Lightweight X11 Desktop Environment (LXDE); TODO: x11!
         arandr  # visual front end for XRandR; TODO: x11
+        #wlr-randr  # arandr for wayland; https://gitlab.freedesktop.org/emersion/wlr-randr
         autorandr  # TODO: x11; https://github.com/phillipberndt/autorandr
         copyq  # TODO: avail as flatpak; notable alternatives: - https://github.com/NiffirgkcaJ/all-in-one-clipboard - for gnome shell
                                                              # - https://github.com/savedra1/clipse - nice TUI manager
@@ -6653,6 +6652,7 @@ install_from_repo() {
         # slirp4netns   # fills similar needs to passt/pasta, but is older; also recommended pkg for podman
         criu  # utilities to checkpoint and restore processes in userspace; It can freeze a running container (or an individual application) and checkpoint its state to disk
         mitmproxy  # SSL-capable man-in-the-middle HTTP proxy; https://github.com/mitmproxy/mitmproxy
+                   # see also its web interface: mitmweb
         #charles-proxy5  # note also avail as tarball @ https://www.charlesproxy.com/download/
         tofu
         gh  # github cli; also avail from debian
@@ -6965,7 +6965,6 @@ setup_btrfs() {
     if is_btrfs; then
         # TODO: do we need to set up btrfsmaintenance? think we need to manually schedule it, e.g. scrub
         install_block 'btrfsmaintenance btrfs-progs'
-
         _setup_snapper
     else
         true # TODO: verify we don't leave in some btrfs-specifics!
@@ -6973,18 +6972,27 @@ setup_btrfs() {
 }
 
 
+# this applies to `docker` front-end command, doesn't matter what the actual backend is
+install_docker_shell_completion() {
+    install_from_url -Ad "$BASH_COMPLETIONS" docker-completion 'https://raw.githubusercontent.com/docker/cli/refs/heads/master/contrib/completion/bash/docker'
+    install_from_url -Ad "$ZSH_COMPLETIONS"  _docker           'https://raw.githubusercontent.com/docker/cli/refs/heads/master/contrib/completion/zsh/_docker'
+}
+
+
 # rootless tutorial: https://github.com/containers/podman/blob/main/docs/tutorials/rootless_tutorial.md
 # alternatives:
 # - containerd + nerdctl
-_setup_podman() {
-    is_d -m 'is podman installed?' /etc/containers || return 1
+setup_podman() {
+    is_d -m 'is podman even installed?' /etc/containers || return 1
 
-    # touch file to avoid msg printed to stdout whenever we use 'docker' command:
-    # msg being [Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.]
+    # touch file to avoid this msg printed to stdout whenever we use `docker` command:
+    # > Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.
     [[ -e /etc/containers/nodocker ]] || exe 'sudo touch /etc/containers/nodocker'
-    exe 'systemctl --user enable podman.socket'  # see https://golang.testcontainers.org/system_requirements/using_podman/#podman-socket-activation
 
-    return 0  # atm not using btrfs storage driver, as it's not really recommended by the devs
+    exe 'systemctl --user enable podman.socket'  # see https://golang.testcontainers.org/system_requirements/using_podman/#podman-socket-activation
+    install_docker_shell_completion
+
+    return 0  # atm not using btrfs storage driver, as it's not really recommended/used by the devs themselves
     #################################################
 
     local conf user_conf user_storage
@@ -7484,7 +7492,7 @@ full_install() {
     is_interactive && is_native && install_nfs_server_or_client
     [[ "$PROFILE" == work ]] && exe_work_funs
     setup_btrfs  # late, so snapper won't create bunch of snapshots due to apt operations
-    is_pkg_installed podman && _setup_podman
+    is_pkg_installed podman && setup_podman
 }
 
 
