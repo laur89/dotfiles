@@ -2436,6 +2436,9 @@ setup_additional_apt_keys_and_sources() {
     # for params see also https://pkgs.tailscale.com/stable/debian/trixie.list & https://tailscale.com/install.sh
     #create_apt_source  tailscale  https://pkgs.tailscale.com/stable/debian/trixie.noarmor.gpg  https://pkgs.tailscale.com/stable/debian trixie main
 
+    # cloudflare warp client: https://pkg.cloudflareclient.com/#debian
+    create_apt_source  cloudflare-warp  https://pkg.cloudflareclient.com/pubkey.gpg  https://pkg.cloudflareclient.com/ trixie main
+
     exe 'sudo apt-get --yes update'
 }
 
@@ -6351,10 +6354,13 @@ install_from_repo() {
         iptraf-ng  # ncurses-based IP LAN monitor that generates various network statistics, including bandwidth; https://github.com/iptraf-ng/iptraf-ng
         rsync
         wireguard
+        cloudflare-warp  # clourdflare's warp VPN client; for usage see https://developers.cloudflare.com/warp-client/get-started/linux/
+                         # upon the very initial registration, the daily commands will likely be `warp-cli connect` & `warp-cli disconnect`;
+                         # note after disconnect the connection might be buggered; in that case `sudo service systemd-resolved restart`
         #tailscale  # note depends on custom apt entry
         gparted  # GNOME partition editor; https://gparted.org/
-        gnome-disk-utility  # manage and configure disk drives and media; launch via $ disks
-        gnome-usage  # simple system monitor app for GNOME (cpu, mem, disk space...)
+        gnome-disk-utility  # manage and configure disk drives and media; launch via $ Disks
+        gnome-usage  # simple system monitor app for GNOME (cpu, mem, disk space...); launch via $ Usage
         aircrack-ng  # wireless WEP/WPA cracking utilities
         hashcat  # fastest and most advanced password recovery utility
         reaver  # brute force attack tool against Wi-Fi Protected Setup PIN number (WPS); https://github.com/t6x/reaver-wps-fork-t6x
