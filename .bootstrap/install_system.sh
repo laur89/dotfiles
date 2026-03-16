@@ -2110,7 +2110,6 @@ setup_config_files() {
     setup_global_shell_links
     setup_private_asset_perms
     setup_global_bash_settings
-    #is_native && swap_caps_lock_and_esc
     override_locale_time
 }
 
@@ -2447,7 +2446,7 @@ setup_additional_apt_keys_and_sources() {
 #
 # - to display current active locale settings, run  $ locale
 override_locale_time() {
-    local conf_file loc_file locales i modified
+    local conf_file loc_file i modified
 
     readonly conf_file='/etc/default/locale'
     readonly loc_file='/etc/locale.gen'
@@ -2475,49 +2474,6 @@ override_locale_time() {
     done
     [[ -n "$modified" ]] && exe 'sudo locale-gen'
     # }}}
-
-    return 0
-}
-
-
-# can also exec 'setxkbmap -option' caps:escape or use dconf-editor; also could use $loadkeys
-# or switch it via XKB options (see https://wiki.archlinux.org/index.php/Keyboard_configuration_in_Xorg)
-#
-# see also https://gist.github.com/tanyuan/55bca522bf50363ae4573d4bdcf06e2e
-#
-# to see current active keyboard setting:    setxkbmap -print -verbose 10
-#################
-# TODO: do not call; looks like changing pc file makes xcape not work for the remapped caps key;
-#       regular ctrl key worked fine, but caps key only worked as esc -- ctrl functionality was broken for it.
-#       we're calling alternative logic from .xinitrc instead.
-# TODO: deprecated
-swap_caps_lock_and_esc() {
-    local conf_file
-
-    readonly conf_file='/usr/share/X11/xkb/symbols/pc'
-
-    is_f "$conf_file" || return 1
-
-    # map esc to caps:
-    if ! grep -Eq 'key <ESC>.*Caps_Lock' "$conf_file"; then
-        # hasn't been replaced yet
-        if ! exe "sudo sed -i --follow-symlinks 's/.*key.*ESC.*Escape.*/    key <ESC>  \{    \[ Caps_Lock     \]   \};/g' $conf_file"; then
-            err "mapping esc->caps @ [$conf_file] failed"
-            return 2
-        fi
-    fi
-
-    # map caps to control:
-    if ! grep -Eq 'key <CAPS>.*Control_L' "$conf_file"; then
-        # hasn't been replaced yet
-        if ! exe "sudo sed -i --follow-symlinks 's/.*key.*CAPS.*Caps_Lock.*/    key <CAPS> \{    \[ Control_L        \]   \};/g' $conf_file"; then
-            err "mapping caps->esc @ [$conf_file] failed"
-            return 2
-        fi
-    fi
-
-    # make short-pressed Ctrl behave like Escape:
-    exe "xcape -e 'Control_L=Escape'" || return 2   # note this command needs to be ran also at every startup!
 
     return 0
 }
