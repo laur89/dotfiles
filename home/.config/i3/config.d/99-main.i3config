@@ -641,10 +641,11 @@ for_window [class="^org.remmina.Remmina$"] border pixel $border
 # }}}
 
 # Starting apps on a specific workspace {{{
-assign [class="^Tor Browser$"]           $w1
+assign [class="^(Tor Browser|Chromium)$"]           $w1
 # we don't want to include instance such as 'Dialog', which is eg the download prompt:
 assign [class="^[fF]irefox$" instance="^Navigator$"]  $w1
 assign [class="^jetbrains-(idea|studio)$"]       $w2
+assign [class="^Eclipse Memory Analyzer$"]       $w2
 #assign [class="^Zathura"]                $w3
 assign [class="^(Slack|Signal|discord|vesktop|equibop|Ferdium|TelegramDesktop|Pidgin)$"]                $w3
 assign [class="^(mpv|MPlayer|smplayer)$"] $w4
