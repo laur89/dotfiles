@@ -1,7 +1,8 @@
 # see https://mise.jdx.dev/configuration.html#global-config-config-mise-config-toml
 [tools]
 usage = "latest"
-java = "lts"
+java = { version = "lts", shorthand_vendor = "temurin" }
+gradle = "latest"
 node = "lts"
 #deno = "latest"
 bun = "latest"
@@ -12,4 +13,4 @@ zls = "latest"
 #python = {version='3.12'}  # caused some issues, best continue using system py version for global
 
 [settings]
-idiomatic_version_file_enable_tools = []
+idiomatic_version_file_enable_tools = ["node", "java"]
