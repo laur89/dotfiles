@@ -25,8 +25,8 @@
 set -o pipefail
 shopt -s nullglob  # unmatching globs to expand into empty string/list instead of being left unexpanded
 
-TMP_DIR=/tmp  # changeable via an option
-readonly KRING="$HOME/.local/share/kring.sala"  # note location is referenced in db's AutoOpen section
+TMP_DIR=/tmp  # changeable via an option (e.g. in VMs /tmp tmpfs might not be large enough)
+readonly KRING="$HOME/.local/share/kring.sala"  # note location is referenced in db's AutoOpen section/group
 readonly LUKS_USB="/tmp/usb-luks-$RANDOM"  # mountpoint
 readonly KPXC_KRING_DB="$LUKS_USB/passdb/fresh_keyring.kdbx"
 KPXC_DB=''  # will be defined downstream
@@ -142,8 +142,8 @@ validate_and_init() {
         APT_OPTS+="${APT_OPTS:+ }--yes"
     fi
 
-    [[ -d "$TMP_DIR" ]] || fail "tempdir [$TMP_DIR] is not a dir"
-    [[ "$TMP_DIR" == /* ]] || fail "tempdir [$TMP_DIR] needs to be defined as a full path"
+    [[ -d "$TMP_DIR" ]] || fail "given tempdir [$TMP_DIR] is not a dir"
+    [[ "$TMP_DIR" != /* ]] && fail "tempdir [$TMP_DIR] needs to be defined as a full path"
     check_connection && CONNECTED=1 || CONNECTED=0
     [[ "$CONNECTED" -eq 0 && "$ALLOW_OFFLINE" -ne 1 ]] && fail "no internet connection. abort."
 
@@ -193,7 +193,7 @@ validate_and_init() {
     sudo --validate || fail "is user in sudoers file? is sudo installed? if not, then [su && apt-get install sudo]"
     #clear
 
-    # keep-alive: update existing `sudo` time stamp; search tags:  keep sudo, keepsudo, sudokeep, staysudo stay sudo
+    # keep-alive: update existing `sudo` time stamp; search tags:  keep sudo, keepsudo, sudo keep, sudokeep, stay sudo, staysudo
     while true; do sudo -n true; sleep 30; kill -0 "$$" || exit; done 2>/dev/null &
 }
 
@@ -1873,8 +1873,6 @@ fetch_castles() {
 
 # check whether ssh key(s) were pulled with homeshick; if not, offer to create one:
 setup_ssh() {
-    local err
-
     is_proc_running  ssh-agent || eval "$(ssh-agent)" || { err 'starting ssh-agent failed'; return 1; }
     is_ssh_key_loaded && report 'SSH already set up' && return 0
 
@@ -1885,12 +1883,8 @@ setup_ssh() {
     # TODO: keep an eye on keepassxc-cli, at one point it'll likely gain ssh-agent support.
     # note we run in subshell just so the export is not global:
     ( export KPXC_PASS; keepassxc-cli attachment-export --stdout -q -- "$KPXC_DB" \
-            'master-ssh-key' priv_key <<< "$KPXC_PASS" | SSH_ASKPASS_REQUIRE=force SSH_ASKPASS=/tmp/.kps  ssh-add - )
-    err=$?
-    if [[ "$err" -ne 0 ]]; then
-        err "pulling SSH key from pass db failed w/ $err; skipping ssh keys import"
-        return 1
-    fi
+            'master-ssh-key' priv_key <<< "$KPXC_PASS" | SSH_ASKPASS_REQUIRE=force SSH_ASKPASS=/tmp/.kps  ssh-add - ) \
+            || { err "pulling SSH key from pass db failed w/ $?; skipping ssh keys import"; return 1; }
 
     # following bit only needed if systemd is decrypting some partition/drive and its key is needed to be copied over: {{{
     #keepassxc-cli attachment-export -- "$KPXC_DB" 'backup-USB-thumb' keyfile.bin /tmp/usb_thumb_1.key
@@ -1900,15 +1894,15 @@ setup_ssh() {
 
     # sanity:
     if ! is_ssh_key_loaded; then
-        err "couldn't import our SSH keys"
-        confirm -d N "do you wish to generate set of ssh keys?" || return
+        err "couldn't import our SSH key(s)"
+        confirm -d N "do you wish to generate SSH key?" || return
         generate_ssh_key || return 1
         report 'loading generated key...'
         exe  ssh-add
 
         # sanity:
         if ! is_ssh_key_loaded; then
-            err "ssh keys still not loaded after generating 'em"
+            err "ssh key(s) still not loaded after generating 'em"
             return 1
         fi
     fi
@@ -2242,7 +2236,7 @@ mount_usb() {
 
 setup() {
     if is_interactive && [[ "$MODE" -eq 1 ]]; then
-        mount_usb  # TODO: detect not only MODE==1, but if _very initial_ installation
+        mount_usb  # TODO: detect not only MODE==1, but if _very initial_ installation, as we won't have USB at hand most of the time
         setup_ssh
         import_netrc
     fi
@@ -2260,7 +2254,7 @@ setup() {
     [[ "$MODE" -eq 1 ]] && install_flatpak
     setup_additional_apt_keys_and_sources
 
-    [[ "$PROFILE" == work && -s ~/.npmrc ]] && mv -- ~/.npmrc "$NPMRC_BAK"  # work npmrc might define private registry
+    [[ "$PROFILE" == work && -s $HOME/.npmrc ]] && mv -- $HOME/.npmrc "$NPMRC_BAK"  # work npmrc might define private registry
     # following npm hack is superseded by temporarily getting rid of ~/.npmrc above:
     #if [[ "$MODE" -eq 1 && "$PROFILE" == work && -z "$NODE_EXTRA_CA_CERTS" ]]; then
         #NPM_PRFX+=' NODE_TLS_REJECT_UNAUTHORIZED=0'  # certs might've not been init'd yet; NODE_TLS_REJECT_UNAUTHORIZED not working, so far only '$npm config set strict-ssl' false has had any effect
@@ -2294,8 +2288,7 @@ update_clock() {
 
     if [[ "${diff#-}" -gt 30 ]]; then
         report "system time diff to remote source is [${diff}s] - updating clock..."
-        # IIRC, input format to date -s here is important:
-        exe "sudo date -s '$(date -d @${remote_time} '+%Y-%m-%d %H:%M:%S')'" || { err "setting system time w/ date failed w/ $?"; return 1; }
+        exe "sudo date -s '$(date -d @${remote_time} '+%Y-%m-%d %H:%M:%S')'" || { err "setting system time w/ \$ date failed w/ $?"; return 1; }
     fi
 
     return 0
@@ -2442,7 +2435,7 @@ setup_additional_apt_keys_and_sources() {
 }
 
 
-# to add additional locales, uncomment wanted locale in /etc/locale.gen and run $ locale-gen as root;
+# to add additional locales, uncomment wanted locale in /etc/locale.gen and run `sudo locale-gen`;
 #
 # - to display current active locale settings, run  $ locale
 override_locale_time() {
@@ -2451,7 +2444,7 @@ override_locale_time() {
     readonly conf_file='/etc/default/locale'
     readonly loc_file='/etc/locale.gen'
 
-    is_f "$conf_file" || return 1
+    is_f -m 'cannot change our locale config' "$conf_file" || return 1
 
     # change our LC_TIME, so first day of week is Mon (from https://wiki.debian.org/Locale#First_day_of_week):
     if ! grep -qE 'LC_TIME=.en_GB.UTF-8.' "$conf_file"; then
@@ -2487,8 +2480,7 @@ install_progs() {
     install_from_flatpak
     install_own_builds  # has to be after install_from_repo()
 
-    is_native && install_nvidia
-    is_native && install_amd_gpu
+    is_native && install_gpu_drivers
     is_native && install_cpu_microcode_pkg
     #is_native && install_games
 
@@ -6874,17 +6866,54 @@ install_vbox_guest() {
 }
 
 
+install_gpu_drivers() {
+    local disp
+
+    # TODO: consider  lspci -vnn | grep VGA | grep -i nvidia|AMD
+    disp="$(sudo lshw | grep -iA 5 'display')"
+
+    if grep -Eq 'vendor.*NVIDIA' <<< "$disp"; then
+        install_nvidia
+    elif grep -Eq 'vendor.*AMD' <<< "$disp"; then
+        install_amd_gpu
+    else
+        err "!! could not detect our GPU vendor -- if no DGPU, all good, otherwise need to fix !!"
+        return 1
+    fi
+}
+
+
+# offers to install nvidia drivers, if NVIDIA card is detected.
+#
+# in order to reinstall the dkms part, purge nvidia-driver and then reinstall.
+#
+# - Note if you see some flickering, it might be caused by compton and its settings.
+#   eg based on info from https://github.com/chjj/compton/issues/152,
+#    set glx-swap-method to 1;
+# - also, you might want to select 'Force Full Composition Pipeline' from
+#   nvidia-settings -> x server Disp Conf -> Advanced... -> tick the box
+# - you might also consider enabling/disabling KMS: https://wiki.archlinux.org/index.php/kernel_mode_setting
+#
+# https://wiki.debian.org/NvidiaGraphicsDrivers
+# TODO: add logic to detect & configure nvidia Optimus, also described in abovementioned link
+install_nvidia() {
+    if confirm -d N "we seem to have NVIDIA card; want to install nvidia drivers?"; then  # TODO: should we default to _not_ installing in non-interactive mode?
+        # TODO: also/instead install  nvidia-detect and install the driver it suggests?
+        report "installing NVIDIA drivers..."
+        install_block 'nvidia-driver firmware-misc-nonfree'
+        #exe "sudo nvidia-xconfig"  # not required as of Stretch
+        return $?
+    else
+        report "we chose not to install nvidia drivers..."
+    fi
+}
+
+
 # offers to install AMD drivers, if card is detected.
 # note run radeontop to monitor AMD card usage
 #
 # https://wiki.debian.org/AtiHowTo
 install_amd_gpu() {
-    # TODO: consider  lspci -vnn | grep VGA | grep AMD
-    if ! sudo lshw | grep -iA 5 'display' | grep -Eq 'vendor.*AMD'; then
-        report "we don't have an AMD card; skipping installing their drivers..."
-        return 0
-    fi
-
     if confirm -d N "we seem to have AMD card; want to install AMD drivers?"; then  # TODO: should we default to _not_ installing in non-interactive mode?
         report "installing AMD drivers & firmware & other relevant tools..."
         # TODO: x11!:
@@ -7083,37 +7112,6 @@ install_dbus_broker() {
 }
 
 
-# offers to install nvidia drivers, if NVIDIA card is detected.
-#
-# in order to reinstall the dkms part, purge nvidia-driver and then reinstall.
-#
-# - Note if you see some flickering, it might be caused by compton and its settings.
-#   eg based on info from https://github.com/chjj/compton/issues/152,
-#    set glx-swap-method to 1;
-# - also, you might want to select 'Force Full Composition Pipeline' from
-#   nvidia-settings -> x server Disp Conf -> Advanced... -> tick the box
-# - you might also consider enabling/disabling KMS: https://wiki.archlinux.org/index.php/kernel_mode_setting
-#
-# https://wiki.debian.org/NvidiaGraphicsDrivers
-# TODO: add logic to detect & configure nvidia Optimus, also described in abovementioned link
-install_nvidia() {
-    # TODO: consider  lspci -vnn | grep VGA | grep -i nvidia
-    if sudo lshw | grep -iA 5 'display' | grep -Eiq 'vendor.*NVIDIA'; then
-        if confirm -d N "we seem to have NVIDIA card; want to install nvidia drivers?"; then  # TODO: should we default to _not_ installing in non-interactive mode?
-            # TODO: also/instead install  nvidia-detect and install the driver it suggests?
-            report "installing NVIDIA drivers..."
-            install_block 'nvidia-driver firmware-misc-nonfree'
-            #exe "sudo nvidia-xconfig"  # not required as of Stretch
-            return $?
-        else
-            report "we chose not to install nvidia drivers..."
-        fi
-    else
-        report "we don't have an nvidia card; skipping installing their drivers..."
-    fi
-}
-
-
 # provides the possibility to cherry-pick out packages.
 # this might come in handy, if few of the packages cannot be found/installed.
 #
@@ -7181,7 +7179,7 @@ choose_step() {
     fi
 
     if [[ "$BOOTSTRAP_LAUNCHER_TAG" != Y ]] && [[ "$MODE" -eq 1 || "$LOGGING_LVL" -ge 20 ]] && cmd_avail script; then
-        report "re-starting script via [script] to capture terminal output; sudo passwd will likely be asked again..."
+        report "restarting logic via [script] to capture terminal output; sudo passwd will be asked again..."
         sleep 2
         script --flush --quiet --return --log-out "$SCRIPT_LOG" --command "BOOTSTRAP_LAUNCHER_TAG=Y MODE=$MODE $0 ${ORIG_OPTS[*]}"
         ERR=$?
@@ -8903,8 +8901,8 @@ is_appimage() {
 
     readonly file="$1"
 
-    [[ $# -ne 1 ]] && { err "exactly 1 argument (node name) required."; return 1; }
-    is_f "$file" || return 1
+    [[ $# -ne 1 ]] && { err "exactly 1 argument (node path) required."; return 1; }
+    is_f -n "$file" || return 1
     check_progs_installed  xxd || return 2
 
     #i="$(xxd "$file" 2>/dev/null | head -1)"   # note likely exits w/ code 3
@@ -8938,12 +8936,13 @@ is_windows() {
 
 
 # Checks whether system is virtualized (including WSL)
+# see also: virt-what, $ systemd-detect-virt (latter detects also systemd- and  containerised isolations)
 #
 # @returns {bool}   true if we're running in virt mode.
 is_virt() {
     if [[ -z "$_IS_VIRT" ]]; then
         is_f -m 'cannot test if virtualized' /proc/cpuinfo || return 2
-        grep -Eq '^flags.*\s+hypervisor' /proc/cpuinfo &>/dev/null  # detects all virtualizations, including WSL
+        grep -qE '^flags.*\s+hypervisor' /proc/cpuinfo &>/dev/null  # detects all virtualizations, including WSL
         readonly _IS_VIRT=$?
     fi
 
@@ -9099,6 +9098,9 @@ is_secure_boot() {
     elif cmd_avail bootctl; then
         bootctl 2>/dev/null | grep -Eiq '^\s*secure boot:\s*enabled'
     else
+        # TODO: this seems to be broken as of '26, at least when uptime is 3d+; only relevant messages are:
+        #       > Bluetooth: hci0: Secure boot is enabled
+        #       > integrity: Loaded X.509 cert 'Debian Secure Boot CA:
         sudo dmesg | grep -Eiq 'secureboot: secure boot enabled'  # note need to exec as root as allow_user_run_dmesg() has not been set up yet
     fi
 }
@@ -9415,8 +9417,10 @@ is_f() {
 
     for f in "$@"; do
         if ! sudo test -f "$f"; then
-            [[ -e "$f" ]] && m=" (but it exists, and is [$(file_type "$f")])"
-            [[ -z "$quiet" ]] && err "[$f] not a file$m${msg:+; $msg}" -1
+            if [[ -z "$quiet" ]]; then
+                [[ ! -e "$f" ]] && unset m || m=" (but it exists, and is [$(file_type "$f")])"
+                err "[$f] not a file${m}${msg:+; $msg}" -1
+            fi
             e=1
         elif [[ -n "$nonempty" ]] && ! sudo test -s "$f"; then
             [[ -z "$quiet" ]] && err "[$f] is an empty file${msg:+; $msg}" -1
@@ -9442,8 +9446,10 @@ is_d() {
 
     for d in "$@"; do
         if ! sudo test -d "$d"; then
-            [[ -e "$d" ]] && m=" (but it exists, and is [$(file_type "$d")])"
-            [[ -z "$quiet" ]] && err "[$d] not a dir$m${msg:+; $msg}" -1
+            if [[ -z "$quiet" ]]; then
+                [[ ! -e "$d" ]] && unset m || m=" (but it exists, and is [$(file_type "$d")])"
+                err "[$d] not a dir${m}${msg:+; $msg}" -1
+            fi
             e=1
         elif [[ -n "$nonempty" ]] && is_dir_empty -s "$d"; then
             [[ -z "$quiet" ]] && err "[$d] is an empty dir${msg:+; $msg}" -1
@@ -9561,7 +9567,7 @@ popd() {
 cleanup() {
     [[ "$__CLEANUP_EXECUTED_MARKER" == 1 || -z "$MODE" ]] && return  # don't invoke more than once.
 
-    [[ -s "$NPMRC_BAK" ]] && mv -- "$NPMRC_BAK" ~/.npmrc   # move back
+    [[ -s "$NPMRC_BAK" ]] && exe "mv -- '$NPMRC_BAK' $HOME/.npmrc"   # move back
 
     if [[ -d "$ZSH_COMPLETIONS" && "$ZSH_COMPLETIONS" == /usr/* ]]; then
         exe -s "sudo chmod -R 'o+r' '$ZSH_COMPLETIONS'"  # ensure 'other' group has read rights
@@ -9595,7 +9601,7 @@ cleanup() {
 #----------------------------
 #---  Script entry point  ---
 #----------------------------
-ORIG_OPTS=("$@")
+ORIG_OPTS=("$@")  # note our options must _not_ break on whitespace, given how ORIG_OPTS is referenced!
 while getopts 'NFSUQOP:L:T:h' OPT; do
     case "$OPT" in
         N) NON_INTERACTIVE=1 ;;
