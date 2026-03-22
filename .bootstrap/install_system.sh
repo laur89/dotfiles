@@ -1748,8 +1748,9 @@ install_chezmoi() {
     install_from_git twpayne/chezmoi '_linux_amd64.deb'
     #install_bin_from_git -N chezmoi twpayne/chezmoi 'linux_amd64.tar.gz'
 
-    # install 3rd party extensions; cz project lists them @ https://www.chezmoi.io/links/related-software/
-    install_bin_from_git -N chezmoi_modify_manager VorpalBlade/chezmoi_modify_manager 'x86_64-unknown-linux-gnu.tar.gz'
+    # install 3rd party extensions; cz project lists them @ https://www.chezmoi.io/links/related-software/ {{{
+    install_bin_from_git -N chezmoi_modify_manager VorpalBlade/chezmoi_modify_manager 'x86_64-unknown-linux-gnu.tar.gz'  # https://github.com/VorpalBlade/chezmoi_modify_manager
+    # }}} /3rd-party
 }
 
 
@@ -1994,12 +1995,15 @@ setup_homesick() {
 
 # https://www.chezmoi.io/quick-start/
 setup_chezmoi() {
+    local force
+
     install_chezmoi || return $?
     report "initializing our chezmoi store; note some data will be queried..."
     # do not add --verbose flag to following command, as the massive diff in
     # stdout screeches the term to a halt:
     # TODO: init takes currently ages, some 3+ minutes. find out why
-    exe 'chezmoi init --apply git@github.com:laur89/dots.git'  # pull & install dotfiles
+    is_noninteractive && force=TRUE
+    exe "chezmoi init --apply ${force:+--force }git@github.com:laur89/dots.git"  # pull & install dotfiles
     # note modify_mngr doctor can only be ran _after_ init, as otherwise it'll complain about missing ~/.local/share/chezmoi/:
     chezmoi_modify_manager --doctor || err "[chezmoi_modify_manager --doctor] failed w/ $?"  # verify all's well from manager's perspective
 }
@@ -3973,16 +3977,16 @@ install_arc() {
 
 # https://github.com/usebruno/bruno
 #
-# TODO: consider ARC (advanced rest client) instead: https://install.advancedrestclient.com/install
-# TODO: or maybe httpie that apparently now has a GUI as well!
-# TODO also recipeUI: https://github.com/RecipeUI/RecipeUI
-# TODO also hoppscotch: https://hoppscotch.io/ (note it's possible to self-host as well)
-# TODO not verified, but there's also https://kreya.app/ - note it's _not_ FOSS; note it's also not using electron, but 'native webview of the OS': read @ https://kreya.app/blog/how-we-built-kreya/ - note it also does grpc
-# TODO !!!!!!!!!!!!!!!!!!!!: list of alternatives: https://github.com/stepci/awesome-api-clients
-# for automated testing see https://github.com/stepci/stepci
-# TODO also https://github.com/firecamp-dev/firecamp (relatively new as of Nov '23)
-# haven't checked, but also https://github.com/manatlan/reqman
-# there's also CLI client wrapping curl that uses toml-like config: https://github.com/jonaslu/ain
+# alternatives: list of alts @ https://github.com/stepci/awesome-api-clients
+# - httpie that apparently now has a GUI as well!
+# - yaak: https://github.com/mountain-loop/yaak
+# - hoppscotch: https://hoppscotch.io/ (note it's possible to self-host as well)
+# - firecamp: https://github.com/firecamp-dev/firecamp
+# - https://kreya.app/ - note it's _not_ FOSS; note it's also not using electron, but 'native webview of the OS': read @ https://kreya.app/blog/how-we-built-kreya/ - note it also does grpc
+# - https://github.com/manatlan/reqman - without GUI
+# - ain https://github.com/jonaslu/ain - similar to reqman i think
+# Other noteworthy mentions/related:
+# - for automated testing see https://github.com/stepci/stepci
 install_bruno() {
     err "do not call, using flatpak atm"; return
     install_bin_from_git -N bruno usebruno/bruno  _x86_64_linux.AppImage
@@ -4920,6 +4924,7 @@ setup_keyd() {
     conf_target='/etc/keyd/default.conf'
     xcomp='/usr/share/keyd/keyd.compose'
 
+    # note xcompose is not strictly x11 thing, it shoud (partially) work under wayland
     if is_f -n "$xcomp"; then
         create_link    "$xcomp" "$HOME/.XCompose"
         create_link -s "$xcomp" '/root/.XCompose'
@@ -6819,7 +6824,10 @@ install_from_flatpak() {
     # KDE calculator:
     # https://flathub.org/en/apps/org.kde.kcalc
 
-    # flatpak manager:
+    # flatpak manager, doing things like:
+    # - change versions
+    # - see current app user data
+    # - take snapshots of app user data
     # https://flathub.org/en/apps/io.github.flattool.Warehouse
 
     # system resource utilization visualizer:
