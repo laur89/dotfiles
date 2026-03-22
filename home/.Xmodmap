@@ -1,0 +1,8 @@
+! Set Right Alt as a Mode Switcher
+keycode 108 = Mode_switch
+
+! Map Umlaut to <Key> + Mode_switch
+keycode 34 = bracketleft  braceleft  udiaeresis Udiaeresis
+keycode 35 = bracketright braceright otilde     Otilde
+keycode 47 = semicolon    colon      odiaeresis Odiaeresis
+keycode 48 = apostrophe   quotedbl   adiaeresis Adiaeresis
