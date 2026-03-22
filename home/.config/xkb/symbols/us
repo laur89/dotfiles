@@ -1,0 +1,26 @@
+// find ideas/guidance from
+// - /usr/share/X11/xkb/symbols/ee
+// - /usr/share/X11/xkb/symbols/eurosign
+// - https://gitlab.freedesktop.org/xkeyboard-config/xkeyboard-config/-/blob/master/symbols/us#L2241-2262
+//
+partial alphanumeric_keys
+xkb_symbols "ee-umlaut" {
+    //include "us(basic)"
+    include "us(altgr-intl)"
+
+    // use caps instead of altgr to access 3rd layer of characters, i.e. "altgr dead keys":
+    //include "level3(caps_switch)"
+
+    name[Group1] = "English (US, international with Estonian umlauts)";
+
+    key <AC10>	{[   semicolon,  colon,      odiaeresis, Odiaeresis ]};
+    key <AC11>	{[  apostrophe,  quotedbl,   adiaeresis, Adiaeresis ]};
+    key <AD11>	{[ bracketleft,  braceleft,  udiaeresis, Udiaeresis ]};
+    key <AD12>	{[ bracketright, braceright, otilde,     Otilde     ]};
+
+    //include "eurosign(e)"
+    //include "eurosign(E)"
+
+    //include "level3(ralt_switch)"  // TODO: is this needed if we already include us(altgr-intl), as latter seems to be including the same already?
+                                     // tho the "intl" variant that "altgr-intl" imports _also_ adds the include...
+};

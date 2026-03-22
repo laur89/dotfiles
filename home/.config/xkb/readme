@@ -1,0 +1,20 @@
+Extra xkb config to extend base US layout with our umlauts. Idea from
+https://www.karl.berlin/umlauts.html that itself got infomration from a
+3-part blog post @ https://who-t.blogspot.com/2020/08/user-specific-xkb-configuration-part-3.html
+
+Note this comment on keyd umlauts issue/discussion also suggests going
+xkb route: https://github.com/rvaiya/keyd/issues/470#issuecomment-1843065356
+
+# some commands:
+- get current keyboard variant settings: `localectl status`
+- list all avail layouts: `localectl list-x11-keymap-layouts`
+- list avail keybaord variants: `localectl list-x11-keymap-variants`
+- list all variants for given layout: `localectl list-x11-keymap-variants us`
+- list available toggle options: `localectl list-x11-keymap-options`
+- see current active keyboard setting: `setxkbmap -print -verbose 10`
+
+# troubleshooting
+
+If custom layout is not found/loaded, consider:
+- https://askubuntu.com/questions/1537309/my-xkb-custom-keyboard-layout-is-no-longer-working-after-restart
+- if using sway, we possibly have to define used layout in its config file: https://bbs.archlinux.org/viewtopic.php?pid=2213207#p2213207
