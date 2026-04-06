@@ -137,6 +137,8 @@ print_usage() {
 
 
 validate_and_init() {
+    [[ "$EUID" -eq 0 ]] && fail "don't run as root"
+
     if is_noninteractive; then
         APT_ENVS+="${APT_ENVS:+ }DEBIAN_FRONTEND=noninteractive"
         APT_OPTS+="${APT_OPTS:+ }--yes"
@@ -374,7 +376,7 @@ setup_smartd() {
     # - the -s option there schedules a short self-test every day between 2-3am, and an extended self test weekly on Saturdays between 3-4am
     # - -W 4,35,40 -- log changes of 4deg+, log when temp reaches 35deg, and log/mail warning when temp reaches 40
     #c='DEVICESCAN -a -o on -S on -n standby,q -s (S/../.././02|L/../../6/03) -W 4,35,40 -m smart_mail_alias -M exec /usr/local/bin/smartdnotify'  # TODO: create the script! from there we mail & notify; note script shouldn't write anything to stdout/stderr, otherwise it ends up in syslog
-    is_f -nm 'cannot configure smart' "$notif" || return 1
+    is_f -nxm 'cannot configure smart' "$notif" || return 1
     c="DEVICESCAN -a -o on -S on -n standby,q -s (S/../.././02|L/../../6/03) -W 4,35,40 -m <nomailer> -M exec $notif"
 
     is_f -nm 'cannot configure smartd' "$conf" || return 1
@@ -499,11 +501,11 @@ setup_needrestart() {
     for dir in "${src_dirs[@]}"; do
         is_d -qn "$dir" || continue
         for file in "$dir/"*; do
-            [[ -f "$file" && "$file" =~ \.(conf)$ ]] || continue  # note we require certain suffix
+            [[ -s "$file" && "$file" =~ \.(conf)$ ]] || continue  # note we require certain suffix
             filename="$(basename -- "$file")"
-            tmpfile="$TMP_DIR/.needrestart_setup-$filename"
             filename="${filename/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
 
+            tmpfile="$TMP_DIR/.needrestart_setup-$filename"
             exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || { err "sed-ing needrestart file [$file] failed"; continue; }
             exe "sudo install -m644 -CT '$tmpfile' '$target_confdir/$filename'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
         done
@@ -815,30 +817,23 @@ setup_hosts() {
     local file tmpfile current_hostline
 
     readonly file="$PRIVATE__DOTFILES/backups/hosts-header.tmpl"
-    readonly tmpfile="$TMP_DIR/hosts.head"  # note result file won't be 'hosts', but 'hosts.head'
+    readonly tmpfile="$TMP_DIR/hosts.head-$RANDOM"
 
     _extract_current_hostname_line() {
-        local current
-
-        current="$(grep -E '^127\.0\.1\.1\s+' "$1")"
+        local current="$(grep -E '^127\.0\.1\.1\s+' "$1")"
         if ! is_single "$current"; then
             err "[$1] contained either more or less than 1 line(s) containing our hostname. check manually."
             return 1
         fi
-
         echo "$current"
-        return 0
     }
 
-    is_f /etc/hosts || return 1
-    is_f -m "won't install it" "$file" || return 1
-
+    is_f -m "won't install [$file]" "$file" /etc/hosts || return 1
     current_hostline="$(_extract_current_hostname_line /etc/hosts)" || return 1
-    exe "sed -e 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' -e 's/{HOSTNAME}/$HOSTNAME/g' $file > $tmpfile" || { err; return 1; }
+    exe "sed -e 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' -e 's/{HOSTNAME}/$HOSTNAME/g' '$file' > '$tmpfile'" || { err; return 1; }
 
-    exe "sudo install -m644 -C --backup=numbered '$tmpfile' /etc" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
+    exe "sudo install -m644 -CT --backup=numbered '$tmpfile' /etc/hosts.head" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
     exe "rm -- '$tmpfile'"
-
     unset _extract_current_hostname_line
 }
 
@@ -846,9 +841,9 @@ setup_hosts() {
 setup_sudoers() {
     local sudoers_dest file tmpfile
 
-    readonly sudoers_dest='/etc/sudoers.d'
-    readonly tmpfile="$TMP_DIR/sudoers-$RANDOM"
-    readonly file="$COMMON_PRIVATE_DOTFILES/backups/00_sudoers_first"
+    sudoers_dest='/etc/sudoers.d'
+    file="$COMMON_PRIVATE_DOTFILES/backups/00_sudoers_first"
+    tmpfile="$TMP_DIR/sudoers-$RANDOM"
 
     is_d -m 'skipping sudoers file installation' "$sudoers_dest" || return 1
     is_f -m "won't install it" "$file" || return 1
@@ -908,7 +903,7 @@ setup_apt_dpkg() {
 
 
 # symlinked crontabs don't work!
-# TODO: deprecate crontab & move to systemd timers?
+# TODO: DEPRECATED
 setup_crontab() {
     local cron_dir weekly_crondir tmpfile file i
 
@@ -940,7 +935,7 @@ setup_crontab() {
 
 
 # pass '-s' or '--sudo' as first arg to execute as sudo
-# TODO: mv, cp, ln, install commands have --backup option (eg --backup=numbered)
+# TODO: {mv, cp, ln, install} commands have --backup option (eg. --backup=numbered)
 #
 backup_original_and_copy_file() {
     local sudo file dest_dir filename i old_suffixes
@@ -1024,6 +1019,9 @@ clone_or_pull_repo() {
     elif is_ssh_key_loaded; then
         exe "git -C '$install_dir' pull" || { err "git pull for [$hub/$user/$repo] failed w/ $?"; return 1; }  # TODO: retry?
         exe "git -C '$install_dir' submodule update --init --recursive" || return 1  # make sure to pull submodules
+    else
+        err "cannot pull [$hub/$user/$repo] -- ssh keys not loaded"
+        return 1
     fi
 }
 
@@ -1137,7 +1135,7 @@ _install_nfs_client_laptop() {
     install_block 'autofs' || { err "unable to install autofs. aborting NFS client install/config."; return 1; }
 
     is_d -m 'cannot add autofs NFS config' "$autofs_d" || return 1
-    [[ -d "$root_confd" ]] && ! is_dir_empty "$root_confd" || return 0
+    is_d -nq "$root_confd" || return 0
 
     for i in "$root_confd/servers/"*; do
         [[ -f "$i" ]] || continue
@@ -1593,14 +1591,14 @@ install_deps() {
     # consider also perl alternative @ https://github.com/pasky/speedread
     #rb_install speed_read  # https://github.com/sunsations/speed_read  (spritz-like terminal speedreader)
 
-    py_install update-conf.py # https://github.com/rarylson/update-conf.py  (generate config files from conf.d dirs)
+    py_install update-conf.py  # https://github.com/rarylson/update-conf.py  (generate config files from conf.d dirs)
     #py_install starred     # https://github.com/maguowei/starred  - create list of your github starts; note it's updated by CI so no real reason to install it locally
 
     # rofi-based emoji picker
     # change rofi command to something like [-modi combi#ssh#emoji:rofimoji] to use.
     # alternatives:
     # - https://github.com/vemonet/EmojiMart (avail as flatpak)
-    py_install -g fdw/rofimoji  # https://github.com/fdw/rofimoji
+    py_install rofimoji  # https://github.com/fdw/rofimoji
 
     # keepass cli tool
     # alternatives: kpcli
@@ -2177,7 +2175,7 @@ setup_mok() {
     target_dir='/var/lib/shim-signed/mok'
 
     ensure_d -s "$target_dir" || return 1
-    if ! is_dir_empty -s "$target_dir"; then
+    if ! is_dir_empty "$target_dir"; then
         report "[$target_dir] not empty, assuming MOK keys already created; testing key enrollment..."
         # TODO: mokutil here exits w/ 1 on success, so cannot use w/ pipefail:
         #sudo mokutil --test-key "$target_dir/MOK.der" | grep -q 'is already enrolled' || { err "[$target_dir/MOK.der] not enrolled, verify MOK!"; return 1; }
@@ -2708,7 +2706,7 @@ install_own_builds() {
     install_ctags
     #install_bandwhich
     is_btrfs && install_btdu
-    install_difftastic
+    #install_difftastic
     install_uv
     install_rmpc
     install_peco
@@ -2806,7 +2804,7 @@ prepare_build_container() {  # TODO container build env not used atm
 # -C      - pull from codeberg forge
 #
 # $1 - git user/repo
-# $2 - asset regex to be used (for jq's test()) to parse correct item from git /releases page. note jq requires most likely double-backslashes!
+# $2 - asset regex to be used (for jq's test()) to parse correct item from GH /releases page. note jq requires most likely double-backslashes!
 # $3 - what to rename resulting file as; optional, but recommended
 #
 # see also:
@@ -2883,7 +2881,7 @@ _fetch_release_common() {
     name="$4"  # optional, but recommended
 
     [[ "$name" == */* ]] && { err "name arg can't be a path, but was [$name]"; return 1; }
-    [[ -z "$skipadd" ]] && is_installed "$ver" "$id" && return 2
+    [[ -z "$skipadd" ]] && is_installed "$ver" "$id" && return 2  # bail fast if already installed
     tmpdir="$(mkt "release-from-${id}")" || return 1
 
     report "fetching [$dl_url]..."
@@ -2999,7 +2997,7 @@ resolve_dl_urls() {
 #
 # $1 - name of the binary/resource; also used in installed ver tracking.
 # $2 - url to extract the asset url from;
-# $3 - build/file regex to be used (for grep -Po) to parse correct item from git /releases page src;
+# $3 - build/file regex to be used (for grep -Po) to parse correct item from GH /releases page src;
 #      note it matches 'til the very end of url (ie you should only provide the latter bit);
 #
 # see also: install_from_url() - note effectively ...from_url() differs that it's not doing url parsing from the page, but it's fed the actual asset url as a param
@@ -3052,7 +3050,7 @@ install_from_any() {
 #   -S       see extract_tarball()
 #
 # $1 - git user/repo
-# $2 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
+# $2 - build/file regex to be used (for grep -P) to parse correct item from GH /releases page src.
 #
 # @returns {string} path to root dir of extraction result, IF we found a
 #                   _single_ dir in the result.
@@ -3061,7 +3059,6 @@ fetch_extract_tarball_from_git() {
     local opts opt OPTIND
 
     opts=(-D)
-
     while getopts 'TZCS' opt; do
         case "$opt" in
             T|Z|C|S) opts+=("-$opt") ;;
@@ -3194,7 +3191,7 @@ install_bin_from_git() {
 # -N name            - what to name pulled file/dir to, optional, but recommended
 # -n, -f, -v, -T, -Z, -C, -D - see fetch_release_from_git()
 # $1 - git user/repo
-# $2 - build/file regex to be used (for grep -P) to parse correct item from git /releases page src.
+# $2 - build/file regex to be used (for grep -P) to parse correct item from GH /releases page src.
 install_from_git() {
     local opt f name OPTIND fetch_git_args install_file_args
 
@@ -3222,14 +3219,16 @@ install_from_git() {
 
 # terminal-based presentation/slideshow tool
 #
-# alternative: https://github.com/visit1985/mdp
-# another, more rich alternative: https://github.com/slidevjs/slidev
+# alternatives:
+# - https://github.com/visit1985/mdp
+# - https://github.com/slidevjs/slidev
+#   - note this is a more rich alternative
 install_slides() {  # https://github.com/maaslalani/slides
     install_bin_from_git -N slides maaslalani/slides '_linux_amd64.tar.gz'
 }
 
 
-install_cursor() {  # https://github.com/ferdium/ferdium-app
+install_cursor() {
     install_from_any  cursor-ide 'https://cursor.com/download' '/linux-x64/cursor/[0-9.]+'
 }
 
@@ -4413,15 +4412,15 @@ install_open_interpreter() {
 # - https://github.com/TheR1D/shell_gpt
 # - https://github.com/reugn/gemini-cli
 install_aichat() {  # https://github.com/sigoden/aichat
-    local shell="$BASE_PROGS_DIR/aichat-shell-scripts/"  # trailing slash is important; note this path is also referenced in bash/zsh rc!
+    local shell="$BASE_PROGS_DIR/aichat-shell-scripts"  # note this path is also referenced in bash/zsh rc!
 
     install_bin_from_git -N aichat sigoden/aichat 'x86_64-unknown-linux-musl.tar.gz'
 
     # install shell completions:
-    clone_repo_subdir  sigoden aichat "scripts" "$shell"
-    #exe "sudo cp -- '${shell}completions/aichat.zsh' $ZSH_COMPLETIONS/_aichat"
-    create_link -s "${shell}completions/aichat.zsh" "$ZSH_COMPLETIONS/_aichat"
-    create_link "${shell}completions/aichat.bash" "$BASH_COMPLETIONS/aichat"
+    clone_repo_subdir  sigoden aichat "scripts" "$shell/"  # trailing slash is important
+    #exe "sudo cp -- '$shell/completions/aichat.zsh' $ZSH_COMPLETIONS/_aichat"
+    create_link -s "$shell/completions/aichat.zsh" "$ZSH_COMPLETIONS/_aichat"
+    create_link "$shell/completions/aichat.bash" "$BASH_COMPLETIONS/aichat"
 
     # alternatively, if we didn't need also the integration components, we
     # could directly install the completion files:
@@ -4669,9 +4668,11 @@ install_uv() {  # https://docs.astral.sh/uv/getting-started/installation/#github
     install_file "$dir/uv" || return 1
     install_file "$dir/uvx" || return 1
 
-    # shell completion:  # https://docs.astral.sh/uv/getting-started/installation/#shell-autocompletion
-    #echo 'eval "$(uv generate-shell-completion bash)"' >> ~/.bashrc
-    #echo 'eval "$(uvx --generate-shell-completion bash)"' >> ~/.bashrc
+    # shell completions:  # https://docs.astral.sh/uv/getting-started/installation/#shell-autocompletion
+    exe "uv generate-shell-completion bash | tee $BASH_COMPLETIONS/uv > /dev/null"
+    exe "uvx --generate-shell-completion bash | tee $BASH_COMPLETIONS/uvx > /dev/null"
+    exe "uv generate-shell-completion zsh | sudo tee $ZSH_COMPLETIONS/_uv > /dev/null"
+    exe "uvx --generate-shell-completion zsh | sudo tee $ZSH_COMPLETIONS/_uvx > /dev/null"
 }
 
 
@@ -5571,15 +5572,13 @@ install_i3_deps() {
     #py_install i3ipc      # https://github.com/altdesktop/i3ipc-python
 
     # rofi-tmux (aka rft):
-    #py_install rofi-tmux-ng  # TODO: unreleased as of Nov '24 due to drone.ci's plugins/pypi image using outdated twine
-    py_install -g laur89/rofi-tmux-ng  # https://github.com/laur89/rofi-tmux-ng
+    py_install rofi-tmux-ng
 
     # install i3expo:
     py_install i3expo
 
     # install our i3 tools:
-    #py_install i3-tools  # TODO: unreleased as of Jun '25 due to drone.ci's plugins/pypi image using outdated twine
-    py_install -g laur89/i3-tools  # https://github.com/laur89/i3-tools
+    py_install -g haridusministeerium/i3-tools  # https://github.com/haridusministeerium/i3-tools
 
     # i3ass  # https://github.com/budlabs/i3ass/
     #clone_or_pull_repo budlabs i3ass "$BASE_PROGS_DIR"
@@ -6189,6 +6188,8 @@ install_from_repo() {
     declare -ar block1_nonwin=(
         # firmware-linux  # bunch of firmware, free & non-free
         smartmontools
+        nvme-cli  # https://github.com/linux-nvme/nvme-cli
+                  # example commands: `sudo nvme smart-log /dev/nvme0n1`, `sudo nvme error-log /dev/nvme0n1`
         gsmartcontrol  # graphical user interface for smartctl; see also: qdiskinfo, https://github.com/AnalogJ/scrutiny
         ntfs-3g  # TODO: note ntfs3 is in kernel nowadays, unsure if and when we want to remove ntfs-3g pkg - they're not the same
         kdeconnect
@@ -6199,6 +6200,7 @@ install_from_repo() {
         #psensor  # GTK+ application for monitoring hardware sensors; unsure, but maybe x11?
         #xsensors  # xsensors reads data from the libsensors library regarding hardware health such as temperature, voltage and fan speed and displays the information in a digital read-out; https://github.com/Mystro256/xsensors
         hardinfo2  # !! good GUI !!; offers System Information and Benchmark for Linux Systems. https://github.com/hardinfo2/hardinfo2
+        mesa-utils  # hardinfo2 suggested pkg
         inxi  # full featured system information script (cli)
         lshw  # list hardware; https://github.com/lyonel/lshw
         macchanger  # utility for manipulating the MAC address of network interfaces; https://github.com/alobbs/macchanger
@@ -6207,6 +6209,7 @@ install_from_repo() {
         fail2ban
         #udisks2  # D-Bus service to access and manipulate storage devices; https://www.freedesktop.org/wiki/Software/udisks/ ; commented out as it's already a dependency of udiskie we use
         udiskie  # a udisks2 front-end that allows to manage removable media ; https://github.com/coldfix/udiskie
+        gir1.2-notify-0.7  # provides notifications for udiskie; currently it's a recommended pkg, not a dependency (https://github.com/coldfix/udiskie/issues/345)
         fwupd  # daemon to allow session software to update device firmware. https://github.com/fwupd/fwupd
         apparmor-utils  # provides tools such as aa-genprof, aa-enforce, aa-complain and aa-disable
         #apparmor-profiles  # experimental aa profiles
@@ -6342,7 +6345,7 @@ install_from_repo() {
         pv  # pv (Pipe Viewer) can be inserted into any normal pipeline between two processes to give a visual indication of how quickly data
             # is passing through, how long it has taken, how near to completion it is, and an estimate of how long it will be until completion
             # https://www.ivarch.com/programs/pv.shtml
-        # for html parser, see pup: https://github.com/gromgit/pup
+        #pup  # jq for html parsing; see: https://github.com/gromgit/pup
         crudini  # .ini file manipulation tool
         #lxtask  # GUI task manager for the LXDE
         htop  # https://htop.dev/
@@ -6389,7 +6392,7 @@ install_from_repo() {
                            # NOTE: used to use policykit-1-gnome, but it got removed/dropped from debian, as it's no longer maintained.
                            #
                            # - forum thread https://forums.bunsenlabs.org/viewtopic.php?id=8595&p=2 discusses it:
-                           #     - consensus as of May seems to be: lxpolkit, or mate-polit (as latter is gtk3)
+                           #     - consensus as of May '25 seems to be: lxpolkit, or mate-polit (as latter is gtk3)
                            #         - also said "if xfce-polkit makes it to Trixie in time, might be worth considering."
                            #     - replace w/ lxqt-policykit or lxpolkit or polkit-kde-agent-1 or mate-polkit or ukui-polkit (last seems unmaintained as well)
                            #         - there's also xfce-polkit, but gh repo seen last update 3y ago
@@ -6487,7 +6490,8 @@ install_from_repo() {
     declare -ar block3=(
         firefox/unstable  # TODO: avail as flatpak (does native messaging work tho?); also can pull binaries from mozilla. see https://wiki.debian.org/Firefox#From_Mozilla_binaries
                           # note for flatpak native messaging, see https://github.com/flatpak/xdg-desktop-portal/issues/655#issuecomment-4048570056 and a solution/hack it links to: https://github.com/keepassxreboot/keepassxc/issues/7352#issuecomment-2409096972
-        profile-sync-daemon  # pseudo-daemon designed to manage your browsers profile in tmpfs and periodically sync it back to disk
+        profile-sync-daemon  # pseudo-daemon designed to manage your browsers profile in tmpfs and periodically sync it back to disk.
+                             # to detect config updates/changes, do  $ vimdiff /usr/share/psd/psd.conf $XDG_CONFIG_HOME/psd/psd.conf
         buku  # CLI bookmark manager; https://github.com/jarun/Buku
         chromium
         chromium-sandbox  # TODO: document what's this about
@@ -6506,6 +6510,7 @@ install_from_repo() {
         nsxiv  # TODO: x11; # TODO: consider [imv] that supports both wayland & x11
         geeqie  # GTK-based image/gallery viewer; avail as flatpak; https://www.geeqie.org/
         gthumb  # gnome image viewer; avail as flatpak; alternatives: https://flathub.org/en/apps/org.kde.koko,
+        libglib2.0-bin  # gives us `gsettings` command, among others
         imagemagick
         inkscape  # vector-based drawing program; can also erease text from pdf;  # TODO: avail as flatpak; alternatives:
                                                                                         # graphite (for raster AND vector)
@@ -6605,6 +6610,7 @@ install_from_repo() {
         geoclue-2.0  # D-Bus geoinformation service. The goal of the Geoclue project is to make creating location-aware applications as simple as possible; https://gitlab.freedesktop.org/geoclue/geoclue/
         podman
         podman-docker  # installs a Docker-compatible CLI interface
+        docker-compose
         uidmap  # needed to run podman containers as non-root; note it's also a recommended pkg for podman; see https://forum.openmediavault.org/index.php?thread/42841-podman-seams-to-miss-uidmap/
         passt   # needed for non-root podman container networking; note it's also a recommended pkg for podman;
         #buildah  # OCI image build tool; kind of alternative to dockerfiles, see https://github.com/containers/buildah#example
@@ -7178,9 +7184,9 @@ choose_step() {
        select_items -s -h 'what do you want to do' single-task update fast-update full-install
        case "$__SELECTED_ITEMS" in
           'single-task'  ) MODE=0 ;;
+          'full-install' ) MODE=1 ;;
           'update'       ) MODE=2 ;;
           'fast-update'  ) MODE=3 ;;
-          'full-install' ) MODE=1 ;;
           ''             ) exit 0 ;;
           *) fail "unsupported choice [$__SELECTED_ITEMS]" ;;
        esac
@@ -7189,8 +7195,9 @@ choose_step() {
     if [[ "$BOOTSTRAP_LAUNCHER_TAG" != Y ]] && [[ "$MODE" -eq 1 || "$LOGGING_LVL" -ge 20 ]] && cmd_avail script; then
         report "restarting logic via [script] to capture terminal output; sudo passwd will be asked again..."
         sleep 2
-        script --flush --quiet --return --log-out "$SCRIPT_LOG" --command "BOOTSTRAP_LAUNCHER_TAG=Y MODE=$MODE $0 ${ORIG_OPTS[*]}"
-        ERR=$?
+        script --flush --quiet --return --log-out "$SCRIPT_LOG" \
+            --command "BOOTSTRAP_LAUNCHER_TAG=Y MODE=$MODE $0 ${ORIG_OPTS[*]}"
+        local e=$?
 
         # ways to clean up $script output:
         # $ ansi2html <"$SCRIPT_LOG" > out.html
@@ -7204,7 +7211,7 @@ choose_step() {
                 echo -e "    terminal log can be found at [$SCRIPT_LOG]"
             fi
         fi
-        exit $ERR
+        exit $e
     fi
 
     trap 'cleanup; exit' EXIT HUP INT QUIT PIPE TERM;
@@ -8163,9 +8170,11 @@ install_setup_printing_cups() {
 }
 
 
-# similar to profile-sync-daemon, but generic
+# similar to profile-sync-daemon, but for any directories
 # https://github.com/graysky2/anything-sync-daemon
 # https://github.com/graysky2/anything-sync-daemon/blob/master/INSTALL
+#
+# to see config & service status, run `asd parse`
 install_anything_sync() {
     local conf repo ver tmpdir
 
@@ -8187,13 +8196,19 @@ install_anything_sync() {
     is_f -n "$conf" || return 1
     if ! sudo grep -q "^WHATTOSYNC.*firefox" "$conf"; then
         exe "sudo sed -i --follow-symlinks '/^WHATTOSYNC=/d' '$conf'" || return 1
-        exe "echo 'WHATTOSYNC=(/home/$USER/.cache/mozilla/firefox)' | sudo tee --append $conf > /dev/null"
+        exe "echo 'WHATTOSYNC=(/home/$USER/.cache/mozilla/firefox)' | sudo tee --append '$conf' > /dev/null"
         #exe "sudo sed -i --follow-symlinks 's|^WHATTOSYNC=.*|WHATTOSYNC=(/home/$USER/.cache/mozilla/firefox)|g' $conf"
     fi
     if ! sudo grep -q "^USE_BACKUPS=no" "$conf"; then
         exe "sudo sed -i --follow-symlinks '/^USE_BACKUPS=/d' '$conf'" || return 1
-        exe "echo 'USE_BACKUPS=no' | sudo tee --append $conf > /dev/null"
+        exe "echo 'USE_BACKUPS=no' | sudo tee --append '$conf' > /dev/null"
     fi
+    if ! sudo grep -q "^USE_OVERLAYFS=yes" "$conf"; then
+        exe "sudo sed -i --follow-symlinks '/^USE_OVERLAYFS=/d' '$conf'" || return 1
+        exe "echo 'USE_OVERLAYFS=yes' | sudo tee --append '$conf' > /dev/null"
+    fi
+
+    exe "sudo systemctl enable asd.service"
 }
 
 
@@ -8249,15 +8264,16 @@ setup_firefox() {
 
 # locate / plocate conf
 # note plocate has its db in /var/lib/plocate
+# db indexing is managed by systemd, see $ systemctl status plocate-updatedb.timer
 configure_updatedb() {
     local conf paths line i modified
 
-    conf='/etc/updatedb.conf'
+    readonly conf='/etc/updatedb.conf'
     paths=(/mnt /run/media /media /var/cache /data/seafile-data "$HOME/.cache")  # paths to be added to PRUNEPATHS definition
 
-    is_btrfs && paths+=("$HOME/.snapshots" /.snapshots)  # */.snapshots are snapper/btrfs location
+    is_btrfs && paths+=(/home/.snapshots /.snapshots)  # */.snapshots are snapper/btrfs locations
     is_f -n "$conf" || return 1
-    line="$(grep -Po '^PRUNEPATHS="\K.*(?="$)' "$conf")"  # extract the value between quotes
+    line="$(grep -Po '^PRUNEPATHS="\K.*(?="$)' "$conf")" || { err "$?: couldn't find PRUNEPATHS in [$conf]"; return 1; }  # extract the value between quotes
 
     for i in "${paths[@]}"; do
         [[ "$line" =~ ([[:space:]]|^)"$i"([[:space:]]|$) ]] && continue  # path already included
@@ -8267,7 +8283,7 @@ configure_updatedb() {
 
     if [[ -n "$modified" ]]; then
         [[ -s "$conf" ]] && exe "sudo sed -i --follow-symlinks '/^PRUNEPATHS=.*$/d' '$conf'"  # nuke previous setting
-        exe "echo 'PRUNEPATHS=\"$line\"' | sudo tee --append $conf > /dev/null"
+        exe "echo 'PRUNEPATHS=\"$line\"' | sudo tee --append '$conf' > /dev/null"
     fi
 }
 
@@ -8317,7 +8333,7 @@ add_user() {
 
     user="$1"
 
-    if ! id -- "$user" 2>/dev/null; then
+    if ! id -- "$user" >/dev/null 2>&1; then
         # note useradd exits w/ 9 just like groupadd if target already exists
         exe "sudo useradd --no-create-home ${opts[*]} --shell /bin/false --user-group $user" || return $?
     fi
@@ -8455,7 +8471,6 @@ is_installed() {
         report "[${COLORS[GREEN]}$ver${COLORS[OFF]}] already processed, skipping ${id:+${COLORS[YELLOW]}${id}${COLORS[OFF]} }installation..." -1
         return 0
     fi
-
     return 1
 }
 
@@ -8645,9 +8660,8 @@ is_ssh_key_loaded() {
 check_connection() {
     local timeout ip
 
-    readonly timeout=3  # in seconds
-    readonly ip='http://www.google.com'
-
+    timeout=3  # in seconds
+    ip='http://www.google.com'
     wget --no-check-certificate -q --user-agent="$USER_AGENT" --spider \
         --timeout=$timeout -- "$ip" > /dev/null 2>&1  # works in networks where ping is not allowed
 }
@@ -9063,8 +9077,7 @@ is_wayland() {
 #
 # @returns {bool}  true, if provided url was a valid url.
 is_valid_url() {
-    local regex
-    readonly regex='^(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
+    local regex='^(https?|ftp|file)://[-A-Za-z0-9\+&@#/%?=~_|!:,.;]*[-A-Za-z0-9\+&@#/%=~_|]'
     [[ "$1" =~ $regex ]]
 }
 
@@ -9076,9 +9089,7 @@ is_valid_url() {
 #
 # @returns {bool}  true, if provided IP was a valid ipv4.
 is_valid_ip() {
-    local ip
-
-    ip="$1"
+    local ip="$1"
 
     if [[ "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
         readarray -t -d '.' ip <<< "$ip"
@@ -9338,25 +9349,12 @@ create_symlinks() {
 # Tests whether given directory is empty.
 #
 # @param {string}  dir   directory whose emptiness to test.
-# pass '-s' as first arg to execute as sudo
-# TODO: default to _always_ checking dir contents as root?
 #
 # @returns {bool}  true, if directory IS empty.
 is_dir_empty() {
-    local opt OPTIND sudo dir
-
-    while getopts 's' opt; do
-        case "$opt" in
-            s) sudo=sudo ;;
-            *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
-        esac
-    done
-    shift "$((OPTIND-1))"
-
-    readonly dir="$1"
-
-    $sudo test -d "$dir" || { err "[$dir] is not a valid dir" -1; return 2; }
-    $sudo find "$dir" -mindepth 1 -maxdepth 1 -print -quit | grep -q . && return 1 || return 0
+    local dir="$1"
+    sudo test -d "$dir" || { err "[$dir] is not a valid dir" -1; return 2; }
+    sudo find "$dir" -mindepth 1 -maxdepth 1 -print -quit | grep -q . && return 1 || return 0
 }
 
 
@@ -9395,12 +9393,8 @@ is_interactive() {
 #
 # @returns {bool}    true, if provided function name is a valid function.
 is_function() {
-    local fun _type
-
-    readonly fun="$1"
-
-    _type="$(type -t -- "$fun" 2> /dev/null)"
-    [[ "$?" -eq 0 && "$_type" == function ]]
+    #typeset -f "$1" > /dev/null  # should work both in zsh & bash
+    [[ "$(type -t -- "$*" 2>/dev/null)" == function ]]
 }
 
 
@@ -9411,11 +9405,12 @@ funname() {
 
 
 is_f() {
-    local opt nonempty msg quiet OPTIND f e m
+    local opt nonempty executable msg quiet OPTIND f e m
 
-    while getopts 'nqm:' opt; do
+    while getopts 'nxqm:' opt; do
         case "$opt" in
             n) nonempty=TRUE ;;
+            x) executable=TRUE ;;
             q) quiet=TRUE ;;
             m) msg="$OPTARG" ;;  # additional message to print on failure
             *) fail "unexpected opt [$opt] passed to ${FUNCNAME}()" ;;
@@ -9432,6 +9427,9 @@ is_f() {
             e=1
         elif [[ -n "$nonempty" ]] && ! sudo test -s "$f"; then
             [[ -z "$quiet" ]] && err "[$f] is an empty file${msg:+; $msg}" -1
+            e=1
+        elif [[ -n "$executable" ]] && ! sudo test -x "$f"; then
+            [[ -z "$quiet" ]] && err "[$f] is a nonexecutable file${msg:+; $msg}" -1
             e=1
         fi
     done
@@ -9459,7 +9457,7 @@ is_d() {
                 err "[$d] not a dir${m}${msg:+; $msg}" -1
             fi
             e=1
-        elif [[ -n "$nonempty" ]] && is_dir_empty -s "$d"; then
+        elif [[ -n "$nonempty" ]] && is_dir_empty "$d"; then
             [[ -z "$quiet" ]] && err "[$d] is an empty dir${msg:+; $msg}" -1
             e=1
         fi
@@ -9509,6 +9507,8 @@ file_type() {
         echo file
     elif [[ -d "$*" ]]; then
         echo dir
+    elif ! [[ -e "$*" ]]; then
+        echo 'does not exist'
     elif [[ -p "$*" ]]; then
         echo 'named pipe'
     elif [[ -c "$*" ]]; then
@@ -9517,10 +9517,8 @@ file_type() {
         echo 'block special'
     elif [[ -S "$*" ]]; then
         echo socket
-    elif ! [[ -e "$*" ]]; then
-        echo 'does not exist'
     else
-        err "unknown filetype for [$*]?!"
+        err "unknown filetype for [$*]"
         echo UNKNOWN
     fi
 }
@@ -9537,8 +9535,8 @@ mkt() {
         template="${template##*/}"
     fi
 
-    if ! tmpdir="$(mktemp -d -p "$parent" -- "${template}.XXXXX")"; then
-        err "unable to create tempdir with [\$mktemp -d -p '$parent' -- ${template}.XXXXX]" -1
+    if ! tmpdir="$(mktemp -d -p "$parent" -- "${template}.XXXXX" 2>/dev/null)"; then
+        err "unable to create tempdir with [mktemp -d -p '$parent' -- ${template}.XXXXX]" -1
         return 1
     fi
     printf '%s' "$tmpdir"
@@ -9550,7 +9548,6 @@ rgxesc() {
 }
 
 
-
 # Verifies given string is non-empty, non-whitespace-only and on a single line.
 #
 # @param {string}  s  string to validate.
@@ -9560,18 +9557,22 @@ is_single() {
     local s
 
     s="$(tr -d '[:blank:]' <<< "$*")"  # make sure not to strip newlines!
-    [[ -n "$s" && "$(wc -l <<< "$s")" -eq 1 ]]
+    #[[ -n "$s" && "$(wc -l <<< "$s")" -eq 1 ]]
+    [[ -n "$s" && "$s" != *$'\n'* ]]
 }
 
+# shellcheck disable=SC2329
 pushd() {
     command pushd "$@" > /dev/null
 }
 
+# shellcheck disable=SC2329
 popd() {
     command popd > /dev/null
 }
 
 
+# shellcheck disable=SC2329
 cleanup() {
     [[ "$__CLEANUP_EXECUTED_MARKER" == 1 || -z "$MODE" ]] && return  # don't invoke more than once.
 
@@ -9631,8 +9632,6 @@ done
 shift "$((OPTIND-1))"
 
 readonly PROFILE="$1"   # work | personal
-
-[[ "$EUID" -eq 0 ]] && fail "don't run as root"
 
 validate_and_init
 exe "cd -- '$TMP_DIR'" || fail
