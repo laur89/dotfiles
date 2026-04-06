@@ -1,5 +1,10 @@
-/.snapshots/
-/home/.snapshots/
+# note absolute paths don't work atm per https://github.com/sharkdp/fd/discussions/1949 :
+#/.snapshots/
+#/home/.snapshots/
+*/.snapshots/*
+*/home/.snapshots/*
+
+*/data/nocow/*
 /proc/
 /sys
 **/.git/*
