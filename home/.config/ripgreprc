@@ -47,4 +47,4 @@
 # !! note this also limits search to a given btrfs subvol !!
 #--one-file-system
 
---glob=!{/.snapshots,/home/.snapshots,/proc,/sys,**/.git/*}
+--glob=!{/data/nocow,/.snapshots,/home/.snapshots,/proc,/sys,**/.git/*}
