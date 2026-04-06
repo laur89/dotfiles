@@ -6,3 +6,21 @@ keycode 34 = bracketleft  braceleft  udiaeresis Udiaeresis
 keycode 35 = bracketright braceright otilde     Otilde
 keycode 47 = semicolon    colon      odiaeresis Odiaeresis
 keycode 48 = apostrophe   quotedbl   adiaeresis Adiaeresis
+
+! note if our assigned Mode_switch is also mapped by say kanata, then it'll
+! mask the events from xmodmap (see https://github.com/jtroo/kanata/discussions/1992)
+!
+! one solution to work around it per above discussion, we make kanata emit unused
+! keycodes (as per `xmodmap -pke`) instead, that are _also_ mapped by xmodmap:
+!keycode 248 = odiaeresis Odiaeresis
+! another solution is to change kanata logic, which we're currently using.
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! unsure why, but this doesn't toggle player play status:
+!keycode 30 = u U XF86AudioPlay
+
+!keycode 43 = h H Left
+!keycode 44 = j J Down
+!keycode 45 = k K Up
+!keycode 46 = l L Right
+
