@@ -72,11 +72,12 @@ grep -Eq -m 1 "\s+/\s+btrfs\s+.*=${DEFAULT_ROOT_SUBVOL}\s+" /target/etc/fstab ||
 # chattr is not avail right after partitioning, hence why these options need to be set later
 if [ "$APPLY_OPTS" == 1 ]; then
     for mapping in "$@"; do
-        mountpoint="$(echo "$mapping" | cut -d: -f2)"
         opts="$(echo "$mapping" | cut -d: -f3)"
-
         [ -z "$opts" ] && continue
+
+        mountpoint="$(echo "$mapping" | cut -d: -f2)"
         [ -e "/target/$mountpoint" ] || exit 1  # sanity
+
         if echo "$opts" | grep -q 'NOCOW'; then
             # TODO: or should we set it on /mnt/$subvol? if so, we'd have to mount it first under /mnt again;
             # TODO 2: chattr not avail right after partitioning!
