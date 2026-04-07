@@ -1,41 +1,66 @@
 #|
     Kanata
+    - https://github.com/jtroo/kanata/blob/main/docs/config.adoc (full guide)
+    - https://github.com/jtroo/kanata/blob/main/cfg_samples/simple.kbd (simplified example)
+    - https://github.com/jtroo/kanata/blob/main/cfg_samples/kanata.kbd (all features)
     good examples of configs:
       - https://github.com/argenkiwi/kenkyo/blob/main/kanata/kanata.kbd
+        - note his thoughts on using spc as home-row mod: https://github.com/argenkiwi/kenkyo/discussions/11
+        - their thoughts in blog: https://argenkiwi.medium.com/keyboard-layer-pinning-20aafede96e5
       - https://github.com/mhantsch/maxtend/tree/main/kanata
-      - https://github.com/jtroo/kanata/blob/main/cfg_samples/kanata.kbd (official)
 
 keydefs in here: https://github.com/jtroo/kanata/blob/main/parser/src/keys/mod.rs
+
+issues/troubleshooting:
+- duplicate keys: https://github.com/jtroo/kanata/discussions/422
  ######################################################################
 |#
 
 
 (defcfg
+  ;; set this to 'no' if you only use the keys defined in defsrc:
   process-unmapped-keys no
   concurrent-tap-hold yes
   ;;log-layer-changes yes
 )
 
 (defsrc
-       q w e r t y u i o p
-  caps a s d f g h j k l ;
-       z x c v b n m , . /
-              spc
+   tab q w e r t y u i o p [ ]
+  caps a s d f g h j k l ; '
+lshift z x c v b n m , . / rshift
+              spc ralt
 )
 
 (defvar
   streak-count 3
   streak-time 325
   tap-timeout 200
-  hold-timeout 500
+  hold-timeout 300
   chord-timeout 50
 )
 
-(deftemplate charmod (char mod)
-  ;; reason for this switch block & key-timing is @ https://github.com/jtroo/kanata/discussions/1455
+(deftemplate flowtap (flow tap)
   (switch
-    ((key-timing $streak-count less-than $streak-time)) $char break
-    () (tap-hold-release-timeout $tap-timeout $hold-timeout $char $mod $char) break
+    ((key-timing $streak-count less-than $streak-time)) $flow break
+    () $tap break
+  )
+)
+
+;; charmod takes a character and a modifier. The modifier requires another key,
+;; the key to be modified, to be pressed within the timeout. If the timeout elapses
+;; and no other key is pressed, the char, not the mod, is what will come out
+;;(deftemplate charmod (char mod)
+;;  ;; reason for this switch block & key-timing is @ https://github.com/jtroo/kanata/discussions/1455
+;;  (switch
+;;    ((key-timing $streak-count less-than $streak-time)) $char break
+;;    () (tap-hold-release-timeout $tap-timeout $hold-timeout $char $mod $char) break
+;;  )
+;;)
+
+(deftemplate charmod (char mod)
+  (t! flowtap
+    $char
+    (tap-hold-release-timeout $tap-timeout $hold-timeout $char $mod $char reset-timeout-on-press)
   )
 )
 
@@ -45,11 +70,40 @@ keydefs in here: https://github.com/jtroo/kanata/blob/main/parser/src/keys/mod.r
   clear (multi (layer-switch main) (on-press release-virtualkey shift))
 )
 
+;;(defalias
+;;  ;; tap for caps lock, hold for left control:
+;;  cap (tap-hold 200 200 caps lctl)
+;;
+;;  ;;tab (tap-hold $tt $ht tab (layer-while-held extend))
+;;)
 (defalias
   ;; tap for caps lock, hold for left control:
-  cap (tap-hold 200 200 caps lctl)
+  ;;cap (tap-hold 50 60 caps lctl)
+  ;;cap (tap-hold-press 150 150 esc lctl)
+  cap (tap-hold-release 150 150 esc lctl)
 
-  ;;tab (tap-hold $tt $ht tab (layer-while-held extend))
+  ;; note the first nav alias swallows ralt for combos _not_ defined in kanata,
+  ;; which blocks e.g. xmodmap mappings, see https://github.com/jtroo/kanata/discussions/1992
+  ;; to work around it, we could either emit unused keycodes from kanata (see the
+  ;; @ab1 alias), or change nav alias, which we're currently doing:
+  ;;nav  (tap-hold-press 200 200 ralt (layer-toggle nav))
+  nav (multi ralt (tap-hold-press 200 200 _ (layer-toggle nav)))
+  ;; alternatively we could also re-emit `RA-;` from kanata, i.e. set @ab1 to RA-;
+
+  Ae (unicode Ä)
+  Ue (unicode Ü)
+  Oe (unicode Ö)
+  OOe (unicode Õ)
+  ae (unicode ä)
+  ue (unicode ü)
+  oe (unicode ö)
+  ooe (unicode õ)
+  _ae (fork @ae @Ae (lsft rsft))
+  _ue (fork @ue @Ue (lsft rsft))
+  _oe (fork @oe @Oe (lsft rsft))
+  _ooe (fork @ooe @OOe (lsft rsft))
+  ;; send arbitrary keycode that's unused per `xmodmap -pke`:
+  ab1 (arbitrary-code 240)
 )
 
 ;; note we can use deflayermap instead of deflayers:
@@ -59,12 +113,26 @@ keydefs in here: https://github.com/jtroo/kanata/blob/main/parser/src/keys/mod.r
 
 (deflayermap (main)
   caps @cap
-  spc (t! charmod spc (multi (layer-switch extend) (on-release tap-virtualkey clear)))
+  ;;spc (t! charmod spc (multi (layer-switch extend) (on-release tap-virtualkey clear)))
+  ralt @nav
+)
+
+(deflayermap (nav)
+  u MediaPlayPause
+  j down
+  k up
+  h lft
+  l rght
+  ;;; @_oe
+  ;;; @ab1
+  ;;' @_ae
+  ;;[ @_ue
+  ;;] @_ooe
 )
 
 (deflayermap (extend)
   ;;e (layer-switch fumbol)
-  r (on-press press-virtualkey shift)  ;; switchess to shift layer
+  r (on-press press-virtualkey shift)  ;; switchess to shift layer; makes sense only w/ keebs w/o dedicated shift keys
   y ins
   u home
   ;;i up
@@ -91,3 +159,4 @@ keydefs in here: https://github.com/jtroo/kanata/blob/main/parser/src/keys/mod.r
   . del
   / ret
 )
+
