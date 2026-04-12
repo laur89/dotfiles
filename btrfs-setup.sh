@@ -43,6 +43,7 @@ if [ $# -eq 0 ]; then
     # default subvolume-to-mountpoint mappings to create:
     # - note /var/log/journal is automatically set NOCOW, so no need to do it ourselves
     # - note /var/lib/machines is where systemd-nspawn containers are stored
+    # - note /.snapshots & /home/.snapshots are also blacklisted in system_isntall bootstrap's configure_updatedb(), so keep values in-sync
     set -- 'snapshots/@root:.snapshots' \
            '@home:home' \
            'snapshots/@home:home/.snapshots' \
@@ -69,7 +70,7 @@ fi
 # note upstream scripts do it differently, see script under /usr/lib/partman/finish.d/70aptinstall_btrfs
 grep -Eq -m 1 "\s+/\s+btrfs\s+.*=${DEFAULT_ROOT_SUBVOL}\s+" /target/etc/fstab || exit 0
 
-# chattr is not avail right after partitioning, hence why these options need to be set later
+# chattr is not avail right after partitioning, hence why these options need to be set by later invocation
 if [ "$APPLY_OPTS" == 1 ]; then
     for mapping in "$@"; do
         opts="$(echo "$mapping" | cut -d: -f3)"
@@ -79,9 +80,8 @@ if [ "$APPLY_OPTS" == 1 ]; then
         [ -e "/target/$mountpoint" ] || exit 1  # sanity
 
         if echo "$opts" | grep -q 'NOCOW'; then
-            # TODO: or should we set it on /mnt/$subvol? if so, we'd have to mount it first under /mnt again;
-            # TODO 2: chattr not avail right after partitioning!
-            in-target chattr +C -- "/$mountpoint" || exit 1  # confirm values via  $ lsattr  (e.g. lsattr -d /dir/path)
+            # note chattr not avail right after partitioning!
+            in-target chattr +C -- "/$mountpoint" || exit 1  # confirm values via  $ lsattr  (e.g. `lsattr -d /dir/path`)
         fi
 
         if echo "$opts" | grep -q 'USROWN'; then
