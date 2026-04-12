@@ -53,6 +53,7 @@ command -v rg >/dev/null || alias rg='report "rg not avail, using ffstr()..."; f
 export VIMINIT="source $_TMUX_RC/vimrc"
 export INPUTRC="$_TMUX_RC/inputrc"
 export ZDOTDIR="$_TMUX_RC"
+[[ -s "$_TMUX_RC/ripgreprc" ]] && export RIPGREP_CONFIG_PATH="$_TMUX_RC/ripgreprc"
 
 if ! command -v tree >/dev/null; then
     function tree() {
