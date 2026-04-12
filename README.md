@@ -326,6 +326,8 @@ For GUI dconf editor install `dconf-editor` pkg.
   - Tab Session Manager -> `Export settings`
   - Form hisotry control -> Save/Restore -> `Save options`
 - just in case dump dconf db: `dconf dump / > dump-file`
+- review & commit homeshick changes
+- review & commit chezmoi changes
 
 ## TODO
 
