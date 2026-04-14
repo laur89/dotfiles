@@ -33,7 +33,7 @@ KPXC_DB=''  # will be defined downstream
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via dotfiles mngr;
                                                  # note that contents of that file are somewhat important, as some
                                                  # (script-related) configuration lies within.
-#readonly BASH_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # as per https://github.com/scop/bash-completion#faq  # cannot set before importing SHELL_ENVS!
+#readonly BASH_COMPLETIONS=  # set later in flow
 # TODO: sure we don't want ot use /usr/share/zsh/vendor-completions for zsh?
 readonly ZSH_COMPLETIONS='/usr/local/share/zsh/site-functions'  # as per https://unix.stackexchange.com/a/607810/47501
 readonly APT_KEY_DIR='/usr/local/share/keyrings'  # dir where per-application apt keys will be stored in
@@ -43,7 +43,7 @@ readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
 readonly BUILD_DOCK='deb-build-box'          # name of the build container; TODO: deprecate
 
-readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0'
+readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:149.0) Gecko/20100101 Firefox/149.0'
 #------------------------
 #--- Global Variables ---
 #------------------------
@@ -779,10 +779,10 @@ setup_apparmor() {
     [[ "$(cat /sys/module/apparmor/parameters/enabled)" != Y ]] && err 'apparmor not enabled!'  # sanity
     add_to_group  adm  # adm used for system monitoring tasks; members can read log files etc
 
-    # as per https://wiki.debian.org/AppArmor/HowToUse :
-    # if auditd is installed, then aa-notify desktop should be modified to use auditd log:
+    # per https://wiki.debian.org/AppArmor/HowToUse :
+    # > if auditd is installed, then aa-notify desktop should be modified to use auditd log:
     if is_pkg_installed 'auditd'; then
-        local aa_notif_desktop=/etc/xdg/autostart/aa-notify.desktop
+        local aa_notif_desktop='/etc/xdg/autostart/aa-notify.desktop'
 
         if is_f -nm 'is apparmor-notify pkg installed?' "$aa_notif_desktop"; then
             local cmd='Exec=sudo aa-notify -p -f /var/log/audit/audit.log'
@@ -1501,7 +1501,7 @@ install_deps() {
     # note we're using whjvenyl's fork instead of original clvv, as latter was last updated 2015 (orig: https://github.com/clvv/fasd.git)
     # alternatives:
     #   - https://github.com/ajeetdsouza/zoxide
-    #   - https://github.com/wyne/fasder  - go reimplementation
+    #   - https://github.com/wyne/fasder - reimplementation in go
     #   - https://github.com/andrewferrier/memy
     clone_or_pull_repo "whjvenyl" "fasd" "$BASE_PROGS_DIR"  # https://github.com/whjvenyl/fasd
     create_link "$BASE_PROGS_DIR/fasd/fasd" "$HOME/bin/fasd"
@@ -1509,19 +1509,19 @@ install_deps() {
 
     # maven bash completion:
     clone_or_pull_repo "juven" "maven-bash-completion" "$BASE_PROGS_DIR"  # https://github.com/juven/maven-bash-completion
-    create_link "${BASE_PROGS_DIR}/maven-bash-completion/bash_completion.bash" "$BASH_COMPLETIONS/mvn"
+    create_link "${BASE_PROGS_DIR}/maven-bash-completion/bash_completion.bash" "$BASH_COMPLETIONS/mvn.bash"
 
     # gradle shell completion:  # https://github.com/gradle/gradle-completion/blob/master/README.md#installation-for-zsh-50
     clone_or_pull_repo "gradle" "gradle-completion" "$BASE_PROGS_DIR"
-    create_link "${BASE_PROGS_DIR}/gradle-completion/gradle-completion.bash" "$BASH_COMPLETIONS/gradle"
+    create_link "${BASE_PROGS_DIR}/gradle-completion/gradle-completion.bash" "$BASH_COMPLETIONS/gradle.bash"
     create_link -s "${BASE_PROGS_DIR}/gradle-completion/_gradle" "$ZSH_COMPLETIONS/_gradle"
 
     # leiningen shell completion:  # https://codeberg.org/leiningen/leiningen/src/branch/main
     #
     #clone_or_pull_repo leiningen leiningen "$BASE_PROGS_DIR" codeberg.org
-    #create_link "${BASE_PROGS_DIR}/leiningen/bash_completion.bash" "$BASH_COMPLETIONS/lein"
+    #create_link "${BASE_PROGS_DIR}/leiningen/bash_completion.bash" "$BASH_COMPLETIONS/lein.bash"
     #create_link -s "${BASE_PROGS_DIR}/leiningen/zsh_completion.zsh" "$ZSH_COMPLETIONS/_lein"
-    install_from_url -Ad "$BASH_COMPLETIONS" lein-bash 'https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash'
+    install_from_url -Ad "$BASH_COMPLETIONS" lein.bash 'https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash'
     install_from_url -Ad "$ZSH_COMPLETIONS"  _lein     'https://codeberg.org/leiningen/leiningen/raw/branch/main/zsh_completion.zsh'
 
     # git-fuzzy (yet another git fzf tool)   # https://github.com/bigH/git-fuzzy
@@ -1565,8 +1565,7 @@ install_deps() {
 
     # TODO: following are not deps, are they?:
 
-    # this needs apt-get install  python-imaging ?:
-    py_install scdl          # https://github.com/flyingrub/scdl (soundcloud downloader)
+    py_install scdl          # https://github.com/scdl-org/scdl (soundcloud downloader)
                              # note yt-dl also supports soundcloud
                              # ! as of v3 this script is a wrapper around yt-dlp
     #py_install rtv           # https://github.com/michael-lazar/rtv (reddit reader)  # TODO: active development has ceased; alternatives @ https://gist.github.com/michael-lazar/8c31b9f637c3b9d7fbdcbb0eebcf2b0a
@@ -1672,9 +1671,9 @@ install_deps() {
 
 
     # install npm_modules:
+    # https://github.com/neovim/node-client  # TODO: consider removal
     # https://github.com/FredrikNoren/ungit
-    # https://github.com/dominictarr/JSON.sh
-    # https://github.com/sindresorhus/fast-cli
+    # https://github.com/sindresorhus/fast-cli  # TODO: consider removal
     #
     exe "$NPM_PRFX npm install -g \
         neovim \
@@ -1690,7 +1689,10 @@ setup_dirs() {
     local dir opts
 
     # could also use /usr/share/bash-completion/completions
-    readonly BASH_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # as per https://github.com/scop/bash-completion#faq  # cannot set before importing SHELL_ENVS!
+    # NOTE: this location is used/picked up by the `bash-completion` package, per https://github.com/scop/bash-completion#faq
+    #
+    # native bash completions dir could be found via `pkg-config --variable=completionsdir bash-completion`
+    readonly BASH_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # cannot set before importing SHELL_ENVS!
 
     # create dirs:
     for dir in \
@@ -2135,16 +2137,16 @@ source_shell_conf() {
     local i
 
     # source own functions and env vars:
-    if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != "loaded" ]]; then
+    if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != 'loaded' ]]; then
         for i in \
                 "$SHELL_ENVS" \
                     ; do  # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
-            [[ -r "$i" ]] && source "$i"
+            [[ ! -s "$i" ]] || source "$i"
         done
 
         if [[ -d "$HOME/.bash_env_vars_overrides" ]]; then
             for i in "$HOME/.bash_env_vars_overrides/"*; do
-                [[ -f "$i" ]] && source "$i"
+                [[ ! -s "$i" ]] || source "$i"
             done
         fi
     fi
@@ -2155,7 +2157,7 @@ source_shell_conf() {
 
         if [[ -d "$HOME/.bash_funs_overrides" ]]; then
             for i in "$HOME/.bash_funs_overrides/"*; do
-                [[ -f "$i" ]] && source "$i"
+                [[ ! -s "$i" ]] || source "$i"
             done
        fi
     fi
@@ -3228,11 +3230,6 @@ install_slides() {  # https://github.com/maaslalani/slides
 }
 
 
-install_cursor() {
-    install_from_any  cursor-ide 'https://cursor.com/download' '/linux-x64/cursor/[0-9.]+'
-}
-
-
 # note as of '26 it's avail in debian own repos, so no need to add their repos
 install_openvpn() {
     openvpn3-client
@@ -3433,7 +3430,6 @@ install_from_url() {
 
 
 # curl given $loc and pipe it to a $shell for installation
-# TODO: deprecate?
 install_from_url_shell() {
     local opt OPTIND shell name loc ver
 
@@ -3766,14 +3762,15 @@ install_kubectl() {
     install_from_url  kubectl  "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 
     # shell completion: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#bash
-    cmd_avail kubectl && exe "kubectl completion bash | tee $BASH_COMPLETIONS/kubectl > /dev/null"
+    cmd_avail kubectl && exe "kubectl completion bash | tee $BASH_COMPLETIONS/kubectl.bash > /dev/null"
 }
 
 # kubectx - kubernetes contex swithcher
 # tag: aws, k8s, kubernetes
 #
 # TODO: consider replacing installation by using krew? note that likely won't install shell completion though;
-# https://github.com/ahmetb/kubectx?tab=readme-ov-file#manual-installation-macos-and-linux
+#
+# NOTE: avail as apt pkg: `sudo apt install kubectx`
 install_kubectx() {  # https://github.com/ahmetb/kubectx
     install_bin_from_git -N kubectx ahmetb/kubectx  'kubectx_.*_linux_x86_64.tar.gz'
     install_bin_from_git -N kubens  ahmetb/kubectx  'kubens_.*_linux_x86_64.tar.gz'
@@ -3786,8 +3783,10 @@ install_kubectx() {  # https://github.com/ahmetb/kubectx
     #create_link -s "${BASE_PROGS_DIR}/kubectx/completion/kubens.bash" "$COMPDIR/kubens"
     #create_link -s "${BASE_PROGS_DIR}/kubectx/completion/kubectx.bash" "$COMPDIR/kubectx"
 
-    create_link "$BASE_PROGS_DIR/kubectx/completion/kubens.bash" "$BASH_COMPLETIONS/kubens"
-    create_link "$BASE_PROGS_DIR/kubectx/completion/kubectx.bash" "$BASH_COMPLETIONS/kubectx"
+    create_link "$BASE_PROGS_DIR/kubectx/completion/kubens.bash" "$BASH_COMPLETIONS/kubens.bash"
+    create_link "$BASE_PROGS_DIR/kubectx/completion/kubectx.bash" "$BASH_COMPLETIONS/kubectx.bash"
+    create_link -s "$BASE_PROGS_DIR/kubectx/completion/_kubens.zsh" "$ZSH_COMPLETIONS/_kubens"
+    create_link -s "$BASE_PROGS_DIR/kubectx/completion/_kubectx.zsh" "$ZSH_COMPLETIONS/_kubectx"
 }
 
 # kube-ps1 - kubernets shell prompt
@@ -4025,7 +4024,7 @@ install_alacritty() {
     exe 'gzip -c extra/alacritty-msg.man | sudo tee /usr/local/share/man/man1/alacritty-msg.1.gz > /dev/null' || err
 
     # install bash completion:
-    exe "cp extra/completions/alacritty.bash $BASH_COMPLETIONS/alacritty" || err
+    exe "cp extra/completions/alacritty.bash $BASH_COMPLETIONS/alacritty.bash" || err
 
     exe 'sudo mv -- target/release/alacritty  /usr/local/bin/' || err
 
@@ -4377,6 +4376,16 @@ install_opencode() {  # https://github.com/anomalyco/opencode
 }
 
 
+install_cursor() {
+    install_from_any  cursor-ide 'https://cursor.com/download' '/linux-x64/cursor/[0-9.]+'
+}
+
+
+install_claude() {  # https://code.claude.com/docs/en/terminal-guide#macos-and-linux
+    install_from_url_shell  claude 'https://claude.ai/install.sh'
+}
+
+
 # plandex CLI
 # installation logic from https://raw.githubusercontent.com/plandex-ai/plandex/main/app/cli/install.sh
 # TODO: deprecated?
@@ -4420,13 +4429,13 @@ install_aichat() {  # https://github.com/sigoden/aichat
     clone_repo_subdir  sigoden aichat "scripts" "$shell/"  # trailing slash is important
     #exe "sudo cp -- '$shell/completions/aichat.zsh' $ZSH_COMPLETIONS/_aichat"
     create_link -s "$shell/completions/aichat.zsh" "$ZSH_COMPLETIONS/_aichat"
-    create_link "$shell/completions/aichat.bash" "$BASH_COMPLETIONS/aichat"
+    create_link "$shell/completions/aichat.bash" "$BASH_COMPLETIONS/aichat.bash"
 
     # alternatively, if we didn't need also the integration components, we
     # could directly install the completion files:
     #install_from_url -A -d "$ZSH_COMPLETIONS" -O root:root -P 644 \
         #_aichat 'https://raw.githubusercontent.com/sigoden/aichat/refs/heads/main/scripts/completions/aichat.zsh'
-    #install_from_url -A -d "$BASH_COMPLETIONS" aichat \
+    #install_from_url -A -d "$BASH_COMPLETIONS" aichat.bash \
         #'https://raw.githubusercontent.com/sigoden/aichat/refs/heads/main/scripts/completions/aichat.bash'
 }
 
@@ -4669,8 +4678,8 @@ install_uv() {  # https://docs.astral.sh/uv/getting-started/installation/#github
     install_file "$dir/uvx" || return 1
 
     # shell completions:  # https://docs.astral.sh/uv/getting-started/installation/#shell-autocompletion
-    exe "uv generate-shell-completion bash | tee $BASH_COMPLETIONS/uv > /dev/null"
-    exe "uvx --generate-shell-completion bash | tee $BASH_COMPLETIONS/uvx > /dev/null"
+    exe "uv generate-shell-completion bash | tee $BASH_COMPLETIONS/uv.bash > /dev/null"
+    exe "uvx --generate-shell-completion bash | tee $BASH_COMPLETIONS/uvx.bash > /dev/null"
     exe "uv generate-shell-completion zsh | sudo tee $ZSH_COMPLETIONS/_uv > /dev/null"
     exe "uvx --generate-shell-completion zsh | sudo tee $ZSH_COMPLETIONS/_uvx > /dev/null"
 }
@@ -4715,7 +4724,7 @@ install_mise() {
 
     # set up shell autocompletion: https://mise.jdx.dev/installing-mise.html#autocompletion
     exe 'mise use --global usage'
-    exe "mise completion bash --include-bash-completion-lib | tee $BASH_COMPLETIONS/mise > /dev/null"
+    exe "mise completion bash --include-bash-completion-lib | tee $BASH_COMPLETIONS/mise.bash > /dev/null"
     exe "mise completion zsh | sudo tee $ZSH_COMPLETIONS/_mise > /dev/null"
 
     # trust our user config, otherwise the initial installation of e.g. ly fails; see https://github.com/jdx/mise/discussions/8088
@@ -4746,7 +4755,7 @@ install_webdev() {
     if cmd_avail npm; then
         exe "$NPM_PRFX npm install npm@latest -g"
         # NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
-        exe "npm completion | tee $BASH_COMPLETIONS/npm > /dev/null"
+        exe "npm completion | tee $BASH_COMPLETIONS/npm.bash > /dev/null"
 
         # install npm modules:  # TODO review what we want to install
         # note nwb (zero-config development setup) is dead - use vite instead: https://github.com/vitejs/vite
@@ -6127,17 +6136,19 @@ install_fonts() {
     # see  https://wiki.archlinux.org/index.php/Font_configuration#Disable_bitmap_fonts
     #
     # to list font families, do `fc-list -f '%{family[0]}\n' | bat`
-    #   - or `fc-list : family style | bat`
+    #   - or `fc-list : family style | bat`  (not exactly equivalent to above cmd)
+    #
     # NOTE: should no longer be needed, as we're now enabling specific bitmap fonts
     #       explicitly in ~/.config/fontconfig/fonts.conf
     enable_bitmap_rendering() {
-        local bitmap_no bitmap_yes
+        local etc_fonts bitmap_no bitmap_yes
 
-        readonly bitmap_no='/etc/fonts/conf.d/70-no-bitmaps-except-emoji.conf'
-        readonly bitmap_yes='/usr/share/fontconfig/conf.avail/70-yes-bitmaps.conf'
+        etc_fonts='/etc/fonts/conf.d'
+        bitmap_no="$etc_fonts/70-no-bitmaps-except-emoji.conf"
+        bitmap_yes='/usr/share/fontconfig/conf.avail/70-yes-bitmaps.conf'
 
         [[ ! -h "$bitmap_no" ]] || exe "sudo rm -- '$bitmap_no'" || return $?
-        [[ ! -f "$bitmap_yes" ]] || create_link -s "$bitmap_yes" /etc/fonts/conf.d/
+        [[ ! -f "$bitmap_yes" ]] || create_link -s "$bitmap_yes" "$etc_fonts/"
     }
 
     #enable_bitmap_rendering; unset enable_bitmap_rendering
@@ -6311,8 +6322,9 @@ install_from_repo() {
         rsync
         wireguard
         cloudflare-warp  # clourdflare's warp VPN client; for usage see https://developers.cloudflare.com/warp-client/get-started/linux/
-                         # upon the very initial registration, the daily commands will likely be `warp-cli connect` & `warp-cli disconnect`;
+                         # upon the very initial registration, the daily commands will likely be `warp-cli connect`, `warp-cli disconnect`, `warp-cli status`;
                          # note after disconnect the connection might be buggered; in that case `sudo service systemd-resolved restart`
+                         # creates warp-svc.service systemd unit
         #tailscale  # note depends on custom apt entry
         gparted  # GNOME partition editor; https://gparted.org/
         gnome-disk-utility  # manage and configure disk drives and media; launch via $ Disks
@@ -6447,7 +6459,7 @@ install_from_repo() {
         dirmngr  # server for managing and downloading OpenPGP and X.509 certificates, as well as updates and status signals related to those certificates;
                  # used for network access by gpg, gpgsm, and dirmngr-client, among other tools
         #direnv  # commented out as it might conflict w/ mise: https://mise.jdx.dev/direnv.html
-        bash-completion
+        bash-completion  # extra bash completions; https://github.com/scop/bash-completion
     )
 
 
@@ -6511,6 +6523,7 @@ install_from_repo() {
         geeqie  # GTK-based image/gallery viewer; avail as flatpak; https://www.geeqie.org/
         gthumb  # gnome image viewer; avail as flatpak; alternatives: https://flathub.org/en/apps/org.kde.koko,
         libglib2.0-bin  # gives us `gsettings` command, among others
+        pkgconf  # gives us `pkg-config` command, e.g. `pkg-config --variable=completionsdir bash-completion`
         imagemagick
         inkscape  # vector-based drawing program; can also erease text from pdf;  # TODO: avail as flatpak; alternatives:
                                                                                         # graphite (for raster AND vector)
@@ -6979,8 +6992,8 @@ setup_btrfs() {
 
 # this applies to `docker` front-end command, doesn't matter what the actual backend is
 install_docker_shell_completion() {
-    install_from_url -Ad "$BASH_COMPLETIONS" docker-completion 'https://raw.githubusercontent.com/docker/cli/refs/heads/master/contrib/completion/bash/docker'
-    install_from_url -Ad "$ZSH_COMPLETIONS"  _docker           'https://raw.githubusercontent.com/docker/cli/refs/heads/master/contrib/completion/zsh/_docker'
+    install_from_url -Ad "$BASH_COMPLETIONS" docker.bash  'https://raw.githubusercontent.com/docker/cli/refs/heads/master/contrib/completion/bash/docker'
+    install_from_url -Ad "$ZSH_COMPLETIONS"  _docker      'https://raw.githubusercontent.com/docker/cli/refs/heads/master/contrib/completion/zsh/_docker'
 }
 
 
@@ -7304,7 +7317,6 @@ __choose_prog_to_build() {
         build_ddcutil
         build_neowall
         install_slides
-        install_cursor
         install_openvpn
         install_seafile_cli
         install_seafile_gui
@@ -7436,6 +7448,8 @@ __choose_prog_to_build() {
         install_aider
         install_aider_desk
         install_opencode
+        install_cursor
+        install_claude
         install_android_command_line_tools
         install_chezmoi
         install_anything_sync
