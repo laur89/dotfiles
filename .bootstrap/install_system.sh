@@ -27,7 +27,7 @@ shopt -s nullglob  # unmatching globs to expand into empty string/list instead o
 
 TMP_DIR=/tmp  # changeable via an option (e.g. in VMs /tmp tmpfs might not be large enough)
 readonly KRING="$HOME/.local/share/kring.sala"  # note location is referenced in db's AutoOpen section/group
-readonly LUKS_USB="/tmp/usb-luks-$RANDOM"  # mountpoint
+readonly LUKS_USB="/tmp/.usb-luks-$RANDOM"  # mountpoint
 readonly KPXC_KRING_DB="$LUKS_USB/passdb/fresh_keyring.kdbx"
 KPXC_DB=''  # will be defined downstream
 readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via dotfiles mngr;
@@ -64,6 +64,7 @@ SYSCTL_CHANGED=0       # states whether sysctl config got changed
 APT_ENVS='NEEDRESTART_MODE=l'
 APT_OPTS=''
 #umask 0077  # keep this in sync with what we set via systemd & ~/.profile!
+NPM_PRFX='NPM_CONFIG_IGNORE_SCRIPTS=true'
 
 unset _IS_WIN _IS_VIRT _IS_VIRTUALBOX _IS_NATIVE
 
@@ -211,6 +212,7 @@ check_dependencies() {
         [ssh-add]=openssh-client
         [ssh-agent]=openssh-client
         [ansi2txt]=colorized-logs
+        [pkg-config]=pkgconf
     )
 
     for prog in \
@@ -219,7 +221,7 @@ check_dependencies() {
             mktemp file date id html2text \
             pwd uniq sort xxd openssl mokutil \
             gpg keepassxc-cli ssh-add ssh-agent \
-            ansi2txt cryptsetup lsblk fzf \
+            ansi2txt pkg-config cryptsetup lsblk fzf \
                 ; do
         if ! cmd_avail "$prog"; then
             report "[$prog] not installed yet, installing..."
@@ -2454,7 +2456,7 @@ override_locale_time() {
     if ! grep -qE 'LC_TIME=.en_GB.UTF-8.' "$conf_file"; then
         # just in case delete all same definitions, regardless of its value:
         exe "sudo sed -i --follow-symlinks '/^LC_TIME\s*=/d' '$conf_file'" || return 1
-        exe "echo 'LC_TIME=\"en_GB.UTF-8\"' | sudo tee --append $conf_file > /dev/null"  # en-gb gives us 24h clock & Monday as first day of the week
+        exe "echo 'LC_TIME=\"en_GB.UTF-8\"' | sudo tee --append '$conf_file' > /dev/null"  # en-gb gives us 24h clock & Monday as first day of the week
     fi
 
     # generate missing locales: {{{
@@ -2498,9 +2500,8 @@ install_xonotic() {
 
     # note we're selecting a mirror URL here:
     url="$(curl -Lsf --retry 2 'https://xonotic.org/download/' \
-        | grep -Po '<a href="\Khttps://dl\.xonotic.org/xonotic-[0-9.]+\.zip(?="><i class=".*"></i>\s*xonotic.org</a>.*DE)')"
-
-    [[ -z "$url" ]] && { err "couldn't resolve xonotic version"; return 1; }
+        | grep -Po '<a href="\Khttps://dl\.xonotic.org/xonotic-[0-9.]+\.zip(?="><i class=".*"></i>\s*xonotic.org</a>.*DE)')" \
+        || { err "couldn't resolve xonotic version"; return 1; }
     install_from_url -D -d "$BASE_PROGS_DIR" xonotic "$url" || return 1
 
     # TODO: use glx or sdl script? best try both and benchmark w/ included 'the-big-benchmark'
@@ -3564,6 +3565,12 @@ install_zoom() {  # https://zoom.us/download
 }
 
 
+# htop alternative
+install_bottom() {  # https://github.com/ClementTsang/bottom
+    install_from_git ClementTsang/bottom 'bottom_[-0-9.]+_amd64.deb'
+}
+
+
 # fasd-alike alternative
 # also avail in apt
 install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
@@ -3572,7 +3579,8 @@ install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
 }
 
 # Smart session manager for the terminal; good description from the creator:
-#  > Sesh will sort the folders you use the most on the top in the fzf filter, it does not have any sort of resurrect or continue features.
+#  > Sesh will sort the folders you use the most on the top in the fzf filter,
+#    it does not have any sort of resurrect or continue features.
 # tl;dr you configure set of tmux sessions and folders, and optionally
 # execute a command when entering said dir; works w/ zoxide?!
 install_sesh() {  # https://github.com/joshmedeski/sesh
@@ -4754,7 +4762,7 @@ install_webdev() {
     # update npm:
     if cmd_avail npm; then
         exe "$NPM_PRFX npm install npm@latest -g"
-        # NPM tab-completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
+        # NPM shell completion; instruction from https://docs.npmjs.com/cli-commands/completion.html
         exe "npm completion | tee $BASH_COMPLETIONS/npm.bash > /dev/null"
 
         # install npm modules:  # TODO review what we want to install
@@ -7324,6 +7332,7 @@ __choose_prog_to_build() {
         install_freetube
         install_streamlink_twitch_gui
         install_zoom
+        install_bottom
         install_xournalpp
         install_zoxide
         install_sesh
@@ -8276,37 +8285,43 @@ setup_firefox() {
 }
 
 
-# locate / plocate conf
 # note plocate has its db in /var/lib/plocate
 # db indexing is managed by systemd, see $ systemctl status plocate-updatedb.timer
 configure_updatedb() {
-    local conf paths line i modified
+    local conf values
 
     readonly conf='/etc/updatedb.conf'
-    paths=(/mnt /run/media /media /var/cache /data/seafile-data "$HOME/.cache")  # paths to be added to PRUNEPATHS definition
-
-    is_btrfs && paths+=(/home/.snapshots /.snapshots)  # */.snapshots are snapper/btrfs locations
     is_f -n "$conf" || return 1
-    line="$(grep -Po '^PRUNEPATHS="\K.*(?="$)' "$conf")" || { err "$?: couldn't find PRUNEPATHS in [$conf]"; return 1; }  # extract the value between quotes
 
-    for i in "${paths[@]}"; do
-        [[ "$line" =~ ([[:space:]]|^)"$i"([[:space:]]|$) ]] && continue  # path already included
-        line+="${line:+ }$i"
-        modified=TRUE
-    done
+    _update_key() {
+        local key line i modified
+        key="$1"
 
-    if [[ -n "$modified" ]]; then
-        [[ -s "$conf" ]] && exe "sudo sed -i --follow-symlinks '/^PRUNEPATHS=.*$/d' '$conf'"  # nuke previous setting
-        exe "echo 'PRUNEPATHS=\"$line\"' | sudo tee --append '$conf' > /dev/null"
-    fi
+        line="$(grep -Po "^${key}=\"\K.*(?=\"$)" "$conf")"  # extract the value between quotes
+        for i in "${values[@]}"; do
+            [[ "$line" =~ ([[:space:]]|^)"$(rgxesc "$i")"([[:space:]]|$) ]] && continue  # path already included
+            line+="${line:+ }$i"
+            modified=TRUE
+        done
+
+        if [[ -n "$modified" ]]; then
+            exe "sudo sed -i --follow-symlinks '/^${key}=.*$/d' '$conf'"  # nuke previous setting
+            exe "echo '${key}=\"$line\"' | sudo tee --append '$conf' > /dev/null"
+        fi
+    }
+
+    values=(/mnt /run/media /media /var/cache /data/seafile-data "$HOME/.cache")  # paths to be added to PRUNEPATHS definition
+    is_btrfs && values+=(/home/.snapshots /.snapshots)  # */.snapshots are snapper/btrfs locations
+    _update_key PRUNEPATHS
+
+    values=(.git .bzr .hg .svn)  # names to be added to PRUNENAMES definition
+    _update_key PRUNENAMES
 }
 
 
 # add our USER to given group, if not already in it
 add_to_group() {
-    local group
-    readonly group="$1"
-
+    local group="$1"
     if ! id -Gn "$USER" | grep -Eq "\b${group}\b"; then
         exe "sudo adduser $USER $group" || return $?
     fi
@@ -9163,7 +9178,7 @@ create_link() {
     declare -a srcs
     if [[ "$contents" -eq 1 ]]; then
         [[ -d "$src" ]] || { err "source [$src] should be a dir, but is [$(file_type "$src")]"; return 1; }
-        [[ -d "$target" ]] || { err "with -c opt, target [$target] should be a dir, but is [$(file_type "$target")]"; return 1; }
+        [[ -d "$target" ]] || { err "with -c opt, target [$target] needs to be a dir, but is [$(file_type "$target")]"; return 1; }
         [[ "$target" != */ ]] && target+='/'
 
         for node in "$src/"*; do
@@ -9173,8 +9188,9 @@ create_link() {
         srcs=("$src")
     fi
 
+    [[ "$target" == */ ]] && ! $sudo test -d "$target" && { err "if target ends w/ slash, then the dir needs to pre-exist"; return 1; }
     for node in "${srcs[@]}"; do
-        if [[ "$target" == */ ]] && $sudo test -d "$target"; then
+        if [[ "$target" == */ ]]; then
             trgt="${target}$(basename -- "$node")"
         else
             trgt="$target"
@@ -9254,9 +9270,7 @@ check_progs_installed() {
 #
 # @returns {bool}  true, if the process with given name is running.
 is_proc_running() {
-    local proc
-
-    readonly proc="$1"
+    local proc="$1"
 
     [[ -z "$proc" ]] && { err "process name not provided! Abort."; return 1; }
 
@@ -9568,9 +9582,7 @@ rgxesc() {
 #
 # @returns {bool}  true, if passed string is non-empty, and on a single line.
 is_single() {
-    local s
-
-    s="$(tr -d '[:blank:]' <<< "$*")"  # make sure not to strip newlines!
+    local s="$(tr -d '[:blank:]' <<< "$*")"  # make sure not to strip newlines!
     #[[ -n "$s" && "$(wc -l <<< "$s")" -eq 1 ]]
     [[ -n "$s" && "$s" != *$'\n'* ]]
 }
