@@ -6463,6 +6463,7 @@ install_from_repo() {
         # for that PAM integration is needed, but KPXC project is not really
         # interested in taking care of one, so alternatives have emerged: https://github.com/sumwale/keepassxc-unlock
         keepassxc-full
+        pwgen  # provides pwgen binary, e.g. `pwgen -s 40 1`
         gnupg
         dirmngr  # server for managing and downloading OpenPGP and X.509 certificates, as well as updates and status signals related to those certificates;
                  # used for network access by gpg, gpgsm, and dirmngr-client, among other tools
