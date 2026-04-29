@@ -242,9 +242,12 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
 
     # seafile libraries: (likley referenced by our install bootstrap & other seafile-related script(s)):
     export SEAFILE_LIBS='main,secrets,notes'  # list of seafile libraries to sync with
+
+    export RIPGREP_CONFIG_PATH="$XDG_CONFIG_HOME/ripgreprc"
 fi
 
-export _SCRIPTS_COMMONS="$_SCRIPTS_BIN/__utils.sh"
+export _SCRIPTS_COMMONS="$_SCRIPTS_BIN/__utils.sh"  # also used/referenced by pearlssh!
+
 # note this doesn't work, as systemd session where this is evaluated won't have $DISPLAY set:
 #[[ -n "$DISPLAY" ]] && export BROWSER=/usr/bin/firefox || export BROWSER=links2
 export BROWSER=/usr/bin/firefox
@@ -395,7 +398,6 @@ export FZF_CTRL_R_COMMAND=''  # disable ctrl+r binding (in cmd mode if using vi 
 #_gen_fzf_default_opts; unset _gen_fzf_default_opts
 ################## /fzf-colors
 
-export RIPGREP_CONFIG_PATH="$XDG_CONFIG_HOME/ripgreprc"
 export CALCHISTFILE="$XDG_DATA_HOME/calc_history"  # location of the `calc` history file
 export WGETRC="$XDG_CONFIG_HOME/wgetrc"
 
