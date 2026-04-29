@@ -56,7 +56,7 @@ alias pdx=plandex
 alias lgit=lazygit
 alias iotop='iotop --accumulated --processes'
 
-alias yarn='yarn --use-yarnrc "$XDG_CONFIG_HOME/yarn/config"'  # current work-around for XDG compliance: https://github.com/yarnpkg/yarn/issues/2334#issuecomment-3559816403
+#alias yarn='yarn --use-yarnrc "$XDG_CONFIG_HOME/yarn/config"'  # current work-around for XDG compliance, but --use-yarnrc is not supported option: https://github.com/yarnpkg/yarn/issues/2334#issuecomment-3559816403
 pdxn() { [[ "$#" -eq 1 ]] || { err 'need one arg - new plan name to create'; return 1; }; plandex new -n "$1"; }
 
 # change dir, as that's where attachments will be saved to by default: (from https://wiki.archlinux.org/title/Mutt#Default_folder_for_saving_attachments)
