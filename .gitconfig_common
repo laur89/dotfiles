@@ -29,6 +29,9 @@
     editor = nvim
     ; note the bufhidden=wipe is to work around https://github.com/mhinz/neovim-remote/issues/193 
     ;editor = nvr-tmux --nostart --remote-tab-wait '+setlocal bufhidden=wipe'
+    ; another nvr binding from a tmux plugin https://github.com/carlocab/tmux-nvr :
+    ; note atm we're not using the plugin, but have extracted the logic to our own script of same name:
+    ;editor = nvr-tmux
 
     ; decent read on the line ending subject:
     ;  - https://stackoverflow.com/a/48384768
@@ -61,8 +64,9 @@
 [difftool "difftastic"]
     # from https://difftastic.wilfred.me.uk/git.html#difftool
     # See `man git-difftool` for a description of MERGED, LOCAL and REMOTE.
-    # TODO: does not work, see our issue at https://github.com/Wilfred/difftastic/issues/932
-    cmd = difft "$MERGED" "$LOCAL" "abcdef1" "100644" "$REMOTE" "abcdef2" "100644"
+    # TODO: this cmd definition does not work, see our issue at https://github.com/Wilfred/difftastic/issues/932
+    #cmd = difft "$MERGED" "$LOCAL" "abcdef1" "100644" "$REMOTE" "abcdef2" "100644"
+    cmd = difft "$LOCAL" "$REMOTE"
 [diff]
     tool = meld
     ;tool = difftastic
@@ -73,8 +77,9 @@
     colorMoved = default
 [pager]
     # Use a pager if the difftool output is larger than one screenful,
-    # consistent with the behaviour of `git diff`:
+    # consistent with the behaviour of `git diff`: (from https://difftastic.wilfred.me.uk/git.html)
     ;difftool = true  # <-- !note this will stop launching meld w/ $ gitdi
+
     difftool = false
     ;diff = diff-so-fancy | less --tabs=4 -RFXS --pattern '^(Date|added|deleted|modified): '
 [interactive]
