@@ -2415,8 +2415,9 @@ setup_additional_apt_keys_and_sources() {
     # latest/current key can be found from https://installer.id.ee/media/install-scripts/
     #
     # note you'll likely want to use the latest ubuntu LTS or latest, period, codename for repo.
-    #create_apt_source -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh  https://installer.id.ee/media/ubuntu/ plucky main
-    create_apt_source  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub  https://installer.id.ee/media/ubuntu/ plucky main
+    # just use whatever codename the upstream install-open-eid.sh debian logic references.
+    #create_apt_source -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh  https://installer.id.ee/media/ubuntu/ noble main
+    create_apt_source  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub  https://installer.id.ee/media/ubuntu/ noble main
 
     # mozilla/firefox:  https://support.mozilla.org/en-US/kb/install-firefox-linux#w_install-firefox-deb-package-for-debian-based-distributions-recommended
     #create_apt_source  mozilla  https://packages.mozilla.org/apt/repo-signing-key.gpg  https://packages.mozilla.org/apt/ mozilla main
@@ -2611,7 +2612,7 @@ upgrade_kernel() {
         '
         readonly arch='amd64'  # or instead of magic string, do  $ dpkg --print-architecture
     else
-        err "verified we're not running 64bit system. make sure it's correct. skipping kernel meta-package installation..."
+        err "we're not running amd64 system. make sure it's correct. skipping kernel meta-package installation..."
         sleep 10
     fi
 
@@ -4708,7 +4709,7 @@ install_asdf() {
     ensure_d "$ASDF_DIR" || return 1
     install_bin_from_git -N asdf asdf-vm/asdf '-linux-amd64.tar.gz'
 
-    cmd_avail asdf || { err 'asdf not on PATH??'; return 1; }  # sanity
+    cmd_avail asdf || { err 'asdf not on PATH?'; return 1; }  # sanity
 
     # asdf plugins:
     if ! [[ -d "$ASDF_DATA_DIR/plugins/nodejs" ]]; then
@@ -6430,6 +6431,7 @@ install_from_repo() {
         #galculator  # https://github.com/galculator/galculator
         speedcrunch  # https://heldercorreia.bitbucket.io/speedcrunch/  TODO: not avail in testing in aug '25
         calc  # for cli
+        bc
         #bcal  # Bits, bytes and address calculator; https://github.com/jarun/bcal
         atool  # provides aunpack command. instead of atool, consider https://github.com/mholt/archives
         file-roller  # archive manager for gnome
@@ -9739,6 +9741,7 @@ exit 0
 #        how to do battery threshold?
 #    - it has USB_EXCLUDE_BTUSB opt to exclude bluetooth devices from usb autosuspend feature
 #    - there's also https://gitlab.freedesktop.org/upower/power-profiles-daemon
+#    - consider sleepd pkg -- put computer to sleep on inactivity and/or low battery
 #    - there's also powerprofilesctl (cli for power-profiles-daemon)
 #    - there's also https://tuned-project.org/
 #    - there's also https://github.com/intel/thermal_daemon (intel only?)
