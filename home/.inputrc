@@ -75,6 +75,8 @@ set enable-bracketed-paste on
 set colored-stats on
 # Show extra file information when completing, like `ls -F` does
 set visible-stats on
+# turn off the use of the internal pager when returning long completion lists: (from https://github.com/scop/bash-completion#faq)
+set page-completions off
 # Immediately add a trailing slash when autocompleting symlinks to directories
 set mark-symlinked-directories on
 # Color the common prefix
