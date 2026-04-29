@@ -30,15 +30,11 @@
 
 # source own functions and env vars:
 
-if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != 'loaded' ]]; then
+if [ "$__ENV_VARS_LOADED_MARKER_VAR" != 'loaded' ]; then
     for i in \
             "$HOME/.bash_env_vars" \
                 ; do  # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
-        if [[ -r "$i" ]]; then
-            source "$i"
-        #else
-            #echo -e "file [$i] to be sourced does not exist or is not readable!"
-        fi
+        [ ! -s "$i" ] || source "$i"
     done
 fi
 
