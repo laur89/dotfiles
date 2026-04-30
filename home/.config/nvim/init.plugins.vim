@@ -83,6 +83,7 @@ Plug 'airblade/vim-rooter'
 Plug 'preservim/tagbar'
 
 " Ctags generator/highlighter
+" see also https://github.com/jha-naman/treetags to generate tags using treetags
 Plug 'ludovicchabant/vim-gutentags'  " last commit in '23
 
 "Plug 'xolox/vim-misc'  " remove once we no longer use any of xolox' plugins that use vim-misc as dependency
