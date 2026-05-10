@@ -1661,6 +1661,9 @@ install_deps() {
 
     is_native && py_install bctl  # brightness control, https://github.com/laur89/bctl
 
+    # bubblewrap/bwrap sandbox script  # https://github.com/haridusministeerium/bubblebox
+    install_from_url  bb 'https://raw.githubusercontent.com/haridusministeerium/bubblebox/refs/heads/master/bb'
+
     # work deps:  # TODO remove block?
     #if [[ "$PROFILE" == work ]]; then
         ## cx toolbox/vagrant env deps:  # TODO: deprecate? at least try to find what is _really_ required.
@@ -3500,45 +3503,41 @@ install_file() {
         file="$(extract_tarball "${extract_opts[@]}" "$file")" || return 1
     fi
 
-    _process() {
+    _rename_f() {
         if [[ -n "$name" && "$(basename -- "$file")" != "$name" ]]; then  # check if rename is needed
             local tmpdir
             tmpdir="$(mkt "install-file-${name}")" || return 1
             exe "mv -- '$file' '$tmpdir/$name'" || { err "renaming [$file] to [$tmpdir/$name] failed"; return 1; }
-            file="$tmpdir/$name"
+            file="$tmpdir/$name"  # note outer $file gets reassigned
         fi
-
-        _owner_perms "$file"
     }
 
     _owner_perms() {
-        local f="$1"
-
-        if [[ -n "$owner" ]]; then
-            exe "sudo chown -R -- '$owner' '$f'" || return 1
-        fi
-        if [[ -n "$perms" ]]; then
-            exe "sudo chmod -R -- '$perms' '$f'" || return 1
-        fi
+        local f="$target/$(basename -- "$file")"
+        [[ -z "$owner" ]] || exe "sudo chown -R -- '$owner' '$f'" || return 1
+        [[ -z "$perms" ]] || exe "sudo chmod -R -- '$perms' '$f'" || return 1
     }
 
     [[ -n "$asis" ]] && ftype='text/plain; charset=' || ftype="$(file -iLb -- "$file")"  # mock as-is filetype to enable simple file move logic
 
     if [[ "$ftype" == 'text/plain; charset='* ]]; then  # same as executable/binary logic, but do not set executable flag
-        _process || return 1
+        _rename_f || return 1
         exe "sudo install -m644 -C --group=$USER '$file' '$target'" || return 1
-        _owner_perms "$target/$(basename -- "$file")"
+        _owner_perms
     elif [[ "$ftype" == *'inode/directory; charset=binary' ]]; then
         [[ -z "$name" ]] && { err "[name] arg needs to be provided when installing a directory"; return 1; }
-        _process || return 1
+        _rename_f || return 1
         target+="/$name"
         exe "rm -rf -- '$target'" || return 1  # rm previous installation
         exe "mv -- '$file' '$target'" || return 1
-    elif [[ "$ftype" == *'executable; charset=binary' || "$ftype" == 'text/x-shellscript; charset='* || "$ftype" == 'text/x-perl; charset='* ]]; then
-        exe "chmod +x '$file'" || return 1
-        _process || return 1
+        _owner_perms
+    elif [[ "$ftype" == *'executable; charset=binary' || \
+            "$ftype" == 'text/x-shellscript; charset='* || \
+            "$ftype" == 'text/x-perl; charset='* || \
+            "$ftype" == 'text/x-script.python; charset='* ]]; then
+        _rename_f || return 1
         exe "sudo install -m754 -C --group=$USER '$file' '$target'" || return 1
-        _owner_perms "$target/$(basename -- "$file")"
+        _owner_perms
     elif [[ "$ftype" == *'debian.binary-package; charset=binary' ]]; then
         exe "sudo ${APT_ENVS:+$APT_ENVS }apt-get ${APT_OPTS:+$APT_OPTS }install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
         exe "rm -f -- '$file'"
@@ -3547,7 +3546,7 @@ install_file() {
         exe "rm -f -- '$file'"
         return 1
     fi
-    unset _process _owner_perms
+    unset _rename_f _owner_perms
 }
 
 
@@ -3954,6 +3953,8 @@ install_obsidian() {  # https://github.com/obsidianmd/obsidian-releases/releases
 
 
 # https://www.postman.com/downloads/canary/
+#
+# note also avail as non-verified flatpak: https://flathub.org/en/apps/com.getpostman.Postman
 install_postman() {  # https://learning.postman.com/docs/getting-started/installation/installation-and-updates/#install-postman-on-linux
     local target dsk
 
@@ -5581,8 +5582,7 @@ install_i3_conf() {
 #  - https://github.com/justahuman1/i3-grid  - code smells, at least as of '25
 #  - https://github.com/yurikhan/firefox-i3-workspaces - positions multiple ff windows in correct i3 workspace
 install_i3_deps() {
-    local f
-    f="$TMP_DIR/i3-dep-${RANDOM}"
+    local f="$TMP_DIR/i3-dep-${RANDOM}"
 
     install_block 'python3-i3ipc' || return 1
 
@@ -6199,8 +6199,7 @@ install_from_repo() {
     local block blocks block1 block2 block3 block4 block5 extra_apt_params inst_block_params
     local block1_nonwin block2_nonwin block3_nonwin block4_nonwin block_recommends
 
-    declare -A extra_apt_params=(
-    )
+    declare -A extra_apt_params
     declare -A inst_block_params=(
         [block_recommends]='-f'
     )
@@ -6230,7 +6229,7 @@ install_from_repo() {
         #udisks2  # D-Bus service to access and manipulate storage devices; https://www.freedesktop.org/wiki/Software/udisks/ ; commented out as it's already a dependency of udiskie we use
         udiskie  # a udisks2 front-end that allows to manage removable media ; https://github.com/coldfix/udiskie
         gir1.2-notify-0.7  # provides notifications for udiskie; currently it's a recommended pkg, not a dependency (https://github.com/coldfix/udiskie/issues/345)
-        fwupd  # daemon to allow session software to update device firmware. https://github.com/fwupd/fwupd
+        fwupd  # daemon to allow session software to update device firmware (pulls firmware from LVFS). https://github.com/fwupd/fwupd
         apparmor-utils  # provides tools such as aa-genprof, aa-enforce, aa-complain and aa-disable
         #apparmor-profiles  # experimental aa profiles
         apparmor-profiles-extra
@@ -6792,6 +6791,9 @@ install_from_flatpak() {
     # https://flathub.org/en/apps/com.usebruno.Bruno
     fp_install 'com.usebruno.Bruno'
 
+    # https://flathub.org/en/apps/com.getpostman.Postman
+    #fp_install 'com.getpostman.Postman' flathub-main
+
     # https://flathub.org/en/apps/org.gnome.Logs
     # GUI systemd journal log viewer
     fp_install 'org.gnome.Logs'
@@ -6821,7 +6823,7 @@ install_from_flatpak() {
     # another git GUI client:
     # https://flathub.org/en/apps/org.gnome.gitg
 
-    # pentest tool:
+    # (web app) pentest tool:
     # https://flathub.org/en/apps/org.zaproxy.ZAP
 
     # listen to your mic:
@@ -7628,11 +7630,10 @@ add_manpath() {
     man_db='/etc/manpath.config'
 
     is_f -m "can't add [$path -> $manpath] mapping" "$man_db" || return 1
-    is_d -m "can't add [$path -> $manpath] mapping" "$path" || return 1
-    is_d -m "can't add [$path -> $manpath] mapping" "$manpath" || return 1
+    is_d -m "can't add [$path -> $manpath] mapping" "$path" "$manpath" || return 1
 
     grep -Eq "^MANPATH_MAP\s+${path}\s+${manpath}$" "$man_db" && return 0  # value already set, nothing to do
-    exe "echo 'MANPATH_MAP $path  $manpath' | sudo tee --append $man_db > /dev/null"
+    exe "echo 'MANPATH_MAP $path  $manpath' | sudo tee --append '$man_db' > /dev/null"
 }
 
 
