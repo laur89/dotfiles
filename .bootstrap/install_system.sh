@@ -159,15 +159,13 @@ validate_and_init() {
                 confirm "you selected [${COLORS[RED]}${COLORS[BOLD]}$PROFILE${COLORS[OFF]}] profile on non-work machine; sure you want to continue?" || exit
             fi
 
-            PRIVATE__DOTFILES="$BASE_HOMESICK_REPOS_LOC/work_dotfiles"
-            ;;
+            PRIVATE__DOTFILES="$BASE_HOMESICK_REPOS_LOC/work_dotfiles" ;;
         personal)
             if [[ "$__ENV_VARS_LOADED_MARKER_VAR" == loaded ]] && __is_work; then
                 confirm "you selected [${COLORS[RED]}${COLORS[BOLD]}$PROFILE${COLORS[OFF]}] profile on work machine; sure you want to continue?" || exit
             fi
 
-            PRIVATE__DOTFILES="$BASE_HOMESICK_REPOS_LOC/personal-dotfiles"
-            ;;
+            PRIVATE__DOTFILES="$BASE_HOMESICK_REPOS_LOC/personal-dotfiles" ;;
         *)
             err "unsupported PROFILE [$PROFILE]"
             print_usage
@@ -2132,7 +2130,7 @@ install_nm_dispatchers() {
     is_d -m "NM dispatcher script(s) won't be installed" "$nm_wrapper_dest" || return 1
 
     for f in "${dispatchers[@]}"; do
-        is_f -m "this NM dispatcher won't be installed" "$f" || continue
+        is_f -nm "this NM dispatcher won't be installed" "$f" || continue
         exe "sudo install -m744 -C '$f' '$nm_wrapper_dest'" || { err "installing [$f] failed w/ $?"; return 1; }
     done
 }
@@ -2178,26 +2176,27 @@ setup_install_log_file() {
 
 # see https://wiki.debian.org/SecureBoot#MOK_-_Machine_Owner_Key
 setup_mok() {
-    local target_dir
+    local target_dir cert_file
     target_dir='/var/lib/shim-signed/mok'
+    cert_file="$target_dir/MOK.der"
 
     ensure_d -s "$target_dir" || return 1
     if ! is_dir_empty "$target_dir"; then
         report "[$target_dir] not empty, assuming MOK keys already created; testing key enrollment..."
         # TODO: mokutil here exits w/ 1 on success, so cannot use w/ pipefail:
-        #sudo mokutil --test-key "$target_dir/MOK.der" | grep -q 'is already enrolled' || { err "[$target_dir/MOK.der] not enrolled, verify MOK!"; return 1; }
-        local i="$(sudo mokutil --test-key "$target_dir/MOK.der")"
-        grep -qF 'is already enrolled' <<< "$i" || { err "[$target_dir/MOK.der] not enrolled, verify MOK!"; return 1; }
+        #sudo mokutil --test-key "$cert_file" | grep -q 'is already enrolled' || { err "[$cert_file] not enrolled, verify MOK!"; return 1; }
+        local i="$(sudo mokutil --test-key "$cert_file")"
+        grep -qF 'is already enrolled' <<< "$i" || { err "[$cert_file] not enrolled, verify MOK!"; return 1; }
         return 0
     fi
 
     is_noninteractive && { err "do not exec $FUNCNAME() in non-interactive mode; make sure to manually re-run this step!"; return 1; }
 
-    exe "sudo openssl req -nodes -new -x509 -newkey rsa:2048 -keyout $target_dir/MOK.priv -outform DER -out $target_dir/MOK.der -days 36500 -subj '/CN=Laur Aliste/'" || return $?
-    exe "sudo openssl x509 -inform der -in $target_dir/MOK.der -out $target_dir/MOK.pem" || return $?
+    exe "sudo openssl req -nodes -new -x509 -newkey rsa:2048 -keyout $target_dir/MOK.priv -outform DER -out $cert_file -days 36500 -subj '/CN=Laur Aliste/'" || return $?
+    exe "sudo openssl x509 -inform der -in $cert_file -out $target_dir/MOK.pem" || return $?
 
     report "enrolling MOK, enter password to use for enrollment during next reboot..."
-    exe "sudo mokutil --import $target_dir/MOK.der" || return $?  # prompts for one-time password
+    exe "sudo mokutil --import $cert_file" || return $?  # prompts for one-time password
 
     _instruct_dkms_to_use_keys() {  # TODO: refactor out into setup_dkms() ?
         local conf_dir f
@@ -2289,7 +2288,7 @@ update_clock() {
         return 0
     fi
 
-    remote_time="$(curl --connect-timeout 5 --max-time 5 --fail --insecure --silent --head "$src" 2>&1 \
+    remote_time="$(curl -skf --connect-timeout 5 --max-time 5 --head "$src" 2>&1 \
             | grep -ioP '^date:\s*\K.*' | { read -r t; [[ -z "$t" ]] && return 1; date +%s -d "$t"; })"
 
     is_digit "$remote_time" || { err "resolved remote [$src] time was not digit: [$remote_time]"; return 1; }
@@ -2483,7 +2482,7 @@ override_locale_time() {
 
 
 install_progs() {
-    exe "sudo apt-get --yes update"
+    exe 'sudo apt-get --yes update'
 
     install_webdev
     install_from_repo
@@ -3693,6 +3692,17 @@ install_rga() {  # https://github.com/phiresky/ripgrep-all#debian-based
 # installation script @ https://raw.githubusercontent.com/unhappychoice/gitlogue/main/install.sh
 install_gitlogue() {  # https://github.com/unhappychoice/gitlogue/blob/main/docs/installation.md
     install_bin_from_git -N gitlogue unhappychoice/gitlogue 'x86_64-unknown-linux-gnu.tar.gz'
+}
+
+
+# per-process network monitor, akin to nethogs
+install_rustnet() {  # https://github.com/domcyrus/rustnet
+    install_bin_from_git -N rustnet domcyrus/rustnet 'x86_64-unknown-linux-gnu.tar.gz' || return  # https://github.com/domcyrus/rustnet/blob/main/INSTALL.md#static-binary-portable---any-linux-distribution
+    # Grant capabilities (modern kernel 5.8+):
+    exe "sudo setcap 'cap_net_raw,cap_bpf,cap_perfmon+eip' /usr/local/bin/rustnet"
+
+    # OR install as deb:
+    #install_bin_from_git domcyrus/rustnet  Rustnet_LinuxDEB_amd64.deb  # https://github.com/domcyrus/rustnet/blob/main/INSTALL.md#debianubuntu-deb-packages
 }
 
 
@@ -6378,6 +6388,7 @@ install_from_repo() {
         dysk  # another df alternative
         nethogs  # small 'net top' tool. Instead of breaking the traffic down per protocol or per subnet,
                  # like most tools do, it groups bandwidth by process; https://github.com/raboof/nethogs
+                 # alternatives: - rustnet: https://github.com/domcyrus/rustnet
         #vnstat  # console-based network traffic monitor; keeps a log of daily network traffic for the selected interface
         #nload  # monitors network traffic and bandwidth usage in real time.
         #iftop  # displays bandwidth usage information on an network interface
@@ -7345,6 +7356,7 @@ __choose_prog_to_build() {
         install_ripgrep
         install_rga
         install_gitlogue
+        install_rustnet
         install_browsh
         install_rebar
         install_treesitter
@@ -8749,8 +8761,7 @@ exe() {
               for ok_code in "${ok_codes[@]}"; do
                 is_digit "$ok_code" || { err "non-digit ok_code arg passed to ${FUNCNAME}: [$ok_code]"; return 1; }
                 [[ "${#ok_code}" -gt 3 ]] && { err "too long ok_code arg passed to ${FUNCNAME}: [$ok_code]"; return 1; }
-              done
-                ;;
+              done ;;
            *) err "unexpected opt [$opt] passed to $FUNCNAME"; return 1 ;;
         esac
     done
@@ -9304,6 +9315,7 @@ retry() {
     local -r -i max_attempts="$1"; shift
     local -r cmd="$*"
     local -i attempt_num=1
+    local s
     #local -ra cmd=("$@")
     #until "${cmd[@]}"; do
 
@@ -9313,9 +9325,11 @@ retry() {
             err "Attempt $attempt_num failed and there are no more attempts left!"
             return 1
         else
-            report "Attempt $attempt_num failed! Trying again in $attempt_num seconds..."
+            [[ "$attempt_num" != 1 ]] && s=s
+            report "Attempt $attempt_num failed! Trying again in $attempt_num second${s}..."
             sleep $(( attempt_num++ ))
         fi
+        unset s
     done
 }
 
@@ -9652,14 +9666,14 @@ while getopts 'NFSUQOP:L:T:h' OPT; do
         P) PLATFORM="$OPTARG" ;;  # force the platform-specific config to install (as opposed to deriving it from hostname);
                                   # best not use it and let platform be resolved from our hostname
         L) LOGGING_LVL="$OPTARG"
-           is_digit "$OPTARG" || fail "log level needs to be an int, but was [$OPTARG]"
-            ;;
+           is_digit "$OPTARG" || fail "log level needs to be an int, but was [$OPTARG]" ;;
         T) TMP_DIR="$OPTARG" ;;
         h) print_usage; exit 0 ;;
         *) print_usage; exit 1 ;;
     esac
 done
 shift "$((OPTIND-1))"
+[[ "$#" -eq 1 ]] || fail "exactly 1 arg (profile) required, got $#"
 
 readonly PROFILE="$1"   # work | personal
 
