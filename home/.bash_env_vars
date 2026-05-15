@@ -244,6 +244,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     export SEAFILE_LIBS='main,secrets,notes'  # list of seafile libraries to sync with
 
     export RIPGREP_CONFIG_PATH="$XDG_CONFIG_HOME/ripgreprc"
+    export WGETRC="$XDG_CONFIG_HOME/wgetrc"
 fi
 
 export _SCRIPTS_COMMONS="$_SCRIPTS_BIN/__utils.sh"  # also used/referenced by pearlssh!
@@ -399,7 +400,6 @@ export FZF_CTRL_R_COMMAND=''  # disable ctrl+r binding (in cmd mode if using vi 
 ################## /fzf-colors
 
 export CALCHISTFILE="$XDG_DATA_HOME/calc_history"  # location of the `calc` history file
-export WGETRC="$XDG_CONFIG_HOME/wgetrc"
 
 #export AWS_OKTA_BACKEND=secret-service  # for aws-okta: https://github.com/segmentio/aws-okta
 
