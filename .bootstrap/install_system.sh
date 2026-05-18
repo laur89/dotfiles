@@ -1417,7 +1417,7 @@ install_deps() {
             }
 
             # consider using   lspci -vnn | grep -A5 WLAN | grep -qi intel
-            readonly wifi_info="$(sudo lshw -C network | grep -iA 5 'Wireless interface')"
+            wifi_info="$(sudo lshw -C network | grep -iA 5 'Wireless interface')"
 
             # TODO: with one intel card we had some UNCLAIMED in lspci output, instead of
             # wireless interface'; went ok after intel drivers were installed tho
@@ -6230,7 +6230,7 @@ install_from_repo() {
         #xsensors  # xsensors reads data from the libsensors library regarding hardware health such as temperature, voltage and fan speed and displays the information in a digital read-out; https://github.com/Mystro256/xsensors
         hardinfo2  # !! good GUI !!; offers System Information and Benchmark for Linux Systems. https://github.com/hardinfo2/hardinfo2
         mesa-utils  # hardinfo2 suggested pkg
-        inxi  # full featured system information script (cli)
+        inxi  # full featured system information script (cli); `inxi -e` to see full/expanded report; https://smxi.org/docs/inxi.htm
         lshw  # list hardware; https://github.com/lyonel/lshw
         macchanger  # utility for manipulating the MAC address of network interfaces; https://github.com/alobbs/macchanger
         #nftables  # debian default since Buster!
@@ -6240,6 +6240,7 @@ install_from_repo() {
         udiskie  # a udisks2 front-end that allows to manage removable media ; https://github.com/coldfix/udiskie
         gir1.2-notify-0.7  # provides notifications for udiskie; currently it's a recommended pkg, not a dependency (https://github.com/coldfix/udiskie/issues/345)
         fwupd  # daemon to allow session software to update device firmware (pulls firmware from LVFS). https://github.com/fwupd/fwupd
+        fwupd-signed  # Tools to manage UEFI firmware updates (signed); without it we'd get this err: https://github.com/fwupd/fwupd/wiki/LVFS-Triaged-Issue:-UEFI:-fwupdx64.efi-cannot-be-found
         apparmor-utils  # provides tools such as aa-genprof, aa-enforce, aa-complain and aa-disable
         #apparmor-profiles  # experimental aa profiles
         apparmor-profiles-extra
@@ -6282,7 +6283,7 @@ install_from_repo() {
         #pulsemixer  # https://github.com/GeorgeFilipkin/pulsemixer  # last commit in '20
         pasystray  # PulseAudio controller for the system tray; should work w/ pipewire
         pulseaudio-utils  # gives us e.g. pactl cmd
-        qpwgraph  # visual representation of which audio devices are connected where; also allows point-and-click connections/configuration; inspired by Jack
+        qpwgraph  # visual representation of which audio devices are connected where; also allows point-and-click connections/configuration; inspired by Jack; https://gitlab.freedesktop.org/rncbc/qpwgraph
                   # other pw tools to keep an eye on: Sonusmix,
         ca-certificates
         aptitude  # ncurses-based cli apt manager; https://wiki.debian.org/Aptitude
@@ -6290,20 +6291,20 @@ install_from_repo() {
         #gdebi  # GUI local deb file viewer/installer for gnome
         synaptic
         #software-properties-gtk  # GUI frontend for managing distribution and independent software vendor software sources
-        apt-file  # command line tool for searching files contained in packages for the APT packaging system. You can search in which package a file is included or list the contents of a package without installing or fetching it
-                  # TODO: do we need to schedule 'apt-file update'?
+        apt-file  # command line tool for searching files contained in packages for the APT packaging system;
+                  # You can search in which package a file is included or list the contents of a package without installing or fetching it
         command-not-found  # automatically search repos when entering unrecognized command, needs apt-file; installs hook for bash, to use w/ zsh see https://github.com/Freed-Wu/zsh-command-not-found
         apt-show-versions
         unattended-upgrades  # automatic installation of security upgrades
         apt-listchanges  # compare a new version of a package with the one currently installed and show what has been changed; TODO: we haven't provided configuration for it! one example: https://wiki.debian.org/PeriodicUpdates?action=show&redirect=UnattendedUpgrades#Get_more_information_about_changes
         apt-listbugs  # retrieves bug reports from the Debian Bug Tracking System and lists them. Especially, it is intended to be invoked before each installation/upgrade by APT
-        debsecan  # Debian Security Analyzer - tool to generate a list of vulnerabilities which affect a particular Debian installation
+        debsecan  # Debian Security Analyzer - tool to generate a list of vulnerabilities which affect a particular Debian installation.
                   # note it's also dependency for https://github.com/khimaros/debian-hybrid (project that generates automatic higher apt-pins for security updates from unstable)
         sudo  # https://github.com/sudo-project/sudo
         libnotify-bin  # sends desktop notifications to a notification daemon; provides notify-send
         dunst  # notification-daemon; https://dunst-project.org/
         rofi  # supports both x11 & wayland
-        picom  # picom is a compositor for X11; https://github.com/yshui/picom ; for wayland consider https://github.com/WayfireWM/wayfire
+        picom  # picom is a compositor for X11; https://github.com/yshui/picom ; for wayland consider https://github.com/WayfireWM/wayfire (compiz-like compositor)
         dosfstools  # utilities for making and checking MS-DOS FAT filesystems; https://github.com/dosfstools/dosfstools
         #alien  # convert LSB, Red Hat, Stampede and Slackware Packages into Debian packages
         #checkinstall
@@ -6313,16 +6314,17 @@ install_from_repo() {
         #equivs  # tool to create trivial Debian packages. Typically these packages contain only dependency information, but they can also include normal installed files like other packages do
         #cmake
         #ruby
-        ipython3  # https://github.com/ipython/ipython
         python3
         python3-dev
         python3-venv  # venv module for python3
         python3-pip
         python-is-python3  # creates /usr/bin/python -> python3 symlink
         pipx  # https://github.com/pypa/pipx
+        ipython3  # https://github.com/ipython/ipython (its readme lists other repl alternatives)
         curl
         httpie  # CLI, cURL-like tool for humans; https://httpie.io/
         fuse3  # simple interface for userspace programs to export a virtual filesystem to the Linux kernel; https://github.com/libfuse/libfuse/
+               # note as of trixie "fuse" package also defaults to fuse3
         #fuseiso  # FUSE module to mount ISO filesystem images
         parallel
         at  # Delayed job execution and batch processing
@@ -6330,7 +6332,7 @@ install_from_repo() {
         hashdeep
         dconf-cli  # low-level key/value database designed for storing gnome desktop environment settings; https://wiki.gnome.org/Projects/dconf
         dconf-editor  # GUI frontend for dconf (gnome)
-        d-spy  # tool to explore and test end-points and interfaces on the System or Session D-Bus
+        d-spy  # GUI tool to explore and test end-points and interfaces on the System or Session D-Bus
     )
 
     # for .NET dev, consider also nuget pkg;
@@ -6355,20 +6357,21 @@ install_from_repo() {
     # -    netdata
 
     declare -ar block2=(
-        strace  # system call tracer, i.e. a debugging tool which prints out a trace of all the system calls made by another process/program
+        strace  # system call tracer, i.e. a debugging tool which prints out a trace of all the system calls made by another process/program; https://strace.io/
         net-tools  # includes the important tools for controlling the network subsystem of the Linux kernel.
                    # This includes arp, ifconfig, netstat, rarp, nameif and route
         bind9-dnsutils  # provides dig, nslookup, nsupdate
         dnstracer  # determines where a given Domain Name Server (DNS) gets its information fromfor a given
                    # hostname, and follows the chain of DNS servers back to the authoritative answer
-        mtr  # mtr combines the functionality of the 'traceroute' and 'ping' programs in a single network diagnostic tool; GUI
+        mtr  # mtr combines the functionality of the 'traceroute' and 'ping' programs in a single network diagnostic tool; GUI; https://www.bitwizard.nl/mtr/
         whois  # whois client
+        #sublist3r  # gather subdomains for the domain they are targeting over the network; e.g. `sublist3r -d google.com`; unmaintained since '20
         systemd-timesyncd
         #systemd-resolved  # !! be careful, it's buggy; e.g. see https://github.com/systemd/systemd/issues/21123 https://github.com/systemd/systemd/issues/13432 as pointed out in https://www.reddit.com/r/linux/comments/18kh1r5/im_shocked_that_almost_no_one_is_talking_about/
                            # NOTE: installation requires networking stack restart, see https://forums.debian.net/viewtopic.php?t=163267
                            #       that's why its installation has been moved to preseed
         network-manager
-        network-manager-gnome  # provides network-manager-applet and nm-connection-editor
+        network-manager-gnome  # provides network-manager-applet and nm-connection-editor;
                                # alternative to nm, consider systemd-networkd
         jq  # https://jqlang.github.io/jq
             # see also go-qo: https://github.com/kiki-ki/go-qo
@@ -6393,7 +6396,7 @@ install_from_repo() {
         #nload  # monitors network traffic and bandwidth usage in real time.
         #iftop  # displays bandwidth usage information on an network interface
         #arp-scan  # uses the ARP protocol to discover and fingerprint IP hosts on the local network; https://github.com/royhills/arp-scan
-        etherape  # graphical network monitor modeled after etherman. it displays network activity graphically
+        etherape  # graphical network monitor modeled after etherman. it displays network activity graphically; https://etherape.sourceforge.io/
         tcpdump  # dump the traffic on a network; dump the traffic on a network
         tcpflow  # A program like 'tcpdump' shows a summary of packets seen on the wire, but usually doesn't store the data that's actually being transmitted. In contrast, tcpflow reconstructs the actual data streams and stores each flow in a separate file for later analysis; https://github.com/simsong/tcpflow
         #ngrep  # grep for network traffic; https://github.com/jpr5/ngrep
@@ -6439,7 +6442,7 @@ install_from_repo() {
                     # purpose is to synchronize a CalDAV/CardDAV server with a local folder or file
         #calcurse  # calendar and todo list for the console which allows you to keep track of your appointments and everyday tasks; https://calcurse.org/
         #galculator  # https://github.com/galculator/galculator
-        speedcrunch  # https://heldercorreia.bitbucket.io/speedcrunch/  TODO: not avail in testing in aug '25
+        speedcrunch  # https://heldercorreia.bitbucket.io/speedcrunch/
         calc  # for cli
         bc
         #bcal  # Bits, bytes and address calculator; https://github.com/jarun/bcal
@@ -6654,8 +6657,8 @@ install_from_repo() {
                    # see also its web interface: mitmweb
         #charles-proxy5  # note also avail as tarball @ https://www.charlesproxy.com/download/
         tofu
-        gh  # github cli; also avail from debian
-        tealdeer  # rust-based tl;dr client  # https://github.com/tealdeer-rs/tealdeer/
+        gh  # github cli; either from debian or github's own repo
+        tealdeer  # rust-based tl;dr client (provides `tldr` cmd)  # https://github.com/tealdeer-rs/tealdeer/
     )
     # old/deprecated block4:
 
@@ -8951,7 +8954,7 @@ is_server() {
 # @returns {bool}   true if system is a laptop.
 is_laptop() {
     local pwr_supply_dir
-    readonly pwr_supply_dir="/sys/class/power_supply"
+    readonly pwr_supply_dir='/sys/class/power_supply'
 
     # sanity:
     is_d -m "cannot decide if we're a laptop; assuming we're not" "$pwr_supply_dir" || return 1
@@ -9256,7 +9259,7 @@ list_contains() {
 #
 # @returns {bool}  true if ALL the passed programs are installed.
 check_progs_installed() {
-    local msg msg_beginning i progs_missing
+    local msg_beginning i progs_missing
 
     declare -a progs_missing
 
@@ -9268,10 +9271,8 @@ check_progs_installed() {
     done
 
     if [[ "${#progs_missing[@]}" -gt 0 ]]; then
-        [[ "${#progs_missing[@]}" -eq 1 ]] && readonly msg_beginning="[1] required program appears" || readonly msg_beginning="[${#progs_missing[@]}] required programs appear"
-        readonly msg="$msg_beginning not to be installed on the system:\n\t$(build_comma_separated_list "${progs_missing[@]}")\n\nAbort.\n"
-        err "$msg"
-
+        [[ "${#progs_missing[@]}" -eq 1 ]] && msg_beginning='[1] required program appears' || msg_beginning="[${#progs_missing[@]}] required programs appear"
+        err "$msg_beginning not to be installed on the system:\n\t$(build_comma_separated_list "${progs_missing[@]}")\n\nAbort.\n"
         return 1
     fi
 
@@ -9286,11 +9287,12 @@ check_progs_installed() {
 # @returns {bool}  true, if the process with given name is running.
 is_proc_running() {
     local proc="$1"
-
-    [[ -z "$proc" ]] && { err "process name not provided! Abort."; return 1; }
+    [[ -z "$proc" ]] && { err 'process name not provided! Abort.'; return 1; }
 
     #if pidof "$proc"; then
-    pgrep -f -- "$proc" > /dev/null 2>&1  # TODO: add -x flag to search for EXACT commands? also, -f seems like a bad idea, eg is_proc_running 'kala' would return true if file named 'kala' was opened in vim
+    pgrep -f -- "$proc" > /dev/null 2>&1  # TODO: add -x flag to search for EXACT commands? also,
+                                          # -f seems like a bad idea, eg `is_proc_running somecmd`
+                                          # would return true if file named 'somecmd' was opened in vim
 }
 
 
@@ -9531,7 +9533,7 @@ ensure_d() {
             # NOTE: not doing this atm, as we're returning back to default umask AND
             #       it's better to enforce sudo umask via sudoers conf:
             #exe "(${sudo:+umask 2 && sudo }mkdir -p -- '$d')" || e=1
-            exe "${sudo:+sudo }mkdir -p -- '$d'" || e=1
+            exe "${sudo:+sudo }mkdir -p -- '$d'" || e=$?
         fi
     done
     return ${e:-0}
@@ -9776,7 +9778,8 @@ exit 0
 #    - other interesting interactive shells:
 #      - elvish
 #      - murex
-#      - xonsh
+#      - xonsh - python-powered shell
+#        - looks interesting zsh/nushell alternative
 #      - see also pharo: https://github.com/pharo-project/pharo (smalltalk-like lang with a repl/ide tooling)
 #  - for shell: consider
 #    - ble.sh (readline alternative for bash)
