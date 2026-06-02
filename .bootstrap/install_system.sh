@@ -633,7 +633,7 @@ setup_systemd() {
             # as of '25 they are (ctrl+f following line in above page): ".service", ".socket", ".device", ".mount", ".automount", ".swap", ".target", ".path", ".timer", ".slice", or ".scope".
             if [[ -f "$node" && "$node" =~ \.(service|socket|device|mount|automount|swap|target|path|timer|slice|scope)$ ]]; then  # note we require certain suffixes
                 __var_expand_move $sudo "$node" "$tdir/$fname" || continue
-                [[ "$node" == *@.* ]] && continue  # bail as cannot enable (uninstantiated) template units
+                [[ "$node" == *@.* ]] && continue  # skip as cannot enable (uninstantiated) template units
 
                 # note do not use the '--now' flag with systemctl enable, as some units
                 # might be listening on something like sleep.target or battery.target - those shouldn't be started like that!
@@ -2177,6 +2177,7 @@ setup_install_log_file() {
 # see https://wiki.debian.org/SecureBoot#MOK_-_Machine_Owner_Key
 setup_mok() {
     local target_dir cert_file
+    # !! careful with changing dir or filename, as our dkms' use_user_mok.conf references them
     target_dir='/var/lib/shim-signed/mok'
     cert_file="$target_dir/MOK.der"
 
@@ -2211,6 +2212,18 @@ setup_mok() {
 
     _instruct_dkms_to_use_keys
     MANUAL_STEPS+=('enroll secureboot MOK - needs reboot')
+}
+
+
+# see also:
+# - https://github.com/purarue/mpv-sockets
+setup_mpv() {
+    local script_d="$HOME/.config/mpv/scripts"
+
+    # https://github.com/wis/mpvSockets#linux--unixes
+    # TODO: can consider committing this script to our dotfiles instead
+    ensure_d "$script_d" || return 1
+    install_from_url -Ad "$script_d"  mpvSockets.lua  'https://raw.githubusercontent.com/wis/mpvSockets/master/mpvSockets.lua'
 }
 
 
@@ -4322,25 +4335,30 @@ install_glow() { # https://github.com/charmbracelet/glow
 
 
 install_btop() {  # https://github.com/aristocratos/btop
-    install_bin_from_git -N btop aristocratos/btop  'btop-x86_64-unknown-linux-musl.tbz'
+    install_bin_from_git -N btop aristocratos/btop  'btop-x86_64-unknown-linux-musl.tar.gz'
 }
 
 
 # currently not in use, installing via pipx instead
+# plugin installation documentation: https://github.com/yt-dlp/yt-dlp#installing-plugins
 #
 # ytdl plugins to consider:
 # - https://github.com/pukkandan/yt-dlp-YTAgeGateBypass
 # - https://github.com/bindestriche/srt_fix
 install_ytdl() {  # https://github.com/yt-dlp/yt-dlp
-    local dir target plugs_d
+    local plugs_d="$XDG_CONFIG_HOME/yt-dlp/plugins"
 
-    plugs_d="${XDG_CONFIG_HOME}/yt-dlp/plugins"
-
-    # not for runtime make sure to also start the docker container, as per https://github.com/Brainicism/bgutil-ytdlp-pot-provider#a-http-server-option
+    # note for runtime make sure to also start the docker container, per https://github.com/Brainicism/bgutil-ytdlp-pot-provider#a-http-server-option :
+    # > docker run --name bgutil-provider -d --init brainicism/bgutil-ytdlp-pot-provider
+    #
+    # note as long as you're exposing the port 4416 on host side (default),
+    # then the plugin should work without further config
+    #
+    # usage: https://github.com/Brainicism/bgutil-ytdlp-pot-provider#usage
     _install_pot_provider_plugin() {  # https://github.com/Brainicism/bgutil-ytdlp-pot-provider#installation
         local dir target
-        dir="$(fetch_extract_tarball_from_git Brainicism/bgutil-ytdlp-pot-provider 'bgutil-ytdlp-pot-provider.zip')" || return 1
-        is_d -nm "cannot install ytdl POT provider plugin" "$dir" || return 1
+        dir="$(fetch_extract_tarball_from_git  Brainicism/bgutil-ytdlp-pot-provider 'bgutil-ytdlp-pot-provider.zip')" || return 1
+        is_d -nm 'cannot install ytdl POT provider plugin' "$dir" || return 1
 
         target="$plugs_d/bgutil-ytdlp-pot-provider"
         exe "rm -rf -- '$target'" || return 1  # rm previous installation
@@ -4349,7 +4367,9 @@ install_ytdl() {  # https://github.com/yt-dlp/yt-dlp
     }
 
     #install_bin_from_git -N ytdl yt-dlp/yt-dlp 'yt-dlp_linux'
-    py_install '"yt-dlp[default,curl-cffi]"'  # note curl-cffi is for impersonation, see https://github.com/yt-dlp/yt-dlp#impersonation
+
+    # yt-dlp-ejs from https://github.com/yt-dlp/ejs
+    py_install -e yt-dlp-ejs '"yt-dlp[default,curl-cffi]"'  # note curl-cffi is for impersonation, see https://github.com/yt-dlp/yt-dlp#impersonation
 
     # install plugins:
     _install_pot_provider_plugin
@@ -4392,6 +4412,7 @@ install_aider_desk() {  # https://github.com/hotovo/aider-desk
 
 # note there's also a desktop app:  opencode-desktop-linux-amd64.deb
 install_opencode() {  # https://github.com/anomalyco/opencode
+    # alternatively install via mise: `mise use -g opencode`
     install_bin_from_git -N opencode anomalyco/opencode 'opencode-linux-x64.tar.gz'
 }
 
@@ -5516,8 +5537,9 @@ install_i3() {
 }
 
 
-# pass -g opt to install from github; in that case the repo to be provided is [user/repo]
-# and we can install one pkg at a time.
+# -g  githubuser/repo   install from github; can only install one git-sourced pkg at a time.
+# -e  pkg1,pkg2...pkgn  inject additional pakcages to main package enviornment;
+#                       can only use if we're installing a single main pkg
 #
 # good write-up on py dependency management as of '24: https://nielscautaerts.xyz/python-dependency-management-is-a-dumpster-fire.html
 # tl;dr: use uv if pypi, or pixi if conda
@@ -5525,19 +5547,31 @@ install_i3() {
 #   - also supports PEP 723 to add dependencies to file hdr, so can run these
 #     single scripts via uvx while also using deps; also supported by pipx! - https://peps.python.org/pep-0723/
 py_install() {
-    local opt opts OPTIND
+    local opt pkgs extra_deps main_pkg OPTIND
 
-    declare -a opts
-    while getopts 'g:' opt; do
+    declare -a pkgs extra_deps
+    while getopts 'g:e:' opt; do
         case "$opt" in
-            g) opts+=("git+ssh://git@github.com/${OPTARG}.git") ;;
+            g) pkgs+=("git+ssh://git@github.com/${OPTARG}.git")
+               main_pkg="${OPTARG##*/}" ;;
+            # for extra dependency injection, see https://stackoverflow.com/a/78884561/1803648
+            e) readarray -t -d ',' extra_deps <<< "$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}(): -$opt" ;;
         esac
     done
     shift "$((OPTIND-1))"
 
-    opts+=("$@")
-    exe "pipx install ${opts[*]}"
+    pkgs+=("$@")
+    exe "pipx install ${pkgs[*]}" || return $?
+
+    # inject extra dependencies to $main_pkg env:
+    [[ "${#extra_deps[@]}" -eq 0 ]] && return 0
+    [[ "${#pkgs[@]}" -eq 1 ]] || { err "cannot use -e flag when installing >1 main pkg"; return 1; }  # sanity
+    if [[ -z "$main_pkg" ]]; then
+        main_pkg="${1//\"/}"  # first remove double-quotes, e.g. if '"yt-dlp[default,curl-cffi]"' was provided
+        main_pkg="${main_pkg%%\[*}"  # remove after [ (inclusive)
+    fi
+    exe "pipx inject '$main_pkg' ${extra_deps[*]}"
 }
 
 
@@ -5564,7 +5598,8 @@ fp_install() {  # flatpak install
     exe "flatpak install -y --noninteractive '$remote' '$ref'" || return 1
 
     # looks like link creation no longer required as of '26, as FP appears to be creating
-    # .desktop files somewhere under ~/.local/share/flatpak/exports/share/applications that are picked up.
+    # .desktop files somewhere under ~/.local/share/flatpak/exports/share/applications
+    # that are picked up by rofi.
     if [[ -n "$link" ]]; then
         # there's still some confusion, as by default $ flatpak install should
         # install system-wide (e.g. /var/lib/flatpak/exports/bin, I think), but
@@ -5579,8 +5614,7 @@ fp_install() {  # flatpak install
 
 
 install_i3_conf() {
-    local conf
-    conf="$HOME/.config/i3/config"  # conf file _to be_ generated;
+    local conf="$HOME/.config/i3/config"  # conf file _to be_ generated;
 
     py_install update-conf.py || { err "update-conf.py install failed"; return 1; }
     update-conf.py -f "$conf" || { err "i3 config install failed w/ $?"; return 1; }
@@ -6514,7 +6548,7 @@ install_from_repo() {
                   # alternatives: pitivi (gnome)
         frei0r-plugins  # https://github.com/dyne/frei0r ; collection of free and open source video effects plugins
         gimp  # TODO: avail as flatpak
-        xss-lock  # TODO: x11!
+        xss-lock  # TODO: x11! note xss-lock is preferred, as it also triggers on system suspend
         xsecurelock  # TODO: x11
         #filezilla
         #transmission
@@ -7931,6 +7965,12 @@ install_binance() {
 }
 
 
+# https://www.interactivebrokers.ie/en/trading/download-tws.php
+install_ibkr_tws() {
+    true  # TODO
+}
+
+
 # https://github.com/cointop-sh/cointop
 # archived in '25
 install_cointop() {
@@ -8460,6 +8500,7 @@ post_install_progs_setup() {
     setup_secret_service
     is_native && setup_smartd
     is_secure_boot && setup_mok  # otherwise e.g. dkms dirs won't be there
+    is_pkg_installed mpv && setup_mpv
 }
 
 
