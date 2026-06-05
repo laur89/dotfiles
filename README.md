@@ -119,9 +119,10 @@ Instead we partition it manually. Instructions from [here](https://www.dwarmstro
   the top), `btrfs`, mount to `/`
 - `Finish partitioning and write changes to disk`
 
-Note if we had more than one encrypted volume (e.g. / and /home), then we'd
+Note if we had more than one encrypted volume (e.g. `/` and `/home`), then we'd
 have to configure a keyfile to forego entering two passphrases, see the bottom
-of the (minimal-debian post) blog post above.
+of the ([minimal-debian post](https://www.dwarmstrong.org/minimal-debian/#4-16-keyfile-to-unlock-home))
+blog post above.
 
 ### [another instruction](https://medium.com/@inatagan/installing-debian-with-btrfs-snapper-backups-and-grub-btrfs-27212644175f)
 - sets up grub-btrfs to allow us to boot directly into our snapshots without the need of a live media
@@ -285,11 +286,11 @@ was ran; could be [gtk4](https://wiki.archlinux.org/title/GTK#Dark_theme_variant
 gsettings likely has (a binary!) config file at `~/.config/dconf/user`.
 For GUI dconf editor install `dconf-editor` pkg.
     - note it's a binary file, [which should not be replaced while logged in](https://askubuntu.com/a/984214),
-    so be careful if storing it in our dotfiles/git repo.
+      so be careful if storing it in our dotfiles/git repo.
         - u/muru's reply below it shows a way to configure it via text files
-            system-wide under `/etc/dconf/db/database.d/`
+          system-wide under `/etc/dconf/db/database.d/`
     - there's also [this askubuntu answer](https://askubuntu.com/a/875922) that
-        might be relevant;
+      might be relevant;
     - as always, Arch' [wiki on GTK](https://wiki.archlinux.org/title/GTK) is good.
 
 - for uniform GTK & QT look, see [this arch wiki](https://wiki.archlinux.org/title/Uniform_look_for_Qt_and_GTK_applications)
@@ -346,5 +347,8 @@ For GUI dconf editor install `dconf-editor` pkg.
     - https://github.com/infokiller/config-public
     - https://github.com/risu729/dotfiles (wsl stuff as well!)
     - https://gitlab.com/sio/server_common (from [this reddit post](https://www.reddit.com/r/linux/comments/vd9qkn/it_took_years_to_perfect_my_setup_and_now_i_want/ickhfsc/))
+    - https://github.com/vincentbernat/i3wm-configuration
+      - excellent i3 config, i3 companion scripts, accompanying blog post,
+        xsecureconfig / xss-lock scripts
 1. look into [HTTP Boot](https://www.debian.org/releases/trixie/release-notes/whats-new.en.html#http-boot-support) - UEFI functionality to boot .iso from network
 

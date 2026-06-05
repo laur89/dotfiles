@@ -3270,6 +3270,7 @@ install_ferdium() {  # https://github.com/ferdium/ferdium-app
 }
 
 
+# alternative YT client/youtube client
 # also avail as flatpak
 install_freetube() {  # https://github.com/FreeTubeApp/FreeTube
     install_bin_from_git -N freetube FreeTubeApp/FreeTube 'amd64.AppImage'
@@ -3278,8 +3279,6 @@ install_freetube() {  # https://github.com/FreeTubeApp/FreeTube
 
 # https://help.seafile.com/syncing_client/install_linux_client/
 # !!! "Since 9.0.7 version, we only provide official packages in AppImage format" !!!
-#
-# note url is like https://s3.eu-central-1.amazonaws.com/download.seadrive.org/Seafile-cli-x86_64-9.0.8.AppImage
 install_seafile_cli() {
     install_from_any  seaf-cli 'https://www.seafile.com/en/download/' 'Seafile-cli-x86_64-[0-9.]+AppImage'
 }
@@ -4417,11 +4416,19 @@ install_opencode() {  # https://github.com/anomalyco/opencode
 }
 
 
+# alternatives:
+# - codex desktop (from openai)
+# - claude desktop
+# - jetbrains air
 install_cursor() {
     install_from_any  cursor-ide 'https://cursor.com/download' '/linux-x64/cursor/[0-9.]+'
 }
 
 
+# alternatives:
+# - codex desktop (from openai)
+# - cursor
+# - jetbrains air
 install_claude() {  # https://code.claude.com/docs/en/terminal-guide#macos-and-linux
     install_from_url_shell  claude 'https://claude.ai/install.sh'
 }
@@ -6874,7 +6881,7 @@ install_from_flatpak() {
     # (web app) pentest tool:
     # https://flathub.org/en/apps/org.zaproxy.ZAP
 
-    # listen to your mic:
+    # listen to your microphone:
     # https://flathub.org/en/apps/it.mijorus.whisper
 
     # network scanner - discover devices on your network:

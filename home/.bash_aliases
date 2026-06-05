@@ -292,7 +292,7 @@ alias dki='docker run -i -t -P'
 dex() { docker exec -it "$(container_by_name "$1")" "${@:2}"; }
 
 # Stop all containers
-dstop() { docker stop $(docker ps --no-trunc -aq); }
+dstop() { docker stop $(docker ps --no-trunc -q); }
 
 # Remove all (all, not just running!) containers
 drm() { docker rm $(docker ps --no-trunc -aq); }
