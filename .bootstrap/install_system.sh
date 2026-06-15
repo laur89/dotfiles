@@ -3948,10 +3948,10 @@ install_chrome() {  # https://www.google.com/chrome/?platform=linux
 
 
 # alternatives:
-# - https://github.com/joeferner/redis-commander
+# - https://github.com/joeferner/redis-commander#with-docker-compose
 # - https://github.com/patrikx3/redis-ui
-#   - can run as docker or flatpak
-install_redis_desktop_manager() {
+#   - can run as docker or flatpak (fp needs to be pulled from gh)
+install_redis_desktop_manager() {  # https://github.com/qishibo/AnotherRedisDesktopManager
     install_bin_from_git -N redis-desktop-manager  qishibo/AnotherRedisDesktopManager 'x86_64.AppImage'
 }
 
