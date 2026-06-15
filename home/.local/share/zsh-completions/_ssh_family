@@ -1,0 +1,12 @@
+#compdef sshpearl
+
+# note naming it to _ssh would not work as it prolly conflicts w/ ssh completion
+# from /usr/share/zsh/functions/Completion/Unix/_ssh
+_ssh_family() {
+    local -a hosts
+    hosts=(
+        ${(f)"$(sed -rn 's/^[[:space:]]*Host[[:space:]]+([[:alnum:]]+)/\1/ip' "$HOME/.ssh/config" | grep -v 'localhost')"}
+    )
+    _describe 'ssh to:' hosts
+}
+

@@ -1,0 +1,117 @@
+#compdef g
+
+# note there's also a counterpart in bash side of the world
+_g() {
+    local tokens curw wordlist d prefix p i
+
+    # Other zsh tips/hints:
+    # - $CURSOR holds cursor position
+    # - $BUFFER holds the whole command line buffer
+    # - $LBUFFER holds command line buffer that is left from the cursor, i.e. it's a
+    #   BUFFER substring 1 .. $CURSOR
+    # - $RBUFFER is the same as LBUFFER but holds part of BUFFER right to the cursor
+    # - $CURRENT - the word on the command line we are on
+    # - $words
+    #
+    tokens=(${(z)LBUFFER})
+    #curw="${tokens[-1]}"
+    curw=$words[CURRENT]
+    orig_curw=$curw
+    #cmd="${tokens[1]}"  # command we're running/completing
+
+    # note input is guaranteed to be minimum of 2 dots
+    __go_up() {
+        local i d
+        for ((i=0; i <= (${#1} - 2); i++)); do
+            d+='../'
+        done
+        echo -n "$d"
+    }
+
+    # build the parent/root directory to search from
+    # note defines global/outer $d
+    __define_d() {
+        local I input paths i
+
+        I="$1"
+
+        #err_display "I: [$I], resulting in: [${words[@]:1:${#words[@]}-I}]"
+        for i in "${words[@]:1:${#words[@]}-I}"; do
+            input+="$i"
+            [[ "$i" != */ ]] && input+='/'
+        done
+
+        [[ "$input" == '~'* ]] && input="${HOME}${input:1}"
+        [[ "$input" == /* ]] && { input="${input:1}"; d='/'; }
+        #[[ -z "$input" ]] && input='.'  # TODO  do we want this?
+
+        paths=("${(@s:/:)${input%/}}")
+
+        for i in "${paths[@]}"; do
+            [[ -z "$i" || "$i" == . ]] && continue   # TODO: what if the first path element is '.'?
+
+            [[ -z "$d" && "$i" =~ '^\.{3,}$' ]] && { d="$(__go_up "$i")"; continue; }
+            [[ "$i" == \$* ]] && i="$(envsubst <<< "$i")"  # need to manually expand env vars
+            [[ -n "$d" && "$d" != */ && "$i" != /* ]] && d+='/'
+            d+="$i"
+        done
+        #err_display "curw: [$curw], input: [$input], tokens: [$tokens], words: [$words] d: [$d] CURR: $CURRENT" define_d
+    }
+
+    #if [[ "$curw" == */ ]]; then  # ie all's confirmed directory path i suppose? as in no further completion needed here
+        #compadd -qS ' ' -- "$curw"
+        #return
+        ##prefix="$curw"
+    #elif [[ "$CURRENT" -eq 2 ]]; then
+    if [[ "$CURRENT" -eq 2 ]]; then
+
+        if [[ "$curw" =~ '^\.{2,}$' ]]; then
+            d="$(__go_up "$curw")"
+            compadd -qS ' ' -- "$d"
+            return
+            #OR:
+            d="$(__go_up "$curw")"
+            compadd -qS ' ' -- "$d"
+            _path_files -W "$d" -/
+            prefix="$d"
+        else
+            _files -/  # directories
+            return 0
+        fi
+    else
+        __define_d 2
+
+        if [[ "$curw" == */* ]]; then
+            p=("${(@s:/:)${curw%/*}}")  # split up everything before last slash
+            curw="${curw##*/}"  # everything _after_ very last slash
+        fi
+
+        for i in "${p[@]}"; do
+            [[ -z "$i" || "$i" == . ]] && continue   # TODO: what if the first path element is '.'?
+            [[ "$i" == \$* ]] && i="$(envsubst <<< "$i")"  # need to manually expand env vars
+            [[ "$i" != */ ]] && i+='/'
+            [[ "$d" != */ ]] && d+='/'
+            d+="$i"
+            prefix+="$i"
+        done
+    fi
+
+    #err_display "curw: [$curw]: d: [$d] prfx: [$prefix]"
+
+    # TODO: currently when doing  $g /dev dir word<TAB>   while /dev/dir is partial, then find here would
+    # try to search where $d=/dev/dir; not a deal-breaker, but some recursive completion for this would be cool
+    wordlist=(
+        ${(f)"$(find -L "${d:-.}" -mindepth 1 -maxdepth 1 -type d -printf "${prefix}%f\n" 2>/dev/null)"}
+    )
+    #err_display "CURRENT: $CURRENT wlist: [$wordlist]"
+
+    # TODO: how to make sure our current dir's contents aren't offered
+    # in case target dir no longer has candidates? setting COMPREPLY here to
+    # empty val sort of works, but not ideal:
+    [[ -z "$wordlist" ]] && return 0
+
+    _describe -t values 'change dir' wordlist
+    #compadd -qP "$prefix" -- "$curw"
+    #compadd  -- "$wordlist"
+}
+
