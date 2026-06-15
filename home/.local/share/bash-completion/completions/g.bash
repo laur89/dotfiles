@@ -2,9 +2,10 @@
 # $1 - name of the function whose args are completed
 # $2 - word being completed
 # $3 - word preceding the word being completed on the current command line, think it's same as ${COMP_WORDS[COMP_CWORD-1]}
+#
+# note there's also a counterpart in zsh side of the world
 _complete_dirs_in_pwd() {
     local curw wordlist d prefix p i
-
 
     if [[ "$DEBUG" -eq 1 ]]; then
         err "\$1: [$1]"  # always funcname
@@ -22,7 +23,6 @@ _complete_dirs_in_pwd() {
         echo -n "$d"
     }
 
-
     # defines global/outer $d
     __define_d() {
         local I input paths i
@@ -33,13 +33,8 @@ _complete_dirs_in_pwd() {
             [[ "$i" != */ ]] && input+='/'
         done
 
-        if [[ "$input" == '~'* ]]; then
-            input="${HOME}${input:1}"
-        fi
-        if [[ "$input" == /* ]]; then
-            input="${input:1}"
-            d='/'
-        fi
+        [[ "$input" == '~'* ]] && input="${HOME}${input:1}"
+        [[ "$input" == /* ]] && { input="${input:1}"; d='/'; }
         #[[ -z "$input" ]] && input='.'  # TODO  do we want this?
 
         IFS='/' read -ra paths <<< "$input"
@@ -56,18 +51,23 @@ _complete_dirs_in_pwd() {
 
 
     if [[ "$COMP_CWORD" -eq 1 && ! "$curw" =~ ^\.{3,} ]]; then
+        [[ "$DEBUG" -eq 1 ]] && display_message 1st
         return 0  # if [^...] then those need to be expanded, hence can't return here
     elif [[ "$2" == */ ]]; then  # ie all's confirmed directory path i suppose? as in no further completion needed here
+        [[ "$DEBUG" -eq 1 ]] && display_message 2nd
         curw="$2\ "
         COMPREPLY=($(compgen -W "$curw" -- "$curw"))
         return 0
     elif grep -qE '\S+/\S+' <<< "$curw"; then
         if [[ "$COMP_CWORD" -eq 1 ]]; then
+            # TODO: is this block even reachable, doesn't the very first condition cover this?
+            [[ "$DEBUG" -eq 1 ]] && display_message 3rd
             __define_d 1
             d="${d%/*}/"
             curw="${curw##*/}"  # everything after very last slash
             prefix="$d"
         else
+            [[ "$DEBUG" -eq 1 ]] && display_message 4th
             __define_d 2
 
             IFS='/' read -ra p <<< "${curw%/*}"  # split up everything before last slash
@@ -83,6 +83,7 @@ _complete_dirs_in_pwd() {
             done
         fi
     else
+        [[ "$DEBUG" -eq 1 ]] && display_message 5th
         __define_d 1
         if [[ -n "$2" ]]; then  # if we're currently trying to auto-complete something
             curw="${d##*/}"  # everything after very last slash
