@@ -191,10 +191,10 @@ validate_and_init() {
     fi
 
     # ask for the admin password upfront:
-    sudo --validate || fail "is user in sudoers file? is sudo installed? if not, then [su && apt-get install sudo]"
+    sudo --validate || fail 'is user in sudoers file? is sudo installed? if not, then [su && apt-get install sudo]'
     #clear
 
-    # keep-alive: update existing `sudo` time stamp; search tags:  keep sudo, keepsudo, sudo keep, sudokeep, stay sudo, staysudo
+    # keep-alive: update existing `sudo` time stamp; search tags:  [keep sudo, keepsudo, sudo keep, sudokeep, stay sudo, staysudo, sudostay]
     while true; do sudo -n true; sleep 30; kill -0 "$$" || exit; done 2>/dev/null &
 }
 
@@ -223,7 +223,7 @@ check_dependencies() {
                 ; do
         if ! cmd_avail "$prog"; then
             report "[$prog] not installed yet, installing..."
-            [[ -n "${exec_to_pkg[$prog]}" ]] && prog=${exec_to_pkg[$prog]}
+            prog="${exec_to_pkg[$prog]:-$prog}"
 
             # TODO: currently does not fail even when prog is not avail!
             install_block "$prog" || fail "unable to install required prog [$prog] this script depends on. abort."
@@ -1503,9 +1503,10 @@ install_deps() {
     #   - https://github.com/ajeetdsouza/zoxide
     #   - https://github.com/wyne/fasder - reimplementation in go
     #   - https://github.com/andrewferrier/memy
-    clone_or_pull_repo "whjvenyl" "fasd" "$BASE_PROGS_DIR"  # https://github.com/whjvenyl/fasd
-    create_link "$BASE_PROGS_DIR/fasd/fasd" "$HOME/bin/fasd"
-    ensure_d "$XDG_DATA_HOME/fasd"  # referenced by ~/.config/fasd/config
+    #     - lists bunch of alternatives @ https://github.com/andrewferrier/memy#comparison-with-similar-tools
+    #clone_or_pull_repo "whjvenyl" "fasd" "$BASE_PROGS_DIR"  # https://github.com/whjvenyl/fasd
+    #create_link "$BASE_PROGS_DIR/fasd/fasd" "$HOME/bin/fasd"
+    #ensure_d "$XDG_DATA_HOME/fasd"  # referenced by ~/.config/fasd/config
 
     # maven bash completion:
     clone_or_pull_repo "juven" "maven-bash-completion" "$BASE_PROGS_DIR"  # https://github.com/juven/maven-bash-completion
@@ -1579,7 +1580,6 @@ install_deps() {
     #py_install awscli         # https://docs.aws.amazon.com/en_pv/cli/latest/userguide/install-linux.html#install-linux-awscli
 
     # colorscheme generator:
-    # see also complementing script @ https://github.com/dylanaraps/bin/blob/master/wal-set
     # alternatives to pywal:
     #   - rust: https://codeberg.org/explosion-mental/wallust
     #   - c: https://github.com/danihek/hellwal
@@ -2050,9 +2050,11 @@ setup_private_asset_perms() {
             "$GNUPGHOME" \
             ~/.bash_hist \
             ~/.bash_history_eternal \
-            "$XDG_DATA_HOME/atuin/history.db" \
-            "$XDG_CONFIG_HOME/revolut-py" \
-            "$XDG_CONFIG_HOME/zsh" \
+            "$XDG_DATA_HOME/atuin/" \
+            "$XDG_CONFIG_HOME/revolut-py/" \
+            "$XDG_CONFIG_HOME/zsh/" \
+            "$RLWRAP_HOME" \
+            "$XDG_STATE_HOME/memy/" \
                 ; do
         [[ -e "$i" ]] || { err "expected to find [$i] for permission sanitization, but it doesn't exist; is it normal?"; continue; }
         [[ -d "$i" && "$i" != */ ]] && i+='/'
@@ -2711,7 +2713,7 @@ install_own_builds() {
     # TODO: why are ferdium&discord behind is_native?
     is_native && install_ferdium
     #install_xournalpp
-    install_zoxide
+    #install_zoxide
     install_sesh
     install_ripgrep
     install_rga
@@ -2743,6 +2745,7 @@ install_own_builds() {
     install_atuin
     install_lnav
     install_croc
+    install_memy
     install_kanata
     install_eza
     install_i3
@@ -3324,7 +3327,7 @@ install_xdg_ninja() {  # https://github.com/b3nj5m1n/xdg-ninja
 # TODO: seems to build fine, but no idea how to pass flags to cmake such as -DCMAKE_BUILD_TYPE=Release
 #       or this for wayland: -DCMAKE_BUILD_TYPE=Release -DENABLE_X11=OFF ENABLE_WAYLAND=ON
 build_ueberzugpp() {  # https://github.com/jstkdng/ueberzugpp#build-from-source
-    local tmpdir repo ver deps
+    local repo ver deps tmpdir
 
     repo='https://github.com/jstkdng/ueberzugpp'
     ver="$(get_git_sha "$repo")" || return 1
@@ -3350,7 +3353,7 @@ build_ueberzugpp() {  # https://github.com/jstkdng/ueberzugpp#build-from-source
 
 
 resolve_ver() {
-    local url ver hdrs
+    local url hdrs ver
 
     readonly url="$1"
 
@@ -3362,6 +3365,7 @@ resolve_ver() {
         n=3  # we want to see at least 3 digits in url to make it more likely we have version in it
 
         # increase $n by the number of digits in $v that are not part of ver:
+        # NOTE: hardcoded architecture expectation
         for i in 'x86\S64' 'linux\S{,2}64' 'amd\S{,2}64'; do
             readarray o < <(grep -Eio "$i" <<< "$v")  # occurrences of $i in $v
             for j in "${o[@]}"; do
@@ -3373,18 +3377,18 @@ resolve_ver() {
         [[ "${#v}" -ge "$n" ]]
     }
 
-    hdrs="$(curl -Ls --fail --retry 1 -A "$USER_AGENT" --head -o /dev/stdout "$url")"
+    hdrs="$(curl -Lsf --retry 1 -A "$USER_AGENT" --head -o /dev/stdout "$url")" || { err "curling for version from [$url] failed w/ $?"; return 1; }
     ver="$(grep -iPo '^etag:\s*"*\K\S+(?=")' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
     if [[ "${#ver}" -le 5 ]]; then
-        ver="$(grep -iPo '^location:\s*\K\S+' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
+        ver="$(grep -iPo '^location:\s*\K\S+' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check; https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Location
         if [[ "${#ver}" -le 5 ]]; then
             # TODO: is grepping for content-disposition hdr a good idea?
             #       example case of this being used is Postman
-            ver="$(grep -iPo '^content-disposition:.*filename="*\K.+' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
+            ver="$(grep -iPo '^content-disposition:.*filename="*\K.+' <<< "$hdrs" | tail -1)"  # https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Disposition
             _verif_ver "$ver" || ver="$url"  # TODO: is this okay assumption for version tracking? maybe just not store ver and always install?
         fi
 
-        _verif_ver "$ver" || err "ver resolve from url [$url] resource dubious, as resolved ver [$ver] doesn't have enough digits"
+        _verif_ver "$ver" || { err "ver resolve from url [$url] resource dubious, as resolved ver [$ver] doesn't have enough digits"; return 1; }
     fi
 
     unset _verif_ver
@@ -3946,6 +3950,7 @@ install_chrome() {  # https://www.google.com/chrome/?platform=linux
 # alternatives:
 # - https://github.com/joeferner/redis-commander
 # - https://github.com/patrikx3/redis-ui
+#   - can run as docker or flatpak
 install_redis_desktop_manager() {
     install_bin_from_git -N redis-desktop-manager  qishibo/AnotherRedisDesktopManager 'x86_64.AppImage'
 }
@@ -4299,7 +4304,7 @@ install_jd() {  # https://github.com/josephburnett/jd
 }
 
 
-# see also https://github.com/eth-p/bat-extras/blob/master/README.md#installation
+# see also https://github.com/eth-p/bat-extras#installation
 # TODO: look into bat extras (like manpages)
 install_bat() {  # https://github.com/sharkdp/bat
     #install_from_git sharkdp/bat 'bat_[-0-9.]+_amd64.deb'
@@ -4392,7 +4397,9 @@ install_ytdl() {  # https://github.com/yt-dlp/yt-dlp
 # https://aider.chat/docs/install.html#install-with-pipx
 #   - !! take note of supported py version !!
 # post-install steps: https://aider.chat/docs/install/optional.html
-#   - e.g. nvim plugin: https://github.com/joshuavial/aider.nvim
+#   - e.g. nvim plugin: https://github.com/joshuavial/aider.nvim [archived may '26]
+# # alteratives/see also:
+# - nvim's avante plugin
 install_aider() {
     py_install aider-chat --python python3.12
 
@@ -4410,6 +4417,9 @@ install_aider_desk() {  # https://github.com/hotovo/aider-desk
 
 
 # note there's also a desktop app:  opencode-desktop-linux-amd64.deb
+# - other GUI frontends to consider:
+#   - OpenChamber
+#   - zed
 install_opencode() {  # https://github.com/anomalyco/opencode
     # alternatively install via mise: `mise use -g opencode`
     install_bin_from_git -N opencode anomalyco/opencode 'opencode-linux-x64.tar.gz'
@@ -5611,7 +5621,7 @@ fp_install() {  # flatpak install
         # there's still some confusion, as by default $ flatpak install should
         # install system-wide (e.g. /var/lib/flatpak/exports/bin, I think), but
         # appears to install into $HOME/.local/share/flatpak/exports/bin
-        #
+
         #bin="/var/lib/flatpak/exports/bin/$ref"
         bin="$HOME/.local/share/flatpak/exports/bin/$ref"  # i.e. $XDG_DATA_HOME/flatpak/exports/bin/$ref
         is_f -nm "cannot create shortcut link for [$link]" "$bin" || return 1  # sanity
@@ -5893,9 +5903,12 @@ install_neovide() {  # rust-based GUI front-end to neovim
 
 # https://github.com/helix-editor/helix
 # also available in apt repo
+#
 # see also:
-# - kakoune - https://github.com/mawww/kakoune (avail on apt)
-# - zed (below)
+# - alternatives/see also:
+#   - kakoune - https://github.com/mawww/kakoune (avail on apt)
+#   - zed
+# tags: helix editor
 install_helix() {
     #install_bin_from_git -N hx helix-editor/helix 'x86_64.AppImage'
     #install_bin_from_git -N hx -n hx  helix-editor/helix '-x86_64-linux.tar.xz'
@@ -5904,7 +5917,17 @@ install_helix() {
 
 
 # https://github.com/zed-industries/zed
-# see also their own installation script (e.g. where icon replace logic is from) @ https://zed.dev/install.sh
+# avail as nonverified flatpak: https://flathub.org/en/apps/dev.zed.Zed
+#
+# installation logic from https://zed.dev/docs/linux#downloading-manually
+#   - (see also their own installation script @ https://zed.dev/install.sh)
+# - rust, gpu-accel
+# - agentic, i.e. integrates nicely w/ opencode et al
+#
+# - alternatives/see also:
+#   - kakoune - https://github.com/mawww/kakoune (avail on apt)
+#   - helix
+# tags: zed editor
 install_zed() {
     local dsk desktop_file_path
 
@@ -5914,7 +5937,7 @@ install_zed() {
     # install .desktop:
     dsk="$HOME/.local/share/applications"  # i.e. $XDG_DATA_HOME/applications
     is_d -m 'cannot install zed .desktop entry' "$dsk" || return 1
-    desktop_file_path="$BASE_PROGS_DIR/zed/share/applications/zed.desktop"
+    desktop_file_path="$BASE_PROGS_DIR/zed/share/applications/dev.zed.Zed.desktop"
     is_f -nm 'cannot install zed .desktop entry' "$desktop_file_path" || return 1
 
     sed -i --follow-symlinks "s|Icon=zed|Icon=$BASE_PROGS_DIR/zed/share/icons/hicolor/512x512/apps/zed.png|g" "$desktop_file_path"
@@ -5926,12 +5949,9 @@ install_zed() {
 # NO plugin config should go here (as it's not guaranteed they've been installed by this time)
 # TODO: is this fine? see https://vi.stackexchange.com/questions/46887
 nvim_post_install_configuration() {
-    local nvim_confdir
-
-    readonly nvim_confdir="$HOME/.config/nvim"
-
-    ensure_d -s "/root/.config" || return 1
-    create_link -s "$nvim_confdir" "/root/.config/"  # root should use same conf
+    local nvim_confdir="$HOME/.config/nvim"
+    ensure_d -s '/root/.config' || return 1
+    create_link -s "$nvim_confdir" '/root/.config/'  # root should use same conf
 }
 
 
@@ -6034,7 +6054,7 @@ install_YCM() {  # the quick-and-not-dirty install.py way
     fi
 
     exe "pushd -- $ycm_plugin_root" || return 1
-    readonly ver="$(git rev-parse HEAD)"
+    ver="$(git rev-parse HEAD)"
     is_installed "$ver" YCM && { popd; return 2; }
 
     # install deps
@@ -6046,8 +6066,8 @@ install_YCM() {  # the quick-and-not-dirty install.py way
     '
 
     # install YCM
-    exe -i "python3 ./install.py --all" || { popd; return 1; }
-    exe "popd"
+    exe -i 'python3 ./install.py --all' || { popd; return 1; }
+    exe popd
 
     add_to_dl_log  YCM "$ver"
 }
@@ -6289,6 +6309,8 @@ install_from_repo() {
         auditd  # user space utilities for storing and searching the audit records generated by the audit subsystem
         systemd-container  # gives us systemd-nspawn command, see https://wiki.debian.org/nspawn
         systemd-zram-generator  # create zram device for swap space
+        systemd-oomd  # userspace out-of-memory (OOM) killer; as alternative, consider https://github.com/rfjakob/earlyoom
+                      # `oomctl` to show current config & mem usage
         # haveged is a entropy daemon using jitter-entropy method to populate entropy pool;
         # some systems might start up slowly as entropy device is starved. see e.g. https://lwn.net/Articles/800509/, https://serverfault.com/a/986327
         # edit: should not be needed, as jitter entropy collecter was introduced
@@ -6366,6 +6388,7 @@ install_from_repo() {
         httpie  # CLI, cURL-like tool for humans; https://httpie.io/
         fuse3  # simple interface for userspace programs to export a virtual filesystem to the Linux kernel; https://github.com/libfuse/libfuse/
                # note as of trixie "fuse" package also defaults to fuse3
+        squashfuse  # FUSE filesystem to mount squashfs archives; e.g. used by our appimage sandbox helper
         #fuseiso  # FUSE module to mount ISO filesystem images
         parallel
         at  # Delayed job execution and batch processing
@@ -6416,6 +6439,7 @@ install_from_repo() {
                                # alternative to nm, consider systemd-networkd
         jq  # https://jqlang.github.io/jq
             # see also go-qo: https://github.com/kiki-ki/go-qo
+            # see also jc  # https://github.com/kellyjonbrazil/jc - py program that has number of preconfigured parsers parsing common commands' output to json
         pv  # pv (Pipe Viewer) can be inserted into any normal pipeline between two processes to give a visual indication of how quickly data
             # is passing through, how long it has taken, how near to completion it is, and an estimate of how long it will be until completion
             # https://www.ivarch.com/programs/pv.shtml
@@ -6607,6 +6631,7 @@ install_from_repo() {
         vifm  # alternatives: yazi
         fastfetch  # screenshot tool
         maim  # TODO: x11!  - screenshot.sh depends on it; one wayland alternative: grim: https://gitlab.freedesktop.org/emersion/grim ; see https://github.com/naelstrof/maim/issues/67#issuecomment-974622572 for usage
+        slop  # needed for our screenshooter script; TODO: x11
         #flameshot  # https://github.com/flameshot-org/flameshot ; x11? looks like there's _some_ wayland support there; also avail as flatpak
         ffmpeg
         ffmpegthumbnailer  # lightweight video thumbnailer that can be used by file managers to create thumbnails for your video files;  https://github.com/dirkvdb/ffmpegthumbnailer
@@ -6734,6 +6759,7 @@ install_from_repo() {
     # another alternatives:
     # - https://flathub.org/apps/org.gnome.Boxes
     # - https://github.com/firecracker-microvm/firecracker/
+    #   - similar to firecracker, see also https://www.qemu.org/docs/master/system/i386/microvm.html
     if [[ "$PROFILE" == work ]]; then
         true
         #if is_native; then
@@ -6800,6 +6826,7 @@ install_kvm() {
 }
 
 
+# note FP populates /var/lib/flatpak/exports/bin
 install_from_flatpak() {
     # https://flathub.org/apps/com.github.PintaProject.Pinta
     fp_install 'com.github.PintaProject.Pinta'
@@ -7505,6 +7532,7 @@ __choose_prog_to_build() {
         install_zed
         install_mise
         install_croc
+        install_memy
         install_ventoy
         install_kanata
         install_plandex
@@ -7979,7 +8007,7 @@ install_ibkr_tws() {
 
 
 # https://github.com/cointop-sh/cointop
-# archived in '25
+# DEPRECATED -- archived in '25
 install_cointop() {
     install_bin_from_git -N cointop cointop-sh/cointop '_linux_amd64.tar.gz'
 }
@@ -8000,9 +8028,11 @@ install_electrum_wallet() {
 }
 
 
-install_revanced() {
-    local d
-    d="$BASE_PROGS_DIR/revanced"
+# alternatives:
+# - morphe - revanced spin-off i think? some dev drama, dunno -- https://github.com/MorpheApp
+#   - note root mode installation is hidden: In Settings go to Advanced and then Primary Installer. Select Rooted mount installer.
+install_revanced() {  # https://github.com/ReVanced
+    local d="$BASE_PROGS_DIR/revanced"
     ensure_d "$d" || return 1
 
     install_bin_from_git -A -N revanced.jar -d "$d"  ReVanced/revanced-cli 'all.jar'
@@ -8010,9 +8040,9 @@ install_revanced() {
 }
 
 
-install_apkeditor() {
-    local d
-    d="$BASE_PROGS_DIR/apkeditor"
+# requirement for our revanced workflow; iirc it's for merging APKs
+install_apkeditor() {  # https://github.com/REAndroid/APKEditor
+    local d="$BASE_PROGS_DIR/apkeditor"
     ensure_d "$d" || return 1
 
     install_bin_from_git -A -N apkeditor.jar -d "$d"  REAndroid/APKEditor 'APKEditor-.*.jar'
@@ -8039,6 +8069,18 @@ install_android_command_line_tools() {
 # share files between computers/phones
 install_croc() {
     install_bin_from_git -N croc -n croc  schollz/croc  '_Linux-64bit.tar.gz'
+}
+
+
+# fasd alternative
+install_memy() {  # https://github.com/andrewferrier/memy#installation
+    #cargo install --git https://github.com/andrewferrier/memy
+    #install_from_git andrewferrier/memy 'memy_latest_amd64.deb'
+    install_bin_from_git -N memy andrewferrier/memy 'memy-linux-x86_64.tar.gz' || return 1
+
+    # shell completions (https://github.com/andrewferrier/memy#shell-completions)
+    exe "memy completions bash | tee $BASH_COMPLETIONS/memy.bash > /dev/null"
+    exe "memy completions zsh | sudo tee $ZSH_COMPLETIONS/_memy > /dev/null"
 }
 
 
@@ -8376,7 +8418,7 @@ configure_updatedb() {
         fi
     }
 
-    values=(/mnt /run/media /media /var/cache /data/seafile-data "$HOME/.cache")  # paths to be added to PRUNEPATHS definition
+    values=(/mnt /run/media /media /var/cache /data/seafile-data "$HOME/.cache" "$BASE_DATA_DIR/nocow/container-storage")  # paths to be added to PRUNEPATHS definition
     is_btrfs && values+=(/home/.snapshots /.snapshots)  # */.snapshots are snapper/btrfs locations
     _update_key PRUNEPATHS
 
@@ -8440,9 +8482,11 @@ add_user() {
 # - atop in logging mode can also show you which applications are having their pages swapped out in the SWAPSZ column
 #
 # Also note there are userspace OOM killers to help system not hand on memory exhaustion. e.g.:
+# - https://github.com/rfjakob/earlyoom
+#   - popular alternative, written in C
+# - systemd-oomd: https://man7.org/linux/man-pages/man8/systemd-oomd.service.8.html
 # - https://github.com/facebookincubator/oomd
 # - https://github.com/hakavlad/nohang
-# - https://man7.org/linux/man-pages/man8/systemd-oomd.service.8.html
 #
 # NOTE: as of '25, we just install systemd-zram-generator that configures us a zram
 setup_swappiness() {
@@ -9786,6 +9830,8 @@ exit 0
 #    - has zoxide integration?
 #    - see gruvbox theme: https://github.com/bennyyip/gruvbox-dark.yazi
 #  - https://github.com/dylanaraps/fff - bash file mngr [deprecated]
+#  - https://github.com/dylanaraps/dfm
+#  - https://github.com/kamiyaa/joshuto
 #
 #  TODO:
 #  - replace cron w/ systemd timers
