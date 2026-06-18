@@ -4419,6 +4419,8 @@ install_aider_desk() {  # https://github.com/hotovo/aider-desk
 # - other GUI frontends to consider:
 #   - OpenChamber
 #   - zed
+# - see other opencode-related projects:
+#   - https://github.com/alberti42/Zsh-Opencode-Tab
 install_opencode() {  # https://github.com/anomalyco/opencode
     # alternatively install via mise: `mise use -g opencode`
     install_bin_from_git -N opencode anomalyco/opencode 'opencode-linux-x64.tar.gz'

@@ -13,6 +13,7 @@
 # see also:
 # - https://grml.org/zsh/zsh-lovers.html
 # - https://github.com/Phantas0s/.dotfiles/blob/master/zsh/zshrc
+#    - and their https://github.com/Phantas0s/.dotfiles/blob/master/zsh/completion.zsh
 # - https://github.com/oryband/dotfiles/blob/master/.zshrc
 #   - loads of zinit usage/examples
 #   - uses loiccoyle/zsh-github-copilot, sgpt (shell-gpt)...
@@ -27,6 +28,12 @@
 # - https://github.com/Freed-Wu/Freed-Wu/blob/main/.zshrc
 # - https://github.com/intelfx/dotfiles/blob/master/.zshrc.d/fzf
 #   - zsh config is split over many files, but has some interesting stuff like this fzf-specific conf
+# - !! really powerful !!: completion on current _word_, not current command: https://jonathanh.co.uk/blog/current-word-completion/
+#   - note it references their code @ https://git.jonathanh.co.uk/jab2870/Dotfiles/src/branch/master/shells/zsh/includes/currentwordcompletion.zsh
+#
+# see some plugins:
+# - https://github.com/alberti42/zsh-appearance-control - plugin to switch term/neovim/shell/other-tools color between light/dark
+# - https://github.com/alberti42/Zsh-Opencode-Tab - build command in terminal
 ##############################
 
 #zmodload zsh/zprof  # for debugging shell startup speed
@@ -38,6 +45,10 @@
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
+
+# load user-defined completions, per https://www.reddit.com/r/zsh/comments/12pgp4k/where_can_zsh_completion_files_be_placed_within/jgm3w6i/
+# note oftentimes ~/.zfunc dir is also used for this
+[[ ! -d $XDG_DATA_HOME/zsh-completions ]] || typeset -gaU fpath=($fpath $XDG_DATA_HOME/zsh-completions)
 
 # Enable ** and *** as shortcuts for **/* and ***/*, respectively:
 # https://zsh.sourceforge.io/Doc/Release/Expansion.html#Recursive-Globbing
@@ -272,11 +283,12 @@ zinit ice wait="0c" lucid blockf; zinit light zsh-users/zsh-completions  # TODO:
 
 unsetopt CORRECT   # note CORRECT tries to correct the spelling of commands
 # setopt NOCORRECT
-setopt COMPLETE_IN_WORD  # # Complete from both ends of a word.  # TODO: do we want this?
+setopt COMPLETE_IN_WORD  # Complete from both ends of a word.  # TODO: do we want this?
 setopt ALWAYS_TO_END  # Move cursor to the end of a completed word.
 setopt AUTO_LIST  # Automatically list choices on ambiguous completion.
 setopt AUTO_PARAM_SLASH  # If completed parameter is a directory, add a trailing slash.
-setopt COMPLETE_ALIASES
+setopt COMPLETE_ALIASES  # treat aliases as their own commands for completion; note this likely breaks aliased commands' completions, e.g. see https://github.com/ajeetdsouza/zoxide/issues/471#issuecomment-4600081752
+                         # also this answer argues there's not much point to this opt:https://unix.stackexchange.com/a/250489/47501
 
 # Enable additional glob operators. (Globbing = pattern matching)
 # https://zsh.sourceforge.io/Doc/Release/Expansion.html#Filename-Generation
@@ -319,14 +331,16 @@ fi
 
 # opts from https://github.com/crivotz/dot_files/blob/master/linux/zinit/zshrc#L89 (TODO: needed/wanted?)
 zstyle ':completion:*' completer _expand _complete _ignored _approximate
-# mathcer-list be set to a list of match specifications that are to be applied everywhere, see https://zsh.sourceforge.io/Doc/Release/Completion-Widgets.html#Completion-Matching-Control :
-zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+# mathcer-list be set to a list of match specifications that are to be applied everywhere, see https://zsh.sourceforge.io/Doc/Release/Completion-Widgets.html#Completion-Matching-Control & https://thevaluable.dev/zsh-completion-guide-examples#completion-matching-control :
+#zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+zstyle ':completion:*' matcher-list '' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+
 #zstyle ':completion:*' matcher-list 'b:=*'  # this should match all substrings, not just prefix
 zstyle ':completion:*' menu no  # force zsh not to show completion menu, which allows fzf-tab to capture the unambiguous prefix
 zstyle ':completion:*' select-prompt '%SScrolling active: current selection at %p%s'
 #zstyle ':completion:*:descriptions' format '%U%F{yellow}%d%f%u'  # fzf-tab will ignore escape sequences like %F{red}
-zstyle ':completion:*:descriptions' format '[%d]'
-zstyle ':completion:*:*:*:*:corrections' format '%F{yellow}> %d:%f'
+zstyle ':completion:*:*:*:*:descriptions' format '[%d]'
+zstyle ':completion:*:*:*:*:corrections' format '%F{yellow}> %d (errors: %e):%f'
 zstyle ':completion:*:*:*:*:messages' format ' %F{purple} -- %d --%f'
 zstyle ':completion:*:*:*:*:warnings' format ' %F{red}-- no matches found --%f'
 zstyle ':completion:complete:*:options' sort false
@@ -338,6 +352,16 @@ zstyle ':completion:*' option-stacking true
 #zstyle ':completion:*' special-dirs true  # make sure _not_ to enable this, as it'll show . & .. dirs as per https://www.reddit.com/r/zsh/comments/i3o2cq/show_hidden_files_but_hide_and_from_completion/
 #zstyle ':completion:*' use-compctl false  # compctl is the old completion system, see https://zsh.sourceforge.io/Guide/zshguide06.html
 #zstyle ':completion:*' muttrc ${XDG_CONFIG_HOME:-$HOME/.config}/neomutt/neomuttrc   # TODO
+# cache completions:  # from https://thevaluable.dev/zsh-completion-guide-examples#caching-the-completion
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path "$ZDOTDIR/.zcompcache"
+# /cache
+# display files&folders w/ more details akin to `ls -l`:
+zstyle ':completion:*' file-list all
+# squash multiple slashes:
+zstyle ':completion:*' squeeze-slashes true
+# makes sure that hosts from ~/.ssh/config will be included in default `ssh` completion list:
+zstyle ':completion:*:ssh:*' hosts
 
 # enable these two if not using fzf-tab:
 #zstyle ':completion:*' menu select
@@ -356,6 +380,8 @@ zstyle ':fzf-tab:*' prefix ''
 zstyle ':fzf-tab:*' use-fzf-default-opts yes
 
 zstyle ':fzf-tab:*' switch-group '<' '>'  # default bindings are F1 & F2
+# change the order of group descriptions:
+#zstyle ':completion:*:*:-command-:*:*' group-order alias builtins functions commands
 
 # make use of tmux popup feature:
 zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
@@ -363,9 +389,9 @@ zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 # TODO: review minimal popup win size config:
 # increase minimal size of popup window; useful w/ fzf-preview:
 # increase for all commands:
-zstyle ':fzf-tab:*' popup-min-size 50 8
+zstyle ':fzf-tab:*' popup-min-size 200 15
 # ...or only increase for 'diff':
-zstyle ':fzf-tab:complete:diff:*' popup-min-size 80 12
+#zstyle ':fzf-tab:complete:diff:*' popup-min-size 80 12
 
 #zstyle ':fzf-tab:*' accept-line enter  # key to accept and run a suggestion in one keystroke
 
@@ -472,8 +498,8 @@ zinit light zdharma-continuum/fast-syntax-highlighting
 zinit id-as depth'1' wait='0b' lucid \
   atload'bindkey "^[p" history-substring-search-up
   bindkey "^[n" history-substring-search-down
-  bindkey "^[[A" history-substring-search-up
-  bindkey "^[[B" history-substring-search-down
+  bindkey "^[[A" history-beginning-search-backward
+  bindkey "^[[B" history-beginning-search-forward
   bindkey -M vicmd "k" history-substring-search-up
   bindkey -M vicmd "j" history-substring-search-down' \
   for zsh-users/zsh-history-substring-search
@@ -586,9 +612,7 @@ READNULLCMD=$PAGER  # Use `< file` to quickly view the contents of any text file
 ### /COMMANDS
 
 ########################################## mise  # https://mise.jdx.dev/installing-mise.html#zsh
-if command -v mise >/dev/null 2>/dev/null; then
-    eval -- "$(mise activate zsh)"
-fi
+command -v mise &>/dev/null && eval -- "$(mise activate zsh)"
 ########################################## /mise
 
 #########################################################################
@@ -598,12 +622,15 @@ fi
 # note bash version is https://gist.github.com/sebastiancarlos/762ac6da14a3180f7ce2409889a6de81
 #########################################################################
 function fg-fzf() {
-  job="$(jobs | fzf -0 -1 | sed -E 's/\[(.+)\].*/\1/')" && echo '' && fg %$job
+  local job
+  # note we filter out the "(pwd now:)" message that's printed if
+  # backgrounded job was started when our pwd differs from current one
+  job="$(jobs -s | grep -Ev '^\(pwd now: ' | fzf -0 -1 | sed -E 's/\[(.+)\].*/\1/')" && echo '' && fg %$job
 }
 
 function fancy-ctrl-z () {
   if [[ $#BUFFER -eq 0 ]]; then
-    BUFFER=" fg-fzf"
+    BUFFER=' fg-fzf'
     zle accept-line -w
   else
     zle push-input -w
@@ -619,13 +646,20 @@ i="$BASE_PROGS_DIR/forgit/forgit.plugin.zsh"
 
 ########################################## zoxide  # https://github.com/ajeetdsouza/zoxide
 # needs to be at the end of file, as it must be _after_ compinit is called.    TODO: compinit seq dependency, so perhaps zinit is the way to import?
-#export _ZO_DATA_DIR="$BASE_DATA_DIR/.zoxide"
-export _ZO_RESOLVE_SYMLINKS=1
-#command -v zoxide > /dev/null && eval -- "$(zoxide init zsh)"
-# alternatively, source it via zinit:   # note 'wait' ice fucks up the 'z <pattern><space><tab>' completions
-zinit ice has'zoxide'; zinit light ajeetdsouza/zoxide
-alias zz=__zoxide_zi  # for interactive, as `zi` is taken by zinit
+##export _ZO_DATA_DIR="$BASE_DATA_DIR/.zoxide"
+#export _ZO_RESOLVE_SYMLINKS=1
+##command -v zoxide > /dev/null && eval -- "$(zoxide init zsh)"
+## alternatively, source it via zinit:   # note 'wait' ice fucks up the 'z <pattern><space><tab>' completions
+#zinit ice has'zoxide'; zinit light ajeetdsouza/zoxide
+#alias zz=__zoxide_zi  # for interactive, as `zi` is taken by zinit
 ########################################## /zoxide
+
+########################################## memy  # https://github.com/andrewferrier/memy
+command -v memy &> /dev/null && eval -- "$(memy hook zsh)"
+# alternatively, source it via zinit:
+#zinit ice has'memy'; zinit light andrewferrier/memy
+#alias zz=__zoxide_zi  # for interactive, as `zi` is taken by zinit
+########################################## /memy
 
 ########################################## fzf
 # https://github.com/junegunn/fzf#setting-up-shell-integration
@@ -650,43 +684,41 @@ command -v fzf > /dev/null && source <(fzf --zsh)
 _load_atuin() {
     command -v atuin > /dev/null && source <(atuin init zsh --disable-up-arrow)
 }
-zvm_after_init_commands+=(_load_atuin)
+#zvm_after_init_commands+=(_load_atuin)
 
 # another method to use atuin, but w/ fzf; from https://github.com/atuinsh/atuin/issues/68#issuecomment-1567410629
 # note this races with zsh-vi-mode plugin; that can be overriden by zsh-vi-mode's
 # own zvm_after_init_commands hook
-atuin-setup() {
-    if ! which atuin &> /dev/null; then return 1; fi
+_load_atuin_fzf() {
+    which atuin &> /dev/null || return 1
     bindkey '^E' _atuin_search_widget
 
-    export ATUIN_NOBIND="true"
+    export ATUIN_NOBIND='true'
     eval -- "$(atuin init zsh --disable-up-arrow)"
     fzf-atuin-history-widget() {
-        local selected num
+        local atuin_opts fzf_opts selected ret
         setopt localoptions noglobsubst noposixbuiltins pipefail no_aliases 2>/dev/null
 
-        # local atuin_opts="--cmd-only --limit ${ATUIN_LIMIT:-5000}"
-        local atuin_opts='--cmd-only'
-        local fzf_opts=(
-            --height=${FZF_TMUX_HEIGHT:-80%}
+        # local atuin_opts="--cmd-only --print0 --limit ${ATUIN_LIMIT:-5000}"
+        atuin_opts='--cmd-only --print0'
+        fzf_opts=(
+            --read0
+            "--height=${FZF_TMUX_HEIGHT:-80%}"
             --tac
-            "-n2..,.."
+            '-n2..,..'
             --tiebreak=index
             "--query=${LBUFFER}"
-            "+m"
+            '+m'
             "--bind=ctrl-d:reload(atuin search $atuin_opts -c $PWD),ctrl-r:reload(atuin search $atuin_opts)"
             '--preview=echo {}'
-            '--preview-window=down:3:wrap'
+            '--preview-window=down:3:hidden:wrap'
         )
 
-        selected=$(
-            eval "atuin search ${atuin_opts}" |
-                fzf "${fzf_opts[@]}"
-        )
-        local ret=$?
+        selected=$(eval "atuin search ${atuin_opts}" | fzf "${fzf_opts[@]}")
+        ret=$?
         if [[ -n "$selected" ]]; then
             # the += lets it insert at current pos instead of replacing
-            LBUFFER+="${selected}"
+            LBUFFER+="$selected"
         fi
         zle reset-prompt
         return $ret
@@ -694,8 +726,8 @@ atuin-setup() {
     zle -N fzf-atuin-history-widget
     bindkey '^R' fzf-atuin-history-widget
 }
-#atuin-setup  # if no racing w/ jeffreytse/zsh-vi-mode plugin, or if using, then:
-#zvm_after_init_commands+=(atuin-setup)
+#_load_atuin_fzf  # if no racing w/ jeffreytse/zsh-vi-mode plugin; or if using that plugin, then:
+zvm_after_init_commands+=(_load_atuin_fzf)
 ########################################## /atuin
 
 # AI {{{
@@ -703,6 +735,13 @@ atuin-setup() {
 i="$BASE_PROGS_DIR/aichat-shell-scripts/shell-integration/integration.zsh"
 command -v aichat > /dev/null && [[ -f "$i" ]] && source "$i"
 # }}}
+
+# stop `_files -/` completion from completing for regular files if no dirs avail; from  https://www.zsh.org/mla/workers/2013/msg00684.html
+# e.g. otherwise our g_ completion logic will also complete for regular files.
+# TODO: think this will also stop completing for symlinked directories... {{{
+#zstyle -e ':completion::*' file-patterns \
+	#'[[ $funcstack[1] = _files && $type = */* ]] && reply=("*(/)")'
+#}}}
 
 # other examples to consider:
 # Define functions and completions.
@@ -714,15 +753,19 @@ command -v aichat > /dev/null && [[ -f "$i" ]] && source "$i"
 
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f "$ZDOTDIR/p10k.zsh" ]] || source "$ZDOTDIR/p10k.zsh"
-#########################################################################
+i="$ZDOTDIR/p10k.zsh"
+[[ ! -f "$i" ]] || source "$i"
+##########################################
 #
 # think it's best to load compinit last, but unsure why
 # note compinit & cdreplay are commented out, as are invoked by zinit's "zpcompinit;zpcdreplay"
 #autoload -Uz compinit; compinit
 #zinit cdreplay -q  # needs to be after compinit call; see https://github.com/zdharma-continuum/zinit#calling-compinit-without-turbo-mode
 
-GPG_TTY=$(tty)
-export GPG_TTY  # to make sure git tag properly launches pinentry; instructed by gpg manual: https://www.gnupg.org/documentation/manuals/gnupg/Invoking-GPG_002dAGENT.html
+i="$ZDOTDIR/extra_config.zsh"
+[[ ! -f "$i" ]] || source "$i"
+i="$XDG_CONFIG_HOME/shell/common_shell.sh"
+[[ ! -f "$i" ]] || source "$i"
 
 unset i
+
