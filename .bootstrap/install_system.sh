@@ -2433,8 +2433,8 @@ setup_additional_apt_keys_and_sources() {
     #
     # note you'll likely want to use the latest ubuntu LTS or latest, period, codename for repo.
     # just use whatever codename the upstream install-open-eid.sh debian logic references.
-    #create_apt_source -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh  https://installer.id.ee/media/ubuntu/ noble main
-    create_apt_source  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub  https://installer.id.ee/media/ubuntu/ noble main
+    #create_apt_source -g  estonian-eid  https://raw.githubusercontent.com/open-eid/linux-installer/master/install-open-eid.sh  https://installer.id.ee/media/ubuntu/ resolute main
+    create_apt_source  estonian-eid  https://installer.id.ee/media/install-scripts/C6C83D68.pub  https://installer.id.ee/media/ubuntu/ resolute main
 
     # mozilla/firefox:  https://support.mozilla.org/en-US/kb/install-firefox-linux#w_install-firefox-deb-package-for-debian-based-distributions-recommended
     #create_apt_source  mozilla  https://packages.mozilla.org/apt/repo-signing-key.gpg  https://packages.mozilla.org/apt/ mozilla main
@@ -3593,7 +3593,7 @@ install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
     install_from_git ajeetdsouza/zoxide '_amd64.deb'
 }
 
-# Smart session manager for the terminal; good description from the creator:
+# Smart tmux session manager for the terminal; good description from the creator:
 #  > Sesh will sort the folders you use the most on the top in the fzf filter,
 #    it does not have any sort of resurrect or continue features.
 # tl;dr you configure set of tmux sessions and folders, and optionally
@@ -4224,7 +4224,6 @@ install_bitlbee() {  # https://github.com/bitlbee/bitlbee
 
     # slack:
     _install_slack_support
-
 }
 
 install_terragrunt() {  # https://github.com/gruntwork-io/terragrunt/
@@ -5932,7 +5931,7 @@ install_zed() {
     local dsk desktop_file_path
 
     install_from_git -D -d "$BASE_PROGS_DIR" -N zed  zed-industries/zed 'zed-linux-x86_64.tar.gz' || return 1
-    #create_link "$BASE_PROGS_DIR/zed/bin/zed" "$HOME/bin/zed"  # not needed as we set full path in .desktop file
+    create_link "$BASE_PROGS_DIR/zed/bin/zed" "$HOME/bin/zed"  # just so we can start it from cli
 
     # install .desktop:
     dsk="$HOME/.local/share/applications"  # i.e. $XDG_DATA_HOME/applications
