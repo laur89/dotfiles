@@ -19,6 +19,7 @@ target/
 
 # vim
 .vimtags
+# ignore ctag files (https://stackoverflow.com/a/42260393/1803648)
 .tags
 .tags.lock
 .tags.temp

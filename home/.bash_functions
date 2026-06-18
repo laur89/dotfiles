@@ -29,8 +29,7 @@
 #   - procs: search for 'tmux' and print only ppid:  $ procs --no-header -i Ppid --only Ppid -- tmux
 # TODO: when changing this logic, test it also on our remote nodes, e.g. seedbox
 ffindproc() {
-    [[ "$#" -ne 1 ]] && { err "exactly one arg (process name to search) allowed"; return 1; }
-    [[ -z "$1" ]] && { err "process name required"; return 1; }
+    [[ "$#" -ne 1 || -z "$1" ]] && { err "exactly one arg (process name to search) allowed"; return 1; }
 
     #if command -v procs > /dev/null; then
         #procs --no-header -- "$1" | grep -v '\bgrep\b' | grep -i --color=auto -- "$1"
@@ -39,14 +38,15 @@ ffindproc() {
         ## last grep for re-coloring:
         #ps -ef | grep -v '\bgrep\b' | grep -i --color=auto -- "$1"
     #fi
-    ps --no-headers -eo pid,ppid,pgid,egroup,command | \
-        grep -Ev "\b${USER}\b\s+\bgrep\b .*$(rgxesc "$1")" | grep -i --color=auto -- "$1"
+    ps --no-headers -eo pid,ppid,pgid,egroup,command | grep -Ev -- \
+        "(\b${USER}\s+\bgrep\b\s+.*$1|##sshpearl-exec-marker.?\$)" \
+        | grep -i --color=auto -- "$1"
 }
 
 
 aptsearch() {
     [[ -z "$@" ]] && { err "provide partial package name to search for."; return 1; }
-    check_progs_installed  apt-cache || return 1
+    check_progs_installed  apt-cache || return 2
 
     apt-cache search -- "$@"
     #apt search -- "$@"
@@ -67,13 +67,17 @@ aptsrc() { aptsearch "$@"; }  # alias
 #    dpkg --get-selections > packages.dpkg
 #    apt list --installed | bat
 # - find biggest packages:
-#    dpigs
+#       dpigs
 #    or:
-#    wajig size
+#       wajig size
 #    or:
-#    start aptitude, select Views > New Flat Package List, plress l and enter ~i, press S and enter ~installsize
+#       start aptitude, select Views > New Flat Package List, plress l and enter ~i, press S and enter ~installsize
 # - find why given pkg is installed:
-#   apt-cache rdepends --installed pkg
+#       apt-cache rdepends --installed pkg
+#   or (this one's better):
+#       aptitude why pkg
+# - find why given pkg cannot be installed:
+#       aptitude why-not pkg
 # - list packages from experimental repos:
 #   aptitude search ~S~i~Aexperimental
 nondebpkgs() {
@@ -83,9 +87,7 @@ nondebpkgs() {
 }
 
 aptclean() {
-    local apt_lists_dir
-
-    readonly apt_lists_dir='/var/lib/apt/lists'
+    local apt_lists_dir='/var/lib/apt/lists'
 
     report "note that sudo passwd is required"
 
@@ -108,9 +110,7 @@ aptclean() {
 }
 
 aptlargest()  {
-    local num
-
-    num="$1"
+    local num="$1"
     [[ -z "$num" ]] && num=10
     is_digit "$num" && [[ "$num" -gt 0 ]] || { err "nr of largest apt packages needs to be a positive digit, but was [$num]"; return 1; }
 
@@ -120,17 +120,17 @@ aptlargest()  {
 aptbiggest() { aptlargest "$@"; }  # alias
 
 
-# to list 'Obsolete and Locally Created Packages':
+# - to list 'Obsolete and Locally Created Packages':
 #   aptitude search '~o'
 #   or:
 #   apt list '~o'
-# to purge said packages:
+# - to purge said packages:
 #   aptitude purge '~o'
 #   or:
 #   apt purge '~o'
-# display list of removed pkgs that have config files left that can be purged:
+# - display list of removed pkgs that have config files left that can be purged:
 #   apt list '~c'
-# purge 'em w/:
+# - purge 'em w/:
 #   apt purge '~c'
 #
 # provide -f flag to allow for release codename change (ie to upgrade to new codename)
@@ -199,11 +199,9 @@ update() {
 
     while getopts 'f' opt; do
         case "$opt" in
-           f) full=TRUE
-              ;;
+           f) full=TRUE ;;
            *) err "unsupported option [$opt]";
-              return 1
-              ;;
+              return 1 ;;
         esac
     done
     shift "$((OPTIND-1))"
@@ -230,13 +228,10 @@ mvnclean() {
 
     while getopts 'np:' opt; do
         case "$opt" in
-           n) noop=1
-              ;;
+           n) noop=1 ;;
            p) ptrn="$OPTARG"
-              [[ -z "$ptrn" ]] && { err "[pattern] arg cannot be empty"; return 1; }
-              ;;
-           *) return 1
-              ;;
+              [[ -z "$ptrn" ]] && { err "[pattern] arg cannot be empty"; return 1; } ;;
+           *) return 1 ;;
         esac
     done
     shift "$((OPTIND-1))"
@@ -257,6 +252,11 @@ mvnclean() {
 }
 
 
+# - see also:
+# - https://superuser.com/a/1177778/179401
+#    - e.g. `ps -eo pmem,vsize,cmd | grep -v '\[' | awk 'NR>2{mem[$3]+=$2}END {for(k in mem) print k " " mem[k]/1024000};' | sort -rgk2 | head -n 10`
+#       - note this one uses vsize, i.e. virtual memory -- reported virt mem will always be higher than its actual ram use
+#       - comm would be prefereable over cmd, but e.g. for firefox it list some odd commads like 'Isolated Web Co'
 __mem_cpu_most_common_fun() {
     local num ps_out first_hdr second_hdr first_ps_col second_ps_col format
 
@@ -461,13 +461,10 @@ $f  [-e]  /dir_to_look_from/filename_to_grep
     while getopts 'he' opt; do
         case "$opt" in
            h) echo -e "$usage";
-              return 0
-              ;;
-           e) exact=1
-              ;;
+              return 0 ;;
+           e) exact=1 ;;
            *) echo -e "$usage";
-              return 1
-              ;;
+              return 1 ;;
         esac
     done
     shift "$((OPTIND-1))"
@@ -609,16 +606,14 @@ compress() {
     sup='zip|tar|rar|7z'  # supported compression type options
     sup="[${COLORS[YELLOW]}${COLORS[BOLD]}${sup}${COLORS[OFF]}]"
     readonly def=tar  # default compression mode
-    readonly usage="$(funname)  fileOrDir  $sup\n\tif optional second arg not provided, compression type defaults to [$def] "
+    usage="$(funname)  fileOrDir  $sup\n\tif optional second arg not provided, compression type defaults to [$def] "
 
     while getopts 'h' opt; do
         case "$opt" in
            h) echo -e "$usage";
-              return 0
-              ;;
+              return 0 ;;
            *) echo -e "$usage";
-              return 1
-              ;;
+              return 1 ;;
         esac
     done
     shift "$((OPTIND-1))"
@@ -628,23 +623,18 @@ compress() {
 
     [[ $# -eq 1 || $# -eq 2 ]] || { err "gimme file/dir to compress plox.\n"; echo -e "$usage"; return 1; }
     [[ -e "$file" ]] || { err "$file doesn't exist."; echo -e "\n\n$usage"; return 1; }
-    [[ -z "$type" ]] && { report "no compression type selected, defaulting to [${COLORS[YELLOW]}${COLORS[BOLD]}$def${COLORS[OFF]}]\n"; type="$def"; }
+    [[ -z "$type" ]] && { report "no compression type selected, defaulting to [${COLORS[YELLOW]}${COLORS[BOLD]}${def}${COLORS[OFF]}]\n"; type="$def"; }
 
     case "$type" in
-        zip) makezip "$file"
-             ;;
+        zip) makezip "$file" ;;
         #tar) maketar "$file"
-        tar) maketar2 "$file"
-             ;;
+        tar) maketar2 "$file" ;;
         rar) [[ -d "$file" ]] || { err "input for rar has to be a dir"; return 1; }
-             makerar "$file"
-             ;;
-        7z)  make7z "$file"
-             ;;
+             makerar "$file" ;;
+        7z)  make7z "$file" ;;
         *)   err "compression type [$type] not supported; supported types: $sup\n"
              echo -e "$usage";
-             return 1;
-             ;;
+             return 1 ;;
     esac
 }
 
@@ -661,14 +651,14 @@ maketar2() { tar cvjf "${1%%/}.tar.bz2" -- "${1%%/}/"; }
 # -m# - compresson lvl, 5 being max level, 0 just storage;
 # TODO: what's the deal with -r flag?
 makerar() {
-    check_progs_installed rar || return 1
+    check_progs_installed rar || return 2
 
     rar a -r -rr10 -m4 -- "${1%%/}.rar"  "${1%%/}/"
 }
 
 # Create a ZIP archive of a file or folder.
 makezip() {
-    check_progs_installed zip || return 1
+    check_progs_installed zip || return 2
 
     zip -r "${1%%/}.zip" -- "$1"
 }
@@ -676,7 +666,7 @@ makezip() {
 # Create a 7z archive of a file or folder.
 # -mx=# - compression lvl, 9 being highest (ultra)
 make7z() {
-    check_progs_installed 7z || return 1
+    check_progs_installed 7z || return 2
 
     7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on -- "${1%%/}.7z" "$1"
 }
@@ -728,13 +718,13 @@ extract() {
         *.tar.xz)    file_without_extension="${file_without_extension%.*}"  # because two extensions
                         __create_target_dir && tar xpvf "$file" -C "$file_without_extension" || return 1
                         ;;
-        *.bz2)       check_progs_installed bunzip2 || return 1
+        *.bz2)       check_progs_installed bunzip2 || return 2
                         bunzip2 -k -- "$file" || return 1
                         ;;
-        *.rar)       check_progs_installed unrar || return 1
+        *.rar)       check_progs_installed unrar || return 2
                         __create_target_dir && unrar x "$file" "${file_without_extension}"/ || return 1
                         ;;
-        *.gz)        check_progs_installed gunzip || return 1
+        *.gz)        check_progs_installed gunzip || return 2
                         gunzip -kd -- "$file" || return 1
                         ;;
         *.tar)       __create_target_dir && tar xf "$file" -C "$file_without_extension" || return 1
@@ -743,14 +733,14 @@ extract() {
                         ;;
         *.tgz)       __create_target_dir && tar xzf "$file" -C "$file_without_extension" || return 1
                         ;;
-        *.zip)       check_progs_installed unzip || return 1
+        *.zip)       check_progs_installed unzip || return 2
                         __create_target_dir && unzip -- "$file" -d "$file_without_extension" || return 1
                         ;;
-        *.7z)        check_progs_installed 7z || return 1
+        *.7z)        check_progs_installed 7z || return 2
                         __create_target_dir && 7z x "-o$file_without_extension" -- "$file" || return 1
                         ;;
                         # TODO .Z is unverified how and where they'd unpack:
-        *.Z)         check_progs_installed uncompress || return 1
+        *.Z)         check_progs_installed uncompress || return 2
                         uncompress -- "$file"  || return 1
                         ;;
         *)           err "[$file] cannot be extracted; this filetype is not supported."
@@ -825,7 +815,7 @@ xmlformat() {
 
     readonly regex='^\s*<'
     [[ -z "$@" ]] && { echo -e "usage:   $(funname)  <filename>  OR  $(funname)  'raw xml string'"; return 1; }
-    check_progs_installed xmllint "$EDITOR" || return 1;
+    check_progs_installed xmllint "$EDITOR" || return 2
 
     if [[ "$#" -eq 1 && ! -f "$*" && "$*" =~ $regex ]]; then
         content="$(sed '/^\s*$/d;s/^[[:space:]]*//;s/[[:space:]]*$//' <<< "$*")"  # strip empty lines + leading&trailing whitespace
@@ -846,7 +836,8 @@ xmlformat() {
 
 xmlf() { xmlformat "$@"; }  # alias for xmlformat;
 
-# TODO: instead of verifying device doesn't end w/ digit, perhaps list devices via:   lsblk -d -n -oNAME,RO | grep '0$' | awk {'print $1'}
+# TODO: instead of verifying device doesn't end w/ digit, perhaps list devices
+#       via:   lsblk -d -n -oNAME,RO | grep '0$' | awk {'print $1'}
 createUsbIso() {
     local file device mountpoint cleaned_devicename usage override_dev_partitioncheck
     local reverse inf ouf full_lsblk_output i f OPTIND partition
@@ -862,18 +853,15 @@ createUsbIso() {
     example: $f  file.iso  /dev/sdh
              $f  /dev/sdb  /tmp/file.iso"
 
-    check_progs_installed   dd lsblk dirname umount sudo || return 1
+    check_progs_installed   dd lsblk dirname umount sudo || return 2
 
     while getopts 'ho' opt; do
         case "$opt" in
-           h) echo -e "$usage";
-              return 0
-              ;;
-           o) override_dev_partitioncheck=1
-              ;;
-           *) echo -e "$usage";
-              return 1
-              ;;
+           h) echo -e "$usage"
+              return 0 ;;
+           o) override_dev_partitioncheck=1 ;;
+           *) echo -e "$usage"
+              return 1 ;;
         esac
     done
     shift "$((OPTIND-1))"
@@ -927,15 +915,15 @@ createUsbIso() {
 
     #echo "please provide passwd for running fdisk -l to confirm the selected device is the right one:"
     #sudo fdisk -l $device
-    readonly full_lsblk_output="$(lsblk)" || { err "issues running lsblk"; return 1; }
-    echo "$full_lsblk_output" | grep --color=auto -- "$cleaned_devicename\|MOUNTPOINT"
+    full_lsblk_output="$(lsblk)" || { err "lsblk exited w/ $?"; return 1; }
+    grep --color=auto -- "$cleaned_devicename\|MOUNTPOINT" <<< "$full_lsblk_output"
     confirm  "\nis selected device [$device] the correct one? (y/n)" || { report "aborting, nothing written."; return 1; }
 
     # find if device is mounted:
     #lsblk -o name,size,mountpoint /dev/sda
     report "unmounting [$cleaned_devicename] partitions... (may ask for sudo password)"
-    for partition in ${device}* ; do
-        echo "$full_lsblk_output" | grep -Eq "${partition##*/}\b" || continue  # not all partitions are listed by lsblk; dunno what's with that
+    for partition in "$device"*; do
+        grep -Eq "${partition##*/}\b" <<< "$full_lsblk_output" || continue  # not all partitions are listed by lsblk; dunno what's with that
 
         mountpoint="$(lsblk -o mountpoint -- "$partition")" || { err "some issue occurred running [lsblk -o mountpoint ${partition}]"; return 1; }
         mountpoint="$(echo "$mountpoint" | sed -n 2p)"
@@ -985,7 +973,7 @@ hw() {
     shift "$((OPTIND-1))"
 
 
-    check_progs_installed inxi || return 1
+    check_progs_installed inxi || return 2
     $sudo inxi -F
 }
 
@@ -1008,7 +996,7 @@ iostat-monit() {
 
     [[ -d "$path" ]] || { err "provided path [$path] is not a dir"; return 1; }
     is_positive "$interval_sec" || { err "interval needs to be positive int, but was [$interval_sec]"; return 1; }
-    check_progs_installed  iostat findmnt || return 1
+    check_progs_installed  iostat findmnt || return 2
 
     _cmd() {
         local device
@@ -1100,7 +1088,7 @@ mkgit() {
         echo -e "$usage"
         return 1
     elif ! check_progs_installed git getnetrc curl jq; then
-        return 1
+        return 2
     elif [[ -z "$dir" ]]; then
         err "need to provide dir at minimum"
         echo -e "$usage"
@@ -1534,33 +1522,8 @@ git-show-merged-branches() {
 
     # --no-merged for branches that haven't been merged to currently checked out branch;
     for branch in $(git branch -r --merged | grep -v HEAD); do
-        echo -e "$(git show --format="%ci %cr %an" $branch | head -n 1) \\t$branch"
+        echo -e "$(git show --format='%ci %cr %an' "$branch" | head -n 1) \\t$branch"
     done | sort -r
-}
-
-
-# ag looks for whole file path!
-ago() {
-    local DMENU match dmenurc editor
-
-    err "ag is not playing along at the moment. see fo()"
-    return 1
-
-    readonly dmenurc="$HOME/.dmenurc"
-    readonly editor="$EDITOR"
-
-    check_progs_installed ag "$editor" dmenu || return 1
-    [[ -r "$dmenurc" ]] && source "$dmenurc" || DMENU="dmenu -i "
-
-    [[ -z "$*" ]] && { err "args required."; return 1; }
-
-    match="$(ag -g "$@")" || return 1
-
-    [[ $(echo "$match" | wc -l) -gt 1 ]] && match="$(echo "$match" | $DMENU -l 20 -p open)"
-    [[ -z "$match" ]] && return 1
-
-    [[ -f "$match" ]] || { err "[$match] is not a regular file."; return 1; }
-    $editor "$match"
 }
 
 
@@ -1599,7 +1562,7 @@ fog() {
 
     opts="$1"
 
-    readonly default_depth="m6"
+    readonly default_depth='m6'
     declare -a matches=()
 
     if [[ "$opts" == -* ]]; then
@@ -1611,7 +1574,7 @@ fog() {
         opts="-L${default_depth}"
     fi
 
-    [[ "$#" -eq 0 ]] && { err "too few args."; return 1; }
+    [[ "$#" -eq 0 ]] && { err 'too few args.'; return 1; }
 
     if ! command -v fzf > /dev/null 2>&1; then
         while IFS= read -r -d $'\0' i; do
@@ -1645,7 +1608,7 @@ fow() {
 
     opts="$1"
 
-    readonly default_depth="m10"
+    readonly default_depth='m10'
     declare -a matches=()
 
     if [[ "$opts" == -* ]]; then
@@ -1662,7 +1625,7 @@ fow() {
 
     # filter out prog name
     readonly prog="${@: -1}"  # last arg; alternatively ${@:$#}
-    [[ -d "$prog" ]] && report "last arg needs to be the program to open with, not dir arg for ffind"
+    [[ -d "$prog" ]] && report 'last arg needs to be the program to open with, not dir arg for ffind()'
     if ! command -v -- "$prog" >/dev/null; then
         err "[$prog] is not installed."
         return 1
@@ -1683,7 +1646,7 @@ fow() {
         done < <(ffind --_skip_msgs "$opts" "$@" | fzf --select-1 --multi --read0 --exit-0)
     fi
 
-    [[ "${#matches[@]}" -eq 0 ]] && { err "no matches found"; return 1; }
+    [[ "${#matches[@]}" -eq 0 ]] && { err 'no matches found'; return 1; }
     report "opening [${COLORS[YELLOW]}${COLORS[BOLD]}${matches[*]}${COLORS[OFF]}] with [${COLORS[GREEN]}${COLORS[BOLD]}$prog${COLORS[OFF]}]"
     $prog -- "${matches[@]}"
 }
@@ -1695,7 +1658,7 @@ foc() {
 
     opts="$1"
 
-    readonly default_depth="m10"
+    readonly default_depth='m10'
     declare -a matches=()
 
     if [[ "$opts" == -* ]]; then
@@ -1718,10 +1681,14 @@ foc() {
 }
 
 
-# note id doesn't have to add _only_ to fasd, can also update other databases
+# note it doesn't have to add _only_ to fasd, can also update other databases
 add_nodes_to_fasd() {
     [[ -z "$*" ]] && return
-    command -v fasd > /dev/null 2>&1 && fasd -A "$@"
+    if command -v memy &> /dev/null; then
+        memy note "$@"
+    elif command -v fasd &> /dev/null; then
+        fasd -A "$@"
+    fi
 }
 
 sethometime() { setspaintime; }  # home is where you make it;
@@ -1757,7 +1724,7 @@ __settz() {
     readonly tz="$*"
     readonly zonedir='/usr/share/zoneinfo'  # as per file/docs above
 
-    check_progs_installed timedatectl || return 1
+    check_progs_installed timedatectl || return 2
     [[ -z "$tz" ]] && { err "provide a timezone to switch to (e.g. Europe/Madrid)." -1; return 1; }
     [[ "$tz" =~ ^[A-Z][a-z]+/[-_A-Za-z]+$ ]] || { err "invalid timezone format; has to be in a format like [Europe/Madrid]" -1; return 1; }
     [[ -e "$zonedir/$tz" ]] || { err "[$zonedir/$tz] does not exist; sure about your tz?" -1; return 1; }
@@ -1777,7 +1744,7 @@ killmenao() {
 ## Print window class ##
 ########################
 xclass() {
-    check_progs_installed xprop awk || return 1
+    check_progs_installed xprop awk || return 2
 
     xprop | awk '
     /^WM_CLASS/{sub(/.* =/, "instance:"); sub(/,/, "\nclass:"); print}
@@ -1790,7 +1757,7 @@ xclass() {
 # note this is fronted by goto()/gt() for interactive usage
 _goto() {
     local i
-    [[ -z "$*" ]] && { err "node operand required"; return 1; }
+    [[ -z "$*" ]] && { err 'node operand required'; return 1; }
 
     if [[ -d "$*" ]]; then
         cd -- "$*"
@@ -1823,9 +1790,9 @@ sumtree() {
     shift "$((OPTIND-1))"
 
     readonly dir="$1"
-    [[ "$#" -gt 1 ]] && { err "max 1 arg - a directory - allowed"; return 1; }
+    [[ "$#" -gt 1 ]] && { err "max 1 arg -- a directory -- allowed"; return 1; }
 
-    check_progs_installed find md5sum || return 1
+    check_progs_installed find md5sum || return 2
 
     if [[ -n "$dir" ]]; then
         [[ -d "$dir" ]] || { err "directory [$dir] not a valid dir"; return 1; }
@@ -1839,7 +1806,7 @@ sumtree() {
     fi
 
     # to ignore file names; note we could also bake parallel in this command as above
-    #find . -type f -exec md5sum {} \; | cut -d" " -f1 | sort | md5sum
+    #find . -type f -exec md5sum {} \; | cut -d' ' -f1 | sort | md5sum
 
     # if you care also about metadata (ownership, perms), use tar:
     #tar -cf - ./ | md5sum
@@ -1876,7 +1843,7 @@ is_same() {
 
         if [[ -z "$t" ]]; then  # i.e. first run
             if [[ -f "$n" ]]; then
-                check_progs_installed md5sum || return 1
+                check_progs_installed md5sum || return 2
                 readonly t=f
             elif [[ -d "$n" ]]; then
                 readonly t=d
@@ -1898,7 +1865,6 @@ is_same() {
         fi
 
         [[ -z "$sum" ]] && { err "empty checksum for [$n]"; return 1; }
-
         [[ -n "$benchmark_sum" && "$sum" != "$benchmark_sum" ]] && return 1
         benchmark_sum="$sum"
     done
@@ -1919,7 +1885,7 @@ is_valid_json() {
     command -v jq >/dev/null 2>&1 || return 2
 
     for file in "$@"; do
-        jq -reM '""' "$file" >/dev/null 2>&1 || return 1  # https://stackoverflow.com/a/67979464/1803648
+        [[ -s "$file" ]] && jq -reM '""' "$file" >/dev/null 2>&1 || return 1  # https://stackoverflow.com/a/67979464/1803648
     done
 
     return 0
@@ -1941,7 +1907,7 @@ same_json() {
     f1="$1"
     f2="$2"
 
-    check_progs_installed  jq || return 1
+    check_progs_installed  jq || return 2
     [[ "$#" -eq 2 && -f "$f1" && -f "$f2" ]] || { err "exactly 2 args expected, both json files"; return 1; }
     is_valid_json "$f1" "$f2" || { err "both files need to contain valid json"; return 1; }
     jq -en --slurpfile a "$f1" --slurpfile b "$f2" '$a == $b' >/dev/null 2>&1
@@ -1955,118 +1921,13 @@ json_diff() {
     f1="$1"
     f2="$2"
 
-    check_progs_installed  jq vimdiff || return 1
+    check_progs_installed  jq vimdiff || return 2
     [[ "$#" -eq 2 && -f "$f1" && -f "$f2" ]] || { err "exactly 2 args expected, both json files"; return 1; }
     is_valid_json "$f1" "$f2" || { err "both files need to contain valid json"; return 1; }
     vimdiff <(jq -S . "$f1") <(jq -S . "$f2")
 }
 
 diff_json() { json_diff "$@"; }
-
-
-# cd-s to directory by partial match; if multiple matches, opens input via fzf. smartcase.
-#
-#
-#  g /data/partialmatch               # searches for partialmatch in /data.
-#  g /  da  part                      # same as previous; note that partialmatches can
-#                                     # be separated by whitespace instead of slashes.
-#  g /partialmatch_1/partialmatch     # searches for partialmatch in directory resolved
-#                                     # from partialmatch_1 in /.
-#  g partialmatch_1  partialmatch     # searches for partialmatch in directory resolved
-#                                     # from partialmatch_1 in our current dir.
-#  g ../partialmatch                  # searches for partialmatch in parent directory.
-#  g ...../partialmatch               # searches for partialmatch in directory that's
-#                                     # 4 levels up.
-#  g partialmatch                     # searches for partialmatch in current dir.
-#  g                                  # if no input, then searches all directories in current dir.
-#
-# see also gg()
-g() {
-    local paths input i dir is_backing has_fzf
-
-    # TODO: support fd if avail?
-    __find_fun() {
-        local pattern dir iname_arg
-        readonly pattern="$1"
-        dir="${2:-.}"
-
-        [[ "$(tolowercase "$pattern")" == "$pattern" ]] && iname_arg='iname'
-        [[ "$dir" != */ ]] && dir+='/'
-
-        find -L "$dir" -maxdepth 1 -mindepth 1 -type d -${iname_arg:-name} "*${pattern}*" -print0
-    }
-
-    # note this function sets the parent function's dir variable.
-    __select_dir() {
-        local pattern start_dir _dir matches
-        readonly pattern="$1"
-        readonly start_dir="${2:-.}"
-
-        # debug:
-        #report "patt: '$pattern'; dir: '$start_dir'" -1
-
-        # first check whether exact node name was given (including [..], given is_backing=1);
-        # then we can define [dir] without invoking find:
-        [[ "$start_dir" != '/' ]] && _dir="$start_dir"  # avoid building double slashes
-        ! [[ "$is_backing" -eq 0 && "$pattern" == '..' ]] && [[ "$pattern" != '.' && -d "$_dir/$pattern" ]] && { dir="$_dir/$pattern"; return 0; }
-
-        if [[ "$has_fzf" -eq 0 ]]; then
-            declare -a matches=()
-            while IFS= read -r -d $'\0' i; do
-                matches+=("$i")
-            done < <(__find_fun "$pattern" "$start_dir")
-
-            select_items -s "${matches[@]}" || return 1
-            dir="${__SELECTED_ITEMS[*]}"
-        else
-            dir="$(__find_fun "$pattern" "$start_dir" | fzf --select-1 --read0 --exit-0)" || return 1
-        fi
-
-        [[ -z "$dir" ]] && { err "no matches found" -1; return 1; }
-        [[ -d "$dir" ]] || { err "no such dir like [$dir] in $start_dir" -1; return 1; }
-    }
-
-    # note this function sets the parent function's dir variable.
-    __go_up() {
-        local pattern i
-        readonly pattern="$1"  # dots only; guaranteed to be minimum of 3 dots.
-
-        for ((i=0; i <= (( ${#pattern} - 2 )) ; i++)); do
-            dir+='../'
-        done
-    }
-
-    for i in "$@"; do
-        input+="$i"
-        [[ "$i" != */ ]] && input+='/'
-    done
-
-    #[[ -d "$input" && ! "$input" =~ ^.*/\.+/$ ]] && { cd -- "$input"; return; }
-    is_backing=1  # default to assume first directory navigations are going up the tree;
-    [[ -z "$input" ]] && input='*'
-    [[ "$input" == /* ]] && { input="${input:1}"; is_backing=0; dir='/'; }
-    command -v fzf > /dev/null 2>&1 && readonly has_fzf=1 || readonly has_fzf=0
-
-    IFS='/' read -ra paths <<< "$input"
-    #echo "paths: [${paths[@]}]"
-
-    # clean paths:
-    # TODO: what if the first path element is '.'?
-    for i in "${!paths[@]}"; do
-        [[ -z "${paths[$i]}" || "${paths[$i]}" == . ]] && unset 'paths[i]'
-    done
-    [[ "${#paths[@]}" -eq 0 ]] && paths=('*')
-    #echo "cleaned paths: [${paths[@]}]"
-
-    for i in "${paths[@]}"; do
-        [[ -z "$dir" && "$i" =~ ^\.{3,}$ ]] && { __go_up "$i"; is_backing=0; continue; }
-        [[ "$i" != '..' ]] && is_backing=0
-        __select_dir "$i" "$dir" || { unset __find_fun __select_dir __go_up; return 1; }
-    done
-
-    unset __find_fun __select_dir __go_up
-    cd -- "$dir"
-}
 
 
 # dockers
@@ -2088,24 +1949,17 @@ dcleanup() {
         -n  remove unused networks
         -h  display this usage info"
 
-    check_progs_installed  docker || return 1
+    check_progs_installed  docker || return 2
     [[ -z "$*" ]] && { echo -e "$usage"; return 1; }
 
     while getopts 'acivnh' opt; do
         case "$opt" in
-           a) docker system prune --all
-                ;;
-           c) docker container prune
-                ;;
-           i) docker image prune --all
-                ;;
-           v) docker volume prune
-                ;;
-           n) docker network prune
-                ;;
-           h) echo -e "$usage"
-              return 0
-                ;;
+           a) docker system prune --all ;;
+           c) docker container prune ;;
+           i) docker image prune --all ;;
+           v) docker volume prune ;;
+           n) docker network prune ;;
+           h) echo -e "$usage"; return 0 ;;
            *) echo -e "$usage"; return 1 ;;
         esac
     done
@@ -2119,7 +1973,7 @@ wifilist() {
 
     readonly wifi_device_file="$_WIRELESS_IF"
 
-    check_progs_installed nmcli || return 1
+    check_progs_installed nmcli || return 2
 
     if [[ -r "$wifi_device_file" ]]; then
         [[ -z "$(cat -- "$wifi_device_file")" ]] && err "[$wifi_device_file] is empty."
@@ -2133,7 +1987,7 @@ wifilist() {
 
 
 keepsudo() {
-    check_progs_installed sudo || return 1
+    check_progs_installed sudo || return 2
 
     while true; do
         sudo -n true
@@ -2165,7 +2019,7 @@ fumount() {
 #
 # TODO: enable also encrypted upload:
 #    encrypt:
-#        cat /tmp/hello.txt|gpg -ac -o- | curl -X PUT --upload-file "-" https://transfer.sh/test.txt
+#        cat /tmp/hello.txt | gpg -ac -o- | curl -X PUT --upload-file "-" https://transfer.sh/test.txt
 #    decrypt:
 #        curl https://transfer.sh/1lDau/test.txt | gpg -o- > /tmp/hello.txt
 #
@@ -2175,6 +2029,16 @@ fumount() {
 # TODO5: retrieve&store deletion token
 #
 # see  https://github.com/dutchcoders/transfer.sh/
+#
+# NOTE:
+# as of '26 transfer.sh (and its many alternatives) appar down. consider following alternatives:
+# - https://0x0.st/
+#   - based in germany, good service; source @ https://git.0x0.st/mia/0x0 if you wanna self-host
+# - https://gitlab.com/timvisee/send
+#   - public instances listed @ https://gitlab.com/timvisee/send-instances
+# - https://github.com/magic-wormhole/magic-wormhole - direct transfer between computers
+#   - no reason to use it over croc IMHO
+# - https://github.com/root-gg/plik - self-hosted temporary file upload, i.e. self-hosted transfer.sh/wetransfer
 transfer() {
     local tmpfile file
 
@@ -2182,7 +2046,7 @@ transfer() {
 
     [[ "$#" -ne 1 || -z "$file" ]] && { err "single file to upload required"; return 1; }
     [[ -e "$file" ]] || { err "[$file] does not exist."; return 1; }
-    check_progs_installed curl || return 1
+    check_progs_installed curl || return 2
 
     # write to output to tmpfile because of progress bar  # TODO: wat, why? would bar be stored into var if we didn't use this pointeless file?
     tmpfile=$(mktemp -t transfer_XXX.tmp) || { err "unable to create temp with mktemp"; return 1; }
@@ -2228,7 +2092,7 @@ mkf() { mkcd "$@"; }  # alias to mkcd
 shot() {
     local mon file
 
-    check_progs_installed ffcast scrot || return 1
+    check_progs_installed ffcast scrot || return 2
 
     mon=$@
     file="$HOME/shot-$(date +'%H:%M-%d-%m-%Y').png"
@@ -2262,10 +2126,9 @@ mkgif() {
     [[ "$#" -ne 1 ]] && { err "exactly one arg expected - video file to convert"; return 1; }
     [[ -z "$input_file" ]] && { err "video file to convert to gif required as a param."; return 1; }
     [[ -f "$input_file" ]] || { err "[$input_file] is not a file"; return 1; }
-    check_progs_installed ffmpeg
+    check_progs_installed ffmpeg convert || return 2
 
     ffmpeg -ss 00:00:00.000 -i "$input_file" -pix_fmt rgb24 -r 10 -s 320x240 -t 00:00:10.000 "$output"
-    check_progs_installed convert || { err "convert is not installed; can't optimise final output [$output]"; return 1; }
 
     convert -layers Optimize "$output" "$optimized"
 
@@ -2282,7 +2145,7 @@ capture() {
     readonly dest='/tmp'  # dir where recorded file will be written into
     readonly regex='^[0-9]+x[0-9]+$'
 
-    check_progs_installed ffmpeg || return 1
+    check_progs_installed ffmpeg || return 2
     [[ "$#" -ne 1 ]] && { err "exactly one arg (filename without extension) required"; return 1; }
     [[ "$name" == */* || "$(dirname -- "$name")" != '.' ]] && { err "please enter only filename, not path; it will be written to [$dest]"; return 1; }
     [[ -n "$name" ]] && readonly name="$dest/${name}.mkv" || { err "need to provide output filename as first arg (without an extension)."; return 1; }
@@ -2359,7 +2222,7 @@ fdd() {  # 'fd' conflicts with https://github.com/sharkdp/fd
 
     readonly src="$1"
     [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir."; return 1; }
-    check_progs_installed fzf || return 1
+    check_progs_installed fzf || return 2
     dir=$(find "${src:-.}" -path '*/\.*' -prune \
                     -o -type d -print 2> /dev/null | fzf +m) && cd -- "$dir"
 }
@@ -2372,7 +2235,7 @@ fda() {
 
     readonly src="$1"
     [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir."; return 1; }
-    check_progs_installed fzf || return 1
+    check_progs_installed fzf || return 2
     dir=$(find "${src:-.}" -type d 2> /dev/null | fzf +m) && cd -- "$dir"
 }
 
@@ -2385,7 +2248,7 @@ fdu() {
     readonly pwd="$(realpath -- "$PWD")"
 
     [[ -n "$src" && ! -d "$src" ]] && { err "first argument can only be starting dir."; return 1; }
-    check_progs_installed fzf || return 1
+    check_progs_installed fzf || return 2
 
     declare -a dirs=()
     _get_parent_dirs() {
@@ -2412,16 +2275,9 @@ cdf() {
 
     readonly pattern="$1"
     [[ -d "$pattern" ]] && report "fyi, input argument has to be a search pattern, not starting dir."
-    check_progs_installed fzf || return 1
+    check_progs_installed fzf || return 2
 
     file=$(fzf +m -q "$pattern") && dir=$(dirname -- "$file") && cd -- "$dir"
-}
-
-
-# utility function used to write the command in the shell (used by fzf wrappers)
-# pass '-run' as first argument to run the passed command
-__writecmd() {
-    perl -e '$TIOCSTI = 0x5412; $l = <STDIN>; $lc = $ARGV[0] eq "-run" ? "\n" : ""; $l =~ s/\s*$/$lc/; map { ioctl STDOUT, $TIOCSTI, $_; } split "", $l;' -- $1
 }
 
 
@@ -2496,6 +2352,9 @@ fif() {
     out="$(_rg_find | FZF_DEFAULT_OPTS="$opts" fzf)"  # note capturing output fricks up non-gui opening w/ --bind
     unset _rg_find
     readarray -t out <<< "$out"
+
+    # TODO: broken in zsh where index starts w/ 1
+    is_bash || { err "currently only bash supported"; return 1; }
 
     k="${out[0]}"; unset 'out[0]'
     [[ -z "$k" ]] && return 0  # got no --expect keypress event, exit
@@ -2594,12 +2453,12 @@ fh() {
     local input f cleanup_regex cmd out ifs_old k
 
     input="$*"
-
     f="$(funname)"
+    is_bash || { err "currently only bash supported"; return 1; }  # TODO: zsh history support needs adding!
 
     readonly cleanup_regex='^\s*\d+\s+\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+\K.*$'  # depends on your history format (HISTTIMEFORMAT) set in .bashrc
     #([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac | sed -re 's/^\s*[0-9]+\s*//' | __writecmd -run
-    check_progs_installed history || return 1
+    check_progs_installed history || return 2
 
     if command -v fzf > /dev/null 2>&1; then
         # clean up history output, remove FUNCNAME, remove trailing whitespace & clean up multiple ws, print unique (w/o sorting):
@@ -2656,10 +2515,11 @@ fh() {
 fhd() {
     local q offset_regex cmd ifs_old i out
 
+    is_bash || { err "currently only bash supported"; return 1; }  # TODO: zsh history support needs adding!
     q="$*"
 
     readonly offset_regex='^\s*\K\d+(?=.*$)'
-    check_progs_installed history || return 1
+    check_progs_installed history || return 2
 
     __delete_cmd() {
         local line offset
@@ -2672,6 +2532,7 @@ fhd() {
     if command -v fzf > /dev/null 2>&1; then
         while out="$(history | fzf --no-sort --print-query --tac --query="$q" +m -e --exit-0)"; do
             mapfile -t out <<< "$out"
+# TODO: broken in zsh where index starts w/ 1
             q="${out[0]}"
             i="${out[-1]}"
             [[ -z "$i" ]] && return
@@ -2716,7 +2577,7 @@ fbr() {
     local branches branch q
 
     q="$*"
-    check_progs_installed fzf git || return 1
+    check_progs_installed fzf git || return 2
     is_git || { err "not in git repo."; return 1; }
 
     branches=$(
@@ -2734,7 +2595,7 @@ fco() {
     local tags branches target q
 
     q="$*"
-    check_progs_installed fzf git || return 1
+    check_progs_installed fzf git || return 2
     is_git || { err "not in git repo."; return 1; }
 
     tags=$(git tag | awk '{print "\x1b[31;1mtag\x1b[m\t" $1}') || return
@@ -2772,7 +2633,7 @@ fco() {
 e() {  # mnemonic: edit
     local file
 
-    check_progs_installed fasd fzf "$EDITOR" || return 1
+    check_progs_installed fasd fzf "$EDITOR" || return 2
     file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)"
     [[ -f "$file" ]] && $EDITOR -- "$file" && return 0 || return 1
 }
@@ -2781,9 +2642,9 @@ e() {  # mnemonic: edit
 se() {  # mnemonic: sudo edit
     local file
 
-    check_progs_installed fasd fzf "$EDITOR" || return 1
+    check_progs_installed fasd fzf "$EDITOR" || return 2
     file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)"
-    [[ -f "$file" ]] && sudo $EDITOR -- "$file" && return 0 || return 1
+    [[ -f "$file" ]] && sudoedit -- "$file" && return 0 || return 1
 }
 
 es() { se "$@"; }  # alias; keep as a function as opposed to shell alias
@@ -2799,7 +2660,7 @@ d() {  # mnemonic: dir
     #command -v ranger >/dev/null && fm=ranger
     #check_progs_installed "$fm" || return 1
 
-    check_progs_installed fasd fzf || return 1
+    check_progs_installed fasd fzf || return 2
     dir="$(fasd -Rdl "$@" | fzf -1 -0 --no-sort +m --exit-0)"
     [[ -d "$dir" ]] && cd -- "$dir" && return 0 || return 1
 }
@@ -2811,7 +2672,7 @@ d() {  # mnemonic: dir
 goto() {
     local node
 
-    check_progs_installed fasd fzf || return 1
+    check_progs_installed fasd fzf || return 2
     [[ "$*" == */ && -d "$*" ]] && { _goto "$*"; return $?; }  # TODO: only short-circuit if dir-arg ends with slash?
 
     node="$(fasd -Ral "$@" | fzf -1 -0 --no-sort +m --exit-0)"
@@ -2854,7 +2715,7 @@ javadump() {
 
     pids=("$@")
 
-    check_progs_installed jcmd || return 1
+    check_progs_installed jcmd || return 2
     # if no pids provided, ask user to select:
     if [[ "${#pids[@]}" -eq 0 ]]; then
         unset opt; opt=()
@@ -2969,7 +2830,7 @@ tcpdumperino() {
 # look up IPs in LAN
 # from https://superuser.com/a/261823/179401
 scan_network() {
-    check_progs_installed  arp-scan || return 1
+    check_progs_installed  arp-scan || return 2
     report "note that sudo passwd is required"
 
     #sudo arp-scan 10.42.21.1/24 --retry=5
@@ -3003,7 +2864,7 @@ fi
 export _MARKPATH
 
 # jump to mark:
-function jj {
+jj() {
     [[ "$#" -ne 1 ]] && { err "provide a mark to jump to"; return 1; }
     [[ -d "$_MARKPATH" ]] || { err "no marks saved in ${_MARKPATH} - dir does not exist."; return 1; }
     cd -P -- "$_MARKPATH/$1" 2>/dev/null || err "no mark [$1] in [$_MARKPATH]"
@@ -3012,7 +2873,7 @@ function jj {
 # mark:
 # pass '-o' as first arg to force overwrite existing target link
 # TODO: consider https://github.com/urbainvaes/fzf-marks
-function jm {
+jm() {
     local overwrite target
 
     [[ "$1" == "-o" || "$1" == "--overwrite" ]] && { readonly overwrite=1; shift; }
@@ -3030,19 +2891,19 @@ function jm {
 
 # mark override:
 # mnemonic: jm overwrite
-function jmo {
+jmo() {
     jm --overwrite "$@"
 }
 
 # un-mark:
-function jum {
+jum() {
     [[ $# -ne 1 || -z "$1" ]] && { err "exactly one arg accepted"; return 1; }
     [[ -d "$_MARKPATH" ]] || { err "no marks saved in [$_MARKPATH] - dir does not exist."; return 1; }
     rm -i -- "$_MARKPATH/$1"
 }
 
 # list all saved marks:
-function jjj {
+jjj() {
     [[ -d "$_MARKPATH" ]] || { err "no marks saved in [$_MARKPATH] - dir does not exist."; return 1; }
     ls -l -- "$_MARKPATH/" | sed 's/  / /g' | cut -d' ' -f9- | sed 's/ -/\t-/g' && echo
 }
@@ -3059,21 +2920,18 @@ _completemarks() {
 }
 is_bash && complete -F _completemarks jj jum jmo
 
-# print out pstree, but in reverse (ie root of the tree is at the bottom)
+# print out pstree, but in reverse (ie. root of the tree is at the bottom)
 ptree() {
-    pstree -U | sed "y/└┬/┌┴/" | tac
+    pstree -U | sed 'y/└┬/┌┴/' | tac
 }
 
 
-# when using gnu tools (mv, cp etc) you may also check out progress command (https://github.com/Xfennec/progress)
+# when using gnu tools (mv, cp etc) you may also check out progress command (https://github.com/Xfennec/progress);
 # that one won't show aggregate progress though, but the progress of individual file being operated on so likely most useful for large files.
 copy-progress() {
     local i src dest e
 
-    if [[ $# -lt 2 ]]; then
-        err 'at least 2 args required'
-        return 1
-    fi
+    [[ $# -lt 2 ]] && { err 'at least 2 args required'; return 1; }
     for i in "$@"; do
         if ! [[ -e "$i" ]]; then
             err "given source/dest [$i] does not exist"
@@ -3092,134 +2950,16 @@ copy-progress() {
     e=$?
 
     if [[ "$e" -eq 0 ]]; then
-        report "copy succeeded, running sync..."
+        report 'copy succeeded, running sync...'
         sync && report "sync OK" || err "sync failed w/ $?"  # to check sync progress in separate terminal, do  $ watch -d grep -e Dirty: -e Writeback: /proc/meminfo
     else
-        err "rsync failed w/ $?"
+        err "rsync failed w/ $e"
     fi
 
     return "$e"
 }
 
 ################################################
-# other shell completions:
-# use this if grep w/ perl regex not avail:
-#[[ -f ~/.ssh/config ]] && complete -o default -o nospace -W "$(grep -i -e '^host ' ~/.ssh/config | awk '{print substr($0, index($0,$2))}' ORS=' ')" sshpearl
-is_bash && [[ -f ~/.ssh/config ]] && complete -o default -o nospace -W "$(grep -Poi '^host\s+\K\S+' ~/.ssh/config | grep -vFx '*')" sshpearl
-
-# $1 - name of the function whose args are completed
-# $2 - word being completed
-# $3 - word preceding the word being completed on the current command line, think it's same as ${COMP_WORDS[COMP_CWORD-1]}
-_complete_dirs_in_pwd() {
-    local curw wordlist d prefix p i
-
-
-    [[ "$DEBUG" -eq 1 ]] && err "1: [$1]"  # always funcname
-    [[ "$DEBUG" -eq 1 ]] && err "2: [$2]"  # think its what's on cml at the time you press tab, even if it gets completed immediately; separate last part, not entirety that's on CLI
-    [[ "$DEBUG" -eq 1 ]] && err "3: [$3]"  # last completed word? even if its not valid completion
-    curw=${COMP_WORDS[COMP_CWORD]}  # think it's the same as $2?
-
-    __go_up() {
-        local dots i d
-
-        dots="$*"  # guaranteed to be _minimum_ of 3 dots.
-
-        for ((i=0; i <= (( ${#dots} - 2 )); i++)); do
-            d+='../'
-        done
-        echo "$d"
-    }
-
-
-    # defines global/outer $d
-    __define_d() {
-        local I input paths i
-
-        I="$1"
-        for i in "${COMP_WORDS[@]:1:${#COMP_WORDS[@]}-I}"; do
-            input+="$i"
-            [[ "$i" != */ ]] && input+='/'
-        done
-
-        if [[ "$input" == '~'* ]]; then
-            input="${HOME}${input:1}"
-        fi
-        if [[ "$input" == /* ]]; then
-            input="${input:1}"
-            d='/'
-        fi
-        #[[ -z "$input" ]] && input='.'  # TODO  do we want this?
-
-        IFS='/' read -ra paths <<< "$input"
-
-        for i in "${paths[@]}"; do
-            [[ -z "$i" || "$i" == . ]] && continue   # TODO: what if the first path element is '.'?
-
-            [[ -z "$d" && "$i" =~ ^\.{3,}$ ]] && { d="$(__go_up "$i")"; continue; }
-            [[ "$i" == \$* ]] && i="$(envsubst <<< "$i")"  # need to manually expand env vars
-            [[ -n "$d" && "$d" != */ && "$i" != /* ]] && d+='/'
-            d+="$i"
-        done
-    }
-
-
-    if [[ "$COMP_CWORD" -eq 1 && ! "$curw" =~ ^\.{3,} ]]; then
-        return 0  # if [^...] then those need to be expanded, hence can't return here
-
-    elif [[ "$2" == */ ]]; then  # ie all's confirmed directory path i suppose? as in no further completion needed here
-        curw="$2\ "
-        COMPREPLY=($(compgen -W "$curw" -- "$curw"))
-        return 0
-
-    elif grep -qE '\S+/\S+' <<< "$curw"; then
-
-        if [[ "$COMP_CWORD" -eq 1 ]]; then
-            __define_d 1
-            d="${d%/*}/"
-            curw="${curw##*/}"  # everything after very last slash
-            prefix="$d"
-        else
-            __define_d 2
-
-            IFS='/' read -ra p <<< "${curw%/*}"  # split up everything before last slash
-            curw="${curw##*/}"  # everything after very last slash
-
-            for i in "${p[@]}"; do
-                [[ -z "$i" || "$i" == . ]] && continue   # TODO: what if the first path element is '.'?
-                [[ "$i" == \$* ]] && i="$(envsubst <<< "$i")"  # need to manually expand env vars
-                [[ "$i" != */ ]] && i+='/'
-                [[ "$d" != */ ]] && d+='/'
-                d+="$i"
-                prefix+="$i"
-            done
-        fi
-    else
-        __define_d 1
-        if [[ -n "$2" ]]; then  # if we're currently trying to auto-complete something
-            curw="${d##*/}"  # everything after very last slash
-            d="${d%/*}"  # get everything before the very last slash
-            [[ "$d" != */ ]] && d+='/'
-            [[ "$COMP_CWORD" -eq 1 && "$2" =~ ^\.{3,} ]] && prefix="$d"  # expand the ...+ on command line if we're only completing that
-        fi
-    fi
-
-    # TODO: currently when doing  $g /dev dir word<TAB>   while /dev/dir is partial, then find here would
-    # try to search where $d=/dev/dir; not a deal-breaker, but some recursive completion for this would be cool
-    wordlist=$(find -L "${d:-.}" -mindepth 1 -maxdepth 1 -type d -printf "${prefix}%f\n" 2>/dev/null)
-
-    # TODO: how to make sure our current dir's contents aren't offered
-    # in case target dir no longer has candidates? setting COMPREPLY here to
-    # empty val sort of works, but not ideal:
-    [[ -z "$wordlist" ]] && COMPREPLY=('') && return 0
-
-    # COMPREPLY is the output of completion attempt
-    COMPREPLY=($(compgen -W '${wordlist[@]}' -- "${prefix}$curw"))
-    #report "comprelpy: [${COMPREPLY[*]}]"
-    return 0
-}
-#is_function g && complete -o dirnames -o filenames -o nospace -F _complete_dirs_in_pwd g  # autocomplete on directories
-#is_function g && complete -o dirnames -o filenames -F _complete_dirs_in_pwd g  # autocomplete on directories
-is_bash && is_function g && complete -o dirnames -F _complete_dirs_in_pwd g
 
 # TODO: here we try to introduce fuzzyness via find -iname {{{
 #_complete_dirs_in_pwd() {

@@ -144,7 +144,7 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     # !! only set this if not using portal !! (for portals see https://flatpak.github.io/xdg-desktop-portal/)
     #export ADW_DISABLE_PORTAL=1
 
-    # supporess warnings about accessibility bus (see https://wiki.archlinux.org/title/GTK#Suppress_warning_about_accessibility_bus)
+    # suppress warnings about accessibility bus (see https://wiki.archlinux.org/title/GTK#Suppress_warning_about_accessibility_bus)
     export NO_AT_BRIDGE=1
 
     # Make QT automatically scale according to screen DPI (from https://github.com/vincentbernat/i3wm-configuration/blob/master/dotfiles/xsession )
