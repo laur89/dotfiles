@@ -10,13 +10,14 @@ _g() {
     # - $LBUFFER holds command line buffer that is left from the cursor, i.e. it's a
     #   BUFFER substring 1 .. $CURSOR
     # - $RBUFFER is the same as LBUFFER but holds part of BUFFER right to the cursor
+    # - {L,R}BUFFER cannot be overwritten from a simple completion logic,
+    #   only from a zle widget
     # - $CURRENT - the word on the command line we are on
     # - $words
     #
     tokens=(${(z)LBUFFER})
     #curw="${tokens[-1]}"
     curw=$words[CURRENT]
-    orig_curw=$curw
     #cmd="${tokens[1]}"  # command we're running/completing
 
     # note input is guaranteed to be minimum of 2 dots
@@ -41,7 +42,7 @@ _g() {
             [[ "$i" != */ ]] && input+='/'
         done
 
-        [[ "$input" == '~'* ]] && input="${HOME}${input:1}"
+        [[ "$input" == '~'* ]] && input="${HOME}${input:1}"  # or: input="${input/#\~/$HOME}"
         [[ "$input" == /* ]] && { input="${input:1}"; d='/'; }
         #[[ -z "$input" ]] && input='.'  # TODO  do we want this?
 
@@ -55,7 +56,7 @@ _g() {
             [[ -n "$d" && "$d" != */ && "$i" != /* ]] && d+='/'
             d+="$i"
         done
-        #err_display "curw: [$curw], input: [$input], tokens: [$tokens], words: [$words] d: [$d] CURR: $CURRENT" define_d
+        #display_message "curw: [$curw], input: [$input], tokens: [$tokens], words: [$words] d: [$d] CURR: $CURRENT"
     }
 
     #if [[ "$curw" == */ ]]; then  # ie all's confirmed directory path i suppose? as in no further completion needed here
@@ -75,8 +76,16 @@ _g() {
             _path_files -W "$d" -/
             prefix="$d"
         else
-            _files -/  # directories
-            return 0
+            # TODO: this entire else block should be merged/consolidated w/ the last else block below
+            if [[ "$curw" == */* ]]; then
+                d="${curw%/*}"
+                curw="${curw##*/}"
+                [[ "$d" != */ ]] && d+='/'
+                prefix=$d
+            fi
+            #wordlist=(
+                #${(f)"$(find -L "${d:-.}" -mindepth 1 -maxdepth 1 -type d ${curw:+-iname *${curw}*} -printf "${prefix}%f\n" 2>/dev/null)"}
+            #)
         fi
     else
         __define_d 2
@@ -100,10 +109,14 @@ _g() {
 
     # TODO: currently when doing  $g /dev dir word<TAB>   while /dev/dir is partial, then find here would
     # try to search where $d=/dev/dir; not a deal-breaker, but some recursive completion for this would be cool
-    wordlist=(
-        ${(f)"$(find -L "${d:-.}" -mindepth 1 -maxdepth 1 -type d -printf "${prefix}%f\n" 2>/dev/null)"}
-    )
-    #err_display "CURRENT: $CURRENT wlist: [$wordlist]"
+    if [[ -z "$wordlist" ]]; then
+        wordlist=(
+            #${(f)"$(find -L "${d:-.}" -mindepth 1 -maxdepth 1 -type d -printf "${prefix}%f\n" 2>/dev/null)"}
+            ${(f)"$(find -L "${d:-.}" -mindepth 1 -maxdepth 1 -type d ${curw:+-iname *${curw}*} -printf "${prefix}%f\n" 2>/dev/null)"}
+        )
+    fi
+    #display_message "CURRENT: $CURRENT wlist: [$wordlist]"
+    #display_message "curw: [$curw], d: [$d], wlist: $wordlist"
 
     # TODO: how to make sure our current dir's contents aren't offered
     # in case target dir no longer has candidates? setting COMPREPLY here to

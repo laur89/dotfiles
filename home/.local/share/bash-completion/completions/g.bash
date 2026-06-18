@@ -33,7 +33,7 @@ _complete_dirs_in_pwd() {
             [[ "$i" != */ ]] && input+='/'
         done
 
-        [[ "$input" == '~'* ]] && input="${HOME}${input:1}"
+        [[ "$input" == '~'* ]] && input="${HOME}${input:1}"  # or: input="${input/#\~/$HOME}"
         [[ "$input" == /* ]] && { input="${input:1}"; d='/'; }
         #[[ -z "$input" ]] && input='.'  # TODO  do we want this?
 
