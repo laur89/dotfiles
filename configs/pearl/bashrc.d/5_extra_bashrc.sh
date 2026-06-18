@@ -1,0 +1,1 @@
+/home/laur/.config/shell/extra_bashrc.sh

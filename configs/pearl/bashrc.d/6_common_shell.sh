@@ -1,0 +1,1 @@
+/home/laur/.config/shell/common_shell.sh
