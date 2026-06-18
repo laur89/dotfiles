@@ -213,10 +213,10 @@ set -o noclobber        # do not allow overwriting existing files w/ > redirecti
 unset MAILCHECK         # avoid delays;
 ##########################################
 if ! type __BASH_FUNS_LOADED_MARKER > /dev/null 2>&1; then
-    [[ ! -r "$HOME/.bash_functions" ]] || source "$HOME/.bash_functions"
+    [[ ! -f "$HOME/.bash_functions" ]] || source "$HOME/.bash_functions"
 
     if [[ -d "$HOME/.bash_funs_overrides" ]]; then
-        for i in $HOME/.bash_funs_overrides/*; do
+        for i in "$HOME/.bash_funs_overrides/"*; do
             [[ ! -f "$i" ]] || source "$i"
         done
     fi
@@ -224,8 +224,8 @@ fi
 
 # sys-specific aliases:
 if [[ -d "$HOME/.bash_aliases_overrides" ]]; then
-    for i in $HOME/.bash_aliases_overrides/*; do
-        [[ -f "$i" ]] && source "$i"
+    for i in "$HOME/.bash_aliases_overrides/"*; do
+        [[ ! -f "$i" ]] || source "$i"
     done
 fi
 
@@ -384,14 +384,12 @@ if command -v fasd > /dev/null; then
     # add tab completion support to all our own-defined fasd aliases (as per fasd readme):
     _fasd_bash_hook_cmd_complete  e se es goto gt  # completion for d is already added by cache, no point in duplicating
 fi
-########################################## forgit
-# forgit  (https://github.com/wfxr/forgit)
+########################################## forgit  # https://github.com/wfxr/forgit
 i="$BASE_PROGS_DIR/forgit/forgit.plugin.sh"
 [[ ! -f "$i" ]] || source "$i"
-########################################## mise
-if command -v mise >/dev/null 2>/dev/null; then
-    eval -- "$(mise activate bash)"  # https://mise.jdx.dev/installing-mise.html#bash
-fi
+########################################## mise  # https://mise.jdx.dev/installing-mise.html#bash
+command -v mise &>/dev/null && eval -- "$(mise activate bash)"
+########################################## /mise
 
 # some nvim plugins require node to be on PATH; configure a constant link so plugins et al can be pointed at it;
 # idea is to have access to node executable prior to loading anything from asdf.
@@ -422,64 +420,6 @@ export VIRTUAL_ENV_DISABLE_PROMPT=1  # disable the default virtualenv prompt cha
 __py_virtualenv_ps1() {  # called by PS1
     echo -n "${VIRTUAL_ENV:+${PROMPT_SEGMENT_PREFIX}${COLORS[BOLD]}venv:${COLORS[CYAN]}${VIRTUAL_ENV##*/}${PROMPT_SEGMENT_SUFFIX}}"
 }
-########################################## nvr
-# TODO: instead of any nvr functions here, consider https://github.com/carlocab/tmux-nvr instead
-#
-# single nvim instance per tmux window OR session  (from https://www.reddit.com/r/neovim/comments/aex45u/integrating_nvr_and_tmux_to_use_a_single_tmux_per/)
-#  some ideas also taken from https://github.com/carlocab/tmux-nvr/blob/main/bin/nvr-tmux
-# just as a reminder - there might also be (n)vim config that sets $GIT_EDITOR to use nvr
-#
-# TODO: nvr doesn't start... look here for the socket issue: https://github.com/mhinz/neovim-remote/issues/134
-# TODO 2: NVIM_LISTEN_ADDRESS is deprecated in nvim, but still supported by nvr
-
-#if [[ -n "$TMUX" ]]; then
-    #export NVR_TMUX_BIND_SESSION=1  # if 1, then single nvim per tmux session; otherwise single nvim per tmux window
-
-    ## note NVIM_LISTEN_ADDRESS env var is referenced in vim config, so don't change the value carelessly!
-    #NVIM_LISTEN_ADDRESS="/tmp/.nvim_userdef_${USER}_"
-    #if [[ "$NVR_TMUX_BIND_SESSION" == 1 ]]; then
-        #export NVIM_LISTEN_ADDRESS+="sess_$(tmux display -p '#{session_id}').sock"
-    #else
-        #export NVIM_LISTEN_ADDRESS+="sess_win_$(tmux display -p '#{session_id}_#{window_id}').sock"
-    #fi
-#fi
-
-## TODO: we might have to move this into a script on $PATH for git_editor settings to work et al
-#nvr() {
-    #if [[ -S "$NVIM_LISTEN_ADDRESS" ]]; then
-        #if [[ -n "$TMUX" ]]; then
-            #local pane_id window_id
-
-            ## Use nvr to get the tmux pane_id
-            #pane_id="$(command nvr --remote-expr 'get(environ(), "TMUX_PANE")')"
-            ## Activate the pane containing our nvim server
-            #command tmux select-pane -t"$pane_id"
-
-            #if [[ "$NVR_TMUX_BIND_SESSION" == 1 ]]; then
-                ## Find the window containing $pane_id (this feature requires tmux 3.2+!)
-                #window_id="$(command tmux list-panes -s -F '#{window_id}' -f "#{m:$pane_id,#{pane_id}}")"
-                ## Activate the window
-                #command tmux select-window -t"$window_id"
-            #fi
-        #fi
-
-        #command nvr -s "$@"
-    #else
-        #nvim -- "$@"
-    #fi
-#}
-#export -f nvr
-####### OR logic lifted from https://github.com/carlocab/tmux-nvr/blob/main/tmux-nvr.plugin.zsh (well, close to it anyway):
-# note this depends on we using the carlocab/tmux-nvr plugin, as its nvim-listen.sh
-# is who originally sets/defines the NVIM_LISTEN_ADDRESS env var.
-#
-# !! note we place "$HOME/.tmux/plugins/tmux-nvr/bin" on our PATH in env vars !!
-if [[ -n "$TMUX" ]]; then
-    eval -- "$(tmux show-environment -s NVIM_LISTEN_ADDRESS 2> /dev/null)"
-else
-    [[ -d /tmp/.nvr ]] || mkdir -p -m 700 /tmp/.nvr  # -m 700 sets permissions so that only you have access to this directory
-    export NVIM_LISTEN_ADDRESS=/tmp/.nvr/nvimsocket
-fi
 ########################################## fzf-tab-completion
 # replace default bash tab completion menu w/ fzf: (https://github.com/lincheney/fzf-tab-completion)
 # note: commented out (at least) 'til these are solved:
@@ -491,13 +431,15 @@ fi
     #bind -x '"\t": fzf_bash_completion'
 #fi
 #unset ftc
-########################################## zoxide
-# needs to be at the end of bashrc
-# zoxide settings:  (https://github.com/ajeetdsouza/zoxide)
+########################################## zoxide (needs to be at the end of bashrc)
 #export _ZO_DATA_DIR="$BASE_DATA_DIR/.zoxide"
 export _ZO_RESOLVE_SYMLINKS=1
 command -v zoxide > /dev/null && eval -- "$(zoxide init bash)"
 ########################################## /zoxide
+
+########################################## memy  # https://github.com/andrewferrier/memy
+command -v memy &> /dev/null && source <(memy hook bash)
+########################################## /memy
 
 ########################################## ai
 # aichat; see https://github.com/sigoden/aichat/blob/main/scripts/shell-integration/integration.bash
@@ -525,7 +467,9 @@ i="$BASE_DATA_DIR/dev/scripts/bash-fancy-ctrl-z"
 # - as per automated setup logic, atuin is sourced _after_ bash-preexec
 command -v atuin > /dev/null && eval -- "$(atuin init bash --disable-up-arrow)"
 
-GPG_TTY=$(tty)
-export GPG_TTY  # to make sure git tag properly launches pinentry; instructed by gpg manual: https://www.gnupg.org/documentation/manuals/gnupg/Invoking-GPG_002dAGENT.html
+i="$XDG_CONFIG_HOME/shell/extra_bashrc.sh"
+[[ ! -f "$i" ]] || source "$i"
+i="$XDG_CONFIG_HOME/shell/common_shell.sh"
+[[ ! -f "$i" ]] || source "$i"
 
 unset i
