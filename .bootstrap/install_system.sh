@@ -3106,8 +3106,6 @@ fetch_extract_tarball_from_git() {
 # -n     - filename pattern to be used by find; works together w/ -f;
 # -f     - $file output pattern to grep for in order to filter for specific
 #          single file from unpacked tarball;
-#          as it stands, the _first_ file matching given filetype is returned, even
-#          if there were more. works together w/ -n opt;
 #
 # $1 - tarball file to be extracted, or a URL where to fetch file from first
 #      TODO: remove url support? as we're not tracking the version this way.
@@ -6512,7 +6510,9 @@ install_from_repo() {
         calc  # for cli
         bc
         #bcal  # Bits, bytes and address calculator; https://github.com/jarun/bcal
-        atool  # provides aunpack command. instead of atool, consider https://github.com/mholt/archives
+        atool  # provides aunpack command. instead of atool, consider:
+                                                            # - https://github.com/mholt/archives - think this is just a library and requires a front-end, like the 'arc' that's mentioned in the readme?
+                                                            # - unar
         file-roller  # archive manager for gnome
         rar
         unrar
@@ -9046,13 +9046,17 @@ is_server() {
 #
 # @returns {bool}   true if system is a laptop.
 is_laptop() {
-    local pwr_supply_dir
-    readonly pwr_supply_dir='/sys/class/power_supply'
+    local d
+    for d in /sys/class/power_supply /proc/acpi/battery; do
+        [[ -d "$d" ]] && find "$d" -mindepth 1 -maxdepth 1 -name 'BAT*' -print -quit 2>/dev/null | grep -q . && return 0
+    done
 
-    # sanity:
-    is_d -m "cannot decide if we're a laptop; assuming we're not" "$pwr_supply_dir" || return 1
+    # note we're checking /sys/class/power_supply/battery/status for WSL
+    for d in /sys/class/power_supply/battery/status /sys/module/battery/initstate; do
+        [[ -f "$d" ]] && return 0
+    done
 
-    find "$pwr_supply_dir" -mindepth 1 -maxdepth 1 -name 'BAT*' -print -quit | grep -q .
+    return 1
 }
 
 
