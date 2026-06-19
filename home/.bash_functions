@@ -1682,17 +1682,6 @@ foc() {
     return
 }
 
-
-# note it doesn't have to add _only_ to fasd, can also update other databases
-add_nodes_to_fasd() {
-    [[ -z "$*" ]] && return
-    if command -v memy &> /dev/null; then
-        memy note "$@"
-    elif command -v fasd &> /dev/null; then
-        fasd -A "$@"
-    fi
-}
-
 sethometime() { setspaintime; }  # home is where you make it;
 
 setromaniatime() {
