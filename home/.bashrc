@@ -137,7 +137,7 @@ export HISTTIMEFORMAT='%F %T '
 
 # ---------------------------------------
 # nuke non-consecutive dupes:
-# from https://debian-administration.org/article/543/Bash_eternal_history#comment_19
+# from https://web.archive.org/web/20191218222345/https://debian-administration.org/article/543/Bash_eternal_history#comment_19
 # WIP
 # TODO: what if HISTTIMEFORMAT is set, making hist entries 2 lines long?
 # TODO: dedup should perhaps be called w/ nice of 19? - yup, better convert to script & run via cron instead from .bashrc
@@ -146,8 +146,8 @@ _dedup() {
     temp="/tmp/.${RANDOM}-bash-hist-dupd"
 
     [[ -f "$1" ]] || return;
-    #awk ' !x[$0]++' "$1" > "$temp" || return 1               # keeps first repeated value
-    tac "$1" | awk '!x[$0]++' | tac > "$temp" || return 1     # keep the last repeated value
+    #awk ' !x[$0]++' "$1" >| "$temp" || return 1               # keeps first repeated value
+    tac "$1" | awk '!x[$0]++' | tac >| "$temp" || return 1     # keep the last repeated value
     mv -- "$temp" "$1"
     # -----------------------
     # OR:
@@ -156,22 +156,22 @@ _dedup() {
     ptrns="/tmp/.${RANDOM}-bash-hist-grep-ptrns"
     reversed="/tmp/.${RANDOM}-bash-hist-reversed"
     # cleanup to follow if histfile entry is on 2 lines (one being timestamp):
-    #awk '!x[$0]++' "$1" | grep -Ev '^#[0-9]{10}$' > "$ptrns" || return 1
-    #grep -Ev '^#[0-9]{10}$' "$1" | sort -u > "$ptrns" || return 1  # order of patterns does not matter right?
-    #grep -Ev '^#[0-9]{10}$' "$1" | awk '!x[$0]++' > "$ptrns" || return 1  # uniqueing w/ preserving the order
+    #awk '!x[$0]++' "$1" | grep -Ev '^#[0-9]{10}$' >| "$ptrns" || return 1
+    #grep -Ev '^#[0-9]{10}$' "$1" | sort -u >| "$ptrns" || return 1  # order of patterns does not matter right?
+    #grep -Ev '^#[0-9]{10}$' "$1" | awk '!x[$0]++' >| "$ptrns" || return 1  # uniqueing w/ preserving the order
 
-    #tac "$1" | grep -f "$ptrns" --fixed-strings --line-regexp --max-count=1 -A 1 | tac > "$temp" || return 1
-    tac -- "$1" > "$reversed"
-    grep -Ev '^#[0-9]{10}$' "$reversed" | awk '!x[$0]++' > "$ptrns" || return 1  # uniqueing w/ preserving the order; note we grep -v the timestamp-lines of hist entries
-    cat -- "$ptrns" | xargs -n1 -I '{}' -- grep -e '{}' --fixed-strings --line-regexp --max-count=1 -A 1 -- "$reversed" | tac > "$temp" || return 1
+    #tac "$1" | grep -f "$ptrns" --fixed-strings --line-regexp --max-count=1 -A 1 | tac >| "$temp" || return 1
+    tac -- "$1" >| "$reversed"
+    grep -Ev '^#[0-9]{10}$' "$reversed" | awk '!x[$0]++' >| "$ptrns" || return 1  # uniqueing w/ preserving the order; note we grep -v the timestamp-lines of hist entries
+    cat -- "$ptrns" | xargs -n1 -I '{}' -- grep -e '{}' --fixed-strings --line-regexp --max-count=1 -A 1 -- "$reversed" | tac >| "$temp" || return 1
     mv -- "$temp" "$1"
     rm -- "$ptrns" "$reversed"
 
     #----
     # dedup ~/.bash_history_eternal: (keepin the last entry in case of dupes)
     # note we sort from 7th field (includes the cat-prepended index)
-    cat -n -- "$1" | sort -rk7 | sort -uk7 | sort -nk1 | cut -f2- > "$temp" || return 1
-    #cat -n -- "$1" | sort -rk7 | sort -uk7 | sort -nk1 | awk '{for(i=2; i<=NF; ++i) printf "%s ", $i; print ""}' > "$temp" || return 1
+    cat -n -- "$1" | sort -rk7 | sort -uk7 | sort -nk1 | cut -f2- >| "$temp" || return 1
+    #cat -n -- "$1" | sort -rk7 | sort -uk7 | sort -nk1 | awk '{for(i=2; i<=NF; ++i) printf "%s ", $i; print ""}' >| "$temp" || return 1
     mv -- "$temp" "$1"
 }
 
@@ -189,9 +189,8 @@ export HISTFILE=~/.bash_hist
 # see also this comment: https://unix.stackexchange.com/a/419779/47501
 #
 #export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"  <-- immediately propagate to all open shells; fyi makes every command slow if our histfile is massive!
-# note the eternal history bit is from https://debian-administration.org/article/543/Bash_eternal_history
-#  (link dead, see archive @ http://web.archive.org/web/20200925232709/https://debian-administration.org/article/543/Bash_eternal_history)
-[[ ";${PROMPT_COMMAND};" != *';history -a;'* ]] && export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND;}"'history -a;echo $USER "$(history 1)" >> ~/.bash_history_eternal'
+# note the eternal history bit is from http://web.archive.org/web/20200925232709/https://debian-administration.org/article/543/Bash_eternal_history
+[[ ";${PROMPT_COMMAND};" == *';history -a;'* ]] || export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND;}"'history -a;echo $USER "$(history 1)" >> ~/.bash_history_eternal'
 
 shopt -u mailwarn       # disable mail notification:
 shopt -s cdspell        # try to correct typos in path
