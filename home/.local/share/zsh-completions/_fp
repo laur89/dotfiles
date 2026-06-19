@@ -1,14 +1,12 @@
 #compdef fp
 
+# see also: https://github.com/DLopezJr/fp/pull/3/changes
 _fp() {
     local -a applications
     applications=(
         ${(f)"$(flatpak list --app | awk -F '\t' '{print tolower($2)}')"}
     )
-    _describe 'flatpak application' applications
-
-    # example for providing description for options 'c' & 'd':
-    #subcmds=('c:description for c command' 'd:description for d command')
-    #_describe 'command' subcmds
+    #_describe 'flatpak application' applications
+    _arguments '1: :("${applications[@]}")'
 }
 

@@ -257,6 +257,8 @@ mvnclean() {
 #    - e.g. `ps -eo pmem,vsize,cmd | grep -v '\[' | awk 'NR>2{mem[$3]+=$2}END {for(k in mem) print k " " mem[k]/1024000};' | sort -rgk2 | head -n 10`
 #       - note this one uses vsize, i.e. virtual memory -- reported virt mem will always be higher than its actual ram use
 #       - comm would be prefereable over cmd, but e.g. for firefox it list some odd commads like 'Isolated Web Co'
+#       - or use resident set size (rss) to get actual used memory:
+#         `ps -eo pmem,rss,cmd | grep -v '\[' | awk 'NR>2{mem[$3]+=$2}END {for(k in mem) print k " " mem[k]/1024};' | sort -rgk2 | head -n 10`
 __mem_cpu_most_common_fun() {
     local num ps_out first_hdr second_hdr first_ps_col second_ps_col format
 
