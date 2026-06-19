@@ -245,8 +245,8 @@ fi
 ########################################## bash-prompt
 # if using bash-git-prompt; ...
 
-_BGPRMPT="$BASE_PROGS_DIR/bash-git-prompt/gitprompt.sh"
-if [[ -f "$_BGPRMPT" ]]; then
+i="$BASE_PROGS_DIR/bash-git-prompt/gitprompt.sh"
+if [[ -f "$i" ]]; then
     # add lazy-loaded/dynamic extra content to git-prompt, eg kube-ps1:
     # !! note this guy's only called/shown when we're in git repo, unless GIT_PROMPT_ONLY_IN_REPO=0 !!
     #prompt_callback() {  # function called by bash-git-prompt for additional dynamic content
@@ -258,9 +258,8 @@ if [[ -f "$_BGPRMPT" ]]; then
     GIT_PROMPT_END='\n'  # used when we're showing vi mode in prompt (expects counterpart/extra config in inputrc)
     GIT_PROMPT_ONLY_IN_REPO=1  # show prompt only if in git repo; if !=1, then eg prompt_callback() gets called&shown everywhere, not only in repos
     #GIT_PROMPT_THEME=Solarized  # list all w/  $ git_prompt_list_themes
-    source "$_BGPRMPT"
+    source "$i"
 fi
-unset _BGPRMPT
 
 # ...and prompt without the bash-git-prompt would be:
 #   PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
@@ -271,7 +270,6 @@ unset _BGPRMPT
     #source $pwrLineLoc
 #fi
 
-
 ########################################## /bash-prompt
 #ruby env (rbenv) - enable shims and autocompletion:  (as per `rbenv init` instructions)
 #command -v rbenv >/dev/null 2>/dev/null && eval "$(rbenv init -)"
@@ -280,7 +278,7 @@ unset _BGPRMPT
 # note this needs to exec after rbenv (or other shim-based ver manager) has set the version, assuming we use shim-based solution
 if command -v ruby >/dev/null && command -v gem >/dev/null; then
     i="$(ruby -r rubygems -e 'puts Gem.user_dir')/bin"
-    [[ "$i" != /bin && :$PATH: != *:"$i":* ]] && export PATH="$i:$PATH"
+    [[ "$i" != /bin && -d "$i" && :$PATH: != *:"$i":* ]] && export PATH="$i:$PATH"
 fi
 
 ##########################################
@@ -355,8 +353,8 @@ KUBE_PS1_SUFFIX="$PROMPT_SEGMENT_SUFFIX"
 KUBE_PS1_SYMBOL_USE_IMG=true
 KUBE_PS1_SYMBOL_PADDING=false
 #KUBE_PS1_SYMBOL_DEFAULT=$'\u2388'
-__kube_ps1_sh="${BASE_PROGS_DIR}/kube-ps1/kube-ps1.sh"
-[[ -f "$__kube_ps1_sh" ]] && source "$__kube_ps1_sh" && kubeoff && unset __kube_ps1_sh  # note we default to kubeoff; for better automatic prompt filtering check out this issue/comment: https://github.com/jonmosco/kube-ps1/issues/115#issuecomment-724971405
+i="$BASE_PROGS_DIR/kube-ps1/kube-ps1.sh"
+[[ -f "$i" ]] && source "$i" && kubeoff  # note we default to kubeoff; for better automatic prompt filtering check out this issue/comment: https://github.com/jonmosco/kube-ps1/issues/115#issuecomment-724971405
 ##########################################
 # customize python virtualenv prompt
 export VIRTUAL_ENV_DISABLE_PROMPT=1  # disable the default virtualenv prompt change (as it doesn't play nice w/ multiline prompts)

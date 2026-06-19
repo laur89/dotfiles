@@ -9073,7 +9073,7 @@ is_appimage() {
 
     #i="$(xxd "$file" 2>/dev/null | head -1)"   # note likely exits w/ code 3
     i="$(xxd -l 12 -- "$file")"
-    #grep -q '^00000000: 7f45 4c46 0201 0100 4149 0200' <<< "$i"    # only verifies appimage type 2 format, i.e. w/ magix hex 0x414902
+    #grep -q '^00000000: 7f45 4c46 0201 0100 4149 0200' <<< "$i"    # only verifies appimage type 2 format, i.e. w/ magic hex 0x414902
     grep -q '^00000000: 7f45 4c46 0201 0100 4149 0[12]00' <<< "$i"  # also includes appimage type 1 format, i.e. w/ magic hex 0x414901
 }
 
