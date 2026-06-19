@@ -132,54 +132,9 @@ export HISTFILESIZE=50000
 # ignore dups:
 #export HISTCONTROL=ignoredups
 export HISTCONTROL=ignoreboth:erasedups
-export HISTIGNORE='?:??:fhd:history:lat:ltr:latr:;*'  # ignore commands from history
+export HISTIGNORE='?:??:fhd:history:clear:lat:ltr:latr:;*'  # ignore commands from history
+#export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear"  # from https://github.com/mrzool/bash-sensible/blob/master/sensible.bash
 export HISTTIMEFORMAT='%F %T '
-
-# ---------------------------------------
-# nuke non-consecutive dupes:
-# from https://web.archive.org/web/20191218222345/https://debian-administration.org/article/543/Bash_eternal_history#comment_19
-# WIP
-# TODO: what if HISTTIMEFORMAT is set, making hist entries 2 lines long?
-# TODO: dedup should perhaps be called w/ nice of 19? - yup, better convert to script & run via cron instead from .bashrc
-_dedup() {
-    local temp
-    temp="/tmp/.${RANDOM}-bash-hist-dupd"
-
-    [[ -f "$1" ]] || return;
-    #awk ' !x[$0]++' "$1" >| "$temp" || return 1               # keeps first repeated value
-    tac "$1" | awk '!x[$0]++' | tac >| "$temp" || return 1     # keep the last repeated value
-    mv -- "$temp" "$1"
-    # -----------------------
-    # OR:
-
-    local ptrns reversed
-    ptrns="/tmp/.${RANDOM}-bash-hist-grep-ptrns"
-    reversed="/tmp/.${RANDOM}-bash-hist-reversed"
-    # cleanup to follow if histfile entry is on 2 lines (one being timestamp):
-    #awk '!x[$0]++' "$1" | grep -Ev '^#[0-9]{10}$' >| "$ptrns" || return 1
-    #grep -Ev '^#[0-9]{10}$' "$1" | sort -u >| "$ptrns" || return 1  # order of patterns does not matter right?
-    #grep -Ev '^#[0-9]{10}$' "$1" | awk '!x[$0]++' >| "$ptrns" || return 1  # uniqueing w/ preserving the order
-
-    #tac "$1" | grep -f "$ptrns" --fixed-strings --line-regexp --max-count=1 -A 1 | tac >| "$temp" || return 1
-    tac -- "$1" >| "$reversed"
-    grep -Ev '^#[0-9]{10}$' "$reversed" | awk '!x[$0]++' >| "$ptrns" || return 1  # uniqueing w/ preserving the order; note we grep -v the timestamp-lines of hist entries
-    cat -- "$ptrns" | xargs -n1 -I '{}' -- grep -e '{}' --fixed-strings --line-regexp --max-count=1 -A 1 -- "$reversed" | tac >| "$temp" || return 1
-    mv -- "$temp" "$1"
-    rm -- "$ptrns" "$reversed"
-
-    #----
-    # dedup ~/.bash_history_eternal: (keepin the last entry in case of dupes)
-    # note we sort from 7th field (includes the cat-prepended index)
-    cat -n -- "$1" | sort -rk7 | sort -uk7 | sort -nk1 | cut -f2- >| "$temp" || return 1
-    #cat -n -- "$1" | sort -rk7 | sort -uk7 | sort -nk1 | awk '{for(i=2; i<=NF; ++i) printf "%s ", $i; print ""}' >| "$temp" || return 1
-    mv -- "$temp" "$1"
-}
-
-#echo "Remove duplicate entries in $HISTFILE"
-#wc -l "$HISTFILE"
-#_dedup "$HISTFILE"
-#wc -l "$HISTFILE"
-# ---------------------------------------
 
 # Change the file location because certain bash sessions truncate .bash_history file upon close.
 # http://superuser.com/questions/575479/bash-history-truncated-to-500-lines-on-each-login
@@ -189,10 +144,10 @@ export HISTFILE=~/.bash_hist
 # see also this comment: https://unix.stackexchange.com/a/419779/47501
 #
 #export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"  <-- immediately propagate to all open shells; fyi makes every command slow if our histfile is massive!
-# note the eternal history bit is from http://web.archive.org/web/20200925232709/https://debian-administration.org/article/543/Bash_eternal_history
-[[ ";${PROMPT_COMMAND};" == *';history -a;'* ]] || export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND;}"'history -a;echo $USER "$(history 1)" >> ~/.bash_history_eternal'
+[[ ";${PROMPT_COMMAND};" == *';history -a;'* ]] || export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND;}"'history -a'
 
-shopt -u mailwarn       # disable mail notification:
+shopt -u mailwarn       # disable mail notification
+shopt -s dirspell       # correct spelling errors during tab-completion
 shopt -s cdspell        # try to correct typos in path
 shopt -s extglob        # enable extended pattern matching features
 shopt -s dotglob        # include dotfiles in path expansion
@@ -202,7 +157,7 @@ shopt -s huponexit      # send SIGHUP on when interactive login shell exits
 shopt -s globstar       # ** in pathname expansion will match all files and zero or more directories and subdirs
 shopt -s autocd         # if you type dir name, it's interpreted as an argument to cd
 shopt -s cmdhist        # bash attempts to save all lines of a multi-line command in same history entry;
-shopt -s lithist        # if cmdhist is enabled, then multiline commands are saved in history with embedded newlines rather than using semicolon separators;
+#shopt -s lithist        # if cmdhist is enabled, then multiline commands are saved in history with embedded newlines rather than using semicolon separators;
 set -o vi               # needs to be added *before* fzf is sourced, otherwise fzf is screwed:
                         #     https://github.com/junegunn/fzf#key-bindings-for-command-line
 stty -ixon              # disable ctrl+s/ctrl+q;
@@ -244,30 +199,25 @@ fi
 ########################################## bash-prompt
 # if using bash-git-prompt; ...
 
-i="$BASE_PROGS_DIR/bash-git-prompt/gitprompt.sh"
-if [[ -f "$i" ]]; then
-    # add lazy-loaded/dynamic extra content to git-prompt, eg kube-ps1:
-    # !! note this guy's only called/shown when we're in git repo, unless GIT_PROMPT_ONLY_IN_REPO=0 !!
-    #prompt_callback() {  # function called by bash-git-prompt for additional dynamic content
-    #    echo -n " $(kube_ps1)"
-    #}
-
-    [[ "$PS1" != *'\n' ]] && GIT_PROMPT_START="$PS1" || GIT_PROMPT_START="${PS1:0:$(( ${#PS1} - 2 ))}"   # note we strip the trailing newline
-    #GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # this would be used if we didn't show vi mode in inputrc
-    GIT_PROMPT_END='\n'  # used when we're showing vi mode in prompt (expects counterpart/extra config in inputrc)
-    GIT_PROMPT_ONLY_IN_REPO=1  # show prompt only if in git repo; if !=1, then eg prompt_callback() gets called&shown everywhere, not only in repos
-    #GIT_PROMPT_THEME=Solarized  # list all w/  $ git_prompt_list_themes
-    source "$i"
-fi
-
-# ...and prompt without the bash-git-prompt would be:
-#   PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
+# TODO: currently not importing as it _overwrites_ our prompt (see https://github.com/magicmonty/bash-git-prompt/issues/574)
+#i="$BASE_PROGS_DIR/bash-git-prompt/gitprompt.sh"
+#if [[ -f "$i" ]]; then
+#    # add lazy-loaded/dynamic extra content to git-prompt, eg kube-ps1:
+#    # !! note this guy's only called/shown when we're in git repo, unless GIT_PROMPT_ONLY_IN_REPO=0 !!
+#    #prompt_callback() {  # function called by bash-git-prompt for additional dynamic content
+#    #    echo -n " $(kube_ps1)"
+#    #}
 #
-# ...or powerline:
-#pwrLineLoc=/usr/local/lib/python2.7/dist-packages/powerline/bindings/bash/powerline.sh
-#if [[ -f "$pwrLineLoc" ]]; then
-    #source $pwrLineLoc
+#    [[ "$PS1" != *'\n' ]] && GIT_PROMPT_START="$PS1" || GIT_PROMPT_START="${PS1:0:$(( ${#PS1} - 2 ))}"   # note we strip the trailing newline
+#    #GIT_PROMPT_END="\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"  # this would be used if we didn't show vi mode in inputrc
+#    GIT_PROMPT_END='\n'  # used when we're showing vi mode in prompt (expects counterpart/extra config in inputrc)
+#    GIT_PROMPT_ONLY_IN_REPO=1  # show prompt only if in git repo; if !=1, then eg prompt_callback() gets called&shown everywhere, not only in repos
+#    #GIT_PROMPT_THEME=Solarized  # list all w/  $ git_prompt_list_themes
+#    source "$i"
 #fi
+
+# ...and prompt w/o the bash-git-prompt:
+#   PS1="\[\033[0;37m\]\342\224\214\342\224\200\$([[ \$? != 0 ]] && echo \"[\[\033[0;31m\]\342\234\227\[\033[0;37m\]]\342\224\200\")[$(if [[ ${EUID} == 0 ]]; then echo '\[\033[0;31m\]\h'; else echo '\[\033[0;33m\]\u\[\033[0;37m\]@\[\033[0;96m\]\h'; fi)\[\033[0;37m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;37m\]]\n\[\033[0;37m\]\342\224\224\342\224\200\342\224\200\342\225\274 \[\033[0m\]"
 
 ########################################## /bash-prompt
 #ruby env (rbenv) - enable shims and autocompletion:  (as per `rbenv init` instructions)
