@@ -396,7 +396,9 @@ bindsym XF86TouchpadToggle  $ex /some/path/toggletouchpad.sh
 # Screenshot
 #bindsym Print $ex   scrot -e 'mv $f ~/Pictures/screenshots/$hostname' && notify-send "Screenshot Taken"
 #bindsym Print $ex   maim --quality 9 ~/Pictures/screenshots/$hostname/screenshot_latest.jpg
-bindsym Print $ex   screenshot.sh #--auto
+bindsym Print $ex   screenshot.sh  #-a
+bindsym Shift+Print $ex   screenshot.sh -v
+bindsym Control+Print $ex screenshot.sh -v
 
 # My apps shortcut
 # note all bindings get translated by Group1 keymap (see https://i3wm.org/docs/userguide.html#keybindings)
@@ -632,7 +634,7 @@ for_window [class="^org.remmina.Remmina$"] border pixel $border
 #for_window [class="Evolution"] title_format "<tt></tt><span foreground='#FFFFFF' >  </span><tt> </tt>%title"
 #for_window [title=".* Evolution"] title_format "<tt></tt><span foreground='#FFFFFF' >  </span><tt> </tt>%title"
 #for_window [class="Slack"] title_format "<tt></tt><span foreground='#FFFFFF' >  </span><tt> </tt>%title"
-#for_window [class="Signal"] title_format "<tt></tt><span background='#2090ea' foreground='#FFFFFF' >  </span><tt> </tt>%title"
+#for_window [class="signal"] title_format "<tt></tt><span background='#2090ea' foreground='#FFFFFF' >  </span><tt> </tt>%title"
 #for_window [class="VirtualBox Machine"] title_format "<tt></tt><span  background='#073624' foreground='#AAAAFF' >  </span><tt> </tt>%title"
 #for_window [class="VirtualBox Manager"] title_format "<tt></tt><span  background='#073642' foreground='#AAAAFF' >  </span><tt> </tt>%title"
 #for_window [class="libreoffice-writer"] title_format "<tt></tt><span  background='#073642' foreground='#adc5e7' >  </span><tt> </tt>%title"
@@ -648,7 +650,7 @@ assign [class="^[fF]irefox$" instance="^Navigator$"]  $w1
 assign [class="^jetbrains-"]       $w2
 assign [class="^Eclipse Memory Analyzer$"]       $w2
 #assign [class="^Zathura"]                $w3
-assign [class="^(Slack|Signal|discord|vesktop|equibop|Ferdium|TelegramDesktop|Pidgin)$"]                $w3
+assign [class="^(Slack|signal|discord|vesktop|equibop|Ferdium|TelegramDesktop|Pidgin)$"]                $w3
 assign [class="^(mpv|MPlayer|smplayer)$"] $w4
 assign [class="^streamlink-twitch-gui$"] $w4
 assign [class="^(VirtualBox|Virt-manager)$"]            $w7
