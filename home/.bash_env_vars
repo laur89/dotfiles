@@ -5,7 +5,6 @@
 # !! might be used by root as well!
 #
 export MAIN_SYSTEM_USER=laur
-export DEFAULT_SSH_USER=laur
 
 # test whether the shell is interactive; if not, set missing env vars:
 # (as per http://www.tldp.org/LDP/abs/html/intandnonint.html)
@@ -118,16 +117,12 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
     #export ASDF_DIR="$BASE_PROGS_DIR/asdf"  # https://asdf-vm.com/manage/configuration.html#asdf-dir
     #export ASDF_DATA_DIR="$ASDF_DIR"  # defaults to $HOME/.asdf
 
-    # mise conf: https://mise.jdx.dev/directories.html#directory-structure
-    export MISE_DATA_DIR="$BASE_PROGS_DIR/mise"  # defaults to ~/.local/share/mise
-
     # set our own-used link to latest node version (managed by .bashrc):
     #export NODE_LOC="$NVM_DIR/latest"  # when unsing nvm
     #export NODE_LOC="$ASDF_DIR/nodejs-latest"  # when unsing asdf
-    export NODE_LOC="$MISE_DATA_DIR/shims/node"  # when unsing mise; note this does not need to be managed by us like w/ asdf
+    export NODE_LOC="${XDG_DATA_HOME:-$HOME/.local/share}/mise/shims/node"  # when unsing mise; note this does not need to be managed by us in .bashrc like w/ asdf
 
     export CUSTOM_LOGDIR='/var/log/custom_logs'
-    export PANEL_FIFO='/tmp/panel-fifo'  # for BSPWM
 
     #export HGRCPATH="$XDG_CONFIG_HOME/hg/hgrc"
     export PASSWORD_STORE_DIR="$XDG_CONFIG_HOME/password-store"  # used by pass?
@@ -326,6 +321,11 @@ export TLDR_COLOR_COMMAND="red"
 export TLDR_COLOR_PARAMETER="white"
 export TLDR_CACHE_ENABLED=1
 export TLDR_CACHE_MAX_AGE=720
+#export TLDR_PLATFORM=linux
+
+
+# colored GCC warnings and errors (likely from https://stackoverflow.com/a/26072600/1803648)
+#export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 
 
 if [[ -d "$BASE_DATA_DIR/tmp" && -w "$BASE_DATA_DIR/tmp" ]]; then
@@ -353,14 +353,21 @@ export FZF_DEFAULT_OPTS="--ansi --bind=alt-k:preview-up,alt-p:preview-up \
 #export FZF_DEFAULT_OPTS='--ansi --color fg:-1,bg:-1,hl:230,fg+:3,bg+:233,hl+:229,info:150,prompt:110,spinner:150,pointer:167,marker:174'
 
 
-export FZF_DEFAULT_COMMAND='fd --hidden --follow --exclude .git'  # --type f perhaps?
+export FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"  # note --multi is already enabled for c+t
-#export FZF_CTRL_T_OPTS="--preview 'bat --color=always --line-range :500 {}'"  #using bat here only makes sense if ctrl_t_command is filtered by --type f
+# Preview file content using bat (https://github.com/sharkdp/bat):
+export FZF_CTRL_T_OPTS="
+  --walker-skip .git,node_modules,target
+  --preview 'bat -n --color=always --line-range :500 {}'
+  --bind 'ctrl-/:change-preview-window(down|hidden|)'"
 export FZF_ALT_C_COMMAND="$FZF_DEFAULT_COMMAND --type d"
 # or if you want to use bfs instead of fd:
 #export FZF_ALT_C_COMMAND="cd ~/; bfs -type d -nohidden | sed s/^\./~/"
 
-export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200'"
+# Print tree structure in the preview window:
+export FZF_ALT_C_OPTS="
+  --walker-skip .git,node_modules,target
+  --preview 'tree -C {} | head -200'"
 export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window down:3:wrap"  # show the longer history; helps if cmd line is extra long
 export FZF_CTRL_R_COMMAND=''  # disable ctrl+r binding (in cmd mode if using vi mode), both bash & zsh; introduced in https://github.com/junegunn/fzf/pull/4535
 #export FZF_TMUX=1  # if you want to start fzf in a tmux pane

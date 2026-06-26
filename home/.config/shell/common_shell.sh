@@ -58,11 +58,14 @@
 # note this depends on we using the carlocab/tmux-nvr plugin, as its nvim-listen.sh
 # is who originally sets/defines the NVIM_LISTEN_ADDRESS env var.
 #
-# !! note we place [~/.config/tmux/plugins/tmux-nvr/bin] on our PATH in env vars !!
+# !! also !! either:
+# - place [~/.config/tmux/plugins/tmux-nvr/bin] on our PATH in env vars for the
+#   plugin-provided nvr-tmux script to be picked up; or
+# - use our own lifted-from-nvr-tmux in scripts/; should already be on $PATH
 #if [[ -n "$TMUX" ]]; then
     #eval -- "$(tmux show-environment -s NVIM_LISTEN_ADDRESS 2>/dev/null)"
 #else
-    #[[ -d /tmp/.nvr ]] || mkdir -p -m 700 "/tmp/.nvr-$USER"  # -m 700 sets permissions so that only you have access to this directory
+    #[[ -d "/tmp/.nvr-$USER" ]] || mkdir -p -m 700 "/tmp/.nvr-$USER"  # -m 700 sets permissions so that only you have access to this directory
     #export NVIM_LISTEN_ADDRESS=/tmp/.nvr-$USER/nvimsocket
 #fi
 ########################################## /nvr
