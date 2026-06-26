@@ -43,7 +43,7 @@ readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
 readonly BUILD_DOCK='deb-build-box'          # name of the build container; TODO: deprecate
 
-readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:149.0) Gecko/20100101 Firefox/149.0'
+readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:152.0) Gecko/20100101 Firefox/152.0'
 #------------------------
 #--- Global Variables ---
 #------------------------
@@ -2870,7 +2870,7 @@ fetch_release_from_git() {
         *) fail "unexpected forge source [$forge]" ;;
     esac
 
-    readonly id="${forge}-${1//\//-}${3:+-$3}"  # note we append name to the id when defined (same repo might contain multiple binaries we're installing)
+    id="${forge}-${1//\//-}${3:+-$3}"  # note we append name to the id when defined (same repo might contain multiple binaries we're installing)
     is_valid_url "$dl_url" || { err "resolved url for ${id} is improper: [$dl_url]; aborting"; return 1; }
     _fetch_release_common "${opts[@]}" "$id" "$dl_url" "$dl_url" "$3"
 }
@@ -2956,7 +2956,7 @@ resolve_dl_urls() {
 
     domain="$(grep -Po '^https?://([^/]+)(?=)' <<< "$loc")"
     page="$(wget "$loc" --user-agent="$USER_AGENT" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
-    readonly dl_url="$(grep -Po ' href="\K'"$grep_tail"'(?=")' <<< "$page" | sort --unique)"
+    dl_url="$(grep -Po ' href="\K'"$grep_tail"'(?=")' <<< "$page" | sort --unique)"
 
     if [[ -z "$dl_url" ]]; then
         err "no urls found from [$loc] for pattern [$grep_tail]"
@@ -5886,6 +5886,7 @@ setup_nvim() {
     # nvr stuff; you prolly want to install https://github.com/carlocab/tmux-nvr for tmux
     # TODO: is this still relevant? note nvim now supports --remote:  https://neovim.io/doc/user/remote.html
     py_install neovim-remote     # https://github.com/mhinz/neovim-remote
+                                 # note no commits since '22; consider/track https://github.com/neovim/neovim/issues/24788 instead
 
     #py_install pynvim            # https://github.com/neovim/pynvim  # ! now installed via system pkg python3-pynvim
 }
@@ -5896,7 +5897,7 @@ setup_nvim() {
 # !! note our $VISUAL env var is tied to it !!
 install_neovide() {  # rust-based GUI front-end to neovim
     # alternative asset:   neovide.AppImage
-    install_bin_from_git -N neovide -n neovide  neovide/neovide 'linux-x86_64.tar.gz'
+    install_bin_from_git -N neovide -n neovide  neovide/neovide 'neovide-linux-x86_64.tar'
 }
 
 
@@ -5961,7 +5962,6 @@ build_and_install_vim() {
     readonly expected_runtimedir='/usr/local/share/vim/vim91'  # path depends on the ./configure --prefix; version can be found in src/version.h file:
                                                                #   #define VIM_VERSION_MAJOR               9
                                                                #   #define VIM_VERSION_MINOR               1
-
     repo='https://github.com/vim/vim.git'
     ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" vim-our-build && return 2
@@ -6043,7 +6043,7 @@ config_coc() {
 install_YCM() {  # the quick-and-not-dirty install.py way
     local ycm_plugin_root ver
 
-    readonly ycm_plugin_root="$HOME/.config/nvim/bundle/YouCompleteMe"
+    ycm_plugin_root="$HOME/.config/nvim/bundle/YouCompleteMe"
 
     # sanity
     if ! [[ -d "$ycm_plugin_root" ]]; then
