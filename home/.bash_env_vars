@@ -240,6 +240,9 @@ if [[ -z "$PEARL_HOME" && "$__REMOTE_SSH" -ne 1 ]]; then
 
     export RIPGREP_CONFIG_PATH="$XDG_CONFIG_HOME/ripgreprc"
     export WGETRC="$XDG_CONFIG_HOME/wgetrc"
+
+    [[ -z "$BB_SANDBOXED" ]] || export CLAUDE_CONFIG_DIR="TODO"
+    export CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-TODO}"
 fi
 
 export _SCRIPTS_COMMONS="$_SCRIPTS_BIN/__utils.sh"  # also used/referenced by pearlssh!
@@ -353,16 +356,16 @@ export FZF_DEFAULT_OPTS="--ansi --bind=alt-k:preview-up,alt-p:preview-up \
 #export FZF_DEFAULT_OPTS='--ansi --color fg:-1,bg:-1,hl:230,fg+:3,bg+:233,hl+:229,info:150,prompt:110,spinner:150,pointer:167,marker:174'
 
 
-export FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow --exclude .git'
+_FZF_FD_COMMON='--strip-cwd-prefix --hidden --follow --exclude .git'
+export FZF_DEFAULT_COMMAND="fd --type f $_FZF_FD_COMMON"
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"  # note --multi is already enabled for c+t
 # Preview file content using bat (https://github.com/sharkdp/bat):
 export FZF_CTRL_T_OPTS="
   --walker-skip .git,node_modules,target
   --preview 'bat -n --color=always --line-range :500 {}'
   --bind 'ctrl-/:change-preview-window(down|hidden|)'"
-export FZF_ALT_C_COMMAND="$FZF_DEFAULT_COMMAND --type d"
-# or if you want to use bfs instead of fd:
-#export FZF_ALT_C_COMMAND="cd ~/; bfs -type d -nohidden | sed s/^\./~/"
+#export FZF_ALT_C_COMMAND="$FZF_DEFAULT_COMMAND --type d"  # cannot use this, as '--type f' from $FZF_DEFAULT_COMMAND will stack w/ '--type d'!
+export FZF_ALT_C_COMMAND="fd --type d $_FZF_FD_COMMON"
 
 # Print tree structure in the preview window:
 export FZF_ALT_C_OPTS="
