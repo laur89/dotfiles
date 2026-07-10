@@ -2577,7 +2577,7 @@ fbr() {
         sort -u) || return
     branch=$(echo "$branches" |
             fzf --tmux --select-1 --exit-0 --query="$q" -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
-            git checkout "$branch"
+            git switch "$branch"
 }
 
 
@@ -2597,7 +2597,7 @@ fco() {
     target=$(
         ([[ -n "$tags" ]] && echo "$tags"; [[ -n "$branches" ]] && echo "$branches") |
         fzf --tmux 'left,30%' -- --query="$q" --exit-0 --select-1 --no-hscroll --ansi +m -d "\t" -n 2) || return
-    git checkout "$(awk '{print $2}' <<< "$target")"
+    git switch "$(awk '{print $2}' <<< "$target")"
 }
 
 
@@ -2624,8 +2624,9 @@ fco() {
 e() {  # mnemonic: edit
     local file
 
-    check_progs_installed fasd fzf "$EDITOR" || return 2
-    file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)"
+    check_progs_installed  memy fzf "$EDITOR" || return 2
+    #file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)"
+    file="$(memy list -f -- "$@" 2>/dev/null | fzf -1 -0 --no-sort +m --exit-0)"
     [[ -f "$file" ]] && $EDITOR -- "$file" && return 0 || return 1
 }
 
@@ -2633,8 +2634,9 @@ e() {  # mnemonic: edit
 se() {  # mnemonic: sudo edit
     local file
 
-    check_progs_installed fasd fzf "$EDITOR" || return 2
-    file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)"
+    check_progs_installed  memy fzf "$EDITOR" || return 2
+    #file="$(fasd -Rfl "$@" | fzf -1 -0 --no-sort +m --exit-0)"
+    file="$(memy list -f -- "$@" 2>/dev/null | fzf -1 -0 --no-sort +m --exit-0)"
     [[ -f "$file" ]] && sudoedit -- "$file" && return 0 || return 1
 }
 
@@ -2651,8 +2653,9 @@ d() {  # mnemonic: dir
     #command -v ranger >/dev/null && fm=ranger
     #check_progs_installed "$fm" || return 1
 
-    check_progs_installed fasd fzf || return 2
-    dir="$(fasd -Rdl "$@" | fzf -1 -0 --no-sort +m --exit-0)"
+    check_progs_installed  memy fzf || return 2
+    #dir="$(fasd -Rdl "$@" | fzf -1 -0 --no-sort +m --exit-0)"
+    dir="$(memy list -d -- "$@" 2>/dev/null | fzf -1 -0 --no-sort +m --exit-0)"
     [[ -d "$dir" ]] && cd -- "$dir" && return 0 || return 1
 }
 
@@ -2663,10 +2666,11 @@ d() {  # mnemonic: dir
 goto() {
     local node
 
-    check_progs_installed fasd fzf || return 2
+    check_progs_installed memy fzf || return 2
     [[ "$*" == */ && -d "$*" ]] && { _goto "$*"; return $?; }  # TODO: only short-circuit if dir-arg ends with slash?
 
-    node="$(fasd -Ral "$@" | fzf -1 -0 --no-sort +m --exit-0)"
+    #node="$(fasd -Ral "$@" | fzf -1 -0 --no-sort +m --exit-0)"
+    node="$(memy list -- "$@" 2>/dev/null | fzf -1 -0 --no-sort +m --exit-0)"
     if [[ -e "$node" ]]; then
         _goto "$node"
     elif [[ "$*" != */ && "$*" == */* ]]; then
