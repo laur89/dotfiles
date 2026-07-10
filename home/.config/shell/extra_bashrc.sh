@@ -118,12 +118,10 @@ g() {
 _complete_dirs_in_pwd() {
     local curw wordlist d prefix p i
 
-    if [[ "$DEBUG" -eq 1 ]]; then
-        err "\$1: [$1]"  # always funcname
-        err "\$2: [$2]"  # think its what's on cml at the time you press tab, even if it gets completed immediately; separate last part, not entirety that's on CLI
-        err "\$3: [$3]"  # last completed word? even if its not valid completion
-    fi
     curw=${COMP_WORDS[COMP_CWORD]}  # think it's the same as $2?
+    if [[ "$DEBUG" -eq 1 ]]; then
+        display_message "\$1: [$1]; \$2: [$2]; \$3: [$3]; \$curw: [$curw]"
+    fi
 
     __go_up() {
         local dots i d
@@ -158,6 +156,7 @@ _complete_dirs_in_pwd() {
             [[ -n "$d" && "$d" != */ && "$i" != /* ]] && d+='/'
             d+="$i"
         done
+        [[ "$DEBUG" -eq 1 ]] && display_message "define_d(): [$d]"
     }
 
 
@@ -195,7 +194,7 @@ _complete_dirs_in_pwd() {
         fi
     else
         [[ "$DEBUG" -eq 1 ]] && display_message 5th
-        __define_d 1
+        __define_d 1        # TODO: shouldn't this be  __define_d 2 ??
         if [[ -n "$2" ]]; then  # if we're currently trying to auto-complete something
             curw="${d##*/}"  # everything after very last slash
             d="${d%/*}"  # get everything before the very last slash

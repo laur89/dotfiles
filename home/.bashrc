@@ -92,6 +92,8 @@ if [[ -x /usr/bin/dircolors ]]; then
     fi
 fi
 
+export HOST=$HOSTNAME  # bash sets HOSTNAME, zsh has HOST (see https://unix.stackexchange.com/a/209401/47501)
+
 # Alias definitions.
 # You may want to put all your additions into a separate file like
 # ~/.bash_aliases, instead of adding them here directly.
@@ -274,6 +276,11 @@ _fzf_compgen_dir() {
 ########################################## forgit  # https://github.com/wfxr/forgit
 i="$BASE_PROGS_DIR/forgit/forgit.plugin.sh"
 [[ ! -f "$i" ]] || source "$i"
+
+########################################## television
+i="$XDG_CONFIG_HOME/television/bash_completion.sh"  # likely installed there by install_system
+[[ ! -f "$i" ]] || source "$i"
+
 ########################################## mise  # https://mise.jdx.dev/installing-mise.html#bash
 command -v mise &>/dev/null && eval -- "$(mise activate bash)"
 ########################################## /mise

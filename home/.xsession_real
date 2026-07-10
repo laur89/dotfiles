@@ -165,6 +165,10 @@ main() {
   # shellcheck source=./set-x11-settings
   "$SET_X11_SETTINGS"
 
+  xset dpms 0 0 0  # we want ssid-monitor & locking utils et al to manage dpms/screensaver
+  # or to disable dpms w/o changing values:
+  #xset -dpms
+
   # Start i3 and user services and block till i3 exits, as expected by the
   # display manager. Note that i3-session.target pulls i3, but it doesn't affect
   # the later command that waits for i3 to terminate.

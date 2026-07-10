@@ -46,6 +46,8 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
+export HOSTNAME=$HOST  # bash sets HOSTNAME, zsh has HOST (see https://unix.stackexchange.com/a/209401/47501)
+
 # load user-defined completions, per https://www.reddit.com/r/zsh/comments/12pgp4k/where_can_zsh_completion_files_be_placed_within/jgm3w6i/
 # note oftentimes ~/.zfunc dir is also used for this
 [[ ! -d $XDG_DATA_HOME/zsh-completions ]] || typeset -gaU fpath=($fpath $XDG_DATA_HOME/zsh-completions)
@@ -356,8 +358,8 @@ zstyle ':completion:*' option-stacking true
 zstyle ':completion:*' use-cache on
 zstyle ':completion:*' cache-path "$ZDOTDIR/.zcompcache"
 # /cache
-# display files&folders w/ more details akin to `ls -l`:
-zstyle ':completion:*' file-list all
+# display files&folders w/ more details in tab-completion view; akin to `ls -l`:
+#zstyle ':completion:*' file-list all
 # squash multiple slashes:
 zstyle ':completion:*' squeeze-slashes true
 # makes sure that hosts from ~/.ssh/config will be included in default `ssh` completion list:
@@ -372,7 +374,7 @@ zstyle ':completion:*:ssh:*' hosts
 #zstyle ':completion:*:vim:*' file-sort modification
 # }}} /completion
 
-# get rid of the prefix-dot (e.g. shown on kill <TAB>), see https://github.com/Aloxaf/fzf-tab/discussions/511 :
+# get rid of the prefix-dot (e.g. shown on `kill <TAB>`), see https://github.com/Aloxaf/fzf-tab/discussions/511 :
 zstyle ':fzf-tab:*' prefix ''
 
 # To make fzf-tab follow FZF_DEFAULT_OPTS.
@@ -388,9 +390,9 @@ zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 
 # TODO: review minimal popup win size config:
 # increase minimal size of popup window; useful w/ fzf-preview:
-# increase for all commands:
+# increase for all commands...:
 zstyle ':fzf-tab:*' popup-min-size 200 15
-# ...or only increase for 'diff':
+# ...or only for 'diff':
 #zstyle ':fzf-tab:complete:diff:*' popup-min-size 80 12
 
 #zstyle ':fzf-tab:*' accept-line enter  # key to accept and run a suggestion in one keystroke
@@ -628,7 +630,7 @@ function fg-fzf() {
   job="$(jobs -s | grep -Ev '^\(pwd now: ' | fzf -0 -1 | sed -E 's/\[(.+)\].*/\1/')" && echo '' && fg %$job
 }
 
-function fancy-ctrl-z () {
+function fancy-ctrl-z() {
   if [[ $#BUFFER -eq 0 ]]; then
     BUFFER=' fg-fzf'
     zle accept-line -w
@@ -644,6 +646,10 @@ bindkey '^Z' fancy-ctrl-z
 i="$BASE_PROGS_DIR/forgit/forgit.plugin.zsh"
 [[ ! -f "$i" ]] || source "$i"
 
+########################################## television
+i="$XDG_CONFIG_HOME/television/zsh_completion.sh"  # likely installed there by install_system
+[[ ! -f "$i" ]] || source "$i"
+
 ########################################## zoxide  # https://github.com/ajeetdsouza/zoxide
 # needs to be at the end of file, as it must be _after_ compinit is called.    TODO: compinit seq dependency, so perhaps zinit is the way to import?
 ##export _ZO_DATA_DIR="$BASE_DATA_DIR/.zoxide"
@@ -655,10 +661,9 @@ i="$BASE_PROGS_DIR/forgit/forgit.plugin.zsh"
 ########################################## /zoxide
 
 ########################################## memy  # https://github.com/andrewferrier/memy
-command -v memy &> /dev/null && eval -- "$(memy hook zsh)"
+#command -v memy &> /dev/null && eval -- "$(memy hook zsh)"
 # alternatively, source it via zinit:
-#zinit ice has'memy'; zinit light andrewferrier/memy
-#alias zz=__zoxide_zi  # for interactive, as `zi` is taken by zinit
+zinit ice has'memy'; zinit light andrewferrier/memy
 ########################################## /memy
 
 ########################################## fzf
