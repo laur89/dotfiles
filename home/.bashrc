@@ -99,7 +99,8 @@ export HOST=$HOSTNAME  # bash sets HOSTNAME, zsh has HOST (see https://unix.stac
 # ~/.bash_aliases, instead of adding them here directly.
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
-[[ ! -f ~/.bash_aliases ]] || source ~/.bash_aliases
+i="$XDG_CONFIG_HOME/shell/aliases"
+[[ ! -f "$i" ]] || source "$i"
 
 # enable programmable completion features (you don't need to enable
 # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
@@ -166,7 +167,8 @@ set -o noclobber        # do not allow overwriting existing files w/ > redirecti
 unset MAILCHECK         # avoid delays;
 ##########################################
 if ! type __BASH_FUNS_LOADED_MARKER > /dev/null 2>&1; then
-    [[ ! -f "$HOME/.bash_functions" ]] || source "$HOME/.bash_functions"
+    i="$XDG_CONFIG_HOME/shell/funcs.sh"
+    [[ ! -f "$i" ]] || source "$i"
 
     if [[ -d "$HOME/.bash_funs_overrides" ]]; then
         for i in "$HOME/.bash_funs_overrides/"*; do
