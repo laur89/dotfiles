@@ -1,21 +1,21 @@
-    if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != loaded ]]; then
-        user_envs=/etc/.bash_env_vars
+if [[ "$__ENV_VARS_LOADED_MARKER_VAR" != loaded ]]; then
+    __user_envs=/etc/.bash_env_vars
 
-        if [[ -s "$user_envs" ]]; then
-            source "$user_envs"
-        else
-            echo -e "\n    ERROR: env vars file [$user_envs] not found! Abort."
-            return 1
-        fi
-        unset user_envs
+    if [[ -f "$__user_envs" ]]; then
+        source "$__user_envs"
+    else
+        echo -e "\n    ERROR: env vars file [$__user_envs] not found! Abort."
+        exit 1
     fi
+    unset __user_envs
+fi
 
-    # import common:
-    if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
-        if [[ -s "$_SCRIPTS_COMMONS" ]]; then
-            source "$_SCRIPTS_COMMONS"
-        else
-            echo -e "\n    ERROR: common file [$_SCRIPTS_COMMONS] not found! Abort."
-            return 1
-        fi
+# import common:
+if ! type __COMMONS_LOADED_MARKER > /dev/null 2>&1; then
+    if [[ -f "$_SCRIPTS_COMMONS" ]]; then
+        source "$_SCRIPTS_COMMONS"
+    else
+        echo -e "\n    ERROR: common file [$_SCRIPTS_COMMONS] not found! Abort."
+        exit 1
     fi
+fi
