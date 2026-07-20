@@ -721,7 +721,7 @@ EOF
             # TODO: why are we running this as sudo?:
             exe "sudo install -m600 -CT --group=$USER --owner=$USER '$KPXC_KRING_DB' '$KRING'"
         else
-            err "[$LUKS_USB] not mounted, cannot init our secret service db; make sure to do this manually!"
+            err "USB [$LUKS_USB] not mounted, cannot init our secret service/keyring db; make sure to do this manually!"
         fi
     fi
 }
@@ -1722,7 +1722,6 @@ setup_dirs() {
             $BASE_DATA_DIR/dev \
             $BASE_DATA_DIR/repositories \
             $BASE_DATA_DIR/repositories/maven \
-            $BASE_DATA_DIR/repositories/gradle \
             $BASE_DATA_DIR/Downloads \
             $BASE_DATA_DIR/Downloads/mutt \
             $BASE_DATA_DIR/Videos \
@@ -1924,15 +1923,6 @@ setup_ssh() {
             return 1
         fi
     fi
-}
-
-
-import_netrc() {
-    local t="$HOME/.netrc"
-    define_secret || return 1
-    report 'loading netrc...'
-    keepassxc-cli attachment-export -q -- "$KPXC_DB" 'netrc' netrc "$t" <<< "$KPXC_PASS" || { err "[netrc] import failed w/ $?"; return 1; }
-    chmod 600 "$t"
 }
 
 
@@ -2284,12 +2274,11 @@ setup() {
     if is_interactive && [[ "$MODE" -eq 1 ]]; then
         mount_usb  # TODO: detect not only MODE==1, but if _very initial_ installation, as we won't have USB at hand most of the time
         setup_ssh
-        import_netrc
         import_chezmoi_key
     fi
     # note: set up chezmoi _before_ homeshick, as some stuff might depend on symlinks set up by the former
     is_interactive && setup_chezmoi  # interactive as templates might prompt for data
-    setup_homesick || fail "homesick setup failed; as homesick is necessary, script will exit"
+    setup_homesick || fail 'homesick setup failed; as homesick is necessary, script will exit'
     source_shell_conf  # so we get our env vars after dotfiles are pulled in
     is_interactive && [[ "$MODE" -eq 1 ]] && setup_gpg  # call after source_shell_conf()
 

@@ -32,7 +32,7 @@
 
 if [ "$__ENV_VARS_LOADED_MARKER_VAR" != 'loaded' ]; then
     for i in \
-            "$HOME/.bash_env_vars" \
+            "$HOME/.config/shell/env_vars" \
                 ; do  # note the sys-specific env_vars_overrides! also make sure env_vars are fist to be imported;
         [ ! -s "$i" ] || source "$i"
     done
@@ -52,6 +52,7 @@ select_wm() {
     if [ $? -gt 128 ]; then __xsession_=i3; fi  # read timed out, default to something
 }
 
+# TODO: currently x11-specific!
 # start X; note the ssh-agent:
 # https://wiki.archlinux.org/title/Xinit#Autostart_X_at_login
 #   - per this article, we could check here as if [ -z "$DISPLAY" ] && [ "$XDG_VTNR" -le 3 ]  to use graphical logins on more than one virtual terminal
