@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2317
+# shellcheck disable=SC2329
 #
 # base version taken from https://github.com/rastasheep/dotfiles/blob/master/script/bootstrap
 #
@@ -30,9 +30,9 @@ readonly KRING="$HOME/.local/share/kring.sala"  # note location is referenced in
 readonly LUKS_USB="/tmp/.usb-luks-$RANDOM"  # mountpoint
 readonly KPXC_KRING_DB="$LUKS_USB/passdb/fresh_keyring.kdbx"
 KPXC_DB=''  # will be defined downstream
-readonly SHELL_ENVS="$HOME/.bash_env_vars"       # location of our shell vars; expected to be pulled in via dotfiles mngr;
-                                                 # note that contents of that file are somewhat important, as some
-                                                 # (script-related) configuration lies within.
+readonly SHELL_ENVS="$HOME/.config/shell/env_vars"       # location of our shell vars; expected to be pulled in via dotfiles mngr;
+                                                         # note that contents of that file are somewhat important, as some
+                                                         # (script-related) configuration lies within.
 #readonly BASH_COMPLETIONS=  # set later in flow
 # TODO: sure we don't want ot use /usr/share/zsh/vendor-completions for zsh?
 readonly ZSH_COMPLETIONS='/usr/local/share/zsh/site-functions'  # as per https://unix.stackexchange.com/a/607810/47501
@@ -66,7 +66,7 @@ APT_OPTS=''
 #umask 0077  # keep this in sync with what we set via systemd & ~/.profile!
 NPM_PRFX='NPM_CONFIG_IGNORE_SCRIPTS=true'
 
-unset _IS_WIN _IS_VIRT _IS_VIRTUALBOX _IS_NATIVE
+unset _IS_WIN _IS_VIRT _IS_VIRTUALBOX _IS_NATIVE DISPLAY_MANAGER_INSTALLED
 
 #------------------------
 #--- Global Constants ---
@@ -220,6 +220,7 @@ check_dependencies() {
             pwd uniq sort xxd openssl mokutil \
             gpg keepassxc-cli ssh-add ssh-agent \
             ansi2txt pkg-config cryptsetup lsblk fzf \
+            age \
                 ; do
         if ! cmd_avail "$prog"; then
             report "[$prog] not installed yet, installing..."
@@ -345,7 +346,7 @@ install_flatpak() {
     # by default we install from the 'verified' repo, taken from this secureblue comment:
     # https://www.reddit.com/r/linux/comments/1bq9d3b/flathub_now_marks_unverified_apps/kx1adws/ :
     exe 'sudo flatpak remote-add --if-not-exists --subset=verified flathub-verified https://flathub.org/repo/flathub.flatpakrepo'
-    exe 'sudo flatpak remote-add --if-not-exists flathub-main https://flathub.org/repo/flathub.flatpakrepo'
+    exe 'sudo flatpak remote-add --if-not-exists                   flathub-main https://flathub.org/repo/flathub.flatpakrepo'
 }
 
 
@@ -672,8 +673,8 @@ setup_systemd() {
 
 
 # SS is the keyring implementation
-# - $ busctl --user status org.freedesktop.secrets
-#   to see which program acts as secret service
+# - to see which program acts as secret service: `busctl --user status org.freedesktop.secrets`
+#
 setup_secret_service() {
     if is_pkg_installed  gnome-keyring; then
         MANUAL_STEPS+=('setup default keyring via seahorse if using gnome-keyring (TODO: think keyring needs to be named login)')
@@ -685,6 +686,8 @@ setup_secret_service() {
 
 
 setup_keepassxc_ss() {
+    local t="${XDG_DATA_HOME:-${HOME}/.local/share}/dbus-1/services/org.freedesktop.secrets.service"
+
     # make sure gnome-keyring is not installed, as it depends to be
     # suggestion/recommendation of _many_ pkgs; note this implies we
     # have some other secret service implementation in use.
@@ -694,45 +697,50 @@ setup_keepassxc_ss() {
     # without it, running $ secret-tool lookup nheko user    will error:
     #    > secret-tool: The name org.freedesktop.secrets was not provided by any .service files
     # ...instead of launching keepassxc.
-    mkdir -p "${XDG_DATA_HOME:-${HOME}/.local/share}/dbus-1/services"
 
     # from https://github.com/keepassxreboot/keepassxc/issues/6274#issuecomment-810983553 or
     # https://keepassxc.org/docs/KeePassXC_UserGuide#_enabling_the_integration :
-    #cat >| "${XDG_DATA_HOME:-${HOME}/.local/share}/dbus-1/services/org.freedesktop.secrets.service" <<EOF
+    #cat >| "$t" <<EOF
 #[D-BUS Service]
 #Name=org.freedesktop.secrets
 #Exec=/usr/bin/keepassxc
 #EOF
     # instead of directly exec'ing keepassxc, we start systemd service per https://stackoverflow.com/a/31725112/1803648 :
-    cat >| "${XDG_DATA_HOME:-${HOME}/.local/share}/dbus-1/services/org.freedesktop.secrets.service" <<EOF
+    install -DCTm644 <(cat <<EOF
 [D-BUS Service]
 Name=org.freedesktop.secrets
 Exec=/bin/false
 SystemdService=keepassxc.service
 EOF
+) "$t" || err "installing into [$t] failed w/ $?"
     # }}}
 
-    # copy over fresh keyring db:
-    if [[ -d "$LUKS_USB" ]]; then
-        exe "sudo install -m600 -CT --group=$USER --owner=$USER '$KPXC_KRING_DB' '$KRING'"
-    else
-        err "[$LUKS_USB] not mounted, cannot init our secret service db; make sure to do this manually!"
+    # copy over fresh keyring db if it doesn't exist:
+    if ! [[ -s "$KRING" ]]; then
+        if [[ -d "$LUKS_USB" ]]; then
+            # TODO: why are we running this as sudo?:
+            exe "sudo install -m600 -CT --group=$USER --owner=$USER '$KPXC_KRING_DB' '$KRING'"
+        else
+            err "[$LUKS_USB] not mounted, cannot init our secret service db; make sure to do this manually!"
+        fi
     fi
 }
 
 # unlock default keyring on login, only needed if using gnome-keyring.
 # note your keyring passwd needs to match user login passwd.
 #
-# as per https://wiki.archlinux.org/title/GNOME/Keyring#PAM_step
-# this should only be used if not using DM/display manager
 # - consider ssh integration, see https://wiki.archlinux.org/title/GNOME/Keyring#SSH_keys
 #
 # see also: https://wiki.gnome.org/Projects/GnomeKeyring/Pam/Manual
 #
-# TODO: should we perhaps see if the line exists, but is commented out? note hyphen might be a valid comment-character for PAM files
+# TODO: should we perhaps see if the line exists, but is commented out?
+#       note hyphen might be a valid comment-character for PAM files
 setup_gnome_keyring_pam_module() {
-    local f
-    f='/etc/pam.d/login'
+    # per https://wiki.archlinux.org/title/GNOME/Keyring#PAM_step
+    # this should only be used if not using DM/display manager:
+    [[ "$DISPLAY_MANAGER_INSTALLED" == 1 ]] && return
+
+    local f='/etc/pam.d/login'
 
     is_f "$f" || return 1
     install_block 'libpam-gnome-keyring' || return 1  # PAM module to unlock the GNOME keyring upon login
@@ -745,8 +753,8 @@ setup_gnome_keyring_pam_module() {
         exe "echo 'session    optional     pam_gnome_keyring.so auto_start' | sudo tee --append '$f' > /dev/null"
     fi
 
-    # to update keyring's passwd during user passwd change, make sure "password optional	pam_gnome_keyring.so" is somewhere in /etc/pam.d/*passw*:
-    # note it's not necessarily under $p, could be in file(s) sourced by it
+    # to update keyring's passwd during user passwd change, make sure "password optional	pam_gnome_keyring.so" is somewhere in /etc/pam.d/*passw*;
+    # note it's not necessarily under $f, could be in file(s) sourced by it:
     f='/etc/pam.d/passwd'
     is_f "$f" || return 1
     if ! grep -REq '^password\s+optional\s+pam_gnome_keyring.so' /etc/pam.d/; then
@@ -1747,8 +1755,15 @@ install_homesick() {
 
 
 # https://github.com/twpayne/chezmoi
+#
+# also avail in apt, at least @ unstable
+#
+# see also:
+# - 3rd party terminal GUI: https://github.com/matmaer/chezmoi-mousse
 install_chezmoi() {
     install_from_git twpayne/chezmoi '_linux_amd64.deb'
+    # put package on hold so they don't get overridden by apt-upgrade:
+    exe 'sudo apt-mark hold chezmoi'
     #install_bin_from_git -N chezmoi twpayne/chezmoi 'linux_amd64.tar.gz'
 
     # install 3rd party extensions; cz project lists them @ https://www.chezmoi.io/links/related-software/ {{{
@@ -1875,7 +1890,6 @@ fetch_castles() {
 }
 
 
-# check whether ssh key(s) were pulled with homeshick; if not, offer to create one:
 setup_ssh() {
     is_proc_running  ssh-agent || eval "$(ssh-agent)" || { err 'starting ssh-agent failed'; return 1; }
     is_ssh_key_loaded && report 'SSH already set up' && return 0
@@ -1922,6 +1936,17 @@ import_netrc() {
 }
 
 
+import_chezmoi_key() {  # other random keys to import
+    local t="$HOME/.config/chezmoi/.key.txt"  # referenced by chezmoi config
+
+    define_secret || return 1
+    report 'loading chezmoi key...'
+    ensure_d "$(basename -- "$t")" || return 1
+    keepassxc-cli attachment-export -q -- "$KPXC_DB" 'chezmoi-key' key.txt "$t" <<< "$KPXC_PASS" || { err "[chezmoi-key] import failed w/ $?"; return 1; }
+    chmod 600 "$t"
+}
+
+
 # sets global KPXC_DB; note this also sets global passwd var
 define_secret() {
     _set_kpxc_pass() {
@@ -1929,7 +1954,7 @@ define_secret() {
             read -rsp 'enter kpxc pass: ' KPXC_PASS
             # test the pass:
             keepassxc-cli ls -q "$KPXC_DB" <<< "$KPXC_PASS" > /dev/null && return 0
-            err "incorrect pass, try again"
+            err 'incorrect pass, try again'
             unset KPXC_PASS
         done
     }
@@ -1941,6 +1966,7 @@ define_secret() {
         done
     fi
     [[ -n "$KPXC_PASS" ]] || _set_kpxc_pass || return 1
+    unset _set_kpxc_pass
     return 0
 }
 
@@ -2002,30 +2028,27 @@ setup_chezmoi() {
 
     install_chezmoi || return $?
     report "initializing our chezmoi store; note some data will be queried..."
+
+    is_noninteractive && force=TRUE
+
     # do not add --verbose flag to following command, as the massive diff in
     # stdout screeches the term to a halt:
+    #
+    # NOTE: this first [init --apply] will ask for an encryption key passphrase
+    #       if we're using encryption:
     # TODO: init takes currently ages, some 3+ minutes. find out why
-    is_noninteractive && force=TRUE
-    exe "chezmoi init --apply ${force:+--force }git@github.com:laur89/dots.git"  # pull & install dotfiles
+    exe "chezmoi init --apply ${force:+--force }git@codeberg.org/laur/dots.git"  # pull & install dotfiles
+
     # note modify_mngr doctor can only be ran _after_ init, as otherwise it'll complain about missing ~/.local/share/chezmoi/:
-    chezmoi_modify_manager --doctor || err "[chezmoi_modify_manager --doctor] failed w/ $?"  # verify all's well from manager's perspective
+    exe 'chezmoi_modify_manager --doctor'  # verify all's well from manager's perspective
 }
 
 
 setup_global_shell_links() {
-    local global_dir real_file_locations file
-
-    declare -ar real_file_locations=(
-        "$SHELL_ENVS"
-        "$HOME/.global-bash-init"
-    )
-    readonly global_dir='/etc'  # so our env vars would have user-agnostic location as well;
-                                # that location will be used by various scripts.
-
-    for file in "${real_file_locations[@]}"; do
-        is_f -m "can't link it to ${global_dir}/" "$file" || continue
-        create_link -s "$file" "${global_dir}/"
-    done
+    local global_dir='/etc'  # so our env vars would have user-agnostic location as well;
+                             # that location will be used by various scripts.
+    exe "sudo install -m644 -CT '$SHELL_ENVS' '$global_dir/.bash_env_vars'" || return 1
+    exe "sudo install -m644 -CT '$HOME/.config/shell/.global-bash-init' '$global_dir/.global-bash-init'" || return 1
 }
 
 
@@ -2158,7 +2181,7 @@ source_shell_conf() {
 
     if ! type __BASH_FUNS_LOADED_MARKER > /dev/null 2>&1; then
         # skip common funs import - we don't need 'em, and might cause conflicts:
-        #[[ -r "$HOME/.bash_functions" ]] && source "$HOME/.bash_functions"
+        #[[ -r "$HOME/.config/shell/funcs.sh" ]] && source "$HOME/.config/shell/funcs.sh"
 
         if [[ -d "$HOME/.bash_funs_overrides" ]]; then
             for i in "$HOME/.bash_funs_overrides/"*; do
@@ -2262,8 +2285,9 @@ setup() {
         mount_usb  # TODO: detect not only MODE==1, but if _very initial_ installation, as we won't have USB at hand most of the time
         setup_ssh
         import_netrc
+        import_chezmoi_key
     fi
-    # note: set up chezmoi before homeshick, as some stuff might depend on symlinks set up by the former
+    # note: set up chezmoi _before_ homeshick, as some stuff might depend on symlinks set up by the former
     is_interactive && setup_chezmoi  # interactive as templates might prompt for data
     setup_homesick || fail "homesick setup failed; as homesick is necessary, script will exit"
     source_shell_conf  # so we get our env vars after dotfiles are pulled in
@@ -2662,6 +2686,8 @@ upgrade_kernel() {
 # note this should still be common for both work & non-work
 install_devstuff() {
     #install_rebar
+    install_gh_extensions
+    install_worktrunk
     install_lazygit
     install_lazydocker
     install_dive
@@ -2734,6 +2760,7 @@ install_own_builds() {
     install_fd
     install_jd
     install_bat
+    install_television
     install_sad
     install_glow
     install_btop
@@ -3424,7 +3451,7 @@ install_from_url() {
     readonly name="$1"
     readonly loc="$2"
 
-    [[ -z "$name" ]] && { err "[name] param required"; return 1; }
+    [[ -z "$name" ]] && { err '[name] param required'; return 1; }
 
     ver="$(resolve_ver "$loc")" || return 1
 
@@ -3454,7 +3481,7 @@ install_from_url_shell() {
     shell=bash  # default
     while getopts 's' opt; do
         case "$opt" in
-            s) shell='sh' ;;  # TODO: rename opt to d) for dash?
+            s) shell='sh' ;;  # TODO: rename opt to d) for dash (i.e. default shell on debian)?
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
         esac
     done
@@ -3463,7 +3490,7 @@ install_from_url_shell() {
     readonly name="$1"
     readonly loc="$2"
 
-    [[ -z "$name" ]] && { err "[name] param required"; return 1; }
+    [[ -z "$name" ]] && { err '[name] param required'; return 1; }
 
     ver="$(resolve_ver "$loc")" || return 1
 
@@ -3801,6 +3828,7 @@ install_kubectl() {
 # tag: aws, k8s, kubernetes
 #
 # TODO: consider replacing installation by using krew? note that likely won't install shell completion though;
+# TODO: consider replacing kubectx w/ television
 #
 # NOTE: avail as apt pkg: `sudo apt install kubectx`
 install_kubectx() {  # https://github.com/ahmetb/kubectx
@@ -4438,8 +4466,37 @@ install_cursor() {
 # - codex desktop (from openai)
 # - cursor
 # - jetbrains air
+#
+# NOTE: to debug what the installer really installs under our homedir, do:
+#   - $ bb -s @include=base-simple  zsh
+#   - <enter the installation cmd, e.g. `curl -fsSL https://claude.ai/install.sh | bash`>
+#   - $ tree -a ~
 install_claude() {  # https://code.claude.com/docs/en/terminal-guide#macos-and-linux
-    install_from_url_shell  claude 'https://claude.ai/install.sh'
+    #install_from_url_shell  claude 'https://claude.ai/install.sh'
+
+    # or, same but sandboxed:
+    local ver d tmpdir json_conf
+
+    # note the url is from https://claude.ai/install.sh header: (+/latest somewhere else in script appended):
+    ver="$(resolve_ver 'https://downloads.claude.ai/claude-code-releases/latest')" || return 1
+    is_installed "$ver" claude && return 2
+
+    d="$HOME/.local/bin"
+    tmpdir="$TMP_DIR/.install-claude-${RANDOM}"
+
+    json_conf=$(cat <<EOF
+{
+  "include": ["base"],
+  "mounts": {
+    "$d": "bind-create:$tmpdir",
+    "{xdg_data}/claude": "bind-create",
+    "{xdg_state}/claude": "bind-create"
+  }
+}
+EOF
+)
+    exe "bb -DM -j '$json_conf' sh -c 'curl -fsSL https://claude.ai/install.sh | bash'" || return 1
+    exe "mv -f -- '$tmpdir/claude' '$d/claude'"
 }
 
 
@@ -4506,6 +4563,8 @@ install_display_manager() {
     #install_lemurs_display_manager
     #install_ly_display_manager
     install_lightdm
+
+    DISPLAY_MANAGER_INSTALLED=1
 
     # install our WM session definitions: {
     local x_sess_src x_sess_target i
@@ -4599,8 +4658,7 @@ install_ly_display_manager() {  # https://codeberg.org/fairyglade/ly
 # commands:
 # - view effective config: lightdm --show-config
 install_lightdm() {  # https://wiki.debian.org/LightDM
-    local conf_dir
-    conf_dir='/etc/lightdm/lightdm.conf.d'
+    local conf_dir='/etc/lightdm/lightdm.conf.d'
 
     install_block  lightdm || return 1
     ensure_d -s "$conf_dir" || return 1
@@ -4639,6 +4697,20 @@ install_eza() {  # https://github.com/eza-community/eza
 }
 
 
+install_gh_extensions() {
+    is_pkg_installed gh || { err 'gh pkg not installed'; return 1; }
+
+    # terminal UI for GitHub
+    exe 'gh extension install dlvhdr/gh-dash'  # https://github.com/dlvhdr/gh-dash
+}
+
+
+# git worktree manager
+install_worktrunk() {  # https://github.com/max-sixty/worktrunk
+    install_bin_from_git -n wt -N wt max-sixty/worktrunk '-x86_64-unknown-linux-musl.tar.xz'
+}
+
+
 # TODO: consider https://github.com/gitui-org/gitui  instead; seems to be faster?
 install_lazygit() {  # https://github.com/jesseduffield/lazygit
     install_bin_from_git -N lazygit jesseduffield/lazygit '_linux_x86_64.tar.gz'
@@ -4660,8 +4732,18 @@ install_dive() {  # https://github.com/wagoodman/dive
 # similar to nvim's telescope; comes w/ shell binding; e.g. ctrl+t can complete
 # being context-aware, e.g. completing for dirs/files/git repos etc
 install_television() {  # https://github.com/alexpasmantier/television
-    #install_from_git  alexpasmantier/television 'x86_64-unknown-linux-gnu.deb'
-    install_bin_from_git -N tv  alexpasmantier/television 'x86_64-unknown-linux-gnu.tar.gz'
+    #install_from_git  alexpasmantier/television 'x86_64-unknown-linux-gnu.deb' || return
+    install_bin_from_git -N tv  alexpasmantier/television 'x86_64-unknown-linux-gnu.tar.gz' || return
+
+    # https://alexpasmantier.github.io/television/user-guide/shell-integration#customizing-shell-integration-scripts
+    _rm_unwanted_binds() {
+        # zsh has:   bindkey '^R' tv-shell-history
+        # bash has:  bind -x '"\C-R": tv_shell_history
+        grep -Ev "^bind.*R['\"]"
+    }
+    # note following locations are referenced from shell .rc files:
+    exe "tv init bash | _rm_unwanted_binds | tee $XDG_CONFIG_HOME/television/bash_completion.sh > /dev/null"
+    exe "tv init zsh  | _rm_unwanted_binds | tee $XDG_CONFIG_HOME/television/zsh_completion.sh > /dev/null"
 }
 
 
@@ -4950,7 +5032,7 @@ build_lesspipe() {
     exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     exe "pushd $tmpdir" || return 1
 
-    report "building lesspipe..."
+    report 'building lesspipe...'
     exe './configure' || { err; popd; return 1; }
     exe make || { err; popd; return 1; }
     create_deb_install_and_store lesspipe || { popd; return 1; }
@@ -4961,7 +5043,7 @@ build_lesspipe() {
     # }
 
     exe popd
-    exe "sudo rm -rf -- $tmpdir"
+    exe "sudo rm -rf -- '$tmpdir'"
 
     add_to_dl_log  lesspipe "$ver"
 
@@ -5460,7 +5542,7 @@ EOF
     # clone the repository
     tmpdir="$TMP_DIR/i3-build-${RANDOM}/build"
     exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
-    exe "pushd $tmpdir" || return 1
+    exe "pushd '$tmpdir'" || return 1
 
     _apply_patches  # TODO: should we bail on error?
     _fix_rules
@@ -5596,7 +5678,8 @@ rb_install() {
 }
 
 
-# - ~/.var/app/ contains user-specific config
+# - ~/.var/app/ contains user-specific app config
+# - ~/.local/share/flatpak/overrides/global -- flatpak config
 fp_install() {  # flatpak install
     local opt link ref bin remote OPTIND
 
@@ -5895,6 +5978,8 @@ setup_nvim() {
 # https://github.com/neovide/neovide
 #
 # !! note our $VISUAL env var is tied to it !!
+# alternatives:
+# - neovim-qt - Qt5 GUI interface for neovim
 install_neovide() {  # rust-based GUI front-end to neovim
     # alternative asset:   neovide.AppImage
     install_bin_from_git -N neovide -n neovide  neovide/neovide 'neovide-linux-x86_64.tar'
@@ -6520,6 +6605,7 @@ install_from_repo() {
         7zip
         dos2unix  # convert text file line endings between CRLF and LF
         secure-delete  # provides srm, sfill, sswap and sdmem commands; esp. the 'srm' command is useful; similar to wipe & shred
+        age  # simple, modern and secure encryption tool; e.g. used by chezmoi
         lxappearance  # TODO: x11
         qt5ct
         #qt5-style-plugins
@@ -6724,7 +6810,7 @@ install_from_repo() {
                    # see also its web interface: mitmweb
         #charles-proxy5  # note also avail as tarball @ https://www.charlesproxy.com/download/
         tofu
-        gh  # github cli; either from debian or github's own repo
+        gh  # github cli; either from debian or github's own repo; https://github.com/cli/cli
         tealdeer  # rust-based tl;dr client (provides `tldr` cmd)  # https://github.com/tealdeer-rs/tealdeer/
     )
     # old/deprecated block4:
@@ -7437,13 +7523,15 @@ __choose_prog_to_build() {
         install_zprint
         install_clj_kondo
         install_lazygit
+        install_gh_extensions
+        install_worktrunk
         install_lazydocker
         install_dive
-        install_television
         install_systemd_manager_tui
         install_fd
         install_jd
         install_bat
+        install_television
         install_timr
         install_sad
         install_viu
@@ -9753,6 +9841,7 @@ cleanup() {
 #----------------------------
 #---  Script entry point  ---
 #----------------------------
+export LC_ALL=C
 ORIG_OPTS=("$@")  # note our options must _not_ break on whitespace, given how ORIG_OPTS is referenced!
 while getopts 'NFSUQOP:L:T:h' OPT; do
     case "$OPT" in
