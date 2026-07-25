@@ -1,0 +1,5 @@
+# from https://superuser.com/a/615583/179401
+#
+# disable recommends & suggests/suggested pkgs autoinstallation:
+APT::Install-Recommends "0";
+APT::Install-Suggests "0";
