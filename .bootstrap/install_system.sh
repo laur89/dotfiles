@@ -27,7 +27,7 @@ shopt -s nullglob  # unmatching globs to expand into empty string/list instead o
 
 TMP_DIR=/tmp  # changeable via an option (e.g. in VMs /tmp tmpfs might not be large enough)
 readonly KRING="$HOME/.local/share/kring.sala"  # note location is referenced in db's AutoOpen section/group
-readonly LUKS_USB="/tmp/.usb-luks-$RANDOM"  # mountpoint
+readonly LUKS_USB="/tmp/.usb-luks-${RANDOM}.mnt"  # mountpoint
 readonly KPXC_KRING_DB="$LUKS_USB/passdb/fresh_keyring.kdbx"
 KPXC_DB=''  # will be defined downstream
 readonly SHELL_ENVS="$HOME/.config/shell/env_vars"       # location of our shell vars; expected to be pulled in via dotfiles mngr;
@@ -56,15 +56,25 @@ LOGGING_LVL=0                   # execution logging level (full install mode log
                                 # don't set log level too soon; don't want to persist bullshit.
                                 # levels are currently 0, 1 and 10; 0 being no logging, 1 being the lowest (from lvl 1 to 9 only execute() errors are logged)
 NON_INTERACTIVE=0               # whether script's running non-attended
+
 EXECUTION_LOG="$HOME/installation-execution-$(date +%d-%b-%y--%R).log"  # do not create logfile here! otherwise cleanup()
                                                                         # picks it up and reports of its existence, opening
                                                                         # up for false positives.
-SCRIPT_LOG="$HOME/installation-execution-term-$(date +%d-%b-%y--%R).log"
+# NOTE: do not add '.log' suffix to these; it messes up how `bat` shows colorcodes; not the case for `less` tho:
+SCRIPT_LOG="$HOME/installation-execution-term-$(date +%d-%b-%y--%R)"
+
 SYSCTL_CHANGED=0       # states whether sysctl config got changed
 APT_ENVS='NEEDRESTART_MODE=l'
 APT_OPTS=''
 #umask 0077  # keep this in sync with what we set via systemd & ~/.profile!
-NPM_PRFX='NPM_CONFIG_IGNORE_SCRIPTS=true'
+NPM_PRFX='NPM_CONFIG_IGNORE_SCRIPTS=true  NPM_CONFIG_MIN_RELEASE_AGE=7'  # also set in our ~/.npmrc, but duplicating here in case
+CURL_COMMON=(
+    -fsSL
+    -A "$USER_AGENT"
+    --connect-timeout 3
+    --max-time 120
+    --retry-max-time 30
+)
 
 unset _IS_WIN _IS_VIRT _IS_VIRTUALBOX _IS_NATIVE DISPLAY_MANAGER_INSTALLED
 
@@ -94,7 +104,7 @@ declare -A COLORS=(
     [OFF]=$'\033[0m'
     [BOLD]=$'\033[1m'
 )
-readonly NPMRC_BAK="/tmp/npmrc.bak.$RANDOM"  # temp location where we _might_ move our npmrc to for the duration of this script;
+readonly NPMRC_BAK="/tmp/.npmrc.bak.$RANDOM"  # temp location where we _might_ move our npmrc to for the duration of this script;
 readonly GIT_OPTS=(--depth 1 -j8)
 
 # this configures our platform-specific dotfile repos:
@@ -103,7 +113,7 @@ declare -A HOSTNAME_TO_PLATFORM=(
 )
 
 declare -a MANUAL_STEPS=(  # note this list is potentially modified later on
-    'intelliJ toolbox'
+    'intelliJ toolbox to [/progs/jetbrains-toolbox]'
     'install tmux plugins (prefix+I)'
     'ublock additional configs (EST, social media, ...)'
     'ublock whitelist, filters (should be saved somewhere)'
@@ -211,6 +221,7 @@ check_dependencies() {
         [ssh-agent]=openssh-client
         [ansi2txt]=colorized-logs
         [pkg-config]=pkgconf
+        [md5sum]=coreutils
     )
 
     for prog in \
@@ -220,7 +231,7 @@ check_dependencies() {
             pwd uniq sort xxd openssl mokutil \
             gpg keepassxc-cli ssh-add ssh-agent \
             ansi2txt pkg-config cryptsetup lsblk fzf \
-            age \
+            age md5sum \
                 ; do
         if ! cmd_avail "$prog"; then
             report "[$prog] not installed yet, installing..."
@@ -279,7 +290,7 @@ install_acpi_events() {
         for file in "$dir/"*; do
             [[ -f "$file" ]] || continue  # TODO: how to validate acpi event files? what are the rules?
             tmpfile="$TMP_DIR/.acpi_setup-$RANDOM"
-            exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
+            exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' >| '$tmpfile'" || return 1
             exe "sudo install -m644 -CT '$tmpfile' '$acpi_target/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
         done
     done
@@ -312,7 +323,7 @@ setup_udev() {
         for file in "$dir/"*; do
             [[ -s "$file" && "$file" == *.rules ]] || continue  # note we require '.rules' suffix
             tmpfile="$TMP_DIR/.udev_setup-$RANDOM"
-            exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
+            exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' >| '$tmpfile'" || return 1
             exe "sudo install -m644 -CT '$tmpfile' '$udev_target/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
         done
     done
@@ -381,7 +392,7 @@ setup_smartd() {
     c="DEVICESCAN -a -o on -S on -n standby,q -s (S/../.././02|L/../../6/03) -W 4,35,40 -m <nomailer> -M exec $notif"
 
     is_f -nm 'cannot configure smartd' "$conf" || return 1
-    exe "cat '$conf' > $tmpfile" || return 1
+    exe "cat '$conf' >| $tmpfile" || return 1
     exe "sed -i --follow-symlinks '/^DEVICESCAN.*$/d' '$tmpfile'"  # nuke previous setting
     exe "echo '$c' >> '$tmpfile'" || return 1
     exe "sudo install -m644 -CT '$tmpfile' '$conf'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
@@ -507,7 +518,7 @@ setup_needrestart() {
             filename="${filename/\{USER_PLACEHOLDER\}/$USER}"  # replace the placeholder in filename in case it's templated servicefile
 
             tmpfile="$TMP_DIR/.needrestart_setup-$filename"
-            exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || { err "sed-ing needrestart file [$file] failed"; continue; }
+            exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' >| '$tmpfile'" || { err "sed-ing needrestart file [$file] failed"; continue; }
             exe "sudo install -m644 -CT '$tmpfile' '$target_confdir/$filename'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
         done
     done
@@ -557,7 +568,7 @@ _var_expand_install() {
         [[ -e "$dest" ]] && { err "dest [$dest] is not a dir, but exists and is [$(file_type "$dest")]"; return 1; }
         [[ "$install_opts" != *D* ]] && { err "dest [$dest] is not a dir and -D flag not provided"; return 1; }
     fi
-    exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$in' > '$tmpfile'" || { err "sed-ing file [$in] failed"; return $?; }
+    exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$in' >| '$tmpfile'" || { err "sed-ing file [$in] failed"; return $?; }
     exe "${sudo:+sudo }install -m$perms $install_opts '$tmpfile' '$dest'" || { err "installing [$in] to [$dest] failed"; return 1; }
     rm -- "$tmpfile"
     return 0
@@ -614,7 +625,7 @@ setup_systemd() {
         tmpfile="$TMP_DIR/.sysd_setup-$RANDOM"
 
         is_f -n "$in" || return 1
-        exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$in' > '$tmpfile'" || { err "sed-ing systemd file [$in] failed"; return $?; }
+        exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$in' >| '$tmpfile'" || { err "sed-ing systemd file [$in] failed"; return $?; }
         exe "${sudo:+sudo }install -m644 -CT '$tmpfile' '$outf'" || { err "installing [$tmpfile] failed"; return 1; }
         return 0
     }
@@ -838,7 +849,7 @@ setup_hosts() {
 
     is_f -m "won't install [$file]" "$file" /etc/hosts || return 1
     current_hostline="$(_extract_current_hostname_line /etc/hosts)" || return 1
-    exe "sed -e 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' -e 's/{HOSTNAME}/$HOSTNAME/g' '$file' > '$tmpfile'" || { err; return 1; }
+    exe "sed -e 's/{HOSTS_LINE_PLACEHOLDER}/$current_hostline/g' -e 's/{HOSTNAME}/$HOSTNAME/g' '$file' >| '$tmpfile'" || { err; return 1; }
 
     exe "sudo install -m644 -CT --backup=numbered '$tmpfile' /etc/hosts.head" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
     exe "rm -- '$tmpfile'"
@@ -856,12 +867,13 @@ setup_sudoers() {
     is_d -m 'skipping sudoers file installation' "$sudoers_dest" || return 1
     is_f -m "won't install it" "$file" || return 1
 
-    exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
+    exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' >| '$tmpfile'" || return 1
     exe "sudo install -m440 -CT '$tmpfile' '$sudoers_dest/sudoers'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
 }
 
 
 # https://wiki.debian.org/UnattendedUpgrades for unattended-upgrades setup
+# TODO: some resources actually recommend _against_ unattended-upgrades on testing! (as described in 02periodic hdr)
 setup_apt_dpkg() {
     local apt_dir file
 
@@ -923,7 +935,7 @@ setup_crontab() {
     is_d -m 'skipping crontab installation' "$cron_dir" || return 1
 
     if is_f -m "won't install it" "$file"; then
-        exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' > '$tmpfile'" || return 1
+        exe "sed --follow-symlinks 's/{USER_PLACEHOLDER}/$USER/g' '$file' >| '$tmpfile'" || return 1
         exe "sudo install -m644 -CT '$tmpfile' '$cron_dir/$(basename -- "$file")'" || { err "installing [$tmpfile] failed w/ $?"; return 1; }
         exe "rm -- '$tmpfile'"
     fi
@@ -1683,7 +1695,7 @@ install_deps() {
 
     # install npm_modules:
     # https://github.com/neovim/node-client  # TODO: consider removal
-    # https://github.com/FredrikNoren/ungit
+    # https://github.com/FredrikNoren/ungit  # note: electron pkgs also avail under /releases
     # https://github.com/sindresorhus/fast-cli  # TODO: consider removal
     #
     exe "$NPM_PRFX npm install -g \
@@ -1704,6 +1716,7 @@ setup_dirs() {
     #
     # native bash completions dir could be found via `pkg-config --variable=completionsdir bash-completion`
     readonly BASH_COMPLETIONS="$XDG_DATA_HOME/bash-completion/completions"  # cannot set before importing SHELL_ENVS!
+                                                                            # note this path is likely referenced also in/from our bubblebox config
 
     # create dirs:
     for dir in \
@@ -1939,15 +1952,6 @@ import_chezmoi_key() {  # other random keys to import
 
 # sets global KPXC_DB; note this also sets global passwd var
 define_secret() {
-    _set_kpxc_pass() {
-        while true; do
-            read -rsp 'enter kpxc pass: ' KPXC_PASS
-            # test the pass:
-            keepassxc-cli ls -q "$KPXC_DB" <<< "$KPXC_PASS" > /dev/null && return 0
-            err 'incorrect pass, try again'
-            unset KPXC_PASS
-        done
-    }
     if ! [[ -s "$KPXC_DB" ]]; then
         while true; do
             read -rp 'enter kpxc db location: ' KPXC_DB
@@ -1955,8 +1959,17 @@ define_secret() {
             unset KPXC_DB
         done
     fi
-    [[ -n "$KPXC_PASS" ]] || _set_kpxc_pass || return 1
-    unset _set_kpxc_pass
+
+    # NOTE: do not `export` KPXC_PASS!
+    if [[ -z "$KPXC_PASS" ]]; then
+        while true; do
+            read -rsp 'enter kpxc pass: ' KPXC_PASS
+            # test the pass:
+            keepassxc-cli ls -q "$KPXC_DB" <<< "$KPXC_PASS" > /dev/null && break
+            err 'incorrect pass, try again'
+            unset KPXC_PASS
+        done
+    fi
     return 0
 }
 
@@ -2034,11 +2047,28 @@ setup_chezmoi() {
 }
 
 
+# NOTE: think .bash_env_vars needs to be a link, as otherwise our
+#       modified envs don't get propagated to /etc quick enough, right?
+#       counterpoint, we need to make sure all the sandboxes/systd-hardened
+#       services have bind mappings also to the link _targets_
 setup_global_shell_links() {
-    local global_dir='/etc'  # so our env vars would have user-agnostic location as well;
-                             # that location will be used by various scripts.
-    exe "sudo install -m644 -CT '$SHELL_ENVS' '$global_dir/.bash_env_vars'" || return 1
-    exe "sudo install -m644 -CT '$HOME/.config/shell/.global-bash-init' '$global_dir/.global-bash-init'" || return 1
+    local global_dir real_file_locations file target
+
+    declare -ar real_file_locations=(
+        "${SHELL_ENVS}:.bash_env_vars"
+        "$HOME/.config/shell/.global-bash-init"
+    )
+    readonly global_dir='/etc'  # so our env vars would have user-agnostic location as well;
+                                # that location will be used by various scripts.
+    for file in "${real_file_locations[@]}"; do
+        IFS=':' read -r file target <<< "$file"
+        is_f -m "can't link it to ${global_dir}/" "$file" || continue
+        create_link -s "$file" "${global_dir}/$target"
+    done
+
+    ## OR alternatively to the links, `install` 'em:
+    #exe "sudo install -m644 -CT '$SHELL_ENVS' '$global_dir/.bash_env_vars'" || return 1
+    #exe "sudo install -m644 -CT '$HOME/.config/shell/.global-bash-init' '$global_dir/.global-bash-init'" || return 1
 }
 
 
@@ -2068,6 +2098,7 @@ setup_private_asset_perms() {
             "$XDG_CONFIG_HOME/zsh/" \
             "$RLWRAP_HOME" \
             "$XDG_STATE_HOME/memy/" \
+            "$XDG_CONFIG_HOME/containers/auth.json" \
                 ; do
         [[ -e "$i" ]] || { err "expected to find [$i] for permission sanitization, but it doesn't exist; is it normal?"; continue; }
         [[ -d "$i" && "$i" != */ ]] && i+='/'
@@ -2295,7 +2326,7 @@ setup() {
     #if [[ "$MODE" -eq 1 && "$PROFILE" == work && -z "$NODE_EXTRA_CA_CERTS" ]]; then
         #NPM_PRFX+=' NODE_TLS_REJECT_UNAUTHORIZED=0'  # certs might've not been init'd yet; NODE_TLS_REJECT_UNAUTHORIZED not working, so far only '$npm config set strict-ssl' false has had any effect
         #local _cert="$TMP_DIR/wh_${RANDOM}.crt"
-        #curl -s --fail --connect-timeout 2 --max-time 4 --insecure --output "$_cert" \
+        #curl "${CURL_COMMON[@]}" --insecure --output "$_cert" \
                 #https://git.nonprod.williamhill.plc/profiles/profile_wh_sslcerts/raw/master/files/wh_chain_sc1wnpresc03.crt \
                 #&& export NODE_EXTRA_CA_CERTS=$_cert
     #fi
@@ -2401,7 +2432,7 @@ create_apt_source() {
     # finally write the source file itself:
     target_src="/etc/apt/sources.list.d/${name}.sources"
     f="$TMP_DIR/.apt-src_${name}-$RANDOM"
-    cat <<EOF > "$f"
+    cat <<EOF >| "$f"
 Types: deb
 URIs: $uris
 Suites: $suites
@@ -2512,6 +2543,8 @@ override_locale_time() {
 install_progs() {
     exe 'sudo apt-get --yes update'
 
+    install_setup_mise
+    install_uv  # install as one of the first tools so pipx backend will default to `uv`
     install_webdev
     install_from_repo
     install_from_flatpak
@@ -2530,7 +2563,7 @@ install_xonotic() {
     local url
 
     # note we're selecting a mirror URL here:
-    url="$(curl -Lsf --retry 2 'https://xonotic.org/download/' \
+    url="$(curl "${CURL_COMMON[@]}" --retry 2 'https://xonotic.org/download/' \
         | grep -Po '<a href="\Khttps://dl\.xonotic.org/xonotic-[0-9.]+\.zip(?="><i class=".*"></i>\s*xonotic.org</a>.*DE)')" \
         || { err "couldn't resolve xonotic version"; return 1; }
     install_from_url -D -d "$BASE_PROGS_DIR" xonotic "$url" || return 1
@@ -2685,6 +2718,7 @@ install_devstuff() {
     #install_saml2aws
     #install_aia
     install_kustomize
+    install_freelens
     install_k9s
     install_krew
     install_popeye
@@ -2698,6 +2732,13 @@ install_devstuff() {
     #install_terragrunt
     install_minikube
     #install_coursier
+
+    #install_jdtls
+    install_agentic_lsp
+    install_codegraph
+    install_graymatter
+    install_fff
+    install_claude
 
     install_kubectl
 
@@ -2743,7 +2784,6 @@ install_own_builds() {
     #install_bandwhich
     is_btrfs && install_btdu
     #install_difftastic
-    install_uv
     install_rmpc
     install_peco
     install_fd
@@ -2754,6 +2794,7 @@ install_own_builds() {
     install_glow
     install_btop
     install_ytdl
+    install_fence
     install_procs
     install_procinfo
     #install_alacritty
@@ -2839,7 +2880,7 @@ prepare_build_container() {  # TODO container build env not used atm
 # -T      - instead of grepping via asset rgx, go with the latest tarball
 # -Z      - instead of grepping via asset rgx, go with the latest zipball
 # -v ver  - specify tag to install; this is to pin a version
-# -C      - pull from codeberg forge
+# -C      - pull from codeberg forge (default is gh)
 #
 # $1 - git user/repo
 # $2 - asset regex to be used (for jq's test()) to parse correct item from GH /releases page. note jq requires most likely double-backslashes!
@@ -2867,7 +2908,7 @@ fetch_release_from_git() {
     done
     shift "$((OPTIND-1))"
 
-    [[ -n "$selector" && -n "$2" ]] && { err "if -T or -Z options provided, then asset regex should not be given as it won't be used"; return 1; }
+    [[ -n "$selector" && -n "$2" ]] && { err "if -T or -Z options provided, then asset regex must not be given as it won't be used"; return 1; }
     [[ -z "$selector" ]] && selector=".assets[] | select(.name|test(\"$2\$\")) | .browser_download_url"
 
     case "$forge" in
@@ -2875,12 +2916,12 @@ fetch_release_from_git() {
             readonly loc="https://api.github.com/repos/$1/releases/$ver"
             token="$(getnetrc curl@ghapi.com)" && token="-u $token" || report "couldn't resolve gh api token"
             # note including api version is recommended: https://docs.github.com/en/rest/using-the-rest-api/troubleshooting-the-rest-api#not-a-supported-version
-            dl_url="$(curl -fsSL -A "$USER_AGENT" -H 'X-GitHub-Api-Version:2022-11-28' $token -- "$loc" \
+            dl_url="$(curl "${CURL_COMMON[@]}" -H 'X-GitHub-Api-Version:2022-11-28' $token -- "$loc" \
                 | jq -er "$selector")" || { err "asset url resolution from [$loc] via selector [$selector] failed w/ $?"; return 1; }
             ;;
         codeberg)
             readonly loc="https://codeberg.org/api/v1/repos/$1/releases/$ver"
-            dl_url="$(curl -fsSL -A "$USER_AGENT" -- "$loc" \
+            dl_url="$(curl "${CURL_COMMON[@]}" -- "$loc" \
                 | jq -er "$selector")" || { err "asset url resolution from [$loc] via selector [$selector] failed w/ $?"; return 1; }
             ;;
         *) fail "unexpected forge source [$forge]" ;;
@@ -2972,7 +3013,7 @@ resolve_dl_urls() {
 
     domain="$(grep -Po '^https?://([^/]+)(?=)' <<< "$loc")"
     page="$(wget "$loc" --user-agent="$USER_AGENT" -q -O -)" || { err "wgetting [$loc] failed with $?"; return 1; }
-    dl_url="$(grep -Po ' href="\K'"$grep_tail"'(?=")' <<< "$page" | sort --unique)"
+    dl_url="$(grep -Po " href=[\"']\K[^'\" ]*${grep_tail}(?=[\"'])" <<< "$page" | sort --unique)"  # note href value is sometimes double, sometimes (but rarely) single quote
 
     if [[ -z "$dl_url" ]]; then
         err "no urls found from [$loc] for pattern [$grep_tail]"
@@ -3023,7 +3064,6 @@ resolve_dl_urls() {
 #          single file from unpacked tarball (meaning it's pointless when -U is given);
 #          as it stands, the _first_ file matching given filetype is returned, even
 #          if there were more. works together w/ -n
-# -r     - if href grep should be relative, ie start with / (note user should not prefix w/ '/' themselves)
 # -d /target/dir    - dir to install pulled binary in, optional. (see install_file())
 #                     note if installing whole dirs (-D), it should be the root dir;
 #                     /$name will be created/appended by install_file()
@@ -3040,15 +3080,14 @@ resolve_dl_urls() {
 #
 # see also: install_from_url() - note effectively ...from_url() differs that it's not doing url parsing from the page, but it's fed the actual asset url as a param
 install_from_any() {
-    local install_file_args skipadd opt relative
+    local install_file_args skipadd opt
     local name loc url_ptrn dl_url ver f OPTIND tmpdir id
 
     declare -a install_file_args
-    while getopts 'sf:n:d:O:P:rUDAI:' opt; do
+    while getopts 'sf:n:d:O:P:UDAI:' opt; do
         case "$opt" in
             s) skipadd=TRUE ;;
             f|n|d|O|P) install_file_args+=("-$opt" "$OPTARG") ;;
-            r) relative=TRUE ;;
             U|D|A) install_file_args+=("-$opt") ;;
             I) id="$OPTARG" ;;
             *) fail "unexpected arg passed to ${FUNCNAME}()" ;;
@@ -3062,7 +3101,7 @@ install_from_any() {
 
     id="${id:-$name}"
 
-    dl_url="$(resolve_dl_urls "$loc" "${relative:+/}[^\" ]*$url_ptrn")" || return 1  # note we might be looking for a relative url
+    dl_url="$(resolve_dl_urls "$loc" "$url_ptrn")" || return 1
     ver="$(resolve_ver "$dl_url")" || return 1
     [[ -z "$skipadd" ]] && is_installed "$ver" "$id" && return 2
 
@@ -3264,10 +3303,14 @@ install_slides() {  # https://github.com/maaslalani/slides
 }
 
 
-# note as of '26 it's avail in debian own repos, so no need to add their repos
+# note as of '26 openvpn3-client is avail in debian own repos, so no need to add their repos
 install_openvpn() {
-    openvpn3-client
-    network-manager-openvpn-gnome  # OpenVPN plugin GNOME GUI
+    is_pkg_installed  network-manager-gnome || { err 'network-manager-gnome pkg not installed, not installing openvpn stack'; return 1; }
+
+    install_block '
+        openvpn3-client
+        network-manager-openvpn-gnome
+    '
 }
 
 
@@ -3373,25 +3416,24 @@ resolve_ver() {
 
     # verify the passed string includes (likely) a version
     _verif_ver() {
-        local v n i j o
+        local v n i
         v="$1"
         [[ "$v" == http* ]] && v="$(grep -Po '^https?://([^/]+)\K.*' <<< "$v")"  # remove the domain, we only care for the path part
         n=3  # we want to see at least 3 digits in url to make it more likely we have version in it
 
         # increase $n by the number of digits in $v that are not part of ver:
         # NOTE: hardcoded architecture expectation
-        for i in 'x86\S64' 'linux\S{,2}64' 'amd\S{,2}64'; do
-            readarray o < <(grep -Eio "$i" <<< "$v")  # occurrences of $i in $v
-            for j in "${o[@]}"; do
-                i="${j//[!0-9]/}"  # leave only digits
-                let n+=${#i}
-            done
+        for i in 'x86\S64' 'linux\S{,2}64' 'amd\S{,2}64'; do  # do not add '64bit' pattern here, should be covered by 'linux\S{,2}64'
+            while read -r i; do
+                i="${i//[!0-9]/}"  # leave only digits
+                let n+=${#i}  # bump up required # of digits
+            done< <(grep -Eio "$i" <<< "$v")  # find occurrences of $i in $v
         done
         v="${v//[!0-9]/}"  # leave only digits
         [[ "${#v}" -ge "$n" ]]
     }
 
-    hdrs="$(curl -Lsf --retry 1 -A "$USER_AGENT" --head -o /dev/stdout "$url")" || { err "curling for version from [$url] failed w/ $?"; return 1; }
+    hdrs="$(curl "${CURL_COMMON[@]}" --retry 1 --head -o /dev/stdout "$url")" || { err "curling for version from [$url] failed w/ $?"; return 1; }
     ver="$(grep -iPo '^etag:\s*"*\K\S+(?=")' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check
     if [[ "${#ver}" -le 5 ]]; then
         ver="$(grep -iPo '^location:\s*\K\S+' <<< "$hdrs" | tail -1)"  # extract the very last redirect; resolving it is needed for is_installed() check; https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Location
@@ -3415,7 +3457,7 @@ resolve_ver() {
 #
 # -s                - skip adding fetched asset in $GIT_RLS_LOG
 # -D, -A            - see install_file()
-# -O owner:group    - see install_file()
+# -O owner[:group]  - see install_file()
 # -P perms          - see install_file()
 # -d /target/dir    - see install_file()
 #                     dir to install pulled binary in, optional.
@@ -3490,7 +3532,7 @@ install_from_url_shell() {
         return 2
     fi
 
-    exe "curl -fsSL -A '$USER_AGENT' '$loc' | $shell" || return 1
+    exe "curl -fsSL -A '$USER_AGENT' --max-time 10 --connect-timeout 3 '$loc' | $shell" || return 1
     add_to_dl_log "$name" "$ver"
 }
 
@@ -3549,32 +3591,29 @@ install_file() {
 
     [[ -n "$asis" ]] && ftype='text/plain; charset=' || ftype="$(file -iLb -- "$file")"  # mock as-is filetype to enable simple file move logic
 
-    if [[ "$ftype" == 'text/plain; charset='* ]]; then  # same as executable/binary logic, but do not set executable flag
-        _rename_f || return 1
-        exe "sudo install -m644 -C --group=$USER '$file' '$target'" || return 1
-        _owner_perms
-    elif [[ "$ftype" == *'inode/directory; charset=binary' ]]; then
-        [[ -z "$name" ]] && { err "[name] arg needs to be provided when installing a directory"; return 1; }
-        _rename_f || return 1
-        target+="/$name"
-        exe "rm -rf -- '$target'" || return 1  # rm previous installation
-        exe "mv -- '$file' '$target'" || return 1
-        _owner_perms
-    elif [[ "$ftype" == *'executable; charset=binary' || \
-            "$ftype" == 'text/x-shellscript; charset='* || \
-            "$ftype" == 'text/x-perl; charset='* || \
-            "$ftype" == 'text/x-script.python; charset='* ]]; then
-        _rename_f || return 1
-        exe "sudo install -m754 -C --group=$USER '$file' '$target'" || return 1
-        _owner_perms
-    elif [[ "$ftype" == *'debian.binary-package; charset=binary' ]]; then
-        exe "sudo ${APT_ENVS:+$APT_ENVS }apt-get ${APT_OPTS:+$APT_OPTS }install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
-        exe "rm -f -- '$file'"
-    else
-        err "dunno how to install file [$file] - unknown type [$ftype]"
-        exe "rm -f -- '$file'"
-        return 1
-    fi
+    case "$ftype" in
+        'text/plain; charset='*)  # same as executable/binary logic, but do not set executable flag
+            _rename_f || return 1
+            exe "sudo install -m644 -C --group=$USER '$file' '$target'" || return 1
+            _owner_perms ;;
+        *'inode/directory; charset=binary')
+            [[ -z "$name" ]] && { err "[name] arg needs to be provided when installing a directory"; return 1; }
+            _rename_f || return 1
+            [[ ! -e "$target/$name" ]] || exe "sudo rm -rf -- '$target/$name'" || return 1  # rm previous installation
+            exe "chmod -- 'go+X' '$file'" || return 1  # make sure _everyone_ have _root_ dir listing access; non-recursive!
+            exe "sudo mv -- '$file' '$target/'" || return 1
+            _owner_perms ;;
+        *'executable; charset=binary' | 'text/x-shellscript; charset='* | 'text/x-perl; charset='* | 'text/x-script.python; charset='*)
+            _rename_f || return 1
+            exe "sudo install -m754 -C --group=$USER '$file' '$target'" || return 1
+            _owner_perms ;;
+        *'debian.binary-package; charset=binary')
+            exe "sudo ${APT_ENVS:+$APT_ENVS }apt-get ${APT_OPTS:+$APT_OPTS }install '$file'" || { err "apt-get installing [$file] failed"; return 1; }
+            exe "rm -f -- '$file'" ;;
+        *)  err "dunno how to install file [$file] - unknown type [$ftype]"
+            exe "rm -f -- '$file'"
+            return 1 ;;
+    esac
     unset _rename_f _owner_perms
 }
 
@@ -3595,23 +3634,21 @@ install_zoom() {  # https://zoom.us/download
 
 
 # htop alternative
+# - also does network stats/monit
 install_bottom() {  # https://github.com/ClementTsang/bottom
     install_from_git ClementTsang/bottom 'bottom_[-0-9.]+_amd64.deb'
 }
 
 
-# fasd-alike alternative
-# also avail in apt
-install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
-    #install_bin_from_git -N zoxide ajeetdsouza/zoxide '-x86_64-unknown-linux-musl.tar.gz'
-    install_from_git ajeetdsouza/zoxide '_amd64.deb'
-}
-
 # Smart tmux session manager for the terminal; good description from the creator:
 #  > Sesh will sort the folders you use the most on the top in the fzf filter,
 #    it does not have any sort of resurrect or continue features.
 # tl;dr you configure set of tmux sessions and folders, and optionally
-# execute a command when entering said dir; works w/ zoxide?!
+# execute a command when entering said dir; integrates w/ zoxide & friends;
+#
+# see also:
+# - https://github.com/raine/workmux
+# - https://github.com/raine/aven - one overview across projects, task capture from wherever work appears, first-class agent workflows, workspace isolation, and a polished terminal UI
 install_sesh() {  # https://github.com/joshmedeski/sesh
     install_bin_from_git -N sesh joshmedeski/sesh 'Linux_x86_64.tar.gz'
 }
@@ -3666,7 +3703,7 @@ install_clojure() {  # https://clojure.org/guides/install_clojure#_linux_instruc
     report "installing $name dependencies..."
     install_block 'rlwrap' || { err 'failed to install deps. abort.'; return 1; }
 
-    exe "curl -fsSL -A '$USER_AGENT' 'https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh' -o '$f'" || return 1
+    exe "curl -fsSL -A '$USER_AGENT' --max-time 10 --connect-timeout 3 'https://github.com/clojure/brew-install/releases/latest/download/linux-install.sh' -o '$f'" || return 1
     exe "chmod +x '$f'" || return 1
 
     exe "$f --prefix $install_target" || return 1
@@ -3761,6 +3798,14 @@ install_kustomize() {  # https://github.com/kubernetes-sigs/kustomize
     install_bin_from_git -N kustomize kubernetes-sigs/kustomize _linux_amd64.tar.gz
 }
 
+
+# IDE for Kubernetes/k8s
+install_freelens() {  # https://github.com/freelensapp/freelens
+    #install_bin_from_git -N freelens freelensapp/freelens '-linux-amd64.AppImage'
+    #install_from_git  freelensapp/freelens '-linux-amd64.deb'
+    fp_install 'app.freelens.Freelens'
+}
+
 # kubernetes (k8s) cli management
 # tag: aws, k8s, kubernetes
 install_k9s() {  # https://github.com/derailed/k9s
@@ -3791,7 +3836,7 @@ install_popeye() {  # https://github.com/derailed/popeye
 #
 # see also https://github.com/spekt8/spekt8 - visualize your Kubernetes cluster in real time
 #
-# TODO: octant development halted, it's deprecated
+# TODO: octant development halted, it's deprecated; use k9s, freelens & friends instead
 install_octant() {  # https://github.com/vmware-tanzu/octant
     install_from_git  vmware-tanzu/octant  _Linux-64bit.deb
 }
@@ -3807,7 +3852,7 @@ install_kops() {  # https://github.com/kubernetes/kops/
 
 # kubectl:  https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-kubectl-binary-with-curl-on-linux
 install_kubectl() {
-    install_from_url  kubectl  "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    install_from_url  kubectl  "https://dl.k8s.io/release/$(curl "${CURL_COMMON[@]}" https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 
     # shell completion: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#bash
     cmd_avail kubectl && exe "kubectl completion bash | tee $BASH_COMPLETIONS/kubectl.bash > /dev/null"
@@ -3919,6 +3964,8 @@ install_pam() {  # https://github.com/eduardofuncao/pam
 # https://www.gitkraken.com/download
 # see also:
 # - https://flathub.org/en/apps/io.github.pol_rivero.github-desktop-plus
+# - https://github.com/Murmele/Gittyup
+#   - looks like OSS kraken alternative
 install_gitkraken() {
     # deb url    :  https://api.gitkraken.dev/releases/production/linux/x64/active/gitkraken-amd64.deb
     # tarball url:  https://api.gitkraken.dev/releases/production/linux/x64/active/gitkraken-amd64.tar.gz
@@ -3928,13 +3975,15 @@ install_gitkraken() {
 
 # perforce git mergetool, alternative to meld;
 #
-# TODO: does not work in '25 - requires registration and whatnot
+# TODO: does not work in '25 - requires registration and whatnot.
 # alternatives:
 # - beyond compare (lincence fee but recommended): https://www.scootersoftware.com/shop
+# - diffmerge: https://www.sourcegear.com/diffmerge/
+# - kdiff3
 install_p4merge() {  # https://www.perforce.com/downloads/visual-merge-tool
     local ver loc
 
-    ver="$(curl -Ls --fail --retry 1 -X POST -d 'family=722&form_id=pfs_inline_download_10_1_1&_triggering_element_name=family' \
+    ver="$(curl "${CURL_COMMON[@]}" --retry 1 -X POST -d 'family=722&form_id=pfs_inline_download_10_1_1&_triggering_element_name=family' \
         'https://www.perforce.com/downloads/visual-merge-tool?ajax_form=1&_wrapper_format=drupal_ajax' \
         | jq 'last.data' | grep -Po 'selected=\\"selected\\">\d{2}\K\d{2}\.\d(?=/)')"
 
@@ -4014,7 +4063,7 @@ Icon=$target/app/resources/app/assets/icon.png
 Terminal=false
 Type=Application
 Categories=Development;
-" > "$dsk/PostmanCanary.desktop" || { err "unable to create Postman .desktop in [$dsk]"; return 1; }
+" >| "$dsk/PostmanCanary.desktop" || { err "unable to create Postman .desktop in [$dsk]"; return 1; }
 }
 
 
@@ -4241,7 +4290,9 @@ install_bitlbee() {  # https://github.com/bitlbee/bitlbee
     _install_slack_support
 }
 
-install_terragrunt() {  # https://github.com/gruntwork-io/terragrunt/
+
+# orchestration tool that allows Infrastructure as Code written in OpenTofu/Terraform to scale
+install_terragrunt() {  # https://github.com/gruntwork-io/terragrunt
     install_bin_from_git -N terragrunt gruntwork-io/terragrunt  terragrunt_linux_amd64
 }
 
@@ -4387,10 +4438,23 @@ install_ytdl() {  # https://github.com/yt-dlp/yt-dlp
     #install_bin_from_git -N ytdl yt-dlp/yt-dlp 'yt-dlp_linux'
 
     # yt-dlp-ejs from https://github.com/yt-dlp/ejs
+    # installation/config @ https://github.com/yt-dlp/yt-dlp/wiki/EJS#option-1-install-the-yt-dlp-ejs-python-package
     py_install -e yt-dlp-ejs '"yt-dlp[default,curl-cffi]"'  # note curl-cffi is for impersonation, see https://github.com/yt-dlp/yt-dlp#impersonation
 
     # install plugins:
     _install_pot_provider_plugin
+}
+
+
+# note it requires some deps: https://fencesandbox.com/docs/quickstart#linux-dependencies
+#
+# useful examples:
+# - fence -m --fence-log-file /tmp/fence.log -- claude
+install_fence() {  # https://github.com/fencesandbox/fence
+    install_bin_from_git -N fence fencesandbox/fence '_Linux_x86_64.tar.gz'
+
+    # verify no features we care about are unavail:
+    fence --linux-features | grep -v 'eBPF monitor' | grep unavailable && err 'some fence features unavail, run [fence --linux-features]'
 }
 
 
@@ -4403,6 +4467,9 @@ install_ytdl() {  # https://github.com/yt-dlp/yt-dlp
 #       - comes w/ its own editor
 #  - claude code
 #  - opencode
+#  - pi
+#  - not really alternative, but related: https://github.com/lidge-jun/opencodex - use any model with
+#    claude/codex/opencode[wip] front-ends
 #
 # chat-based pair-programming. as opposed to plandex which has git-like CLI with various stateful commands.
 # plandex itself is more stateful - it accumulates changes to its own git repo you
@@ -4436,9 +4503,103 @@ install_aider_desk() {  # https://github.com/hotovo/aider-desk
 #   - zed
 # - see other opencode-related projects:
 #   - https://github.com/alberti42/Zsh-Opencode-Tab
+#     - Turn a comment into a command by pressing TAB
+# - alternatives:
+#  - https://github.com/code-yeongyu/oh-my-openagent
+#  - https://github.com/1jehuang/jcode - more ram-efficient
+#  - https://github.com/earendil-works/pi - sounds like lighter weight than OC, prolly leading to token cost savings
+#    - they have their own plugin/extension system: https://pi.dev/packages
+#    - crazy extendible, e.g. see it's (arguably bloated) oh-my-pi extension
 install_opencode() {  # https://github.com/anomalyco/opencode
     # alternatively install via mise: `mise use -g opencode`
     install_bin_from_git -N opencode anomalyco/opencode 'opencode-linux-x64.tar.gz'
+}
+
+
+# java LSP implementation; required by claude's java plugin
+#
+# Note: if we're using serena, we likely don't have to install most of the
+#       per-lang LSP-s ourselves -- serena takes care of it
+install_jdtls() {  # https://github.com/eclipse-jdtls/eclipse.jdt.ls#installation
+    local url
+
+    # we want GUI version, not console:
+    url="$(resolve_dl_urls -S 'https://download.eclipse.org/jdtls/milestones/' '/jdtls/milestones/\d+\.\d+\.\d+')" || return 1
+    url="$(resolve_dl_urls "$url" 'jdt-language-server-.*.tar.gz')" || return 1
+
+    install_from_url -O root:root -Dd /opt jdt-language-server "$url" || return 1
+    create_link '/opt/jdt-language-server/bin/jdtls' "$HOME/bin/jdtls"
+}
+
+
+# list of alternatives:
+# - https://github.com/1broseidon/cymbal
+# - https://github.com/oraios/serena
+#   - follow https://github.com/oraios/serena#quick-start
+# - https://github.com/ktnyt/cclsp
+#   - !discontinued! -- recommends claude plugins! https://github.com/ktnyt/cclsp/issues/40
+# - https://github.com/nesaminua/claude-code-lsp-enforcement-kit
+#   - doesn't provide LSP, but sets up hooks to use external LSP: https://github.com/nesaminua/claude-code-lsp-enforcement-kit#-works-with-any-lsp-mcp-server
+#      - looks hardcoded and _heavily_ FE-dev-heavy
+#   - note alternatively Serena has their own hooks: https://oraios.github.io/serena/02-usage/030_clients.html#claude-code
+# - https://github.com/ast-grep/ast-grep-mcp
+#   - not LSP, but... close and lighter
+# - NOTE:
+#   - per https://oraios.github.io/serena/02-usage/020_running.html#streamable-http-mode :
+#     > Serena is a stateful MCP server, and only one coding project can be active
+#     at a time. Therefore, starting a single Serena instance and connecting it to
+#     multiple clients is only appropriate if all clients will be working on the same project.
+#   - they have paid jetbrains plugin that supposedly offers way better perf: https://oraios.github.io/serena/02-usage/025_jetbrains_plugin.html
+#   - see claude-specific setup @ https://oraios.github.io/serena/02-usage/030_clients.html#claude-code
+install_agentic_lsp() {
+    # TODO: need to -n/@include also mise profile? (for py runtimes):
+    #exe 'bb -DM -n base,py  uv tool install -p 3.13 serena-agent' || return $?
+
+    exe 'bb -DM -n base,py -- uv tool install --upgrade serena-agent' || return $?
+    # or why not pipx:
+    #exe 'bb -DM -n base,py pipx install serena-agent' || return $?
+
+    # `serena init` writes into $SERENA_HOME, so have to run it from the actual end-sandbox(es):
+    exe 'bb -DM -n dev-work -- serena init' || return $?
+
+    # TODO: verify hooks are set in $CLAUDE_CONFIG_DIR/settings.json
+}
+
+
+# https://github.com/colbymchenry/codegraph#user-content-3-initialize-projects
+#
+# few major setup bits:
+# - claude.md (or in our case system prompt) instructions, we manage via cz
+# - hook to remind usage -- potentially manual, unless settings.json was checked into dots
+# - mcp addition in claude.json -- done in this function
+#
+# - to quickly compare required config changes against latest upstream, do
+#   - $ bb -n base-simple,mise zsh
+#   - $ NPM_CONFIG_PREFIX=/tmp/cg npm i -g @colbymchenry/codegraph
+#   - $ /tmp/cg/bin/codegraph install --yes
+#   OR, even cleaner:
+#   - $ bb -n base-simple zsh
+#   - $ curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
+#   - $ codegraph install --yes
+#   - $ cat ~/.claude.json
+#   - $ cat ~/.claude/settings.json
+#   - $ cat ~/.claude/CLAUDE.md
+install_codegraph() {
+    exe "bb -DM -n base,mise,node -- npm i -g @colbymchenry/codegraph" || return 1
+}
+
+
+# few manual setup bits:
+# - global CLAUDE.md instructions
+#
+# - to quickly compare required config changes against latest upstream, do
+#   - $ bb -n base-simple zsh
+#   - $ graymatter init --global
+#   - $ nvim ~/.claude/CLAUDE.md
+#   - $ nvim ~/.config/opencode/AGENTS.md
+#   - $ cat .mcp.json
+install_graymatter() {
+    install_bin_from_git -N graymatter angelnicolasc/graymatter '_linux_amd64.tar.gz' || return 1
 }
 
 
@@ -4457,16 +4618,17 @@ install_cursor() {
 # - jetbrains air
 #
 # NOTE: to debug what the installer really installs under our homedir, do:
-#   - $ bb -s @include=base-simple  zsh
+#   - $ bb -n base-simple  zsh
 #   - <enter the installation cmd, e.g. `curl -fsSL https://claude.ai/install.sh | bash`>
 #   - $ tree -a ~
+# NOTE: also available as native pkg: https://code.claude.com/docs/en/setup#install-with-linux-package-managers
 install_claude() {  # https://code.claude.com/docs/en/terminal-guide#macos-and-linux
     #install_from_url_shell  claude 'https://claude.ai/install.sh'
 
     # or, same but sandboxed:
-    local ver d tmpdir json_conf
+    local ver d tmpdir json_conf conf
 
-    # note the url is from https://claude.ai/install.sh header: (+/latest somewhere else in script appended):
+    # note the url is from https://claude.ai/install.sh head: (+/latest somewhere else in script appended):
     ver="$(resolve_ver 'https://downloads.claude.ai/claude-code-releases/latest')" || return 1
     is_installed "$ver" claude && return 2
 
@@ -4485,7 +4647,33 @@ install_claude() {  # https://code.claude.com/docs/en/terminal-guide#macos-and-l
 EOF
 )
     exe "bb -DM -j '$json_conf' sh -c 'curl -fsSL https://claude.ai/install.sh | bash'" || return 1
+    # TODO: do not move to $d as we don't want it to be used outside of
+    #       sandbox; perhaps move link to PATH-shims dir instead?:
     exe "mv -f -- '$tmpdir/claude' '$d/claude'"
+    is_dir_empty "$tmpdir" || err "[$tmpdir] did not remain empty, but contains something unexpected!"  # sanity
+    add_to_dl_log  claude "$ver"
+
+    # configure/add MCPs: {{{
+    conf="$XDG_CONFIG_HOME/claude/work/.claude.json"
+    #jq -e .mcpServers "$conf" >/dev/null || err ".mcpServers key not found in [$conf]"  # key won't exist on a fresh install...
+
+    # `claude mcp add` command is annoying as it exits non-zero if mcp already
+    # defined; also if some file is missing, it'll start interactive wizard;
+    # that's why we edit raw json instead
+    _add_mcp_server() {
+        local name="$1" json="$2" tmpfile="$TMP_DIR/.claude_setup-$RANDOM"
+        #jq -e ".mcpServers.$name" "$conf" &>/dev/null && return  # alredy defined, bail
+        jq -reM '""' <<< "$json" 2>/dev/null || { err "[$name] mcp definition not a valid json: [$json]"; return 1; }
+        [[ -s "$conf" ]] || echo '{"mcpServers":{}}' > "$conf" || err '.claude init err'
+        jq --arg name "$name" --argjson server "$json" \
+           '.mcpServers[$name] = $server' "$conf" > "$tmpfile" || err '.claude jq err'
+        is_same_json "$tmpfile" "$conf" || exe "mv -- '$tmpfile' '$conf'"
+    }
+    _add_mcp_server fff        '{"type":"stdio","command":"fff-mcp","args":[]}'
+    _add_mcp_server serena     '{"type":"stdio","command":"serena","args":["start-mcp-server","--context=claude-code","--project-from-cwd"]}'  # see https://oraios.github.io/serena/02-usage/030_clients.html#claude-code
+    _add_mcp_server codegraph  '{"type":"stdio","command":"codegraph","args":["serve","--mcp"]}'
+    _add_mcp_server graymatter '{"type":"stdio","command":"graymatter","args":["mcp","serve"]}'  # from https://github.com/angelnicolasc/graymatter#global-install-all-projects
+    # }}} /mcp
 }
 
 
@@ -4495,7 +4683,7 @@ EOF
 install_plandex() {
     local VERSION RELEASES_URL ENCODED_TAG url
 
-    VERSION="$(curl -sLf -A "$USER_AGENT" -- https://plandex.ai/v2/cli-version.txt)" || return 1
+    VERSION="$(curl "${CURL_COMMON[@]}" -- https://plandex.ai/v2/cli-version.txt)" || return 1
 
     RELEASES_URL="https://github.com/plandex-ai/plandex/releases/download"
     ENCODED_TAG="cli%2Fv${VERSION}"
@@ -4505,11 +4693,16 @@ install_plandex() {
 }
 
 
-# execute commands on PC - i.e. natural language interface for computers
-# https://github.com/OpenInterpreter/open-interpreter
+# ~~A coding agent for open models like Kimi K3~~  execute commands on PC - i.e. natural language interface for computers
+#
+# TODO: looks like this project has gone some heavy rework. sounds like it's
+#       claude/opencode alternative, but supposed to work _with_ them?
+#
+# https://github.com/openinterpreter/openinterpreter
 # https://docs.openinterpreter.com/getting-started/setup
 #
 # TODO: install fails
+# TODO2: last pypi release was back in '24, think we shouldn't install via pipx!
 #
 # alternative:
 # - https://github.com/gptme/gptme
@@ -4671,6 +4864,7 @@ install_procs() {  # https://github.com/dalance/procs
 # portable process inspector for Linux, written in bash
 # alternatives:
 # - https://github.com/pranshuparmar/witr
+#   - Why is this running? Trace any process, port, container, or file back to what started it - CLI + TUI
 install_procinfo() {  # https://github.com/wenekar/procinfo
     install_from_url  procinfo 'https://raw.githubusercontent.com/wenekar/procinfo/refs/heads/main/procinfo.sh'
 }
@@ -4686,6 +4880,7 @@ install_eza() {  # https://github.com/eza-community/eza
 }
 
 
+# launch via `gh dash`
 install_gh_extensions() {
     is_pkg_installed gh || { err 'gh pkg not installed'; return 1; }
 
@@ -4695,8 +4890,37 @@ install_gh_extensions() {
 
 
 # git worktree manager
+# Worktrunk is a CLI for git worktree management, designed for running AI agents in parallel
+# agent config: https://worktrunk.dev/claude-code/
+#
+# alternatives/related:
+#  - workmux
+#
+# tags: ai-tooling
 install_worktrunk() {  # https://github.com/max-sixty/worktrunk
-    install_bin_from_git -n wt -N wt max-sixty/worktrunk '-x86_64-unknown-linux-musl.tar.xz'
+    install_bin_from_git -n wt -N wt  max-sixty/worktrunk '-x86_64-unknown-linux-musl.tar.xz'
+}
+
+
+# FFF is a file search library/MCP, NOT a cli!
+#
+# note codex requires extra config: codex mcp add fff -- "$HOME/.local/bin/fff-mcp"
+# For e.g. agent setup, see install script's print_setup_instructions()
+#
+# NOTE: mcp is likely configured globally at ~/.claude.json (we don't want to move this under ~/.config to apply to all claude accounts)
+#   - this also means if you change the default install dir, you gotta update .claud.json!
+# NOTE2: there's also a note/instruction in CLAUDE.md to use fff for search, per fff docs
+# - see also/alternatives:
+#   - https://github.com/ast-grep/ast-grep-mcp
+#     - not LSP, but... close and lighter
+#
+# tags: ai-tooling
+install_fff() {  # https://github.com/dmtrKovalenko/fff#mcp-server
+    # install script @ https://github.com/dmtrKovalenko/fff/blob/main/install-mcp.sh
+    # - defines source release file in detect_platform() & get_latest_release_tag()
+    # - its download_binary() saves into: "${INSTALL_DIR}/${BINARY_NAME}${ext}"
+    install_bin_from_git -N fff-mcp  dmtrKovalenko/fff 'fff-mcp-x86_64-unknown-linux-musl' || return
+    #MANUAL_STEPS+=('fff-mcp: config agents -- refer to print_setup_instructions() in https://github.com/dmtrKovalenko/fff/blob/main/install-mcp.sh')
 }
 
 
@@ -4720,11 +4944,14 @@ install_dive() {  # https://github.com/wagoodman/dive
 
 # similar to nvim's telescope; comes w/ shell binding; e.g. ctrl+t can complete
 # being context-aware, e.g. completing for dirs/files/git repos etc
+#
+# note it has many editor plugins: intellij, zed, nvim...
 install_television() {  # https://github.com/alexpasmantier/television
     #install_from_git  alexpasmantier/television 'x86_64-unknown-linux-gnu.deb' || return
     install_bin_from_git -N tv  alexpasmantier/television 'x86_64-unknown-linux-gnu.tar.gz' || return
 
     # https://alexpasmantier.github.io/television/user-guide/shell-integration#customizing-shell-integration-scripts
+    # see also our ticket @ https://github.com/alexpasmantier/television/discussions/1100
     _rm_unwanted_binds() {
         # zsh has:   bindkey '^R' tv-shell-history
         # bash has:  bind -x '"\C-R": tv_shell_history
@@ -4745,7 +4972,6 @@ install_systemd_manager_tui() {  # https://github.com/matheus-git/systemd-manage
 
 
 # fzf-alternative, some tools use it as a dep
-# last commit sept '23
 install_peco() {  # https://github.com/peco/peco#installation
     install_bin_from_git -N peco peco/peco '_linux_amd64.tar.gz'
 }
@@ -4844,31 +5070,34 @@ install_asdf() {
 #
 # plugins org: https://github.com/mise-plugins
 # available tools: https://mise.jdx.dev/registry.html
-install_mise() {
-    install_bin_from_git -N mise jdx/mise '-linux-x64' || return
-    cmd_avail mise || { err '[mise] not on PATH?'; return 1; }  # sanity
+install_setup_mise() {
+    _install_mise() {
+        install_bin_from_git -N mise jdx/mise '-linux-x64' || return
+        cmd_avail mise || { err '[mise] not on PATH?'; return 1; }  # sanity
 
-    [[ "$MODE" -eq 1 ]] && eval "$(mise activate bash --shims)"  # use shims to load dev tools
+        [[ "$MODE" -eq 1 ]] && eval "$(mise activate bash --shims)"  # use shims to load dev tools
 
-    # set up shell autocompletion: https://mise.jdx.dev/installing-mise.html#autocompletion
-    exe 'mise use --global usage'
-    exe "mise completion bash --include-bash-completion-lib | tee $BASH_COMPLETIONS/mise.bash > /dev/null"
-    exe "mise completion zsh | sudo tee $ZSH_COMPLETIONS/_mise > /dev/null"
+        # set up shell autocompletion: https://mise.jdx.dev/installing-mise.html#autocompletion
+        exe 'mise use --global usage'
+        exe "mise completion bash --include-bash-completion-lib | tee $BASH_COMPLETIONS/mise.bash > /dev/null"
+        exe "mise completion zsh | sudo tee $ZSH_COMPLETIONS/_mise > /dev/null"
 
-    # trust our user config, otherwise the initial installation of e.g. ly fails; see https://github.com/jdx/mise/discussions/8088
-    # (as for -C opt, see https://stackoverflow.com/a/39549585/1803648)
-    sudo -C64 install -DCTm644 <(printf '[settings]\ntrusted_config_paths=["%s/.config/mise/config.toml"]' "$HOME") \
-        /root/.config/mise/config.toml || err "trusting $USER mise config failed w/ $?"
+        exe "mise trust --ignore '$HOME/.local/share/chezmoi/dot_config/mise/config.toml'"  # ignore it, so we don't get warnings when we cd to dotfiles
+
+        # trust our user config, otherwise the initial installation of e.g. ly fails; see https://github.com/jdx/mise/discussions/8088
+        # (as for sudo's -C opt, see https://stackoverflow.com/a/39549585/1803648)
+        sudo -C64 install -DCTm644 <(printf '[settings]\ntrusted_config_paths=["%s/.config/mise/config.toml"]' "$HOME") \
+            /root/.config/mise/config.toml || err "trusting $USER mise config failed w/ $?"
+    }
+
+    _install_mise
+    exe 'mise install'  # install the globally-defined tools (and local, if pwd has mise.toml)
+    exe 'mise upgrade'  # upgrade tracked tools
 }
 
 
 install_webdev() {
     is_server && { report "we're server, skipping webdev env installation."; return; }
-
-    install_mise
-    exe "mise trust --ignore '$COMMON_DOTFILES/home/.config/mise/config.toml'"  # ignore it, so we don't get warnings when we cd to $COMMON_DOTFILES/
-    exe 'mise install'  # install the globally-defined tools (and local, if pwd has mise.toml)
-    exe 'mise upgrade'  # upgrade tracked tools
 
     # make sure the constant link to latest node exec ($NODE_LOC) is set up (normally managed by .bashrc, but might not have been created, as this is install_sys).
     # eg some nvim plugin(s) might reference $NODE_LOC
@@ -5503,11 +5732,11 @@ build_i3() {
         local f
         f="$TMP_DIR/i3-patch-${RANDOM}.patch"
 
-        curl --fail -o "$f" 'https://raw.githubusercontent.com/laur89/i3-extras/master/i3-v-h-split-label-swap.patch' || { err "i3-v-h-split-label-swap-patch download failed"; return 1; }
+        curl "${CURL_COMMON[@]}" -o "$f" 'https://raw.githubusercontent.com/laur89/i3-extras/master/i3-v-h-split-label-swap.patch' || { err "i3-v-h-split-label-swap-patch download failed"; return 1; }
         report "patching v-h split label..."
         patch -p1 < "$f" || { err "applying i3-v-h-split-label-swap-patch failed"; return 1; }
 
-        curl --fail -o "$f" 'https://raw.githubusercontent.com/maestrogerardo/i3-gaps-deb/master/patches/0001-debian-Disable-sanitizers.patch' || { err "disable-sanitizers-patch download failed"; return 1; }
+        curl "${CURL_COMMON[@]}" -o "$f" 'https://raw.githubusercontent.com/maestrogerardo/i3-gaps-deb/master/patches/0001-debian-Disable-sanitizers.patch' || { err "disable-sanitizers-patch download failed"; return 1; }
         report "patching removal of debian sanitizers..."
         patch --forward -r - -p1 < "$f" || { err "applying disable-sanitizers.patch failed"; return 1; }
     }
@@ -5633,6 +5862,14 @@ install_i3() {
 #   - note uv has pipx analogue: uvx
 #   - also supports PEP 723 to add dependencies to file hdr, so can run these
 #     single scripts via uvx while also using deps; also supported by pipx! - https://peps.python.org/pep-0723/
+# note:
+#   - to reinstall _all_ packages e.g. when system py ver upgraded, then `pipx reinstall-all`
+#     - equivalent uv alternative: `uv tool upgrade --reinstall --all`
+#       - note: in may be broken, see https://github.com/astral-sh/uv/issues/11534 & https://github.com/astral-sh/uv/issues/9739
+#   - pipx also allows uv as backend instead of default pip (possibly even defaults to it if avail)
+#   - PIPX_GLOBAL_BIN_DIR if --global is used
+#   - PIPX_HOME
+#   - PIPX_BIN_DIR
 py_install() {
     local opt pkgs extra_deps main_pkg OPTIND
 
@@ -5648,15 +5885,15 @@ py_install() {
     done
     shift "$((OPTIND-1))"
 
-    pkgs+=("$@")
+    [[ -z "$main_pkg" ]] && pkgs+=("$@")
+    [[ "${#extra_deps[@]}" -gt 0 && "${#pkgs[@]}" -ne 1 ]] && { err "cannot use -e flag when installing >1 main pkg"; return 1; }  # sanity
     exe "pipx install ${pkgs[*]}" || return $?
 
     # inject extra dependencies to $main_pkg env:
     [[ "${#extra_deps[@]}" -eq 0 ]] && return 0
-    [[ "${#pkgs[@]}" -eq 1 ]] || { err "cannot use -e flag when installing >1 main pkg"; return 1; }  # sanity
     if [[ -z "$main_pkg" ]]; then
         main_pkg="${1//\"/}"  # first remove double-quotes, e.g. if '"yt-dlp[default,curl-cffi]"' was provided
-        main_pkg="${main_pkg%%\[*}"  # remove after [ (inclusive)
+        main_pkg="${main_pkg%%\[*}"  # remove after '[' (inclusive)
     fi
     exe "pipx inject '$main_pkg' ${extra_deps[*]}"
 }
@@ -5686,7 +5923,7 @@ fp_install() {  # flatpak install
     exe "flatpak install -y --noninteractive '$remote' '$ref'" || return 1
 
     # looks like link creation no longer required as of '26, as FP appears to be creating
-    # .desktop files somewhere under ~/.local/share/flatpak/exports/share/applications
+    # .desktop files somewhere under ~/.local/share/flatpak/exports/share/applications or /var/lib/flatpak/exports/share/applications
     # that are picked up by rofi.
     if [[ -n "$link" ]]; then
         # there's still some confusion, as by default $ flatpak install should
@@ -5739,7 +5976,7 @@ install_i3_deps() {
 
     # install i3-cycle-windows   # https://github.com/DavsX/dotfiles/blob/master/bin/i3_cycle_windows
     # this script defines a 'next' window, so we could bind it to someting like super+mouse_wheel;
-    #curl --fail --output "$f" 'https://raw.githubusercontent.com/DavsX/dotfiles/master/bin/i3_cycle_windows' \
+    #curl "${CURL_COMMON[@]}" --output "$f" 'https://raw.githubusercontent.com/DavsX/dotfiles/master/bin/i3_cycle_windows' \
             #&& exe "chmod +x -- '$f'" \
             #&& exe "mv -- '$f' $HOME/bin/i3-cycle-windows" || err "installing i3-cycle-windows failed /w $?"
 
@@ -5873,7 +6110,7 @@ build_deb() {
   * New upstream release
 
  -- la.packager.eu <la@packager.eu>  $(date --rfc-email)
-" > "$d/debian/changelog" || return 1
+" >| "$d/debian/changelog" || return 1
         # OR use dhc:  $ dch --create -v 0.0-0 --package $pkg_name
 
         # create control:
@@ -5884,7 +6121,7 @@ Build-Depends: ${build_deps:+$build_deps, }debhelper-compat (= 13)
 Package: $pkg_name
 Architecture: any
 Description: custom-built $pkg_name package
-" > "$d/debian/control" || return 1
+" >| "$d/debian/control" || return 1
 
         # create rules:
         #printf '#!/usr/bin/make -f
@@ -5905,7 +6142,7 @@ Description: custom-built $pkg_name package
 	#make install DESTDIR=debian/memcached
 
 #override_dh_gencontrol:
-	#dh_gencontrol -- -v$(PACKAGEVERSION)' > debian/rules || return 1
+	#dh_gencontrol -- -v$(PACKAGEVERSION)' >| debian/rules || return 1
         printf '#!/usr/bin/make -f
 
 #DISTRIBUTION = $(shell sed -n "s/^VERSION_CODENAME=//p" /etc/os-release)
@@ -5921,7 +6158,7 @@ override_dh_auto_test:
 override_dh_auto_configure:
 	dh_auto_configure -- %s --disable-sanitizers
 override_dh_gencontrol:
-	dh_gencontrol -- -v$(PACKAGEVERSION)' "${dh_extra:+ $dh_extra}" "$configure_extra" > "$d/debian/rules" || return 1
+	dh_gencontrol -- -v$(PACKAGEVERSION)' "${dh_extra:+ $dh_extra}" "$configure_extra" >| "$d/debian/rules" || return 1
     fi
 
     # - note built .deb will end up in $d/
@@ -6017,6 +6254,15 @@ install_zed() {
     sed -i --follow-symlinks "s|Icon=zed|Icon=$BASE_PROGS_DIR/zed/share/icons/hicolor/512x512/apps/zed.png|g" "$desktop_file_path"
     sed -i --follow-symlinks "s|Exec=zed|Exec=$BASE_PROGS_DIR/zed/bin/zed|g" "$desktop_file_path"
     exe "install -m644 -CT '$desktop_file_path' '$dsk/zed.desktop'" || { err "installing [$desktop_file_path] file failed w/ $?"; return 1; }
+}
+
+
+# TODO: does not work as of '26 -- cannot resolve dl url
+install_intellij_toolbox() {
+    local url
+
+    url="$(resolve_dl_urls 'https://www.jetbrains.com/toolbox-app/download/download-thanks.html?platform=linux' 'jetbrains-toolbox-[.0-9]+.tar.gz')" || return 1
+    install_from_url -D -d "$BASE_PROGS_DIR" jetbrains-toolbox "$url" || return 1
 }
 
 
@@ -6349,15 +6595,18 @@ install_from_repo() {
     )
 
     declare -ar block1_nonwin=(
-        # firmware-linux  # bunch of firmware, free & non-free
+        #firmware-linux  # bunch of firmware, free & non-free
         smartmontools
         nvme-cli  # https://github.com/linux-nvme/nvme-cli
                   # example commands: `sudo nvme smart-log /dev/nvme0n1`, `sudo nvme error-log /dev/nvme0n1`
         gsmartcontrol  # graphical user interface for smartctl; see also: qdiskinfo, https://github.com/AnalogJ/scrutiny
-        ntfs-3g  # TODO: note ntfs3 is in kernel nowadays, unsure if and when we want to remove ntfs-3g pkg - they're not the same
+        #ntfs-3g  # TODO: note ntfs3 is in kernel nowadays, unsure if and when we want to remove ntfs-3g pkg - they're not the same
+                  # NOTE: ntfs3 is in kernel, but IIRC unmaintained in '26, whereas the OG ntfs saw more love again in linux 7.1 & .2; see https://www.reddit.com/r/linux/comments/1vqc9wk/linux_kernel_72_has_been_released/p457htw/
         kdeconnect
         #erlang  # avail in mise
         cargo  # Rust package manager
+        rustup # installs The Rust Programming Language from the official release channels, enabling you to easily switch between stable, beta, and nightly compilers and keep them updated;
+               # note we really should use mise for ver management, but even mise uses rustup under the hood, and e.g. Serena requires rustup as well
         acpid  # Advanced Configuration and Power Interface event daemon
         lm-sensors  # utilities to read temperature/voltage/fan sensors; https://github.com/hramrach/lm-sensors
         #psensor  # GTK+ application for monitoring hardware sensors; unsure, but maybe x11?
@@ -6382,8 +6631,9 @@ install_from_repo() {
         auditd  # user space utilities for storing and searching the audit records generated by the audit subsystem
         systemd-container  # gives us systemd-nspawn command, see https://wiki.debian.org/nspawn
         systemd-zram-generator  # create zram device for swap space
-        systemd-oomd  # userspace out-of-memory (OOM) killer; as alternative, consider https://github.com/rfjakob/earlyoom
-                      # `oomctl` to show current config & mem usage
+        #systemd-oomd  # userspace out-of-memory (OOM) killer; as alternative, consider https://github.com/rfjakob/earlyoom
+                       # `oomctl` to show current config & mem usage
+        earlyoom
         # haveged is a entropy daemon using jitter-entropy method to populate entropy pool;
         # some systems might start up slowly as entropy device is starved. see e.g. https://lwn.net/Articles/800509/, https://serverfault.com/a/986327
         # edit: should not be needed, as jitter entropy collecter was introduced
@@ -6517,10 +6767,14 @@ install_from_repo() {
             # is passing through, how long it has taken, how near to completion it is, and an estimate of how long it will be until completion
             # https://www.ivarch.com/programs/pv.shtml
         #pup  # jq for html parsing; see: https://github.com/gromgit/pup
+              # alternatives: https://github.com/mgdm/htmlq
         crudini  # .ini file manipulation tool
         #lxtask  # GUI task manager for the LXDE
         htop  # https://htop.dev/
         glances  # Curses-based monitoring tool; https://github.com/nicolargo/glances
+                 # optionally exposes MCP, see https://github.com/nicolargo/glances#usage-
+                 # note by default starts a process in server mode as systemd
+                 # daemon; run `glances -c localhost` to connect to it in client mode
         #bpytop  # btop command; https://github.com/aristocratos/bpytop
         iotop  # top-like I/O monitor; handy for answering the question "Why is the disk churning so much?"
         ncdu  # ncurses disk usage viewer
@@ -6619,6 +6873,7 @@ install_from_repo() {
         # for that PAM integration is needed, but KPXC project is not really
         # interested in taking care of one, so alternatives have emerged: https://github.com/sumwale/keepassxc-unlock
         keepassxc-full
+        ssh-agent-filter  # filtering proxy for ssh-agent; likely used by our bwrap/bubblebox sandboxes
         pwgen  # provides pwgen binary, e.g. `pwgen -s 40 1`
         gnupg
         dirmngr  # server for managing and downloading OpenPGP and X.509 certificates, as well as updates and status signals related to those certificates;
@@ -6638,7 +6893,8 @@ install_from_repo() {
     declare -ar block3_nonwin=(
         #spotify-client
         #mopidy
-        playerctl  # cli utility and library for controlling media players that implement the MPRIS D-Bus Interface Specification. Compatible players include audacious, cmus, mopidy, mpd, mpv, quod libet, rhythmbox, spotify, and vlc; https://github.com/altdesktop/playerctl
+        playerctl  # cli utility and library for controlling media players that implement the MPRIS D-Bus Interface Specification.
+                   # Compatible players include audacious, cmus, mopidy, mpd, mpv, quod libet, rhythmbox, spotify, and vlc; https://github.com/altdesktop/playerctl
                    # note last commit is from '21
         socat
         #yt-dlp  # dl vids from yt & other sites; https://github.com/yt-dlp/yt-dlp
@@ -6741,6 +6997,8 @@ install_from_repo() {
         copyq  # TODO: avail as flatpak; notable alternatives: - https://github.com/NiffirgkcaJ/all-in-one-clipboard - for gnome shell
                                                              # - https://github.com/savedra1/clipse - nice TUI manager
         copyq-plugins
+        qt6-image-formats-plugins  # contains plugins for adding support for ICNS, MNG, TGA, TIFF, WBMP and WEBP image formats; see https://github.com/hluk/CopyQ/issues/3661
+                                   # we need it for webp support in copyq
         msmtp-mta  # msmtp is an SMTP client that can be used to send mails from Mutt and probably other
                    # MUAs (mail user agents)  # This package is compiled with SASL and TLS/SSL support
         #thunderbird  # TODO: avail as flatpak; alternatives: betterbird
@@ -6790,6 +7048,8 @@ install_from_repo() {
         podman
         podman-docker  # installs a Docker-compatible CLI interface
         docker-compose
+        aardvark-dns  # required for inter-container DNS resolution; it's a recommended pkg for netavark, which itself is a dependency for podman;
+                      # if podman dns is hecked, make sure `podman info --debug -f=json | jq .host.networkBackendInfo.dns.package` is set and not "Unknown"/null/etc
         uidmap  # needed to run podman containers as non-root; note it's also a recommended pkg for podman; see https://forum.openmediavault.org/index.php?thread/42841-podman-seams-to-miss-uidmap/
         passt   # needed for non-root podman container networking; note it's also a recommended pkg for podman;
         #buildah  # OCI image build tool; kind of alternative to dockerfiles, see https://github.com/containers/buildah#example
@@ -6801,6 +7061,7 @@ install_from_repo() {
         tofu
         gh  # github cli; either from debian or github's own repo; https://github.com/cli/cli
         tealdeer  # rust-based tl;dr client (provides `tldr` cmd)  # https://github.com/tealdeer-rs/tealdeer/
+                  # see also: https://github.com/tldr-pages/tlrc
     )
     # old/deprecated block4:
 
@@ -6888,6 +7149,7 @@ install_from_repo() {
 #   they're gone in virt-manager, but files are still at /var/lib/libvirt/images/ !!!
 # - if you get error [Requested operation is not valid: network 'default' is not active],
 #   see https://blog.programster.org/kvm-missing-default-network
+# TODO2: do we need to add us to 'kvm' group as well or not? at least debian page doesn't mention it
 install_kvm() {
     # virt-install - cli utils to create & edit virt machines
     install_block -f '
@@ -7172,14 +7434,25 @@ install_docker_shell_completion() {
 # alternatives:
 # - containerd + nerdctl
 setup_podman() {
+    local i
     is_d -m 'is podman even installed?' /etc/containers || return 1
 
     # touch file to avoid this msg printed to stdout whenever we use `docker` command:
     # > Emulate Docker CLI using podman. Create /etc/containers/nodocker to quiet msg.
     [[ -e /etc/containers/nodocker ]] || exe 'sudo touch /etc/containers/nodocker'
 
-    exe 'systemctl --user enable podman.socket'  # see https://golang.testcontainers.org/system_requirements/using_podman/#podman-socket-activation
+    exe 'systemctl --user enable podman.socket'  # create the podman.sock under $XDG_RUNTIME_DIR;
+                                                 # e.g. required for testcontainers: see https://golang.testcontainers.org/system_requirements/using_podman/#podman-socket-activation
     install_docker_shell_completion
+
+    # by default `podman login` stores auth.json in $XDG_RUNTIME_DIR, meaning it's ephemeral;
+    # remember this file location is referenced from our sandbox et al.
+    i="$HOME/.config/containers/auth.json"
+    if ! [[ -s "$i" ]]; then
+        define_secret || return 1
+        podman login --authfile "$i" -u layr --password-stdin \
+            < <(keepassxc-cli show -q --attributes password -- "$KPXC_DB" Docker <<< "$KPXC_PASS") docker.io || { err 'docker login failed'; return 1; }
+    fi
 
     return 0  # atm not using btrfs storage driver, as it's not really recommended/used by the devs themselves
     #################################################
@@ -7378,26 +7651,35 @@ choose_step() {
 
     if [[ "$BOOTSTRAP_LAUNCHER_TAG" != Y ]] && [[ "$MODE" -eq 1 || "$LOGGING_LVL" -ge 20 ]] && cmd_avail script; then
         report "restarting logic via [script] to capture terminal output; sudo passwd will be asked again..."
-        sleep 2
+        sleep 3
+        #report "running [script --flush --quiet --return --log-out '$SCRIPT_LOG' --command 'BOOTSTRAP_LAUNCHER_TAG=Y MODE=$MODE $0 ${ORIG_OPTS[*]}']"
         script --flush --quiet --return --log-out "$SCRIPT_LOG" \
             --command "BOOTSTRAP_LAUNCHER_TAG=Y MODE=$MODE $0 ${ORIG_OPTS[*]}"
         local e=$?
 
         # ways to clean up $script output:
-        # $ ansi2html <"$SCRIPT_LOG" > out.html
+        # $ ansi2html <"$SCRIPT_LOG" >| out.html
         # $ ansi2txt <file.log | col -bp >| 111
-        # - note both ansi2* commands come from [colorized-logs] package
+        #    - note both ansi2* commands come from [colorized-logs] package
+        # $ cat --show-nonprinting "$SCRIPT_LOG"
+        # $ sed -r 's/\x1b\[[0-9;]*m//g'
         if is_f -n "$SCRIPT_LOG"; then
             if cmd_avail ansi2txt; then
-                ansi2txt <"$SCRIPT_LOG" | col -bp > "${SCRIPT_LOG}.cleaned"
-                echo -e "    cleaned up terminal log can be found at [${SCRIPT_LOG}.cleaned]"
-            else
-                echo -e "    terminal log can be found at [$SCRIPT_LOG]"
+                ansi2txt <"$SCRIPT_LOG" | col -bp >| "${SCRIPT_LOG}.cleaned"
+                echo -e "    (cleaned up terminal log can be found at [${SCRIPT_LOG}.cleaned])"
             fi
+
+            # view the log preserving the colors & resetting to column 0 when needed (spinners/loaders et at):
+            #printf '    view the log via [sed -E "s/.*\\r([^\\r])/\\1/" %s | bat]\n' "$SCRIPT_LOG"
+
+            sed -i -E 's/.*\r([^\r])/\1/' "$SCRIPT_LOG"
+            echo -e "    full terminal replay avail at [$SCRIPT_LOG]"
         fi
         exit $e
     fi
 
+    exe "cd -- '$TMP_DIR'" || fail  # not needed, but just in case to keep accidental trash in tmp;
+                                    # also keep this _after_ restarting w/ `script`
     trap 'cleanup; exit' EXIT HUP INT QUIT PIPE TERM;
 
     case "$MODE" in
@@ -7497,7 +7779,6 @@ __choose_prog_to_build() {
         install_zoom
         install_bottom
         install_xournalpp
-        install_zoxide
         install_sesh
         #install_fzf
         install_ripgrep
@@ -7514,6 +7795,7 @@ __choose_prog_to_build() {
         install_lazygit
         install_gh_extensions
         install_worktrunk
+        install_fff
         install_lazydocker
         install_dive
         install_systemd_manager_tui
@@ -7527,6 +7809,7 @@ __choose_prog_to_build() {
         install_glow
         install_btop
         install_ytdl
+        install_fence
         install_procs
         install_procinfo
         install_eza
@@ -7549,6 +7832,7 @@ __choose_prog_to_build() {
         install_saml2aws
         install_aia
         install_kustomize
+        install_freelens
         install_k9s
         install_krew
         install_popeye
@@ -7608,8 +7892,10 @@ __choose_prog_to_build() {
         install_neovide
         install_helix
         install_zed
-        install_mise
+        install_intellij_toolbox
+        install_setup_mise
         install_croc
+        install_zoxide
         install_memy
         install_ventoy
         install_kanata
@@ -7626,6 +7912,10 @@ __choose_prog_to_build() {
         install_opencode
         install_cursor
         install_claude
+        install_jdtls
+        install_agentic_lsp
+        install_codegraph
+        install_graymatter
         install_android_command_line_tools
         install_chezmoi
         install_anything_sync
@@ -8150,6 +8440,16 @@ install_croc() {
 }
 
 
+# fasd-alike alternative
+# also avail in apt
+#
+# NOTE: deprecated by memy
+install_zoxide() {  # https://github.com/ajeetdsouza/zoxide
+    #install_bin_from_git -N zoxide ajeetdsouza/zoxide '-x86_64-unknown-linux-musl.tar.gz'
+    install_from_git ajeetdsouza/zoxide '_amd64.deb'
+}
+
+
 # fasd alternative
 install_memy() {  # https://github.com/andrewferrier/memy#installation
     #cargo install --git https://github.com/andrewferrier/memy
@@ -8182,7 +8482,7 @@ install_ventoy() {
     #create_link "$BASE_PROGS_DIR/ventoy/VentoyGUI.x86_64" "$HOME/bin/ventoy"
 
     # instead, we create our own wrapper:
-    cat <<EOF > "$tmpfile"
+    cat <<EOF >| "$tmpfile"
 #!/usr/bin/env sh
 # this wrapper exists as ventoy cannot be executed via links, see https://github.com/ventoy/Ventoy/issues/2512
 exec "$BASE_PROGS_DIR/ventoy/VentoyGUI.x86_64"
@@ -8625,6 +8925,7 @@ post_install_progs_setup() {
     setup_firefox
     configure_updatedb
     setup_apparmor
+    setup_earlyoom
     is_pkg_installed needrestart && setup_needrestart  # TODO: should we include needrestart pkg?
     setup_secret_service
     is_native && setup_smartd
@@ -8664,6 +8965,24 @@ install_nfs_server_or_client() {
         'server-side') install_nfs_server ;;
         'client-side') install_nfs_client ;;
     esac
+}
+
+
+# https://github.com/rfjakob/earlyoom
+# early oom daemon
+#
+# - test OOM via `tail /dev/zero`
+#
+# for logs: `sudo journalctl -u earlyoom`
+# TODO: WIP need to finish config
+setup_earlyoom() {
+    local conf file
+    conf='/etc/default/earlyoom'
+    file="$COMMON_PRIVATE_DOTFILES/backups/earlyoom"
+
+    is_f -nm 'cannot configure earlyoom' "$conf" "$file" || return 1
+    exe "sudo install -m644 -CT '$file' '$conf'" || { err "installing [$file] failed w/ $?"; return 1; }
+    #exe 'sudo systemctl restart earlyoom'
 }
 
 
@@ -8776,10 +9095,10 @@ confirm() {
         fi
 
         case "$(tr '[:lower:]' '[:upper:]' <<< "$yno")" in
-            Y | YES )
+            Y | YES)
                 report "Ok, continuing..." "->";
                 return 0 ;;
-            N | NO )
+            N | NO)
                 >&2 echo "Abort.";
                 return 1 ;;
             *)  err "incorrect answer; try again. (y/n accepted)" "->" ;;
@@ -9408,21 +9727,15 @@ __is_work() {
 #
 # @returns {bool}  true if array contains the element.
 list_contains() {
-    local array element i
+    local element i
 
     #[[ "$#" -lt 2 ]] && { err "at least 2 args required"; return 1; }
 
     readonly element="$1"; shift
-    declare -ar array=("$@")
 
-    #[[ -z "$element" ]]    && { err "element to check can't be empty string."; return 1; }  # it can!
-    #[[ -z "${array[*]}" ]] && { err "array/list to check from can't be empty."; return 1; }  # is this check ok/necessary?
-
-    #for i; do  # also valid
-    for i in "${array[@]}"; do
+    for i; do
         [[ "$i" == "$element" ]] && return 0
     done
-
     return 1
 }
 
@@ -9451,6 +9764,146 @@ check_progs_installed() {
     fi
 
     return 0
+}
+
+
+# Checks if given two or more nodes have same checksums.
+#
+# @param {file...}   list of files/dirs whose equality to check.
+#
+# @returns {bool}  true if nodes are the same, else false
+is_same() {
+    local sum benchmark_sum n t
+
+    if [[ "$#" -le 1 ]]; then
+        err "at least 2 nodes whose equality to compare required"
+        return 1
+    fi
+
+    for n in "$@"; do
+        if [[ ! -e "$n" ]]; then
+            err "[$n] does not exist, abort"; return 1
+        elif [[ "$n" == / ]]; then
+            err "do not pass / as a node"; return 1
+        fi
+
+        if [[ -z "$t" ]]; then  # i.e. first run
+            if [[ -f "$n" ]]; then
+                check_progs_installed md5sum || return 2
+                readonly t=f
+            elif [[ -d "$n" ]]; then
+                readonly t=d
+            else
+                err "only dirs and files supported"; return 1
+            fi
+        elif [[ "$t" == f && ! -f "$n" ]] || [[ "$t" == d && ! -d "$n" ]]; then
+            err "all passed nodes need to be of same type"
+            return 1
+        fi
+    done
+
+    for n in "$@"; do
+        if [[ "$t" == f ]]; then
+            sum="$(md5sum -- "$n" | cut -d' ' -f 1)" || { err "md5suming [$n] failed with $?"; return 1; }
+        else  # we're comparing directories
+            # note sumtree() is our own function
+            sum="$(sumtree -- "$n" | cut -d' ' -f 1)" || { err "sumtreeing [$n] failed with $?"; return 1; }
+        fi
+
+        [[ -z "$sum" ]] && { err "empty checksum for [$n]"; return 1; }
+        [[ -n "$benchmark_sum" && "$sum" != "$benchmark_sum" ]] && return 1
+        benchmark_sum="$sum"
+    done
+
+    return 0
+}
+
+
+# Checks if given files are valid json files
+#
+# @param {file...}   list of files whose json-sanity to check
+#
+# @returns {bool}  true if all provided files contain valid json.
+is_valid_json() {
+    local file
+
+    [[ "$#" -gt 0 ]] || return 2
+    command -v jq &>/dev/null || return 2
+
+    for file in "$@"; do
+        # TODO: think nowadays it should be: `jq empty "$file" 2>/dev/null`; although that ones allows for empty string...
+        [[ -s "$file" ]] && jq -reM '""' "$file" &>/dev/null || return 1  # https://stackoverflow.com/a/67979464/1803648
+    done
+    return 0
+}
+
+is_json() { is_valid_json "$@"; }
+
+
+# Checks if given two files are json files of same logical contents
+#
+# If you want diff, see json_diff()
+#
+# @param {file1}   first file to compare
+# @param {file2}   second file to compare
+#
+# @returns {bool}  true if given files have same logical json contents
+is_same_json() {
+    local f1="$1" f2="$2"
+    [[ "$#" -eq 2 && -f "$f1" && -f "$f2" ]] || { err "exactly 2 args expected, both json files"; return 1; }
+    is_valid_json "$f1" "$f2" || { err "both files need to contain valid json"; return 1; }
+    jq -en --slurpfile a "$f1" --slurpfile b "$f2" '$a == $b' >/dev/null 2>&1
+}
+
+
+# calculate md5sum of all files recursively from current PWD/given dir;
+# note filenames are also taken into account!
+#
+# consider also py package 'checksumdir'
+# https://unix.stackexchange.com/a/35834/47501
+sumtree() {
+    local f usage OPTIND opt usage dir
+
+    f="$(funname)"
+    readonly usage="\n$f: get cumulative md5 sum of all files of either
+         given directory, or current dir (default)
+         Usage: $f  [-h]  [directory]
+             -h  show this help\n"
+
+    while getopts 'h' opt; do
+        case "$opt" in
+           h) echo -e "$usage"; return 0 ;;
+           *) echo -e "$usage"; return 1 ;;
+        esac
+    done
+    shift "$((OPTIND-1))"
+
+    readonly dir="$1"
+    [[ "$#" -gt 1 ]] && { err "max 1 arg -- a directory -- allowed"; return 1; }
+
+    check_progs_installed find md5sum || return 2
+
+    if [[ -n "$dir" ]]; then
+        [[ -d "$dir" ]] || { err "directory [$dir] not a valid dir"; return 1; }
+        pushd "$dir" &> /dev/null || return 1  # cd to dir in order to take relative paths
+    fi
+
+    if command -v parallel > /dev/null 2>&1; then
+        find . -type f | parallel -k -n 100 md5sum -- {} | sort -k 2 | md5sum | cut -d' ' -f 1  # speeds up a bit, as it decreases number of calls to md5sum
+    else
+        find . -type f -exec md5sum -- {} \+ | sort -k 2 | md5sum | cut -d' ' -f 1
+    fi
+
+    # to ignore file names; note we could also bake parallel in this command as above
+    #find . -type f -exec md5sum {} \; | cut -d' ' -f1 | sort | md5sum
+
+    # if you care also about metadata (ownership, perms), use tar:
+    #tar -cf - ./ | md5sum
+
+    # hashdeep alternative:
+    #hashdeep -r -l -j0 -c md5 . | md5sum  # follows symlinks by default!
+
+    [[ -n "$dir" ]] && popd &> /dev/null
 }
 
 
@@ -9541,11 +9994,12 @@ copy_to_clipboard() {
 
     readonly input="$1"
 
+    [[ -n "$DISPLAY" ]] || return 1  # TODO: x11-only
+
     { cmd_avail xsel && echo -n "$input" | xsel --clipboard; } \
         || { cmd_avail copyq && copyq add "$input" && copyq select 0; } \
         || { cmd_avail xclip && echo -n "$input" | xclip -selection clipboard; } \
         || return 1
-
     return 0
 }
 
@@ -9555,11 +10009,7 @@ copy_to_clipboard() {
 # @param {string}  src  directory whose contents should be linked to dest
 # @param {string}  dest directory where links of files in $src should be created in.
 create_symlinks() {
-    local src dest
-
-    src="$1"
-    dest="$2"
-
+    local src="$1" dest="$2"
     is_d "$src" "$dest" || return 1
 
     # Create symlink of every file (note target file will be overwritten no matter what):
@@ -9802,9 +10252,10 @@ cleanup() {
         exe -s "sudo chmod -R 'o+r' '$ZSH_COMPLETIONS'"  # ensure 'other' group has read rights
     fi
 
-    if [[ -d "$LUKS_USB" ]]; then
-        exe "sudo umount '$LUKS_USB' && sudo cryptsetup close luksvol1 && sudo rm -r -- '$LUKS_USB'"
-    fi
+    [[ -d "$LUKS_USB" ]] && \
+            exe "sudo umount '$LUKS_USB'" && \
+            exe "sudo cryptsetup close luksvol1" && \
+            exe "sudo rm -r -- '$LUKS_USB'"
 
     # shut down the build container:
     if cmd_avail docker && [[ -n "$(docker ps -qa -f status=running -f name="$BUILD_DOCK")" ]]; then
@@ -9855,7 +10306,6 @@ shift "$((OPTIND-1))"
 readonly PROFILE="$1"   # work | personal
 
 validate_and_init
-exe "cd -- '$TMP_DIR'" || fail
 check_dependencies
 
 # we need to make sure our system clock is roughly right; otherwise stuff like apt-get might start failing:
