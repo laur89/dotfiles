@@ -50,6 +50,7 @@ export HOSTNAME=$HOST  # bash sets HOSTNAME, zsh has HOST (see https://unix.stac
 
 # load user-defined completions, per https://www.reddit.com/r/zsh/comments/12pgp4k/where_can_zsh_completion_files_be_placed_within/jgm3w6i/
 # note oftentimes ~/.zfunc dir is also used for this
+# note2: this path is likely referenced from our bubblebox config!
 [[ ! -d $XDG_DATA_HOME/zsh-completions ]] || typeset -gaU fpath=($fpath $XDG_DATA_HOME/zsh-completions)
 
 # Enable ** and *** as shortcuts for **/* and ***/*, respectively:
@@ -147,7 +148,8 @@ setopt HIST_FIND_NO_DUPS         # Do not display a previously found event.
 ################ /HISTORY
 
 if ! typeset -f __BASH_FUNS_LOADED_MARKER > /dev/null; then
-    [[ ! -r "$HOME/.bash_functions" ]] || source "$HOME/.bash_functions"
+    i="$XDG_CONFIG_HOME/shell/funcs.sh"
+    [[ ! -f "$i" ]] || source "$i"
 
     if [[ -d "$HOME/.bash_funs_overrides" ]]; then
         for i in $HOME/.bash_funs_overrides/*; do
@@ -754,7 +756,8 @@ command -v aichat > /dev/null && [[ -f "$i" ]] && source "$i"
 #compdef _directories md
 #
 
-[[ ! -f ~/.bash_aliases ]] || source ~/.bash_aliases
+i="$XDG_CONFIG_HOME/shell/aliases"
+[[ ! -f "$i" ]] || source "$i"
 
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.

@@ -1,4 +1,5 @@
 {
     "wm": "i3",
-    "tmux_title_rgx": "^t:{session} / {window} "
+    "tmux_title_rgx": "^t:{session} / {window} ",
+    "ignored_sessions": ["scratch"]
 }

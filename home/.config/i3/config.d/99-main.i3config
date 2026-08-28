@@ -606,6 +606,9 @@ for_window [class="^com-charlesproxy-main-MainWithClassLoader$" title="^win"] fl
 for_window [title="^_wm_float_no_titlebar$"] floating enable, border pixel $border, focus
 for_window [class="^org.remmina.Remmina$" title="^Remmina Preferences$"] floating enable, border pixel $border, focus
 for_window [class="^fontforge$" title="^Warnings$"] floating enable, border pixel $border, focus
+# try to solve issues wher i3 messes with xsecurelock windows:
+for_window [class="^xsecurelock$"] floating enable, border none
+no_focus [class="^xsecurelock$"]
 
 # some other per-app configs:
 #  we occupy first index; note 'scratch_mark' is a pre-set prefix used elsewhere in this config!:
@@ -633,7 +636,7 @@ for_window [class="^org.remmina.Remmina$"] border pixel $border
 #for_window [class="(.*)Chromium-browser(.*)"] title_format "<tt></tt><span foreground='#367dd0' background='#d9e5f4'>  </span><tt> </tt>%title"
 #for_window [class="Evolution"] title_format "<tt></tt><span foreground='#FFFFFF' >  </span><tt> </tt>%title"
 #for_window [title=".* Evolution"] title_format "<tt></tt><span foreground='#FFFFFF' >  </span><tt> </tt>%title"
-#for_window [class="Slack"] title_format "<tt></tt><span foreground='#FFFFFF' >  </span><tt> </tt>%title"
+#for_window [class="(Slack|com.slack.Slack)"] title_format "<tt></tt><span foreground='#FFFFFF' >  </span><tt> </tt>%title"
 #for_window [class="signal"] title_format "<tt></tt><span background='#2090ea' foreground='#FFFFFF' >  </span><tt> </tt>%title"
 #for_window [class="VirtualBox Machine"] title_format "<tt></tt><span  background='#073624' foreground='#AAAAFF' >  </span><tt> </tt>%title"
 #for_window [class="VirtualBox Manager"] title_format "<tt></tt><span  background='#073642' foreground='#AAAAFF' >  </span><tt> </tt>%title"
@@ -650,7 +653,7 @@ assign [class="^[fF]irefox$" instance="^Navigator$"]  $w1
 assign [class="^jetbrains-"]       $w2
 assign [class="^Eclipse Memory Analyzer$"]       $w2
 #assign [class="^Zathura"]                $w3
-assign [class="^(Slack|signal|discord|vesktop|equibop|Ferdium|TelegramDesktop|Pidgin)$"]                $w3
+assign [class="^(Slack|com.slack.Slack|signal|discord|vesktop|equibop|Ferdium|TelegramDesktop|Pidgin)$"]                $w3
 assign [class="^(mpv|MPlayer|smplayer)$"] $w4
 assign [class="^streamlink-twitch-gui$"] $w4
 assign [class="^(VirtualBox|Virt-manager)$"]            $w7
