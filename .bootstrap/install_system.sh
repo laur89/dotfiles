@@ -3956,8 +3956,9 @@ install_dbeaver() {  # https://dbeaver.io/download/
 
 
 # minimal CLI tool for managing and executing SQL queries across multiple databases
-install_pam() {  # https://github.com/eduardofuncao/pam
-    install_bin_from_git -N pam eduardofuncao/pam 'pam-linux-amd64'
+# features: https://github.com/eduardofuncao/squix#highlights
+install_squix() {  # https://github.com/eduardofuncao/squix
+    install_bin_from_git -N squix eduardofuncao/squix '-linux-amd64 '
 }
 
 
@@ -5886,7 +5887,7 @@ py_install() {
     shift "$((OPTIND-1))"
 
     [[ -z "$main_pkg" ]] && pkgs+=("$@")
-    [[ "${#extra_deps[@]}" -gt 0 && "${#pkgs[@]}" -ne 1 ]] && { err "cannot use -e flag when installing >1 main pkg"; return 1; }  # sanity
+    [[ "${#extra_deps[@]}" -ne 0 && "${#pkgs[@]}" -ne 1 ]] && { err "cannot use -e flag when installing >1 main pkg"; return 1; }  # sanity
     exe "pipx install ${pkgs[*]}" || return $?
 
     # inject extra dependencies to $main_pkg env:
@@ -7844,7 +7845,7 @@ __choose_prog_to_build() {
         install_grpcui
         install_grpc_cli
         install_dbeaver
-        install_pam
+        install_squix
         install_gitkraken
         install_p4merge
         install_steam
@@ -7961,7 +7962,8 @@ quick_refresh() {
     install_progs
     install_deps
 
-    exe 'pipx  upgrade-all'
+    exe 'pipx upgrade-all'
+    exe 'uv tool upgrade --all'
     exe 'flatpak -y --noninteractive update'
 }
 
@@ -7977,7 +7979,8 @@ quicker_refresh() {
     post_install_progs_setup  # from install_progs()
     install_deps  # TODO: do we want this with mode=3?
 
-    exe 'pipx  upgrade-all'
+    exe 'pipx upgrade-all'
+    exe 'uv tool upgrade --all'
     exe 'flatpak -y --noninteractive update'
 }
 
@@ -8405,6 +8408,20 @@ install_revanced() {  # https://github.com/ReVanced
 
     install_bin_from_git -A -N revanced.jar -d "$d"  ReVanced/revanced-cli 'all.jar'
     install_bin_from_git -A -N patches.rvp  -d "$d"  ReVanced/revanced-patches  'patches-.*.rvp'
+}
+
+
+# revanced revivied; or... re-revanced?
+#
+# cli:
+# - https://github.com/MorpheApp/morphe-desktop#cli
+# - docs: https://github.com/MorpheApp/morphe-desktop/blob/main/docs/documentation.md
+install_morphe() {  # https://github.com/MorpheApp
+    local d="$BASE_PROGS_DIR/morphe"
+    ensure_d "$d" || return 1
+
+    install_bin_from_git -A -N morphe.jar  -d "$d"  MorpheApp/morphe-desktop 'all.jar'
+    install_bin_from_git -A -N patches.mpp -d "$d"  MorpheApp/morphe-patches  'patches-.*\.mpp'
 }
 
 
