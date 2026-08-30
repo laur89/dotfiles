@@ -1021,26 +1021,25 @@ clone_repo_subdir() {
 
 # !! note the importance of optional trailing slash for $install_dir param;
 clone_or_pull_repo() {
-    local user repo install_dir hub
+    local repo install_dir hub
 
-    readonly user="$1"
-    readonly repo="$2"
-    install_dir="$3"  # if has trailing / then $repo won't be appended, eg pass './' to clone to $PWD
-    readonly hub=${4:-github.com}  # OPTIONAL; defaults to github.com;
+    readonly repo="$1"  # 'user/repo' format
+    install_dir="$2"  # if has trailing / then $repo won't be appended, eg pass './' to clone to $PWD
+    readonly hub=${3:-github.com}  # OPTIONAL; defaults to github.com;
 
     [[ -z "$install_dir" ]] && { err "need to provide target directory."; return 1; }
-    [[ "$install_dir" != */ ]] && install_dir+="/$repo"
+    [[ "$install_dir" != */ ]] && install_dir+="/${repo##*/}"  # append the repo part, i.e. sans org/user
 
     if ! [[ -d "$install_dir/.git" ]]; then
-        exe "git clone --recursive -j8 https://$hub/$user/${repo}.git '$install_dir'" || { err "cloning [$hub/$user/$repo] failed w/ $?"; return 1; }
+        exe "git clone --recursive -j8 https://$hub/${repo}.git '$install_dir'" || { err "cloning [$hub/$repo] failed w/ $?"; return 1; }
 
-        exe "git -C '$install_dir' remote set-url origin git@${hub}:$user/${repo}.git" || return 1
-        exe "git -C '$install_dir' remote set-url --push origin git@${hub}:$user/${repo}.git" || return 1
+        exe "git -C '$install_dir' remote set-url origin git@${hub}:${repo}.git" || return 1
+        exe "git -C '$install_dir' remote set-url --push origin git@${hub}:${repo}.git" || return 1
     elif is_ssh_key_loaded; then
-        exe "git -C '$install_dir' pull" || { err "git pull for [$hub/$user/$repo] failed w/ $?"; return 1; }  # TODO: retry?
+        exe "git -C '$install_dir' pull" || { err "git pull for [$hub/$repo] failed w/ $?"; return 1; }  # TODO: retry?
         exe "git -C '$install_dir' submodule update --init --recursive" || return 1  # make sure to pull submodules
     else
-        err "cannot pull [$hub/$user/$repo] -- ssh keys not loaded"
+        err "cannot pull [$hub/$repo] -- ssh keys not loaded"
         return 1
     fi
 }
@@ -1356,7 +1355,7 @@ install_deps() {
         readonly plugins_dir="$XDG_CONFIG_HOME/tmux/plugins"
 
         if ! [[ -d "$plugins_dir/tpm" ]]; then
-            clone_or_pull_repo "tmux-plugins" "tpm" "$plugins_dir"
+            clone_or_pull_repo "tmux-plugins/tpm" "$plugins_dir"
             report "don't forget to install tmux plugins by running <prefix + I> in tmux later on." && sleep 4
         elif ! is_dir_empty "$plugins_dir"; then
             # update all the tmux plugins, including the plugin manager itself:
@@ -1388,7 +1387,7 @@ install_deps() {
     #
     # from within zsh, upgrade plugins via  $ zinit update [--parallel]
     _install_zsh_deps() {
-        clone_or_pull_repo zdharma-continuum zinit "$BASE_PROGS_DIR"  # https://github.com/zdharma-continuum/zinit#manual
+        clone_or_pull_repo zdharma-continuum/zinit "$BASE_PROGS_DIR"  # https://github.com/zdharma-continuum/zinit#manual
 
         # default ZINIT[HOME_DIR], where zinit creates all working dirs:
         ensure_d "$HOME/.local/share/zinit/"  # same as $XDG_DATA_HOME/zinit/
@@ -1474,7 +1473,7 @@ install_deps() {
         #   - xfce4-power-manager
 
         # batt output (requires spark):
-        clone_or_pull_repo "laur89" "Battery" "$BASE_PROGS_DIR"  # https://github.com/laur89/Battery
+        clone_or_pull_repo "laur89/Battery" "$BASE_PROGS_DIR"  # https://github.com/laur89/Battery
         create_link "${BASE_PROGS_DIR}/Battery/battery" "$HOME/bin/battery"
 
         __install_wifi_driver && sleep 5; unset __install_wifi_driver  # keep last, as this _might_ restart wifi kernel module
@@ -1484,7 +1483,7 @@ install_deps() {
     # used by both bash & zsh
     # see also:
     #   - https://github.com/sharkdp/vivid - themeable LS_COLORS generator
-    clone_or_pull_repo trapd00r LS_COLORS "$BASE_PROGS_DIR"
+    clone_or_pull_repo trapd00r/LS_COLORS "$BASE_PROGS_DIR"
 
     # prettyping:  # https://github.com/denilsonsa/prettyping
     # see also: gping
@@ -1492,30 +1491,30 @@ install_deps() {
 
     # bash-git-prompt:
     # alternatively consider https://github.com/starship/starship !!
-    clone_or_pull_repo "magicmonty" "bash-git-prompt" "$BASE_PROGS_DIR"
+    clone_or_pull_repo "magicmonty/bash-git-prompt" "$BASE_PROGS_DIR"
 
     # bash-preexec:  # https://github.com/rcaloras/bash-preexec
     # note this is known dependency of some functions/programs, such as
     # - atuin
     # - fancy-ctrl-z()
-    clone_or_pull_repo rcaloras bash-preexec "$BASE_PROGS_DIR"
+    clone_or_pull_repo rcaloras/bash-preexec "$BASE_PROGS_DIR"
 
     # bars (as in bar-charts) in shell:
     #  note: see also https://github.com/sindresorhus/sparkly-cli
-    clone_or_pull_repo "holman" "spark" "$BASE_PROGS_DIR"  # https://github.com/holman/spark
+    clone_or_pull_repo "holman/spark" "$BASE_PROGS_DIR"  # https://github.com/holman/spark
     create_link "${BASE_PROGS_DIR}/spark/spark" "$HOME/bin/spark"
 
     # imgur uploader:
-    clone_or_pull_repo "ram-on" "imgurbash2" "$BASE_PROGS_DIR"  # https://github.com/ram-on/imgurbash2
+    clone_or_pull_repo "ram-on/imgurbash2" "$BASE_PROGS_DIR"  # https://github.com/ram-on/imgurbash2
     create_link "${BASE_PROGS_DIR}/imgurbash2/imgurbash2" "$HOME/bin/imgurbash2"
 
     # imgur uploader 2:
-    #clone_or_pull_repo "tangphillip" "Imgur-Uploader" "$BASE_PROGS_DIR"  # https://github.com/tangphillip/Imgur-Uploader
+    #clone_or_pull_repo "tangphillip/Imgur-Uploader" "$BASE_PROGS_DIR"  # https://github.com/tangphillip/Imgur-Uploader
     #create_link "${BASE_PROGS_DIR}/Imgur-Uploader/imgur" "$HOME/bin/imgur-uploader"
 
     # replace bash tab completion w/ fzf:
     # alternatively consider https://github.com/rockandska/fzf-obc
-    clone_or_pull_repo "lincheney" "fzf-tab-completion" "$BASE_PROGS_DIR"  # https://github.com/lincheney/fzf-tab-completion
+    clone_or_pull_repo "lincheney/fzf-tab-completion" "$BASE_PROGS_DIR"  # https://github.com/lincheney/fzf-tab-completion
 
     # fasd - shell navigator similar to autojump:
     # note we're using whjvenyl's fork instead of original clvv, as latter was last updated 2015 (orig: https://github.com/clvv/fasd.git)
@@ -1524,47 +1523,47 @@ install_deps() {
     #   - https://github.com/wyne/fasder - reimplementation in go
     #   - https://github.com/andrewferrier/memy
     #     - lists bunch of alternatives @ https://github.com/andrewferrier/memy#comparison-with-similar-tools
-    #clone_or_pull_repo "whjvenyl" "fasd" "$BASE_PROGS_DIR"  # https://github.com/whjvenyl/fasd
+    #clone_or_pull_repo "whjvenyl/fasd" "$BASE_PROGS_DIR"  # https://github.com/whjvenyl/fasd
     #create_link "$BASE_PROGS_DIR/fasd/fasd" "$HOME/bin/fasd"
     #ensure_d "$XDG_DATA_HOME/fasd"  # referenced by ~/.config/fasd/config
 
     # maven bash completion:
-    clone_or_pull_repo "juven" "maven-bash-completion" "$BASE_PROGS_DIR"  # https://github.com/juven/maven-bash-completion
+    clone_or_pull_repo "juven/maven-bash-completion" "$BASE_PROGS_DIR"  # https://github.com/juven/maven-bash-completion
     create_link "${BASE_PROGS_DIR}/maven-bash-completion/bash_completion.bash" "$BASH_COMPLETIONS/mvn.bash"
 
     # gradle shell completion:  # https://github.com/gradle/gradle-completion/blob/master/README.md#installation-for-zsh-50
-    clone_or_pull_repo "gradle" "gradle-completion" "$BASE_PROGS_DIR"
+    clone_or_pull_repo "gradle/gradle-completion" "$BASE_PROGS_DIR"
     create_link "${BASE_PROGS_DIR}/gradle-completion/gradle-completion.bash" "$BASH_COMPLETIONS/gradle.bash"
     create_link -s "${BASE_PROGS_DIR}/gradle-completion/_gradle" "$ZSH_COMPLETIONS/_gradle"
 
     # leiningen shell completion:  # https://codeberg.org/leiningen/leiningen/src/branch/main
     #
-    #clone_or_pull_repo leiningen leiningen "$BASE_PROGS_DIR" codeberg.org
+    #clone_or_pull_repo leiningen/leiningen "$BASE_PROGS_DIR" codeberg.org
     #create_link "${BASE_PROGS_DIR}/leiningen/bash_completion.bash" "$BASH_COMPLETIONS/lein.bash"
     #create_link -s "${BASE_PROGS_DIR}/leiningen/zsh_completion.zsh" "$ZSH_COMPLETIONS/_lein"
     install_from_url -Ad "$BASH_COMPLETIONS" lein.bash 'https://codeberg.org/leiningen/leiningen/raw/branch/main/bash_completion.bash'
     install_from_url -Ad "$ZSH_COMPLETIONS"  _lein     'https://codeberg.org/leiningen/leiningen/raw/branch/main/zsh_completion.zsh'
 
     # git-fuzzy (yet another git fzf tool)   # https://github.com/bigH/git-fuzzy
-    clone_or_pull_repo "bigH" "git-fuzzy" "$BASE_PROGS_DIR"
+    clone_or_pull_repo "bigH/git-fuzzy" "$BASE_PROGS_DIR"
 
     # TODO: find alternative. note we have some scripts currently depending on it
     # notify-send with additional features  # https://github.com/M3TIOR/notify-send.sh
     # note it depends on libglib2.0-bin (should be already installed):   install_block libglib2.0-bin
-    clone_or_pull_repo  M3TIOR  "notify-send.sh" "$BASE_PROGS_DIR"
+    clone_or_pull_repo  M3TIOR/notify-send.sh "$BASE_PROGS_DIR"
     create_link "${BASE_PROGS_DIR}/notify-send.sh/src/notify-send.sh" "$HOME/bin/"
 
 
     # forgit - fzf-fueled git tool:  # https://github.com/wfxr/forgit
-    clone_or_pull_repo "wfxr" "forgit" "$BASE_PROGS_DIR" || return 1
+    clone_or_pull_repo "wfxr/forgit" "$BASE_PROGS_DIR" || return 1
 
     # dynamic colors loader: (TODO: deprecated by pywal right?)
-    #clone_or_pull_repo "sos4nt" "dynamic-colors" "$BASE_PROGS_DIR"  # https://github.com/sos4nt/dynamic-colors
+    #clone_or_pull_repo "sos4nt/dynamic-colors" "$BASE_PROGS_DIR"  # https://github.com/sos4nt/dynamic-colors
     #create_link "${BASE_PROGS_DIR}/dynamic-colors" "$HOME/.dynamic-colors"
     #create_link "${BASE_PROGS_DIR}/dynamic-colors/bin/dynamic-colors" "$HOME/bin/dynamic-colors"
 
     # base16 shell colors:
-    #clone_or_pull_repo "chriskempson" "base16-shell" "$BASE_PROGS_DIR"  # https://github.com/chriskempson/base16-shell
+    #clone_or_pull_repo "chriskempson/base16-shell" "$BASE_PROGS_DIR"  # https://github.com/chriskempson/base16-shell
     #create_link "${BASE_PROGS_DIR}/base16-shell" "$HOME/.config/base16-shell"
 
 
@@ -1762,7 +1761,7 @@ setup_dirs() {
 
 
 install_homesick() {
-    clone_or_pull_repo "andsens" "homeshick" "$BASE_HOMESICK_REPOS_LOC" || return 1
+    clone_or_pull_repo "andsens/homeshick" "$BASE_HOMESICK_REPOS_LOC" || return 1
 }
 
 
@@ -3376,7 +3375,7 @@ install_ueberzugpp() {  # https://github.com/jstkdng/ueberzugpp
 # When xdg-ninja encounters a file or directory it knows about, it will tell you
 # whether it's possible to move it to the XDG location, and how to do it.
 install_xdg_ninja() {  # https://github.com/b3nj5m1n/xdg-ninja
-    clone_or_pull_repo "b3nj5m1n" "xdg-ninja" "$BASE_PROGS_DIR"
+    clone_or_pull_repo "b3nj5m1n/xdg-ninja" "$BASE_PROGS_DIR"
     create_link "${BASE_PROGS_DIR}/xdg-ninja/xdg-ninja.sh" "$HOME/bin/xdg-ninja"
 }
 
@@ -3870,7 +3869,7 @@ install_kubectx() {  # https://github.com/ahmetb/kubectx
     install_bin_from_git -N kubens  ahmetb/kubectx  'kubens_.*_linux_x86_64.tar.gz'
 
     # kubectx/kubens completion scripts:
-    clone_or_pull_repo "ahmetb" "kubectx" "$BASE_PROGS_DIR" || return 1
+    clone_or_pull_repo "ahmetb/kubectx" "$BASE_PROGS_DIR" || return 1
 
     #local COMPDIR=$(pkg-config --variable=completionsdir bash-completion)
     #[[ -d "$COMPDIR" ]] || { err "[$COMPDIR] not a dir, cannot install kube{ctx,ns} shell completion"; return 1; }
@@ -3886,7 +3885,7 @@ install_kubectx() {  # https://github.com/ahmetb/kubectx
 # kube-ps1 - kubernets shell prompt
 # tag: aws, k8s, kubernetes
 install_kube_ps1() {  # https://github.com/jonmosco/kube-ps1
-    clone_or_pull_repo "jonmosco" "kube-ps1" "$BASE_PROGS_DIR"
+    clone_or_pull_repo "jonmosco/kube-ps1" "$BASE_PROGS_DIR"
     # note there's corresponding entry in ~/.bashrc
 }
 
@@ -4208,7 +4207,7 @@ install_weechat_matrix() {  # https://github.com/poljar/weechat-matrix
     install_block 'libolm-dev' || return 1
     ensure_d "$d/autoload" || return 1
 
-    clone_or_pull_repo "poljar" "weechat-matrix" "$deps/"
+    clone_or_pull_repo "poljar/weechat-matrix" "$deps/"
 
     exe "pip3 install --user -r $deps/requirements.txt"
     create_link "$deps/main.py" "$d/matrix.py"
@@ -5969,7 +5968,7 @@ install_i3_deps() {
     py_install -g haridusministeerium/i3-tools  # https://github.com/haridusministeerium/i3-tools
 
     # i3ass  # https://github.com/budlabs/i3ass/
-    #clone_or_pull_repo budlabs i3ass "$BASE_PROGS_DIR"
+    #clone_or_pull_repo budlabs/i3ass "$BASE_PROGS_DIR"
     #create_link -c "${BASE_PROGS_DIR}/i3ass/src" "$HOME/bin/"  # <- broken, links project root dirs, not the executables said root dirs contain
 
     # install i3-quickterm   # https://github.com/laur89/i3-quickterm
@@ -8290,7 +8289,7 @@ install_gruvbox_gtk_theme() {
     local ver json_conf
 
     install_block 'gtk2-engines-murrine  gnome-themes-extra  sassc'
-    clone_or_pull_repo 'Fausto-Korpsvart' 'Gruvbox-GTK-Theme' "$BASE_PROGS_DIR"
+    clone_or_pull_repo 'Fausto-Korpsvart/Gruvbox-GTK-Theme' "$BASE_PROGS_DIR"
 
     ver="$(get_git_sha 'https://github.com/Fausto-Korpsvart/Gruvbox-GTK-Theme')" || return 1
     is_installed "$ver" gruvbox-gtk-theme && return 2
@@ -8791,7 +8790,7 @@ setup_firefox() {
     profile="$(find "$conf_dir" -mindepth 1 -maxdepth 1 -type d -name '*default-release')"
     is_d "$profile" || return 1
     ensure_d "$profile/chrome" || return 1
-    clone_or_pull_repo  MrOtherGuy  firefox-csshacks  "$profile/chrome/"
+    clone_or_pull_repo  MrOtherGuy/firefox-csshacks  "$profile/chrome/"
     # }
 
     # !!!!!!!!!!!!!!!! DO NOT MISS THESE !!!!!!!!!!!!!!!!
