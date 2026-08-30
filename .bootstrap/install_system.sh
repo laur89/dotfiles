@@ -444,7 +444,7 @@ setup_mail() {
 
 
 # https://github.com/gauteh/lieer
-# TODO: quite sure we can't continue with our recoveredd credentials and have
+# TODO: quite sure we can't continue with our recovered credentials and have
 #       to re-auth, see https://github.com/gauteh/lieer/issues/298
 _setup_lieer_account() {
     local acc acc_root nm_conf i
@@ -814,7 +814,7 @@ setup_apparmor() {
 }
 
 
-# note it should be automatically installed as flatpak dependency.
+# bubblebox being our own bubblewrap launcher
 #
 # other alternatives:
 # - firejail; larger attack surface (https://madaidans-insecurities.github.io/linux.html#firejail), but _way_ easier to use
@@ -827,8 +827,8 @@ setup_apparmor() {
 # see also:
 # - https://github.com/igo95862/bubblejail
 # - https://gist.github.com/ageis/f5595e59b1cddb1513d1b425a323db04  (hardening via systemd)
-setup_bubblewrap() {
-    true
+setup_bubblebox() {
+    exe "systemctl enable --user --no-warn 'ai-agent-ssh-agent@dev-work.service'"
 }
 
 
@@ -2738,7 +2738,7 @@ install_devstuff() {
     install_codegraph
     install_graymatter
     install_fff
-    install_claude
+    install_setup_claude
 
     install_kubectl
 
@@ -4623,7 +4623,7 @@ install_cursor() {
 #   - <enter the installation cmd, e.g. `curl -fsSL https://claude.ai/install.sh | bash`>
 #   - $ tree -a ~
 # NOTE: also available as native pkg: https://code.claude.com/docs/en/setup#install-with-linux-package-managers
-install_claude() {  # https://code.claude.com/docs/en/terminal-guide#macos-and-linux
+install_setup_claude() {  # https://code.claude.com/docs/en/terminal-guide#macos-and-linux
     #install_from_url_shell  claude 'https://claude.ai/install.sh'
 
     # or, same but sandboxed:
@@ -4638,7 +4638,7 @@ install_claude() {  # https://code.claude.com/docs/en/terminal-guide#macos-and-l
 
     json_conf=$(cat <<EOF
 {
-  "include": ["base"],
+  "include": ["base-simple"],
   "mounts": {
     "$d": "bind-create:$tmpdir",
     "{xdg_data}/claude": "bind-create",
@@ -7912,7 +7912,7 @@ __choose_prog_to_build() {
         install_aider_desk
         install_opencode
         install_cursor
-        install_claude
+        install_setup_claude
         install_jdtls
         install_agentic_lsp
         install_codegraph
@@ -8283,11 +8283,31 @@ install_gtk_numix() {
 
 
 # https://github.com/Fausto-Korpsvart/Gruvbox-GTK-Theme
+#
+# installation logic needs write access only to ~/.themes (and $HOME/.config/gtk-4.0/ if { -l, --libadwaita} opt provided)
+# per https://github.com/Fausto-Korpsvart/Gruvbox-GTK-Theme/blob/master/themes/install.sh
 install_gruvbox_gtk_theme() {
-    install_block 'gtk2-engines-murrine gnome-themes-extra sassc'
+    local ver json_conf
 
-    clone_or_pull_repo "Fausto-Korpsvart" "Gruvbox-GTK-Theme" "$BASE_PROGS_DIR"
-    exe "$BASE_PROGS_DIR/Gruvbox-GTK-Theme/themes/install.sh" || err "gruvbox theme installation failed w/ $?"  # TODO: sandbox! needs write access only to ~/.themes
+    install_block 'gtk2-engines-murrine  gnome-themes-extra  sassc'
+    clone_or_pull_repo 'Fausto-Korpsvart' 'Gruvbox-GTK-Theme' "$BASE_PROGS_DIR"
+
+    ver="$(get_git_sha 'https://github.com/Fausto-Korpsvart/Gruvbox-GTK-Theme')" || return 1
+    is_installed "$ver" gruvbox-gtk-theme && return 2
+
+    json_conf=$(cat <<EOF
+{
+  "include": ["base-simple"],
+  "mounts": {
+    "$BASE_PROGS_DIR/Gruvbox-GTK-Theme": "bind",
+    "~/.themes": "bind",
+    "{xdg_config}/gtk-4.0": "bind"
+  }
+}
+EOF
+)
+    exe "bb -DM -j '$json_conf' '$BASE_PROGS_DIR/Gruvbox-GTK-Theme/themes/install.sh'" || return 1
+    add_to_dl_log  gruvbox-gtk-theme "$ver"
 }
 
 
@@ -8943,6 +8963,7 @@ post_install_progs_setup() {
     configure_updatedb
     setup_apparmor
     setup_earlyoom
+    setup_bubblebox
     is_pkg_installed needrestart && setup_needrestart  # TODO: should we include needrestart pkg?
     setup_secret_service
     is_native && setup_smartd
