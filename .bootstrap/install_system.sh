@@ -995,13 +995,12 @@ backup_original_and_copy_file() {
 
 # !! note the importance of optional trailing slash for $install_dir param;
 clone_repo_subdir() {
-    local user repo path install_dir hub tmpdir
+    local repo path install_dir hub tmpdir
 
-    readonly user="$1"
-    readonly repo="$2"
-    readonly path="${3#/}"  # note remove leading slash
-    install_dir="$4"  # if has trailing / then $repo won't be appended, eg pass './' to clone to $PWD
-    readonly hub=${5:-github.com}  # OPTIONAL; defaults to github.com;
+    readonly repo="$1"  # 'user/repo' format
+    readonly path="${2#/}"  # note remove leading slash
+    install_dir="$3"  # if has trailing / then $(basename $path) won't be appended, eg pass './' to clone $path contents to $PWD
+    readonly hub=${4:-github.com}  # OPTIONAL; defaults to github.com;
 
     [[ -z "$install_dir" ]] && { err "need to provide target directory."; return 1; }
     [[ "$install_dir" != */ ]] && install_dir+="/$(basename -- "$path")"
@@ -1010,8 +1009,8 @@ clone_repo_subdir() {
         rm -rf -- "$install_dir" || { err "removing existing install_dir [$install_dir] failed w/ $?"; return 1; }
     fi
 
-    tmpdir="$TMP_DIR/$repo-${user}-${RANDOM}"
-    exe "git clone -n --depth=1 --filter=tree:0 https://$hub/$user/${repo}.git '$tmpdir'" || { err "cloning [$hub/$user/$repo] failed w/ $?"; return 1; }
+    tmpdir="$TMP_DIR/.clone-repo-subdir-${RANDOM}"
+    exe "git clone -n --depth=1 --filter=tree:0 https://$hub/${repo}.git '$tmpdir'" || { err "cloning [$hub/$repo] failed w/ $?"; return 1; }
     exe "git -C '$tmpdir' sparse-checkout set --no-cone $path" || return 1
     exe "git -C '$tmpdir' checkout" || return 1
     exe "mv -- '$tmpdir/$path' '$install_dir'" || return 1
@@ -1232,14 +1231,11 @@ install_ssh_server() {
 
 
 create_mountpoint() {
-    local mountpoint
-
-    readonly mountpoint="$1"
+    local mountpoint="$1"
 
     [[ -z "$mountpoint" ]] && { err "cannot pass empty mountpoint arg"; return 1; }
     ensure_d -s "$mountpoint" || return 1
-    exe "sudo chmod 777 -- '$mountpoint'" || return $?  # TODO: why 777 ???
-    return 0
+    exe "sudo chmod 777 -- '$mountpoint'"  # TODO: why 777 ???
 }
 
 
@@ -1373,8 +1369,8 @@ install_deps() {
     # see also/consider:
     # - https://github.com/monkeyxite/muttlook
     _install_mutt_deps() {
-        # https://github.com/Konfekt/mutt-trim
-        install_from_url  mutt-trim 'https://raw.githubusercontent.com/Konfekt/mutt-trim/refs/heads/master/mutt-trim'
+        # similar to t-prot (see https://github.com/Konfekt/mutt-trim/issues/5)
+        install_from_url  mutt-trim 'https://raw.githubusercontent.com/Konfekt/mutt-trim/refs/heads/master/mutt-trim'  # https://github.com/Konfekt/mutt-trim
 
         # goobook - Access your Google contacts from the command line;  tags: email,
         #                                                               similar to: abook, khard
@@ -1401,7 +1397,7 @@ install_deps() {
 
         # https://github.com/vifm/vifm/tree/master/data/plugins/ueberzug
         for plugin in 'ueberzug'; do
-            clone_repo_subdir  vifm vifm "data/plugins/$plugin" "$plugins_dir"
+            clone_repo_subdir  vifm/vifm "data/plugins/$plugin" "$plugins_dir"
         done
     }
 
@@ -4722,7 +4718,7 @@ install_aichat() {  # https://github.com/sigoden/aichat
     install_bin_from_git -N aichat sigoden/aichat 'x86_64-unknown-linux-musl.tar.gz'
 
     # install shell completions:
-    clone_repo_subdir  sigoden aichat "scripts" "$shell/"  # trailing slash is important
+    clone_repo_subdir  sigoden/aichat "scripts" "$shell/"  # trailing slash is important
     #exe "sudo cp -- '$shell/completions/aichat.zsh' $ZSH_COMPLETIONS/_aichat"
     create_link -s "$shell/completions/aichat.zsh" "$ZSH_COMPLETIONS/_aichat"
     create_link "$shell/completions/aichat.bash" "$BASH_COMPLETIONS/aichat.bash"
