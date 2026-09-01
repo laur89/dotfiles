@@ -1381,7 +1381,7 @@ install_deps() {
     #           https://github.com/zimfw/zimfw (yes, for real that's the name)
     # essentially the same installer stanza we have at the header of .zshrc
     #
-    # from within zsh, upgrade plugins via  $ zinit update [--parallel]
+    # from within zsh, upgrade plugins via  $ `zinit update [--parallel]`  # tags: upgrade zsh plugin upgrade
     _install_zsh_deps() {
         clone_or_pull_repo zdharma-continuum/zinit "$BASE_PROGS_DIR"  # https://github.com/zdharma-continuum/zinit#manual
 
@@ -4618,6 +4618,11 @@ install_cursor() {
 #   - <enter the installation cmd, e.g. `curl -fsSL https://claude.ai/install.sh | bash`>
 #   - $ tree -a ~
 # NOTE: also available as native pkg: https://code.claude.com/docs/en/setup#install-with-linux-package-managers
+#
+# TODO: for looping, see:
+# - https://github.com/open-gsd/gsd-core
+# - claude /loop
+# - ralph (or even better -- https://ghuntley.com/loop/)
 install_setup_claude() {  # https://code.claude.com/docs/en/terminal-guide#macos-and-linux
     #install_from_url_shell  claude 'https://claude.ai/install.sh'
 
@@ -4669,6 +4674,10 @@ EOF
     _add_mcp_server serena     '{"type":"stdio","command":"serena","args":["start-mcp-server","--context=claude-code","--project-from-cwd"]}'  # see https://oraios.github.io/serena/02-usage/030_clients.html#claude-code
     _add_mcp_server codegraph  '{"type":"stdio","command":"codegraph","args":["serve","--mcp"]}'
     _add_mcp_server graymatter '{"type":"stdio","command":"graymatter","args":["mcp","serve"]}'  # from https://github.com/angelnicolasc/graymatter#global-install-all-projects
+
+    # other MCPs to consider:
+    # - Puppeteer MCP -- FE work
+    unset _add_mcp_server
     # }}} /mcp
 }
 
@@ -9020,10 +9029,7 @@ setup_earlyoom() {
 
 
 add_to_dl_log() {
-    local id ver
-
-    id="$1"
-    ver="$2"
+    local id="$1" ver="$2"
 
     [[ -s "$GIT_RLS_LOG" ]] && sed --follow-symlinks -i "/^${id}:/d" "$GIT_RLS_LOG"
     echo -e "${id}:\t${ver}\t$(date +'%d %b %Y %R')" >> "$GIT_RLS_LOG"
@@ -9031,10 +9037,7 @@ add_to_dl_log() {
 
 
 is_installed() {
-    local ver id
-
-    ver="$1"
-    id="$2"
+    local ver="$1" id="$2"
 
     [[ "$#" -eq 2 ]] || { err "2 args needed for ${FUNCNAME}()" -1; return 2; }  # sanity
     if grep -Pq "^${id}:\t$(rgxesc "$ver")" "$GIT_RLS_LOG" 2>/dev/null; then  # note -P flag is just so \t is matched
@@ -9062,8 +9065,7 @@ is_pkg_installed() {
 # @returns {string} last git tag
 # @returns {bool} false if anything went wrong
 get_git_tag() {
-    local repo tag
-    repo="$1"
+    local repo="$1" tag
 
     tag="$(git -c 'versionsort.suffix=-' \
         ls-remote --exit-code --refs --sort='version:refname' --tags "$repo" '*.*.*' \
@@ -9084,9 +9086,7 @@ get_git_tag() {
 # @returns {string} url's HEAD git sha
 # @returns {bool} false if anything went wrong
 get_git_sha() {
-    local repo sha
-
-    repo="$1"
+    local repo="$1" sha
 
     [[ -z "$repo" ]] && { err "no repo url provided"; return 1; }
     sha="$(git ls-remote --exit-code "$repo" HEAD | cut -f1)"
@@ -9200,9 +9200,7 @@ report() {
 # see https://unix.stackexchange.com/questions/468807/strange-error-in-apt-get-download-bug
 # TODO: consider removing
 sanitize_apt() {
-    local target
-
-    target="$1"
+    local target="$1"
 
     if ! [[ -e "$target" ]]; then
         err "tried to sanitize [$target] for apt, but it doesn't exist"
@@ -9220,9 +9218,10 @@ _sanitize_ssh() {
 }
 
 
-# check whether _any_ key is loaded to ssh-agent
+# check whether _any_ key is loaded to ssh-agent.
+# or to check specific key: `ssh-add -L | grep -Eq '^\S+\s+\S+\s+first\.name@gmail\.com$'`
 is_ssh_key_loaded() {
-    ssh-add -l >/dev/null 2>&1
+    ssh-add -l &>/dev/null
 }
 
 
@@ -9240,26 +9239,19 @@ check_connection() {
 # https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
 # or: https://support.atlassian.com/bitbucket-cloud/docs/set-up-personal-ssh-keys-on-linux/
 generate_ssh_key() {
-    local mail valid_mail_regex
-
-    readonly valid_mail_regex='^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+$'
+    local comment
 
     if is_ssh_key_loaded; then
         confirm -d N "some key(s) are already loaded to agent; still generate key?" || return 1
     fi
 
-    if ! cmd_avail ssh-keygen; then
-        err "ssh-keygen is not installed; won't generate ssh key."
-        return 1
-    fi
-
-    report "generating ssh key..."
-    while ! [[ "$mail" =~ $valid_mail_regex ]]; do
-        report "enter your (valid) mail (eg [username@server.com]):"
-        read -r mail
+    cmd_avail ssh-keygen || { err "ssh-keygen is not installed; won't generate ssh key."; return 1; }
+    report 'generating ssh key...'
+    while [[ -z "$comment" ]]; do
+        read -rp 'enter a comment (e.g. your mail): ' comment
     done
 
-    exe "ssh-keygen -t ed25519 -C '$mail'" || return $?
+    exe "ssh-keygen -t ed25519 -C '$comment'" || return $?
     #_sanitize_ssh
 }
 
@@ -9885,7 +9877,7 @@ is_same_json() {
     local f1="$1" f2="$2"
     [[ "$#" -eq 2 && -f "$f1" && -f "$f2" ]] || { err "exactly 2 args expected, both json files"; return 1; }
     is_valid_json "$f1" "$f2" || { err "both files need to contain valid json"; return 1; }
-    jq -en --slurpfile a "$f1" --slurpfile b "$f2" '$a == $b' >/dev/null 2>&1
+    jq -en --slurpfile a "$f1" --slurpfile b "$f2" '$a == $b' &>/dev/null
 }
 
 
@@ -9921,7 +9913,7 @@ sumtree() {
         pushd "$dir" &> /dev/null || return 1  # cd to dir in order to take relative paths
     fi
 
-    if command -v parallel > /dev/null 2>&1; then
+    if command -v parallel &>/dev/null; then
         find . -type f | parallel -k -n 100 md5sum -- {} | sort -k 2 | md5sum | cut -d' ' -f 1  # speeds up a bit, as it decreases number of calls to md5sum
     else
         find . -type f -exec md5sum -- {} \+ | sort -k 2 | md5sum | cut -d' ' -f 1
@@ -9936,7 +9928,7 @@ sumtree() {
     # hashdeep alternative:
     #hashdeep -r -l -j0 -c md5 . | md5sum  # follows symlinks by default!
 
-    [[ -n "$dir" ]] && popd &> /dev/null
+    [[ -n "$dir" ]] && popd &>/dev/null
 }
 
 
@@ -9950,9 +9942,9 @@ is_proc_running() {
     [[ -z "$proc" ]] && { err 'process name not provided! Abort.'; return 1; }
 
     #if pidof "$proc"; then
-    pgrep -f -- "$proc" > /dev/null 2>&1  # TODO: add -x flag to search for EXACT commands? also,
-                                          # -f seems like a bad idea, eg `is_proc_running somecmd`
-                                          # would return true if file named 'somecmd' was opened in vim
+    pgrep -f -- "$proc" &>/dev/null  # TODO: add -x flag to search for EXACT commands? also,
+                                     # -f seems like a bad idea, eg `is_proc_running somecmd`
+                                     # would return true if file named 'somecmd' was opened in vim
 }
 
 
@@ -9962,7 +9954,7 @@ is_proc_running() {
 #
 # @returns {bool}  true if ANY of the passed programs is installed.
 cmd_avail() {
-    command -v -- "$@" > /dev/null 2>&1
+    command -v -- "$@" &>/dev/null
 }
 
 
