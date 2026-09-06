@@ -211,9 +211,8 @@ validate_and_init() {
 
 # check dependencies required for this installation script
 check_dependencies() {
-    local dir prog perms exec_to_pkg
+    local dir prog exec_to_pkg
 
-    readonly perms='u=rwX,g=,o='  # can't be 777, nor 766, since then you'd be unable to ssh into;
     declare -A exec_to_pkg=(
         [gpg]=gnupg
         [keepassxc-cli]=keepassxc-full
@@ -239,31 +238,26 @@ check_dependencies() {
 
             # TODO: currently does not fail even when prog is not avail!
             install_block "$prog" || fail "unable to install required prog [$prog] this script depends on. abort."
-            report "...done"
+            report '...done'
         fi
     done
 
     # TODO: need to create dev/ already here, since both dotfiles and private-common
     # either point to it, or point at something in it; not a good solution.
     # better finalise scripts and move them to the public/common dotfiles repo.
-    #
-    #
-    # verify required dirs are existing and have $perms perms:
     for dir in \
             "$BASE_DATA_DIR" \
             "$BASE_DATA_DIR/dev" \
             "$BASE_PROGS_DIR" \
                 ; do
         if ! [[ -d "$dir" ]]; then
-            if confirm -d Y "[$dir] mountpoint/dir does not exist; simply create a directory instead? (answering 'no' aborts script)"; then
+            if confirm -d Y "[$dir] mountpoint/dir does not exist; create a directory now? (answering 'no' aborts script)"; then
                 ensure_d -s "$dir" || fail
+                exe "sudo chown $USER:$USER -- '$dir'" || fail "unable to change [$dir] ownership to [$USER:$USER]. abort."
             else
                 fail "expected [$dir] to be an already-existing dir. abort"
             fi
         fi
-
-        exe "sudo chown $USER:$USER -- '$dir'" || fail "unable to change [$dir] ownership to [$USER:$USER]. abort."
-        exe "sudo chmod $perms -- '$dir'" || fail "unable to change [$dir] permissions to [$perms]. abort."
     done
 }
 
@@ -873,7 +867,8 @@ setup_sudoers() {
 
 
 # https://wiki.debian.org/UnattendedUpgrades for unattended-upgrades setup
-# TODO: some resources actually recommend _against_ unattended-upgrades on testing! (as described in 02periodic hdr)
+#   - note this link redirects to https://wiki.debian.org/PeriodicUpdates as of '26
+# NOTE: some resources actually recommend _against_ unattended-upgrades on testing! (as described in 02periodic hdr)
 setup_apt_dpkg() {
     local apt_dir file
 
@@ -2058,7 +2053,7 @@ setup_global_shell_links() {
     for file in "${real_file_locations[@]}"; do
         IFS=':' read -r file target <<< "$file"
         is_f -m "can't link it to ${global_dir}/" "$file" || continue
-        create_link -s "$file" "${global_dir}/$target"
+        create_link -s "$file" "${global_dir}/$target"  # note $target may be empty
     done
 
     ## OR alternatively to the links, `install` 'em:
@@ -2077,6 +2072,7 @@ setup_private_asset_perms() {
             ~/.netrc \
             ~/.pypirc \
             ~/.electrum \
+            "$XDG_CONFIG_HOME/chezmoi/" \
             "$XDG_CONFIG_HOME/gcalcli/" \
             "$XDG_CONFIG_HOME/neomutt/" \
             "$XDG_DATA_HOME/goobook_auth.json" \
@@ -2733,6 +2729,7 @@ install_devstuff() {
     install_codegraph
     install_graymatter
     install_fff
+    install_dcg
     install_setup_claude
 
     install_kubectl
@@ -4538,7 +4535,7 @@ install_jdtls() {  # https://github.com/eclipse-jdtls/eclipse.jdt.ls#installatio
 #   - doesn't provide LSP, but sets up hooks to use external LSP: https://github.com/nesaminua/claude-code-lsp-enforcement-kit#-works-with-any-lsp-mcp-server
 #      - looks hardcoded and _heavily_ FE-dev-heavy
 #   - note alternatively Serena has their own hooks: https://oraios.github.io/serena/02-usage/030_clients.html#claude-code
-# - https://github.com/ast-grep/ast-grep-mcp
+# - if serena (or other LSPs for that matter) are too heavy, consider https://github.com/ast-grep/ast-grep (w/ its https://github.com/ast-grep/ast-grep-mcp)
 #   - not LSP, but... close and lighter
 # - NOTE:
 #   - per https://oraios.github.io/serena/02-usage/020_running.html#streamable-http-mode :
@@ -4623,6 +4620,9 @@ install_cursor() {
 # - https://github.com/open-gsd/gsd-core
 # - claude /loop
 # - ralph (or even better -- https://ghuntley.com/loop/)
+#   - another ralph implementation/flavor: https://github.com/frankbria/ralph-claude-code
+#   - see also https://github.com/klaudworks/ralph-meets-rex
+# - https://github.com/Chachamaru127/claude-code-harness
 install_setup_claude() {  # https://code.claude.com/docs/en/terminal-guide#macos-and-linux
     #install_from_url_shell  claude 'https://claude.ai/install.sh'
 
@@ -4828,7 +4828,7 @@ install_ly_display_manager() {  # https://codeberg.org/fairyglade/ly
     #exe "sudo rm -rf -- '$dir'"
     # }}} ...or manual: {{{
     install_block "${deps[*]}"
-    exe "pushd $dir"
+    exe "pushd '$dir'" || return 1
     # as for why we pass via mise exec, see https://github.com/jdx/mise/discussions/8088
     exe 'mise x -- zig build' || { popd; return 1; }
     exe "mise x -- sudo env 'PATH=$PATH' zig build installnoconf -Dinit_system=systemd" || { popd; return 1; }  # PATH=$PATH as zig is avail as a shim; also see https://codeberg.org/fairyglade/ly/issues/921#issuecomment-10424028
@@ -4926,6 +4926,21 @@ install_fff() {  # https://github.com/dmtrKovalenko/fff#mcp-server
     # - its download_binary() saves into: "${INSTALL_DIR}/${BINARY_NAME}${ext}"
     install_bin_from_git -N fff-mcp  dmtrKovalenko/fff 'fff-mcp-x86_64-unknown-linux-musl' || return
     #MANUAL_STEPS+=('fff-mcp: config agents -- refer to print_setup_instructions() in https://github.com/dmtrKovalenko/fff/blob/main/install-mcp.sh')
+}
+
+
+# https://github.com/Dicklesworthstone/destructive_command_guard#installation
+# https://github.com/Dicklesworthstone/destructive_command_guard#prebuilt-binaries
+#
+# https://github.com/Dicklesworthstone/destructive_command_guard#claude-code-configuration
+# https://github.com/Dicklesworthstone/destructive_command_guard#enabled-by-default-no-config-file
+#
+# - to quickly compare required config changes against latest upstream, do
+#   - $ bb -n base-simple zsh
+#   - $ curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/destructive_command_guard/main/install.sh?$(date +%s)" | bash
+#   - $ nvim ~/.claude/settings.json
+install_dcg() {  # https://github.com/Dicklesworthstone/destructive_command_guard Dicklesworthstone/destructive_command_guard
+    install_bin_from_git -N dcg  Dicklesworthstone/destructive_command_guard '-x86_64-unknown-linux-musl.tar.xz'
 }
 
 
@@ -6445,15 +6460,16 @@ install_fonts() {
     # another font editor: https://github.com/bezy-org/bezy
     is_native && install_block 'fontforge gucharmap'
 
-    # https://github.com/ryanoasis/nerd-fonts#option-7-install-script
+    # https://github.com/ryanoasis/nerd-fonts#option-3-install-script
     install_nerd_fonts() {
-        local tmpdir fonts repo ver i opts
+        local tmpdir fonts repo ver i json_conf
 
+        # `./install.sh list`
         fonts=(
             Hack
             SourceCodePro
             AnonymousPro
-            Terminus:M
+            Terminus
             RobotoMono
             Ubuntu
             UbuntuMono
@@ -6465,24 +6481,30 @@ install_fonts() {
         )
 
         repo='https://github.com/ryanoasis/nerd-fonts'
-        ver="$(get_git_sha "$repo")" || return 1
+        ver="$(get_git_sha "$repo")" || return 1  # TODO: better use get_git_tag() ?
         is_installed "$ver" nerd-fonts && return 2
 
-        # clone the repository
-        tmpdir="$TMP_DIR/nerd-fonts-${RANDOM}"
-        exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
-        exe "pushd $tmpdir" || return 1
+        tmpdir="$(mkt nerd-fonts)"
+        exe "curl -fsSL https://raw.githubusercontent.com/ryanoasis/nerd-fonts/master/install.sh -o '$tmpdir/install.sh' && chmod +x '$tmpdir/install.sh'"
 
-        report "installing nerd-fonts..."
+        json_conf=$(cat <<EOF
+{
+  "include": ["base-simple"],
+  "mounts": {
+    "$tmpdir": "bind",
+    "~/.fonts": "ro-bind",
+    "{xdg_cache}/fontconfig": bind-create,
+    "{xdg_data}/fonts/NerdFonts": "bind-create"
+  }
+}
+EOF
+)
+        report 'installing nerd-fonts...'
         for i in "${fonts[@]}"; do
-            IFS=: read -r i opts <<< "$i"
-            exe -i "./install.sh '$i'"
-            [[ "$opts" == *M* ]] && exe -i "./install.sh --mono '$i'"  # mono variant needs explicit installation, see https://github.com/ryanoasis/nerd-fonts/discussions/1903#discussioncomment-13948180
+            exe "bb -DM -j '$json_conf' $tmpdir/install.sh install $i" || return 1
         done
 
-        exe "popd"
-        exe "sudo rm -rf -- '$tmpdir'"
-
+        exe "rm -rf -- '$tmpdir'"
         add_to_dl_log  nerd-fonts "$ver"
         return 0
     }
@@ -6609,9 +6631,9 @@ install_from_repo() {
                   # NOTE: ntfs3 is in kernel, but IIRC unmaintained in '26, whereas the OG ntfs saw more love again in linux 7.1 & .2; see https://www.reddit.com/r/linux/comments/1vqc9wk/linux_kernel_72_has_been_released/p457htw/
         kdeconnect
         #erlang  # avail in mise
-        cargo  # Rust package manager
         rustup # installs The Rust Programming Language from the official release channels, enabling you to easily switch between stable, beta, and nightly compilers and keep them updated;
                # note we really should use mise for ver management, but even mise uses rustup under the hood, and e.g. Serena requires rustup as well
+        #cargo  # Rust package manager; note rustup & cargo pkgs likely conflict! note rustup pkg provides us w/ 'cargo' command
         acpid  # Advanced Configuration and Power Interface event daemon
         lm-sensors  # utilities to read temperature/voltage/fan sensors; https://github.com/hramrach/lm-sensors
         #psensor  # GTK+ application for monitoring hardware sensors; unsure, but maybe x11?
@@ -6687,7 +6709,7 @@ install_from_repo() {
         command-not-found  # automatically search repos when entering unrecognized command, needs apt-file; installs hook for bash, to use w/ zsh see https://github.com/Freed-Wu/zsh-command-not-found
         apt-show-versions
         unattended-upgrades  # automatic installation of security upgrades
-        apt-listchanges  # compare a new version of a package with the one currently installed and show what has been changed; TODO: we haven't provided configuration for it! one example: https://wiki.debian.org/PeriodicUpdates?action=show&redirect=UnattendedUpgrades#Get_more_information_about_changes
+        apt-listchanges  # compare a new version of a package with the one currently installed and show what has been changed; TODO: we haven't provided configuration for it! one example: https://wiki.debian.org/PeriodicUpdates#Get_more_information_about_changes
         apt-listbugs  # retrieves bug reports from the Debian Bug Tracking System and lists them. Especially, it is intended to be invoked before each installation/upgrade by APT
         debsecan  # Debian Security Analyzer - tool to generate a list of vulnerabilities which affect a particular Debian installation.
                   # note it's also dependency for https://github.com/khimaros/debian-hybrid (project that generates automatic higher apt-pins for security updates from unstable)
@@ -6716,6 +6738,7 @@ install_from_repo() {
         httpie  # CLI, cURL-like tool for humans; https://httpie.io/
         fuse3  # simple interface for userspace programs to export a virtual filesystem to the Linux kernel; https://github.com/libfuse/libfuse/
                # note as of trixie "fuse" package also defaults to fuse3
+        libfuse2t64  # old libfuse2 libs; needed for appimage type2
         squashfuse  # FUSE filesystem to mount squashfs archives; e.g. used by our appimage sandbox helper
         #fuseiso  # FUSE module to mount ISO filesystem images
         parallel
@@ -7021,6 +7044,7 @@ install_from_repo() {
                  # one advantage over urlview is it handles long urls better
         translate-shell  # cli translator powered by Google Translate (and others); https://github.com/soimort/translate-shell # TODO: also avail via docker
                          # last commit '24
+        shfmt  # A shell parser, formatter, and interpreter with bash and zsh support; https://github.com/mvdan/sh
     )
     # old/deprecated block3:
     #         spacefm-gtk3
@@ -7801,6 +7825,7 @@ __choose_prog_to_build() {
         install_gh_extensions
         install_worktrunk
         install_fff
+        install_dcg
         install_lazydocker
         install_dive
         install_systemd_manager_tui
