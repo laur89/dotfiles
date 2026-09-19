@@ -802,7 +802,7 @@ setup_xsecurelock() {
 #   - scan apparomor audit messages, review them & update the profiles:
 #     sudo aa-logprof
 setup_apparmor() {
-    [[ "$(cat /sys/module/apparmor/parameters/enabled)" != Y ]] && err 'apparmor not enabled!'  # sanity
+    [[ "$(</sys/module/apparmor/parameters/enabled)" != Y ]] && err 'apparmor not enabled!'  # sanity
     add_to_group  adm  # adm used for system monitoring tasks; members can read log files etc
 
     # per https://wiki.debian.org/AppArmor/HowToUse :
@@ -8582,7 +8582,7 @@ _init_seafile_cli() {
     readonly parent_dir="$BASE_DATA_DIR"
 
     is_d "$parent_dir" || return 1
-    [[ -f "$ccnet_conf/seafile.ini" && -d "$(cat "$ccnet_conf/seafile.ini")" ]] && return 0  # everything seems set, no need to init
+    [[ -s "$ccnet_conf/seafile.ini" && -d "$(<"$ccnet_conf/seafile.ini")" ]] && return 0  # everything seems set, no need to init
 
     check_progs_installed  seaf-cli || return 1
     seaf-cli init -c "$ccnet_conf" -d "$parent_dir" || { err "[seaf-cli init] failed w/ $?"; return 1; }
@@ -8933,7 +8933,7 @@ setup_swappiness() {
     local target current
 
     readonly target=100  # on spinning disks you'd want to set this lower; believe kernel default is 60
-    current="$(cat -- /proc/sys/vm/swappiness)"
+    current="$(</proc/sys/vm/swappiness)"
     is_digit "$current" || { err "couldn't find current swappiness value, not a digit: [$current]"; return 1; }
     [[ "$target" -eq "$current" ]] && return 0
 
