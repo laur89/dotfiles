@@ -444,7 +444,7 @@ zstyle ':fzf-tab:*' popup-min-size 200 15
 #zstyle ':fzf-tab:complete:*:*' fzf-preview 'less ${(Q)realpath}'
 #export LESSOPEN='|~/.lessfilter %s'
 ## } ...or our own script: {
-##PREVIEW_SNIPPET='/data/dev/scripts/system/preview-file $realpath'
+##PREVIEW_SNIPPET='/data/scripts/system/preview-file $realpath'
 ##zstyle ':fzf-tab:complete:(-command-|-parameter-|-brace-parameter-|export|unset|expand):*' fzf-preview 'eval echo \$$word'
 ##zstyle ':fzf-tab:complete:*:*' fzf-preview $PREVIEW_SNIPPET
 ###zstyle ':fzf-tab:complete:ln:*' fzf-preview $PREVIEW_SNIPPET
