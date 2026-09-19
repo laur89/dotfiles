@@ -242,9 +242,7 @@ check_dependencies() {
         fi
     done
 
-    # TODO: need to create dev/ already here, since both dotfiles and private-common
-    # either point to it, or point at something in it; not a good solution.
-    # better finalise scripts and move them to the public/common dotfiles repo.
+    # TODO: consider moving dir creation to chezmoi script; unsure whether it'd be better tho
     for dir in \
             "$BASE_DATA_DIR" \
             "$BASE_DATA_DIR/dev" \
@@ -344,8 +342,10 @@ install_flatpak() {
     #   - also avail as flatpak: https://flathub.org/en/apps/com.github.tchx84.Flatseal
     # - xdg-desktop-portal provides sandboxed programs mediated D-Bus interfaces
     #   for file access, URI opening, printing and similar desktop integration features
-    #   - gtk version is one of its implementing backends
-    install_block 'flatpak flatseal xdg-desktop-portal xdg-desktop-portal-gtk' || return 1
+    #   - gtk version is one of its implementing backends we've chosen
+    # - xdg-native-messaging-proxy is Native Messaging proxy for browsers running as Flatpaks; see https://github.com/flatpak/xdg-desktop-portal/issues/655
+    #   note as one of the comments mentions, it still requires e.g. keepassXC to run natively
+    install_block 'flatpak flatseal xdg-desktop-portal xdg-desktop-portal-gtk xdg-native-messaging-proxy' || return 1
     #exe 'sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo'  # <- normal/non-verified-only remote
 
     # by default we install from the 'verified' repo, taken from this secureblue comment:
@@ -369,7 +369,7 @@ setup_smartd() {
     local conf notif tmpfile c
 
     conf='/etc/smartd.conf'
-    notif='/data/dev/scripts/smartdnotify'
+    notif="$BASE_DATA_DIR/scripts/smartdnotify"
     tmpfile="$TMP_DIR/.smartd_setup-$RANDOM"
 
     # - The -M test option causes a test email to be sent each time the smartd daemon starts (set in /etc/smartd.conf):
@@ -768,6 +768,19 @@ setup_gnome_keyring_pam_module() {
 }
 
 
+# https://github.com/google/xsecurelock/#special-notes-for-freebsd-and-netbsd
+# without this setuid bit setting you'll get following err in journal:
+# > authproto_pam[163261]: pam_unix(common-auth:account): setuid failed: Operation not permitted
+# - see also: https://github.com/google/xsecurelock/issues/186
+setup_xsecurelock() {
+    local f='/usr/libexec/xsecurelock/authproto_pam'
+    is_pkg_installed  xsecurelock || return 1
+    is_f "$f" || return 1
+    exe "sudo chmod u+s '$f'" || return 1
+    exe -c 0,2 "sudo dpkg-statoverride --add root root 4755 '$f'"  # exits w/ 2 if override already exists
+}
+
+
 # https://wiki.debian.org/AppArmor/HowToUse
 # note profiles from apparmor-profiles are not installed by default; to do that, don
 # $ sudo cp /usr/share/apparmor/extra-profiles/usr.bin.example /etc/apparmor.d/   # to install profile
@@ -823,6 +836,7 @@ setup_apparmor() {
 # - https://gist.github.com/ageis/f5595e59b1cddb1513d1b425a323db04  (hardening via systemd)
 setup_bubblebox() {
     exe "systemctl enable --user --no-warn 'ai-agent-ssh-agent@dev-work.service'"
+    #exe "systemctl enable --user --no-warn 'ai-agent-ssh-agent@dev-personal.service'"
 }
 
 
@@ -940,7 +954,7 @@ setup_crontab() {
     for i in \
             hosts-block-update \
                 ; do
-        i="$BASE_DATA_DIR/dev/scripts/$i"
+        i="$BASE_DATA_DIR/scripts/$i"
         is_f -nm "can't dump into $weekly_crondir" "$i" || continue
 
         #create_link -s "$i" "${weekly_crondir}/"  # linked crontabs don't work!
@@ -2161,7 +2175,7 @@ install_nm_dispatchers() {
 
     readonly nm_wrapper_dest='/etc/NetworkManager/dispatcher.d'
     readonly dispatchers=(
-        "$BASE_DATA_DIR/dev/scripts/network_manager_SSID_checker_wrapper.sh"
+        "$BASE_DATA_DIR/scripts/network_manager_SSID_checker_wrapper.sh"
     )
 
     is_d -m "NM dispatcher script(s) won't be installed" "$nm_wrapper_dest" || return 1
@@ -3151,7 +3165,7 @@ fetch_extract_tarball_from_git() {
 # -S     - flag to extract into current $PWD, ie won't create a new tempdir.
 # -D     - we want extracted root dir, not a single file;
 # -n     - filename pattern to be used by find; works together w/ -f;
-# -f     - $file output pattern to grep for in order to filter for specific
+# -f     - `file` output pattern to grep for in order to filter for specific
 #          single file from unpacked tarball;
 #
 # $1 - tarball file to be extracted, or a URL where to fetch file from first
@@ -3210,29 +3224,29 @@ extract_tarball() {
     if [[ "$dir_only" == 1 ]]; then
         [[ -d "$dir" ]] || { err "couldn't find single extracted dir in extracted tarball in [$(pwd -P)]"; return 1; }
         echo "$dir"
-    else  # we're looking for a specific file (not a dir!) under extracted tarball
-        [[ "$standalone" == 1 ]] && dir='.' || dir="$tmpdir"
-
-        # TODO: support recursive extraction?
-        if [[ -n "$file_filter" ]]; then
-            local files
-            while IFS= read -r -d $'\0' file; do
-                file -iLb "$file" | grep -Eq "$file_filter" && files+=("$file")
-            done < <(find "$dir" -name "${name_filter:-*}" -type f -print0)
-            if [[ "${#files[@]}" -ne 1 ]]; then
-                err "matched [${#files[@]}] extracted/uncompressed files in [$(realpath "$dir")], expected 1"
-                return 1
-            fi
-            file="${files[0]}"
-        else
-            file="$(find "$dir" -name "${name_filter:-*}" -type f)"
-            [[ -f "$file" ]] || { err "couldn't locate single extracted/uncompressed file in [$(realpath "$dir")]; resulting/found asset is [$file]"; return 1; }
-        fi
-
-        echo "$file"
+        return 0
     fi
 
-    return 0
+    # following is dir_only = 0, i.e. we're looking for a specific file (not a dir!) under extracted tarball...
+    [[ "$standalone" == 1 ]] && dir='.' || dir="$tmpdir"
+
+    # TODO: support recursive extraction?
+    if [[ -n "$file_filter" ]]; then
+        local files
+        while IFS= read -r -d $'\0' file; do
+            file -iLb "$file" | grep -Eq "$file_filter" && files+=("$file")
+        done < <(find "$dir" -name "${name_filter:-*}" -type f -print0)
+        if [[ "${#files[@]}" -ne 1 ]]; then
+            err "matched [${#files[@]}] extracted/uncompressed files in [$(realpath "$dir")], expected 1"
+            return 1
+        fi
+        file="${files[0]}"
+    else
+        file="$(find "$dir" -name "${name_filter:-*}" -type f)"
+        [[ -f "$file" ]] || { err "couldn't locate single extracted/uncompressed file in [$(realpath "$dir")]; resulting/found asset is [$file]"; return 1; }
+    fi
+
+    echo "$file"; return 0
     # do NOT remove $tmpdir! caller can clean up if they want
 }
 
@@ -4452,7 +4466,6 @@ install_fence() {  # https://github.com/fencesandbox/fence
 
 
 # alterantives:
-#  - plandex
 #  - https://github.com/block/goose
 #  - https://github.com/cline/cline
 #  - https://github.com/All-Hands-AI/OpenHands
@@ -4554,6 +4567,7 @@ install_agentic_lsp() {
 
     # `serena init` writes into $SERENA_HOME, so have to run it from the actual end-sandbox(es):
     exe 'bb -DM -n dev-work -- serena init' || return $?
+    exe 'bb -DM -n dev-personal -- serena init' || return $?
 
     # TODO: verify hooks are set in $CLAUDE_CONFIG_DIR/settings.json
 }
@@ -4667,7 +4681,7 @@ EOF
         jq -reM '""' <<< "$json" 2>/dev/null || { err "[$name] mcp definition not a valid json: [$json]"; return 1; }
         [[ -s "$conf" ]] || echo '{"mcpServers":{}}' > "$conf" || err '.claude init err'
         jq --arg name "$name" --argjson server "$json" \
-           '.mcpServers[$name] = $server' "$conf" > "$tmpfile" || err '.claude jq err'
+           '.mcpServers[$name] = $server' "$conf" >| "$tmpfile" || err '.claude jq err'
         is_same_json "$tmpfile" "$conf" || exe "mv -- '$tmpfile' '$conf'"
     }
     _add_mcp_server fff        '{"type":"stdio","command":"fff-mcp","args":[]}'
@@ -4679,22 +4693,6 @@ EOF
     # - Puppeteer MCP -- FE work
     unset _add_mcp_server
     # }}} /mcp
-}
-
-
-# plandex CLI
-# installation logic from https://raw.githubusercontent.com/plandex-ai/plandex/main/app/cli/install.sh
-# TODO: deprecated?
-install_plandex() {
-    local VERSION RELEASES_URL ENCODED_TAG url
-
-    VERSION="$(curl "${CURL_COMMON[@]}" -- https://plandex.ai/v2/cli-version.txt)" || return 1
-
-    RELEASES_URL="https://github.com/plandex-ai/plandex/releases/download"
-    ENCODED_TAG="cli%2Fv${VERSION}"
-    url="${RELEASES_URL}/${ENCODED_TAG}/plandex_${VERSION}_linux_amd64.tar.gz"
-
-    install_from_url plandex "$url" || return 1
 }
 
 
@@ -4939,7 +4937,7 @@ install_fff() {  # https://github.com/dmtrKovalenko/fff#mcp-server
 #   - $ bb -n base-simple zsh
 #   - $ curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/destructive_command_guard/main/install.sh?$(date +%s)" | bash
 #   - $ nvim ~/.claude/settings.json
-install_dcg() {  # https://github.com/Dicklesworthstone/destructive_command_guard Dicklesworthstone/destructive_command_guard
+install_dcg() {  # https://github.com/Dicklesworthstone/destructive_command_guard
     install_bin_from_git -N dcg  Dicklesworthstone/destructive_command_guard '-x86_64-unknown-linux-musl.tar.xz'
 }
 
@@ -6950,7 +6948,6 @@ install_from_repo() {
 
     declare -ar block3=(
         firefox/unstable  # TODO: avail as flatpak (does native messaging work tho?); also can pull binaries from mozilla. see https://wiki.debian.org/Firefox#From_Mozilla_binaries
-                          # note for flatpak native messaging, see https://github.com/flatpak/xdg-desktop-portal/issues/655#issuecomment-4048570056 and a solution/hack it links to: https://github.com/keepassxreboot/keepassxc/issues/7352#issuecomment-2409096972
         profile-sync-daemon  # pseudo-daemon designed to manage your browsers profile in tmpfs and periodically sync it back to disk.
                              # to detect config updates/changes, do  $ vimdiff /usr/share/psd/psd.conf $XDG_CONFIG_HOME/psd/psd.conf
         buku  # CLI bookmark manager; https://github.com/jarun/Buku
@@ -7929,7 +7926,6 @@ __choose_prog_to_build() {
         install_memy
         install_ventoy
         install_kanata
-        install_plandex
         install_open_interpreter
         install_aichat
         install_gemini_cli
@@ -8995,6 +8991,7 @@ post_install_progs_setup() {
     setup_bubblebox
     is_pkg_installed needrestart && setup_needrestart  # TODO: should we include needrestart pkg?
     setup_secret_service
+    setup_xsecurelock
     is_native && setup_smartd
     is_secure_boot && setup_mok  # otherwise e.g. dkms dirs won't be there
     is_pkg_installed mpv && setup_mpv
