@@ -43,7 +43,7 @@ readonly SSH_SERVER_SHARE='/data'            # default node to share over SSH
 
 readonly BUILD_DOCK='deb-build-box'          # name of the build container; TODO: deprecate
 
-readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:152.0) Gecko/20100101 Firefox/152.0'
+readonly USER_AGENT='Mozilla/5.0 (X11; Linux x86_64; rv:155.0) Gecko/20100101 Firefox/155.0'
 #------------------------
 #--- Global Variables ---
 #------------------------
@@ -4074,13 +4074,6 @@ Categories=Development;
 }
 
 
-# https://github.com/advanced-rest-client/arc-electron/releases/latest
-install_arc() {
-    #install_from_git  advanced-rest-client/arc-electron '-amd64.deb'
-    install_bin_from_git -N arc advanced-rest-client/arc-electron 'x86_64.AppImage'
-}
-
-
 # https://github.com/usebruno/bruno
 #
 # alternatives: list of alts @ https://github.com/stepci/awesome-api-clients
@@ -4094,7 +4087,7 @@ install_arc() {
 # Other noteworthy mentions/related:
 # - for automated testing see https://github.com/stepci/stepci
 install_bruno() {
-    err "do not call, using flatpak atm"; return
+    err 'do not call, using flatpak atm'; return
     install_bin_from_git -N bruno usebruno/bruno  _x86_64_linux.AppImage
     # or deb:
     #install_from_git  usebruno/bruno '_amd64_linux.deb'
@@ -4106,7 +4099,7 @@ install_alacritty() {
 
     # first install deps: (https://github.com/alacritty/alacritty/blob/master/INSTALL.md#debianubuntu)
     report "installing alacritty build dependencies..."
-    install_block 'cmake pkg-config libfreetype6-dev libfontconfig1-dev libxcb-xfixes0-dev libxkbcommon-dev' || return 1
+    install_block 'cmake g++ pkg-config libfontconfig1-dev libxcb-xfixes0-dev libxkbcommon-dev python3' || return 1
 
     # quick, binary-only installation...:
     #exe 'cargo install alacritty'
@@ -4115,11 +4108,11 @@ install_alacritty() {
     # ...or follow the full build logic if you want to install extras like manpages:
     dir="$(fetch_extract_tarball_from_git alacritty/alacritty 'v\\d+\\.\\d+.*\\.tar\\.gz')" || return 1
 
-    exe "pushd $dir" || return 1
+    exe "pushd '$dir'" || return 1
 
     # build: https://github.com/alacritty/alacritty/blob/master/INSTALL.md#building
-    # Force support for only X11:
-    exe 'cargo build --release --no-default-features --features=x11' || return 1  # should produce binary at target/release/alacritty
+    # Force support for only X11:  (TODO: x11)
+    exe 'cargo build --release --no-default-features --features=x11' || { popd; return 1; }  # should produce binary at target/release/alacritty
 
     # post-build setup: https://github.com/alacritty/alacritty/blob/master/INSTALL.md#post-build
     if ! infocmp alacritty; then
@@ -4127,14 +4120,21 @@ install_alacritty() {
     fi
 
     # install man-pages:
-    ensure_d -s "/usr/local/share/man/man1" || return 1
-    exe 'gzip -c extra/alacritty.man | sudo tee /usr/local/share/man/man1/alacritty.1.gz > /dev/null' || err
-    exe 'gzip -c extra/alacritty-msg.man | sudo tee /usr/local/share/man/man1/alacritty-msg.1.gz > /dev/null' || err
+    ensure_d -s /usr/local/share/man/man1 /usr/local/share/man/man5 /usr/local/share/man/man7 || { popd; return 1; }
+    exe 'scdoc < extra/man/alacritty.1.scd | gzip -c | sudo tee /usr/local/share/man/man1/alacritty.1.gz > /dev/null' || err
+    exe 'scdoc < extra/man/alacritty-msg.1.scd | gzip -c | sudo tee /usr/local/share/man/man1/alacritty-msg.1.gz > /dev/null' || err
+    exe 'scdoc < extra/man/alacritty.5.scd | gzip -c | sudo tee /usr/local/share/man/man5/alacritty.5.gz > /dev/null' || err
+    exe 'scdoc < extra/man/alacritty-bindings.5.scd | gzip -c | sudo tee /usr/local/share/man/man5/alacritty-bindings.5.gz > /dev/null' || err
+    exe 'scdoc < extra/man/alacritty-escapes.7.scd | gzip -c | sudo tee /usr/local/share/man/man7/alacritty-escapes.7.gz > /dev/null' || err
 
-    # install bash completion:
+    # install shell completion:
     exe "cp extra/completions/alacritty.bash $BASH_COMPLETIONS/alacritty.bash" || err
+    exe "sudo cp extra/completions/_alacritty $ZSH_COMPLETIONS/" || err
 
     exe 'sudo mv -- target/release/alacritty  /usr/local/bin/' || err
+    exe 'sudo install -m644 -CT extra/logo/alacritty-term.svg /usr/share/pixmaps/Alacritty.svg' || { popd; return 1; }
+    exe 'sudo desktop-file-install extra/linux/Alacritty.desktop' || err
+    #exe 'sudo update-desktop-database'  # TODO: unsure we need this or not
 
     # cleanup:
     exe 'popd'
@@ -7882,7 +7882,6 @@ __choose_prog_to_build() {
         install_vnote
         install_obsidian
         install_postman
-        install_arc
         #install_bruno
         install_alacritty
         install_wezterm
