@@ -1018,7 +1018,7 @@ clone_repo_subdir() {
         rm -rf -- "$install_dir" || { err "removing existing install_dir [$install_dir] failed w/ $?"; return 1; }
     fi
 
-    tmpdir="$TMP_DIR/.clone-repo-subdir-${RANDOM}"
+    tmpdir="$TMP_DIR/.clone-repo-subdir-$RANDOM"
     exe "git clone -n --depth=1 --filter=tree:0 https://$hub/${repo}.git '$tmpdir'" || { err "cloning [$hub/$repo] failed w/ $?"; return 1; }
     exe "git -C '$tmpdir' sparse-checkout set --no-cone $path" || return 1
     exe "git -C '$tmpdir' checkout" || return 1
@@ -1560,7 +1560,7 @@ install_deps() {
 
 
     # forgit - fzf-fueled git tool:  # https://github.com/wfxr/forgit
-    clone_or_pull_repo "wfxr/forgit" "$BASE_PROGS_DIR" || return 1
+    clone_or_pull_repo 'wfxr/forgit' "$BASE_PROGS_DIR" || return 1
 
     # dynamic colors loader: (TODO: deprecated by pywal right?)
     #clone_or_pull_repo "sos4nt/dynamic-colors" "$BASE_PROGS_DIR"  # https://github.com/sos4nt/dynamic-colors
@@ -3398,7 +3398,7 @@ build_ueberzugpp() {  # https://github.com/jstkdng/ueberzugpp#build-from-source
 
     deps=(libssl-dev libvips-dev libsixel-dev libchafa-dev libtbb-dev)
 
-    tmpdir="$TMP_DIR/ueberzugpp-build-${RANDOM}"
+    tmpdir="$TMP_DIR/ueberzugpp-build-$RANDOM"
     exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
 
     report 'building ueberzugpp...'
@@ -4559,15 +4559,15 @@ install_jdtls() {  # https://github.com/eclipse-jdtls/eclipse.jdt.ls#installatio
 #   - see claude-specific setup @ https://oraios.github.io/serena/02-usage/030_clients.html#claude-code
 install_agentic_lsp() {
     # TODO: need to -n/@include also mise profile? (for py runtimes):
-    #exe 'bb -DM -n base,py  uv tool install -p 3.13 serena-agent' || return $?
+    #exe 'bb -DM -i base,py  uv tool install -p 3.13 serena-agent' || return $?
 
-    exe 'bb -DM -n base,py -- uv tool install --upgrade serena-agent' || return $?
+    exe 'bb -DM -i base,py -- uv tool install --upgrade serena-agent' || return $?
     # or why not pipx:
-    #exe 'bb -DM -n base,py pipx install serena-agent' || return $?
+    #exe 'bb -DM -i base,py pipx install serena-agent' || return $?
 
     # `serena init` writes into $SERENA_HOME, so have to run it from the actual end-sandbox(es):
-    exe 'bb -DM -n dev-work -- serena init' || return $?
-    exe 'bb -DM -n dev-personal -- serena init' || return $?
+    exe 'bb -DM -i dev-work -- serena init' || return $?
+    exe 'bb -DM -i dev-personal -- serena init' || return $?
 
     # TODO: verify hooks are set in $CLAUDE_CONFIG_DIR/settings.json
 }
@@ -4581,18 +4581,18 @@ install_agentic_lsp() {
 # - mcp addition in claude.json -- done in this function
 #
 # - to quickly compare required config changes against latest upstream, do
-#   - $ bb -n base-simple,mise zsh
+#   - $ bb -i base-simple,mise zsh
 #   - $ NPM_CONFIG_PREFIX=/tmp/cg npm i -g @colbymchenry/codegraph
 #   - $ /tmp/cg/bin/codegraph install --yes
 #   OR, even cleaner:
-#   - $ bb -n base-simple zsh
+#   - $ bb -i base-simple zsh
 #   - $ curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
 #   - $ codegraph install --yes
 #   - $ cat ~/.claude.json
 #   - $ cat ~/.claude/settings.json
 #   - $ cat ~/.claude/CLAUDE.md
 install_codegraph() {
-    exe "bb -DM -n base,mise,node -- npm i -g @colbymchenry/codegraph" || return 1
+    exe "bb -DM -i base,mise,node -- npm i -g @colbymchenry/codegraph" || return 1
 }
 
 
@@ -4600,7 +4600,7 @@ install_codegraph() {
 # - global CLAUDE.md instructions
 #
 # - to quickly compare required config changes against latest upstream, do
-#   - $ bb -n base-simple zsh
+#   - $ bb -i base-simple zsh
 #   - $ graymatter init --global
 #   - $ nvim ~/.claude/CLAUDE.md
 #   - $ nvim ~/.config/opencode/AGENTS.md
@@ -4625,7 +4625,7 @@ install_cursor() {
 # - jetbrains air
 #
 # NOTE: to debug what the installer really installs under our homedir, do:
-#   - $ bb -n base-simple  zsh
+#   - $ bb -i base-simple  zsh
 #   - <enter the installation cmd, e.g. `curl -fsSL https://claude.ai/install.sh | bash`>
 #   - $ tree -a ~
 # NOTE: also available as native pkg: https://code.claude.com/docs/en/setup#install-with-linux-package-managers
@@ -4641,14 +4641,14 @@ install_setup_claude() {  # https://code.claude.com/docs/en/terminal-guide#macos
     #install_from_url_shell  claude 'https://claude.ai/install.sh'
 
     # or, same but sandboxed:
-    local ver d tmpdir json_conf conf
+    local ver d tmpdir json_conf
 
     # note the url is from https://claude.ai/install.sh head: (+/latest somewhere else in script appended):
     ver="$(resolve_ver 'https://downloads.claude.ai/claude-code-releases/latest')" || return 1
     is_installed "$ver" claude && return 2
 
     d="$HOME/.local/bin"
-    tmpdir="$TMP_DIR/.install-claude-${RANDOM}"
+    tmpdir="$TMP_DIR/.install-claude-$RANDOM"
 
     json_conf=$(cat <<EOF
 {
@@ -4668,15 +4668,13 @@ EOF
     is_dir_empty "$tmpdir" || err "[$tmpdir] did not remain empty, but contains something unexpected!"  # sanity
     add_to_dl_log  claude "$ver"
 
-    # configure/add MCPs: {{{
-    conf="$XDG_CONFIG_HOME/claude/work/.claude.json"
-    #jq -e .mcpServers "$conf" >/dev/null || err ".mcpServers key not found in [$conf]"  # key won't exist on a fresh install...
 
+    # configure/add MCPs: {{{
     # `claude mcp add` command is annoying as it exits non-zero if mcp already
     # defined; also if some file is missing, it'll start interactive wizard;
-    # that's why we edit raw json instead
+    # that's why we edit raw json instead.
     _add_mcp_server() {
-        local name="$1" json="$2" tmpfile="$TMP_DIR/.claude_setup-$RANDOM"
+        local name="$1" conf="$2" json="$3" tmpfile="$TMP_DIR/.claude_setup-$RANDOM"
         #jq -e ".mcpServers.$name" "$conf" &>/dev/null && return  # alredy defined, bail
         jq -reM '""' <<< "$json" 2>/dev/null || { err "[$name] mcp definition not a valid json: [$json]"; return 1; }
         [[ -s "$conf" ]] || echo '{"mcpServers":{}}' > "$conf" || err '.claude init err'
@@ -4684,14 +4682,24 @@ EOF
            '.mcpServers[$name] = $server' "$conf" >| "$tmpfile" || err '.claude jq err'
         is_same_json "$tmpfile" "$conf" || exe "mv -- '$tmpfile' '$conf'"
     }
-    _add_mcp_server fff        '{"type":"stdio","command":"fff-mcp","args":[]}'
-    _add_mcp_server serena     '{"type":"stdio","command":"serena","args":["start-mcp-server","--context=claude-code","--project-from-cwd"]}'  # see https://oraios.github.io/serena/02-usage/030_clients.html#claude-code
-    _add_mcp_server codegraph  '{"type":"stdio","command":"codegraph","args":["serve","--mcp"]}'
-    _add_mcp_server graymatter '{"type":"stdio","command":"graymatter","args":["mcp","serve"]}'  # from https://github.com/angelnicolasc/graymatter#global-install-all-projects
+
+    _config_for_profile() {
+        local conf
+        for conf; do
+            _add_mcp_server fff        "$conf" '{"type":"stdio","command":"fff-mcp","args":[]}'
+            _add_mcp_server serena     "$conf" '{"type":"stdio","command":"serena","args":["start-mcp-server","--context=claude-code","--project-from-cwd"]}'  # see https://oraios.github.io/serena/02-usage/030_clients.html#claude-code
+            _add_mcp_server codegraph  "$conf" '{"type":"stdio","command":"codegraph","args":["serve","--mcp"]}'
+            _add_mcp_server graymatter "$conf" '{"type":"stdio","command":"graymatter","args":["mcp","serve"]}'  # from https://github.com/angelnicolasc/graymatter#global-install-all-projects
+        done
+    }
+
+    # note if CLAUDE_CONFIG_DIR env var is _not_ set, then the mcp config is in
+    # ~/.claude.json and not in ~/.claude/.claude.json
+    _config_for_profile "$XDG_CONFIG_HOME/claude/work/.claude.json" "$XDG_CONFIG_HOME/claude/personal/.claude.json"
 
     # other MCPs to consider:
     # - Puppeteer MCP -- FE work
-    unset _add_mcp_server
+    unset _add_mcp_server _config_for_profile
     # }}} /mcp
 }
 
@@ -4934,7 +4942,7 @@ install_fff() {  # https://github.com/dmtrKovalenko/fff#mcp-server
 # https://github.com/Dicklesworthstone/destructive_command_guard#enabled-by-default-no-config-file
 #
 # - to quickly compare required config changes against latest upstream, do
-#   - $ bb -n base-simple zsh
+#   - $ bb -i base-simple zsh
 #   - $ curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/destructive_command_guard/main/install.sh?$(date +%s)" | bash
 #   - $ nvim ~/.claude/settings.json
 install_dcg() {  # https://github.com/Dicklesworthstone/destructive_command_guard
@@ -5210,7 +5218,7 @@ build_copyq() {
         qtwayland5-dev-tools
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    tmpdir="$TMP_DIR/copyq-build-${RANDOM}"
+    tmpdir="$TMP_DIR/copyq-build-$RANDOM"
     exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     report "building copyq"
     exe "pushd $tmpdir" || return 1
@@ -5245,7 +5253,7 @@ install_lesspipe() {
     ver="$(get_git_sha "$repo")" || return 1
     is_installed "$ver" lesspipe && return 2
 
-    tmpdir="$TMP_DIR/lesspipe-build-${RANDOM}"
+    tmpdir="$TMP_DIR/lesspipe-build-$RANDOM"
     exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     exe "sudo install -C -m754 --group=$USER --target-directory=/usr/local/bin ${tmpdir}/{archive_color,lesspipe.sh}" || return 1
 
@@ -5498,7 +5506,7 @@ build_goforit() {
         libayatana-appindicator3-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    tmpdir="$TMP_DIR/goforit-build-${RANDOM}"
+    tmpdir="$TMP_DIR/goforit-build-$RANDOM"
     exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     report "building goforit..."
     exe "mkdir $tmpdir/build"
@@ -5583,7 +5591,7 @@ build_i3lock() {
     deps=(autoconf gcc make pkg-config libpam0g-dev libcairo2-dev libfontconfig1-dev libxcb-composite0-dev libev-dev libx11-xcb-dev libxcb-xkb-dev libxcb-xinerama0-dev libxcb-randr0-dev libxcb-image0-dev libxcb-util0-dev libxcb-xrm-dev libxkbcommon-dev libxkbcommon-x11-dev libjpeg-dev libgif-dev)
 
     # clone the repository
-    tmpdir="$TMP_DIR/i3lock-build-${RANDOM}"
+    tmpdir="$TMP_DIR/i3lock-build-$RANDOM"
     exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
     # create tag so a non-debug version is built:
     exe "git -C '$tmpdir' tag -f 'git-$(git -C '$tmpdir' rev-parse --short HEAD)'" || return 1
@@ -5720,7 +5728,7 @@ install_display_switch() {
         ver="$(get_git_sha "$repo")" || return 1
         is_installed "$ver" display-switch && return 2
 
-        tmpdir="$TMP_DIR/display-switch-${RANDOM}"
+        tmpdir="$TMP_DIR/display-switch-$RANDOM"
         exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
 
         exe "cargo -Z unstable-options -C '$tmpdir' build --release" || return 1  # should produce binary at target/release/display_switch
@@ -5969,7 +5977,7 @@ install_i3_conf() {
 #  - https://github.com/justahuman1/i3-grid  - code smells, at least as of '25
 #  - https://github.com/yurikhan/firefox-i3-workspaces - positions multiple ff windows in correct i3 workspace
 install_i3_deps() {
-    local f="$TMP_DIR/i3-dep-${RANDOM}"
+    local f="$TMP_DIR/i3-dep-$RANDOM"
 
     install_block 'python3-i3ipc' || return 1
 
@@ -6324,7 +6332,7 @@ build_and_install_vim() {
         libperl-dev
     ' || { err 'failed to install build deps. abort.'; return 1; }
 
-    tmpdir="$TMP_DIR/vim-build-${RANDOM}"
+    tmpdir="$TMP_DIR/vim-build-$RANDOM"
     exe "git clone ${GIT_OPTS[*]} $repo $tmpdir" || return 1
     exe "pushd $tmpdir" || return 1
 
@@ -6520,7 +6528,7 @@ EOF
         ver="$(get_git_sha "$repo")" || return 1
         is_installed "$ver" powerline-fonts && return 2
 
-        tmpdir="$TMP_DIR/powerline-fonts-${RANDOM}"
+        tmpdir="$TMP_DIR/powerline-fonts-$RANDOM"
         exe "git clone ${GIT_OPTS[*]} $repo '$tmpdir'" || return 1
         exe "pushd $tmpdir" || return 1
         report "installing powerline-fonts..."
@@ -8290,7 +8298,7 @@ install_gtk_numix() {
     report "installing numix build dependencies..."
     rb_install sass || return 1
 
-    tmpdir="$TMP_DIR/numix-theme-build-${RANDOM}"
+    tmpdir="$TMP_DIR/numix-theme-build-$RANDOM"
     exe "git clone ${GIT_OPTS[*]} $theme_repo $tmpdir" || return 1
     exe "pushd $tmpdir" || return 1
     exe "make" || { err; popd; return 1; }
@@ -9797,7 +9805,7 @@ check_progs_installed() {
     declare -a progs_missing
 
     # Check whether required programs are installed:
-    for i in "$@"; do
+    for i; do
         if ! cmd_avail "$i"; then
             progs_missing+=("$i")
         fi
@@ -9826,7 +9834,7 @@ is_same() {
         return 1
     fi
 
-    for n in "$@"; do
+    for n; do
         if [[ ! -e "$n" ]]; then
             err "[$n] does not exist, abort"; return 1
         elif [[ "$n" == / ]]; then
@@ -9848,7 +9856,7 @@ is_same() {
         fi
     done
 
-    for n in "$@"; do
+    for n; do
         if [[ "$t" == f ]]; then
             sum="$(md5sum -- "$n" | cut -d' ' -f 1)" || { err "md5suming [$n] failed with $?"; return 1; }
         else  # we're comparing directories
@@ -9876,7 +9884,7 @@ is_valid_json() {
     [[ "$#" -gt 0 ]] || return 2
     command -v jq &>/dev/null || return 2
 
-    for file in "$@"; do
+    for file; do
         # TODO: think nowadays it should be: `jq empty "$file" 2>/dev/null`; although that ones allows for empty string...
         [[ -s "$file" ]] && jq -reM '""' "$file" &>/dev/null || return 1  # https://stackoverflow.com/a/67979464/1803648
     done
@@ -10136,7 +10144,7 @@ is_f() {
     done
     shift "$((OPTIND-1))"
 
-    for f in "$@"; do
+    for f; do
         if ! sudo test -f "$f"; then
             if [[ -z "$quiet" ]]; then
                 [[ ! -e "$f" ]] && unset m || m=" (but it exists, and is [$(file_type "$f")])"
@@ -10168,7 +10176,7 @@ is_d() {
     done
     shift "$((OPTIND-1))"
 
-    for d in "$@"; do
+    for d; do
         if ! sudo test -d "$d"; then
             if [[ -z "$quiet" ]]; then
                 [[ ! -e "$d" ]] && unset m || m=" (but it exists, and is [$(file_type "$d")])"
@@ -10195,7 +10203,7 @@ ensure_d() {
     done
     shift "$((OPTIND-1))"
 
-    for d in "$@"; do
+    for d; do
         if ! $sudo test -d "$d"; then
             [[ -e "$d" ]] && { err "[$d] exists, but is [$(file_type "$d")]" -1; e=1; continue; }
             # note we set [umask 2] for root to make sure other group can read&traverse created dir; from https://unix.stackexchange.com/a/132201/47501
