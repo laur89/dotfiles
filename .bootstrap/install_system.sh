@@ -751,11 +751,11 @@ setup_gnome_keyring_pam_module() {
     install_block 'libpam-gnome-keyring' || return 1  # PAM module to unlock the GNOME keyring upon login
 
     if ! grep -Eq '^auth\s+optional\s+pam_gnome_keyring.so' "$f"; then
-        exe "echo 'auth       optional     pam_gnome_keyring.so' | sudo tee --append '$f' > /dev/null"
+        exe "echo 'auth       optional     pam_gnome_keyring.so' | sudo tee -a '$f' > /dev/null"
     fi
 
     if ! grep -Eq '^session\s+optional\s+pam_gnome_keyring.so\s+auto_start' "$f"; then
-        exe "echo 'session    optional     pam_gnome_keyring.so auto_start' | sudo tee --append '$f' > /dev/null"
+        exe "echo 'session    optional     pam_gnome_keyring.so auto_start' | sudo tee -a '$f' > /dev/null"
     fi
 
     # to update keyring's passwd during user passwd change, make sure "password optional	pam_gnome_keyring.so" is somewhere in /etc/pam.d/*passw*;
@@ -763,7 +763,7 @@ setup_gnome_keyring_pam_module() {
     f='/etc/pam.d/passwd'
     is_f "$f" || return 1
     if ! grep -REq '^password\s+optional\s+pam_gnome_keyring.so' /etc/pam.d/; then
-        exe "echo 'password	optional	pam_gnome_keyring.so' | sudo tee --append '$f' > /dev/null"
+        exe "echo 'password	optional	pam_gnome_keyring.so' | sudo tee -a '$f' > /dev/null"
     fi
 }
 
@@ -814,7 +814,7 @@ setup_apparmor() {
             local cmd='Exec=sudo aa-notify -p -f /var/log/audit/audit.log'
             if ! grep -Fxq "$cmd" "$aa_notif_desktop"; then
                 exe "sudo sed -i --follow-symlinks 's/^Exec=/#Exec=/g' $aa_notif_desktop"  # comment original one out
-                exe "echo $cmd | sudo tee --append $aa_notif_desktop > /dev/null"
+                exe "echo $cmd | sudo tee -a $aa_notif_desktop > /dev/null"
             fi
         fi
     fi
@@ -1086,7 +1086,7 @@ install_nfs_server() {
         # - all_squash - Maps all user and group IDs to the anonymous user
         if ! grep -q "${share}.*${client_ip}" "$nfs_conf"; then
             report "adding [$share] for $client_ip to $nfs_conf"
-            exe "echo $share ${client_ip}\(rw,sync,no_subtree_check\) | sudo tee --append $nfs_conf > /dev/null"
+            exe "echo $share ${client_ip}\(rw,sync,no_subtree_check\) | sudo tee -a $nfs_conf > /dev/null"
         else
             report "an entry for exposing [$share] to $client_ip is already present in $nfs_conf"
         fi
@@ -1134,7 +1134,7 @@ _install_nfs_client_stationary() {
         if ! grep -q "${server_ip}:${nfs_share}.*${mountpoint}" "$fstab"; then
             report "adding [${server_ip}:$nfs_share] mounting to [$mountpoint] in $fstab"
             exe "echo ${server_ip}:${nfs_share} ${mountpoint} nfs noauto,x-systemd.automount,x-systemd.mount-timeout=10,_netdev,x-systemd.device-timeout=10,timeo=14,rsize=8192,wsize=8192,x-systemd.idle-timeout=1min 0 0 \
-                    | sudo tee --append $fstab > /dev/null"
+                    | sudo tee -a $fstab > /dev/null"
             changed=1
         else
             err "an NFS share entry for [${server_ip}:${nfs_share}] in $fstab already exists."
@@ -1304,7 +1304,7 @@ install_sshfs() {
             report "adding [${server_ip}:$ssh_share] mounting to [$mountpoint] in $fstab..."
             # TODO: you might want to add 'default_permissions,uid=USER_ID_N,gid=USER_GID_N' to the mix as per https://wiki.archlinux.org/index.php/SSHFS:
             exe "echo ${remote_user}@${server_ip}:${ssh_share} $mountpoint fuse.sshfs port=${ssh_port},noauto,x-systemd.automount,_netdev,users,idmap=user,follow_symlinks,IdentityFile=${identity_file},allow_other,reconnect 0 0 \
-                    | sudo tee --append $fstab > /dev/null"
+                    | sudo tee -a $fstab > /dev/null"
 
             sel_ips_to_user["$server_ip"]="$remote_user"
         else
@@ -2127,12 +2127,12 @@ setup_global_bash_settings() {
     ## setup prompt:
     # just in case first delete previous global PS1 def:
     exe "sudo sed -i --follow-symlinks '/^PS1=.*# own-ps1-def-marker$/d' '$global_bashrc'"
-    exe "echo '$ps1' | sudo tee --append $global_bashrc > /dev/null"
+    exe "echo '$ps1' | sudo tee -a $global_bashrc > /dev/null"
 
     ## add the script shell init glue code under /etc for convenience/global access:
     # note this one only covers _interactive_ shells...:
     exe "sudo sed -i --follow-symlinks '/^source .*global_init_marker$/d' '$global_bashrc'"
-    exe "echo 'source /etc/.global-bash-init  # global_init_marker' | sudo tee --append $global_bashrc > /dev/null"
+    exe "echo 'source /etc/.global-bash-init  # global_init_marker' | sudo tee -a $global_bashrc > /dev/null"
 
     # ...and this one only covers _non-interactive_ shells (note cron still isn't covered!)
     # (BASH_ENV is documented here: https://www.gnu.org/software/bash/manual/bash.html#index-BASH_005fENV)
@@ -2462,7 +2462,7 @@ setup_additional_apt_keys_and_sources() {
 
     # spotify: (from https://www.spotify.com/download/linux/):
     # consider also https://github.com/SpotX-Official/SpotX-Bash to patch the client
-    #create_apt_source  spotify  https://download.spotify.com/debian/pubkey_C85668DF69375001.gpg  https://repository.spotify.com/ stable non-free
+    #create_apt_source  spotify  https://download.spotify.com/debian/pubkey_5384CE82BA52C83A.asc  https://repository.spotify.com/ stable non-free
 
     # charles: (from https://www.charlesproxy.com/documentation/installation/apt-repository/):
     #create_apt_source  charles  https://www.charlesproxy.com/packages/apt/charles-repo.asc  https://www.charlesproxy.com/packages/apt/ charles-proxy main
@@ -2523,7 +2523,7 @@ override_locale_time() {
     if ! grep -qE 'LC_TIME=.en_GB.UTF-8.' "$conf_file"; then
         # just in case delete all same definitions, regardless of its value:
         exe "sudo sed -i --follow-symlinks '/^LC_TIME\s*=/d' '$conf_file'" || return 1
-        exe "echo 'LC_TIME=\"en_GB.UTF-8\"' | sudo tee --append '$conf_file' > /dev/null"  # en-gb gives us 24h clock & Monday as first day of the week
+        exe "echo 'LC_TIME=\"en_GB.UTF-8\"' | sudo tee -a '$conf_file' > /dev/null"  # en-gb gives us 24h clock & Monday as first day of the week
     fi
 
     # generate missing locales: {{{
@@ -2658,7 +2658,7 @@ install_kernel_modules() {
     install_block  ddcci-dkms || return 1
 
     for i in "${modules[@]}"; do
-        grep -Fxq "$i" "$conf" || exe "echo $i | sudo tee --append '$conf' > /dev/null"
+        grep -Fxq "$i" "$conf" || exe "echo $i | sudo tee -a '$conf' > /dev/null"
     done
 }
 
@@ -4602,6 +4602,8 @@ install_codegraph() {
 # - to quickly compare required config changes against latest upstream, do
 #   - $ bb -i base-simple zsh
 #   - $ graymatter init --global
+#   - $ graymatter hooks install --scope global  # maybe? dunno
+#   - $ claude mcp add --scope user --transport stdio graymatter -- graymatter mcp serve  # maybe? dunno
 #   - $ nvim ~/.claude/CLAUDE.md
 #   - $ nvim ~/.config/opencode/AGENTS.md
 #   - $ cat .mcp.json
@@ -6843,6 +6845,7 @@ install_from_repo() {
         git
         tig  # https://github.com/jonas/tig
         git-cola
+        gitk  # revision tree visualizer; e.g. git-cola uses it for branch tree visualisation
         git-extras  # extra git commands, e.g. git-ignore, git-setup, git-changelog, git-release, git-effort;  https://github.com/tj/git-extras
         zenity
         #yad  # alternative to zenity
@@ -8102,7 +8105,7 @@ _sysctl_conf() {
         exe "sudo sed -i --follow-symlinks '/^${property}\s*=/d' '$sysctl_conf'"
     fi
 
-    exe "echo $property = $value | sudo tee --append '$sysctl_conf' > /dev/null"
+    exe "echo $property = $value | sudo tee -a '$sysctl_conf' > /dev/null"
 
     # mark our sysctl config has changed:
     SYSCTL_CHANGED=1
@@ -8120,7 +8123,7 @@ add_manpath() {
     is_d -m "can't add [$path -> $manpath] mapping" "$path" "$manpath" || return 1
 
     grep -Eq "^MANPATH_MAP\s+${path}\s+${manpath}$" "$man_db" && return 0  # value already set, nothing to do
-    exe "echo 'MANPATH_MAP $path  $manpath' | sudo tee --append '$man_db' > /dev/null"
+    exe "echo 'MANPATH_MAP $path  $manpath' | sudo tee -a '$man_db' > /dev/null"
 }
 
 
@@ -8163,26 +8166,26 @@ setup_dnsmasq() {
 
     # old ver, directly updating /etc/dnsmasq.conf:
     #exe "sudo sed -i --follow-symlinks '/^cache-size=/d' '$dnsmasq_conf'"
-    #exe "echo cache-size=10000 | sudo tee --append $dnsmasq_conf > /dev/null"
+    #exe "echo cache-size=10000 | sudo tee -a $dnsmasq_conf > /dev/null"
 
     #exe "sudo sed -i --follow-symlinks '/^local-ttl=/d' '$dnsmasq_conf'"
-    #exe "echo local-ttl=10 | sudo tee --append $dnsmasq_conf > /dev/null"
+    #exe "echo local-ttl=10 | sudo tee -a $dnsmasq_conf > /dev/null"
 
     ## lock dnsmasq to be exposed only to localhost:
     #exe "sudo sed -i --follow-symlinks '/^listen-address=/d' '$dnsmasq_conf'"
-    #exe "echo listen-address=::1,127.0.0.1 | sudo tee --append $dnsmasq_conf > /dev/null"
+    #exe "echo listen-address=::1,127.0.0.1 | sudo tee -a $dnsmasq_conf > /dev/null"
 
 
     # TODO: not sure about this bit:
     #if [[ "$PROFILE" != work ]]; then
         #exe "sudo sed -i --follow-symlinks '/^server=/d' '$dnsmasq_conf'"
         #for i in 1.1.1.1   8.8.8.8; do
-            #exe "echo server=$i | sudo tee --append $dnsmasq_conf > /dev/null"
+            #exe "echo server=$i | sudo tee -a $dnsmasq_conf > /dev/null"
         #done
 
         ## no-resolv stops dnsmasq from reading /etc/resolv.conf, and makes it only rely on servers defined in $dnsmasq_conf
         #if ! grep -Fxq 'no-resolv' "$dnsmasq_conf"; then
-            #exe "echo no-resolv | sudo tee --append $dnsmasq_conf > /dev/null"
+            #exe "echo no-resolv | sudo tee -a $dnsmasq_conf > /dev/null"
         #fi
     #fi
 }
@@ -8576,7 +8579,7 @@ configure_ntp_for_work() {
     for i in "${servers[@]}"; do
         if ! grep -qFx "$i" "$conf"; then
             report "adding [$i] to $conf"
-            exe "echo $i | sudo tee --append $conf > /dev/null"
+            exe "echo $i | sudo tee -a $conf > /dev/null"
         fi
     done
 }
@@ -8731,7 +8734,7 @@ install_setup_printing_cups() {
         return 1
     elif ! grep -Eq '^DefaultAuthType\s+None' "$conf_file"; then  # hasn't been changed yet
         exe "sudo sed -i --follow-symlinks 's/^DefaultAuthType/#DefaultAuthType/g' $conf_file"  # comment out existing value
-        exe "echo 'DefaultAuthType None' | sudo tee --append '$conf_file' > /dev/null"
+        exe "echo 'DefaultAuthType None' | sudo tee -a '$conf_file' > /dev/null"
         exe 'sudo service cups restart'
     fi
 
@@ -8774,16 +8777,16 @@ install_anything_sync() {
     is_f -n "$conf" || return 1
     if ! sudo grep -q "^WHATTOSYNC.*firefox" "$conf"; then
         exe "sudo sed -i --follow-symlinks '/^WHATTOSYNC=/d' '$conf'" || return 1
-        exe "echo 'WHATTOSYNC=(/home/$USER/.cache/mozilla/firefox)' | sudo tee --append '$conf' > /dev/null"
+        exe "echo 'WHATTOSYNC=(/home/$USER/.cache/mozilla/firefox)' | sudo tee -a '$conf' > /dev/null"
         #exe "sudo sed -i --follow-symlinks 's|^WHATTOSYNC=.*|WHATTOSYNC=(/home/$USER/.cache/mozilla/firefox)|g' $conf"
     fi
     if ! sudo grep -q "^USE_BACKUPS=no" "$conf"; then
         exe "sudo sed -i --follow-symlinks '/^USE_BACKUPS=/d' '$conf'" || return 1
-        exe "echo 'USE_BACKUPS=no' | sudo tee --append '$conf' > /dev/null"
+        exe "echo 'USE_BACKUPS=no' | sudo tee -a '$conf' > /dev/null"
     fi
     if ! sudo grep -q "^USE_OVERLAYFS=yes" "$conf"; then
         exe "sudo sed -i --follow-symlinks '/^USE_OVERLAYFS=/d' '$conf'" || return 1
-        exe "echo 'USE_OVERLAYFS=yes' | sudo tee --append '$conf' > /dev/null"
+        exe "echo 'USE_OVERLAYFS=yes' | sudo tee -a '$conf' > /dev/null"
     fi
 
     exe "sudo systemctl enable asd.service"
@@ -8861,7 +8864,7 @@ configure_updatedb() {
 
         if [[ -n "$modified" ]]; then
             exe "sudo sed -i --follow-symlinks '/^${key}=.*$/d' '$conf'"  # nuke previous setting
-            exe "echo '${key}=\"$line\"' | sudo tee --append '$conf' > /dev/null"
+            exe "echo '${key}=\"$line\"' | sudo tee -a '$conf' > /dev/null"
         fi
     }
 
