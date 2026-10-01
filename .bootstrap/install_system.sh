@@ -9048,7 +9048,6 @@ install_nfs_server_or_client() {
 # - test OOM via `tail /dev/zero`
 #
 # for logs: `sudo journalctl -u earlyoom`
-# TODO: WIP need to finish config
 setup_earlyoom() {
     local conf file
     conf='/etc/default/earlyoom'
@@ -9057,6 +9056,27 @@ setup_earlyoom() {
     is_f -nm 'cannot configure earlyoom' "$conf" "$file" || return 1
     exe "sudo install -m644 -CT '$file' '$conf'" || { err "installing [$file] failed w/ $?"; return 1; }
     #exe 'sudo systemctl restart earlyoom'
+
+    # as the default systemd service is hardened, we need a drop-in to allow access to our notifier script:
+    file='/usr/lib/systemd/system/earlyoom.service'  # installed by the package
+    is_f -nm 'cannot configure earlyoom systemd service' "$file" || return 1
+    # (as for sudo's -C opt, see https://stackoverflow.com/a/39549585/1803648)
+    sudo -C64 install -DCTm644 <(cat <<EOF
+[Service]
+# note we run as our regular user & bind \$DBUS_SESSION_BUS_ADDRESS just so
+# the notification script is able to push notif over the dbus.
+DynamicUser=false
+User=$USER
+# we need tmpfs so dirs under /home/laur... can be bound:
+ProtectHome=tmpfs
+# allow access to our notifier script, as default service hardening hides it.
+# /data/scripts/shell contains e.g. our shell __utils that's imported by many scripts/services;
+# likewise, ~/.config/shell contains stuff (like env vars) referenced from /etc our scripts use
+BindReadOnlyPaths=$BASE_DATA_DIR/scripts  $HOME/.config/shell
+#Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$EUID/bus
+BindReadOnlyPaths=-/run/user/$EUID/bus
+EOF
+) "${file}.d/10-allow-access-to-scripts.conf" || err "installing earlyoom service drop-in config failed w/ $?"
 }
 
 
